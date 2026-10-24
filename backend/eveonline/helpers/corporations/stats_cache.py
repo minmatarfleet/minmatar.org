@@ -11,7 +11,11 @@ from __future__ import annotations
 
 import logging
 
-
+from app.cache import CachedRollup
+from eveonline.helpers.corporations.about import (
+    corporation_about,
+    member_facts,
+)
 from eveonline.helpers.corporations.activity import activity_for_characters
 from eveonline.helpers.corporations.applications import application_process
 from eveonline.helpers.corporations.kills import RecentKills
@@ -22,20 +26,32 @@ from eveonline.helpers.corporations.timezones import (
     timezone_distribution,
     weekday_distribution,
 )
-from eveonline.helpers.corporations.safe_cache import (
-    cache_add,
-    cache_delete,
-    cache_get,
-    cache_set,
-)
 from eveonline.models import EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
 
 STATS_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_STATS_KEY = "corporation_profile_stats:v1:{corporation_id}"
+_STATS_KEY = "corporation_profile_stats:v2:{corporation_id}"
 _LOCK_KEY = "corporation_profile_stats:refreshing:{corporation_id}"
+
+
+def _queue_refresh(corporation_id: int) -> None:
+    # Imported here: the task module imports this helper.
+    from eveonline.tasks.corporations import (  # pylint: disable=import-outside-toplevel
+        refresh_corporation_profile_stats,
+    )
+
+    refresh_corporation_profile_stats.apply_async(args=[corporation_id])
+
+
+STATS = CachedRollup(
+    key=_STATS_KEY,
+    ttl=STATS_TTL_SECONDS,
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    enqueue=_queue_refresh,
+)
 
 
 def compute_corporation_stats(
@@ -68,6 +84,8 @@ def compute_corporation_stats(
     declared = prime_time_codes_for_users(timezone_users)
     observed = observed_prime_buckets_for_users(timezone_users)
     return {
+        "about": corporation_about(corporation, characters, observed),
+        "member_facts": member_facts(characters, corporation),
         "human_count": len(user_ids),
         # Per person, for leadership tags and the Members table.
         "declared_by_user": declared,
@@ -89,44 +107,10 @@ def refresh_corporation_stats(
     corporation: EveCorporation, kills: RecentKills | None = None
 ) -> dict:
     stats = compute_corporation_stats(corporation, kills)
-    cache_set(
-        _STATS_KEY.format(corporation_id=corporation.corporation_id),
-        stats,
-        STATS_TTL_SECONDS,
-    )
-    cache_delete(_LOCK_KEY.format(corporation_id=corporation.corporation_id))
+    STATS.store(stats, corporation_id=corporation.corporation_id)
     return stats
 
 
 def corporation_stats(corporation_id: int) -> dict | None:
     """Cached stats, or None after queueing a refresh. Never computes inline."""
-    key = _STATS_KEY.format(corporation_id=corporation_id)
-    stats = cache_get(key)
-    if stats is not None:
-        return stats
-    # cache.add is atomic, so only one request per window queues the work.
-    if cache_add(
-        _LOCK_KEY.format(corporation_id=corporation_id),
-        True,
-        REFRESH_LOCK_SECONDS,
-    ):
-        _queue_refresh(corporation_id)
-    # Eager Celery (tests) fills the cache during the call above.
-    return cache_get(key)
-
-
-def _queue_refresh(corporation_id: int) -> None:
-    # Imported here: the task module imports this helper.
-    from eveonline.tasks.corporations import (  # pylint: disable=import-outside-toplevel
-        refresh_corporation_profile_stats,
-    )
-
-    try:
-        refresh_corporation_profile_stats.apply_async(
-            args=[corporation_id], queue="eveonline"
-        )
-    except Exception:  # pylint: disable=broad-exception-caught
-        logger.exception(
-            "Could not queue profile stats refresh for %s", corporation_id
-        )
-        cache_delete(_LOCK_KEY.format(corporation_id=corporation_id))
+    return STATS.get_or_queue(corporation_id=corporation_id)

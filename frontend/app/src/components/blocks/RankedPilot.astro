@@ -1,0 +1,34 @@
+---
+interface Props {
+    place:          number;
+    character_id:   number;
+    character_name: string;
+    stat_text:      string;
+}
+
+const {
+    place,
+    character_id,
+    character_name,
+    stat_text,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+---
+
+<FlexInline
+    class="[ items-center! ]"
+    gap='var(--space-xs)'
+>
+    <h2>{place}</h2>
+    <PilotBadge
+        class="[ items-center! ]"
+        character_id={character_id}
+        character_name={character_name}
+        size={32}
+    >
+        <small>{stat_text}</small>
+    </PilotBadge>
+</FlexInline>

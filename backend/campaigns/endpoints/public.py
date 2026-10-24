@@ -10,15 +10,15 @@ from django.utils import timezone
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
 from campaigns.endpoints.base import router
-from campaigns.endpoints import schemas, serializers
-from campaigns.helpers import campaign_week_start, week_bounds
+from campaigns.endpoints import overlay, schemas, serializers
+from campaigns.helpers import campaign_day, campaign_week_start, week_bounds
 from campaigns.models import (
+    ADVANTAGE_SITE_KINDS,
     Campaign,
     CampaignAdvantageReading,
     CampaignAward,
     CampaignEvent,
     CampaignKillmail,
-    CampaignParticipantStat,
     CampaignSiteCompletion,
     CampaignStatus,
     CampaignStructure,
@@ -27,7 +27,8 @@ from campaigns.models import (
     SiteKind,
 )
 from campaigns.services import entities as entity_service
-from campaigns.services import plan, stats
+from campaigns.services import fleets as fleet_service
+from campaigns.services import objectives, plan, stats
 from eveonline.models import EveCharacter
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
 from groups.helpers.feature_access import require_feature
@@ -122,6 +123,24 @@ def search_entities(request, kind: str, q: str = ""):
 
 
 @router.get(
+    "/overlay",
+    response={200: schemas.CampaignOverlay, 403: ErrorResponse},
+    auth=AuthBearer(),
+)
+def get_overlay(request):
+    """The desktop app's Campaigns window: the pilot's live campaign.
+
+    Declared above ``/{slug}`` so it is not read as a slug. It names pilots,
+    so it needs the feature even when the campaign itself is public.
+    """
+    denied = require_feature(request.user, VIEW_FEATURE)
+    if denied:
+        return denied
+    campaign = overlay.pick_campaign(request.user)
+    return {"campaign": overlay.overlay(campaign) if campaign else None}
+
+
+@router.get(
     "/{slug}",
     response={200: schemas.CampaignDetail, 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
@@ -138,13 +157,6 @@ def get_campaign(request, slug: str):
         else None
     )
 
-    my_stat = (
-        CampaignParticipantStat.objects.filter(
-            campaign=campaign, user=user
-        ).first()
-        if user
-        else None
-    )
     enlistment = (
         campaign.enlistments.filter(user=user, status="active").first()
         if user
@@ -178,13 +190,16 @@ def get_campaign(request, slug: str):
         "fittings": serializers.campaign_fittings(campaign),
         "totals": stats.campaign_totals(campaign),
         "is_enlisted": enlistment is not None,
-        "my_streak": my_stat.streak_days if my_stat else 0,
         "characters_included": (
             enlistment.characters.filter(included_until__isnull=True).count()
             if enlistment
             else 0
         ),
-        "characters_tracked": my_stat.characters_tracked if my_stat else 0,
+        "characters_tracked": (
+            serializers.tracked_character_counts([user.id]).get(user.id, 0)
+            if enlistment
+            else 0
+        ),
         "standing_fleet_up": False,
         "standing_fleet_members": 0,
         "standing_fleet_boss": None,
@@ -231,19 +246,14 @@ def get_right_now(request, slug: str):
             is_active=True,
             occurred_at__gte=forming_since,
         )
-        .select_related("campaign_system", "user")
+        .select_related("campaign_system")
         .order_by("-occurred_at")[:5]
     )
 
-    my_stat = (
-        CampaignParticipantStat.objects.filter(
-            campaign=campaign, user=user
-        ).first()
-        if user
-        else None
-    )
-
     orders = plan.orders_for(campaign, user) if user else []
+    starters = stats.primary_characters(
+        [event.user_id for event in forming if event.user_id]
+    )
 
     ticker = [
         {
@@ -281,12 +291,15 @@ def get_right_now(request, slug: str):
                     if event.campaign_system
                     else None
                 ),
-                "started_by": (event.user.username if event.user else ""),
+                "started_by": (
+                    starters.get(event.user_id, (None, stats.UNKNOWN_PILOT))[1]
+                    if event.user_id
+                    else ""
+                ),
                 "occurred_at": event.occurred_at.isoformat(),
             }
             for event in forming
         ],
-        "my_streak": my_stat.streak_days if my_stat else 0,
         "my_orders_done": sum(1 for order in orders if order["completed"]),
         "my_orders_total": len(orders),
         "ticker": ticker,
@@ -340,19 +353,10 @@ def get_week(request, slug: str):
         **plan.week_position(campaign, week_start),
         "targets": targets,
         "progress": plan.week_system_progress(campaign, week_start),
+        "objective_rows": objectives.weekly_rows(campaign),
         "commander_order_text": campaign.commander_order_text,
         "summary": stats.week_summary(campaign),
     }
-
-
-ADVANTAGE_SITE_KINDS = (
-    SiteKind.ADVANTAGE_SITE,
-    SiteKind.RENDEZVOUS_POINT,
-    SiteKind.PROPAGANDA_BEACON,
-    SiteKind.LISTENING_OUTPOST,
-    SiteKind.SUPPLY_CACHE,
-    SiteKind.BATTLEFIELD,
-)
 
 
 def _my_contribution(campaign_system, user, window) -> dict:
@@ -485,7 +489,9 @@ def _commander_name(fleet) -> str | None:
     character = fleet.fleet_commander
     if character:
         return character.character_name
-    return fleet.created_by.username if fleet.created_by else None
+    if fleet.created_by_id:
+        return stats.pilot_name(fleet.created_by_id)
+    return None
 
 
 @router.get(
@@ -549,6 +555,32 @@ def get_leaderboard(
 
 
 @router.get(
+    "/{slug}/leaderboard/corporations",
+    response={
+        200: list[schemas.CorporationLeaderboardRow],
+        403: ErrorResponse,
+        404: None,
+    },
+    auth=AuthOptional(),
+)
+def get_corporation_leaderboard(
+    request,
+    slug: str,
+    metric: str = "kills",
+    period: str = "week",
+    limit: int = 25,
+):
+    """The pilot leaderboard summed by each pilot's main's corporation."""
+    campaign = _get(request, slug)
+    denied = _may_read(request, campaign)
+    if denied:
+        return denied
+    return stats.corporation_leaderboard(
+        campaign, metric=metric, period=period, limit=_clamp(limit)
+    )
+
+
+@router.get(
     "/{slug}/killmails",
     response={200: list[schemas.KillmailOut], 403: ErrorResponse, 404: None},
     auth=AuthOptional(),
@@ -587,7 +619,7 @@ def get_sites(request, slug: str, limit: int = 50, offset: int = 0):
     rows = list(
         CampaignSiteCompletion.objects.filter(
             campaign=campaign
-        ).select_related("campaign_system", "user", "complex")[
+        ).select_related("campaign_system", "complex")[
             start : start + _clamp(limit)
         ]
     )
@@ -605,7 +637,6 @@ def get_sites(request, slug: str, limit: int = 50, offset: int = 0):
             "site_kind": row.site_kind,
             "amount_lp": row.amount_lp,
             "system": row.campaign_system.name,
-            "username": row.user.username if row.user else None,
             "character_id": row.character_id,
             "character_name": names.get(row.character_id, ""),
             "plex_class": (
@@ -666,9 +697,10 @@ def get_awards(request, slug: str, limit: int = 50):
     if denied:
         return denied
 
-    rows = CampaignAward.objects.filter(campaign=campaign).select_related(
-        "user"
-    )[: _clamp(limit)]
+    rows = list(
+        CampaignAward.objects.filter(campaign=campaign)[: _clamp(limit)]
+    )
+    winners = stats.primary_characters([award.user_id for award in rows])
     return [
         {
             "code": award.code,
@@ -676,7 +708,8 @@ def get_awards(request, slug: str, limit: int = 50):
             "scope": award.scope,
             "week_start": award.week_start,
             "awarded_at": award.awarded_at,
-            "username": award.user.username,
+            "character_id": winners.get(award.user_id, (None, ""))[0],
+            "character_name": winners.get(award.user_id, (None, ""))[1],
             "value": (award.payload or {}).get("value"),
             "metric": (award.payload or {}).get("metric", ""),
         }
@@ -705,6 +738,12 @@ def get_roster(request, slug: str):
 
     return {
         "pilots": rows,
+        "corporations": serializers.roster_corporations(
+            rows,
+            campaign_day(),
+            mails_by_user=stats.kill_mails_by_user(campaign),
+            fleets_by_user=fleet_service.fleet_ids_by_user(campaign),
+        ),
         "coverage": serializers.coverage_by_hour(campaign),
         "by_prime_time": by_prime_time,
     }

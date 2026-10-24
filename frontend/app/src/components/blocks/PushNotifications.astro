@@ -80,7 +80,14 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
     }` : undefined}
     gap='var(--space-l)'
 >
-    <h2>{t('push_notifications')}</h2>
+    <FlexInline gap='var(--space-xs)' class="[ items-baseline ]">
+        <h2>{t('account.this_browser')}</h2>
+        {VAPID_PUBLIC_KEY &&
+            <small class="[ push-status push-status--good ]" x-show="notifications_support && notifications_permission === 'granted'" style="display: none">{t('account.notifications_allowed')}</small>
+            <small class="[ push-status ]" x-show="notifications_support && notifications_permission === 'default'" style="display: none">{t('account.notifications_not_allowed')}</small>
+            <small class="[ push-status ]" x-show="notifications_support && notifications_permission === 'denied'" style="display: none">{t('account.notifications_blocked')}</small>
+        }
+    </FlexInline>
     {VAPID_PUBLIC_KEY ?
         <FlexInline x-ref="notifications_loading" class="[ items-center ]" gap='var(--space-3xs)'>
             <RifterIcon class="small" />
@@ -125,3 +132,24 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         <p>{t('push_notifications_missconfiguration')}</p>
     }
 </Flexblock>
+<style lang="scss">
+    .push-status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        font-weight: 600;
+        color: var(--security-status-point-4);
+
+        &::before {
+            content: '';
+            inline-size: 0.5em;
+            block-size: 0.5em;
+            border-radius: 50%;
+            background: currentColor;
+        }
+    }
+
+    .push-status--good {
+        color: var(--green);
+    }
+</style>

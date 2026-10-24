@@ -1,5 +1,6 @@
 """Boards are recomputed from source, so removals have to land too."""
 
+import importlib
 from datetime import timedelta
 
 from django.test import TestCase
@@ -8,6 +9,7 @@ from django.utils import timezone
 from campaigns.helpers import campaign_day, day_bounds
 from campaigns.models import (
     CampaignAward,
+    CampaignEnlistmentCharacter,
     CampaignComplexCompletion,
     CampaignEvent,
     CampaignKillmail,
@@ -25,7 +27,19 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
-from eveonline.models import EveCharacterFwLpPayout, FwPayoutEventCode
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterFwLpPayout,
+    FwPayoutEventCode,
+)
+
+# Migration modules are named with a number, which is not a valid import.
+confirm_codes_and_recount = importlib.import_module(
+    "campaigns.migrations.0025_confirm_complex_and_advantage_codes"
+).confirm_codes_and_recount
+recount_multibox_days = importlib.import_module(
+    "campaigns.migrations.0028_recount_multibox_kills"
+).recount_multibox_days
 
 
 class RecomputeTests(TestCase):
@@ -57,6 +71,87 @@ class RecomputeTests(TestCase):
         self.assertEqual(row.points, 0)
         self.assertFalse(row.active)
 
+    def _add_alt(self, character_id):
+        alt = EveCharacter.objects.create(
+            character_id=character_id,
+            character_name=f"Alt {character_id}",
+            user=self.user,
+        )
+        CampaignEnlistmentCharacter.objects.create(
+            enlistment=self.campaign.enlistments.get(user=self.user),
+            character=alt,
+            included_from=self.campaign.start_at,
+        )
+
+    def _day_row(self):
+        return CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=self.today
+        )
+
+    def test_a_pilots_alts_on_one_kill_count_as_one_kill(self):
+        # Scored against the pilot on a mail of the same size with two
+        # outsiders, so zKill's solo flag is the same on both.
+        attribute_feed_killmail(
+            make_feed_killmail(
+                802, victim_character_id=9999, attacker_ids=[8001, 7001, 7002]
+            )
+        )
+        stats.materialise_day(self.campaign, self.today)
+        alone = self._day_row()
+
+        CampaignKillmail.objects.all().delete()
+        for character_id in (8002, 8003):
+            self._add_alt(character_id)
+        attribute_feed_killmail(
+            make_feed_killmail(
+                803, victim_character_id=9999, attacker_ids=[8002, 8001, 8003]
+            )
+        )
+        stats.materialise_day(self.campaign, self.today)
+        boxed = self._day_row()
+
+        self.assertEqual(boxed.kills, 1)
+        self.assertEqual(boxed.final_blows, 1)
+        self.assertEqual(boxed.gang_kills, 0)
+        self.assertEqual(boxed.isk_destroyed, alone.isk_destroyed)
+        self.assertEqual(boxed.points, alone.points)
+        self.assertEqual(stats.week_kills(self.campaign), 1)
+
+    def test_the_week_counts_a_shared_kill_once(self):
+        enlist(self.campaign, "wingman", 8101)
+        attribute_feed_killmail(
+            make_feed_killmail(
+                804, victim_character_id=9999, attacker_ids=[8001, 8101]
+            )
+        )
+        stats.materialise_day(self.campaign, self.today)
+
+        self.assertEqual(stats.week_kills(self.campaign), 1)
+        self.assertEqual(stats.week_summary(self.campaign)["kills"], 1)
+
+    def test_the_migration_recounts_older_multibox_days(self):
+        self._add_alt(8002)
+        earlier = self.today - timedelta(days=3)
+        attribute_feed_killmail(
+            make_feed_killmail(
+                805,
+                victim_character_id=9999,
+                attacker_ids=[8001, 8002],
+                killmail_time=day_bounds(earlier)[0] + timedelta(hours=1),
+            )
+        )
+        # The day as the old per-character count left it.
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=self.user, day=earlier, kills=2
+        )
+
+        recount_multibox_days(None, None)
+
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=earlier
+        )
+        self.assertEqual(row.kills, 1)
+
     def test_a_pod_loss_is_not_scored_and_is_not_an_active_day(self):
         """The ship loss already cost the pilot; the pod must not again."""
         feed_killmail = make_feed_killmail(
@@ -80,6 +175,10 @@ class UnconfirmedCodeTests(TestCase):
 
     def setUp(self):
         sites.seed_event_codes()
+        # 516 ships confirmed; these tests are about the unconfirmed state.
+        FwPayoutEventCode.objects.filter(event_code=516).update(
+            confirmed=False
+        )
         self.campaign = make_campaign()
         self.user, self.character = enlist(self.campaign, "pilot", 8101)
         self.system = self.campaign.systems.first()
@@ -154,6 +253,75 @@ class UnconfirmedCodeTests(TestCase):
         totals = stats.campaign_totals(self.campaign)
         self.assertEqual(totals["advantage_sites"], 0)
         self.assertEqual(totals["advantage_generated"], 0)
+
+
+class ConfirmOctoberCodesTests(TestCase):
+    """Sites stored while 359, 373 and 516 were unconfirmed start counting."""
+
+    def setUp(self):
+        sites.seed_event_codes()
+        FwPayoutEventCode.objects.filter(
+            event_code__in=[359, 373, 516]
+        ).update(confirmed=False)
+        self.campaign = make_campaign()
+        self.user, self.character = enlist(self.campaign, "pilot", 8301)
+        self.system = self.campaign.systems.first()
+        # Older than the two days the stats task rebuilds on its own.
+        self.moment = timezone.now() - timedelta(days=3)
+
+    def _payout(self, event_code, amount, notification_id):
+        return EveCharacterFwLpPayout.objects.create(
+            character=self.character,
+            notification_id=notification_id,
+            notification_type="FacWarLPPayoutEvent",
+            occurred_at=self.moment,
+            amount_lp=amount,
+            event_code=event_code,
+            location_id=self.system.solar_system_id,
+            ref_id=9610 if event_code != 516 else None,
+        )
+
+    def test_confirming_counts_complexes_and_advantage_on_older_days(self):
+        sites.attribute_payouts(
+            [
+                self._payout(359, 26_250, 1),
+                self._payout(373, 22_500, 2),
+                self._payout(516, 10_000, 3),
+            ]
+        )
+        day = campaign_day(self.moment)
+        stats.materialise_day(self.campaign, day)
+        self.assertEqual(stats.campaign_totals(self.campaign)["complexes"], 0)
+
+        confirm_codes_and_recount(None, None)
+
+        self.assertFalse(
+            CampaignSiteCompletion.objects.filter(scored=False).exists()
+        )
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=day
+        )
+        self.assertEqual(row.complexes, 2)
+        self.assertEqual(row.advantage_sites, 1)
+        self.assertGreater(row.advantage_generated, 0)
+        totals = stats.campaign_totals(self.campaign)
+        self.assertEqual(totals["complexes"], 2)
+        self.assertGreater(totals["advantage_generated"], 0)
+        self.assertEqual(
+            CampaignParticipantStat.objects.get(
+                campaign=self.campaign, user=self.user
+            ).complexes,
+            2,
+        )
+
+    def test_a_code_relabelled_by_hand_is_left_alone(self):
+        FwPayoutEventCode.objects.filter(event_code=373).update(
+            site_kind=SiteKind.BATTLEFIELD
+        )
+        confirm_codes_and_recount(None, None)
+        self.assertFalse(
+            FwPayoutEventCode.objects.get(event_code=373).confirmed
+        )
 
 
 class LatePayoutTests(TestCase):
@@ -296,57 +464,6 @@ class AwardTests(TestCase):
         self.assertEqual(warlord.user_id, self.hunter.id)
 
 
-class StreakTests(TestCase):
-    """A streak survives the day it is still in, and nothing else."""
-
-    def setUp(self):
-        self.campaign = make_campaign()
-        self.user, _ = enlist(self.campaign, "regular", 8401)
-        self.today = campaign_day()
-
-    def _active(self, *offsets):
-        for offset in offsets:
-            CampaignParticipantDay.objects.create(
-                campaign=self.campaign,
-                user=self.user,
-                day=self.today - timedelta(days=offset),
-                kills=1,
-                points=10,
-                active=True,
-            )
-        stats.rebuild_stats(self.campaign)
-        return CampaignParticipantStat.objects.get(
-            campaign=self.campaign, user=self.user
-        )
-
-    def test_consecutive_days_build_a_streak(self):
-        stat = self._active(0, 1, 2)
-        self.assertEqual(stat.streak_days, 3)
-
-    def test_a_gap_breaks_it(self):
-        stat = self._active(0, 2, 3)
-        self.assertEqual(stat.streak_days, 1)
-        self.assertEqual(stat.best_streak_days, 2)
-
-    def test_flying_last_night_keeps_the_streak_alive(self):
-        """The campaign day does not roll over until 11:00 UTC."""
-        stat = self._active(1, 2)
-        self.assertEqual(stat.streak_days, 2)
-
-    def test_an_old_streak_is_over_but_still_the_best(self):
-        stat = self._active(5, 6, 7, 8)
-        self.assertEqual(stat.streak_days, 0)
-        self.assertEqual(stat.best_streak_days, 4)
-
-    def test_no_activity_is_no_streak(self):
-        stats.rebuild_stats(self.campaign)
-        self.assertFalse(
-            CampaignParticipantStat.objects.filter(
-                campaign=self.campaign, streak_days__gt=0
-            ).exists()
-        )
-
-
 class ZeroOutTests(TestCase):
     """Clearing a withdrawn day must not clear what it does not own."""
 
@@ -394,7 +511,7 @@ class MaterialisationOrderTests(TestCase):
 
     def setUp(self):
         self.campaign = make_campaign()
-        self.user, _ = enlist(self.campaign, "streaker", 8601)
+        self.user, _ = enlist(self.campaign, "nightly", 8601)
         self.today = campaign_day()
         self.days = [
             self.today - timedelta(days=offset) for offset in (2, 1, 0)
@@ -419,7 +536,7 @@ class MaterialisationOrderTests(TestCase):
         }
 
     def test_a_window_scores_the_same_whichever_end_you_pass_in(self):
-        """A streak is read from the days before it.
+        """The contribution-mix bonus is read from the days before it.
 
         Walking a window backwards scores the older days as if the ones
         before them had never happened, so the first pass under-awards and
@@ -447,15 +564,3 @@ class MaterialisationOrderTests(TestCase):
 
         stats.materialise_recent(self.campaign, days=3)
         self.assertEqual(first_pass, self._points())
-
-    def test_the_streak_bonus_is_actually_being_paid(self):
-        """Otherwise this test would pass on two equally broken runs."""
-        stats.materialise_recent(self.campaign, days=3)
-        rows = CampaignParticipantDay.objects.filter(
-            campaign=self.campaign
-        ).order_by("day")
-
-        self.assertEqual(rows.count(), 3)
-        # Day three of a streak is the first that pays, so it must be worth
-        # more than day one despite identical activity.
-        self.assertGreater(rows[2].points, rows[0].points)

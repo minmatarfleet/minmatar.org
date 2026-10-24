@@ -2,11 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 
 import { should_redirect_to_orders_onboarding } from '@helpers/onboarding/ordersRedirect'
 
@@ -77,7 +75,8 @@ import OrdersTable from '@components/blocks/OrdersTable.astro'
 import Button from '@components/blocks/Button.astro'
 import ButtonOrdersLearnMore from '@components/blocks/ButtonOrdersLearnMore.astro'
 import TextBox from '@components/layout/TextBox.astro'
-import IndustryManufacturersReel from '@components/blocks/IndustryManufacturersReel.astro'
+import RankingReel from '@components/blocks/RankingReel.astro'
+import { industry_manufacturers_reel } from '@helpers/ranking_reels'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -203,7 +202,6 @@ const breadcrumbs = [
                         active_orders_locations={active_orders_locations}
                         non_active_orders_locations={non_active_orders_locations}
                         is_history={false}
-                        init_tooltips={false}
                     />
                     :
                     <p>{t('no_manufacturing_orders')}</p>
@@ -211,5 +209,5 @@ const breadcrumbs = [
         </Flexblock>
     </PageWide>
 
-    <IndustryManufacturersReel manufacturers={manufacturers} />
+    <RankingReel {...industry_manufacturers_reel(manufacturers, t, translatePath)} />
 </Viewport>

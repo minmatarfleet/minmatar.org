@@ -6,6 +6,7 @@ const KIND_MAP: Record<string, ActivityKind> = {
   killmail_batch: 'killmail_batch',
   communication: 'communication',
   contested_change: 'contested_change',
+  fleet_kills: 'fleet_kills',
 };
 
 function mapRoster(payload: Record<string, unknown>): ActivityPilot[] | undefined {
@@ -41,6 +42,39 @@ function mapShips(payload: Record<string, unknown>): ActivityShip[] | undefined 
       };
     })
     .filter((entry): entry is ActivityShip => entry != null);
+}
+
+function mapHeadlineShips(payload: Record<string, unknown>): ActivityShip[] | undefined {
+  const headline = payload.headline;
+  const killmails = payload.killmails;
+  if (!Array.isArray(headline) || !Array.isArray(killmails)) return undefined;
+  const byId = new Map<unknown, Record<string, unknown>>();
+  for (const entry of killmails) {
+    if (entry && typeof entry === 'object') {
+      const row = entry as Record<string, unknown>;
+      byId.set(row.killmail_id, row);
+    }
+  }
+  const ships = headline
+    .map((killmailId) => byId.get(killmailId))
+    .filter((row): row is Record<string, unknown> => row != null)
+    .map((row) => ({
+      name: typeof row.victim_ship_name === 'string' ? row.victim_ship_name : 'Unknown',
+      count: 1,
+      ...(typeof row.victim_ship_type_id === 'number' ? { type_id: row.victim_ship_type_id } : {}),
+    }));
+  return ships.length ? ships : undefined;
+}
+
+function mapSystemNames(payload: Record<string, unknown>): string[] | undefined {
+  const systems = payload.systems;
+  if (!Array.isArray(systems)) return undefined;
+  const names = systems
+    .map((entry) =>
+      entry && typeof entry === 'object' ? (entry as Record<string, unknown>).system_name : null,
+    )
+    .filter((name): name is string => typeof name === 'string');
+  return names.length ? names : undefined;
 }
 
 export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
@@ -84,6 +118,16 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
         pilots: payload.pilots as number | undefined,
         ships: mapShips(payload),
         summary: item.preview || item.body || undefined,
+      };
+    case 'fleet_kills':
+      return {
+        ...base,
+        isk_destroyed: payload.isk_destroyed as number | undefined,
+        isk_lost: payload.isk_lost as number | undefined,
+        ships_destroyed: payload.ships_destroyed as number | undefined,
+        ships_lost: payload.ships_lost as number | undefined,
+        systems: mapSystemNames(payload),
+        ships: mapHeadlineShips(payload),
       };
     case 'communication':
       return {

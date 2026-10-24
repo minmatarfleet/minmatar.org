@@ -1,0 +1,80 @@
+---
+/**
+ * One choice of a radio group, drawn as a card. The radio input is real (and
+ * visually hidden), so arrow keys, Space and form submission work natively.
+ * Pages add Alpine (`x-model`) or htmx (`hx-get`, `hx-trigger`) attributes
+ * through `input_attributes`.
+ */
+interface Props {
+    name:               string;
+    value:              string;
+    checked?:           boolean;
+    input_attributes?:  Record<string, any>;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    value,
+    checked = false,
+    input_attributes = {},
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<label class:list={['[ option-card ]', Astro.props.class]} {...attributes}>
+    <input type="radio" name={name} value={value} checked={checked} {...input_attributes} />
+    <span class="[ option-card__body ]">
+        <slot />
+    </span>
+</label>
+
+<style lang="scss">
+    .option-card {
+        display: block;
+        position: relative;
+        min-width: 0;
+        cursor: pointer;
+
+        input {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+    }
+
+    .option-card__body {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+        height: 100%;
+        box-sizing: border-box;
+        padding: var(--space-2xs) var(--space-xs);
+        background-color: var(--component-background);
+        border: 2px solid var(--border-color-hover);
+        transition: var(--fast-transition);
+    }
+
+    input:checked + .option-card__body {
+        border-color: var(--fleet-yellow);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 12%, var(--component-background));
+    }
+
+    input:focus-visible + .option-card__body {
+        outline: solid 2px var(--fleet-yellow);
+        outline-offset: 3px;
+    }
+
+    @media (hover: hover) {
+        input:not(:checked):hover + .option-card__body {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+        }
+    }
+</style>

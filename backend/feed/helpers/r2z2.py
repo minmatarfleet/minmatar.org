@@ -20,16 +20,14 @@ from feed.constants import (
     R2Z2_RATE_LIMIT_SLEEP_SECONDS,
     R2Z2_SEQUENCE_URL,
     R2Z2_SUCCESS_SLEEP_MS,
-    R2Z2_USER_AGENT,
 )
 from feed.helpers.capital_pings import maybe_notify_capital_kill
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
 from feed.helpers.monitored_systems import get_monitored_system_ids
+from feed.helpers.zkill_client import r2z2_sequence_url, zkill_get
 from feed.models import FeedR2z2Cursor
 
 logger = logging.getLogger(__name__)
-
-R2Z2_BASE = "https://r2z2.zkillboard.com/ephemeral"
 
 CursorRole = Literal["live", "catchup"]
 
@@ -39,10 +37,6 @@ class R2Z2Throttled(Exception):
         self.status = status
         self.pause_seconds = pause_seconds
         super().__init__(f"R2Z2 HTTP {status}, pause {pause_seconds}s")
-
-
-def _headers() -> dict[str, str]:
-    return {"User-Agent": R2Z2_USER_AGENT, "Accept": "application/json"}
 
 
 def _retry_after_seconds(
@@ -172,7 +166,7 @@ def _warn_gaps(stats: dict[str, Any], cursor: FeedR2z2Cursor) -> None:
 
 def fetch_latest_sequence() -> int:
     """Fetch tip sequence. Raises on throttle/errors (no long sleeps)."""
-    response = requests.get(R2Z2_SEQUENCE_URL, headers=_headers(), timeout=30)
+    response = zkill_get(R2Z2_SEQUENCE_URL, timeout=30)
     if response.status_code in (429, 403):
         default = (
             float(R2Z2_RATE_LIMIT_SLEEP_SECONDS)
@@ -188,8 +182,7 @@ def fetch_latest_sequence() -> int:
 def fetch_sequence_payload(
     sequence_id: int,
 ) -> tuple[int, dict[str, Any] | None, float | None]:
-    url = f"{R2Z2_BASE}/{sequence_id}.json"
-    response = requests.get(url, headers=_headers(), timeout=30)
+    response = zkill_get(r2z2_sequence_url(sequence_id), timeout=30)
     if response.status_code == 404:
         return 404, None, None
     if response.status_code == 429:

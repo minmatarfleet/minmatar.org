@@ -1112,11 +1112,14 @@ class CampaignEnlistmentAdmin(admin.ModelAdmin):
             "Notifications",
             {
                 "classes": ("collapse",),
+                "description": (
+                    "Stored preferences only: no campaign notification "
+                    "reads these yet."
+                ),
                 "fields": (
                     "notify_gang_forming",
                     "notify_standing_fleet",
                     "notify_activity_nearby",
-                    "notify_streak_at_risk",
                     "notify_fleets",
                     "notify_thresholds",
                     "notify_digest",
@@ -1143,6 +1146,7 @@ class CampaignEnlistmentCharacterAdmin(admin.ModelAdmin):
         "included_from",
         "included_until",
         "payouts_polled_at",
+        "killmails_polled_at",
     )
     list_filter = ("enlistment__campaign",)
     search_fields = ("character__character_name",)
@@ -1312,8 +1316,7 @@ class CampaignParticipantStatAdmin(admin.ModelAdmin):
         "campaign",
         "points",
         "rank_points",
-        "streak_days",
-        "characters_tracked",
+        "active_days",
     )
     list_filter = ("campaign",)
     search_fields = ("user__username",)

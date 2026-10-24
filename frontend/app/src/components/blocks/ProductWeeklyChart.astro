@@ -1,0 +1,249 @@
+---
+import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
+const { t, lang } = i18n(Astro.url)
+
+import type { ProductFight, ProductWeek } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    weekly:             ProductWeek[];
+    fights?:            ProductFight[];
+    show_lost:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    weekly,
+    fights = [],
+    show_lost,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+import ChartTable from '@components/blocks/ChartTable.astro'
+
+// Built goes up from the baseline and everything that left (lost, sold)
+// goes down. Both halves share one scale, so a fight-sized week reads as one.
+const out_of = (week: ProductWeek) => (show_lost ? week.lost : 0) + week.sold
+const max_built = Math.max(0, ...weekly.map(week => week.built))
+const max_out = Math.max(0, ...weekly.map(out_of))
+const has_data = max_built > 0 || max_out > 0
+const scale_total = Math.max(1, max_built + max_out)
+const up_share = max_built / scale_total
+const down_share = max_out / scale_total
+
+const bar_height = (value: number) => `height: calc(var(--plot_height) * ${value / scale_total})`
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+const week_start_ms = weekly.map(week => new Date(week.week_start).getTime())
+const fight_by_week = new Map<number, ProductFight>()
+for (const fight of fights) {
+    const moment = new Date(fight.started_at).getTime()
+    const index = week_start_ms.findIndex(start => moment >= start && moment < start + WEEK_MS)
+    if (index >= 0 && (fight_by_week.get(index)?.units ?? 0) < fight.units)
+        fight_by_week.set(index, fight)
+}
+
+const month_label = (week_start: string) => eve_day_short(lang, week_start)
+const day_label = (week_start: string) =>
+    new Date(week_start).toLocaleDateString(lang, { day: 'numeric', timeZone: 'UTC' })
+const month_of = (week_start: string) => new Date(week_start).getUTCMonth()
+
+const columns = weekly.map((week, index) => {
+    const starts_month = index === 0 || month_of(week.week_start) !== month_of(weekly[index - 1].week_start)
+    const lost = show_lost ? week.lost : 0
+    return {
+        week,
+        lost,
+        out: lost + week.sold,
+        fight: fight_by_week.get(index) ?? null,
+        label: starts_month ? month_label(week.week_start) : day_label(week.week_start),
+        starts_month,
+        tooltip: [
+            `<b>${t('industry.product.week_of').replace('{date}', month_label(week.week_start))}</b>`,
+            `${t('industry.product.built')}: ${number_thousand_separator(week.built)}`,
+            ...(show_lost ? [`${t('industry.product.lost')}: ${number_thousand_separator(lost)}`] : []),
+            `${t('industry.product.sold')}: ${number_thousand_separator(week.sold)}`,
+        ].join('<br>'),
+    }
+})
+---
+
+<figure class:list={['[ weekly-chart ]', Astro.props.class]} {...attributes}>
+    <figcaption class="[ weekly-legend ]">
+        <span class="[ legend-item ]"><span class="[ swatch swatch-built ]"></span>{t('industry.product.built')}</span>
+        {show_lost &&
+            <span class="[ legend-item ]"><span class="[ swatch swatch-lost ]"></span>{t('industry.product.lost')}</span>
+        }
+        <span class="[ legend-item ]"><span class="[ swatch swatch-sold ]"></span>{t('industry.product.sold')}</span>
+    </figcaption>
+
+    {has_data ?
+        <div class="[ weekly-plot ]" aria-hidden="true">
+            {columns.map(column =>
+                <div
+                    class="[ week ]"
+                    data-tippy-content={column.tooltip}
+                    x-init="tippy($el, { ...tippy_options, allowHTML: true })"
+                >
+                    <div class="[ up ]">
+                        {column.week.built > 0 && <small class="[ count ]">{number_thousand_separator(column.week.built)}</small>}
+                        <span class="[ bar bar-built ]" style={bar_height(column.week.built)}></span>
+                    </div>
+                    <div class="[ down ]">
+                        <span class="[ bar bar-lost ]" style={bar_height(column.lost)}></span>
+                        <span class="[ bar bar-sold ]" style={bar_height(column.week.sold)}></span>
+                        {column.out > 0 && <small class="[ count ]">{number_thousand_separator(column.out)}</small>}
+                        {column.fight && <small class="[ fight-label ]">{column.fight.solar_system_name}</small>}
+                    </div>
+                    <small class:list={['[ week-label ]', { 'is-minor': !column.starts_month }]}>
+                        {column.label}
+                    </small>
+                </div>
+            )}
+        </div>
+        :
+        <p class="[ empty ]">{t('industry.product.no_weekly_activity')}</p>
+    }
+
+    <ChartTable
+        caption={t('industry.product.weekly_title')}
+        columns={[
+            t('industry.product.week'),
+            t('industry.product.built'),
+            ...(show_lost ? [t('industry.product.lost')] : []),
+            t('industry.product.sold'),
+        ]}
+        rows={columns.map(column => ({
+            label: month_label(column.week.week_start),
+            values: [column.week.built, ...(show_lost ? [column.lost] : []), column.week.sold],
+        }))}
+    />
+</figure>
+
+<style lang="scss" define:vars={{ up_share, down_share }}>
+    .weekly-chart {
+        --built_color: color-mix(in srgb, var(--alliance-blue) 60%, white);
+        --plot_height: calc(var(--space-3xl) * 2.5);
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        margin: 0;
+    }
+
+    .weekly-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        font-size: var(--step--1);
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--highlight);
+    }
+
+    .swatch {
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+    }
+
+    .swatch-built,
+    .bar-built {
+        background: var(--built_color);
+    }
+
+    .swatch-lost,
+    .bar-lost {
+        background: var(--fleet-red);
+    }
+
+    .swatch-sold,
+    .bar-sold {
+        background: var(--fleet-yellow);
+    }
+
+    .weekly-plot {
+        display: grid;
+        grid-template-columns: repeat(13, minmax(0, 1fr));
+    }
+
+    // Each half is as tall as its tallest bar plus room for the labels.
+    .week {
+        display: grid;
+        grid-template-rows:
+            calc(var(--plot_height) * var(--up_share) + var(--space-m))
+            calc(var(--plot_height) * var(--down_share) + var(--space-xl))
+            auto;
+        min-width: 0;
+        cursor: default;
+        transition: background-color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--border-color);
+            }
+        }
+    }
+
+    .up,
+    .down {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 0;
+        padding-inline: var(--space-3xs);
+    }
+
+    .up {
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+        border-bottom: solid 1px var(--border-color-hover);
+    }
+
+    .bar {
+        flex-shrink: 0;
+        width: 100%;
+        max-width: var(--space-l);
+    }
+
+    .count {
+        font-size: var(--step--2);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.4;
+    }
+
+    .fight-label {
+        font-size: var(--step--2);
+        font-weight: 600;
+        color: var(--fleet-yellow);
+        white-space: nowrap;
+    }
+
+    .week-label {
+        padding-top: var(--space-2xs);
+        font-size: var(--step--2);
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    // Day-of-month and fight labels only fit when the columns are wide.
+    @media (max-width: 48rem) {
+        .is-minor,
+        .fight-label {
+            visibility: hidden;
+        }
+    }
+
+    .empty {
+        color: var(--foreground);
+    }
+</style>

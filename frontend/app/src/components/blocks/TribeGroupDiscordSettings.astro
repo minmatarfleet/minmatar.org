@@ -1,0 +1,213 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeGroupPublishing } from '@dtypes/api.minmatar.org'
+import type { DiscordChannelUI } from '@dtypes/layout_components'
+
+/**
+ * Settings tab, Discord: the group's channel (empty = the tribe's) and the
+ * role it mentions, read only. Saves on its own through the settings partial,
+ * which swaps this form back with the result.
+ */
+interface Props {
+    settings:       TribeGroupPublishing;
+    /** null when the guild's channel list could not be read. */
+    channels:       DiscordChannelUI[] | null;
+    tribe_id:       number;
+    group_id:       number;
+    tribe_name:     string;
+    group_name:     string;
+    status?:        { kind: 'success' | 'error', message: string } | null;
+    [propName: string]: any;
+}
+
+const {
+    settings,
+    channels,
+    tribe_id,
+    group_id,
+    tribe_name,
+    group_name,
+    status = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const fill = (text: string) => text.replaceAll('{group}', group_name).replaceAll('{tribe}', tribe_name)
+const own_channel = settings.discord_channel_id ?? ''
+const inherited_name = !own_channel ? settings.effective_discord_channel_name : null
+const inherit_label = inherited_name
+    ? fill(t('tribes.settings.discord.inherit_option_named')).replace('{channel}', inherited_name.replace(/^#/, ''))
+    : fill(t('tribes.settings.discord.inherit_option'))
+const channel_help = own_channel
+    ? t('tribes.settings.discord.channel_help')
+    : settings.effective_discord_channel_id
+        ? `${fill(t('tribes.settings.discord.channel_inherited'))} ${t('tribes.settings.discord.channel_help')}`
+        : fill(t('tribes.settings.discord.channel_none'))
+// A saved channel the bot can no longer see still shows, so saving keeps it.
+const own_missing = own_channel && channels && !channels.some((channel) => channel.id === own_channel)
+
+const PARTIAL_URL = translatePath(`/partials/tribe_group_settings_component?section=discord&tribe_id=${tribe_id}&group_id=${group_id}`)
+
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+---
+
+<form
+    class:list={['[ tribe-settings-section ]', Astro.props.class]}
+    hx-post={PARTIAL_URL}
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-indicator=".loader"
+    aria-labelledby="tribe-settings-discord-title"
+    {...attributes}
+>
+    <div class="[ tribe-settings-section__head ]">
+        <h2 id="tribe-settings-discord-title">{t('tribes.settings.discord.title')}</h2>
+        <p>{fill(t('tribes.settings.discord.lead'))}</p>
+    </div>
+
+    <div class="[ tribe-settings-section__row ]">
+        <label class="[ tribe-settings-section__label ]" for="tribe-settings-discord-channel">
+            <b>{t('tribes.settings.discord.channel')}</b>
+            <small>{channel_help}</small>
+        </label>
+        {channels ?
+            <div class="[ tribe-settings-section__control ]">
+                <Select id="tribe-settings-discord-channel" name="discord_channel_id" size="sm">
+                    <option value="" selected={!own_channel}>{inherit_label}</option>
+                    {own_missing && <option value={own_channel} selected>{settings.effective_discord_channel_name ?? own_channel}</option>}
+                    {channels.map((channel) =>
+                        <option value={channel.id} selected={channel.id === own_channel}>#{channel.name}</option>
+                    )}
+                </Select>
+            </div>
+            :
+            <p class="[ tribe-settings-section__value ]" role="status">
+                <span>#{(settings.effective_discord_channel_name ?? '').replace(/^#/, '') || '—'}</span>
+                <small>{t('tribes.settings.discord.channels_error')}</small>
+            </p>
+        }
+    </div>
+
+    <div class="[ tribe-settings-section__row ]">
+        <span class="[ tribe-settings-section__label ]">
+            <b>{t('tribes.settings.discord.role')}</b>
+            <small>{t('tribes.settings.discord.role_help')}</small>
+        </span>
+        <span class="[ tribe-settings-section__value ]">
+            {settings.discord_role_name ? `@${settings.discord_role_name}` : t('tribes.settings.discord.role_none')}
+        </span>
+    </div>
+
+    <div class="[ tribe-settings-section__foot ]">
+        {status &&
+            <p
+                class:list={['[ tribe-settings-section__status ]', { 'is-error': status.kind === 'error' }]}
+                role={status.kind === 'error' ? 'alert' : 'status'}
+            >{status.message}</p>
+        }
+        <Button type="submit" size="sm" disabled={!channels}>{t('tribes.settings.discord.save')}</Button>
+    </div>
+</form>
+
+<style lang="scss" is:global>
+    .tribe-settings-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline);
+    }
+
+    .tribe-settings-section .tribe-settings-section__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        p {
+            margin: 0;
+            font-size: var(--step-0);
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-settings-section__control {
+        width: min(100%, 24rem);
+    }
+
+    .tribe-settings-section__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-m);
+        padding-block: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .tribe-settings-section__label {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-settings-section__value {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-3xs);
+        margin: 0;
+        color: var(--highlight);
+        text-align: right;
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-settings-section__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-xs) var(--space-s);
+        padding-top: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .tribe-settings-section__status {
+        margin: 0;
+        color: var(--green);
+
+        &.is-error {
+            color: var(--fleet-red);
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .tribe-settings-section {
+            padding: var(--space-s);
+        }
+
+        .tribe-settings-section__row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .tribe-settings-section__value {
+            align-items: flex-start;
+            text-align: left;
+        }
+    }
+</style>

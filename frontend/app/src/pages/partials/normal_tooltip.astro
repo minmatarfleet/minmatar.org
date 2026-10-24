@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 const title = Astro.url.searchParams.get('title')
@@ -16,16 +16,16 @@ import Markdown from '@components/blocks/Markdown.astro';
 <Context>
     {title &&
         <FlexInline justification='space-between'>
-            <h4>{t(title as any) ?? title}</h4>
+            <h4>{t(dynamic_key(title)) ?? title}</h4>
 
             {tag &&
-                <Tag text={t(tag as any) ?? tag} />
+                <Tag text={t(dynamic_key(tag)) ?? tag} />
             }
         </FlexInline>
     }
     {description &&
         <Markdown
-            markdown={t(description as any) ?? description}
+            markdown={t(dynamic_key(description)) ?? description}
             inline={true}
             inline_element='span'
         />

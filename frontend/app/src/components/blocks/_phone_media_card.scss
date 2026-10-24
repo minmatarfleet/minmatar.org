@@ -1,0 +1,210 @@
+// Phone-only (≤48rem) compact "media object" layout for image-led list cards.
+// Turns a full-width square render with an overlaid caption into a row:
+// thumbnail on the left, caption on the right, optional chevron at the end.
+// Desktop is untouched: everything lives inside the media query.
+//
+// Usage, inside a component's scoped <style lang="scss">:
+//     @use './_phone_media_card.scss' as *;
+//     .fitting-card { @include phone_media_card('.fitting-card-body', '.ship-type-icon'); }
+//
+// $body  — the caption wrapper that is absolutely positioned over the picture on desktop.
+// $icon  — optional corner badge (navy / T2 / doctrine type) that sits on the picture.
+// $thumb — thumbnail edge length.
+// $chevron — draw a trailing chevron (for cards that navigate or open a dialog).
+@mixin phone_media_card($body, $icon: null, $thumb: 64px, $chevron: true) {
+    @media (max-width: 48rem) {
+        inline-size: 100%;
+
+        > :global(.flex-block) {
+            flex-direction: row;
+            align-items: center;
+            min-block-size: $thumb;
+        }
+
+        :global(picture) {
+            flex: 0 0 $thumb;
+            inline-size: $thumb;
+            block-size: $thumb;
+        }
+
+        :global(picture img) {
+            inline-size: $thumb;
+            block-size: $thumb;
+            -webkit-mask-image: none;
+            mask-image: none;
+        }
+
+        #{$body} {
+            position: static;
+            flex: 1 1 auto;
+            min-inline-size: 0;
+            margin-block-start: 0;
+            padding-inline: var(--space-xs);
+            @if $chevron {
+                padding-inline-end: var(--space-l);
+            }
+        }
+
+        h3 {
+            font-size: var(--step-0);
+        }
+
+        @if $icon {
+            #{$icon} :global(svg) {
+                inline-size: var(--space-m);
+                block-size: var(--space-m);
+            }
+        }
+
+        @if $chevron {
+            &::after {
+                content: '';
+                position: absolute;
+                inset-inline-end: var(--space-s);
+                inset-block-start: 50%;
+                inline-size: var(--space-2xs);
+                block-size: var(--space-2xs);
+                border-block-start: 2px solid var(--highlight);
+                border-inline-end: 2px solid var(--highlight);
+                transform: translateY(-50%) rotate(45deg);
+                pointer-events: none;
+            }
+        }
+    }
+}
+
+// Phone-only compact layout for list items built as
+// <Flexblock card> <Tile cover=…/> <Wrapper> <Flexblock> <Flexblock>[actions][status]</Flexblock> … </Wrapper>
+// (FleetListItem, StructureTimerListItem). The Tile cover becomes a thumbnail beside the
+// title, and the status/date block moves up next to the primary action.
+@mixin phone_tile_list_item($thumb: 72px) {
+    @media (max-width: 48rem) {
+        --tile_card_thumb: #{$thumb};
+
+        :global(.tile) {
+            padding-inline: var(--space-s);
+            padding-block: var(--space-s) var(--space-xs);
+        }
+
+        :global(.tile > img) {
+            top: var(--space-s);
+            left: var(--space-s);
+            inline-size: var(--tile_card_thumb);
+            block-size: var(--tile_card_thumb);
+            -webkit-mask-image: none;
+            mask-image: none;
+        }
+
+        :global(.tile__body) {
+            min-height: var(--tile_card_thumb) !important;
+            padding-inline-start: calc(var(--tile_card_thumb) + var(--space-s));
+        }
+
+        :global(.tile__body > .block-list) {
+            justify-content: flex-start !important;
+            --block-list--gap: var(--space-2xs);
+        }
+
+        :global(.tile h2) {
+            font-size: var(--step-1);
+        }
+
+        > :global(.wrapper) {
+            padding-inline: var(--space-s);
+            padding-block-end: var(--space-s) !important;
+        }
+
+        > :global(.wrapper > .flex-block > .flex-block:first-child) {
+            flex-direction: row-reverse;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-xs);
+
+            > :global(*) {
+                margin-block-start: 0;
+            }
+        }
+    }
+}
+
+// Phone-only compact layout for a Card / CharacterCard (cover picture with an overlaid
+// caption, optional header overlay and hover actions). Include it on a selector that
+// matches the `.card` element itself, e.g. `.srp-item > :global(* > .card)`.
+// Grid: [thumbnail | header / caption | actions]. Hover-only actions are made visible
+// because phones have no hover.
+@mixin phone_character_card($thumb: 72px) {
+    @media (max-width: 48rem) {
+        max-height: none;
+
+        > :global(.flex-block) {
+            display: grid;
+            grid-template-columns: $thumb minmax(0, 1fr) auto;
+            align-items: center;
+            min-block-size: $thumb;
+
+            > :global(*) {
+                margin-block-start: 0;
+            }
+        }
+
+        > :global(.flex-block > picture) {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            inline-size: $thumb;
+            block-size: $thumb;
+        }
+
+        > :global(.flex-block > picture img) {
+            inline-size: $thumb;
+            block-size: $thumb;
+            object-fit: cover;
+            -webkit-mask-image: none;
+            mask-image: none;
+        }
+
+        > :global(.flex-block > .card-header) {
+            position: static;
+            grid-column: 2;
+            grid-row: 1;
+            align-self: end;
+            padding-inline: var(--space-xs);
+            padding-block-start: var(--space-2xs);
+        }
+
+        > :global(.flex-block > .card-header:not(:has(*))) {
+            display: none;
+        }
+
+        > :global(.flex-block > .card-body) {
+            position: static;
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            padding-inline: var(--space-xs);
+        }
+
+        > :global(.flex-block:has(> .card-header *) > .card-body) {
+            grid-row: 2;
+            align-self: start;
+            padding-block-start: 0;
+        }
+
+        > :global(.flex-block > .card-actions),
+        > :global(.flex-block > .visible-actions) {
+            position: static;
+            grid-column: 3;
+            grid-row: 1 / span 2;
+            opacity: 1;
+        }
+
+        > :global(.flex-block > .card-actions:not(:has(*))),
+        > :global(.flex-block > .visible-actions:not(:has(*))) {
+            display: none;
+        }
+
+        h3,
+        :global(h3) {
+            font-size: var(--step-0);
+        }
+    }
+}

@@ -1,0 +1,94 @@
+---
+import type { TribeAboutPilot } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    title: string
+    pilots: TribeAboutPilot[]
+    format: (value: number) => string
+    [propName: string]: any
+}
+
+const {
+    title,
+    pilots,
+    format,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+{pilots.length > 0 &&
+    <div class:list={['[ tribe-about-pilots ]', Astro.props.class]} {...attributes}>
+        <h4 class="[ tribe-about-eyebrow ]">{title}</h4>
+        <ol>
+            {pilots.map((pilot, index) => (
+                <li>
+                    <span class="[ rank ]">{index + 1}</span>
+                    {pilot.character_id &&
+                        <img
+                            src={get_player_icon(pilot.character_id, 64)}
+                            alt=""
+                            width="32"
+                            height="32"
+                            loading="lazy"
+                        />
+                    }
+                    <span class="[ name ]">{pilot.character_name}</span>
+                    <span class="[ value ]">{format(pilot.value)}</span>
+                </li>
+            ))}
+        </ol>
+    </div>
+}
+
+<style lang="scss">
+    .tribe-about-pilots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    img {
+        flex: none;
+        inline-size: var(--space-l);
+        block-size: var(--space-l);
+    }
+
+    .rank {
+        inline-size: var(--space-xs);
+        font-family: var(--heading-font);
+        color: var(--faded);
+    }
+
+    .name {
+        flex: 1;
+        min-inline-size: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--highlight);
+    }
+
+    .value {
+        font-family: var(--heading-font);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

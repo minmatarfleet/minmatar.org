@@ -1,0 +1,207 @@
+---
+import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { FleetSchedule } from '@helpers/fetching/fleet_schedule'
+import type { FleetTypes } from '@dtypes/api.minmatar.org'
+import { fleet_types } from '@dtypes/api.minmatar.org'
+import { eve_day } from '@helpers/fetching/fleet_schedule'
+import { FLEET_HOST_FILTERS, type FleetHostFilter } from '@helpers/fleet_hosts'
+
+/**
+ * The fleets page: live fleets and the next one as spotlight cards, then
+ * the rest of the schedule grouped by EVE day. Type chips filter the rows
+ * already on the page; host pills (shown once the viewer can see a tribe
+ * group fleet) re-render the list on the server through htmx.
+ */
+interface Props {
+    schedule:       FleetSchedule;
+}
+
+const {
+    schedule,
+} = Astro.props
+
+const { fleets, live, next, rest, doctrines, next_signups, host_filter, host_counts } = schedule
+
+const show_host_filter = host_counts.tribe > 0
+const SCHEDULE_PARTIAL_URL = translatePath('/partials/upcoming_fleets_component/')
+const HUB_URL = translatePath('/fleets/upcoming/')
+const host_query = (filter:FleetHostFilter) => filter === 'all' ? '' : `?host=${filter}`
+const host_label = (filter:FleetHostFilter) =>
+    filter === 'alliance' ? t('fleets.host.filter_alliance').replace('{count}', host_counts.alliance.toString()) :
+    filter === 'tribe' ? t('fleets.host.filter_tribe').replace('{count}', host_counts.tribe.toString()) :
+    filter === 'mine' ? t('fleets.host.filter_mine') :
+    t('fleets.host.filter_all').replace('{count}', host_counts.all.toString())
+
+const today = eve_day(new Date())
+const tomorrow = eve_day(new Date(Date.now() + 24 * 60 * 60 * 1000))
+const day_label = (day:string) => {
+    const date = new Date(`${day}T12:00:00Z`)
+    const pretty = eve_day_short(lang, date, { weekday: true })
+    if (day === today) return `${t('fleets.schedule.today')} · ${pretty}`
+    if (day === tomorrow) return `${t('fleets.schedule.tomorrow')} · ${pretty}`
+    return pretty
+}
+
+const days:{ key:string, label:string, fleets:typeof rest, types:FleetTypes[] }[] = []
+rest.forEach(fleet => {
+    const key = eve_day(fleet.start_time)
+    let day = days.find(d => d.key === key)
+    if (!day) {
+        day = { key, label: day_label(key), fleets: [], types: [] }
+        days.push(day)
+    }
+    day.fleets.push(fleet)
+    if (fleet.type && !day.types.includes(fleet.type)) day.types.push(fleet.type)
+})
+
+const type_counts = fleet_types.map(type => ({
+    type,
+    count: fleets.filter(fleet => fleet.type === type).length,
+}))
+const type_label = (type:FleetTypes) =>
+    type === 'strategic' ? t('strategic') :
+    type === 'training' ? t('training') :
+    type === 'npsi' ? t('npsi') :
+    t('non_strategic')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FleetSpotlight from '@components/blocks/FleetSpotlight.astro'
+import FleetScheduleRow from '@components/blocks/FleetScheduleRow.astro'
+import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
+---
+
+<Flexblock gap='var(--space-l)' x-data="{ fleet_type: 'all' }">
+    {live.map(fleet =>
+        <FleetSpotlight
+            fleet={fleet}
+            live={true}
+            doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
+        />
+    )}
+
+    {next &&
+        <FleetSpotlight
+            fleet={next}
+            doctrine={next.doctrine_id ? doctrines[next.doctrine_id] : null}
+            signups={next_signups}
+        />
+    }
+
+    {show_host_filter &&
+        <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.host.filter')} class="[ fleet-type-chips ]">
+            {FLEET_HOST_FILTERS.map(filter =>
+                <button
+                    type="button"
+                    class="[ fleet-type-chip ]"
+                    aria-pressed={filter === host_filter ? 'true' : 'false'}
+                    hx-get={`${SCHEDULE_PARTIAL_URL}${host_query(filter)}`}
+                    hx-target="#upcoming-fleets"
+                    hx-swap="innerHTML transition:true"
+                    hx-push-url={`${HUB_URL}${host_query(filter)}`}
+                    hx-indicator=".loader"
+                >
+                    {host_label(filter)}
+                </button>
+            )}
+        </FlexInline>
+    }
+
+    {rest.length > 0 &&
+        <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.filter')} class="[ fleet-type-chips ]">
+            <button
+                type="button"
+                class="[ fleet-type-chip ]"
+                x-bind:aria-pressed="fleet_type === 'all'"
+                x-on:click="fleet_type = 'all'"
+            >
+                {t('fleets.schedule.all').replace('{count}', fleets.length.toString())}
+            </button>
+            {type_counts.map(({ type, count }) =>
+                <button
+                    type="button"
+                    class:list={['[ fleet-type-chip ]', { 'fleet-type-chip--empty': count === 0 }]}
+                    x-bind:aria-pressed={`fleet_type === '${type}'`}
+                    x-on:click={`fleet_type = '${type}'`}
+                >
+                    <FleetTypeFlag type={type} size={22} aria-hidden="true" />
+                    {type_label(type)} {count}
+                </button>
+            )}
+        </FlexInline>
+    }
+
+    {days.map(day =>
+        <section
+            class="[ fleet-schedule-day ]"
+            x-show={`fleet_type === 'all' || ${JSON.stringify(day.types)}.includes(fleet_type)`}
+        >
+            <h3>{day.label}</h3>
+            <div role="list">
+                {day.fleets.map(fleet =>
+                    <FleetScheduleRow
+                        role="listitem"
+                        fleet={fleet}
+                        doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
+                        x-show={`fleet_type === 'all' || fleet_type === '${fleet.type}'`}
+                    />
+                )}
+            </div>
+        </section>
+    )}
+
+    {fleets.length === 0 &&
+        <p>{host_filter === 'mine' ? t('fleets.host.mine_empty') : t('fleets.upcoming.empty_message')}</p>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .fleet-type-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: 2.5rem;
+        padding: 0 var(--space-s) 0 var(--space-2xs);
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--foreground);
+        font: inherit;
+        cursor: pointer;
+
+        &:first-child {
+            padding-left: var(--space-s);
+        }
+
+        &[aria-pressed="true"] {
+            background-color: var(--foreground);
+            color: var(--background);
+        }
+
+        &.fleet-type-chip--empty {
+            opacity: 0.55;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        :global(.fleet-type-chips) {
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            padding-bottom: var(--space-3xs);
+        }
+
+        .fleet-type-chip {
+            flex: 0 0 auto;
+        }
+    }
+
+    .fleet-schedule-day h3 {
+        margin-bottom: var(--space-2xs);
+        font-size: var(--step-0);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+</style>

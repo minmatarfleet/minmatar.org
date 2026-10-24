@@ -2,18 +2,53 @@
 
 .guide-shell {
     --guide-shell-display-font: 'Orbitron', var(--heading-font);
-    --guide-shell-body-font: 'Source Sans 3', var(--body-font);
     width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow-x: clip;
     padding: var(--space-2xl) var(--space-l-xl);
-    font-family: var(--guide-shell-body-font);
+    font-family: inherit;
 }
 
 @media (max-width: 48rem) {
     .guide-shell {
         padding: var(--space-l) var(--space-s);
+    }
+
+    /* Phones: the shell is only a frame around section panels, so let the panels
+       run to the page gutter and trim their own inline padding. Tables are untouched. */
+    .guide-shell.card {
+        padding-inline: 0;
+        border-inline-width: 0;
+    }
+
+    .guide-shell.card .guide-shell__masthead {
+        padding-inline: var(--space-s);
+    }
+
+    .guide-shell.card :is(
+        .guide-contents__nav,
+        .guide-md-panel,
+        .cap-panel,
+        .fwc-panel,
+        .nfg-panel,
+        .ndm-panel,
+        .guide-ship
+    ) {
+        padding-inline: var(--space-xs);
+    }
+
+    .guide-shell.card .guide-ship__hero-visual {
+        padding: var(--space-s);
+    }
+
+    .guide-shell.card :is(
+        .guide-ship__stats,
+        .fwc-summary-card,
+        .nfg-summary-card,
+        .ndm-summary-card
+    ) {
+        padding-inline: var(--space-s);
     }
 }
 

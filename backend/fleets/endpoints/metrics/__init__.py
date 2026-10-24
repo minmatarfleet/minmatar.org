@@ -13,7 +13,20 @@ from fleets.endpoints.metrics.get_fleet_metrics import (
     METHOD as get_fleet_metrics_method,
 )
 
+from fleets.endpoints.metrics.get_fleet_results import (
+    PATH as get_fleet_results_path,
+    ROUTE_SPEC as get_fleet_results_spec,
+    get_fleet_results,
+    METHOD as get_fleet_results_method,
+)
+
 _ROUTES = (
+    (
+        get_fleet_results_method,
+        get_fleet_results_path,
+        get_fleet_results_spec,
+        get_fleet_results,
+    ),
     (
         get_fleet_metrics_method,
         get_fleet_metrics_path,

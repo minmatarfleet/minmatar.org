@@ -1,0 +1,196 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetShipVolunteer } from '@helpers/api.minmatar.org/fleets'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+
+/**
+ * Participants › Signed up: every sign-up grouped by the fit picked, the
+ * viewer's own characters marked. When the FC hides names, pilots see only
+ * how many picked each fit.
+ */
+interface Props {
+    volunteers:     FleetShipVolunteer[];
+    pilots:         SummaryCharacter[];
+    hide_names?:    boolean;
+}
+
+const {
+    volunteers,
+    pilots,
+    hide_names = false,
+} = Astro.props
+
+const NAMES_SHOWN = 6
+
+const my_ids = new Set(pilots.map(pilot => pilot.character_id))
+const characters = new Set(volunteers.map(volunteer => volunteer.character_id))
+const mine = [...characters].filter(id => my_ids.has(id)).length
+
+const groups = [...volunteers.reduce((by_fit, volunteer) => {
+    const key = volunteer.fleet_fitting_id ? `m:${volunteer.fleet_fitting_id}` : `f:${volunteer.fitting_id ?? volunteer.fitting_name}`
+    const group = by_fit.get(key) ?? { name: volunteer.fitting_name, ship_id: volunteer.ship_id, off_doctrine: Boolean(volunteer.off_doctrine), pilots: [] as FleetShipVolunteer[] }
+    group.pilots.push(volunteer)
+    by_fit.set(key, group)
+    return by_fit
+}, new Map<string, { name:string, ship_id:number, off_doctrine:boolean, pilots:FleetShipVolunteer[] }>()).values()]
+    .map(group => ({
+        ...group,
+        // Your own characters first, then by name.
+        pilots: group.pilots.sort((a, b) =>
+            Number(my_ids.has(b.character_id)) - Number(my_ids.has(a.character_id)) ||
+            a.character_name.localeCompare(b.character_name)),
+    }))
+    .sort((a, b) => b.pilots.length - a.pilots.length || a.name.localeCompare(b.name))
+
+const summary = characters.size === 1 ? t('fleets.signups.summary_one') : t('fleets.signups.summary').replace('{count}', characters.size.toString())
+---
+
+<section class="[ fleet-signups ]" aria-labelledby="fleet-signups-title">
+    <header>
+        <h2 id="fleet-signups-title">{t('fleets.signups.title')}</h2>
+        {characters.size > 0 &&
+            <small>{summary}{mine > 0 && <> · {t('fleets.signups.yours').replace('{count}', mine.toString())}</>}</small>
+        }
+    </header>
+
+    {hide_names && <small>{t('fleets.signups.hidden')}</small>}
+
+    {groups.length === 0 ?
+        <EmptyState title={t('fleets.signups.empty')} />
+        :
+        <ul class="[ fleet-signups__list ]">
+            {groups.map(group =>
+                <li>
+                    <img src={get_item_icon(group.ship_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                    <span class="[ fleet-signups__fit ]">
+                        {group.name}
+                        {group.off_doctrine && <small class="[ fleet-signups__off ]">{t('fleets.signups.off_doctrine')}</small>}
+                    </span>
+                    <b class="[ fleet-signups__count ]">{group.pilots.length}</b>
+                    {!hide_names &&
+                        <span class="[ fleet-signups__names ]" x-data="{ all: false }">
+                            {group.pilots.map((pilot, index) =>
+                                <span
+                                    class:list={['[ fleet-signups__pilot ]', { 'is-mine': my_ids.has(pilot.character_id) }]}
+                                    x-show={index >= NAMES_SHOWN ? 'all' : undefined}
+                                    x-cloak={index >= NAMES_SHOWN ? true : undefined}
+                                >
+                                    <img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />
+                                    {pilot.character_name}{my_ids.has(pilot.character_id) && <> {t('fleets.signups.you')}</>}
+                                </span>
+                            )}
+                            {group.pilots.length > NAMES_SHOWN &&
+                                <button type="button" class="[ fleet-signups__more ]" x-show="!all" x-on:click="all = true">
+                                    {t('fleets.signups.more').replace('{count}', (group.pilots.length - NAMES_SHOWN).toString())}
+                                </button>
+                            }
+                        </span>
+                    }
+                </li>
+            )}
+        </ul>
+    }
+</section>
+
+<style lang="scss">
+    .fleet-signups {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        max-width: var(--max-col-width);
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs) var(--space-m);
+            align-items: baseline;
+            justify-content: space-between;
+        }
+    }
+
+    .fleet-signups__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 18rem) 3rem minmax(0, 1fr);
+            gap: var(--space-xs) var(--space-s);
+            align-items: center;
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+        }
+    }
+
+    .fleet-signups__fit {
+        color: var(--highlight);
+    }
+
+    .fleet-signups__off {
+        display: block;
+        color: var(--fleet-yellow);
+    }
+
+    .fleet-signups__count {
+        font-size: var(--step-1);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    .fleet-signups__names {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-2xs);
+        align-items: center;
+    }
+
+    .fleet-signups__pilot {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding: 2px var(--space-2xs) 2px 2px;
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+
+        &.is-mine {
+            border-color: var(--fleet-yellow);
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-signups__more {
+        min-height: 2rem;
+        padding: 0 var(--space-2xs);
+        background: transparent;
+        border: 0;
+        color: var(--highlight);
+        font: inherit;
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+        }
+    }
+
+    @media screen and (max-width: 48rem) {
+        .fleet-signups__list li {
+            grid-template-columns: 40px minmax(0, 1fr) auto;
+        }
+
+        .fleet-signups__names {
+            grid-column: 1 / -1;
+        }
+    }
+</style>

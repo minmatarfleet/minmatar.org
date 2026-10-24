@@ -6,11 +6,13 @@ doctrine (if any) and the fleet's own fittings (catalog picks or manual EFT).
 from dataclasses import dataclass, field
 
 from eveuniverse.models import EveType
+from fittings.eft import eft_item_names
 from fittings.models import EveDoctrineFitting, EveFitting
 
-from fleets.helpers.eft_items import eft_item_names, module_slots_for
+from fleets.helpers.eft_items import module_slots_for
+from fleets.helpers.fit_roles import FitRoles, fit_roles
 
-ROLE_ORDER = {"primary": 0, "secondary": 1, "support": 2}
+ROLE_ORDER = {"primary": 0, "secondary": 1, "support": 2, "utility": 3}
 
 
 @dataclass
@@ -30,6 +32,8 @@ class CompositionEntry:
     # the EFT (fitted or in cargo); lets the UI offer slot-compatible swaps.
     module_slots: dict = field(default_factory=dict)
     refits: list = field(default_factory=list)  # [(id, name)]
+    # Links / cyno / logi this fit fills (fleets.helpers.fit_roles).
+    roles: FitRoles = field(default_factory=FitRoles)
 
     @property
     def key(self) -> str:
@@ -137,6 +141,7 @@ def fleet_composition(eve_fleet) -> list[CompositionEntry]:
             else ""
         )
         entry.ship_group = group_name
+        entry.roles = fit_roles(entry.eft_format, group_name)
 
     names_by_entry = {
         entry.key: eft_item_names(entry.eft_format) for entry in entries

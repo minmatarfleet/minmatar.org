@@ -2,18 +2,15 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const { auth_token } = get_request_user(Astro)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = user ? user?.is_superuser : false
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = user ? await get_user_permissions(user.username) : []
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const gates = await get_gates(Astro)
+const can_view_fleets = can(gates, 'fleets.view')
 
 const doctrine_id = Astro.url.searchParams.get('doctrine_id') as string
 const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')

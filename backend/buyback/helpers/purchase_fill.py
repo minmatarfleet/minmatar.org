@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass, field
 
+from eveonline.helpers.universe import resolve_types_by_name
 from eveonline.models import EveCharacter
 from eveuniverse.models import EveType
 
 from buyback.helpers.classify import (
     BuybackCategory,
     classify_eve_type,
-    resolve_types_by_name,
 )
 from buyback.helpers.ore_names import (
     buyback_ore_family,
@@ -35,6 +36,8 @@ from industry.helpers.compressed_ore import (
     ore_reprocessing_yields,
 )
 from industry.helpers.producers import ORE_BATCH_SIZE
+
+logger = logging.getLogger(__name__)
 
 
 def _ore_yields(name: str, refine_rate: float) -> dict[str, float]:
@@ -300,7 +303,9 @@ def fill_purchase(  # noqa: C901
     if not lines:
         return result
 
-    resolved = resolve_types_by_name([line.name for line in lines])
+    resolved = resolve_types_by_name(
+        [line.name for line in lines], case_insensitive=True
+    )
     remaining = remaining_sale_quantities(exclude_order_id=exclude_order_id)
     lot_ids = set(remaining)
     for eve_type in resolved.values():
@@ -391,11 +396,27 @@ def fill_purchase(  # noqa: C901
     priced_totals = []
     for pick in sorted(picks.values(), key=lambda row: row.name.lower()):
         unit = priced.get(pick.type_id)
-        if unit is not None:
-            pick.unit_price = float(unit)
-            total = line_total(unit, pick.quantity)
-            pick.line_total = float(total)
-            priced_totals.append(total)
+        if unit is None:
+            # No live book, history or CCP price: never ship it at 0 ISK.
+            # It stays in the hangar and the buyer sources it elsewhere.
+            logger.warning(
+                "Buyback purchase: no sell price for %s (%s); moved to "
+                "shortfall",
+                pick.name,
+                pick.type_id,
+            )
+            result.shortfalls.append(
+                FillShortfall(
+                    name=pick.name,
+                    quantity=pick.quantity,
+                    type_id=pick.type_id,
+                )
+            )
+            continue
+        pick.unit_price = float(unit)
+        total = line_total(unit, pick.quantity)
+        pick.line_total = float(total)
+        priced_totals.append(total)
         ordered_picks.append(pick)
     result.picks = ordered_picks
     result.contract_total = contract_total_isk(priced_totals)

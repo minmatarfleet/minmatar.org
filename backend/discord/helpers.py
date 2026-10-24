@@ -10,7 +10,7 @@ from eveonline.models import EveCharacter
 from users.helpers import offboard_user
 
 from .core import make_nickname
-from .models import DiscordRole, DiscordUser
+from .models import DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -150,33 +150,31 @@ def get_discord_user(user: User, notify=False):
     return external_discord_user
 
 
-def add_user_to_expected_discord_roles(user: User):
+def notify_technology_team(location: str, detail: str = "") -> bool:
+    """Post a short error alert to the technology team channel.
+
+    The one way to alert the team on Discord from error handling. It never
+    raises: callers are usually inside an except block, and a Discord outage
+    must not turn one failure into an aborted task. Log the exception
+    itself (logger.exception) so Sentry has the traceback; this is only the
+    nudge. Returns False if the alert could not be posted.
     """
-    Adds the expected roles to a user
-    NOTE: This should not occur, any added roles are a warning / bug
-    """
-    discord_user = DiscordUser.objects.get(user_id=user.id)
-    expected_discord_roles = DiscordRole.objects.filter(
-        group__in=user.groups.all()
-    )
-    for expected_discord_role in expected_discord_roles:
-        if discord_user in expected_discord_role.members.all():
-            logger.info("User has expected role, skipping")
-            continue
-        logger.warning(
-            "User does not have expected role, adding user %s to external role %s",
-            user.username,
-            expected_discord_role.name,
+    message = f"Encountered error in {location}"
+    if detail:
+        message = f"{message}: {detail}"
+    try:
+        discord.create_message(
+            DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID,
+            message=message,
         )
-        discord.add_user_role(discord_user.id, expected_discord_role.role_id)
-        expected_discord_role.members.add(discord_user)
-
-
-def notify_technology_team(location: str):
-    discord.create_message(
-        DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID,
-        message=f"Encountered error in {location}",
-    )
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Could not post technology team alert for %s",
+            location,
+            exc_info=True,
+        )
+        return False
+    return True
 
 
 def find_unregistered_guild_members():

@@ -146,6 +146,15 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="moons.add_evemoon",
         staff_permission="moons.add_evemoon",
     ),
+    "recruitment.scout": FeatureDefinition(
+        code="recruitment.scout",
+        label="Run the recruitment scout",
+        scope=FeatureScope.STAFF,
+        description="Register scout replies for click tracking and read "
+        "their click stats.",
+        legacy_permission="recruitment.add_scoutoutreach",
+        staff_permission="recruitment.add_scoutoutreach",
+    ),
     "posts.create": FeatureDefinition(
         code="posts.create",
         label="Create posts",
@@ -263,6 +272,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="alliance.view_alliancehealth",
         deny_community_statuses=(),
     ),
+    "alliance.health.executor": FeatureDefinition(
+        code="alliance.health.executor",
+        label="Act on alliance health alliance-wide",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "See every corporation on the alliance health board and change "
+            "any member's community status."
+        ),
+        default_auth_group_names=_aff("People Team"),
+    ),
     "fittings.doctrine.approve": FeatureDefinition(
         code="fittings.doctrine.approve",
         label="Approve doctrine changes",
@@ -286,6 +305,37 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         staff_permission="surveys.change_surveycampaign",
         legacy_permission="surveys.change_surveycampaign",
         deny_community_statuses=(),
+    ),
+    "intel.view": FeatureDefinition(
+        code="intel.view",
+        label="View intel",
+        scope=FeatureScope.AFFILIATION,
+        description=(
+            "See shared d-scans and Local reports and the capital and fleet "
+            "pings in the desktop app's Intel window."
+        ),
+        legacy_permission="intel.view_intelreport",
+        default_affiliation_names=_aff("Alliance", "Associate"),
+    ),
+    "intel.report": FeatureDefinition(
+        code="intel.report",
+        label="Share intel",
+        scope=FeatureScope.AFFILIATION,
+        description="Paste a d-scan or Local list into the shared intel sheet.",
+        legacy_permission="intel.add_intelreport",
+        default_affiliation_names=_aff("Alliance", "Associate"),
+    ),
+    "intel.affiliations": FeatureDefinition(
+        code="intel.affiliations",
+        label="Manage intel affiliations",
+        scope=FeatureScope.STAFF,
+        description=(
+            "See the evidence behind blocs, pets and associates, confirm or "
+            "reject suggested affiliations, and check members who fly with "
+            "other blocs."
+        ),
+        staff_permission="intel.change_intelaffiliation",
+        legacy_permission="intel.change_intelaffiliation",
     ),
     "campaigns.view": FeatureDefinition(
         code="campaigns.view",
@@ -325,5 +375,118 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         description="Edit any campaign, accept weekly plans, set orders.",
         legacy_permission="campaigns.change_campaign",
         staff_permission="campaigns.change_campaign",
+    ),
+    # Site gates moved off Django permission strings. Each one ships with
+    # empty wiring plus the permission it replaces as legacy_permission, so
+    # its audience is exactly today's; widen it by wiring it in the admin.
+    "fleets.manage_any": FeatureDefinition(
+        code="fleets.manage_any",
+        label="Manage any fleet",
+        scope=FeatureScope.STAFF,
+        description=(
+            "Edit, run, and see hidden volunteer rosters on fleets you "
+            "don't command."
+        ),
+        legacy_permission="fleets.manage_any_fleet",
+        staff_permission="fleets.manage_any_fleet",
+    ),
+    "tribes.roster.view": FeatureDefinition(
+        code="tribes.roster.view",
+        label="View tribe rosters",
+        scope=FeatureScope.AFFILIATION,
+        description="See member names and portraits on tribe group rosters.",
+        legacy_permission="eveonline.add_evecharactertag",
+    ),
+    "industry.industrialists.view": FeatureDefinition(
+        code="industry.industrialists.view",
+        label="View industrialists",
+        scope=FeatureScope.AFFILIATION,
+        description="Open the industrialists directory.",
+        legacy_permission="eveonline.add_evecharactertag",
+    ),
+    "characters.readiness": FeatureDefinition(
+        code="characters.readiness",
+        label="Character readiness",
+        scope=FeatureScope.AFFILIATION,
+        description=(
+            "Show readiness and missing-tag warnings for your characters."
+        ),
+        legacy_permission="eveonline.add_evecharactertag",
+    ),
+    "corporations.members.view_all": FeatureDefinition(
+        code="corporations.members.view_all",
+        label="View all corporation members",
+        scope=FeatureScope.STAFF,
+        description="Open the alliance-wide corporation member lists.",
+        legacy_permission="eveonline.view_evecorporation",
+        staff_permission="eveonline.view_evecorporation",
+    ),
+    "notifications.push": FeatureDefinition(
+        code="notifications.push",
+        label="Push notifications",
+        scope=FeatureScope.AFFILIATION,
+        description="Subscribe a browser to push notifications.",
+        legacy_permission="subscriptions.add_usersubscription",
+    ),
+    "learning.admin": FeatureDefinition(
+        code="learning.admin",
+        label="Administer certificates",
+        scope=FeatureScope.STAFF,
+        description="Links from the learning pages to certificate admin.",
+        legacy_permission="learning.change_certificate",
+        staff_permission="learning.view_certificate",
+    ),
+    "skillsets.admin": FeatureDefinition(
+        code="skillsets.admin",
+        label="Administer skillsets",
+        scope=FeatureScope.STAFF,
+        description="Links from the learning pages to skillset admin.",
+        legacy_permission="eveonline.change_eveskillset",
+        staff_permission="eveonline.view_eveskillset",
+    ),
+    "content.manage": FeatureDefinition(
+        code="content.manage",
+        label="Manage site content",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description="Edit the alliance content sections.",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+        deny_community_statuses=(),
+    ),
+    "surveys.results.view": FeatureDefinition(
+        code="surveys.results.view",
+        label="View survey results",
+        scope=FeatureScope.AUTH_GROUP,
+        description="Read survey responses. Unwired, so only superusers pass.",
+        deny_community_statuses=(),
+    ),
+    "site.debug_pages": FeatureDefinition(
+        code="site.debug_pages",
+        label="Debug pages",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "Internal data and in-progress pages. Unwired, so only "
+            "superusers pass."
+        ),
+        deny_community_statuses=(),
+    ),
+    "characters.lookup": FeatureDefinition(
+        code="characters.lookup",
+        label="Look up a user's characters",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "List the characters behind any primary character. Unwired, so "
+            "only superusers pass."
+        ),
+        deny_community_statuses=(),
+    ),
+    "site.all_pages": FeatureDefinition(
+        code="site.all_pages",
+        label="See every page",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "The page finder and breadcrumbs list every page as available, "
+            "whatever its own gate. Unwired, so only superusers pass."
+        ),
+        deny_community_statuses=(),
     ),
 }

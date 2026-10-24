@@ -138,4 +138,12 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
             color: var(--viability_color);
         }
     }
+
+    /* Phones: tighter cells so all three columns fit inside the dialog. */
+    @media (max-width: 48rem) {
+        th,
+        td {
+            padding: var(--space-2xs);
+        }
+    }
 </style>

@@ -87,10 +87,32 @@ import CampaignPostCard from '@components/blocks/CampaignPostCard.astro'
 </Flexblock>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     h2 {
         font-family: var(--heading-font);
         font-size: var(--step-2);
         color: var(--highlight);
         text-transform: uppercase;
+    }
+
+    // Phones: cover art as a thumbnail beside the campaign details instead of a
+    // full-width image (scoped to this list; the strips elsewhere keep their cards).
+    .campaign-list :global(.card.campaign-post-card) {
+        @include phone_character_card(96px);
+
+        @media (max-width: 48rem) {
+            &::after {
+                display: none;
+            }
+
+            :global(.card-header) {
+                padding-block-start: var(--space-xs);
+            }
+
+            :global(.card-body) {
+                padding-block-end: var(--space-xs);
+            }
+        }
     }
 </style>

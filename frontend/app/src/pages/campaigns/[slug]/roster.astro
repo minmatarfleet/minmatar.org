@@ -2,12 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import type { CampaignDetail, CampaignRoster } from '@dtypes/api.minmatar.org'
 import { get_campaign, get_campaign_roster } from '@helpers/api.minmatar.org/campaigns'
 
@@ -17,17 +16,14 @@ import PageTitle from '@components/page/PageTitle.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CampaignRosterPanels from '@components/blocks/CampaignRosterPanels.astro'
-import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+const can_view_campaigns = can(gates, 'campaigns.view')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
@@ -50,7 +46,7 @@ try {
 
 const ROSTER_PARTIAL_URL = translatePath(`/partials/campaign_roster_component?slug=${slug}`)
 
-const page_title = campaign ? `${campaign.name} · ${t('campaigns.roster.title')}` : t('campaigns.roster.page_title')
+const page_title = campaign ? `${campaign.name} · ${t('campaigns.corporations.title')}` : t('campaigns.roster.page_title')
 
 const breadcrumbs = [
     { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
@@ -59,7 +55,7 @@ const breadcrumbs = [
         accumulated_path: `/campaigns/${slug}/`,
     },
     {
-        page_title: t('campaigns.roster.title'),
+        page_title: t('campaigns.corporations.title'),
         accumulated_path: `/campaigns/${slug}/roster/`,
     },
 ]
@@ -98,5 +94,4 @@ const breadcrumbs = [
         }
     </PageDefault>
 
-    <CampaignSwapInit />
 </Viewport>

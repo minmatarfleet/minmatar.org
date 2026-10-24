@@ -1,0 +1,107 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string'
+
+/**
+ * The opsec line at the top of a private fleet, until it is declassified.
+ * Invited pilots also get their answer, Sitting out and the coordination
+ * thread; the FC and Strategic FCs get the thread.
+ * See docs/fleets/private-fleets.md.
+ */
+interface Props {
+    fleet:          FleetUI;
+    error?:         string | false;
+}
+
+const {
+    fleet,
+    error = false,
+} = Astro.props
+
+const answer = fleet.my_invite_answer ?? null
+const pending = fleet.status === 'pending' && !fleet.tracking?.start_time
+const can_sit_out = Boolean(answer) && answer !== 'out' && pending
+const note = answer ?
+    t('fleets.private.invited_by')
+        .replace('{fc}', fleet.fleet_commander_name)
+        .replace('{wave}', String(fleet.my_invite_wave ?? 1)) :
+    t('fleets.private.manager_note')
+
+const ANSWER_URL = `${translatePath('/partials/fleet_invite_answer_component')}?${query_string({ fleet_id: fleet.id })}`
+
+import Button from '@components/blocks/Button.astro'
+import LockIcon from '@components/icons/LockIcon.astro'
+---
+
+<section id="fleet-private-banner" class="[ fleet-private ]" role="note" aria-label={t('fleets.private.tag')}>
+    <LockIcon size={20} class="[ fleet-private__icon ]" aria-hidden="true" />
+    <div class="[ fleet-private__text ]">
+        <b>{t('fleets.private.opsec')}</b>
+        <small>{note}</small>
+        {answer === 'out' && <small>{t('fleets.private.sitting_out')}</small>}
+        {can_sit_out && <small>{t('fleets.private.sit_out_hint')}</small>}
+        {error && <small class="[ fleet-private__error ]" role="alert">{error}</small>}
+    </div>
+    <div class="[ fleet-private__actions ]">
+        {fleet.discord_thread_url &&
+            <Button href={fleet.discord_thread_url} size="sm" color="transparent" target="_blank" rel="noopener">
+                {t('fleets.private.open_thread')}
+            </Button>
+        }
+        {can_sit_out &&
+            <Button
+                type="button"
+                size="sm"
+                color="transparent"
+                hx-post={ANSWER_URL}
+                hx-target="#fleet-private-banner"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this"
+            >
+                {t('fleets.private.sit_out')}
+            </Button>
+        }
+    </div>
+</section>
+
+<style lang="scss">
+    .fleet-private {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--space-xs) var(--space-s);
+        padding: var(--space-s) var(--space-m);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+    }
+
+    .fleet-private__icon {
+        flex: none;
+        margin-top: 2px;
+        color: var(--fleet-yellow);
+    }
+
+    .fleet-private__text {
+        display: flex;
+        flex: 1 1 20rem;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-private__error {
+        color: var(--fleet-red);
+    }
+
+    .fleet-private__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+</style>

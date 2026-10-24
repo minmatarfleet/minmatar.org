@@ -1,0 +1,63 @@
+---
+import type { TribeAboutHull } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    hulls: TribeAboutHull[]
+    [propName: string]: any
+}
+
+const {
+    hulls,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<ul class:list={['[ hull-list ]', Astro.props.class]} {...attributes}>
+    {hulls.map((hull) => (
+        <li>
+            <img src={get_item_icon(hull.type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+            <span class="[ hull-list__name ]">{hull.name}</span>
+            <span class="[ hull-list__count ]">{number_thousand_separator(hull.count)}</span>
+        </li>
+    ))}
+</ul>
+
+<style lang="scss">
+    .hull-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        img {
+            flex: none;
+            inline-size: var(--space-l);
+            block-size: var(--space-l);
+            background: var(--background);
+        }
+    }
+
+    .hull-list__name {
+        flex: 1;
+        min-inline-size: 0;
+        color: var(--highlight);
+    }
+
+    .hull-list__count {
+        font-family: var(--heading-font);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

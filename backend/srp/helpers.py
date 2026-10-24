@@ -111,6 +111,25 @@ def get_latest_program_amount(
     return program.amounts.order_by("-created_at", "-id").first()
 
 
+def srp_program_amounts(type_ids) -> dict[int, int]:
+    """
+    {type_id: latest srp_value} for the hulls SRP pays for, in one query.
+    Hulls without a program, or whose latest amount is 0, are left out.
+    """
+    amounts: dict[int, int] = {}
+    for program in ShipReimbursementProgram.objects.filter(
+        eve_type_id__in=set(type_ids)
+    ).prefetch_related("amounts"):
+        latest = max(
+            program.amounts.all(),
+            key=lambda row: (row.created_at, row.id),
+            default=None,
+        )
+        if latest and latest.srp_value > 0:
+            amounts[program.eve_type_id] = latest.srp_value
+    return amounts
+
+
 def average_payout_seconds_approved_last_days(days: int = 90):
     """
     Mean seconds from created_at to approved_at for approved reimbursements

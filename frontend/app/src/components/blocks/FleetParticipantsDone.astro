@@ -1,0 +1,208 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+
+/**
+ * Participants after the fleet: the pilots in join order with their ships
+ * (or the pilots in one engagement), who flew what by ship, the roles
+ * actually flown, and, for the FC and strategic FCs, who signed up and never
+ * joined.
+ */
+interface Props {
+    participants:   FleetParticipants;
+    fleet_id:       number;
+}
+
+const { participants, fleet_id } = Astro.props
+
+const CHIPS_SHOWN = 3
+
+const role_label:Record<string, string> = {
+    logi: t('fleets.after.logi'),
+    links: t('fleets.after.links'),
+    cyno: t('fleets.after.cyno'),
+}
+
+const no_shows = participants.no_shows ?? null
+const signed_up = participants.signed_up ?? 0
+const walk_ins = participants.joined_without_signing_up ?? participants.pilots
+
+const sub_tabs = [
+    { id: 'participants-pilots', label: t('fleets.after.pilots_tab') },
+    { id: 'participants-by-ship', label: t('fleets.after.by_ship') },
+    { id: 'participants-roles-flown', label: t('fleets.after.roles_flown') },
+    ...(no_shows !== null ? [{ id: 'participants-no-shows', label: t('fleets.after.no_shows'), meta: no_shows.length.toString() }] : []),
+]
+
+import FleetParticipantsPilots from '@components/blocks/FleetParticipantsPilots.astro'
+import FleetParticipantsByShip from '@components/blocks/FleetParticipantsByShip.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<SectionTabs
+    aria_label={t('fleets.participants.label')}
+    id_prefix="fleet-after"
+    tabs={sub_tabs}
+    hash_aliases={{ 'participants-flew': 'participants-pilots' }}
+    variant="pills"
+    class="[ fleet-after ]"
+>
+    <SectionTabPanel id="participants-pilots" id_prefix="fleet-after" is_default={true}>
+        <FleetParticipantsPilots participants={participants} fleet_id={fleet_id} />
+    </SectionTabPanel>
+
+    <SectionTabPanel id="participants-by-ship" id_prefix="fleet-after">
+        <FleetParticipantsByShip participants={participants} />
+    </SectionTabPanel>
+
+    <SectionTabPanel id="participants-roles-flown" id_prefix="fleet-after">
+        <section class="[ fleet-after__section ]" aria-labelledby="fleet-roles-flown-title">
+            <header>
+                <h2 id="fleet-roles-flown-title">{t('fleets.after.roles_flown')}</h2>
+            </header>
+            <ul class="[ fleet-after__roles ]">
+                <li>
+                    <img src={get_item_icon(26914, 64)} alt="" width="40" height="40" loading="lazy" />
+                    <span class="[ fleet-after__role ]"><b>{t('fleets.after.logi_fc')}</b><small>{participants.logi_fc.length}</small></span>
+                    <span class="[ fleet-after__chips ]">
+                        {participants.logi_fc.length === 0 ?
+                            <small>{t('fleets.after.nobody')}</small> :
+                            participants.logi_fc.map(pilot =>
+                                <span class="[ fleet-after__chip ]"><img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />{pilot.character_name}</span>
+                            )
+                        }
+                    </span>
+                </li>
+                {participants.roles_flown.map(role =>
+                    <li>
+                        <img src={get_item_icon(role.role === 'links' ? 42526 : role.role === 'cyno' ? 21096 : 11987, 64)} alt="" width="40" height="40" loading="lazy" />
+                        <span class="[ fleet-after__role ]">
+                            <b>{role_label[role.role] ?? role.label}</b>
+                            <small>{role.count > 0 ? role.hulls.map(hull => `${hull.count} ${hull.ship_name}`).join(', ') : t('fleets.after.none_flown')}</small>
+                        </span>
+                        <span class="[ fleet-after__chips ]">
+                            {role.pilots.slice(0, CHIPS_SHOWN).map(pilot =>
+                                <span class="[ fleet-after__chip ]"><img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />{pilot.character_name}</span>
+                            )}
+                            {role.pilots.length > CHIPS_SHOWN && <small>{t('fleets.after.more').replace('{count}', (role.pilots.length - CHIPS_SHOWN).toString())}</small>}
+                        </span>
+                    </li>
+                )}
+            </ul>
+            {participants.opsec_filtered && <small class="[ fleet-after__opsec ]">{t('fleets.after.opsec')}</small>}
+        </section>
+    </SectionTabPanel>
+
+    {no_shows !== null &&
+        <SectionTabPanel id="participants-no-shows" id_prefix="fleet-after">
+            <section class="[ fleet-after__section ]" aria-labelledby="fleet-no-shows-title">
+                <h2 id="fleet-no-shows-title">{t('fleets.after.no_shows_title')}</h2>
+                {signed_up === 0 ?
+                    <EmptyState
+                        title={t('fleets.after.no_signups')}
+                        hint={t('fleets.after.no_signups_hint').replace('{pilots}', participants.pilots.toString())}
+                    />
+                    : no_shows.length === 0 ?
+                    <EmptyState title={t('fleets.after.everyone_showed')} prominent={true} />
+                    :
+                    <>
+                        <small>{t('fleets.after.no_shows_summary').replace('{missing}', no_shows.length.toString()).replace('{signed}', signed_up.toString()).replace('{walk_ins}', walk_ins.toString())}</small>
+                        <ul class="[ fleet-after__roles ]">
+                            {no_shows.map(pilot =>
+                                <li>
+                                    <img src={get_player_icon(pilot.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                    <span class="[ fleet-after__role ]"><b>{pilot.character_name}</b></span>
+                                    <span class="[ fleet-after__chips ]">
+                                        {pilot.ship_type_id && <img src={get_item_icon(pilot.ship_type_id, 32)} alt="" width="24" height="24" loading="lazy" />}
+                                        {pilot.ship_name}
+                                    </span>
+                                </li>
+                            )}
+                        </ul>
+                    </>
+                }
+                <small>{t('fleets.after.fc_only')}</small>
+            </section>
+        </SectionTabPanel>
+    }
+</SectionTabs>
+
+<style lang="scss">
+    .fleet-after__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        max-width: var(--max-col-width);
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs) var(--space-m);
+            align-items: baseline;
+            justify-content: space-between;
+        }
+    }
+
+    .fleet-after__roles {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 18rem) minmax(0, 1fr);
+            gap: var(--space-xs) var(--space-m);
+            align-items: center;
+            padding: var(--space-xs) var(--space-s);
+            background-color: var(--component-background);
+        }
+    }
+
+    .fleet-after__opsec {
+        color: var(--text-muted);
+    }
+
+    .fleet-after__role {
+        display: flex;
+        flex-direction: column;
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-after__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-2xs);
+        align-items: center;
+    }
+
+    .fleet-after__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding: 2px var(--space-2xs) 2px 2px;
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    @media screen and (max-width: 48rem) {
+        .fleet-after__roles li {
+            grid-template-columns: 40px minmax(0, 1fr);
+        }
+
+        .fleet-after__chips {
+            grid-column: 1 / -1;
+        }
+    }
+</style>

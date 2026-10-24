@@ -11,6 +11,7 @@ from fittings.models import FittingTag
 
 from esi.models import CallbackRedirect, Scope, Token
 
+from .constants import MINMATAR_FLEET_ALLIANCE_ID
 from .models import (
     EveCharacterFwLpPayout,
     FwPayoutEventCode,
@@ -28,6 +29,8 @@ from .models import (
     EveCorporationContract,
     EveCorporationIndustryJob,
     EveCorporationMedia,
+    EveCorporationProject,
+    EveCorporationProjectContributor,
     EveCorporationWalletJournalEntry,
     EveSkillset,
     EveTag,
@@ -87,9 +90,6 @@ def _format_corp_label(name, ticker, corp_id):
     if name:
         return name
     return str(corp_id)
-
-
-MINMATAR_FLEET_ALLIANCE_ID = 99011978
 
 
 def _minmatar_fleet_corporations():
@@ -343,24 +343,6 @@ class EveCharacterBlueprintAdmin(admin.ModelAdmin):
     autocomplete_fields = ("character",)
 
 
-class EveCharacterCloneInline(admin.TabularInline):
-    model = EveCharacterClone
-    extra = 0
-    readonly_fields = (
-        "clone_id",
-        "name",
-        "location_id",
-        "location_name",
-        "implants",
-        "total_value_isk",
-        "is_active",
-    )
-    can_delete = False
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(EveCharacterClone)
 class EveCharacterCloneAdmin(admin.ModelAdmin):
     list_display = (
@@ -563,6 +545,32 @@ class EveCorporationWalletJournalEntryAdmin(admin.ModelAdmin):
     readonly_fields = ("updated_at",)
     autocomplete_fields = ("corporation",)
     date_hierarchy = "date"
+
+
+class EveCorporationProjectContributorInline(admin.TabularInline):
+    model = EveCorporationProjectContributor
+    extra = 0
+    can_delete = False
+    readonly_fields = ("character_id", "character_name", "contributed")
+
+
+@admin.register(EveCorporationProject)
+class EveCorporationProjectAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "corporation",
+        "kind",
+        "state",
+        "progress_current",
+        "progress_desired",
+        "reward_remaining",
+        "last_modified",
+    )
+    list_filter = ("state", "kind")
+    search_fields = ("name", "corporation__name", "project_id")
+    autocomplete_fields = ("corporation",)
+    readonly_fields = ("detail_synced_at", "updated_at")
+    inlines = [EveCorporationProjectContributorInline]
 
 
 @admin.register(EveCorporationBlueprint)

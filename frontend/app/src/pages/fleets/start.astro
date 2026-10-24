@@ -2,20 +2,17 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user: User | false = auth_token ? (jose.decodeJwt(auth_token as string) as User) : false
-const is_superuser = user ? user?.is_superuser : false
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = user ? await get_user_permissions(user?.username) : []
-const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+const can_view_page = can(gates, 'fleets.create')
 
 if (!can_view_page) return HTTP_403_Forbidden()
 
@@ -82,7 +79,6 @@ const page_title = t('fleets.start.page_title')
 
             <div
                 id="fleet-start"
-                hx-on--after-swap="window.minmatar_after_inner_html_swap.call(this)"
             >
                 {fetch_error ?
                     <ErrorRefetch

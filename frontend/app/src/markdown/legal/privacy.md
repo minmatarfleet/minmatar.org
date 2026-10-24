@@ -4,7 +4,7 @@ excerpt: >
   How Minmatar Fleet Alliance collects, uses, and shares information on minmatar.org — including Discord login, EVE Online ESI data, cookies, and analytics.
 ---
 
-**Last updated: 16 August 2026**
+**Last updated: 20 October 2026**
 
 This Privacy Policy explains how Minmatar Fleet Alliance (“**FL33T**”, “**we**”, “**us**”) handles information when you use [minmatar.org](https://minmatar.org/) and related services (the “**Site**”).
 
@@ -41,7 +41,7 @@ We store profiles, corporation and tribe applications, group membership, fleet a
 
 ### Technical data
 
-We collect server logs and similar technical data (for example IP address, timestamps, user agent, and referring URL). Referral tracking may record IP and path. Error reporting may include request context.
+We collect server logs and similar technical data (for example IP address, timestamps, user agent, and referring URL). Referral tracking may record IP and path. Recruitment links (`/go/` URLs in our recruiting replies) record which link was followed, the user agent, and a keyed hash of the IP address, not the address itself. Error reporting may include request context.
 
 ### Cookies and similar storage
 
@@ -49,7 +49,7 @@ We use cookies and local browser storage, including:
 
 - **Necessary:** authentication (`auth_token`), session and redirect cookies, primary character cache, and similar items required to keep you signed in and the Site working
 - **Preferences:** UI settings such as colour-blind mode, scaling, staging, learning persona, and “don’t show this disclaimer again”
-- **Analytics:** Google Analytics (see below)
+- **Analytics:** Google Analytics and PostHog (see below)
 
 ## 3. How we use information
 
@@ -60,12 +60,14 @@ We use information to:
 - Sync Discord roles and membership with Site permissions
 - Operate SRP, freight, buyback, and similar community services
 - Improve the Site, diagnose errors, and prevent abuse
-- Measure public traffic with Google Analytics
+- Measure how the Site is used with Google Analytics and PostHog
 - Comply with law and protect the alliance, members, and the Site
 
 ## 4. Analytics and error reporting
 
 **Google Analytics** (property `G-H2HFG2XB2N`) runs on the Site and may set cookies and collect usage data (pages viewed, device/browser information, and approximate location derived by Google). See [Google’s privacy policy](https://policies.google.com/privacy). You can use browser controls or Google’s opt-out tools to limit this.
+
+**PostHog** runs on production builds of the Site. It records pages viewed, clicks, and device/browser information so we can see how the tools are used. Signed-in pilots are identified by their Site user id, not by Discord name or character name. Session replay is not enabled. See [PostHog’s privacy policy](https://posthog.com/privacy).
 
 **Sentry** receives application error reports so we can fix bugs. Reports may include technical details about the failing request. We configure filters to reduce noisy or unnecessary events.
 
@@ -76,6 +78,7 @@ We share information with:
 - **CCP** — when you use EVE SSO/ESI; CCP processes that interaction under its terms and privacy policy
 - **Discord** — for login and server membership
 - **Google** — Analytics
+- **PostHog** — product analytics
 - **Sentry** — error monitoring
 - **Twitch, YouTube, or Reddit** — only if you connect a creator account
 - **Alliance officers, directors, and tool operators** — as needed to run fleets, applications, industry, market, intel, and similar features (this can include character, attendance, and ESI-derived data)

@@ -2,67 +2,41 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect, login_url } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const can_add_fleets = can(gates, 'fleets.create')
+const can_view_fleets = can(gates, 'fleets.view')
 
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem, Alert, DoctrineType } from '@dtypes/layout_components'
-import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import { fetch_fleets_auth } from '@helpers/fetching/fleets'
-import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
-import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+import type { Alert } from '@dtypes/layout_components'
+import { fetch_fleet_schedule, type FleetSchedule as FleetScheduleData } from '@helpers/fetching/fleet_schedule'
+import { parse_host_filter } from '@helpers/fleet_hosts'
+
+const host_filter = parse_host_filter(Astro.url.searchParams.get('host'))
 
 let fetch_fleets_error: Error | false = false
-let fleets:FleetItem[] = []
-let active_fleets:FleetItem[] = []
-let active_doctrines:(DoctrineType | null)[] = []
-let fc_metrics:FleetCommanderMetrics[] = []
+let schedule: FleetScheduleData | null = null
 
 try {
-    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
-    fleets = await fetch_fleets_auth(auth_token as string, true, false, fc_metrics)
-    fleets.sort(function(a, b) {
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-    });
-
-    active_fleets = fleets.filter(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-    if (active_fleets && active_fleets.length > 0)
-        active_doctrines = await Promise.all(active_fleets.map(fleet => fleet.doctrine_id ? fetch_doctrine_by_id(fleet.doctrine_id) : null))
+    schedule = await fetch_fleet_schedule(auth_token as string, host_filter)
 } catch (error) {
     fetch_fleets_error = error
 }
 
-import { get_market_contracts } from '@helpers/api.minmatar.org/market'
-import { get_locations } from '@helpers/api.minmatar.org/locations'
-import type { Contract } from '@dtypes/api.minmatar.org'
-let supply_contracts: Contract[][] = []
-
-if (active_fleets && active_fleets.length > 0) {
-    try {
-        const locations = await get_locations()
-        const fleet_locations = active_fleets.map(fleet => locations.find(location => location.location_name === fleet?.location))
-
-        supply_contracts = await Promise.all(fleet_locations.map(location => location?.location_id ? get_market_contracts(location.location_id) : []))
-    } catch (error) {
-        console.error('Error fetching supply contracts:', error)
-    }
-}
+const fleets = schedule?.fleets ?? []
+const active_fleets = schedule?.live ?? []
+const fc_metrics = schedule?.fc_metrics ?? []
 
 const flash_form_error = Astro.cookies.has('flash_form_error') ? Astro.cookies.get('flash_form_error')?.value : false
 if (Astro.cookies.has('flash_form_error')) Astro.cookies.delete('flash_form_error', { path: '/' })
@@ -85,7 +59,7 @@ try {
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
 
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
+const AUTH_REDIRECT_URL = login_url(Astro)
 
 import { marked } from 'marked';
 const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) as string)
@@ -100,8 +74,6 @@ import {
     get_location_cover_990,
 } from '@helpers/covers'
 
-const count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
-    .replace('{count}', String(fleets.length))
 
 const is_video_cover = active_fleets.length > 0 ?
     Boolean(get_location_video_cover(active_fleets[0]?.location ?? '')) :
@@ -111,13 +83,15 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
+import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro';
 import PageActions from '@components/page/PageActions.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import FleetList from '@components/blocks/FleetList.astro';
+import FleetSchedule from '@components/blocks/FleetSchedule.astro';
+import RankingReel from '@components/blocks/RankingReel.astro';
+import { fleet_commanders_reel } from '@helpers/ranking_reels';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
@@ -165,7 +139,6 @@ const page_title = t('fleets.upcoming.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small id="count-text-oob">{count_text}</small>
                 </Flexblock>
             </FlexInline>
             <PageActions>
@@ -179,16 +152,10 @@ const page_title = t('fleets.upcoming.page_title');
             </PageActions>
         </FlexInline>
 
-        <PageSubheader slot="subheader">
-            <Button
-                href={translatePath('/fleets/history/')}
-                size='sm'
-            >
-                {t('fleet_history')}
-            </Button>
-        </PageSubheader>
+        <FleetsHubTabs active="upcoming" />
         
         <UpcomingFleetsUpdater
+            id="upcoming-fleets"
             refresh_rate_seconds={240}
             current_cover={get_location_cover(active_fleets[0]?.location ?? '') ?? '/images/fleets-cover.jpg'}
         >
@@ -201,15 +168,14 @@ const page_title = t('fleets.upcoming.page_title');
                     }}
                 />
                 :
-                <FleetList
-                    fleets={fleets}
-                    active_fleets={active_fleets}
-                    active_doctrines={active_doctrines}
-                    supply_contracts={supply_contracts}
-                    fc_metrics={fc_metrics}
-                    init_tooltips={false}
+                <FleetSchedule
+                    schedule={schedule as FleetScheduleData}
                 />
             }
         </UpcomingFleetsUpdater>
+
+        {fc_metrics.length > 0 &&
+            <RankingReel {...fleet_commanders_reel(fc_metrics, t)} />
+        }
 	</PageWide>
 </Viewport>

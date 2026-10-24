@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/**
+ * A bloc's name as a small outlined tag. A suggested (not yet confirmed)
+ * bloc gets a dashed border and a "likely" marker. Pass `href` to link it to
+ * the bloc page (only for viewers with the intel.affiliations gate).
+ */
+interface Props {
+    bloc:               { id: number; name: string; likely?: boolean | null };
+    href?:              string;
+    /** Print "likely" after the name; off where a status beside it says so already. */
+    marker?:            boolean;
+    [propName: string]: any;
+}
+
+const {
+    bloc,
+    href,
+    marker = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const Element = href ? 'a' : 'span'
+const likely = Boolean(bloc.likely)
+const title = likely ? `${bloc.name} (${t('intel.affiliations.likely')})` : bloc.name
+---
+
+<Element
+    href={href}
+    class:list={['[ intel-bloc-tag ]', { 'intel-bloc-tag--likely': likely }, Astro.props.class]}
+    title={title}
+    {...attributes}
+>
+    <span class="[ intel-bloc-tag__name ]">{bloc.name}</span>
+    {likely && marker && <small>{t('intel.affiliations.likely')}</small>}
+</Element>
+
+<style lang="scss">
+    .intel-bloc-tag {
+        display: inline-flex;
+        flex: 0 1 auto;
+        align-items: baseline;
+        gap: var(--space-3xs);
+        max-width: 100%;
+        min-width: 0;
+        padding: 0 var(--space-3xs);
+        font-size: var(--step--2);
+        line-height: 1.6;
+        white-space: nowrap;
+        color: var(--fleet-yellow);
+        text-decoration: none;
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+
+        small {
+            font-size: inherit;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+    }
+
+    .intel-bloc-tag__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .intel-bloc-tag--likely {
+        border-style: dashed;
+        color: color-mix(in srgb, var(--fleet-yellow) 80%, transparent);
+    }
+
+    a.intel-bloc-tag:hover,
+    a.intel-bloc-tag:focus-visible {
+        color: var(--highlight);
+        border-color: var(--highlight);
+    }
+</style>

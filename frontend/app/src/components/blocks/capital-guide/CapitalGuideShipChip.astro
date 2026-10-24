@@ -125,4 +125,15 @@ const icon_size = 64
         text-wrap: balance;
         hyphens: auto;
     }
+
+    /* Phones: chips are narrow; give long hull names (NIDHOGGUR) the full chip width. */
+    @media (max-width: 48rem) {
+        .cap-chip__hit {
+            padding-inline: var(--space-3xs);
+        }
+
+        .cap-chip__name {
+            letter-spacing: 0.02em;
+        }
+    }
 </style>

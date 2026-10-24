@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+const order_id = parseInt(Astro.params.order_id ?? '')
+if (isNaN(order_id) || order_id <= 0)
+    return HTTP_404_Not_Found()
+
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import {
+    get_loyalty_capabilities,
+    get_loyalty_order,
+} from '@helpers/api.minmatar.org/loyalty'
+
+let order: LoyaltyMarketOrder
+try {
+    order = await get_loyalty_order(order_id)
+} catch (error) {
+    if ((error as Error).cause === 404)
+        return HTTP_404_Not_Found()
+    throw error
+}
+
+let can_manage = false
+if (auth_token) {
+    try {
+        can_manage = Boolean((await get_loyalty_capabilities(auth_token)).can_manage)
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+const posted = Astro.url.searchParams.get('posted') === '1'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LoyaltyOrderTracker from '@components/blocks/LoyaltyOrderTracker.astro'
+
+const page_title = t('industry.loyalty.tracker.page_title').replace('{id}', String(order.id))
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('industry.loyalty.page_title'), accumulated_path: translatePath('/industry/loyalty/') },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.loyalty.tracker.meta_description')}
+>
+    <PageWide
+        cover={{
+            image: '/images/loyalty-points-cover.webp',
+            image_990: '/images/loyalty-points-cover.webp',
+            overlay: true,
+            scrollable: true,
+        }}
+        sticky={true}
+        breadcrumbs={breadcrumbs}
+        breadcrumb_page_title={page_title}
+    >
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{page_title}</PageTitle>
+        </Flexblock>
+
+        <LoyaltyOrderTracker
+            order={order}
+            current_user_id={user ? Number(user.user_id) : 0}
+            can_manage={can_manage}
+            posted={posted}
+        />
+    </PageWide>
+</Viewport>

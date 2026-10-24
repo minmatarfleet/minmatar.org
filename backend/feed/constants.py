@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from eveonline.constants import (
+    AMARR_FACTION_ID,
+    CALDARI_FACTION_ID,
+    GALLENTE_FACTION_ID,
+    MINMATAR_FACTION_ID,
+)
+
 # ESI empire faction IDs (killmails, affiliations, fw/systems)
-FACTION_CALDARI = 500001
-FACTION_MINMATAR = 500002
-FACTION_AMARR = 500003
-FACTION_GALLENTE = 500004
+FACTION_CALDARI = CALDARI_FACTION_ID
+FACTION_MINMATAR = MINMATAR_FACTION_ID
+FACTION_AMARR = AMARR_FACTION_ID
+FACTION_GALLENTE = GALLENTE_FACTION_ID
 MILITIA_FACTION_IDS = frozenset({FACTION_AMARR, FACTION_MINMATAR})
 
 # Amarr–Minmatar warzone regions (ESI region_id)
@@ -41,9 +48,6 @@ FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS = 8
 
 # ESI faction warfare
 ESI_FW_SYSTEMS_URL = "https://esi.evetech.net/latest/fw/systems/"
-FEED_FW_ESI_USER_AGENT = (
-    "minmatar.org-feed/1.0 (https://minmatar.org; fw contested polling)"
-)
 
 # API defaults
 FEED_DEFAULT_HISTORY_DAYS = 7
@@ -132,6 +136,7 @@ ROLLUP_VERSIONS: dict[str, int] = {
     "kill_burst": 6,
     "fleet_active": 11,
     "contested_change": 1,
+    "fleet_kills": 1,
 }
 
 # Capital kill Discord pings (radius from Amamake)
@@ -140,16 +145,15 @@ CAPITAL_PING_MAX_LIGHT_YEARS = 8.0
 # Only ping for genuinely fresh kills. Stale killmails (feed backlog, bot
 # restarts, replays) must not fire a "capital within jump range" alert.
 CAPITAL_PING_MAX_AGE_SECONDS = 180
-# Reuse one Discord message for further capital-related kills in the same system.
+# Fold further capital-related kills in the same system into one alert. Discord
+# gets a single message per alert; it is never edited (rate limit).
 CAPITAL_PING_SESSION_SECONDS = 30 * 60
-# Amarr fleet Discord pings (fleet_active rollups). Reuse one Discord message
-# for further updates to the same system engagement within the session TTL.
+# Amarr fleet Discord pings (fleet_active rollups). One message per system
+# engagement within the session TTL; later rollups update the row, not Discord.
 AMARR_FLEET_PING_SESSION_SECONDS = 30 * 60
 # Skip rollup catch-up / historical rewrites. Only live fleets whose tip is
 # fresher than this should create Discord traffic.
 AMARR_FLEET_PING_MAX_AGE_SECONDS = 20 * 60
-# Skip no-op Discord message edits within this window (rollups run ~3m).
-AMARR_FLEET_PING_EDIT_MIN_SECONDS = 90
 METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
 CAPITAL_SHIP_GROUPS = frozenset(
     {

@@ -3,31 +3,48 @@
 from __future__ import annotations
 
 import logging
-import time
 
-from django.conf import settings
-
+from app.links import site_url
 from discord.client import DiscordClient
-from discord.models import DiscordChannel
+from discord.forum_threads import ForumThreadMirror, flagged_channel_row
 from eveonline.helpers.characters import user_primary_character
 from industry.helpers.lp_buyback_discord_buttons import (
     isk_sent_components,
     lp_sent_components,
 )
 from industry.helpers.lp_market_orders import (
+    PRE_LP_STATUSES,
+    TERMINAL_STATUSES,
     claimed_quantity,
     currency_short_name,
+    express_due_at,
     format_lp_quantity,
     remaining_quantity,
 )
 from industry.models import IndustryLoyaltyPointMarketOrder
+from tribes.helpers.publishing import group_role_mention
+from tribes.models import TribeGroup
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
 
-# Match help tickets / bot ISK-sent: settle message traffic before archive so
-# Discord does not reopen the thread when a post lands after close.
-THREAD_ARCHIVE_DELAY_SECONDS = 5
+
+def _close_task():
+    # pylint: disable=import-outside-toplevel
+    from industry.tasks import close_lp_buyback_discord_thread_task
+
+    return close_lp_buyback_discord_thread_task
+
+
+MIRROR = ForumThreadMirror(
+    label="LP buyback",
+    channel_flag="receive_lp_buyback",
+    preferred_tags=frozenset(
+        {"open", "buyback", "order", "new", "wts", "wtb"}
+    ),
+    client=lambda: discord,
+    close_task=_close_task,
+)
 
 # Deleted orders 122/123 and cancelled order 130 (thread created after cancel).
 ORPHAN_LP_BUYBACK_THREAD_IDS = (
@@ -36,16 +53,12 @@ ORPHAN_LP_BUYBACK_THREAD_IDS = (
     1542512504742346832,
 )
 
-_TERMINAL_STATUSES = (
-    IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
-    IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
-)
+# Keeps the Conversion Team digest under Discord's 2,000-character cap.
+STALE_DIGEST_MAX_LINES = 15
 
 
 def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
-        "/"
-    )
+    base = site_url()
     return f"{base}/industry/loyalty/?order={order.pk}"
 
 
@@ -56,6 +69,20 @@ def _user_mention(user) -> str:
         return f"<@{user.discord_user.id}>"
     except Exception:
         return user.username
+
+
+def conversion_team_mentions() -> list[str]:
+    """Role pings for every tribe group that can claim buyback orders."""
+    groups = (
+        TribeGroup.objects.filter(
+            pilotfeature__code="industry.loyalty.manage",
+            pilotfeature__is_active=True,
+        )
+        .select_related("group__discord_group")
+        .order_by("pk")
+    )
+    mentions = (group_role_mention(group) for group in groups)
+    return [mention for mention in mentions if mention]
 
 
 def _display_name(user) -> str:
@@ -79,35 +106,85 @@ def isk_payer(order: IndustryLoyaltyPointMarketOrder):
     return order.created_by
 
 
-def lp_buyback_channel_id() -> int | None:
-    channel_id = (
-        DiscordChannel.objects.filter(
-            receive_lp_buyback=True,
-            guild__is_active=True,
-        )
-        .values_list("channel_id", flat=True)
-        .first()
+def _lp_buyback_channel_row() -> tuple[int, int] | None:
+    return MIRROR.channel_row()
+
+
+def lp_buyback_thread_url(order: IndustryLoyaltyPointMarketOrder) -> str:
+    """Discord link to the order's thread, or "" without a thread/guild."""
+    row = _lp_buyback_channel_row()
+    if not order.discord_thread_id or not row:
+        return ""
+    _, guild_id = row
+    return (
+        f"https://discord.com/channels/{guild_id}/"
+        f"{int(order.discord_thread_id)}"
     )
-    return int(channel_id) if channel_id else None
+
+
+def lp_conversion_alert_channel_id() -> int | None:
+    row = flagged_channel_row("receive_lp_conversion_alerts")
+    return row[0] if row else None
+
+
+def lp_buyback_channel_id() -> int | None:
+    row = _lp_buyback_channel_row()
+    return row[0] if row else None
+
+
+def active_lp_buyback_thread_ids() -> set[int] | None:
+    """Unarchived thread ids in the buyback forum (None if unknown)."""
+    row = _lp_buyback_channel_row()
+    if not row:
+        return None
+    channel_id, guild_id = row
+    try:
+        threads = (
+            DiscordClient(guild_id=guild_id)
+            .get_active_threads()
+            .json()
+            .get("threads", [])
+        )
+    except Exception as exc:
+        logger.warning("Could not list active LP buyback threads: %s", exc)
+        return None
+    return {
+        int(thread["id"])
+        for thread in threads
+        if str(thread.get("parent_id")) == str(channel_id)
+    }
 
 
 def order_thread_title(order: IndustryLoyaltyPointMarketOrder) -> str:
     side = "WTS" if order.side == order.Side.SELL else "WTB"
     qty = format_lp_quantity(order.quantity)
     short = currency_short_name(order.loyalty_point.name)
-    return f"{side} {qty} {short} @{order.isk_per_lp}"
+    title = f"{side} {qty} {short} @{order.isk_per_lp}"
+    if order.tier == order.Tier.EXPRESS:
+        title += " Express"
+    return title
 
 
 def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     side_label = "Sell" if order.side == order.Side.SELL else "Buy"
+    mentions = [_user_mention(order.created_by)]
+    if order.tier == order.Tier.EXPRESS:
+        # Express orders are on a clock; the whole Conversion Team hears.
+        mentions.extend(conversion_team_mentions())
     parts = [
-        _user_mention(order.created_by),
+        " ".join(mention for mention in mentions if mention),
         "",
         f"**{side_label}** {order.quantity:,} "
         f"{order.loyalty_point.name} @ {order.isk_per_lp} ISK/LP",
         f"Pilot: {_display_name(order.created_by)}",
         f"Status: {order.get_status_display()}",
     ]
+    due_at = express_due_at(order)
+    if due_at is not None:
+        parts.append(
+            f":zap: **Express** — settle by <t:{int(due_at.timestamp())}:f> "
+            f"(<t:{int(due_at.timestamp())}:R>)"
+        )
     if (
         order.side == order.Side.BUY
         and (order.destination_character_name or "").strip()
@@ -121,65 +198,15 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     return "\n".join(parts)
 
 
-def _default_forum_tag_ids(channel_id: int) -> list[str]:
-    try:
-        channel = discord.get_channel(channel_id).json()
-    except Exception as exc:
-        logger.warning(
-            "Could not fetch LP buyback forum channel %s for tags: %s",
-            channel_id,
-            exc,
-        )
-        return []
-
-    tags = channel.get("available_tags") or []
-    if not tags:
-        return []
-
-    preferred_names = {"open", "buyback", "order", "new", "wts", "wtb"}
-    for tag in tags:
-        name = str(tag.get("name") or "").strip().lower()
-        if name in preferred_names:
-            return [str(tag["id"])]
-    return [str(tags[0]["id"])]
-
-
 def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
-    channel_id = lp_buyback_channel_id()
-    if not channel_id:
-        logger.warning(
-            "No DiscordChannel with receive_lp_buyback; skip thread"
-        )
-        return None
-    try:
-        response = discord.create_forum_thread(
-            channel_id=channel_id,
-            title=order_thread_title(order)[:100],
-            message=order_starter_message(order),
-            applied_tags=_default_forum_tag_ids(channel_id),
-        )
-        return int(response.json()["id"])
-    except Exception as exc:
-        logger.error(
-            "Failed creating LP buyback Discord thread (channel=%s): %s",
-            channel_id,
-            exc,
-        )
-        return None
+    return MIRROR.create_thread(
+        order_thread_title(order), order_starter_message(order)
+    )
 
 
 def close_lp_buyback_thread_id(thread_id: int | None) -> bool:
     """Archive/lock a buyback forum thread by Discord channel id."""
-    if not thread_id:
-        return False
-    try:
-        discord.close_thread(channel_id=int(thread_id))
-        return True
-    except Exception as exc:
-        logger.error(
-            "Failed closing LP buyback Discord thread %s: %s", thread_id, exc
-        )
-        return False
+    return MIRROR.close(thread_id)
 
 
 def close_order_thread(order: IndustryLoyaltyPointMarketOrder) -> None:
@@ -192,18 +219,9 @@ def post_order_status_update(
     *,
     message: str,
     components: list[dict] | None = None,
-) -> None:
-    if not order.discord_thread_id:
-        return
-    payload = {"content": message}
-    if components:
-        payload["components"] = components
-    try:
-        discord.create_message(
-            channel_id=order.discord_thread_id, payload=payload
-        )
-    except Exception as exc:
-        logger.error("Failed posting LP buyback Discord update: %s", exc)
+) -> bool:
+    """Post in the order thread; False when there is no thread or it failed."""
+    return MIRROR.post(order.discord_thread_id, message, components)
 
 
 def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
@@ -213,8 +231,12 @@ def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
         ).get(pk=order.pk)
     except IndustryLoyaltyPointMarketOrder.DoesNotExist:
         return
-    if current.status in _TERMINAL_STATUSES:
+    if current.status in TERMINAL_STATUSES:
         close_order_thread(current)
+        return
+    # The create task and the hourly sweep's retry can both get here; only
+    # the first thread is kept.
+    if current.discord_thread_id:
         return
 
     thread_id = create_order_thread(current)
@@ -222,8 +244,10 @@ def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
         return
 
     attached = (
-        IndustryLoyaltyPointMarketOrder.objects.filter(pk=current.pk)
-        .exclude(status__in=_TERMINAL_STATUSES)
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk=current.pk, discord_thread_id__isnull=True
+        )
+        .exclude(status__in=TERMINAL_STATUSES)
         .update(discord_thread_id=thread_id)
     )
     if not attached:
@@ -429,10 +453,8 @@ def _completed_message(order: IndustryLoyaltyPointMarketOrder) -> str:
 def _post_completed_then_archive(
     order: IndustryLoyaltyPointMarketOrder,
 ) -> None:
-    """Post completion, wait, then archive (avoids Discord reopen race)."""
-    post_order_status_update(order, message=_completed_message(order))
-    time.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
-    close_order_thread(order)
+    """Post completion, then archive shortly after (avoids reopen race)."""
+    MIRROR.post_then_close(order.discord_thread_id, _completed_message(order))
 
 
 def notify_order_status_changed(
@@ -455,3 +477,186 @@ def notify_order_status_changed(
         # Post first, wait, then archive — never post after close (Discord
         # unarchives). Caller must invoke after DB commit (see transition_order).
         _post_completed_then_archive(order)
+
+
+def _order_participants(order: IndustryLoyaltyPointMarketOrder) -> list:
+    """Creator plus every claimer, deduplicated, creator first."""
+    users = [order.created_by, order.claimed_by]
+    users.extend(claim.claimed_by for claim in order.claims.all())
+    seen: set[int] = set()
+    unique = []
+    for user in users:
+        if user is None or user.pk in seen:
+            continue
+        seen.add(user.pk)
+        unique.append(user)
+    return unique
+
+
+def _cancelled_message(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    cancelled_by=None,
+    reason: str = "",
+) -> str:
+    mentions = " ".join(
+        mention
+        for mention in (_user_mention(u) for u in _order_participants(order))
+        if mention
+    )
+    lines: list[str] = []
+    if mentions:
+        lines.extend([mentions, ""])
+    if cancelled_by is not None:
+        lines.append(
+            f":x: Order cancelled by **{_display_name(cancelled_by)}**"
+        )
+    else:
+        lines.append(":x: Order cancelled")
+    if reason:
+        lines.append(reason)
+    lines.append(order_site_url(order))
+    return "\n".join(lines)
+
+
+def notify_order_cancelled(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    cancelled_by=None,
+    reason: str = "",
+) -> None:
+    """Post the cancellation, then archive shortly after (avoids reopen race)."""
+    if not order.discord_thread_id:
+        return
+    MIRROR.post_then_close(
+        order.discord_thread_id,
+        _cancelled_message(order, cancelled_by=cancelled_by, reason=reason),
+    )
+
+
+def waiting_on(order: IndustryLoyaltyPointMarketOrder):
+    """The user whose action the order is waiting on, if any."""
+    if order.status == order.Status.AWAITING_LP:
+        return lp_sender(order)
+    if order.status == order.Status.AWAITING_ISK:
+        return isk_payer(order)
+    if order.status == order.Status.CLAIMED:
+        return order.claimed_by
+    return None
+
+
+def poster_is_stalling(order: IndustryLoyaltyPointMarketOrder) -> bool:
+    """True when the order's own poster owes the next pre-LP step.
+
+    Only then may a stalled order be auto-cancelled. When a claimer (the
+    Conversion Team) is the one holding things up they are pestered daily
+    instead, so a slow claimer never costs the poster their order.
+    """
+    if order.status not in PRE_LP_STATUSES:
+        return False
+    waiting = waiting_on(order)
+    return waiting is not None and waiting.pk == order.created_by_id
+
+
+def waiting_on_action(order: IndustryLoyaltyPointMarketOrder) -> str:
+    """Short description of the pending action (e.g. for cancel reasons)."""
+    if order.status == order.Status.AWAITING_LP:
+        return f"send LP to **{_destination_label(order)}**"
+    if order.status == order.Status.AWAITING_ISK:
+        return (
+            f"pay **{_isk_due(order):,} ISK** to "
+            f"**{_isk_payout_label(order)}**"
+        )
+    return "confirm where the LP should go"
+
+
+def stalled_cancel_reason(order: IndustryLoyaltyPointMarketOrder) -> str:
+    return (
+        "No progress for 48 hours while waiting on "
+        f"**{_display_name(waiting_on(order))}** to "
+        f"{waiting_on_action(order)}. Post a new order when you're ready."
+    )
+
+
+def _stalled_reminder_message(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    waited_hours: int,
+    cancel_at=None,
+) -> str:
+    mention = _user_mention(waiting_on(order))
+    lines: list[str] = []
+    if mention:
+        lines.extend([mention, ""])
+    lines.append(
+        f":alarm_clock: Reminder — this order has been waiting on you to "
+        f"{waiting_on_action(order)} for {waited_hours} hours."
+    )
+    if order.status == order.Status.AWAITING_LP:
+        lines.append("Once it's sent, press **LP sent** below.")
+    elif order.status == order.Status.AWAITING_ISK:
+        lines.append("Once it's paid, press **ISK sent** below.")
+    if cancel_at is not None:
+        lines.append(
+            "If nothing moves, this order is cancelled automatically "
+            f"<t:{int(cancel_at.timestamp())}:R>."
+        )
+    lines.append(order_site_url(order))
+    return "\n".join(lines)
+
+
+def post_stalled_reminder(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    waited_hours: int,
+    cancel_at=None,
+) -> bool:
+    components = None
+    if order.status == order.Status.AWAITING_LP:
+        components = lp_sent_components(order.pk)
+    elif order.status == order.Status.AWAITING_ISK:
+        components = isk_sent_components(order.pk)
+    return post_order_status_update(
+        order,
+        message=_stalled_reminder_message(
+            order, waited_hours=waited_hours, cancel_at=cancel_at
+        ),
+        components=components,
+    )
+
+
+def post_stale_open_orders_digest(orders, *, now) -> bool:
+    """Tell the Conversion Team about orders nobody has taken for a week."""
+    channel_id = lp_conversion_alert_channel_id()
+    if not channel_id or not orders:
+        return False
+    count = len(orders)
+    lines = [
+        f":hourglass: **{count} LP buyback "
+        f"order{'s' if count != 1 else ''}** "
+        f"open for a week or more with no taker:",
+    ]
+    for order in orders[:STALE_DIGEST_MAX_LINES]:
+        days = int((now - order.status_changed_at).total_seconds() // 86400)
+        thread = (
+            f"<#{order.discord_thread_id}>"
+            if order.discord_thread_id
+            else order_site_url(order)
+        )
+        lines.append(
+            f"- **{order_thread_title(order)}** by "
+            f"{_display_name(order.created_by)} — {days}d, "
+            f"{remaining_quantity(order):,} LP unclaimed · {thread}"
+        )
+    if count > STALE_DIGEST_MAX_LINES:
+        lines.append(
+            f"…and {count - STALE_DIGEST_MAX_LINES} more on the site."
+        )
+    try:
+        discord.create_message(
+            channel_id=channel_id, payload={"content": "\n".join(lines)}
+        )
+    except Exception as exc:
+        logger.error("Failed posting stale LP order digest: %s", exc)
+        return False
+    return True

@@ -156,7 +156,6 @@ class CampaignDetail(Schema):
     fittings: list[CampaignFittingOut] = []
     totals: CampaignTotals
     is_enlisted: bool = False
-    my_streak: int = 0
     characters_included: int = 0
     characters_tracked: int = 0
     standing_fleet_up: bool = False
@@ -172,7 +171,6 @@ class RightNow(Schema):
     standing_fleet_members: int = 0
     standing_fleet_boss: str | None = None
     gangs_forming: list[dict] = []
-    my_streak: int = 0
     my_orders_done: int = 0
     my_orders_total: int = 0
     ticker: list[dict] = []
@@ -212,6 +210,46 @@ class WeekSystemProgressOut(Schema):
     # Our advantage at week open and now, so a push can show whether ours rose.
     advantage_our_start: float | None = None
     advantage_our_now: float | None = None
+    # "captured" or "lost" when the system changed hands this week.
+    flipped: Literal["captured", "lost"] | None = None
+
+
+class WeekObjectiveRowOut(Schema):
+    """One row of the week's objectives, as the website table and the
+    desktop window draw it (campaigns/services/objectives.py).
+
+    Progress reads higher-is-better on 0-100. ``change_week`` is the move
+    since the week opened (None when the system changed hands: ``flipped``
+    says which way); ``change_24h`` is the last day's.
+    """
+
+    target_id: int | None = None
+    system_id: int
+    name: str
+    solar_system_id: int
+    priority: str = "medium"
+    holder: Literal["minmatar", "amarr"] | None = None
+    objective: Literal[
+        "capture_complexes",
+        "defend_complexes",
+        "gain_advantage",
+        "hold_advantage",
+        "destroy_advantage",
+        "report_structures",
+    ]
+    pace: Literal["behind", "on_pace", "ahead"] | None = None
+    proposed: bool = False
+    progress_percent: float | None = None
+    change_week: float | None = None
+    change_24h: float | None = None
+    flipped: Literal["captured", "lost"] | None = None
+    # The figures behind the bar, for its caption.
+    contested_percent: float | None = None
+    victory_points: int | None = None
+    victory_points_threshold: int | None = None
+    advantage_level: float | None = None
+    structures_reported: float | None = None
+    structures_target: float | None = None
 
 
 class WeekPlan(Schema):
@@ -222,6 +260,7 @@ class WeekPlan(Schema):
     day_index: int = 1
     targets: list[WeekTargetOut] = []
     progress: list[WeekSystemProgressOut] = []
+    objective_rows: list[WeekObjectiveRowOut] = []
     commander_order_text: str = ""
     summary: dict = {}
 
@@ -260,9 +299,16 @@ class OrderOut(Schema):
 class LeaderboardRow(Schema):
     rank: int
     user_id: int
-    username: str
     character_id: int | None = None
     character_name: str = ""
+    value: float
+
+
+class CorporationLeaderboardRow(Schema):
+    rank: int
+    corporation_id: int | None = None
+    corporation_name: str = ""
+    pilots: int = 0
     value: float
 
 
@@ -294,7 +340,6 @@ class SiteOut(Schema):
     site_kind: str
     amount_lp: int
     system: str
-    username: str | None = None
     character_id: int | None = None
     character_name: str = ""
     plex_class: str = ""
@@ -309,7 +354,8 @@ class AwardOut(Schema):
     scope: str
     week_start: date | None = None
     awarded_at: datetime
-    username: str
+    character_id: int | None = None
+    character_name: str = ""
     value: float | None = None
     metric: str = ""
 
@@ -328,7 +374,6 @@ class TimelineEvent(Schema):
 
 class RosterRow(Schema):
     user_id: int
-    username: str
     primary_character: str = ""
     character_id: int | None = None
     corporation_id: int | None = None
@@ -336,13 +381,34 @@ class RosterRow(Schema):
     prime_time: str = ""
     observed_prime_time: str = ""
     last_active_day: date | None = None
-    streak_days: int = 0
     characters_included: int = 0
     characters_tracked: int = 0
+    kills: int = 0
+    losses: int = 0
+    isk_destroyed: int = 0
+    complexes: int = 0
+    advantage_sites: int = 0
+    fleets_attended: int = 0
+
+
+class RosterCorporation(Schema):
+    corporation_id: int | None = None
+    corporation_name: str = ""
+    pilots: int = 0
+    active_pilots: int = 0
+    characters_included: int = 0
+    kills: int = 0
+    losses: int = 0
+    isk_destroyed: int = 0
+    complexes: int = 0
+    advantage_sites: int = 0
+    fleets_attended: int = 0
+    last_active_day: date | None = None
 
 
 class Roster(Schema):
     pilots: list[RosterRow] = []
+    corporations: list[RosterCorporation] = []
     coverage: list[dict] = []
     by_prime_time: dict = {}
 
@@ -366,11 +432,9 @@ class ReadinessOut(Schema):
 
 
 class EnlistRequest(Schema):
+    # The notify_* flags this used to accept are ignored: no campaign
+    # notification reads them yet. Stored values stay on the enlistment.
     source: Literal["fleet_prompt", "gang_ping", "web", "admin"] = "web"
-    notify_gang_forming: bool = True
-    notify_standing_fleet: bool = True
-    notify_activity_nearby: bool = False
-    notify_streak_at_risk: bool = True
     digest_hour: int = Field(default=18, ge=0, le=23)
 
 
@@ -488,3 +552,49 @@ class CommanderOrderRequest(Schema):
 class WeekTargetPatch(Schema):
     target: float
     accept: bool = True
+
+
+class CampaignOverlaySystem(Schema):
+    system_id: int
+    name: str
+    solar_system_id: int
+    priority: str = "medium"
+    holder: Literal["minmatar", "amarr"] | None = None
+    objective: str
+    objective_label: str
+    progress_percent: float | None = None
+    # The bar's move since the week opened, and over the last day. A complex
+    # row that changed hands this week has no week move: ``flipped`` says
+    # "captured" or "lost" instead.
+    change_week: float | None = None
+    change_24h: float | None = None
+    flipped: Literal["captured", "lost"] | None = None
+    detail: str = ""
+
+
+class CampaignOverlayPilot(Schema):
+    character_id: int
+    character_name: str
+    system: str | None = None
+    last_at: datetime
+    kills: int = 0
+    losses: int = 0
+    complexes: int = 0
+    advantage_sites: int = 0
+    in_fleet: bool = False
+
+
+class CampaignOverlayCampaign(Schema):
+    slug: str
+    name: str
+    week_index: int
+    week_count: int
+    systems: list[CampaignOverlaySystem]
+    active_window_minutes: int
+    active_pilots: list[CampaignOverlayPilot]
+
+
+class CampaignOverlay(Schema):
+    """The desktop app's Campaigns window."""
+
+    campaign: CampaignOverlayCampaign | None = None

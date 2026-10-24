@@ -3,6 +3,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.test import override_settings
 from django.utils import timezone
 
 from app.test import TestCase as AppTestCase
@@ -10,7 +11,10 @@ from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from industry.models import IndustryOrderItem, IndustryOrderItemAssignment
-from industry.test_utils import create_industry_order
+from industry.test_utils import (
+    create_industry_order,
+    set_stored_profit_breakdown,
+)
 from reminders.industry_daily_summary import (
     build_industry_daily_summary_message,
 )
@@ -57,6 +61,7 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             short_name="TST",
         )
 
+    @override_settings(WEB_LINK_URL="https://my.minmatar.org")
     def test_empty_summary(self):
         text = build_industry_daily_summary_message()
         self.assertIn("# Industry order summary", text)
@@ -68,7 +73,7 @@ class IndustryDailySummaryMessageTests(AppTestCase):
         )
         self.assertIn("- *(none)*", text)
         self.assertIn("**Total order amount:** 0B", text)
-        self.assertIn("**Total available margin:** 0B", text)
+        self.assertIn("**Total estimated profit:** 0B", text)
         self.assertIn(
             "[View Order page](https://my.minmatar.org/industry/orders/)",
             text,
@@ -95,13 +100,13 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             eve_type=self.eve_type,
             quantity=10,
             target_unit_price=Decimal("1000000000"),
-            target_estimated_margin=Decimal("50000000"),
         )
         IndustryOrderItemAssignment.objects.create(
             order_item=item,
             character=self.builder2,
             quantity=2,
         )
+        set_stored_profit_breakdown(order, {self.eve_type.id: 50000000})
         text = build_industry_daily_summary_message()
         code = order.public_short_code
         self.assertIn(f"`{code}` [TST] Test Groups (0.5B profit)", text)
@@ -110,7 +115,7 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             text,
         )
         self.assertIn("**Total order amount:** 2B", text)
-        self.assertIn("**Total available margin:** 0.1B", text)
+        self.assertIn("**Total estimated profit:** 0.1B", text)
 
     def test_fully_assigned_in_progress_not_listed_under_unassigned(self):
         """Lines with no unassigned qty are not listed; totals count all assignments."""
@@ -124,8 +129,8 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             eve_type=self.eve_type,
             quantity=2,
             target_unit_price=Decimal("1000000000"),
-            target_estimated_margin=Decimal("100000000"),
         )
+        set_stored_profit_breakdown(order, {self.eve_type.id: 100000000})
         IndustryOrderItemAssignment.objects.create(
             order_item=item,
             character=self.builder2,
@@ -150,8 +155,8 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             eve_type=self.eve_type,
             quantity=2,
             target_unit_price=Decimal("1000000000"),
-            target_estimated_margin=Decimal("100000000"),
         )
+        set_stored_profit_breakdown(order, {self.eve_type.id: 100000000})
         IndustryOrderItemAssignment.objects.create(
             order_item=item,
             character=self.builder2,
@@ -160,4 +165,39 @@ class IndustryDailySummaryMessageTests(AppTestCase):
         )
         text = build_industry_daily_summary_message()
         self.assertIn("**Total order amount:** 2B", text)
-        self.assertIn("**Total available margin:** 0.2B", text)
+        self.assertIn("**Total estimated profit:** 0.2B", text)
+
+    def test_orders_without_profit_snapshot_omit_profit(self):
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        IndustryOrderItem.objects.create(
+            order=order,
+            eve_type=self.eve_type,
+            quantity=3,
+            target_unit_price=Decimal("1000000000"),
+        )
+        text = build_industry_daily_summary_message()
+        code = order.public_short_code
+        self.assertIn(f"- `{code}` [TST] Test Groups\n", text)
+        self.assertIn(f"- `{code}` [TST] {self.eve_type.name} x3\n", text)
+        self.assertNotIn("profit)", text)
+        self.assertIn("**Total estimated profit:** 0B", text)
+
+    def test_loss_making_order_shows_loss(self):
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        IndustryOrderItem.objects.create(
+            order=order,
+            eve_type=self.eve_type,
+            quantity=4,
+        )
+        set_stored_profit_breakdown(order, {self.eve_type.id: -100000000})
+        text = build_industry_daily_summary_message()
+        code = order.public_short_code
+        self.assertIn(f"`{code}` [TST] Test Groups (0.4B loss)", text)

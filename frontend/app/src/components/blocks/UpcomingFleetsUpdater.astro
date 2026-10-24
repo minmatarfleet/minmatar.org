@@ -23,6 +23,8 @@ const FLEET_LIST_PARTIAL_URL = translatePath('/partials/upcoming_fleets_componen
     hx-swap="innerHTML transition:true"
     hx-indicator=".loader"
     hx-headers={`js:{"X-Page-Cover": sessionStorage.getItem("current_bg") || '${current_cover ?? ''}'}`}
+    hx-vals='js:{host: new URLSearchParams(window.location.search).get("host") || ""}'
+    hx-disinherit="hx-vals"
     {...attributes}
 >
     <slot />

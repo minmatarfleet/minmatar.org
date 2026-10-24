@@ -2,24 +2,21 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-if (!is_superuser && !user_permissions.includes('structures.view_evestructuretimer'))
+if (!can(gates, 'structures.timers.view'))
     return HTTP_403_Forbidden()
 
-const can_add_timers = is_superuser || user_permissions.includes('fleets.add_evefleet')
+const can_add_timers = can(gates, 'structures.timers.add_button')
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
@@ -90,7 +87,7 @@ const page_title = t('intel.timers.history.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`${t('lastest_timers')}.replace('TIMERS', structure_timers_count.toString())`}>
+                    <small x-text={`${JSON.stringify(t('lastest_timers'))}.replace('TIMERS', structure_timers_count.toString())`}>
                         {t('lastest_timers').replace('TIMERS', structure_timers.length.toString())}
                     </small>
                 </Flexblock>

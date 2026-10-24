@@ -1,0 +1,387 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import type { MixRow } from '@helpers/corporations/about'
+import { mix_rows, ranked_mix_rows } from '@helpers/corporations/about'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    corporation: CorporationInfo
+    [propName: string]: any
+}
+
+const { corporation } = Astro.props
+
+const summary = corporation.public_summary
+const about = corporation.about
+const home = about?.home_system?.name
+
+interface MixCard {
+    title: string
+    head: string
+    head_label: string
+    rows: (MixRow & { label: string })[]
+    foot: string
+}
+
+function labelled(rows: MixRow[], label_for: (key: string) => string) {
+    return rows.map((row) => ({ ...row, label: label_for(row.key) }))
+}
+
+const tier_label = (key: string) => {
+    switch (key) {
+        case 'core': return t('corporations.about.tier_core')
+        case 'regular': return t('corporations.about.tier_regular')
+        case 'lapsing': return t('corporations.about.tier_lapsing')
+        case 'inactive': return t('corporations.about.tier_inactive')
+        default: return key
+    }
+}
+const role_label = (key: string) => {
+    switch (key) {
+        case 'dps': return t('corporations.detail.ship_dps')
+        case 'logistics': return t('corporations.detail.ship_logistics')
+        case 'support': return t('corporations.detail.ship_support')
+        case 'capital': return t('corporations.detail.ship_capital')
+        default: return key
+    }
+}
+const fight_label = (key: string) => {
+    switch (key) {
+        case 'small_gang': return t('corporations.about.fight_small_gang')
+        case 'fleet': return t('corporations.about.fight_fleet')
+        case 'solo': return t('corporations.about.fight_solo')
+        default: return key
+    }
+}
+const fight_short = (key: string) => {
+    switch (key) {
+        case 'small_gang': return t('corporations.detail.kill_small_gang').toLowerCase()
+        case 'fleet': return t('corporations.detail.kill_fleet').toLowerCase()
+        default: return t('corporations.detail.kill_solo').toLowerCase()
+    }
+}
+const band_label = (key: string) => {
+    switch (key) {
+        case 'two_years': return t('corporations.about.band_two_years')
+        case 'one_year': return t('corporations.about.band_one_year')
+        case 'three_months': return t('corporations.about.band_three_months')
+        default: return t('corporations.about.band_new')
+    }
+}
+
+const cards: MixCard[] = []
+
+if (summary) {
+    const tiers = labelled(mix_rows(summary.fleet_participation.slices, ['core', 'regular', 'lapsing', 'inactive']), tier_label)
+    const flying = tiers.filter((row) => row.key === 'core' || row.key === 'regular').reduce((sum, row) => sum + row.percent, 0)
+    const core = summary.fleet_participation.slices.find((slice) => slice.key === 'core')?.count ?? 0
+    if (tiers.length > 0)
+        cards.push({
+            title: t('corporations.about.fleet_regulars'),
+            head: `${flying}%`,
+            head_label: t('corporations.about.head_regulars'),
+            rows: tiers,
+            foot: t('corporations.about.foot_core').replace('~COUNT', String(core)),
+        })
+
+    const roles = labelled(ranked_mix_rows(summary.fleet_ships.slices, ['dps', 'support', 'logistics', 'capital']), role_label)
+    if (roles.length > 0)
+        cards.push({
+            title: t('corporations.about.ship_roles'),
+            head: `${roles[0].percent}%`,
+            head_label: t('corporations.about.head_role').replace('~ROLE', roles[0].label),
+            rows: roles,
+            foot: t('corporations.about.foot_roles'),
+        })
+
+    const fights = labelled(ranked_mix_rows(summary.kills.slices, ['small_gang', 'fleet', 'solo']), fight_label)
+    if (fights.length > 0)
+        cards.push({
+            title: t('corporations.about.fight_size'),
+            head: `${fights[0].percent}%`,
+            head_label: t('corporations.about.head_fight').replace('~SIZE', fight_short(fights[0].key)),
+            rows: fights,
+            foot: (home
+                ? t('corporations.about.foot_kills_home').replace('~SYSTEM', home)
+                : t('corporations.about.foot_kills')
+            ).replace('~COUNT', String(summary.kills.killmails)),
+        })
+}
+
+const tenure = about?.tenure
+if (tenure && tenure.mains > 0) {
+    const bands = labelled(mix_rows(tenure.bands, ['two_years', 'one_year', 'three_months', 'new']), band_label)
+    const top = [...bands].sort((left, right) => right.count - left.count)[0]
+    if (top)
+        cards.push({
+            title: t('corporations.about.tenure'),
+            head: `${top.percent}%`,
+            head_label: t('corporations.about.head_tenure').replace('~BAND', top.label.toLowerCase()),
+            rows: bands,
+            foot: t('corporations.about.foot_mains').replace('~COUNT', String(tenure.mains)),
+        })
+}
+
+const hulls = about?.hulls ?? []
+const hull_peak = Math.max(1, ...hulls.map((hull) => hull.pilots))
+---
+
+{(cards.length > 0 || hulls.length > 0) &&
+    <section class="numbers">
+        <header class="section-head">
+            <h2>{t('corporations.about.by_the_numbers')}</h2>
+            <p>{t('corporations.about.numbers_caption')}</p>
+        </header>
+
+        {cards.length > 0 &&
+            <div class="cards">
+                {cards.map((card) => (
+                    <article class="card">
+                        <h3 class="eyebrow">{card.title}</h3>
+                        <p class="head">
+                            <span class="head-value">{card.head}</span>
+                            <span>{card.head_label}</span>
+                        </p>
+                        <span class="stack" aria-hidden="true">
+                            {card.rows.map((row) => <span data-shade={row.shade} style={`width: ${row.width}%`}></span>)}
+                        </span>
+                        <ul class="legend">
+                            {card.rows.map((row) => (
+                                <li>
+                                    <span class="key" data-shade={row.shade} aria-hidden="true"></span>
+                                    <span class="legend-label">{row.label}</span>
+                                    <span class="legend-value">{row.percent}%</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <p class="foot">{card.foot}</p>
+                    </article>
+                ))}
+            </div>
+        }
+
+        {hulls.length > 0 &&
+            <div class="card hulls">
+                <div class="hulls-head">
+                    <h3 class="eyebrow">{t('corporations.about.hulls')}</h3>
+                    <small>{t('corporations.about.hulls_caption')}</small>
+                </div>
+                <ol class="hull-list">
+                    {hulls.map((hull, index) => (
+                        <li class="hull">
+                            <span class="rank">{index + 1}</span>
+                            <img src={get_item_icon(hull.type_id, 64)} alt="" width="48" height="48" loading="lazy" />
+                            <span class="hull-body">
+                                <span class="hull-line">
+                                    <span class="hull-name">{hull.name}</span>
+                                    <span class="hull-count">
+                                        {t('corporations.about.count_pilots').replace('~COUNT', String(hull.pilots))}
+                                    </span>
+                                </span>
+                                <span class="track" aria-hidden="true">
+                                    <span style={`width: ${(hull.pilots / hull_peak) * 100}%`}></span>
+                                </span>
+                            </span>
+                        </li>
+                    ))}
+                </ol>
+            </div>
+        }
+    </section>
+}
+
+<style lang="scss">
+    .numbers {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .section-head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h2 {
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+        gap: var(--space-s);
+    }
+
+    .card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background: var(--component-background);
+        min-width: 0;
+    }
+
+    .eyebrow {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        color: var(--faded);
+    }
+
+    // Number above its label on every card, so the cards line up.
+    .head {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .head-value {
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    // One cream lightness ramp for every chart: colour never means two things.
+    [data-shade='0'] { background: var(--fleet-yellow); }
+    [data-shade='1'] { background: color-mix(in srgb, var(--fleet-yellow) 68%, var(--background)); }
+    [data-shade='2'] { background: color-mix(in srgb, var(--fleet-yellow) 44%, var(--background)); }
+    [data-shade='3'] { background: color-mix(in srgb, var(--fleet-yellow) 24%, var(--background)); }
+
+    .stack {
+        display: flex;
+        gap: 2px;
+        height: var(--space-2xs);
+    }
+
+    .legend {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+    }
+
+    .key {
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        flex: none;
+    }
+
+    .legend-label {
+        flex: 1;
+    }
+
+    .legend-value {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .foot {
+        margin: auto 0 0;
+        padding-block-start: var(--space-s);
+        border-top: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .hulls-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-m);
+
+        small {
+            color: var(--faded);
+        }
+    }
+
+    .hull-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+        gap: var(--space-s) var(--space-xl);
+    }
+
+    .hull {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+
+        img {
+            width: var(--space-xl);
+            height: var(--space-xl);
+            flex: none;
+            border: 1px solid var(--border-color-hover);
+        }
+    }
+
+    .rank {
+        width: var(--space-s);
+        font-family: var(--heading-font);
+        color: var(--faded);
+    }
+
+    .hull-body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .hull-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-xs);
+    }
+
+    .hull-name {
+        color: var(--highlight);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .hull-count {
+        font-size: var(--step--1);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .track {
+        display: block;
+        height: var(--space-3xs);
+        background: color-mix(in srgb, var(--highlight) 10%, transparent);
+
+        span {
+            display: block;
+            height: 100%;
+            background: var(--fleet-yellow);
+        }
+    }
+</style>

@@ -8,6 +8,7 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 import factory
+from esi.models import Scope, Token
 
 from campaigns.models import (
     CampaignEnlistment,
@@ -24,9 +25,9 @@ from campaigns.models import (
     SystemRole,
 )
 from campaigns.endpoints import serializers
-from campaigns.services import advantage, plan
+from campaigns.services import advantage, plan, stats
 from campaigns.services.attribution import attribute_feed_killmail
-from campaigns.helpers import campaign_week_start, week_bounds
+from campaigns.helpers import campaign_week_start, day_bounds, week_bounds
 from campaigns.tests.helpers import (
     KAMELA,
     KOURMONEN,
@@ -36,7 +37,8 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
-from eveonline.models import EveCharacter, EvePlayer
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from eveonline.scopes import BASIC_SCOPES, CAMPAIGN_SCOPES
 from fittings.models import EveFitting
 from fleets.models import EveFleet
 
@@ -132,6 +134,52 @@ class CampaignApiTests(TestCase):
         # No token at all, so it counts for nothing and needs one action.
         self.assertEqual(row["state"], "lapsed")
 
+    def test_notification_scope_is_enough_to_count(self):
+        """Structure search is a Basic scope. Campaigns do not use it."""
+        token = Token.objects.create(
+            user=self.user,
+            character_id=self.character.character_id,
+            character_name=self.character.character_name,
+        )
+        for scope_name in CAMPAIGN_SCOPES:
+            scope, _ = Scope.objects.get_or_create(name=scope_name)
+            token.scopes.add(scope)
+        self.character.token = token
+        self.character.save()
+
+        response = self.client.get(
+            f"{BASE}/readiness", **auth_headers(self.user)
+        )
+        row = response.json()["characters"][0]
+        self.assertEqual(row["state"], "ready")
+        self.assertEqual(row["action_url"], "")
+
+        # The detail page counts the same character as tracked. That used to
+        # read a stat column nothing wrote, so it was always 0.
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(self.user)
+        )
+        self.assertEqual(response.json()["characters_tracked"], 1)
+
+    def test_a_basic_token_without_notifications_still_needs_an_update(self):
+        token = Token.objects.create(
+            user=self.user,
+            character_id=self.character.character_id,
+            character_name=self.character.character_name,
+        )
+        for scope_name in BASIC_SCOPES:
+            scope, _ = Scope.objects.get_or_create(name=scope_name)
+            token.scopes.add(scope)
+        self.character.token = token
+        self.character.save()
+
+        response = self.client.get(
+            f"{BASE}/readiness", **auth_headers(self.user)
+        )
+        row = response.json()["characters"][0]
+        self.assertEqual(row["state"], "needs_update")
+        self.assertIn("token_type=FactionWarfare", row["action_url"])
+
     def test_readiness_route_is_not_swallowed_by_the_slug_route(self):
         """``/readiness`` must not resolve as a campaign called readiness."""
         response = self.client.get(
@@ -171,6 +219,47 @@ class CampaignApiTests(TestCase):
         enlistment.refresh_from_db()
         self.assertEqual(enlistment.status, "left")
         self.assertIsNotNone(enlistment.periods.first().left_at)
+
+    def test_re_enlisting_keeps_stored_notify_choices(self):
+        """The web client still sends notify_* defaults; nothing reads them,
+        so the API ignores them instead of overwriting what is stored."""
+        newcomer = User.objects.create(username="returning")
+        grant(newcomer, "view_campaign", "add_campaignenlistment")
+        url = f"{BASE}/{self.campaign.slug}/enlist"
+        body = {
+            "source": "web",
+            "notify_gang_forming": True,
+            "notify_standing_fleet": True,
+            "notify_activity_nearby": False,
+        }
+        response = self.client.post(
+            url,
+            data=body,
+            content_type="application/json",
+            **auth_headers(newcomer),
+        )
+        self.assertEqual(response.status_code, 200)
+        enlistment = CampaignEnlistment.objects.get(
+            campaign=self.campaign, user=newcomer
+        )
+        # New enlistments get the same defaults as before.
+        self.assertTrue(enlistment.notify_gang_forming)
+        self.assertTrue(enlistment.notify_standing_fleet)
+        self.assertFalse(enlistment.notify_activity_nearby)
+
+        CampaignEnlistment.objects.filter(pk=enlistment.pk).update(
+            notify_gang_forming=False, notify_activity_nearby=True
+        )
+        response = self.client.post(
+            url,
+            data=body,
+            content_type="application/json",
+            **auth_headers(newcomer),
+        )
+        self.assertEqual(response.status_code, 200)
+        enlistment.refresh_from_db()
+        self.assertFalse(enlistment.notify_gang_forming)
+        self.assertTrue(enlistment.notify_activity_nearby)
 
     def test_excluding_a_character_closes_its_inclusion_period(self):
         response = self.client.delete(
@@ -266,20 +355,21 @@ class CampaignApiTests(TestCase):
             is_fw_objective=False,
         )
 
-        def _snap(system, when, victory_points, contested):
+        def _snap(system, when, victory_points, contested, occupier=None):
             CampaignSystemSnapshot.objects.create(
                 campaign_system=system,
                 captured_at=when,
                 victory_points=victory_points,
                 victory_points_threshold=5000,
                 contested_percent=contested,
+                occupier_faction_id=occupier,
             )
 
         _snap(system, window_start - timedelta(hours=3), 1000, 20.0)
         _snap(system, window_start + timedelta(minutes=30), 1100, 22.5)
         _snap(system, window_start + timedelta(days=2), 1400, 35.256)
-        _snap(held, window_start + timedelta(hours=1), 400, 12.0)
-        _snap(held, window_start + timedelta(days=1), 380, 9.5)
+        _snap(held, window_start + timedelta(hours=1), 400, 12.0, 500002)
+        _snap(held, window_start + timedelta(days=1), 380, 9.5, 500003)
 
         response = self.client.get(
             f"{BASE}/{self.campaign.slug}/week", **auth_headers(self.user)
@@ -295,6 +385,7 @@ class CampaignApiTests(TestCase):
         self.assertEqual(kamela["victory_points_now"], 1400)
         self.assertIsNone(kamela["advantage_our_start"])
         self.assertIsNone(kamela["advantage_our_now"])
+        self.assertIsNone(kamela["flipped"])
 
         kourmonen = progress["Kourmonen"]
         self.assertEqual(kourmonen["contested_start"], 12.0)
@@ -303,6 +394,8 @@ class CampaignApiTests(TestCase):
         self.assertEqual(kourmonen["victory_points_now"], 380)
         self.assertIsNone(kourmonen["advantage_our_start"])
         self.assertIsNone(kourmonen["advantage_our_now"])
+        # Ours when the week opened, theirs now.
+        self.assertEqual(kourmonen["flipped"], "lost")
 
     def test_fleets_lists_campaign_fleets_with_their_impact(self):
         with factory.django.mute_signals(signals.pre_save, signals.post_save):
@@ -368,6 +461,137 @@ class CampaignApiTests(TestCase):
         self.assertNotIn("points", scored.json()[0])
         self.assertEqual(scored.json()[0]["value"], 2)
 
+    def test_the_fc_board_lists_only_pilots_who_led(self):
+        member = User.objects.create(username="line_member")
+        today = timezone.now().date()
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=self.user, day=today, fleets_led=3
+        )
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=member, day=today, fleets_attended=4
+        )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard?metric=fcs&period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual([row["user_id"] for row in body], [self.user.id])
+        self.assertEqual(body[0]["value"], 3)
+
+    def _pilot_in(self, username, character_id, corporation_id):
+        user, character = enlist(self.campaign, username, character_id)
+        character.corporation_id = corporation_id
+        character.save()
+        EvePlayer.objects.create(
+            user=user, nickname=username, primary_character=character
+        )
+        return user
+
+    def test_the_corporation_board_sums_each_metric_by_main_corporation(self):
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            EveCorporation.objects.create(corporation_id=1, name="Big")
+            EveCorporation.objects.create(corporation_id=2, name="Small")
+        today = timezone.now().date()
+        big_a = self._pilot_in("big_a", 4001, 1)
+        big_b = self._pilot_in("big_b", 4002, 1)
+        small = self._pilot_in("small", 4003, 2)
+        no_main, _ = enlist(self.campaign, "no_main", 4005)
+        # Kill boards read the mails: big_a and big_b share two of Big's
+        # three kills, which count once each for the corporation.
+        for killmail_id, attacker_ids in (
+            (701, [4001, 4002]),
+            (702, [4002, 4001]),
+            (703, [4001]),
+            (704, [4003]),
+            (705, [4005]),
+            (706, [4005]),
+            (707, [4005]),
+            (708, [4005]),
+        ):
+            attribute_feed_killmail(
+                make_feed_killmail(
+                    killmail_id,
+                    victim_character_id=9999,
+                    attacker_ids=attacker_ids,
+                )
+            )
+        for user, kills, complexes, advantage_generated, fleets_led in (
+            (big_a, 3, 0, 4.0, 0),
+            (big_b, 2, 1, 0.0, 0),
+            (small, 1, 5, 0.0, 2),
+            (no_main, 4, 0, 0.0, 0),
+        ):
+            CampaignParticipantDay.objects.create(
+                campaign=self.campaign,
+                user=user,
+                day=today,
+                kills=kills,
+                complexes=complexes,
+                advantage_generated=advantage_generated,
+                fleets_led=fleets_led,
+            )
+
+        def board(metric):
+            response = self.client.get(
+                f"{BASE}/{self.campaign.slug}/leaderboard/corporations"
+                f"?metric={metric}&period=all",
+                **auth_headers(self.user),
+            )
+            self.assertEqual(response.status_code, 200)
+            return [
+                (
+                    row["rank"],
+                    row["corporation_name"],
+                    row["pilots"],
+                    row["value"],
+                )
+                for row in response.json()
+            ]
+
+        self.assertEqual(
+            board("kills"),
+            [(1, "", 1, 4), (2, "Big", 2, 3), (3, "Small", 1, 1)],
+        )
+        self.assertEqual(
+            board("isk"),
+            [
+                (1, "", 1, 200_000_000),
+                (2, "Big", 2, 150_000_000),
+                (3, "Small", 1, 50_000_000),
+            ],
+        )
+        self.assertEqual(
+            board("sites"), [(1, "Small", 1, 5), (2, "Big", 1, 1)]
+        )
+        self.assertEqual(board("advantage"), [(1, "Big", 1, 4)])
+        self.assertEqual(board("fcs"), [(1, "Small", 1, 2)])
+
+    def test_the_corporation_board_honours_the_period(self):
+        old_day = campaign_week_start() - timedelta(days=10)
+        self.campaign.start_at = day_bounds(old_day)[0]
+        self.campaign.save()
+        self._pilot_in("old_hand", 4004, 1)
+        for killmail_id in (711, 712, 713, 714):
+            attribute_feed_killmail(
+                make_feed_killmail(
+                    killmail_id,
+                    victim_character_id=9999,
+                    attacker_ids=[4004],
+                    killmail_time=day_bounds(old_day)[0] + timedelta(hours=1),
+                )
+            )
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard/corporations?period=week",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.json(), [])
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard/corporations?period=all",
+            **auth_headers(self.user),
+        )
+        self.assertEqual(response.json()[0]["value"], 4)
+
     def test_leaderboard_and_timeline_respond(self):
         for path in ("/leaderboard", "/timeline", "/killmails", "/sites"):
             response = self.client.get(
@@ -378,6 +602,9 @@ class CampaignApiTests(TestCase):
             self.assertIsInstance(response.json(), list)
 
     def test_forming_a_gang_puts_it_on_the_right_now_strip(self):
+        EvePlayer.objects.create(
+            user=self.user, nickname="pilot", primary_character=self.character
+        )
         response = self.client.post(
             f"{BASE}/{self.campaign.slug}/gangs",
             data={"ships": "Thrashers", "note": "Kamela roam"},
@@ -393,7 +620,8 @@ class CampaignApiTests(TestCase):
         gangs = response.json()["gangs_forming"]
         self.assertEqual(len(gangs), 1)
         self.assertEqual(gangs[0]["ships"], "Thrashers")
-        self.assertEqual(gangs[0]["started_by"], "pilot")
+        # The main's in-game name, never the web login.
+        self.assertEqual(gangs[0]["started_by"], "Pilot")
 
     def test_a_stale_gang_drops_off_the_strip(self):
         CampaignEvent.objects.create(
@@ -415,6 +643,110 @@ class CampaignApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["coverage"]), 24)
 
+    def test_roster_rolls_pilots_up_by_primary_corporation(self):
+        today = timezone.now().date()
+
+        def pilot(user_id, corporation_id, name, kills, last_active_day):
+            return {
+                "user_id": user_id,
+                "corporation_id": corporation_id,
+                "corporation_name": name,
+                "characters_included": 2,
+                "last_active_day": last_active_day,
+                "kills": kills,
+                "losses": 1,
+                "isk_destroyed": 1000,
+                "complexes": 3,
+                "advantage_sites": 0,
+                "fleets_attended": 1,
+            }
+
+        rows = serializers.roster_corporations(
+            [
+                pilot(1, None, "", 9, today),
+                pilot(2, 2, "Small", 50, None),
+                pilot(3, 1, "Big", 2, today - timedelta(days=30)),
+                pilot(4, 1, "Big", 2, today - timedelta(days=1)),
+            ],
+            today,
+            # Both Big pilots were on mail 11 and in fleet 5.
+            mails_by_user={
+                1: {20: 7},
+                2: {30: 1},
+                3: {10: 100, 11: 100},
+                4: {11: 100, 12: 100},
+            },
+            fleets_by_user={3: {5}, 4: {5, 6}},
+        )
+
+        self.assertEqual([row["corporation_id"] for row in rows], [1, 2, None])
+        big = rows[0]
+        self.assertEqual(big["pilots"], 2)
+        self.assertEqual(big["active_pilots"], 1)
+        self.assertEqual(big["kills"], 3)
+        self.assertEqual(big["isk_destroyed"], 300)
+        self.assertEqual(big["fleets_attended"], 2)
+        self.assertEqual(big["losses"], 2)
+        self.assertEqual(big["complexes"], 6)
+        self.assertEqual(big["characters_included"], 4)
+        self.assertEqual(big["last_active_day"], today - timedelta(days=1))
+        self.assertIsNone(rows[1]["last_active_day"])
+        self.assertEqual(rows[1]["fleets_attended"], 0)
+
+    def test_roster_corporation_kills_match_the_corporation_board(self):
+        """Two alts of one pilot and a corp mate on one kill: the roster's
+        corporation row says one kill, like the board next to it."""
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            EveCorporation.objects.create(corporation_id=1, name="Big")
+        big_a = self._pilot_in("big_a", 4001, 1)
+        self._pilot_in("big_b", 4002, 1)
+        alt = EveCharacter.objects.create(
+            character_id=4011, character_name="Big A Alt", user=big_a
+        )
+        CampaignEnlistmentCharacter.objects.create(
+            enlistment=CampaignEnlistment.objects.get(
+                campaign=self.campaign, user=big_a
+            ),
+            character=alt,
+            included_from=self.campaign.start_at,
+        )
+        attribute_feed_killmail(
+            make_feed_killmail(
+                711,
+                victim_character_id=9999,
+                attacker_ids=[4001, 4011, 4002],
+            )
+        )
+        stats.materialise_recent(self.campaign)
+        stats.rebuild_stats(self.campaign)
+
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.staff)
+        )
+        big = next(
+            row
+            for row in response.json()["corporations"]
+            if row["corporation_id"] == 1
+        )
+        self.assertEqual(big["kills"], 1)
+        self.assertEqual(big["isk_destroyed"], 50_000_000)
+        board = self.client.get(
+            f"{BASE}/{self.campaign.slug}/leaderboard/corporations"
+            "?metric=kills&period=all",
+            **auth_headers(self.user),
+        ).json()
+        self.assertEqual(board[0]["value"], big["kills"])
+
+    def test_roster_carries_the_corporation_roll_up(self):
+        response = self.client.get(
+            f"{BASE}/{self.campaign.slug}/roster", **auth_headers(self.staff)
+        )
+        corporations = response.json()["corporations"]
+        self.assertEqual(
+            sum(row["pilots"] for row in corporations),
+            len(response.json()["pilots"]),
+        )
+
 
 class CampaignAccessTests(TestCase):
     """Every read is as sensitive as the campaign it belongs to."""
@@ -433,6 +765,7 @@ class CampaignAccessTests(TestCase):
             "/orders",
             "/systems",
             "/leaderboard",
+            "/leaderboard/corporations",
             "/killmails",
             "/sites",
             "/timeline",

@@ -1,0 +1,184 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { filter_systems_by_name } from '@helpers/sde/map'
+import { sec_status_class } from '@helpers/eve'
+import { query_string } from '@helpers/string'
+
+/**
+ * Where to form up: the staging system and undock, then the viewer's own
+ * characters and how far each is (loaded by htmx, since it reads ESI).
+ */
+interface Props {
+    fleet:              FleetUI;
+    /** The viewer's characters and their distance; off once the fleet is over. */
+    show_characters?:   boolean;
+}
+
+const { fleet, show_characters = true } = Astro.props
+
+const [ system_name, station ] = fleet.location?.split(' - ') ?? []
+const system = system_name ?
+    (await filter_systems_by_name(system_name)).find(found => found.system_name === system_name) ?? null :
+    null
+
+const LOCATIONS_URL = system && show_characters ? `${translatePath('/partials/fleet_pilot_locations_component')}?${query_string({
+    fleet_id: fleet.id,
+    staging_id: system.system_id,
+})}` : null
+---
+
+<section class="[ fleet-formup ]" aria-labelledby="fleet-formup-title">
+    <h2 id="fleet-formup-title">{t('fleets.formup.title')}</h2>
+
+    <div class="[ fleet-formup__where ]">
+        <span class="[ fleet-formup__system ]">
+            <b>{system_name ?? '—'}</b>
+            {system && <span class:list={['[ fleet-formup__sec ]', sec_status_class(system.security.toFixed(1))]}>{system.security.toFixed(1)}</span>}
+        </span>
+        {station && <span>{t('fleets.formup.undock').replace('{station}', station)}</span>}
+        {system && <small>{system.constellation_name} · {system.region_name}</small>}
+    </div>
+
+    {LOCATIONS_URL &&
+        <div class="[ fleet-formup__pilots ]">
+            <span class="[ fleet-formup__label ]">{t('fleets.formup.your_characters')}</span>
+            <div
+                hx-get={LOCATIONS_URL}
+                hx-trigger="load"
+                hx-swap="innerHTML"
+            >
+                <small class="[ loading ]">{t('fleets.formup.loading')}</small>
+            </div>
+        </div>
+    }
+
+    {system_name &&
+        <a
+            class="[ fleet-formup__dotlan ]"
+            href={`https://evemaps.dotlan.net/system/${encodeURIComponent(system_name.replace(/ /g, '_'))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+        >{t('fleets.formup.dotlan')} ↗</a>
+    }
+</section>
+
+<style lang="scss">
+    .fleet-formup {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .fleet-formup__where {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fleet-formup__system {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-xs);
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-3);
+            line-height: 1;
+            text-transform: uppercase;
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-formup__sec {
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        font-weight: 700;
+    }
+
+    .fleet-formup__pilots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-top: var(--space-s);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .fleet-formup__label {
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    /* fleet_pilot_locations_component swaps these rows in. */
+    .fleet-formup__pilots :global(.fleet-formup__list) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .fleet-formup__pilots :global(.fleet-formup__list li) {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        gap: var(--space-xs);
+        align-items: center;
+    }
+
+    .fleet-formup__pilots :global(.fleet-formup__name) {
+        color: var(--highlight);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .fleet-formup__pilots :global(.fleet-formup__distance) {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    .fleet-formup__pilots :global(.fleet-formup__waypoint) {
+        min-height: 2.75rem;
+        padding: 0 var(--space-xs);
+        background: transparent;
+        border: 1px solid var(--border-color-hover);
+        color: var(--foreground);
+        font: inherit;
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .fleet-formup__pilots :global(.fleet-formup__waypoint:focus-visible) {
+        outline: 2px solid var(--fleet-yellow);
+        outline-offset: 2px;
+    }
+
+    @media screen and (max-width: 30rem) {
+        .fleet-formup__pilots :global(.fleet-formup__list li) {
+            grid-template-columns: auto minmax(0, 1fr) auto;
+        }
+
+        .fleet-formup__pilots :global(.fleet-formup__waypoint),
+        .fleet-formup__pilots :global(.fleet-formup__waypoint-result) {
+            grid-column: 2 / -1;
+            justify-self: start;
+        }
+    }
+
+    .fleet-formup__dotlan {
+        margin-top: auto;
+        align-self: flex-start;
+        font-weight: 700;
+    }
+</style>

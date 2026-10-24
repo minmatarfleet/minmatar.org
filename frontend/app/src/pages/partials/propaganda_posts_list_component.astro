@@ -3,16 +3,15 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-import { get_user_permissions } from '@helpers/permissions'
+const { auth_token, user } = get_request_user(Astro)
+import { get_gates } from '@helpers/gates'
+import { can_manage_own_posts } from '@helpers/fetching/post_publishing'
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+const can_manage_posts = await can_manage_own_posts(gates, auth_token)
 const post_editor = can_manage_posts ? (user as User).user_id : false
 
 import type { PostListUI } from '@dtypes/layout_components'
@@ -38,9 +37,9 @@ try {
     if (status === 'published')
         posts_grouped = await fetch_posts_grouped_by_tags({ status: 'published' })
     else if (post_editor && status === 'trash')
-        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' })
+        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor, status: 'trash' }, false, auth_token)
     else if (post_editor)
-        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor }, true)
+        posts_grouped = await fetch_posts_grouped_by_tags({ user_id: post_editor }, true, auth_token)
     else
         throw new Error(t('invalid_post_fetching_parameters'), { cause: 400 })
 

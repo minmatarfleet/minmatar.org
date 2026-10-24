@@ -3,7 +3,7 @@
 Fetch Alliance-affiliated active users with fleet / kill / voice metrics.
 
 Usage (from repo root):
-  cd backend && pipenv run python ../.cursor/skills/on-leave/scripts/fetch_alliance_activity.py --json
+  cd backend && pipenv run python ../.claude/skills/on-leave/scripts/fetch_alliance_activity.py --json
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ import django
 
 django.setup()
 
-from django.db.models import Count, F, Sum
+from django.db.models import F, Sum
 from django.utils import timezone
 
 from discord.models import DiscordChannelActivityRecord
@@ -112,21 +112,23 @@ def fetch_activity(
             if uid is not None:
                 fleets_by_user[uid].add(instance_id)
 
-    kills_by_char = {}
+    # A person counts a mail once, however many of their alts were on it
+    # (matches alliance.helpers.health).
+    kill_mails_by_user: dict[int, set[int]] = defaultdict(set)
     if all_eve_ids:
-        kills_by_char = {
-            row["character_id"]: row["n"]
-            for row in (
-                EveCharacterKillmailAttacker.objects.using(PRODUCTION_DB)
-                .filter(
-                    character_id__in=all_eve_ids,
-                    killmail__killmail_time__gte=since,
-                )
-                .exclude(character_id=F("killmail__victim_character_id"))
-                .values("character_id")
-                .annotate(n=Count("id"))
+        for character_id, killmail_id in (
+            EveCharacterKillmailAttacker.objects.using(PRODUCTION_DB)
+            .filter(
+                character_id__in=all_eve_ids,
+                killmail__killmail_time__gte=since,
             )
-        }
+            .exclude(character_id=F("killmail__victim_character_id"))
+            .values_list("character_id", "killmail_id")
+            .iterator(chunk_size=5000)
+        ):
+            uid = user_by_eve.get(character_id)
+            if uid is not None:
+                kill_mails_by_user[uid].add(killmail_id)
 
     usernames = list(username_by_id.values())
     voice_by_username = {}
@@ -182,7 +184,7 @@ def fetch_activity(
                 ),
                 "linked_character_count": len(char_ids),
                 "fleets": fleets,
-                "kills": sum(kills_by_char.get(cid, 0) for cid in char_ids),
+                "kills": len(kill_mails_by_user.get(user_id, ())),
                 "voice_minutes": voice_min,
                 "voice_hours": round(voice_min / 60, 1),
                 "restored_from_leave_at": (

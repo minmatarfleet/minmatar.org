@@ -1,9 +1,8 @@
 .cap-guide {
     --cap-display-font: 'Orbitron', var(--heading-font);
-    --cap-body-font: 'Source Sans 3', var(--body-font);
     --cap-panel-padding-block: var(--component-padding-block);
     --cap-panel-padding-inline: var(--space-l-xl);
-    font-family: var(--cap-body-font);
+    font-family: inherit;
     display: flex;
     flex-direction: column;
     gap: var(--space-l);
@@ -130,6 +129,56 @@
 .cap-guide .cap-table tbody th {
     font-weight: 600;
     white-space: nowrap;
+}
+
+/* Phones: each table row becomes a stacked card with the column name above each value. */
+@media (max-width: 48rem) {
+    .cap-guide .cap-table-wrap {
+        overflow-x: visible;
+        padding-bottom: var(--space-m);
+    }
+
+    .cap-guide .cap-table,
+    .cap-guide .cap-table tbody,
+    .cap-guide .cap-table tr,
+    .cap-guide .cap-table th,
+    .cap-guide .cap-table td {
+        display: block;
+    }
+
+    .cap-guide .cap-table thead {
+        display: none;
+    }
+
+    .cap-guide .cap-table tr {
+        padding-block: var(--space-2xs);
+        border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+        border-top-width: 0;
+
+        &:first-child {
+            border-top-width: 1px;
+        }
+    }
+
+    .cap-guide .cap-table th,
+    .cap-guide .cap-table td {
+        padding: var(--space-3xs) var(--space-s);
+        border: 0;
+    }
+
+    .cap-guide .cap-table tbody th {
+        white-space: normal;
+    }
+
+    .cap-guide .cap-table td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-family: var(--cap-display-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
 }
 
 .cap-guide .cap-table__hull-link {

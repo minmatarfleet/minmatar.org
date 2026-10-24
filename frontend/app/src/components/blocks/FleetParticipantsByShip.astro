@@ -1,0 +1,164 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fleet_fights'
+
+/**
+ * Who flew what after the fleet, every name visible: each pilot once by the
+ * ship they flew longest. A fleet that reshipped after the form-up is split
+ * at each reship, each part counted on its own.
+ */
+interface Props {
+    participants:   FleetParticipants;
+}
+
+const { participants } = Astro.props
+
+const phases = participants.phases
+const split = phases.length > 1
+const phase_title = (index: number) =>
+    index === 0 ?
+        t('fleets.after.phase_until').replace('{time}', eve_clock(phases[1].start)) :
+        t('fleets.after.phase_from').replace('{time}', eve_clock(phases[index].start))
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<section class="[ fleet-by-ship ]" aria-labelledby="fleet-by-ship-title">
+    <header>
+        <h2 id="fleet-by-ship-title">{t('fleets.after.flew_title')}</h2>
+        <small>{split ? t('fleets.after.by_ship_hint_split') : t('fleets.after.by_ship_hint')}</small>
+    </header>
+
+    {phases.every(phase => phase.hulls.length === 0) ?
+        <EmptyState title={t('fleets.after.nobody_in')} />
+        :
+        phases.map((phase, index) =>
+            <div class="[ fleet-by-ship__phase ]">
+                {split &&
+                    <div class="[ fleet-by-ship__phase-head ]">
+                        <h3>{phase_title(index)}</h3>
+                        <small>{t('fleets.after.phase_meta')
+                            .replace('{start}', eve_clock(phase.start))
+                            .replace('{end}', eve_clock(phase.end))
+                            .replace('{characters}', phase.characters.toString())
+                            .replace('{peak}', phase.peak.toString())}</small>
+                    </div>
+                }
+                <ul class="[ fleet-by-ship__hulls ]">
+                    {phase.hulls.map(hull =>
+                        <li>
+                            <img src={get_item_icon(hull.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                            <b>{hull.ship_name}</b>
+                            <b class="[ fleet-by-ship__num ]">{hull.count}</b>
+                            <span class="[ fleet-by-ship__chips ]">
+                                {hull.pilots.map(pilot =>
+                                    <span class="[ fleet-by-ship__chip ]"><img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />{pilot.character_name}</span>
+                                )}
+                                {hull.count > hull.pilots.length && <small>{t('fleets.after.unnamed').replace('{count}', (hull.count - hull.pilots.length).toString())}</small>}
+                            </span>
+                        </li>
+                    )}
+                </ul>
+            </div>
+        )
+    }
+
+    {participants.opsec_filtered && <small class="[ fleet-by-ship__muted ]">{t('fleets.after.opsec')}</small>}
+</section>
+
+<style lang="scss">
+    .fleet-by-ship {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-col-width);
+
+        > header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs) var(--space-m);
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        h3 {
+            margin: 0;
+        }
+    }
+
+    .fleet-by-ship__muted {
+        color: var(--text-muted);
+    }
+
+    .fleet-by-ship__phase {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .fleet-by-ship__phase-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+        align-items: baseline;
+    }
+
+    .fleet-by-ship__hulls {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 14rem) 3rem minmax(0, 1fr);
+            gap: var(--space-xs) var(--space-s);
+            align-items: start;
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+
+            > b {
+                padding-top: var(--space-2xs);
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .fleet-by-ship__num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .fleet-by-ship__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-2xs);
+        align-items: center;
+    }
+
+    .fleet-by-ship__chip {
+        display: inline-flex;
+        gap: var(--space-3xs);
+        align-items: center;
+        padding: 2px var(--space-2xs) 2px 2px;
+        border: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    @media screen and (max-width: 48rem) {
+        .fleet-by-ship__hulls li {
+            grid-template-columns: 40px minmax(0, 1fr) auto;
+
+            .fleet-by-ship__chips {
+                grid-column: 1 / -1;
+            }
+        }
+    }
+</style>

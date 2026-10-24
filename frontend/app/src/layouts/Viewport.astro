@@ -1,20 +1,14 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { is_prod_mode } from '@helpers/env'
 const { lang, t } = i18n(Astro.url)
 
 const middleware_error = Astro.cookies.has('middleware_error') ? (Astro.cookies.get('middleware_error')?.value as string) : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-import { is_officer, is_director } from '@helpers/fetching/groups'
-const user_is_officer = (auth_token && user ? is_officer(auth_token, user.user_id) : false)
-const user_is_director = (auth_token && user ? is_director(auth_token, user.user_id) : false)
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
 import { check_referral_url } from '@helpers/fetching/referrals'
 await check_referral_url(
@@ -25,16 +19,16 @@ await check_referral_url(
 	lang
 )
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 import { ClientRouter } from 'astro:transitions';
 import Neocom from '@components/blocks/Neocom.astro';
 import CharacterFinder from '@components/blocks/CharacterFinder.astro';
 
 import SkipToContent from '@components/blocks/SkipToContent.astro';
-// import CoverImagesPreload from '@components/partials/CoverImagesPreload.astro';
 import HeadScripts from '@components/partials/HeadScripts.astro';
+import Posthog from '@components/partials/Posthog.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
@@ -70,6 +64,7 @@ interface Props {
 	meta_description?: 		string;
 	canonical_url?:			string;
 	og_type?:               string;
+	robots?:				string;
 	neocom?: 				boolean;
 	components?:			ViewportComponents;
 }
@@ -83,6 +78,7 @@ const {
 	meta_description = t('generic.meta_description'),
 	canonical_url,
 	og_type = 'website',
+	robots,
 	neocom = true,
 	components = {},
 } = Astro.props
@@ -111,6 +107,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 	<head>
 		<meta charset="UTF-8" />
 		{meta_description && <meta name="description" content={meta_description} />}
+		{robots && <meta name="robots" content={robots} />}
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
@@ -134,15 +131,19 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 
 		<link rel="manifest" href="/site.webmanifest">
 		
-		<!-- Google tag (gtag.js) -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
-		<script is:inline>
-			window.dataLayer = window.dataLayer || [];
-			function gtag(){dataLayer.push(arguments);}
-			gtag('js', new Date());
+		{/* Analytics only from production builds, so dev traffic stays out of the properties. */}
+		<Posthog user_id={user ? user.user_id : null} />
+		{is_prod_mode() && <>
+			<!-- Google tag (gtag.js) -->
+			<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
+			<script is:inline>
+				window.dataLayer = window.dataLayer || [];
+				function gtag(){dataLayer.push(arguments);}
+				gtag('js', new Date());
 
-			gtag('config', 'G-H2HFG2XB2N');
-		</script>
+				gtag('config', 'G-H2HFG2XB2N');
+			</script>
+		</>}
 	</head>
 
 	<body
@@ -187,11 +188,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 
 			{neocom &&
 				<Neocom
-					user_is_officer={user_is_officer ?? false}
-					user_is_director={user_is_director ?? false}
-					user_is_superadmin={user_is_superadmin}
 					authenticated={user !== false}
-					user_permissions={user_permissions}
+					gates={gates}
 				/>
 			}
 			<slot />

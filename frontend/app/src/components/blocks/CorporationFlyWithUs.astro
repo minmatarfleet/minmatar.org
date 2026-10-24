@@ -1,0 +1,173 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { prime_codes } from '@helpers/corporations/leadership'
+import { CORPORATION_APPLY_ID } from '@helpers/corporations/detail'
+
+import Button from '@components/blocks/Button.astro'
+
+interface Props {
+    corporation: CorporationInfo
+    // Link to the Apply tab, or null when the viewer is already a member.
+    apply_href: string | null
+    [propName: string]: any
+}
+
+const { corporation, apply_href } = Astro.props
+
+const VISIBLE_REQUIREMENTS = 2
+const VISIBLE_RECRUITERS = 3
+
+// Requirements are authored as Markdown bullets; show them as plain lines.
+const requirements = (corporation.requirements ?? [])
+    .map((line) => line.replace(/^\s*[-*]\s*/, '').trim())
+    .filter(Boolean)
+const hidden_requirements = Math.max(0, requirements.length - VISIBLE_REQUIREMENTS)
+const recruiters = (corporation.leadership ?? []).filter((member) => member.role === 'recruiter')
+const other_recruiters = recruiters.slice(VISIBLE_RECRUITERS).map((member) => member.character_name)
+const acceptance_days = corporation.application_process?.acceptance_days
+// Opens the header's apply dialog. When that button is disabled, or before
+// Alpine loads, the link scrolls up to it so the reason is in view.
+const open_header_apply = `const target = document.querySelector('#${CORPORATION_APPLY_ID} button:not([disabled])'); if (target) { $event.preventDefault(); target.click() }`
+---
+
+{apply_href &&
+    <section class="fly-with-us">
+        <h2>{t('corporations.about.fly_with_us')}</h2>
+        <div class="columns">
+            {requirements.length > 0 &&
+                <div class="column">
+                    <h3 class="eyebrow">{t('corporations.about.what_we_ask')}</h3>
+                    <ul class="requirements">
+                        {requirements.slice(0, VISIBLE_REQUIREMENTS).map((line) => <li>{line}</li>)}
+                    </ul>
+                    {hidden_requirements > 0 &&
+                        <a href={apply_href}>
+                            {t('corporations.about.more_requirements').replace('~COUNT', String(hidden_requirements))}
+                        </a>
+                    }
+                </div>
+            }
+            {recruiters.length > 0 &&
+                <div class="column">
+                    <h3 class="eyebrow">{t('corporations.about.talk_to_recruiter')}</h3>
+                    <ul class="recruiters">
+                        {recruiters.slice(0, VISIBLE_RECRUITERS).map((recruiter) => (
+                            <li>
+                                <img src={get_player_icon(recruiter.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                                <span class="recruiter-name">{recruiter.character_name}</span>
+                                {prime_codes(recruiter).map((code) => <span class="zone">{code}</span>)}
+                            </li>
+                        ))}
+                    </ul>
+                    {other_recruiters.length > 0 &&
+                        <small class="muted">{t('corporations.about.also').replace('~NAMES', other_recruiters.join(', '))}</small>
+                    }
+                </div>
+            }
+            <div class="column">
+                <h3 class="eyebrow">{t('corporations.about.ready_to_join')}</h3>
+                <Button href={`#${CORPORATION_APPLY_ID}`} x-on:click={open_header_apply}>
+                    {t('corporations.about.apply_to').replace('~NAME', corporation.corporation_name)}
+                </Button>
+                {corporation.discord_invite_url &&
+                    <Button href={corporation.discord_invite_url} external={true} new_tab={true} color="transparent">
+                        {t('corporations.about.ask_discord')}
+                    </Button>
+                }
+                {acceptance_days != null &&
+                    <small class="muted">
+                        {t('corporations.about.answered_within').replace('~DAYS', String(Math.max(1, Math.round(acceptance_days))))}
+                    </small>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<style lang="scss">
+    .fly-with-us {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-l);
+        background: var(--component-background);
+
+        h2 {
+            margin: 0;
+        }
+    }
+
+    .columns {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: var(--space-l);
+        align-items: start;
+    }
+
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .eyebrow {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        color: var(--faded);
+    }
+
+    .requirements,
+    .recruiters {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .requirements li {
+        display: flex;
+        gap: var(--space-xs);
+
+        &::before {
+            content: '✓';
+            color: var(--green);
+        }
+    }
+
+    .recruiters li {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        img {
+            width: var(--space-l);
+            height: var(--space-l);
+            flex: none;
+        }
+    }
+
+    .recruiter-name {
+        flex: 1;
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .zone {
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        padding: 0 var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+    }
+
+    .muted {
+        color: var(--faded);
+    }
+</style>

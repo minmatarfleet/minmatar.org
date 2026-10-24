@@ -5,16 +5,19 @@ from __future__ import annotations
 import re
 
 from django.conf import settings
-from esi.models import Token
 
 from alliance.models import AllianceHealthSnapshot
+from eveonline.helpers.characters.identity import (
+    owner_user_ids,
+    primary_characters_for_users,
+)
 from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import (
     EveCharacter,
     EveCorporation,
     EveCorporationMedia,
-    EvePlayer,
 )
+from groups.models import UserCommunityStatus
 
 _YOUTUBE_ID = re.compile(
     r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([A-Za-z0-9_-]{6,})"
@@ -75,12 +78,30 @@ def apply_cached_timezones(rows: list[dict], stats: dict) -> None:
         )
 
 
+def apply_on_leave(rows: list[dict]) -> None:
+    """Mark leaders whose community status is On Leave (one query)."""
+    user_ids = {row["user_id"] for row in rows if row.get("user_id")}
+    on_leave = (
+        set(
+            UserCommunityStatus.objects.filter(
+                user_id__in=user_ids,
+                status=UserCommunityStatus.STATUS_ON_LEAVE,
+            ).values_list("user_id", flat=True)
+        )
+        if user_ids
+        else set()
+    )
+    for row in rows:
+        row["on_leave"] = row.get("user_id") in on_leave
+
+
 def public_profile(corporation: EveCorporation) -> dict:
     """Profile payload. Heavy 90-day stats come from the Celery-filled cache
     and are absent (empty/None) until the first refresh finishes."""
     leaders = leadership_rows(corporation)
     stats = corporation_stats(corporation.corporation_id) or {}
     apply_cached_timezones(leaders, stats)
+    apply_on_leave(leaders)
     return {
         "ticker": corporation.ticker or None,
         "member_count": corporation.member_count,
@@ -92,11 +113,24 @@ def public_profile(corporation: EveCorporation) -> dict:
         "weekday_distribution": stats.get("weekday_distribution", []),
         "public_summary": stats.get("public_summary"),
         "application_process": stats.get("application_process"),
+        "about": _about(corporation, stats),
         "highlights": corporation.highlights or None,
         "activity_summary": corporation.activity_summary or None,
         "media": [_media_item(item) for item in corporation.media.all()],
         "discord_invite_url": corporation.discord_invite_url or None,
     }
+
+
+def _about(corporation: EveCorporation, stats: dict) -> dict | None:
+    about = stats.get("about")
+    if about is None:
+        if corporation.date_founded is None:
+            return None
+        return {"founded": corporation.date_founded.isoformat()}
+    # ESI's founding date beats the corp-history estimate in the cache.
+    if corporation.date_founded:
+        about = {**about, "founded": corporation.date_founded.isoformat()}
+    return about
 
 
 def missing_prime_time(corporation: EveCorporation) -> list[dict]:
@@ -110,6 +144,12 @@ def missing_prime_time(corporation: EveCorporation) -> list[dict]:
 
 
 def corporation_health(corporation_id: int) -> dict:
+    """The corp's row from the alliance health snapshot.
+
+    ``active_90d`` is alliance-health activity: any fleet, kill or supply
+    signal in 90 days. The member tiers on the same page (summary.fleet_tier)
+    count fleets only, so a miner can be active here and inactive there.
+    """
     snapshot = AllianceHealthSnapshot.objects.order_by("-computed_at").first()
     if snapshot is None:
         return {}
@@ -125,7 +165,7 @@ def corporation_health(corporation_id: int) -> dict:
 
 
 def bot_invite_url() -> str:
-    configured = getattr(settings, "DISCORD_BOT_INVITE_URL", "") or ""
+    configured = settings.DISCORD_BOT_INVITE_URL or ""
     if configured:
         return configured
     client_id = getattr(settings, "DISCORD_CLIENT_ID", "") or ""
@@ -162,13 +202,13 @@ def split_requirements(value: str | None) -> list[str]:
 def _collapse_leadership_to_mains(
     entries: list[tuple[EveCharacter, str]],
 ) -> list[dict]:
-    characters = [entry[0] for entry in entries]
-    primaries, token_user_ids = _primary_characters_by_user(characters)
+    owners = owner_user_ids(entry[0].character_id for entry in entries)
+    primaries = primary_characters_for_users(owners.values())
     seen_users: set[int] = set()
     seen_characters: set[int] = set()
     rows = []
     for character, role in entries:
-        user_id = _owning_user_id(character, token_user_ids)
+        user_id = owners.get(character.character_id)
         display = primaries.get(user_id) if user_id else None
         if display is None:
             display = character
@@ -181,50 +221,6 @@ def _collapse_leadership_to_mains(
         seen_characters.add(display.character_id)
         rows.append(_leader(display, role, user_id=user_id))
     return rows
-
-
-def _primary_characters_by_user(
-    characters: list[EveCharacter],
-) -> tuple[dict[int, EveCharacter], dict[int, int]]:
-    token_ids = [
-        character.token_id
-        for character in characters
-        if not character.user_id and character.token_id
-    ]
-    token_user_ids: dict[int, int] = {}
-    if token_ids:
-        token_user_ids = {
-            token_id: user_id
-            for token_id, user_id in Token.objects.filter(
-                id__in=token_ids
-            ).values_list("id", "user_id")
-            if user_id
-        }
-    user_ids = {
-        character.user_id for character in characters if character.user_id
-    }
-    user_ids.update(token_user_ids.values())
-    primaries: dict[int, EveCharacter] = {}
-    if not user_ids:
-        return primaries, token_user_ids
-    players = EvePlayer.objects.filter(
-        user_id__in=user_ids,
-        primary_character__isnull=False,
-    ).select_related("primary_character")
-    for player in players:
-        if player.primary_character is not None:
-            primaries[player.user_id] = player.primary_character
-    return primaries, token_user_ids
-
-
-def _owning_user_id(
-    character: EveCharacter, token_user_ids: dict[int, int]
-) -> int | None:
-    if character.user_id:
-        return character.user_id
-    if character.token_id:
-        return token_user_ids.get(character.token_id)
-    return None
 
 
 def _leader(
@@ -251,6 +247,7 @@ def _public_leader(row: dict) -> dict:
         "role": row["role"],
         "prime_time": row.get("prime_time"),
         "observed_prime_times": row.get("observed_prime_times") or [],
+        "on_leave": bool(row.get("on_leave")),
     }
 
 

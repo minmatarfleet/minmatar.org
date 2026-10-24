@@ -2,27 +2,22 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
+import { can, type GateContext } from '@helpers/gates'
+
 interface Props {
-    user_is_officer:    boolean;
-    user_is_director:   boolean;
-    user_is_superadmin: boolean;
     authenticated:      boolean;
-    user_permissions:   string[];
+    gates:              GateContext;
 }
 
 const {
-    user_is_officer,
-    user_is_director,
-    user_is_superadmin,
     authenticated,
-    user_permissions,
+    gates,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot')
 
-const can_view_posts = user_is_superadmin || user_permissions.includes('posts.add_evepost')
-const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
-const can_view_campaigns = user_is_superadmin || user_permissions.includes('campaigns.view_campaign')
+const can_view_fleets = can(gates, 'fleets.view')
+const can_view_campaigns = can(gates, 'campaigns.view')
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -58,11 +53,24 @@ const page = Astro.url.pathname
     x-bind:class="open ? 'opened' : ''"
     x-data={`{
         open: false,
+        toggle_hidden: false,
+        last_scroll_y: 0,
+        on_scroll() {
+            const y = window.scrollY
+            if (this.open || y < 64)
+                this.toggle_hidden = false
+            else if (Math.abs(y - this.last_scroll_y) > 8)
+                this.toggle_hidden = y > this.last_scroll_y
+            this.last_scroll_y = y
+        },
     }`}
+    x-on:scroll.window.throttle.100ms="on_scroll()"
 >
     <FlexInline gap='0' class="[ h-full items-start! ]">
+        {/* Below 890px the toggle floats over the page, so it steps aside while scrolling down. */}
         <StylessButton
             class="[ neocom-toggle ]"
+            x-bind:class="{ 'toggle-hidden': toggle_hidden && !open }"
             x-on:click="open = !open"
             @click.outside="open = false"
         >
@@ -86,12 +94,7 @@ const page = Astro.url.pathname
                     <NeocomButton
                         active={page.startsWith(translatePath('/alliance'))}
                         title='neocom.alliance'
-                        description={
-                            user_is_director && user_is_officer ? 'alliance.description.directors_officers' :
-                            user_is_director ? 'alliance.description.directors' :
-                            user_is_officer ? 'alliance.description.officers' :
-                            'alliance.description'
-                        }
+                        description='alliance.description'
                         href={translatePath('/alliance/')}
                     >
                         <AllianceEvEIcon />
@@ -259,6 +262,19 @@ const page = Astro.url.pathname
             .neocom-toggle,
             .loader-wrapper-mobile {
                 display: flex;
+            }
+
+            .neocom-toggle {
+                transition: translate var(--fast-transition);
+            }
+
+            /* Sit above the fixed page-actions bar instead of on top of its first control. */
+            .loader-wrapper-mobile {
+                bottom: var(--subheader-bar-height, 0px);
+            }
+
+            .neocom-toggle.toggle-hidden {
+                translate: 0 -100%;
             }
         }
     }

@@ -1,0 +1,145 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelBlocSummary } from '@dtypes/api.minmatar.org'
+import { fill } from '@helpers/intel_affiliations'
+import { query_string } from '@helpers/string'
+
+/**
+ * A bloc's name and notes, and merging it into another bloc. Both post to
+ * intel_bloc_settings_component: a save answers with this block again, a
+ * merge opens the bloc it went into.
+ */
+interface Props {
+    bloc:               Pick<IntelBlocSummary, 'id' | 'name' | 'notes'>;
+    /** Every other bloc, for the merge picker. */
+    others:             Pick<IntelBlocSummary, 'id' | 'name'>[];
+    status?:            { kind: 'success' | 'error'; text: string } | null;
+    [propName: string]: any;
+}
+
+const {
+    bloc,
+    others,
+    status = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const PARTIAL_URL = translatePath('/partials/intel_bloc_settings_component')
+const url = (action: 'save' | 'merge') => `${PARTIAL_URL}?${query_string({ bloc_id: bloc.id, action })}`
+const id_prefix = `intel-bloc-${bloc.id}`
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<div class:list={['[ intel-bloc-settings ]', Astro.props.class]} {...attributes}>
+    <form
+        class="[ intel-bloc-settings__form ]"
+        hx-post={url('save')}
+        hx-target="closest .intel-bloc-settings"
+        hx-swap="outerHTML"
+        hx-disabled-elt="find button"
+    >
+        <label class="[ intel-bloc-settings__field ]" for={`${id_prefix}-name`}>
+            <span>{t('intel.affiliations.bloc.name')}</span>
+        </label>
+        <Input id={`${id_prefix}-name`} type="text" name="name" size="sm" required maxlength="128" value={bloc.name} autocomplete="off" />
+        <label class="[ intel-bloc-settings__field ]" for={`${id_prefix}-notes`}>
+            <span>{t('intel.affiliations.bloc.notes')}</span>
+        </label>
+        <Textarea id={`${id_prefix}-notes`} name="notes" rows="3" maxlength="2000">{bloc.notes}</Textarea>
+        <div class="[ intel-bloc-settings__row ]">
+            <Button size="sm" type="submit">{t('intel.affiliations.bloc.save')}</Button>
+            {status &&
+                <span class={`[ intel-bloc-settings__status intel-bloc-settings__status--${status.kind} ]`} role="status">{status.text}</span>
+            }
+        </div>
+    </form>
+
+    <form
+        class="[ intel-bloc-settings__form ]"
+        hx-post={url('merge')}
+        hx-target="closest .intel-bloc-settings"
+        hx-swap="outerHTML"
+        hx-disabled-elt="find button"
+        hx-confirm={fill(t('intel.affiliations.bloc.merge_confirm'), { name: bloc.name })}
+    >
+        <label class="[ intel-bloc-settings__field ]" for={`${id_prefix}-merge`}>
+            <span>{t('intel.affiliations.bloc.merge')}</span>
+        </label>
+        {others.length === 0 ?
+            <small class="[ intel-bloc-settings__hint ]">{t('intel.affiliations.bloc.merge_none')}</small>
+            :
+            <Fragment>
+                <div class="[ intel-bloc-settings__row ]">
+                    <div class="[ intel-bloc-settings__grow ]">
+                        <Select id={`${id_prefix}-merge`} name="into_bloc_id" size="sm" required>
+                            {others.map(other => <option value={String(other.id)}>{other.name}</option>)}
+                        </Select>
+                    </div>
+                    <Button size="sm" type="submit" color="transparent">{t('intel.affiliations.bloc.merge_button')}</Button>
+                </div>
+                <small class="[ intel-bloc-settings__hint ]">{t('intel.affiliations.bloc.merge_hint')}</small>
+            </Fragment>
+        }
+    </form>
+</div>
+
+<style lang="scss">
+    .intel-bloc-settings {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .intel-bloc-settings__form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .intel-bloc-settings__field span {
+        font-size: var(--step--2);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .intel-bloc-settings__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+        margin-block-start: var(--space-3xs);
+    }
+
+    .intel-bloc-settings__grow {
+        flex: 1 1 12rem;
+        min-width: 0;
+    }
+
+    .intel-bloc-settings__hint {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .intel-bloc-settings__status {
+        font-size: var(--step--1);
+    }
+
+    .intel-bloc-settings__status--success {
+        color: var(--green);
+        filter: brightness(1.4);
+    }
+
+    .intel-bloc-settings__status--error {
+        color: var(--fleet-red);
+        filter: brightness(1.3);
+    }
+</style>

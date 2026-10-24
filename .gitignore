@@ -60,9 +60,11 @@ temp.md
 # Django stuff:
 *.log
 local_settings.py
-settings.py
-**/settings.py
+# Local Django settings (copied from settings.py.example). Other settings.py
+# files, such as bot/app/settings.py, are tracked source.
+/backend/app/settings.py
 backend/test_db.sqlite3
+backend/.test-db/
 db.sqlite3
 db.sqlite3-journal
 
@@ -170,14 +172,19 @@ cython_debug/
 dev/
 
 .astro/
+*.rar
 artifacts/
 .DS_Store
 
 .vscode/
 
+# Agent plan scratch space (Cursor/Claude Code). Shipped plans live in docs/archive/plans/.
+.claude/plans/
+.cursor/plans/
 
 # debugging / script outputs
 backend/scripts/outputs/
+backend/scripts/output/
 
 # MCP local secrets and OAuth tokens (JARs under mcps/ are tracked)
 mcps/.env
@@ -187,3 +194,8 @@ mcps/.reddit-mcp/
 sde/*.zip
 
 *:Zone.Identifier
+
+# Research notes that may carry security detail. Unfixed security findings
+# go to private GitHub security advisories, never the repo (docs/research/README.md).
+docs/research/*bug-crawl*
+docs/research/*security*

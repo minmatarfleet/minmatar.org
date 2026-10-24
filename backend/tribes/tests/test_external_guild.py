@@ -138,11 +138,12 @@ class ExternalGuildSeatTestCase(TestCase):
     ):
         client = client_for_binding.return_value
         client.get_user.side_effect = _unknown_member_error()
-        TribeGroupMembership.objects.create(
-            user=self.user,
-            tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
         seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
         self.assertEqual(seat.user_id, self.user.id)
         self.assertEqual(
@@ -162,11 +163,12 @@ class ExternalGuildSeatTestCase(TestCase):
             "roles": [],
         }
         self._set_primary()
-        TribeGroupMembership.objects.create(
-            user=self.user,
-            tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
         seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
         self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_PRESENT)
         send_dm.assert_not_called()
@@ -218,11 +220,53 @@ class ExternalGuildSeatTestCase(TestCase):
         )
         membership.status = TribeGroupMembership.STATUS_INACTIVE
         membership.history_inactive_reason = "left"
-        membership.save()
+        with self.captureOnCommitCallbacks(execute=True):
+            membership.save()
 
         seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
         self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_REMOVED)
         client.kick_guild_member.assert_called()
+
+    @patch("tribes.helpers.external_guild.send_pending_join_dm")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_membership_change_queues_seat_sync_after_commit(
+        self, client_for_binding, send_dm
+    ):
+        """Approving or removing a member never waits on Discord."""
+        client = client_for_binding.return_value
+        client.get_user.side_effect = _unknown_member_error()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
+        client_for_binding.assert_not_called()
+        send_dm.assert_not_called()
+        self.assertFalse(TribeExternalGuildSeat.objects.exists())
+
+        for callback in callbacks:
+            callback()
+        seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_PENDING_JOIN
+        )
+        send_dm.assert_called_once()
+
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_membership_without_binding_queues_nothing(
+        self, client_for_binding
+    ):
+        self.binding.is_active = False
+        self.binding.save()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
+        self.assertEqual([], callbacks)
+        client_for_binding.assert_not_called()
 
     def _present_seat(self) -> TribeExternalGuildSeat:
         return TribeExternalGuildSeat.objects.create(
@@ -416,11 +460,12 @@ class ExternalGuildSeatTestCase(TestCase):
     ):
         client = client_for_binding.return_value
         client.get_user.side_effect = _unknown_member_error()
-        TribeGroupMembership.objects.create(
-            user=self.user,
-            tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
         seat = TribeExternalGuildSeat.objects.get()
         seat.status = TribeExternalGuildSeat.STATUS_PRESENT
         seat.save(update_fields=["status", "updated_at"])
@@ -505,11 +550,12 @@ class ExternalGuildSeatTestCase(TestCase):
         client = client_for_binding.return_value
         self._set_primary()
         client.get_user.side_effect = _unknown_member_error()
-        TribeGroupMembership.objects.create(
-            user=self.user,
-            tribe_group=self.tribe_group,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            TribeGroupMembership.objects.create(
+                user=self.user,
+                tribe_group=self.tribe_group,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
         seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
         self.assertEqual(
             seat.status, TribeExternalGuildSeat.STATUS_PENDING_JOIN

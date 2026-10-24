@@ -3,13 +3,11 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { CorporationObject } from '@dtypes/layout_components'
-import {
-    isL3arnCorporation,
-    l3arnApplicationAlpineState,
-} from '@helpers/corporations/l3arn_application'
+import { isL3arnCorporation } from '@helpers/corporations/l3arn_application'
 import {
     corporationApplicationAlpineState,
-} from '@helpers/corporations/corporation_application'
+    l3arnApplicationAlpineState,
+} from '@helpers/corporations/application_form'
 
 interface Props {
     corporation:            CorporationObject;
@@ -40,7 +38,6 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
     color='green'
     hidden={hidden}
     max_width='100%'
-    inside_swiper={true}
     transparent={true}
     full_screen={true}
     non_centered={false}

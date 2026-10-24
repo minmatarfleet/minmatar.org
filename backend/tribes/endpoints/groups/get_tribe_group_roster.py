@@ -5,7 +5,9 @@ from typing import List
 from ninja import Router
 
 from authentication import AuthBearer
-from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
 from eveonline.models import EveCorporation
 from tribes.endpoints.groups.schemas import TribeGroupRosterEntrySchema
 from tribes.helpers import user_can_view_group_roster
@@ -53,14 +55,12 @@ def get_tribe_group_roster(request, tribe_id: int, group_id: int):
             tribe_group=tg,
             status=TribeGroupMembership.STATUS_ACTIVE,
         )
-        .select_related(
-            "user__eveplayer__primary_character",
-            "rank",
-        )
+        .select_related("rank")
         .order_by("approved_at", "created_at")
     )
 
-    primaries = [user_primary_character(m.user) for m in memberships]
+    mains = primary_characters_for_users(m.user_id for m in memberships)
+    primaries = [mains.get(m.user_id) for m in memberships]
     corp_ids = {
         int(primary.corporation_id)
         for primary in primaries

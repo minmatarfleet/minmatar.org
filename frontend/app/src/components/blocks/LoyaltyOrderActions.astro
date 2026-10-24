@@ -1,0 +1,124 @@
+---
+/**
+ * Action menu for one LP order. Must render inside LoyaltyOrderBook: the
+ * click handlers call that component's Alpine methods (open_claim,
+ * set_status, ...) through the enclosing x-data scope.
+ */
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import ActionMenu from '@components/blocks/ActionMenu.astro'
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    order: LoyaltyMarketOrder
+    is_logged_in: boolean
+    current_user_id?: number
+    can_manage_buyback?: boolean
+    [propName: string]: any
+}
+
+const {
+    order,
+    is_logged_in,
+    current_user_id = 0,
+    can_manage_buyback = false,
+    ...attributes
+} = Astro.props
+
+const can_act = ['open', 'claimed', 'awaiting_lp', 'awaiting_isk'].includes(order.status)
+const quantity_remaining = order.quantity_remaining ?? order.quantity
+const quantity_claimed = order.quantity_claimed ?? 0
+const is_creator = current_user_id > 0
+    && order.created_by_user_id === current_user_id
+const has_own_claim = Boolean(
+    current_user_id > 0
+    && (order.claims ?? []).some(
+        (claim) => claim.claimed_by_user_id === current_user_id,
+    )
+)
+const can_claim = can_manage_buyback
+    && order.status === 'open'
+    && quantity_remaining > 0
+// Mirrors PATCH /orders/{id}: managers cancel at any
+// active status, the poster only while it is open.
+const can_cancel = can_manage_buyback
+    || (order.status === 'open' && is_creator)
+const can_release = (
+    order.status === 'claimed'
+    || order.status === 'awaiting_lp'
+    || (order.status === 'open' && quantity_claimed > 0)
+) && (can_manage_buyback || has_own_claim)
+const show_manager_settle = can_manage_buyback
+const show_actions = is_logged_in && can_act && (
+    can_claim
+    || can_cancel
+    || can_release
+    || (show_manager_settle && (
+        order.status === 'claimed'
+        || order.status === 'awaiting_lp'
+        || order.status === 'awaiting_isk'
+    ))
+)
+---
+
+{show_actions && (
+    <ActionMenu {...attributes}>
+        {can_claim && (
+            <ActionMenuItem
+                variant="primary"
+                x-bind:disabled="busy"
+                x-on:click={`open_claim(${order.id}, ${quantity_remaining}, ${order.isk_per_lp}, ${JSON.stringify(order.side)}); close()`}
+            >
+                {t('industry.loyalty.action.claim')}
+            </ActionMenuItem>
+        )}
+        {show_manager_settle && order.status === 'claimed' && (
+            <ActionMenuItem
+                variant="primary"
+                x-bind:disabled="busy"
+                x-on:click={`open_await_lp(${order.id}, ${JSON.stringify(order.destination_character_name || '')}); close()`}
+            >
+                {t('industry.loyalty.action.awaiting_lp')}
+            </ActionMenuItem>
+        )}
+        {show_manager_settle && order.status === 'awaiting_lp' && (
+            <ActionMenuItem
+                variant="primary"
+                x-bind:disabled="busy"
+                x-on:click={`set_status(${order.id}, 'awaiting_isk'); close()`}
+            >
+                {t('industry.loyalty.action.lp_received')}
+            </ActionMenuItem>
+        )}
+        {show_manager_settle && order.status === 'awaiting_isk' && (
+            <ActionMenuItem
+                variant="primary"
+                x-bind:disabled="busy"
+                x-on:click={`set_status(${order.id}, 'completed'); close()`}
+            >
+                {t('industry.loyalty.action.isk_sent')}
+            </ActionMenuItem>
+        )}
+        {can_release && (
+            <ActionMenuItem
+                confirm_label={t('industry.loyalty.action.confirm_release')}
+                x-bind:disabled="busy"
+                x-on:click={`release_claim(${order.id}); close()`}
+            >
+                {t('industry.loyalty.action.release_claim')}
+            </ActionMenuItem>
+        )}
+        {can_cancel && (
+            <ActionMenuItem
+                variant="danger"
+                confirm_label={t('industry.loyalty.action.confirm_cancel')}
+                x-bind:disabled="busy"
+                x-on:click={`set_status(${order.id}, 'cancelled'); close()`}
+            >
+                {t('industry.loyalty.action.cancel_order')}
+            </ActionMenuItem>
+        )}
+    </ActionMenu>
+)}

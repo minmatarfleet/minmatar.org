@@ -1,0 +1,62 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const summary_only = Astro.url.searchParams.get('summary_only') === '1'
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import type { FleetKills as FleetKillsData, FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
+import { get_fleet_kills, get_fleet_my_srp } from '@helpers/api.minmatar.org/fleets'
+import { get_gates, can } from '@helpers/gates'
+
+const can_file_srp = can(await get_gates(Astro), 'srp.resolve')
+
+let fetch_kills_error:Error | false = false
+let fleet_kills:FleetKillsData | null = null
+let srp_losses:FleetSrpLoss[] | null = null
+
+try {
+    fleet_kills = await get_fleet_kills(auth_token as string, fleet_id)
+} catch (error) {
+    fetch_kills_error = error
+}
+
+if (!fetch_kills_error && can_file_srp) {
+    try {
+        srp_losses = await get_fleet_my_srp(auth_token as string, fleet_id)
+    } catch (error) {
+        console.log(`Skipping SRP losses: ${error.message}`)
+    }
+}
+
+const FLEET_KILLS_PARTIAL_URL = translatePath(`/partials/fleet_kills_component?fleet_id=${fleet_id}${summary_only ? '&summary_only=1' : ''}`)
+
+import FleetKills from '@components/blocks/FleetKills.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_kills_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_KILLS_PARTIAL_URL,
+            error: fetch_kills_error,
+            delay: delay,
+            target: '#fleet-kills',
+        }}
+    />
+    :
+    <FleetKills fleet_kills={fleet_kills as FleetKillsData} fleet_id={fleet_id} srp_losses={srp_losses} summary_only={summary_only} />
+}

@@ -7,7 +7,6 @@ export const YC_YEAR = 128
 export const YC_LABEL = `YC${YC_YEAR}` as const
 /** URL slug — includes YC so future Auga sieges can coexist. */
 export const SLUG = `auga-yc${YC_YEAR}` as const
-export const CANONICAL_PATH = `/campaigns/${SLUG}/` as const
 export const ALLIANCE_PATH = `/alliance/campaigns/${SLUG}/` as const
 
 export const SOLAR_SYSTEM_ID = 30_002_542
@@ -409,15 +408,4 @@ export const HEADLINES: readonly CampaignHeadline[] = [
     },
 ] as const
 
-export function formatIsk(isk: number): string {
-    if (isk >= 1_000_000_000_000) {
-        return `${(isk / 1_000_000_000_000).toFixed(2)}T`
-    }
-    if (isk >= 1_000_000_000) {
-        return `${(isk / 1_000_000_000).toFixed(1)}B`
-    }
-    if (isk >= 1_000_000) {
-        return `${(isk / 1_000_000).toFixed(0)}M`
-    }
-    return `${(isk / 1_000).toFixed(0)}K`
-}
+export { formatIsk } from '@/data/campaigns/format'

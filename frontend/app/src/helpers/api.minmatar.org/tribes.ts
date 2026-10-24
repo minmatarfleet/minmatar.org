@@ -1,93 +1,73 @@
 import type {
+    TribeAbout,
+    TribeGroupAbout,
     Tribe,
     TribeGroup,
     TribeMembership,
     TribeAvailableCharacter,
     TribeGroupRosterEntry,
-    TribeGroupGrowth,
     TribeGroupShowcase,
     CharacterMembership,
     TribeExternalGuildJoin,
+    TribeGroupPublishing,
+    TribeGroupPublishingPatch,
+    PublishableGroup,
+    PublishingKind,
+    DiscordChannel,
+    DiscordChannelKind,
+    TribeEvent,
+    TribeEventCreate,
+    TribeEventPatch,
+    TribeEventAnnouncementPreview,
+    TribeInvitation,
+    TribeInvitationCandidate,
 } from '@dtypes/api.minmatar.org'
-import { get_error_message, query_string } from '@helpers/string'
+import { query_string } from '@helpers/string'
+import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/tribes`
 
 export async function get_tribes(): Promise<Tribe[]> {
-    const ENDPOINT = API_ENDPOINT
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: { 'Content-Type': 'application/json' },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as Tribe[]
-    } catch (error) {
-        throw new Error(`Error fetching tribes: ${error.message}`)
-    }
-}
-
-export async function get_current_tribes(access_token: string): Promise<Tribe[]> {
-    const ENDPOINT = `${API_ENDPOINT}/current`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as Tribe[]
-    } catch (error) {
-        throw new Error(`Error fetching current tribes: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<Tribe[]>(API_ENDPOINT, {
+        error: 'Error fetching tribes',
+    })
 }
 
 export async function get_tribe(id: number): Promise<Tribe> {
-    const ENDPOINT = `${API_ENDPOINT}/${id}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: { 'Content-Type': 'application/json' },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as Tribe
-    } catch (error) {
-        throw new Error(`Error fetching tribe: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<Tribe>(`${API_ENDPOINT}/${id}`, {
+        error: 'Error fetching tribe',
+    })
+}
+
+export async function get_tribe_about(
+    tribe_id: number,
+    access_token?: string | false | null,
+): Promise<TribeAbout> {
+    return await api_request<TribeAbout>(`${API_ENDPOINT}/${tribe_id}/about`, {
+        token: access_token,
+        error: 'Error fetching tribe about',
+    })
+}
+
+export async function get_tribe_group_about(
+    tribe_id: number,
+    group_id: number,
+    access_token?: string | false | null,
+): Promise<TribeGroupAbout> {
+    return await api_request<TribeGroupAbout>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/about`, {
+        token: access_token,
+        error: 'Error fetching tribe group about',
+    })
 }
 
 export async function get_tribe_groups(
     tribe_id: number,
     access_token?: string | false | null,
 ): Promise<TribeGroup[]> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        }
-        if (access_token)
-            headers['Authorization'] = `Bearer ${access_token}`
-        const response = await fetch(ENDPOINT, { headers })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeGroup[]
-    } catch (error) {
-        throw new Error(`Error fetching tribe groups: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeGroup[]>(`${API_ENDPOINT}/${tribe_id}/groups`, {
+        token: access_token,
+        error: 'Error fetching tribe groups',
+    })
 }
 
 export async function get_tribe_group(
@@ -95,23 +75,10 @@ export async function get_tribe_group(
     group_id: number,
     access_token?: string | false | null,
 ): Promise<TribeGroup> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        }
-        if (access_token)
-            headers['Authorization'] = `Bearer ${access_token}`
-        const response = await fetch(ENDPOINT, { headers })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeGroup
-    } catch (error) {
-        throw new Error(`Error fetching tribe groups: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeGroup>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}`, {
+        token: access_token,
+        error: 'Error fetching tribe groups',
+    })
 }
 
 export type GetMembershipsOptions = {
@@ -139,23 +106,11 @@ export async function get_memberships(
     if (options.include_requirements) params.set('include_requirements', 'true')
 
     const query = params.toString()
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships${query ? `?${query}` : ''}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeMembership[]
-    } catch (error) {
-        throw new Error(`Error fetching memberships: ${error.message}`, { cause: error.cause })
-    }
+
+    return await api_request<TribeMembership[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships${query ? `?${query}` : ''}`, {
+        token: access_token,
+        error: 'Error fetching memberships',
+    })
 }
 
 export async function get_membership_characters_available(
@@ -163,45 +118,10 @@ export async function get_membership_characters_available(
     tribe_id: number,
     group_id: number,
 ): Promise<TribeAvailableCharacter[]> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/characters-available`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeAvailableCharacter[]
-    } catch (error) {
-        throw new Error(`Error fetching available characters: ${error.message}`, { cause: error.cause })
-    }
-}
-
-export async function refresh_available_character(
-    access_token: string,
-    tribe_id: number,
-    group_id: number,
-    character_id: number,
-): Promise<TribeAvailableCharacter> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/characters-available/refresh`
-    const response = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${access_token}`,
-        },
-        body: JSON.stringify({ character_id }),
+    return await api_request<TribeAvailableCharacter[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/characters-available`, {
+        token: access_token,
+        error: 'Error fetching available characters',
     })
-    if (!response.ok)
-        throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
-                cause: response.status
-            })
-    return await response.json() as TribeAvailableCharacter
 }
 
 export async function apply_to_group(
@@ -210,25 +130,12 @@ export async function apply_to_group(
     group_id: number,
     character_ids: number[] = [],
 ): Promise<TribeMembership> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships`
-    console.log(`Requesting POST: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-            body: JSON.stringify({ character_ids }),
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeMembership
-    } catch (error) {
-        throw new Error(`Error applying to group: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeMembership>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships`, {
+        method: 'POST',
+        token: access_token,
+        body: { character_ids },
+        error: 'Error applying to group',
+    })
 }
 
 export async function leave_group(
@@ -237,23 +144,11 @@ export async function leave_group(
     group_id: number,
     membership_id: number,
 ): Promise<void> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}`
-    console.log(`Requesting DELETE: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`), {
-                cause: response.status
-            })
-    } catch (error) {
-        throw new Error(`Error leaving group: ${error.message}`, { cause: error.cause })
-    }
+    await api_response(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error leaving group',
+    })
 }
 
 export async function delete_membership(
@@ -262,23 +157,11 @@ export async function delete_membership(
     group_id: number,
     membership_id: number,
 ): Promise<void> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}`
-    console.log(`Requesting DELETE: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`), {
-                cause: response.status
-            })
-    } catch (error) {
-        throw new Error(`Error deleting membership: ${error.message}`, { cause: error.cause })
-    }
+    await api_response(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error deleting membership',
+    })
 }
 
 export async function delete_membership_character(
@@ -288,23 +171,11 @@ export async function delete_membership_character(
     membership_id: number,
     character_id: number,
 ): Promise<void> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/characters/${character_id}`
-    console.log(`Requesting DELETE: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`), {
-                cause: response.status
-            })
-    } catch (error) {
-        throw new Error(`Error deleting membership character: ${error.message}`, { cause: error.cause })
-    }
+    await api_response(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/characters/${character_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error deleting membership character',
+    })
 }
 
 export async function approve_membership(
@@ -313,24 +184,11 @@ export async function approve_membership(
     group_id: number,
     membership_id: number,
 ): Promise<TribeMembership> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/approve`
-    console.log(`Requesting POST: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeMembership
-    } catch (error) {
-        throw new Error(`Error approving membership: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeMembership>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/approve`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error approving membership',
+    })
 }
 
 export async function deny_membership(
@@ -339,24 +197,11 @@ export async function deny_membership(
     group_id: number,
     membership_id: number,
 ): Promise<TribeMembership> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/deny`
-    console.log(`Requesting POST: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeMembership
-    } catch (error) {
-        throw new Error(`Error denying membership: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeMembership>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/deny`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error denying membership',
+    })
 }
 
 export async function get_tribe_group_roster(
@@ -364,43 +209,10 @@ export async function get_tribe_group_roster(
     tribe_id: number,
     group_id: number,
 ): Promise<TribeGroupRosterEntry[]> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/roster`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeGroupRosterEntry[]
-    } catch (error) {
-        throw new Error(`Error fetching tribe group roster: ${error.message}`, { cause: error.cause })
-    }
-}
-
-export async function get_tribe_group_growth(
-    tribe_id: number,
-    group_id: number,
-): Promise<TribeGroupGrowth> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/growth`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: { 'Content-Type': 'application/json' },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeGroupGrowth
-    } catch (error) {
-        throw new Error(`Error fetching tribe group growth: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeGroupRosterEntry[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/roster`, {
+        token: access_token,
+        error: 'Error fetching tribe group roster',
+    })
 }
 
 export async function get_tribe_group_showcase(
@@ -408,24 +220,10 @@ export async function get_tribe_group_showcase(
     group_id: number,
     access_token?: string | false | null,
 ): Promise<TribeGroupShowcase> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/showcase`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        }
-        if (access_token)
-            headers['Authorization'] = `Bearer ${access_token}`
-
-        const response = await fetch(ENDPOINT, { headers })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeGroupShowcase
-    } catch (error) {
-        throw new Error(`Error fetching tribe group showcase: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<TribeGroupShowcase>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/showcase`, {
+        token: access_token,
+        error: 'Error fetching tribe group showcase',
+    })
 }
 
 export async function add_character_to_membership(
@@ -435,25 +233,12 @@ export async function add_character_to_membership(
     membership_id: number,
     character_id: number,
 ): Promise<CharacterMembership> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/characters`
-    console.log(`Requesting POST: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-            body: JSON.stringify({ character_id: character_id }),
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as CharacterMembership
-    } catch (error) {
-        throw new Error(`Error applying to group: ${error.message}`, { cause: error.cause })
-    }
+    return await api_request<CharacterMembership>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/characters`, {
+        method: 'POST',
+        token: access_token,
+        body: { character_id: character_id },
+        error: 'Error applying to group',
+    })
 }
 
 export async function get_external_guild_join(
@@ -461,26 +246,148 @@ export async function get_external_guild_join(
     group_id: number,
     redirect_url: string,
 ): Promise<TribeExternalGuildJoin> {
-    const ENDPOINT = `${API_ENDPOINT}/external-guild/join?${query_string({
+    const query = query_string({
         group_id,
         redirect_url,
-    })}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-            },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeExternalGuildJoin
-    } catch (error) {
-        throw new Error(`Error starting external guild join: ${error.message}`, {
-            cause: error.cause,
-        })
-    }
+    })
+
+    return await api_request<TribeExternalGuildJoin>(`${API_ENDPOINT}/external-guild/join?${query}`, {
+        token: access_token,
+        error: 'Error starting external guild join',
+    })
+}
+
+// Tribe publishing (docs/tribes/tribe-publishing.md)
+
+/** Who may publish as the group and its Discord channel (group managers only). */
+export async function get_group_publishing(access_token:string, group_id:number) {
+    return await api_request<TribeGroupPublishing>(`${API_ENDPOINT}/groups/${group_id}/publishing`, {
+        token: access_token,
+        error: 'Error fetching group publishing settings',
+    })
+}
+
+/** Every field optional; left out means unchanged. `discord_channel_id: null` falls back to the tribe's channel. */
+export async function update_group_publishing(access_token:string, group_id:number, patch:TribeGroupPublishingPatch) {
+    return await api_request<TribeGroupPublishing>(`${API_ENDPOINT}/groups/${group_id}/publishing`, {
+        method: 'PATCH',
+        token: access_token,
+        body: patch,
+        error: 'Error updating group publishing settings',
+    })
+}
+
+/** Groups the viewer may post, schedule fleets or create events as. */
+export async function get_publishable_groups(access_token:string, kind:PublishingKind) {
+    return await api_request<PublishableGroup[]>(`${API_ENDPOINT}/publishable-groups?kind=${kind}`, {
+        token: access_token,
+        error: 'Error fetching publishable groups',
+    })
+}
+
+/** The guild's text channels, or voice channels (stage included). Ids are strings. */
+export async function get_discord_channels(access_token:string, kind:DiscordChannelKind = 'text') {
+    return await api_request<DiscordChannel[]>(`${API_ENDPOINT}/discord-channels?kind=${kind}`, {
+        token: access_token,
+        error: 'Error fetching Discord channels',
+    })
+}
+
+/** Upcoming events plus ones cancelled in the last 24 hours; members-only ones need a token. */
+export async function get_group_events(group_id:number, access_token?:string | false | null) {
+    return await api_request<TribeEvent[]>(`${API_ENDPOINT}/groups/${group_id}/events`, {
+        token: access_token,
+        error: 'Error fetching group events',
+    })
+}
+
+export async function create_group_event(access_token:string, group_id:number, event:TribeEventCreate) {
+    return await api_request<TribeEvent>(`${API_ENDPOINT}/groups/${group_id}/events`, {
+        method: 'POST',
+        token: access_token,
+        body: event,
+        error: 'Error creating event',
+    })
+}
+
+/** The announcement a new event would post (same builder as the real one). */
+export async function preview_event_announcement(access_token:string, group_id:number, event:TribeEventCreate) {
+    return await api_request<TribeEventAnnouncementPreview>(`${API_ENDPOINT}/groups/${group_id}/events/announcement-preview`, {
+        method: 'POST',
+        token: access_token,
+        body: event,
+        error: 'Error previewing event announcement',
+    })
+}
+
+export async function update_tribe_event(access_token:string, event_id:number, patch:TribeEventPatch) {
+    return await api_request<TribeEvent>(`${API_ENDPOINT}/events/${event_id}`, {
+        method: 'PATCH',
+        token: access_token,
+        body: patch,
+        error: 'Error updating event',
+    })
+}
+
+export async function cancel_tribe_event(access_token:string, event_id:number) {
+    return await api_request<TribeEvent>(`${API_ENDPOINT}/events/${event_id}/cancel`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error cancelling event',
+    })
+}
+
+export async function get_group_invitations(access_token:string, tribe_id:number, group_id:number) {
+    return await api_request<TribeInvitation[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations`, {
+        token: access_token,
+        error: 'Error fetching invitations',
+    })
+}
+
+export async function send_group_invitations(access_token:string, tribe_id:number, group_id:number, user_ids:number[], note:string = '') {
+    return await api_request<TribeInvitation[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations`, {
+        method: 'POST',
+        token: access_token,
+        body: { user_ids, note },
+        error: 'Error sending invitations',
+    })
+}
+
+export async function withdraw_group_invitation(access_token:string, tribe_id:number, group_id:number, invitation_id:number) {
+    return await api_request<TribeInvitation>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations/${invitation_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error withdrawing invitation',
+    })
+}
+
+export async function get_invitation_candidates(access_token:string, tribe_id:number, group_id:number, q:string) {
+    return await api_request<TribeInvitationCandidate[]>(`${API_ENDPOINT}/${tribe_id}/groups/${group_id}/invitations/candidates?${query_string({ q })}`, {
+        token: access_token,
+        error: 'Error searching pilots',
+    })
+}
+
+export async function get_my_invitations(access_token:string) {
+    return await api_request<TribeInvitation[]>(`${API_ENDPOINT}/invitations/mine`, {
+        token: access_token,
+        error: 'Error fetching your invitations',
+    })
+}
+
+export async function accept_invitation(access_token:string, invitation_id:number, character_ids:number[]) {
+    return await api_request<TribeMembership>(`${API_ENDPOINT}/invitations/${invitation_id}/accept`, {
+        method: 'POST',
+        token: access_token,
+        body: { character_ids },
+        error: 'Error joining the group',
+    })
+}
+
+export async function decline_invitation(access_token:string, invitation_id:number) {
+    return await api_request<TribeInvitation>(`${API_ENDPOINT}/invitations/${invitation_id}/decline`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error declining the invitation',
+    })
 }

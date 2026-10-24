@@ -1,0 +1,446 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyCurrency, LoyaltyOrderStats } from '@dtypes/api.minmatar.org'
+import { EXPRESS_SLA_HOURS, format_close_time } from '@helpers/loyalty_order_stats'
+import { MAX_SELL_LP, SELL_LP_STEP } from '@helpers/loyalty_desk'
+import { format_number } from '@helpers/numbers'
+import { get_player_icon } from '@helpers/eve_image_server'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+import Button from '@components/blocks/Button.astro'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    currency: LoyaltyCurrency
+    /** The rolling window (30 days by default), for the proof under the payout. */
+    stats?: LoyaltyOrderStats | null
+    /** The last 7 days: the Standard blurb's median and the 24-hour count. */
+    week_stats?: LoyaltyOrderStats | null
+    is_logged_in: boolean
+    login_url: string
+    [propName: string]: any
+}
+
+const {
+    currency,
+    stats = null,
+    week_stats = null,
+    is_logged_in,
+    login_url,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const rates = {
+    standard: currency.default_isk_per_lp,
+    express: currency.express_isk_per_lp ?? 0,
+}
+const has_express = rates.express > 0
+const hours = String(EXPRESS_SLA_HOURS)
+const week_median_seconds = week_stats?.median_close_seconds ?? null
+const standard_blurb = week_median_seconds
+    ? t('industry.loyalty.quote.standard_blurb').replace('{time}', format_close_time(week_median_seconds))
+    : t('industry.loyalty.quote.standard_blurb_plain')
+const tiers = [
+    {
+        key: 'standard',
+        name: t('industry.loyalty.tier.standard'),
+        rate: rates.standard,
+        blurb: standard_blurb,
+        disabled: false,
+    },
+    {
+        key: 'express',
+        name: t('industry.loyalty.tier.express'),
+        rate: rates.express,
+        blurb: has_express
+            ? t('industry.loyalty.quote.express_blurb').replace('{hours}', hours)
+            : t('industry.loyalty.tier.express_unavailable'),
+        disabled: !has_express,
+    },
+]
+const chips = [
+    { value: 500_000, label: '500K' },
+    { value: 1_000_000, label: '1M' },
+    { value: 2_000_000, label: '2M' },
+    { value: MAX_SELL_LP, label: t('industry.loyalty.quote.max') },
+]
+const can_sell = currency.allow_sell
+
+// What a seller wants to know before posting: is the desk paying, and how fast.
+const converters = (stats?.converters ?? []).filter((c) => c.character_id)
+const paid_note = stats && stats.completed > 0
+    ? t('industry.loyalty.quote.proof_paid')
+        .replace('{orders}', String(stats.completed))
+        .replace('{lp}', format_number(stats.lp_completed ?? 0))
+        .replace('{days}', String(stats.days))
+    : null
+const within_day_note = week_stats && week_stats.completed > 0
+    ? t('industry.loyalty.quote.proof_within_day')
+        .replace('{paid}', String(week_stats.paid_within_day ?? 0))
+        .replace('{total}', String(week_stats.completed))
+    : null
+---
+
+<section
+    class:list={['[ loyalty-quote ]', Astro.props.class]}
+    aria-labelledby="loyalty-quote-amount-label"
+    x-data={`{
+        amount: 1000000,
+        tier: 'standard',
+        rates: ${JSON.stringify(rates)},
+        step: ${SELL_LP_STEP},
+        max: ${MAX_SELL_LP},
+        fmt(n) { return Number(n).toLocaleString('en-US') },
+        nudge(delta) {
+            this.amount = Math.min(this.max, Math.max(this.step, this.amount + delta))
+        },
+        payout(tier) { return this.amount * (this.rates[tier] || 0) },
+        tradeoff() {
+            const diff = this.amount * (this.rates.standard - this.rates.express)
+            const template = this.tier === 'express'
+                ? ${JSON.stringify(t('industry.loyalty.quote.express_costs'))}
+                : ${JSON.stringify(t('industry.loyalty.quote.express_would'))}
+            return template.replace('{isk}', this.fmt(diff)).replace('{hours}', ${JSON.stringify(hours)})
+        },
+    }`}
+    {...attributes}
+>
+    <FluidFixed width="24rem" gap="var(--space-l)" class="[ loyalty-quote__layout ]">
+        <div class="[ loyalty-quote__inputs ]">
+            <div class="[ loyalty-quote__field ]">
+                <span id="loyalty-quote-amount-label" class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.amount')}</span>
+                <div class="[ loyalty-quote__amount-row ]">
+                    <div class="[ loyalty-quote__stepper ]">
+                        <button
+                            type="button"
+                            class="[ loyalty-quote__step ]"
+                            aria-label={t('industry.loyalty.quote.less')}
+                            x-on:click={`nudge(-${SELL_LP_STEP})`}
+                        >−</button>
+                        <output
+                            class="[ loyalty-quote__amount tabular-nums ]"
+                            aria-labelledby="loyalty-quote-amount-label"
+                            aria-live="polite"
+                            x-text="fmt(amount)"
+                        >1,000,000</output>
+                        <button
+                            type="button"
+                            class="[ loyalty-quote__step ]"
+                            aria-label={t('industry.loyalty.quote.more')}
+                            x-on:click={`nudge(${SELL_LP_STEP})`}
+                        >+</button>
+                    </div>
+                    <div class="[ loyalty-quote__chips ]">
+                        {chips.map((chip) => (
+                            <button
+                                type="button"
+                                class="[ loyalty-quote__chip ]"
+                                x-bind:aria-pressed={`amount === ${chip.value}`}
+                                x-on:click={`amount = ${chip.value}`}
+                            >
+                                {chip.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <small class="[ loyalty-quote__hint ]">{t('industry.loyalty.quote.hint')}</small>
+            </div>
+
+            <div class="[ loyalty-quote__field ]">
+                <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.speed')}</span>
+                <div class="[ loyalty-quote__tiers ]">
+                    {tiers.map((tier) => (
+                        <button
+                            type="button"
+                            class="[ loyalty-quote__tier ]"
+                            disabled={tier.disabled}
+                            x-bind:aria-pressed={`tier === '${tier.key}'`}
+                            x-on:click={`tier = '${tier.key}'`}
+                        >
+                            <span class="[ loyalty-quote__tier-head ]">
+                                <strong>{tier.name}</strong>
+                                {tier.rate > 0 && (
+                                    <span class="[ tabular-nums ]">{tier.rate.toLocaleString('en-US')} {t('industry.loyalty.rates.isk_per_lp')}</span>
+                                )}
+                            </span>
+                            <span class="[ loyalty-quote__tier-blurb ]">{tier.blurb}</span>
+                            {tier.rate > 0 && (
+                                <span class="[ loyalty-quote__tier-payout tabular-nums ]" x-text={`fmt(payout('${tier.key}')) + ' ISK'`}></span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+
+        <div class="[ loyalty-quote__total ]">
+            <div class="[ loyalty-quote__total-text ]">
+                <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.receive')}</span>
+                <span class="[ loyalty-quote__payout tabular-nums ]"><span x-text="fmt(payout(tier))"></span> <small>ISK</small></span>
+                {has_express && <small class="[ loyalty-quote__hint ]" x-text="tradeoff()"></small>}
+            </div>
+            {!can_sell ? (
+                <p class="[ loyalty-quote__paused ]">{t('industry.loyalty.quote.paused')}</p>
+            ) : is_logged_in ? (
+                <Button
+                    color="fleet-red"
+                    x-on:click="$dispatch('loyalty-open-sell', { quantity: amount, tier: tier })"
+                >
+                    {t('industry.loyalty.quote.submit')}
+                </Button>
+            ) : (
+                <Button color="fleet-red" href={login_url}>
+                    {t('industry.loyalty.quote.login')}
+                </Button>
+            )}
+
+            {(paid_note || within_day_note) && (
+                <div class="[ loyalty-quote__proof ]">
+                    {converters.length > 0 && (
+                        <ul class="[ loyalty-quote__faces ]" aria-label={t('industry.loyalty.quote.proof_converters')}>
+                            {converters.slice(0, 8).map((converter) => (
+                                <li>
+                                    <img
+                                        src={get_player_icon(converter.character_id as number, 64)}
+                                        alt={converter.name}
+                                        title={converter.name}
+                                        width="32"
+                                        height="32"
+                                        loading="lazy"
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {paid_note && <p>{paid_note}</p>}
+                    {within_day_note && <p>{within_day_note}</p>}
+                </div>
+            )}
+        </div>
+    </FluidFixed>
+</section>
+
+<style lang="scss">
+    .loyalty-quote {
+        padding: var(--space-m);
+        border: 1px solid var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    .loyalty-quote__inputs {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .loyalty-quote__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .loyalty-quote__label {
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .loyalty-quote__hint {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .loyalty-quote__amount-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .loyalty-quote__stepper {
+        display: flex;
+        align-items: stretch;
+        min-height: var(--space-xl);
+        border: 1px solid var(--border-color-hover);
+        background-color: var(--background);
+    }
+
+    .loyalty-quote__step {
+        min-width: var(--space-xl);
+        border: 0;
+        background: transparent;
+        color: var(--highlight);
+        font-size: var(--step-1);
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--border-color);
+            }
+        }
+    }
+
+    .loyalty-quote__amount {
+        display: grid;
+        place-items: center;
+        min-width: 9ch;
+        padding-inline: var(--space-s);
+        border-inline: 1px solid var(--border-color);
+        font-size: var(--step-1);
+        font-weight: 700;
+        color: var(--highlight);
+    }
+
+    .loyalty-quote__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .loyalty-quote__chip {
+        min-height: var(--space-l);
+        padding-inline: var(--space-xs);
+        border: 1px solid var(--border-color-hover);
+        background: transparent;
+        color: var(--foreground);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        cursor: pointer;
+
+        &[aria-pressed='true'] {
+            border-color: var(--fleet-yellow);
+            background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-quote__tiers {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+        gap: var(--space-xs);
+    }
+
+    .loyalty-quote__tier {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        border: 2px solid var(--border-color-hover);
+        background-color: var(--background);
+        color: var(--foreground);
+        text-align: start;
+        font-family: var(--default-font);
+        cursor: pointer;
+
+        &[aria-pressed='true'] {
+            border-color: var(--fleet-yellow);
+            background-color: color-mix(in srgb, var(--fleet-yellow) 7%, var(--background));
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+    }
+
+    .loyalty-quote__tier-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-xs);
+
+        strong {
+            color: var(--highlight);
+        }
+
+        span {
+            font-size: var(--step--1);
+            font-weight: 600;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-quote__tier-blurb {
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--faded);
+    }
+
+    .loyalty-quote__tier-payout {
+        font-size: var(--step-1);
+        font-weight: 700;
+        color: var(--highlight);
+    }
+
+    /* The checkout column: payout, the button, then why to trust it. */
+    .loyalty-quote__total {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        border: 1px solid var(--border-color);
+        background-color: var(--background);
+    }
+
+    .loyalty-quote__total-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .loyalty-quote__payout {
+        font-size: var(--step-2);
+        font-weight: 700;
+        line-height: 1.1;
+        white-space: nowrap;
+        color: var(--fleet-yellow);
+
+        small {
+            font-size: var(--step-0);
+        }
+    }
+
+    .loyalty-quote__proof {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-block-start: var(--space-s);
+        border-block-start: 1px solid var(--border-color-hover);
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            line-height: 1.5;
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-quote__faces {
+        display: flex;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li + li {
+            margin-inline-start: calc(var(--space-2xs) * -1);
+        }
+
+        img {
+            display: block;
+            width: var(--space-l);
+            height: var(--space-l);
+            border: 2px solid var(--background);
+            border-radius: 50%;
+        }
+    }
+
+    .loyalty-quote__paused {
+        margin: 0;
+        color: var(--fleet-red);
+    }
+</style>

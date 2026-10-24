@@ -6,23 +6,25 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Dialog from '@components/blocks/Dialog.astro'
-import Dropdown from '@components/blocks/Dropdown.astro'
+import LoyaltyOrderActions from '@components/blocks/LoyaltyOrderActions.astro'
 import LoyaltyOrderCard from '@components/blocks/LoyaltyOrderCard.astro'
+import LoyaltyDeskLanes from '@components/blocks/LoyaltyDeskLanes.astro'
 import LoyaltyOrderList from '@components/blocks/LoyaltyOrderList.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
+import { EXPRESS_SLA_HOURS, format_close_time } from '@helpers/loyalty_order_stats'
+import { SEND_LP_HOURS, initially_expanded } from '@helpers/loyalty_desk'
 
 const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
     orders: LoyaltyMarketOrder[]
-    currencies: LoyaltyCurrency[]
+    /** Tribal Liberation Force: the only LP the book trades. */
+    currency: LoyaltyCurrency | null
     is_logged_in: boolean
     current_user_id?: number
     can_manage_buyback?: boolean
     highlight_order_id: string | null
-    default_currency_id: number | null
-    default_isk_per_lp: number
     claim_characters?: {
         character_name: string
         corp_name: string
@@ -31,37 +33,35 @@ interface Props {
     claim_corporations?: string[]
     default_claim_character?: string
     default_claim_corporation?: string
+    /** 'lanes' groups orders by the owed step (the Conversion desk). */
+    layout?: 'list' | 'lanes'
+    show_title?: boolean
+    /** Median posted -> paid this week, shown when reviewing a sell order. */
+    week_median_seconds?: number | null
 }
 
 const {
     orders,
-    currencies,
+    currency,
     is_logged_in,
     current_user_id = 0,
     can_manage_buyback = false,
     highlight_order_id,
-    default_currency_id,
-    default_isk_per_lp,
     claim_characters = [],
     claim_corporations = [],
     default_claim_character = '',
     default_claim_corporation = '',
+    layout = 'list',
+    show_title = true,
+    week_median_seconds = null,
 } = Astro.props
 
-const FACTION_ORDER: readonly number[] = [
-    1000182, // TLIB
-    1000179, // 24th
-    1000180, // State
-    1000181, // FDU
-]
-const sorted_currencies = [...currencies].sort((a, b) => {
-    const ai = FACTION_ORDER.indexOf(a.corporation_id)
-    const bi = FACTION_ORDER.indexOf(b.corporation_id)
-    const ao = ai === -1 ? FACTION_ORDER.length : ai
-    const bo = bi === -1 ? FACTION_ORDER.length : bi
-    if (ao !== bo) return ao - bo
-    return a.name.localeCompare(b.name)
-})
+const tier_rates = {
+    standard: currency?.default_isk_per_lp ?? 0,
+    express: currency?.express_isk_per_lp ?? null,
+}
+const express_hint = t('industry.loyalty.tier.express_description')
+    .replace('{hours}', String(EXPRESS_SLA_HOURS))
 
 const default_lp_destination = default_claim_corporation
     || claim_corporations[0]
@@ -71,14 +71,20 @@ const default_isk_destination = default_claim_character
 const CLAIM_DESTINATION_OTHER = '__other__'
 const claim_character_names = claim_characters.map((c) => c.character_name)
 
+// Long books show the first rows; the rest are a click away (or open
+// straight away when the linked ?order= row is further down).
+const VISIBLE_ROWS = 20
+const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String(order.id) === highlight_order_id)
+
 ---
 
 <section
     class="[ loyalty-orders ]"
-    x-on:loyalty-open-sell.window="open_sell()"
+    x-on:loyalty-open-sell.window="open_sell($event.detail)"
     x-on:loyalty-open-buy.window="open_buy()"
     x-data={`{
         busy: false,
+        show_all_rows: ${rows_expanded},
         post_dialog_open: false,
         claim_dialog_open: false,
         await_lp_dialog_open: false,
@@ -92,15 +98,16 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
         claim_destination_other: '',
         claim_destination_other_value: ${JSON.stringify(CLAIM_DESTINATION_OTHER)},
         form_side: 'buy',
-        form_loyalty_point_id: ${JSON.stringify(default_currency_id)},
+        form_step: 'edit',
+        form_tier: 'standard',
         form_quantity: '',
-        form_isk_per_lp: ${JSON.stringify(number_thousand_separator(default_isk_per_lp))},
         form_notes: '',
         form_destination_choice: ${JSON.stringify(default_lp_destination)},
         form_destination_other: '',
         max_sell_lp: 2500000,
         sell_lp_increment: 100000,
-        currencies: ${JSON.stringify(sorted_currencies)},
+        currency: ${JSON.stringify(currency)},
+        tier_rates: ${JSON.stringify(tier_rates)},
         is_logged_in: ${JSON.stringify(is_logged_in)},
         current_user_id: ${JSON.stringify(current_user_id)},
         can_manage_buyback: ${JSON.stringify(can_manage_buyback)},
@@ -121,22 +128,17 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
         form_quantity_value() {
             return this.parse_int(this.form_quantity)
         },
-        form_currencies() {
-            return this.currencies.filter((c) => (
-                this.form_side === 'sell' ? c.allow_sell : c.allow_buy
-            ))
+        form_side_allowed() {
+            if (!this.currency) return false
+            return this.form_side === 'sell'
+                ? this.currency.allow_sell
+                : this.currency.allow_buy
         },
-        ensure_form_currency() {
-            const allowed = this.form_currencies()
-            if (allowed.length === 0) return false
-            const current = Number(this.form_loyalty_point_id)
-            if (!allowed.some((c) => c.id === current)) {
-                this.form_loyalty_point_id = allowed[0].id
-            }
-            return true
+        express_available() {
+            return Boolean(this.tier_rates.express)
         },
         form_isk_per_lp_value() {
-            return this.parse_int(this.form_isk_per_lp)
+            return Number(this.tier_rates[this.form_tier]) || 0
         },
         form_quantity_over_max() {
             return this.form_side === 'sell' && this.form_quantity_value() > this.max_sell_lp
@@ -240,7 +242,7 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                 return
             }
             const quantity = this.form_quantity_value()
-            if (!this.form_loyalty_point_id || !quantity || quantity <= 0) {
+            if (!this.currency || !quantity || quantity <= 0) {
                 await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.form.invalid'))} })
                 return
             }
@@ -260,10 +262,10 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
             this.busy = true
             try {
                 const body = {
-                    loyalty_point_id: Number(this.form_loyalty_point_id),
+                    loyalty_point_id: this.currency.id,
                     side: this.form_side,
                     quantity,
-                    isk_per_lp: this.form_isk_per_lp_value() || null,
+                    tier: this.form_tier,
                     notes: this.form_notes || '',
                 }
                 if (this.form_side === 'buy') {
@@ -276,6 +278,11 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                 })
                 if (!response.ok) {
                     await this.show_response_error(response, ${JSON.stringify(t('industry.loyalty.form.error'))})
+                    return
+                }
+                const created = await response.json().catch(() => null)
+                if (created && created.id) {
+                    window.location.href = ${JSON.stringify(translatePath('/industry/loyalty/orders/'))} + created.id + '/?posted=1'
                     return
                 }
                 window.location.reload()
@@ -428,22 +435,20 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
             }
             await this.set_status(this.await_lp_order_id, 'awaiting_lp', destination)
         },
-        on_currency_change() {
-            const currency = this.currencies.find(c => c.id === Number(this.form_loyalty_point_id))
-            if (currency) this.form_isk_per_lp = this.format_thousands(currency.default_isk_per_lp)
-        },
-        async open_sell() {
+        async open_sell(detail) {
             this.form_side = 'sell'
-            if (!this.ensure_form_currency()) {
+            if (!this.form_side_allowed()) {
                 await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.form.no_sell_currency'))} })
                 return
             }
             this.claim_dialog_open = false
             this.await_lp_dialog_open = false
-            this.form_quantity = ''
+            this.form_step = 'edit'
+            const preset = detail && typeof detail === 'object' ? detail : {}
+            this.form_tier = preset.tier === 'express' && this.express_available() ? 'express' : 'standard'
+            this.form_quantity = preset.quantity ? this.format_thousands(preset.quantity) : ''
             this.form_notes = ''
             this.reset_form_destination()
-            this.on_currency_change()
             this.post_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-post-quantity')?.focus())
         },
@@ -455,16 +460,17 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                 return
             }
             this.form_side = 'buy'
-            if (!this.ensure_form_currency()) {
+            this.form_step = 'edit'
+            if (!this.form_side_allowed()) {
                 await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.form.no_buy_currency'))} })
                 return
             }
             this.claim_dialog_open = false
             this.await_lp_dialog_open = false
+            this.form_tier = 'standard'
             this.form_quantity = ''
             this.form_notes = ''
             this.reset_form_destination()
-            this.on_currency_change()
             this.post_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-post-quantity')?.focus())
         },
@@ -478,111 +484,52 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
     }`}
     x-bind:aria-busy="busy"
 >
-    <Flexblock gap="var(--space-s)">
-        <h2>{t('industry.loyalty.orders.title')}</h2>
+    {layout === 'lanes' ? (
+        <LoyaltyDeskLanes
+            orders={orders}
+            is_logged_in={is_logged_in}
+            current_user_id={current_user_id}
+            can_manage_buyback={can_manage_buyback}
+        />
+    ) : (
+        <Flexblock gap="var(--space-s)">
+            {show_title && <h2>{t('industry.loyalty.orders.title')}</h2>}
 
-        {orders.length === 0 ? (
-            <p class="[ loyalty-orders__empty ]">{t('industry.loyalty.orders.empty')}</p>
-        ) : (
-            <LoyaltyOrderList variant="book">
-                {orders.map((order) => {
-                    const highlighted = highlight_order_id === String(order.id)
-                    const can_act = ['open', 'claimed', 'awaiting_lp', 'awaiting_isk'].includes(order.status)
-                    const quantity_remaining = order.quantity_remaining ?? order.quantity
-                    const quantity_claimed = order.quantity_claimed ?? 0
-                    const is_creator = current_user_id > 0
-                        && order.created_by_user_id === current_user_id
-                    const has_own_claim = Boolean(
-                        current_user_id > 0
-                        && (order.claims ?? []).some(
-                            (claim) => claim.claimed_by_user_id === current_user_id,
-                        )
-                    )
-                    const can_claim = can_manage_buyback
-                        && order.status === 'open'
-                        && quantity_remaining > 0
-                    const can_cancel = order.status === 'open'
-                        && (can_manage_buyback || is_creator)
-                    const can_release = (
-                        order.status === 'claimed'
-                        || order.status === 'awaiting_lp'
-                        || (order.status === 'open' && quantity_claimed > 0)
-                    ) && (can_manage_buyback || has_own_claim)
-                    const show_manager_settle = can_manage_buyback
-                    const show_actions = is_logged_in && can_act && (
-                        can_claim
-                        || can_cancel
-                        || can_release
-                        || (show_manager_settle && (
-                            order.status === 'claimed'
-                            || order.status === 'awaiting_lp'
-                            || order.status === 'awaiting_isk'
-                        ))
-                    )
-                    return (
-                        <LoyaltyOrderCard order={order} highlighted={highlighted}>
-                                {show_actions && (
-                                    <Dropdown slot="actions" class="[ loyalty-orders__menu ]">
-                                        <span slot="button">{t('actions')}</span>
-                                        <Flexblock gap="var(--space-3xs)" class="[ loyalty-orders__actions ]">
-                                            {can_claim && (
-                                                <Button
-                                                    size="sm"
-                                                    color="green"
-                                                    x-bind:disabled="busy"
-                                                    x-on:click={`open_claim(${order.id}, ${quantity_remaining}, ${order.isk_per_lp}, ${JSON.stringify(order.side)}); close()`}
-                                                >
-                                                    {t('industry.loyalty.action.claim')}
-                                                </Button>
-                                            )}
-                                            {order.status === 'claimed' && (
-                                                <Button
-                                                    size="sm"
-                                                    color="green"
-                                                    x-bind:disabled="busy"
-                                                    x-on:click={`open_await_lp(${order.id}, ${JSON.stringify(order.destination_character_name || '')}); close()`}
-                                                >
-                                                    {t('industry.loyalty.action.awaiting_lp')}
-                                                </Button>
-                                            )}
-                                            {order.status === 'awaiting_lp' && (
-                                                <Button
-                                                    size="sm"
-                                                    color="green"
-                                                    x-bind:disabled="busy"
-                                                    x-on:click={`set_status(${order.id}, 'awaiting_isk'); close()`}
-                                                >
-                                                    {t('industry.loyalty.action.lp_received')}
-                                                </Button>
-                                            )}
-                                            {order.status === 'awaiting_isk' && (
-                                                <Button
-                                                    size="sm"
-                                                    color="green"
-                                                    x-bind:disabled="busy"
-                                                    x-on:click={`set_status(${order.id}, 'completed'); close()`}
-                                                >
-                                                    {t('industry.loyalty.action.isk_sent')}
-                                                </Button>
-                                            )}
-                                            <Button
-                                                size="sm"
-                                                color="fleet-red"
-                                                x-bind:disabled="busy"
-                                                x-on:click={`set_status(${order.id}, 'cancelled'); close()`}
-                                            >
-                                                {t('cancel')}
-                                            </Button>
-                                        </Flexblock>
-                                    </Dropdown>
-                                )}
+            {orders.length === 0 ? (
+                <p class="[ loyalty-orders__empty ]">{t('industry.loyalty.orders.empty')}</p>
+            ) : (
+                <LoyaltyOrderList variant="book">
+                    {orders.map((order, index) => (
+                        <LoyaltyOrderCard
+                            order={order}
+                            highlighted={highlight_order_id === String(order.id)}
+                            collapsed={index >= VISIBLE_ROWS}
+                            cloaked={!rows_expanded}
+                        >
+                            <LoyaltyOrderActions
+                                slot="actions"
+                                class="[ loyalty-orders__menu ]"
+                                order={order}
+                                is_logged_in={is_logged_in}
+                                current_user_id={current_user_id}
+                                can_manage_buyback={can_manage_buyback}
+                            />
                         </LoyaltyOrderCard>
-                    )
-                })}
-            </LoyaltyOrderList>
-        )}
-    </Flexblock>
-
+                    ))}
+                </LoyaltyOrderList>
+            )}
+            {orders.length > VISIBLE_ROWS && (
+                <button
+                    type="button"
+                    class="[ loyalty-orders__more ]"
+                    x-show="!show_all_rows"
+                    x-on:click="show_all_rows = true"
+                >
+                    {t('industry.loyalty.book.show_all').replace('{count}', String(orders.length))}
+                </button>
+            )}
+        </Flexblock>
+    )}
     <template x-teleport="body">
         <Dialog
             breakout={true}
@@ -601,23 +548,50 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
             <Flexblock gap="var(--space-l)" class="[ loyalty-orders__form ]">
                 <Flexblock gap="var(--space-s)">
                     <h3 x-text="post_title()"></h3>
-                    <Flexblock gap="var(--space-xs)">
-                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label for="loyalty-post-currency">{t('industry.loyalty.form.currency')}</label>
-                            <Select
-                                id="loyalty-post-currency"
-                                x-model="form_loyalty_point_id"
-                                x-on:change="on_currency_change()"
+                    <Flexblock gap="var(--space-xs)" x-show="form_step === 'edit'">
+                        <fieldset class="[ loyalty-orders__tiers ]">
+                            <legend>{t('industry.loyalty.form.tier')}</legend>
+                            <label class="[ loyalty-orders__tier ]">
+                                <input
+                                    type="radio"
+                                    name="loyalty-post-tier"
+                                    value="standard"
+                                    x-model="form_tier"
+                                />
+                                <span class="[ loyalty-orders__tier-text ]">
+                                    <span class="[ loyalty-orders__tier-head ]">
+                                        <b>{t('industry.loyalty.tier.standard')}</b>
+                                        <span class="[ tabular ]">
+                                            {number_thousand_separator(tier_rates.standard)} {t('industry.loyalty.rates.isk_per_lp')}
+                                        </span>
+                                    </span>
+                                    <small>{t('industry.loyalty.tier.standard_description')}</small>
+                                </span>
+                            </label>
+                            <label
+                                class="[ loyalty-orders__tier ]"
+                                x-bind:class="!express_available() && 'is-disabled'"
                             >
-                                <template x-for="c in form_currencies()" x-bind:key="c.id">
-                                    <option
-                                        x-bind:value="c.id"
-                                        x-text="c.name"
-                                        x-bind:selected="Number(form_loyalty_point_id) === c.id"
-                                    ></option>
-                                </template>
-                            </Select>
-                        </Flexblock>
+                                <input
+                                    type="radio"
+                                    name="loyalty-post-tier"
+                                    value="express"
+                                    x-model="form_tier"
+                                    disabled={!tier_rates.express}
+                                />
+                                <span class="[ loyalty-orders__tier-text ]">
+                                    <span class="[ loyalty-orders__tier-head ]">
+                                        <b>{t('industry.loyalty.tier.express')}</b>
+                                        <span class="[ tabular ]">
+                                            {tier_rates.express
+                                                ? `${number_thousand_separator(tier_rates.express)} ${t('industry.loyalty.rates.isk_per_lp')}`
+                                                : t('industry.loyalty.tier.express_unavailable')}
+                                        </span>
+                                    </span>
+                                    <small>{express_hint}</small>
+                                </span>
+                            </label>
+                        </fieldset>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                             <label for="loyalty-post-quantity">{t('industry.loyalty.form.quantity')}</label>
                             <Input
@@ -642,19 +616,6 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                             >
                                 {t('industry.loyalty.form.quantity_sell_hint')}
                             </small>
-                        </Flexblock>
-                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label for="loyalty-post-rate">{t('industry.loyalty.form.isk_per_lp')}</label>
-                            <Input
-                                id="loyalty-post-rate"
-                                type="text"
-                                inputmode="numeric"
-                                autocomplete="off"
-                                disabled
-                                readonly
-                                tabindex="-1"
-                                x-bind:value="form_isk_per_lp"
-                            />
                         </Flexblock>
                         <Flexblock
                             class="[ w-full ]"
@@ -703,16 +664,63 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                         </Flexblock>
                         <Flexblock gap="var(--space-3xs)" class="[ loyalty-orders__form-summary ]">
                             <FlexInline justification="flex-end">
+                                <small>{t('industry.loyalty.claim.rate')}</small>
+                                <small
+                                    class="[ basis-[160px] text-right tabular ]"
+                                    x-text="format_thousands(form_isk_per_lp_value()) + ' ISK/LP'"
+                                ></small>
+                            </FlexInline>
+                            <FlexInline justification="flex-end">
                                 <p class="[ basis-[160px] text-green text-right ]">
                                     <b x-text="format_thousands(form_isk_total()) + ' ISK'">0 ISK</b>
                                 </p>
                             </FlexInline>
                         </Flexblock>
                     </Flexblock>
+                    <Flexblock gap="var(--space-s)" x-show="form_step === 'review'" x-cloak>
+                        <dl class="[ loyalty-orders__review tabular-nums ]">
+                            <div>
+                                <dt>{t('industry.loyalty.form.you_sell')}</dt>
+                                <dd x-text="format_thousands(form_quantity_value()) + ' LP'"></dd>
+                            </div>
+                            <div>
+                                <dt>{t('industry.loyalty.form.tier')}</dt>
+                                <dd x-text={`(form_tier === 'express' ? ${JSON.stringify(t('industry.loyalty.tier.express'))} : ${JSON.stringify(t('industry.loyalty.tier.standard'))}) + ' · ' + format_thousands(form_isk_per_lp_value()) + ' ISK/LP'`}></dd>
+                            </div>
+                            <div>
+                                <dt x-text={`form_tier === 'express' ? ${JSON.stringify(t('industry.loyalty.form.paid_within'))} : ${JSON.stringify(t('industry.loyalty.form.typical_wait'))}`}></dt>
+                                <dd x-text={`form_tier === 'express' ? ${JSON.stringify(`${EXPRESS_SLA_HOURS}h`)} : ${JSON.stringify(week_median_seconds ? format_close_time(week_median_seconds) : '—')}`}></dd>
+                            </div>
+                            <div class="[ is-total ]">
+                                <dt>{t('industry.loyalty.form.you_receive')}</dt>
+                                <dd x-text="format_thousands(form_isk_total()) + ' ISK'"></dd>
+                            </div>
+                        </dl>
+                        <Flexblock gap="var(--space-3xs)">
+                            <h4>{t('industry.loyalty.form.after_title')}</h4>
+                            <ul class="[ loyalty-orders__after ]">
+                                <li>{t('industry.loyalty.form.after_thread')}</li>
+                                <li>{t('industry.loyalty.form.after_claim')}</li>
+                                <li>{t('industry.loyalty.form.after_send').replace('{hours}', String(SEND_LP_HOURS))}</li>
+                            </ul>
+                        </Flexblock>
+                    </Flexblock>
                 </Flexblock>
                 <FlexInline justification="flex-end">
                     <Button
                         size="sm"
+                        x-show="form_side === 'sell' && form_step === 'edit'"
+                        color="fleet-red"
+                        off_disable={true}
+                        x-bind:disabled="busy || !form_can_submit()"
+                        x-on:click="form_step = 'review'"
+                    >
+                        {t('industry.loyalty.form.review')}
+                    </Button>
+                    <Button
+                        size="sm"
+                        x-show="form_side === 'buy' || form_step === 'review'"
+                        x-cloak
                         color="green"
                         off_disable={true}
                         x-bind:disabled="busy || !form_can_submit()"
@@ -720,8 +728,11 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
                     >
                         <span x-text="post_title()"></span>
                     </Button>
-                    <Button size="sm" x-on:click="close_dialog()">
-                        {t('cancel')}
+                    <Button
+                        size="sm"
+                        x-on:click="form_step === 'review' ? (form_step = 'edit') : close_dialog()"
+                    >
+                        <span x-text={`form_step === 'review' ? ${JSON.stringify(t('industry.loyalty.form.back'))} : ${JSON.stringify(t('cancel'))}`}>{t('cancel')}</span>
                     </Button>
                 </FlexInline>
             </Flexblock>
@@ -924,21 +935,22 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
         margin: 0;
     }
 
-    :global(.loyalty-orders__menu.dropdown-panel) {
-        min-width: 12rem;
-    }
+    .loyalty-orders__more {
+        align-self: flex-start;
+        min-height: var(--space-l);
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
 
-    .loyalty-orders__actions {
-        width: 100%;
-
-        > :global(*) {
-            width: 100%;
-        }
-
-        :global(button),
-        :global(a.button) {
-            width: 100%;
-            box-sizing: border-box;
+        @media (hover: hover) {
+            &:hover {
+                text-decoration: underline;
+            }
         }
     }
 
@@ -948,10 +960,133 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
         color: var(--highlight);
     }
 
+    .loyalty-orders__review {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        border: 1px solid var(--border-color-hover);
+
+        div {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--space-s);
+            padding: var(--space-2xs) var(--space-xs);
+        }
+
+        div + div {
+            border-block-start: 1px solid var(--border-color);
+        }
+
+        dt {
+            color: var(--faded);
+        }
+
+        dd {
+            margin: 0;
+            font-weight: 700;
+            color: var(--highlight);
+        }
+
+        .is-total {
+            background-color: color-mix(in srgb, var(--fleet-yellow) 6%, transparent);
+
+            dt {
+                color: var(--highlight);
+            }
+
+            dd {
+                font-size: var(--step-1);
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    h4 {
+        margin: 0;
+        font-family: var(--default-font);
+        font-size: var(--step-0);
+        text-transform: none;
+    }
+
+    .loyalty-orders__after {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding-inline-start: var(--space-s);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--foreground);
+    }
+
     .loyalty-orders__form-summary {
         margin-block-start: var(--space-2xs);
         padding-block-start: var(--space-2xs);
         border-top: solid 1px var(--border-color);
+    }
+
+    .loyalty-orders__tiers {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        border: 0;
+
+        legend {
+            padding: 0;
+            margin-block-end: var(--space-3xs);
+        }
+    }
+
+    .loyalty-orders__tier {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-xs);
+        border: solid 1px var(--border-color);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        input {
+            margin-block-start: var(--space-3xs);
+            accent-color: var(--fleet-yellow);
+        }
+
+        &:has(input:checked) {
+            border-color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+    }
+
+    .loyalty-orders__tier-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        flex: 1;
+        min-width: 0;
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
+    .loyalty-orders__tier-head {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        color: var(--highlight);
     }
 
     :global(.loyalty-orders__field-error) {

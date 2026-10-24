@@ -4,6 +4,7 @@ from django.db.models import Count
 from django.urls import reverse
 from django.utils.http import urlencode
 
+from fittings.eft import item_quantities
 from fittings.models import EveDoctrineFitting
 
 from market.helpers.contract_admin import count_mismatched_contracts
@@ -23,7 +24,6 @@ from market.models import (
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
 )
-from market.models.item import parse_eft_items
 
 
 def filter_fitting_expectation_rows(
@@ -244,7 +244,7 @@ def build_fitting_expectation_rows(location) -> list[dict]:
                 "fitting_name": fitting.name,
                 "fitting_tags": fitting.tag_slugs(),
                 "quantity": expectation.quantity if expectation else None,
-                "item_count": len(parse_eft_items(fitting.eft_format)),
+                "item_count": len(item_quantities(fitting.eft_format)),
             }
         )
     return rows

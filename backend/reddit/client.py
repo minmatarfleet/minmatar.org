@@ -3,11 +3,27 @@ import logging
 
 from django.conf import settings
 
+from reddit.oauth import (
+    RedditOAuthError,
+    forget_access_token,
+    password_access_token,
+    refresh_access_token,
+    user_agent,
+)
+
 logger = logging.getLogger(__name__)
 
 EVEJOBS_SR = "/r/evejobs"
 FL33T_SR = "/r/MinmatarFleet"
 TEST_SR = "r/sltest1"
+
+
+def normalize_subreddit(subreddit: str | None) -> str:
+    """Bare subreddit name from "evejobs", "r/evejobs" or "/r/evejobs/"."""
+    name = (subreddit or "").strip().strip("/")
+    if name[:2].lower() == "r/":
+        name = name[2:]
+    return name.strip("/")
 
 
 class RedditClient:
@@ -19,7 +35,10 @@ class RedditClient:
     username = ""
     password = ""
 
-    def __init__(self):
+    def __init__(self, account=None):
+        """With a RedditAccount, act as that linked user (refresh token);
+        otherwise as the alliance account (password grant)."""
+        self.account = account
         self.client_id = settings.REDDIT_CLIENT_ID
         self.client_secret = settings.REDDIT_SECRET
         self.username = settings.REDDIT_USERNAME
@@ -30,57 +49,73 @@ class RedditClient:
             else self.username
         )
         self.password = settings.REDDIT_PASSWORD
-        self.user_agent = "minmatar.org " + settings.ENV
+        self.user_agent = user_agent()
 
     def get_access_token(self) -> str | None:
-        logger.info(
-            "Getting reddit access token for %s / %s",
-            self.username,
-            self.client_id,
-        )
-        client_auth = requests.auth.HTTPBasicAuth(
-            self.client_id, self.client_secret
-        )
-        post_data = {
-            "grant_type": "password",
-            "username": self.username,
-            "password": self.password,
-        }
-        headers = {"User-Agent": self.user_agent}
-        response = requests.post(
-            url="https://www.reddit.com/api/v1/access_token",
-            timeout=10,
-            auth=client_auth,
-            headers=headers,
-            data=post_data,
-        )
-        if response.status_code >= 400:
+        """An access token, reused from the cache until near its expiry."""
+        if self.account is not None:
+            return self._linked_account_token()
+        try:
+            return password_access_token(self.username, self.password)
+        except RedditOAuthError as e:
             logger.error(
-                "Error %d getting Reddit access token: %s",
-                response.status_code,
-                response.text,
+                "Error getting Reddit access token for %s / %s: %s",
+                self.username,
+                self.client_id,
+                e.code,
             )
             return None
-        data = response.json()
-        if "access_token" in data:
-            return data["access_token"]
-        else:
-            logger.error("No access token found in %s", data)
-            return None
 
-    def get_my_details(self):
+    def forget_access_token(self) -> None:
+        """Drop the cached token so the next call asks Reddit again."""
+        if self.account is not None:
+            if self.account.refresh_token:
+                forget_access_token(
+                    "refresh_token", self.account.refresh_token
+                )
+            return
+        forget_access_token("password", self.username)
+
+    def _authorized(self, send, url: str, **kwargs):
+        """Call Reddit with the bearer token. A 401 means the cached token
+        was revoked: forget it and retry once with a fresh one, which is
+        what every call did before tokens were cached."""
         token = self.get_access_token()
         if not token:
-            return
-        headers = {
+            return None
+        response = send(url, headers=self._headers(token), **kwargs)
+        if response.status_code != 401:
+            return response
+        self.forget_access_token()
+        token = self.get_access_token()
+        if not token:
+            return response
+        return send(url, headers=self._headers(token), **kwargs)
+
+    def _headers(self, token: str) -> dict:
+        return {
             "Authorization": "bearer " + token,
             "User-Agent": self.user_agent,
         }
-        response = requests.get(
-            "https://oauth.reddit.com/api/v1/me",
-            headers=headers,
-            timeout=10,
+
+    def _linked_account_token(self) -> str | None:
+        try:
+            return refresh_access_token(self.account.refresh_token)
+        except RedditOAuthError as e:
+            logger.warning(
+                "Reddit refresh failed for %s: %s", self.account, e.code
+            )
+            if e.code == "invalid_grant":
+                self.account.token_invalid = True
+                self.account.save(update_fields=["token_invalid"])
+            return None
+
+    def get_my_details(self):
+        response = self._authorized(
+            requests.get, "https://oauth.reddit.com/api/v1/me", timeout=10
         )
+        if response is None:
+            return None
         return response.json()
 
     def submit_post(
@@ -94,28 +129,23 @@ class RedditClient:
         Submit a self post to a subreddit.
         Returns dict with 'url' and 'id' of the created post on success, None otherwise.
         """
-        token = self.get_access_token()
-        if not token:
-            return None
-
         data = [
             ("kind", "self"),
-            ("sr", subreddit.lstrip("/r")),
+            ("sr", normalize_subreddit(subreddit)),
             ("title", title),
             ("text", content),
         ]
         if flair_id:
             data.append(("flair_id", flair_id))
 
-        response = requests.post(
-            url="https://oauth.reddit.com/api/submit",
-            headers={
-                "Authorization": "bearer " + token,
-                "User-Agent": self.user_agent,
-            },
+        response = self._authorized(
+            requests.post,
+            "https://oauth.reddit.com/api/submit",
             timeout=10,
             data=data,
         )
+        if response is None:
+            return None
         if response.status_code >= 400:
             logger.warning(
                 "Submit post failed: %s (%d)", title, response.status_code
@@ -177,29 +207,17 @@ class RedditClient:
         Fetch link flair templates for a subreddit.
         Returns list of dicts with 'id' and 'text' (or 'name').
         """
-        token = self.get_access_token()
-        if not token:
-            return []
         # Normalize: strip /r/ prefix and use lowercase (Reddit API expects lowercase)
-        sr = (
-            (subreddit or "")
-            .strip()
-            .lstrip("/")
-            .lstrip("r")
-            .lstrip("/")
-            .strip()
-            .lower()
-        )
+        sr = normalize_subreddit(subreddit).lower()
         if not sr:
             return []
-        response = requests.get(
-            url=f"https://oauth.reddit.com/r/{sr}/api/link_flair",
-            headers={
-                "Authorization": "bearer " + token,
-                "User-Agent": self.user_agent,
-            },
+        response = self._authorized(
+            requests.get,
+            f"https://oauth.reddit.com/r/{sr}/api/link_flair",
             timeout=10,
         )
+        if response is None:
+            return []
         if response.status_code >= 400:
             logger.warning(
                 "Link flair fetch failed for r/%s: %d %s",

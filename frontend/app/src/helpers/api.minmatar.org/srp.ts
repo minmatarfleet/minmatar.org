@@ -1,4 +1,5 @@
-import { parse_response_error, query_string } from '@helpers/string'
+import { query_string } from '@helpers/string'
+import { api_request, api_status_is } from '@helpers/api.minmatar.org/client'
 import type {
     SRP,
     SRPStatus,
@@ -13,11 +14,6 @@ import type {
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
 
 export async function get_fleet_srp(access_token:string, srp_filter:SRPFilter) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-    
     const { fleet_id, status } = srp_filter
 
     const query_params = {
@@ -28,227 +24,71 @@ export async function get_fleet_srp(access_token:string, srp_filter:SRPFilter) {
     const query = query_string(query_params)
 
     const ENDPOINT = `${API_ENDPOINT}${query ? `?${query}` : ''}`
-    const METHOD = 'GET'
 
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as SRP[]
-    } catch (error) {
-        throw new Error(`Error fetching fleet SRPs: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<SRP[]>(ENDPOINT, {
+        token: access_token,
+        error: 'Error fetching fleet SRPs',
+    })
 }
 
 export async function create_fleet_srp(access_token:string, srp_request:SRPRequest) {
     const fleet_id = srp_request.fleet_id
-    const combatlog_id = srp_request.combatlog_id
-    
-    const data = JSON.stringify({
-        external_killmail_link: srp_request.external_killmail_link,
-        is_corp_ship: srp_request.is_corp_ship,
-        category: srp_request?.category ?? 'dps',
-        comments: srp_request?.comments ?? '',
-        ...(fleet_id && { fleet_id }),
-        ...(combatlog_id && { combatlog_id }),
+    const combat_log_id = srp_request.combat_log_id
+
+    return await api_status_is(API_ENDPOINT, {
+        method: 'POST',
+        token: access_token,
+        body: {
+            external_killmail_link: srp_request.external_killmail_link,
+            is_corp_ship: srp_request.is_corp_ship,
+            category: srp_request?.category ?? 'dps',
+            comments: srp_request?.comments ?? '',
+            ...(fleet_id && { fleet_id }),
+            ...(combat_log_id && { combat_log_id }),
+        },
+        error: 'Error creating fleet SRP',
     })
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = API_ENDPOINT
-    const METHOD = 'POST'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-            body: data,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-                
-        return (response.status === 200)
-    } catch (error) {
-        throw new Error(`Error creating fleet SRP: ${error.message}`, { cause: error.cause });
-    }
 }
 
 export async function update_fleet_srp(access_token:string, status:SRPStatus, reimbursement_id:number) {
-    const data = JSON.stringify({
-        status: status,
+    return await api_status_is(`${API_ENDPOINT}/${reimbursement_id}`, {
+        method: 'PATCH',
+        token: access_token,
+        body: {
+            status: status,
+        },
+        error: 'Error updating fleet SRP',
     })
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${reimbursement_id}`
-    const METHOD = 'PATCH'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-            body: data,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return (response.status === 200);
-    } catch (error) {
-        throw new Error(`Error updating fleet SRP: ${error.message}`, { cause: error.cause });
-    }
 }
 
 export async function resolve_killmail(access_token:string, external_killmail_link:string) {
-    const data = JSON.stringify({
-        external_killmail_link: external_killmail_link,
+    return await api_request<KillmailResolve>(`${API_ENDPOINT}/resolve-killmail`, {
+        method: 'POST',
+        token: access_token,
+        body: {
+            external_killmail_link: external_killmail_link,
+        },
+        error: 'Error resolving killmail',
     })
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/resolve-killmail`
-    const METHOD = 'POST'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-            body: data,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), { cause: response.status })
-        
-        return await response.json() as KillmailResolve
-    } catch (error) {
-        console.log(error.cause)
-        throw new Error(`Error resolving killmail: ${error.message}`, { cause: error.cause });
-    }
 }
 
 export async function get_srp_programs(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/programs`
-    const METHOD = 'GET'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as SRPProgram[]
-    } catch (error) {
-        throw new Error(`Error reading SRP programs: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<SRPProgram[]>(`${API_ENDPOINT}/programs`, {
+        token: access_token,
+        error: 'Error reading SRP programs',
+    })
 }
 
 export async function get_srp_stats(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/stats/overview`
-    const METHOD = 'GET'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as SRPStatsOverview
-    } catch (error) {
-        throw new Error(`Error reading SRP stats overview: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<SRPStatsOverview>(`${API_ENDPOINT}/stats/overview`, {
+        token: access_token,
+        error: 'Error reading SRP stats overview',
+    })
 }
 
 export async function get_srp_stats_history(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/stats/history`
-    const METHOD = 'GET'
-
-    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers,
-            method: METHOD,
-        })
-
-        // console.log(response)
-
-        if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
-                cause: response.status
-            })
-        
-        return await response.json() as SRPStatsHistory
-    } catch (error) {
-        throw new Error(`Error reading SRP stats history: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<SRPStatsHistory>(`${API_ENDPOINT}/stats/history`, {
+        token: access_token,
+        error: 'Error reading SRP stats history',
+    })
 }

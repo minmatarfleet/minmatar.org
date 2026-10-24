@@ -34,6 +34,7 @@ class CorporationLeadershipResponse(Schema):
     role: str
     prime_time: Optional[str] = None
     observed_prime_times: List[str] = []
+    on_leave: bool = False
 
 
 class TimezoneBucketCount(Schema):
@@ -134,6 +135,84 @@ class CorporationPublicSummary(Schema):
     kills: CorporationKillSummary
 
 
+class CorporationPrimeWindow(Schema):
+    zone: str
+    start_hour: int
+    end_hour: int
+    pilots: int = 0
+
+
+class CorporationTenureBand(Schema):
+    key: str
+    count: int
+
+
+class CorporationTenure(Schema):
+    mains: int = 0
+    average_days: Optional[int] = None
+    bands: List[CorporationTenureBand] = []
+
+
+class CorporationHomeSystem(Schema):
+    name: str
+    share: float
+
+
+class CorporationHull(Schema):
+    type_id: int
+    name: str
+    pilots: int
+
+
+class CorporationTurnoutRecord(Schema):
+    pilots: int
+    date: Optional[str] = None
+    title: str = ""
+
+
+class CorporationMonthRecord(Schema):
+    month: str
+    fleets: int
+
+
+class CorporationRecords(Schema):
+    biggest_turnout: Optional[CorporationTurnoutRecord] = None
+    busiest_month: Optional[CorporationMonthRecord] = None
+
+
+class CorporationLeader(Schema):
+    character_id: int
+    character_name: str
+    value: int
+
+
+class CorporationLeaderboards(Schema):
+    fleets: List[CorporationLeader] = []
+    kills: List[CorporationLeader] = []
+    fleets_led: List[CorporationLeader] = []
+
+
+class CorporationTribeGroupCount(Schema):
+    name: str
+    members: int
+
+
+class CorporationAbout(Schema):
+    """Cached About-tab rollups; mains only, never alts."""
+
+    founded: Optional[str] = None
+    home_system: Optional[CorporationHomeSystem] = None
+    # 7 rows (Monday first) x 24 EVE-time hours of people on fleets.
+    heatmap: List[List[int]] = []
+    prime_windows: List[CorporationPrimeWindow] = []
+    tenure: Optional[CorporationTenure] = None
+    founders: int = 0
+    hulls: List[CorporationHull] = []
+    records: Optional[CorporationRecords] = None
+    leaderboards: Optional[CorporationLeaderboards] = None
+    tribe_groups: List[CorporationTribeGroupCount] = []
+
+
 class CorporationSlugResponse(Schema):
     corporation_id: int
     slug: str
@@ -166,6 +245,7 @@ class CorporationInfoResponse(Schema):
     discord_invite_url: Optional[str] = None
     public_summary: Optional[CorporationPublicSummary] = None
     application_process: Optional["CorporationApplicationProcess"] = None
+    about: Optional[CorporationAbout] = None
 
 
 class CorporationApplicationProcess(Schema):
@@ -199,15 +279,41 @@ class CorporationMemberDetails(Schema):
     prime_time: Optional[str] = None
     observed_prime_times: List[str] = []
     community_status: Optional[str] = None
+    corp_joined_at: Optional[str] = None
+    last_fleet_at: Optional[str] = None
+    # Per person (alts folded, each fleet once), repeated on each character.
+    person_fleets_90d: Optional[int] = None
+    # Distinct fleets per week for the person, oldest first, ending now.
+    weekly_fleets: List[int] = []
+    top_hull_id: Optional[int] = None
+    top_hull_name: Optional[str] = None
+    tribe_groups: List[str] = []
+    status_history: List["CorporationMemberStatusChange"] = []
+    # From the latest alliance health snapshot's trial review.
+    trial_ready: bool = False
+    trial_reason: Optional[str] = None
     # Set when the viewer may not see which characters belong to this person:
     # the row stands for the person and the rest are only counted.
     characters_hidden: bool = False
     hidden_character_count: int = 0
 
 
+class CorporationMemberStatusChange(Schema):
+    to_status: str
+    changed_at: str
+
+
+CorporationMemberDetails.model_rebuild()
+
+
 class CorporationMemberAccess(Schema):
     can_view_members: bool
     can_view_characters: bool
+    # CEO only: the corporation page's Settings tab.
+    can_edit_settings: bool = False
+    # Projects tab: corp leadership sees it; CEO and directors attach.
+    can_view_projects: bool = False
+    can_manage_projects: bool = False
 
 
 class CorporationMembersTopResponse(Schema):
@@ -228,3 +334,59 @@ class CorporationAdminResponse(Schema):
     growth_90d_pct: Optional[float] = None
     stewards: List[CorporationRoleCharacterResponse] = []
     leadership_missing_prime_time: List[CorporationLeadershipResponse] = []
+
+
+class CorporationProjectTarget(Schema):
+    # The configuration key: locations, ships, factions, identities ...
+    kind: str
+    names: List[str]
+
+
+class CorporationProjectContributor(Schema):
+    character_id: int
+    character_name: str
+    contributed: int
+
+
+class CorporationProjectCampaign(Schema):
+    slug: str
+    name: str
+    status: str
+
+
+class CorporationProject(Schema):
+    project_id: str
+    corporation_id: int
+    corporation_name: str
+    name: str
+    description: str = ""
+    state: str
+    kind: str = ""
+    targets: List[CorporationProjectTarget] = []
+    creator_id: Optional[int] = None
+    creator_name: str = ""
+    progress_current: int = 0
+    progress_desired: int = 0
+    reward_initial: Optional[float] = None
+    reward_remaining: Optional[float] = None
+    reward_per_contribution: Optional[float] = None
+    participation_limit: Optional[int] = None
+    created: Optional[datetime] = None
+    expires: Optional[datetime] = None
+    finished: Optional[datetime] = None
+    last_modified: datetime
+    contributors: List[CorporationProjectContributor] = []
+    campaigns: List[CorporationProjectCampaign] = []
+
+
+class CorporationProjectsResponse(Schema):
+    corporation_id: int
+    # CEO or director: may put a project toward a campaign.
+    can_manage: bool
+    # A CEO or director token with esi-corporations.read_projects.v1.
+    has_token: bool
+    synced_at: Optional[datetime] = None
+    refreshing: bool = False
+    projects: List[CorporationProject]
+    # Scheduled and active campaigns a project can be put toward.
+    campaigns: List[CorporationProjectCampaign]

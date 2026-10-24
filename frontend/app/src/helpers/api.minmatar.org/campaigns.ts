@@ -1,125 +1,59 @@
 import type {
     CampaignListItem,
     CampaignDetail,
-    CampaignRightNow,
     CampaignWeek,
-    CampaignOrder,
     CampaignSystemSummary,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignLeaderboardMetric,
     CampaignLeaderboardPeriod,
     CampaignKillmail,
     CampaignKillmailOutcome,
     CampaignSite,
-    CampaignTimelineEvent,
     CampaignRoster,
     CampaignReadiness,
     CampaignEnlistRequest,
     CampaignEnlistResponse,
     CampaignAdvantageRequest,
     CampaignAdvantageResponse,
-    CampaignGangRequest,
     CampaignStructure,
     CampaignStructureAttachRequest,
     UniverseEntityMatch,
+    CorporationProject,
 } from '@dtypes/api.minmatar.org'
-import { parse_response_error } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/campaigns`
-
-const build_headers = (access_token?:string | false) => {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    if (access_token)
-        headers['Authorization'] = `Bearer ${access_token}`
-
-    return headers
-}
-
-async function request_json<Type>(
-    endpoint:string,
-    access_token:string | false,
-    subject:string,
-    method:string = 'GET',
-    body?:unknown,
-) {
-    console.log(`Requesting: ${method} ${endpoint}`)
-
-    try {
-        const response = await fetch(endpoint, {
-            method: method,
-            headers: build_headers(access_token),
-            ...(body !== undefined && { body: JSON.stringify(body) }),
-        })
-
-        if (!response.ok) {
-            throw new Error(await parse_response_error(response, `${method} ${endpoint}`), {
-                cause: response.status
-            });
-        }
-
-        if (response.status === 204)
-            return null as Type
-
-        const text = await response.text()
-
-        return (text ? JSON.parse(text) : null) as Type;
-    } catch (error) {
-        throw new Error(`Error fetching ${subject}: ${error.message}`, { cause: error.cause });
-    }
-}
 
 export async function get_campaigns(access_token:string | false = false, status:string = '') {
     const params = status ? `?status=${encodeURIComponent(status)}` : ''
 
-    return await request_json<CampaignListItem[]>(
-        `${API_ENDPOINT}${params}`,
-        access_token,
-        'campaigns',
-    )
+    return await api_request<CampaignListItem[]>(`${API_ENDPOINT}${params}`, {
+        token: access_token,
+        error: 'Error fetching campaigns',
+    })
 }
 
 export async function get_campaign(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignDetail>(
-        `${API_ENDPOINT}/${slug}`,
-        access_token,
-        'campaign',
-    )
-}
-
-export async function get_campaign_now(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignRightNow>(
-        `${API_ENDPOINT}/${slug}/now`,
-        access_token,
-        'campaign live status',
-    )
+    return await api_request<CampaignDetail>(`${API_ENDPOINT}/${slug}`, {
+        token: access_token,
+        error: 'Error fetching campaign',
+    })
 }
 
 export async function get_campaign_week(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignWeek>(
-        `${API_ENDPOINT}/${slug}/week`,
-        access_token,
-        'campaign week plan',
-    )
-}
-
-export async function get_campaign_orders(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignOrder[]>(
-        `${API_ENDPOINT}/${slug}/orders`,
-        access_token,
-        'campaign orders',
-    )
+    return await api_request<CampaignWeek>(`${API_ENDPOINT}/${slug}/week`, {
+        token: access_token,
+        error: 'Error fetching campaign week plan',
+    })
 }
 
 export async function get_campaign_systems(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignSystemSummary[]>(
-        `${API_ENDPOINT}/${slug}/systems`,
-        access_token,
-        'campaign systems',
-    )
+    return await api_request<CampaignSystemSummary[]>(`${API_ENDPOINT}/${slug}/systems`, {
+        token: access_token,
+        error: 'Error fetching campaign systems',
+    })
 }
 
 export async function get_campaign_leaderboard(
@@ -135,11 +69,29 @@ export async function get_campaign_leaderboard(
         limit: String(limit),
     })
 
-    return await request_json<CampaignLeaderboardRow[]>(
-        `${API_ENDPOINT}/${slug}/leaderboard?${params.toString()}`,
-        access_token,
-        'campaign leaderboard',
-    )
+    return await api_request<CampaignLeaderboardRow[]>(`${API_ENDPOINT}/${slug}/leaderboard?${params.toString()}`, {
+        token: access_token,
+        error: 'Error fetching campaign leaderboard',
+    })
+}
+
+export async function get_campaign_corporation_leaderboard(
+    slug:string,
+    access_token:string | false = false,
+    metric:CampaignLeaderboardMetric = 'kills',
+    period:CampaignLeaderboardPeriod = 'week',
+    limit:number = 25,
+) {
+    const params = new URLSearchParams({
+        metric: metric,
+        period: period,
+        limit: String(limit),
+    })
+
+    return await api_request<CampaignCorporationLeaderboardRow[]>(`${API_ENDPOINT}/${slug}/leaderboard/corporations?${params.toString()}`, {
+        token: access_token,
+        error: 'Error fetching campaign corporation leaderboard',
+    })
 }
 
 export async function get_campaign_killmails(
@@ -153,51 +105,38 @@ export async function get_campaign_killmails(
     if (outcome) params.set('outcome', outcome)
     if (offset > 0) params.set('offset', String(offset))
 
-    return await request_json<CampaignKillmail[]>(
-        `${API_ENDPOINT}/${slug}/killmails?${params.toString()}`,
-        access_token,
-        'campaign killmails',
-    )
+    return await api_request<CampaignKillmail[]>(`${API_ENDPOINT}/${slug}/killmails?${params.toString()}`, {
+        token: access_token,
+        error: 'Error fetching campaign killmails',
+    })
 }
 
 export async function get_campaign_sites(slug:string, access_token:string | false = false, limit:number = 25, offset:number = 0) {
-    return await request_json<CampaignSite[]>(
-        `${API_ENDPOINT}/${slug}/sites?limit=${limit}${offset > 0 ? `&offset=${offset}` : ''}`,
-        access_token,
-        'campaign sites',
-    )
-}
-
-export async function get_campaign_timeline(slug:string, access_token:string | false = false, limit:number = 25) {
-    return await request_json<CampaignTimelineEvent[]>(
-        `${API_ENDPOINT}/${slug}/timeline?limit=${limit}`,
-        access_token,
-        'campaign timeline',
-    )
+    return await api_request<CampaignSite[]>(`${API_ENDPOINT}/${slug}/sites?limit=${limit}${offset > 0 ? `&offset=${offset}` : ''}`, {
+        token: access_token,
+        error: 'Error fetching campaign sites',
+    })
 }
 
 export async function get_campaign_fleets(slug:string, access_token:string | false = false, limit:number = 25) {
-    return await request_json<CampaignFleet[]>(
-        `${API_ENDPOINT}/${slug}/fleets?limit=${limit}`,
-        access_token,
-        'campaign fleets',
-    )
+    return await api_request<CampaignFleet[]>(`${API_ENDPOINT}/${slug}/fleets?limit=${limit}`, {
+        token: access_token,
+        error: 'Error fetching campaign fleets',
+    })
 }
 
 export async function get_campaign_roster(slug:string, access_token:string | false = false) {
-    return await request_json<CampaignRoster>(
-        `${API_ENDPOINT}/${slug}/roster`,
-        access_token,
-        'campaign roster',
-    )
+    return await api_request<CampaignRoster>(`${API_ENDPOINT}/${slug}/roster`, {
+        token: access_token,
+        error: 'Error fetching campaign roster',
+    })
 }
 
 export async function get_campaign_readiness(access_token:string) {
-    return await request_json<CampaignReadiness>(
-        `${API_ENDPOINT}/readiness`,
-        access_token,
-        'campaign character readiness',
-    )
+    return await api_request<CampaignReadiness>(`${API_ENDPOINT}/readiness`, {
+        token: access_token,
+        error: 'Error fetching campaign character readiness',
+    })
 }
 
 export async function enlist_campaign(slug:string, access_token:string, options:CampaignEnlistRequest = {}) {
@@ -206,45 +145,40 @@ export async function enlist_campaign(slug:string, access_token:string, options:
         notify_gang_forming: true,
         notify_standing_fleet: true,
         notify_activity_nearby: false,
-        notify_streak_at_risk: true,
         digest_hour: 18,
         ...options,
     }
 
-    return await request_json<CampaignEnlistResponse>(
-        `${API_ENDPOINT}/${slug}/enlist`,
-        access_token,
-        'campaign enlistment',
-        'POST',
-        body,
-    )
+    return await api_request<CampaignEnlistResponse>(`${API_ENDPOINT}/${slug}/enlist`, {
+        method: 'POST',
+        token: access_token,
+        body: body,
+        error: 'Error fetching campaign enlistment',
+    })
 }
 
 export async function leave_campaign(slug:string, access_token:string) {
-    return await request_json<CampaignEnlistResponse>(
-        `${API_ENDPOINT}/${slug}/enlist`,
-        access_token,
-        'campaign enlistment',
-        'DELETE',
-    )
+    return await api_request<CampaignEnlistResponse>(`${API_ENDPOINT}/${slug}/enlist`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error fetching campaign enlistment',
+    })
 }
 
 export async function include_campaign_character(slug:string, access_token:string, character_id:number) {
-    return await request_json<unknown>(
-        `${API_ENDPOINT}/${slug}/characters/${character_id}`,
-        access_token,
-        'campaign character',
-        'PUT',
-    )
+    return await api_request<unknown>(`${API_ENDPOINT}/${slug}/characters/${character_id}`, {
+        method: 'PUT',
+        token: access_token,
+        error: 'Error fetching campaign character',
+    })
 }
 
 export async function exclude_campaign_character(slug:string, access_token:string, character_id:number) {
-    return await request_json<unknown>(
-        `${API_ENDPOINT}/${slug}/characters/${character_id}`,
-        access_token,
-        'campaign character',
-        'DELETE',
-    )
+    return await api_request<unknown>(`${API_ENDPOINT}/${slug}/characters/${character_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error fetching campaign character',
+    })
 }
 
 export async function report_campaign_advantage(
@@ -253,23 +187,12 @@ export async function report_campaign_advantage(
     system_id:number,
     reading:CampaignAdvantageRequest,
 ) {
-    return await request_json<CampaignAdvantageResponse>(
-        `${API_ENDPOINT}/${slug}/systems/${system_id}/advantage`,
-        access_token,
-        'campaign advantage reading',
-        'POST',
-        reading,
-    )
-}
-
-export async function create_campaign_gang(slug:string, access_token:string, gang:CampaignGangRequest) {
-    return await request_json<unknown>(
-        `${API_ENDPOINT}/${slug}/gangs`,
-        access_token,
-        'campaign gang',
-        'POST',
-        gang,
-    )
+    return await api_request<CampaignAdvantageResponse>(`${API_ENDPOINT}/${slug}/systems/${system_id}/advantage`, {
+        method: 'POST',
+        token: access_token,
+        body: reading,
+        error: 'Error fetching campaign advantage reading',
+    })
 }
 
 export async function search_campaign_entities(
@@ -278,11 +201,10 @@ export async function search_campaign_entities(
     query:string,
 ) {
     const params = new URLSearchParams({ kind, q: query })
-    return await request_json<UniverseEntityMatch[]>(
-        `${API_ENDPOINT}/entities?${params}`,
-        access_token,
-        'entity search',
-    )
+    return await api_request<UniverseEntityMatch[]>(`${API_ENDPOINT}/entities?${params}`, {
+        token: access_token,
+        error: 'Error fetching entity search',
+    })
 }
 
 export async function attach_campaign_structure(
@@ -290,11 +212,34 @@ export async function attach_campaign_structure(
     access_token:string,
     structure:CampaignStructureAttachRequest,
 ) {
-    return await request_json<CampaignStructure>(
-        `${API_ENDPOINT}/${slug}/structures`,
-        access_token,
-        'campaign structure',
-        'POST',
-        structure,
-    )
+    return await api_request<CampaignStructure>(`${API_ENDPOINT}/${slug}/structures`, {
+        method: 'POST',
+        token: access_token,
+        body: structure,
+        error: 'Error fetching campaign structure',
+    })
+}
+
+export async function get_campaign_projects(slug:string, access_token:string | false = false) {
+    return await api_request<CorporationProject[]>(`${API_ENDPOINT}/${slug}/projects`, {
+        token: access_token,
+        error: 'Error fetching campaign projects',
+    })
+}
+
+export async function attach_campaign_project(slug:string, access_token:string, project_id:string) {
+    return await api_request<null>(`${API_ENDPOINT}/${slug}/projects`, {
+        method: 'POST',
+        token: access_token,
+        body: { project_id: project_id },
+        error: 'Error fetching campaign project',
+    })
+}
+
+export async function detach_campaign_project(slug:string, access_token:string, project_id:string) {
+    return await api_request<null>(`${API_ENDPOINT}/${slug}/projects/${project_id}`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error fetching campaign project',
+    })
 }

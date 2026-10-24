@@ -1,0 +1,122 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found, HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'fleets.view'))
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
+
+if (isNaN(fleet_id))
+    return HTTP_404_Not_Found()
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { fetch_fleet_access } from '@helpers/fetching/fleets'
+import { get_fleet_fights, get_fleet_battle_report, type FleetFights, type FleetBattleReport as FleetBattleReportData } from '@helpers/api.minmatar.org/fleets'
+import { move_to_side, type BattleScope } from '@helpers/fleet_fights'
+
+let fleet:FleetUI | null = null
+let fights:FleetFights | null = null
+let report:FleetBattleReportData | null = null
+let fetch_error:Error | false = false
+
+// The whole fleet, a window (start and end), or a saved segment. Without
+// JavaScript the « » move links land here with the group and team.
+const params = Astro.url.searchParams
+const scope: BattleScope = {
+    start: params.get('start'),
+    end: params.get('end'),
+    segment: parseInt(params.get('segment') ?? '') || null,
+    sides: move_to_side(
+        params.get('sides') ?? '',
+        parseInt(params.get('group') ?? ''),
+        parseInt(params.get('team') ?? ''),
+    ),
+}
+
+try {
+    const [access, fleet_fights, battle_report] = await Promise.all([
+        fetch_fleet_access(auth_token as string, fleet_id),
+        // A members-only tribe fleet 403s here for outsiders; the fleet
+        // page below shows them the group's gate instead.
+        get_fleet_fights(auth_token as string, fleet_id).catch((error) => {
+            if (error?.cause === 403) return null
+            throw error
+        }),
+        get_fleet_battle_report(auth_token as string, fleet_id, scope),
+    ])
+    // Members-only tribe fleet: the fleet page shows who to ask, and nothing
+    // about the fleet or its fights.
+    if (access.restricted?.host_group)
+        return Astro.redirect(translatePath(`/fleets/history/${fleet_id}`))
+    fleet = access.fleet
+    fights = fleet_fights
+    report = battle_report
+} catch (error) {
+    if (error?.cause === 403)
+        return HTTP_403_Forbidden()
+    if (error?.cause === 404)
+        return HTTP_404_Not_Found()
+    fetch_error = error
+}
+
+// While the fleet is out only its managers and pilots may read its fights.
+if (!fetch_error && !fights)
+    return HTTP_403_Forbidden()
+
+const fleet_title = fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`
+const fleet_path = fights?.live ? `/fleets/upcoming/${fleet_id}` : `/fleets/history/${fleet_id}`
+const back_href = translatePath(`${fleet_path}#aar`)
+const breadcrumbs = [
+    { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
+    { page_title: t('fleets.history.page_title'), accumulated_path: '/fleets/history/' },
+    { page_title: fleet_title, accumulated_path: fleet_path },
+    { page_title: t('fleets.fights.battle_report'), accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FleetBattleReport from '@components/blocks/FleetBattleReport.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<Viewport title={`${t('fleets.fights.battle_report')} · ${fleet_title}`}>
+    <PageWide
+        cover={{
+            image: '/images/fleets-cover.jpg',
+            image_990: '/images/fleets-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <PageTitle slot="header">{fleet_title}</PageTitle>
+
+        <Wrapper padding_block='0' padding_inline='0' max_width='var(--max-content-width)'>
+            {fetch_error ?
+                <EmptyState title={fetch_error.message} prominent={true} />
+                : report ?
+                    <FleetBattleReport report={report} fleet_id={fleet_id} back_href={back_href} />
+                    :
+                    <EmptyState title={t('fleets.fights.none')} prominent={true}>
+                        <Button slot="action" href={back_href}>{t('fleets.fights.back')}</Button>
+                    </EmptyState>
+            }
+        </Wrapper>
+    </PageWide>
+</Viewport>

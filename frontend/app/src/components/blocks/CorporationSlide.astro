@@ -9,7 +9,6 @@ interface Props {
     ceo_image:              string;
     ceo_character_id:       number;
     corporation:            CorporationObject;
-    is_user_corporation?:   boolean;
     picture_placement:      'left' | 'right';
     mirror_slide?:          boolean;
 }
@@ -19,15 +18,15 @@ const {
     ceo_image,
     ceo_character_id,
     corporation,
-    is_user_corporation = false,
     picture_placement = 'left',
     mirror_slide = false,
 } = Astro.props
 
 // The heading links to this slide within the slider (Swiper hash navigation);
-// "Learn more" is the way into the corporation's own page.
+// "Learn more" is the way into the corporation's own page, where pilots apply.
 const current_page = `${Astro.url.pathname}${Astro.url.search}`
 const slide_url = translatePath(`${current_page}#${corporation.corporation_name.replaceAll(' ', '_')}`)
+const corporation_url = translatePath(corporation_path(corporation.corporation_id, corporation.corporation_name))
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
@@ -35,12 +34,13 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
-import CorporationSlideStatus from "@components/blocks/CorporationSlideStatus.astro";
+import Button from '@components/blocks/Button.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import Tag from '@components/blocks/Tag.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
+import { corporation_path } from '@helpers/corporations/detail';
 import { query_string } from '@helpers/string';
 ---
 
@@ -75,10 +75,9 @@ import { query_string } from '@helpers/string';
                 <slot />
             </TextBox>
             <div class="[ animated ][ animate-fade-in animate-duration-250 animate-delay-450 ]">
-                <CorporationSlideStatus
-                    corporation={corporation}
-                    is_user_corporation={is_user_corporation}
-                />
+                <Button href={corporation_url}>
+                    {t('learn_more')}
+                </Button>
             </div>
         </Flexblock>
     </Wrapper>
@@ -163,7 +162,7 @@ import { query_string } from '@helpers/string';
         &:focus-visible,
         &:hover {
             img {
-                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+                filter: drop-shadow(0px 0px 3px var(--glow));
             }
         }
     }

@@ -2,10 +2,8 @@
 
 from unittest.mock import patch
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, SimpleTestCase, TestCase
 from eveuniverse.models import (
     EveCategory,
     EveGroup,
@@ -18,6 +16,7 @@ from eveuniverse.models import (
 )
 
 from eveonline.models import EveCharacter, EveCharacterSkill
+from industry.helpers.facility_api import normalize_me_te
 from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_ID,
     AUNER_SYSTEM_ID,
@@ -33,21 +32,16 @@ from industry.helpers.reprocessing_skills import (
     SKILL_UBIQUITOUS_MOON_ORE_PROCESSING,
 )
 from industry.models import IndustryLoyaltyPoint, IndustryLpStoreOffer
+from app.testing import make_token
 
 BASE = "/api/industry/planner"
-
-
-def _token(user: User) -> str:
-    return jwt.encode(
-        {"user_id": user.pk}, settings.SECRET_KEY, algorithm="HS256"
-    )
 
 
 class PlannerFacilitiesEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="planner", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
     def test_facilities_public_without_auth(self):
         response = self.client.get(f"{BASE}/facilities")
@@ -186,7 +180,7 @@ class PlannerSystemEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="sysuser", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
     @patch("industry.helpers.facility_api.fetch_system_cost_indices")
     def test_system_amamake_resolves_facility(self, fetch_indices):
@@ -216,7 +210,7 @@ class PlannerPlanEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="planuser", password="x")
-        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {make_token(self.user)}"}
 
         cat, _ = EveCategory.objects.get_or_create(
             id=6, defaults={"name": "Ship", "published": True}
@@ -1081,3 +1075,18 @@ class PlannerCorsTestCase(TestCase):
         # Unknown origins fall through to Ninja routing → 405 Method Not Allowed.
         self.assertEqual(response.status_code, 405)
         self.assertNotIn("Access-Control-Allow-Origin", response)
+
+
+class NormalizeMeTeTestCase(SimpleTestCase):
+    def test_whole_percents(self):
+        for value, expected in [(0, 0), (1, 0.01), (2, 0.02), (10, 0.1)]:
+            self.assertAlmostEqual(normalize_me_te(value), expected)
+        self.assertAlmostEqual(normalize_me_te(20), 0.2)
+
+    def test_fractions_still_accepted(self):
+        for value in (0.0, 0.02, 0.1, 0.2):
+            self.assertAlmostEqual(normalize_me_te(value), value)
+
+    def test_negative_is_rejected(self):
+        with self.assertRaises(ValueError):
+            normalize_me_te(-1)

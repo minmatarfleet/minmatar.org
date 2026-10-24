@@ -20,9 +20,9 @@ from campaigns.models import (
     CampaignStatus,
     CampaignSystem,
 )
-from campaigns.services import advantage
+from campaigns.services import advantage, stats
 from eveonline.models import EveCharacter, EvePlayer
-from eveonline.scopes import TokenType, token_satisfies_type
+from eveonline.scopes import CAMPAIGN_SCOPES
 from groups.helpers.feature_access import require_feature
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ DEFAULT_REDIRECT = "/account/campaigns/"
 
 TOKEN_CHAIN_URL = (
     "/api/eveonline/characters/add"
-    "?token_type=Campaign&character_id={character_id}&redirect_url={redirect}"
+    "?token_type=FactionWarfare&character_id={character_id}&redirect_url={redirect}"
 )
 
 
@@ -77,14 +77,31 @@ def _safe_redirect(redirect_url: str) -> str:
     return DEFAULT_REDIRECT
 
 
+def _has_campaign_scopes(character: EveCharacter) -> bool:
+    """Sites and advantage need the notification scope. Kills come from the feed.
+
+    The Faction Warfare token type carries that scope, but readiness must
+    not demand every scope in it. Structure search was added to Basic later,
+    and requiring it sent pilots who already had notifications through Discord
+    and EVE only to land on the same Missing scopes row.
+    """
+    token = character.token
+    if token is None:
+        return False
+    required = set(CAMPAIGN_SCOPES)
+    have = set(
+        token.scopes.filter(name__in=required).values_list("name", flat=True)
+    )
+    return required.issubset(have)
+
+
 def _character_state(character: EveCharacter) -> tuple[str, str]:
     """One word for what this character is ready for."""
-    token = character.token
     if character.esi_deleted:
         return "removed", "nothing"
-    if character.esi_suspended or token is None:
+    if character.esi_suspended or character.token is None:
         return "lapsed", "nothing"
-    if token_satisfies_type(token, TokenType.CAMPAIGN):
+    if _has_campaign_scopes(character):
         return "ready", "kills, losses, sites and advantage"
     return "needs_update", "kills and losses"
 
@@ -175,10 +192,6 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
         defaults={
             "status": "active",
             "source": payload.source,
-            "notify_gang_forming": payload.notify_gang_forming,
-            "notify_standing_fleet": payload.notify_standing_fleet,
-            "notify_activity_nearby": payload.notify_activity_nearby,
-            "notify_streak_at_risk": payload.notify_streak_at_risk,
             "digest_hour": payload.digest_hour,
         },
     )
@@ -367,7 +380,8 @@ def form_gang(request, slug: str, payload: schemas.GangRequest):
         campaign=campaign,
         kind=CampaignEvent.Kind.GANG_FORMED,
         occurred_at=timezone.now(),
-        title=f"{request.user.username} is forming {payload.ships}",
+        title=f"{stats.pilot_name(request.user.id)} is forming "
+        f"{payload.ships}",
         body=payload.note,
         campaign_system=system,
         user=request.user,

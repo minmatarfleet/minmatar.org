@@ -6,7 +6,7 @@ import type {
     FittingBuyContractFeeRates,
     FittingBuyContractPrice,
 } from '@helpers/api.minmatar.org/fitting_buy_orders'
-import { number_thousand_separator } from '@helpers/numbers'
+import { ISK_CONTRACT, format_compact, format_isk_full } from '@helpers/numbers'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -49,32 +49,11 @@ const to_number = (value: string | null | undefined) => {
     return Number.isNaN(num) ? null : num
 }
 
-const fmt_full = (value: string | null | undefined) => {
-    const num = to_number(value)
-    if (num == null)
-        return '—'
-    return number_thousand_separator(Math.round(num), lang)
-}
+const fmt_full = (value: string | null | undefined) => format_isk_full(to_number(value), lang)
 
-const fmt_compact = (value: string | number | null | undefined, signed = false) => {
-    const num = typeof value === 'number' ? value : to_number(value)
-    if (num == null)
-        return '—'
-    const abs = Math.abs(num)
-    const sign = num < 0 ? '−' : (signed && num > 0 ? '+' : '')
-    let body: string
-    if (abs >= 1e9)
-        body = `${(abs / 1e9).toFixed(2)}B`
-    else if (abs >= 1e8)
-        body = `${(abs / 1e6).toFixed(0)}M`
-    else if (abs >= 1e6)
-        body = `${(abs / 1e6).toFixed(1)}M`
-    else if (abs >= 1e3)
-        body = `${(abs / 1e3).toFixed(0)}k`
-    else
-        body = number_thousand_separator(Math.round(abs), lang)
-    return `${sign}${body}`
-}
+const ISK_CONTRACT_SIGNED = { ...ISK_CONTRACT, plus: '+' }
+const fmt_compact = (value: string | number | null | undefined, signed = false) =>
+    format_compact(typeof value === 'number' ? value : to_number(value), signed ? ISK_CONTRACT_SIGNED : ISK_CONTRACT)
 
 const fmt_pct = (rate: string | null | undefined) => {
     const num = to_number(rate)
@@ -478,6 +457,7 @@ const settings_disabled = !is_owner
     .contract-segments {
         display: inline-flex;
         flex-wrap: wrap;
+        max-width: 100%;
         border: 1px solid var(--border-color-hover);
         background: color-mix(in srgb, var(--background) 45%, transparent);
     }
@@ -542,6 +522,13 @@ const settings_disabled = !is_owner
         font-size: var(--step--2);
         line-height: 1.2;
         white-space: nowrap;
+    }
+
+    /* The public fee line is wider than a phone's card; let it wrap there. */
+    @media (max-width: 767px) {
+        .contract-segment__sub {
+            white-space: normal;
+        }
     }
 
     .contract-segment:has(input[type='radio']:checked) .contract-segment__sub {
@@ -929,5 +916,74 @@ const settings_disabled = !is_owner
 
     [x-cloak] {
         display: none !important;
+    }
+
+    /* Phones: trim nested padding, put the hull thumbnail beside a full-width
+       name/variant column, full-width selects, 16px+ inputs (no iOS zoom). */
+    @media (max-width: 48rem) {
+        .wrapper.fitting-buy-contract-prices {
+            padding-inline: var(--space-s);
+        }
+
+        .contract-segments {
+            display: flex;
+        }
+
+        .contract-segment {
+            flex: 1 1 auto;
+        }
+
+        .contract-segment__sub {
+            white-space: normal;
+        }
+
+        .contract-segment__custom input[type='number'] {
+            font-size: var(--step-0);
+        }
+
+        .contract-fit {
+            padding: var(--space-xs);
+        }
+
+        .contract-fit__identity {
+            flex-wrap: wrap;
+            column-gap: var(--space-xs);
+            row-gap: var(--space-2xs);
+
+            > :global(picture) {
+                flex: 0 0 64px;
+                width: 64px;
+            }
+
+            > :global(.flex-block) {
+                flex: 1 1 0;
+            }
+        }
+
+        .contract-fit__hull {
+            font-size: var(--step-0);
+            line-height: 1.15;
+            overflow-wrap: break-word;
+        }
+
+        .contract-fit__fit,
+        .contract-fit__variant {
+            overflow-wrap: break-word;
+        }
+
+        .contract-fit__copy-fit {
+            flex-basis: 100%;
+            margin-inline-start: 0;
+        }
+
+        .contract-cost {
+            padding-inline: var(--space-xs);
+        }
+
+        .hull-source select {
+            max-width: none;
+            min-height: var(--space-xl);
+            font-size: var(--step-0);
+        }
     }
 </style>

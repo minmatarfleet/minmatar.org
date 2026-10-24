@@ -1,0 +1,26 @@
+---
+// The fleet form's Discord start ping preview: htmx posts the form's fields
+// here as they change, and the backend builds the payload with the same code
+// as the real ping (POST /api/fleets/ping-preview).
+// no-error-refetch: a failed preview renders the empty card with a note, and
+// the next field change asks again; retrying with backoff would race the typing.
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { ping_preview_request } from '@helpers/fleet_hosts'
+import { fetch_fleet_ping_preview } from '@helpers/fetching/fleet_ping_preview'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const form = await Astro.request.formData()
+const host_tribe_id = parseInt(String(form.get('host_tribe_id') ?? ''))
+const preview = await fetch_fleet_ping_preview(
+    auth_token,
+    ping_preview_request(form),
+    Number.isFinite(host_tribe_id) ? host_tribe_id : null,
+)
+
+import FleetPingPreview from '@components/blocks/FleetPingPreview.astro'
+---
+
+<FleetPingPreview preview={preview} />

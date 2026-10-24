@@ -4,10 +4,12 @@ import logging
 from datetime import datetime
 from typing import Optional
 
+from django.contrib.auth.models import User
 from django.utils import timezone
 
-from discord.client import DiscordClient
+from discord.outbox import queue_channel_message
 from eveonline.helpers.characters import user_characters
+from eveonline.helpers.prime_time import prime_bucket
 from fittings.models import EveDoctrine
 from groups.helpers.feature_access import can_use_feature
 
@@ -18,7 +20,6 @@ from fleets.models import (
     close_fleet_cleanup,
 )
 from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
-from fleets.helpers.roam_report import schedule_roam_report
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
 
@@ -41,6 +42,40 @@ def fixup_fleet_status(
     return fleet.status
 
 
+# What make_fleet_response reads, for list endpoints to select_related.
+FLEET_RESPONSE_RELATED = (
+    "created_by__eveplayer__primary_character",
+    "doctrine",
+    "location",
+    "audience",
+    "host_group__tribe",
+)
+
+
+def fleet_host_fields(fleet: EveFleet) -> dict:
+    """The tribe-group fields every fleet response carries."""
+    # pylint: disable=import-outside-toplevel
+    from tribes.helpers.publishing import host_group_ref
+
+    return {
+        "host_group": (
+            host_group_ref(fleet.host_group) if fleet.host_group_id else None
+        ),
+        "open_to_alliance": bool(fleet.open_to_alliance),
+        "on_schedule": bool(fleet.on_schedule),
+    }
+
+
+def _primary_character(user):
+    """The user's primary character, or None (no user, player or primary)."""
+    if user is None:
+        return None
+    try:
+        return user.eveplayer.primary_character
+    except User.eveplayer.RelatedObjectDoesNotExist:
+        return None
+
+
 def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
     tracking = None
     if EveFleetInstance.objects.filter(eve_fleet=fleet).exists():
@@ -48,6 +83,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
             EveFleetInstance.objects.get(eve_fleet=fleet)
         )
 
+    fc_character = _primary_character(fleet.created_by)
     return {
         "id": fleet.id,
         "type": fleet.type,
@@ -55,6 +91,12 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
+        "fleet_commander_character_id": (
+            fc_character.character_id if fc_character else None
+        ),
+        "fleet_commander_name": (
+            fc_character.character_name if fc_character else None
+        ),
         "location": (
             fleet.formup_location.location_name
             if fleet.formup_location
@@ -66,39 +108,43 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "hide_volunteers": fleet.hide_volunteers,
         "status": fixup_fleet_status(fleet, tracking),
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
+        "doctrine_name": fleet.doctrine.name if fleet.doctrine else None,
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
+        **fleet_host_fields(fleet),
     }
 
 
 def time_region(time: datetime) -> str:
-    match time.hour:
-        case 22 | 23 | 0 | 1 | 2 | 3 | 4:
-            return "US"
-        case 5 | 6 | 7 | 8 | 9:
-            return "US_AP"
-        case 10 | 11 | 12 | 13 | 14:
-            return "AP"
-        case 15 | 16 | 17 | 18 | 19:
-            return "EU"
-        case 20 | 21:
-            return "EU_US"
-        case _:
-            return "??"
+    return prime_bucket(time.hour)
 
 
 def _fleet_authorized(request, fleet: EveFleet) -> bool:
-    """True if user can view this fleet (and thus list/volunteer for roles)."""
+    """
+    True if user can view this fleet (and thus list/volunteer for roles).
+    Strategic FCs see every fleet, whatever its audience or host group.
+    """
     if can_use_feature(request.user, "fleets.view", fleet=fleet):
         return True
     if request.user == fleet.created_by:
         return True
-    return False
+    return is_strategic_fc(request.user)
 
 
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
-    """Send a Discord pre-ping for a fleet."""
-    if not fleet.audience:
+    """Queue a Discord pre-ping for a fleet; a worker posts it.
+
+    Returns False when the fleet has no audience channel to ping. Tribe
+    group fleets never pre-ping (docs/tribes/tribe-publishing.md rule 3),
+    and nor do private fleets (docs/fleets/private-fleets.md).
+    """
+    if fleet.host_group_id or fleet.invite_only or not fleet.audience:
+        return False
+    if not fleet.audience.discord_channel_id:
+        logger.error(
+            "Error sending Discord pre-ping for fleet %d : no channel",
+            fleet.id,
+        )
         return False
 
     notification = get_fleet_discord_notification(
@@ -119,19 +165,12 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
         fleet_start_time=fleet.start_time,
     )
 
-    try:
-        DiscordClient().create_message(
-            channel_id=fleet.audience.discord_channel_id,
-            payload=notification,
-        )
-        return True
-    except Exception as e:
-        logger.error(
-            "Error sending Discord pre-ping for fleet %d : %s",
-            fleet.id,
-            str(e),
-        )
-        return False
+    queue_channel_message(
+        fleet.audience.discord_channel_id,
+        payload=notification,
+        context=f"pre-ping for fleet {fleet.id}",
+    )
+    return True
 
 
 def _fleet_patch_audience_location_errors(
@@ -178,15 +217,11 @@ def _fleet_apply_optional_scalar_updates(fleet: EveFleet, payload) -> None:
 
 
 def update_instance_endtime(fleet: EveFleet) -> None:
-    closed_tracking = False
     for instance in EveFleetInstance.objects.filter(eve_fleet=fleet):
         if not instance.end_time:
             instance.end_time = timezone.now()
             instance.save()
-            closed_tracking = True
     close_fleet_cleanup(fleet)
-    if closed_tracking and fleet.status == "complete":
-        schedule_roam_report(fleet.id)
 
 
 def try_refresh_active_fleet_motd(fleet: EveFleet) -> None:
@@ -208,15 +243,27 @@ def is_strategic_fc(user) -> bool:
     """True if this user may manage any fleet and see hidden volunteer rosters."""
     if user is None or not getattr(user, "is_authenticated", False):
         return False
-    return user.has_perm("fleets.manage_any_fleet")
+    return can_use_feature(user, "fleets.manage_any")
+
+
+def sees_all_volunteers(user, fleet: EveFleet) -> bool:
+    """
+    True if this user sees every name on the fleet's roster: always when the
+    roster is shown, else only the fleet's own FC and Strategic FCs.
+    """
+    if not fleet.hide_volunteers:
+        return True
+    if user is not None and user == fleet.created_by:
+        return True
+    return is_strategic_fc(user)
 
 
 def limit_volunteers_to_viewer(request, fleet, volunteers):
     """
-    When the fleet hides its roster, only a Strategic FC sees every signup.
-    Everyone else sees volunteers for their own characters.
+    When the fleet hides its roster, only its FC and Strategic FCs see every
+    signup. Everyone else sees volunteers for their own characters.
     """
-    if not fleet.hide_volunteers or is_strategic_fc(request.user):
+    if sees_all_volunteers(request.user, fleet):
         return volunteers
     own_ids = {
         character.character_id for character in user_characters(request.user)
@@ -264,7 +311,7 @@ def _system_reveal_predicate(request, fleet: EveFleet):
     return lambda volunteer: volunteer.character_id in own_ids
 
 
-def make_ship_volunteer_response(volunteer):
+def make_ship_volunteer_response(volunteer, reveal_system: bool = False):
     from fleets.endpoints.schemas import (  # pylint: disable=import-outside-toplevel
         EveFleetShipVolunteerResponse,
     )
@@ -277,6 +324,13 @@ def make_ship_volunteer_response(volunteer):
         fleet_fitting_id=volunteer.fleet_fitting_id,
         fitting_name=volunteer.target_name,
         ship_id=volunteer.target_ship_id,
+        ship_type_id=volunteer.ship_type_id,
+        off_doctrine=volunteer.is_off_doctrine,
+        bursts=list(volunteer.bursts or []),
+        solar_system_id=volunteer.solar_system_id if reveal_system else None,
+        solar_system_name=(
+            volunteer.solar_system_name or None if reveal_system else None
+        ),
     )
 
 
@@ -302,6 +356,22 @@ def make_composition_entry_response(entry):
             for rid, rname in entry.refits
         ],
         module_slots=entry.module_slots,
+        fit_roles=make_fit_roles_response(entry.roles),
+    )
+
+
+def make_fit_roles_response(roles):
+    from fleets.endpoints.schemas import (  # pylint: disable=import-outside-toplevel
+        EveFleetFitRolesResponse,
+    )
+
+    return EveFleetFitRolesResponse(
+        links=roles.links,
+        burst_slots=roles.burst_slots,
+        bursts_online=roles.bursts_online,
+        bursts_fitted=roles.bursts_fitted,
+        cyno=roles.cyno,
+        logi=roles.logi,
     )
 
 
@@ -336,3 +406,25 @@ def make_fleet_refit_response(refit):
         ],
         notes=refit.notes,
     )
+
+
+def etag_json_response(request, model):
+    """
+    Serialize a response model with an ETag, answering 304 when the client
+    already has this exact body (polling clients skip the download, the
+    parse and the re-render).
+    """
+    # pylint: disable=import-outside-toplevel
+    import hashlib
+
+    from django.http import HttpResponse
+
+    body = model.model_dump_json()
+    etag = '"' + hashlib.sha1(body.encode()).hexdigest()[:24] + '"'
+    if etag in request.headers.get("If-None-Match", ""):
+        response = HttpResponse(status=304)
+    else:
+        response = HttpResponse(body, content_type="application/json")
+    response["ETag"] = etag
+    response["Cache-Control"] = "private, no-cache"
+    return response

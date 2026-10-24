@@ -8,10 +8,10 @@ Identify L3ARN pilots ready to graduate, route them to alliance corps using **be
 
 ```bash
 cd backend
-pipenv run python ../.cursor/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
+pipenv run python ../.claude/skills/academy-graduation/scripts/fetch_academy_pilots.py --json
 ```
 
-Requires `production_readonly` DB access (see `.cursor/skills/debug-production-readonly-db/SKILL.md`).
+Requires `production_readonly` DB access (see `.claude/skills/debug-production-readonly-db/SKILL.md`).
 
 ## What it does
 
@@ -36,7 +36,7 @@ FOSFO replaced Administrative Atrocities as the EUTZ graduate path. Verify corps
 
 `config.json` — academy corp ID, behavior window, graduate days, corp ticker reference.
 
-## Cursor usage
+## Agent usage (Claude Code or Cursor)
 
 ```
 Run the academy graduation report

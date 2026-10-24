@@ -8,14 +8,14 @@ from tribes.endpoints.groups.schemas import (
     TribeGroupShowcaseSchema,
 )
 from tribes.helpers import user_can_view_group_roster
-from tribes.helpers.showcase import build_group_showcase
+from tribes.helpers.showcase import group_showcase, public_highlights
 from tribes.models import TribeGroup
 from tribes.reports import ReportError
 
 PATH = "/{tribe_id}/groups/{group_id}/showcase"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "Group activity showcase (30d totals; named rows for roster viewers).",
+    "summary": "Group activity showcase (totals and records; named rows for roster viewers).",
     "response": {200: TribeGroupShowcaseSchema, 404: dict},
     "auth": AuthOptional(),
 }
@@ -33,11 +33,14 @@ def get_tribe_group_showcase(request, tribe_id: int, group_id: int):
         return 404, {"detail": "Tribe group not found."}
 
     try:
-        payload = build_group_showcase(tg)
+        payload = group_showcase(tg)
     except ReportError as exc:
         return 404, {"detail": str(exc)}
+    if payload.get("error"):
+        return 404, {"detail": payload["error"]}
 
     include_names = user_can_view_group_roster(request.user, tg)
+    highlights = payload.get("highlights") or {}
     contributors = []
     if include_names:
         contributors = [
@@ -46,6 +49,7 @@ def get_tribe_group_showcase(request, tribe_id: int, group_id: int):
                 character_name=c.get("character_name") or "",
                 metric_key=c.get("metric_key") or "",
                 metric_value=c.get("metric_value") or 0,
+                values=c.get("values") or {},
             )
             for c in payload.get("contributors") or []
         ]
@@ -58,10 +62,14 @@ def get_tribe_group_showcase(request, tribe_id: int, group_id: int):
         period_start=payload.get("period_start"),
         period_end=payload.get("period_end"),
         manual=bool(payload.get("manual")),
+        warming=bool(payload.get("warming")),
         message=payload.get("message") or "",
         totals=payload.get("totals") or {},
         columns=payload.get("columns") or [],
         contributors=contributors,
+        highlights=(
+            highlights if include_names else public_highlights(highlights)
+        ),
     )
 
 

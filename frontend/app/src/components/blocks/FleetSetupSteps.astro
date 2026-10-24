@@ -1,0 +1,130 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CommandStep } from '@helpers/fleet_command'
+
+/**
+ * The Command tab's checklist: every step from scheduling to the in-game
+ * checks, in order. Done steps are ticked, the next one is highlighted with
+ * how to do it, later ones wait. While the fleet tracks, the list reloads
+ * itself so in-game fixes show up.
+ */
+interface Props {
+    fleet_id:   number;
+    steps:      CommandStep[];
+    /** Reload every minute (tracking is running). Starting the fleet reloads it too. */
+    refresh?:   boolean;
+}
+
+const {
+    fleet_id,
+    steps,
+    refresh = false,
+} = Astro.props
+
+const done = steps.filter(step => step.state === 'done').length
+const REFRESH_URL = `${translatePath('/partials/fleet_command_steps_component')}?fleet_id=${fleet_id}`
+---
+
+<section
+    id="fleet-command-steps"
+    class="[ fleet-setup ]"
+    aria-labelledby="fleet-setup-title"
+    hx-get={REFRESH_URL}
+    hx-trigger={refresh ? 'every 60s, tracking_started from:body' : 'tracking_started from:body'}
+    hx-swap="outerHTML"
+>
+    <header>
+        <h2 id="fleet-setup-title">{t('fleets.command.steps_title')}</h2>
+        <small>{t('fleets.command.steps_summary').replace('{done}', done.toString()).replace('{total}', steps.length.toString())}</small>
+    </header>
+    <ol>
+        {steps.map((step, index) =>
+            <li class:list={[`fleet-setup__${step.state}`]}>
+                <span class="[ fleet-setup__mark ]" aria-hidden="true">{step.state === 'done' ? '✓' : index + 1}</span>
+                <span class="[ fleet-setup__text ]">
+                    <b>{step.label}</b>
+                    <small>
+                        <span class="[ visually-hidden ]">{step.state === 'done' ? t('fleets.setup.done') : t('fleets.setup.todo')}: </span>
+                        {step.detail}
+                    </small>
+                </span>
+            </li>
+        )}
+    </ol>
+</section>
+
+<style lang="scss">
+    .fleet-setup {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs) var(--space-m);
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        ol {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-s);
+            padding: var(--space-xs) var(--space-s);
+            background-color: var(--component-background);
+        }
+
+        .fleet-setup__next {
+            background-color: color-mix(in srgb, var(--security-status-point-4) 10%, var(--component-background));
+        }
+    }
+
+    .fleet-setup__mark {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        width: 1.75rem;
+        height: 1.75rem;
+        border: 2px solid var(--border-color-hover);
+        font-weight: 700;
+
+        .fleet-setup__done & {
+            background-color: var(--green);
+            border-color: var(--green);
+            color: var(--highlight);
+        }
+
+        .fleet-setup__next & {
+            border-color: var(--security-status-point-4);
+            color: var(--security-status-point-4);
+        }
+    }
+
+    .fleet-setup__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+
+        .fleet-setup__todo & b {
+            color: var(--foreground);
+        }
+    }
+</style>

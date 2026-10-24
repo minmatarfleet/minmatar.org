@@ -2,9 +2,11 @@
 
 from collections import defaultdict
 
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
 from eveonline.models import EveCharacter, EveCharacterMiningEntry
-from eveonline.models.characters import EvePlayer
-from eveuniverse.models import EveMarketPrice
+from market.helpers.pricing import get_history_averages_by_type_id
 from tribes.reports.roster import roster_character_pks, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
 
@@ -44,10 +46,8 @@ def run_mining_report(
         user_ids = {e.character.user_id for e in entries if e.character}
 
     type_ids = {e.eve_type_id for e in entries if e.eve_type_id}
-    prices = {
-        p.eve_type_id: p.average_price
-        for p in EveMarketPrice.objects.filter(eve_type_id__in=type_ids)
-    }
+    # Jita guide value of the ore (Forge history, then CCP average price).
+    prices = get_history_averages_by_type_id(list(type_ids))
 
     vol_by_user: dict[int, float] = defaultdict(float)
     isk_by_user: dict[int, float] = defaultdict(float)
@@ -108,18 +108,13 @@ def _empty_totals():
 
 
 def _build_user_rows(user_ids, chars_by_user, vol_by_user, isk_by_user):
-    players = {
-        p.user_id: p
-        for p in EvePlayer.objects.filter(user_id__in=user_ids).select_related(
-            "primary_character"
-        )
-    }
+    mains = primary_characters_for_users(user_ids)
     # Fallback character names per user
     char_names = {}
     for uid in user_ids:
-        pc = players.get(uid)
-        if pc and pc.primary_character:
-            char_names[uid] = pc.primary_character.character_name or ""
+        main = mains.get(uid)
+        if main:
+            char_names[uid] = main.character_name or ""
         else:
             c = (
                 EveCharacter.objects.filter(user_id=uid)

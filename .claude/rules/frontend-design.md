@@ -4,10 +4,10 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 
 ## 1. Interactivity & state management
 
-- **htmx owns all server state.** Any data fetching, mutation, partial re-render, or DOM update that reflects server state must use htmx (`hx-get`/`hx-post`/`hx-swap`/`hx-swap-oob`, `htmx.process()`) against server-rendered partials in `src/pages/partials/*_component.astro`. The server renders HTML; the client never builds DOM from JSON.
+- **htmx owns all server state.** Any data fetching, mutation, partial re-render, or DOM update that reflects server state must use htmx (`hx-get`/`hx-post`/`hx-swap`/`hx-swap-oob`) against server-rendered partials in `src/pages/partials/*_component.astro`. The server renders HTML; the client never builds DOM from JSON.
 - **Alpine.js is for minor, local UI interactivity only**: toggles, collapsibles, filters over already-rendered DOM, dialog open/close, small transient UI state.
 - **Forbidden**: Alpine calling endpoints (`fetch()`/axios), holding server data in Alpine state, or driving DOM updates from fetched data. If data must update the DOM, use an htmx partial.
-- After htmx injects a partial containing Alpine/htmx markup, call `htmx.process(element)` / `Alpine.initTree(element)`.
+- Swapped-in partials are initialised globally by `src/helpers/swap_init.ts` (htmx processes what it swaps; `Alpine.initTree` and tooltips run on the swap target). Don't add `htmx:afterSwap` re-init scripts and don't call `htmx.process()` on swapped content: re-processing an `hx-trigger="load"` element fires its request twice. Call `htmx.process()` only on markup Alpine creates itself (`x-teleport`, `x-if`/`x-for`), as `DialogButton` and `Dropdown` do. Load deferred slots with `LazyPartial`.
 - Do **not** add new Alpine `fetch()` callers. Existing ones (e.g. `LoyaltyOrderBook`, `PageProgressTracker`) are pending migration.
 
 ## 2. Naming
@@ -19,13 +19,13 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 ## 3. Design tokens — never hardcode values
 
 - Use the CSS custom properties in `src/styles/properties/`: colors (`--fleet-red`, `--fleet-yellow`, `--alliance-blue`, `--militia-purple`, `--green`, semantic `--foreground`/`--highlight`/`--background`), Utopia fluid space `--space-*` and type `--step-*`, fonts (`--heading-font`/`--button-font`/`--default-font`), layout widths, transitions (`--fast-transition`…`--slowest-transition`).
-- No raw `px`/`rem` for spacing/type; no hardcoded hex colors. For glass/transparency use the `.*-transparency` effect classes.
+- No raw `px`/`rem` for spacing/type; no hardcoded hex colors or white/black `rgba()` tints. Use the alpha tokens (`--hairline`, `--hairline-medium`, `--hairline-strong`, `--text-muted`, `--surface-sunken`, `--border-color`, `--faded`) or `color-mix(in srgb, var(--token) N%, transparent)` for other alphas. For glass/transparency use the `.*-transparency` effect classes.
 - Z-index must derive from the layered chain in `_z-index.scss` (`--header` → `--neocom` → `--backdrop` → `--dialog` → `--page-finder` → `--alert` → `--dialog-close` → `--tooltips`). Never invent z-index values.
 
 ## 4. Layout
 
-- Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `Flexblock`, `FixedFluid`, `FluidFixed`, `Cover`, `Center`, `ScrollX`, `AspectRatio`, `BlockList`) instead of hand-rolling flex/grid.
-- Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Card`, `Input` rather than restyling raw elements.
+- Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `FlexInlineSiblings`, `Flexblock`, `FixedFluid`, `FluidFixed`, `BlockList`, `XFadeScroll`, `Cover`, `Center`) instead of hand-rolling flex/grid. Wide tables and chip rows scroll inside `XFadeScroll`, not a hand-rolled `overflow-x: auto`.
+- Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Input` rather than restyling raw elements. A bordered panel is `ComponentBlock`; `Card` is only the picture card with hover actions.
 
 ## 5. Component conventions
 
@@ -34,6 +34,8 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 - Scoped `<style lang="scss">` by default; `is:global` only for shared classes. Pass props into CSS via `define:vars`.
 - Tailwind = utilities only; reference tokens with arbitrary values (`top-[var(--space-2xs)]`). No component-level `@apply` blobs.
 - User-visible strings via `@helpers/i18n` (`t`, `translatePath`); shared UI types via `@dtypes/layout_components`.
+- Empty lists/panels render `<EmptyState title={t(...)} />` (add `hint` for a whole-panel empty); a partial that fetches from the API renders failures with `ErrorRefetch`. Both are styled globally, so they work inside htmx partials. No new `__empty` styles.
+- Access gates (pages, partials, nav, tiles, buttons) use `can(await get_gates(Astro), '<gate>')` from `@helpers/gates`; gates live in `src/json/feature_gates.json` and map to pilot features (see `docs/auth/frontend-feature-gating.md`). Never check Django permission strings or the JWT `is_superuser` claim for access. Per-object rights come from the resource API (`can_manage`, ...).
 
 ## 6. Accessibility
 
@@ -44,4 +46,4 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 
 ## 7. Verify
 
-Run from `frontend/app/`: `npm run check` and `npm run test` before finishing. No frontend change merges with failing `npm run check`.
+Run from `frontend/app/`: `npm run check` (astro check ratchet: fails when a file has more type errors than `testing/conventions/type_check_baseline.json` allows) and `npm run test` before finishing. No frontend change merges with failing `npm run check`.

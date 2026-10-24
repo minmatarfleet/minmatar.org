@@ -18,7 +18,18 @@ class IndustryLoyaltyPoint(models.Model):
     )
     default_isk_per_lp = models.PositiveIntegerField(
         default=800,
-        help_text="Default ISK per LP used when planning navy BPC costs.",
+        help_text=(
+            "Standard ISK/LP: orders fill as volume and the current market "
+            "allow. Also used when planning navy BPC costs."
+        ),
+    )
+    express_isk_per_lp = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Express ISK/LP: orders settled within 24 hours. Leave empty to "
+            "turn express off."
+        ),
     )
     is_active = models.BooleanField(default=True)
     allow_buy = models.BooleanField(
@@ -44,35 +55,43 @@ class IndustryLoyaltyPoint(models.Model):
     def __str__(self) -> str:
         return f"{self.name} ({self.default_isk_per_lp} ISK/LP)"
 
+    # Tracked price field -> price history tier.
+    _PRICE_TIERS = (
+        ("default_isk_per_lp", "standard"),
+        ("express_isk_per_lp", "express"),
+    )
+
     def save(self, *args, **kwargs):
         update_fields = kwargs.get("update_fields")
-        track_price = (
-            update_fields is None or "default_isk_per_lp" in update_fields
-        )
+        tracked = [
+            (field, tier)
+            for field, tier in self._PRICE_TIERS
+            if update_fields is None or field in update_fields
+        ]
         previous = None
-        had_previous = False
-        if track_price and self.pk:
-            try:
-                previous = IndustryLoyaltyPoint.objects.values_list(
-                    "default_isk_per_lp", flat=True
-                ).get(pk=self.pk)
-                had_previous = True
-            except IndustryLoyaltyPoint.DoesNotExist:
-                pass
+        if tracked and self.pk:
+            previous = (
+                IndustryLoyaltyPoint.objects.filter(pk=self.pk)
+                .values(*(field for field, _ in tracked))
+                .first()
+            )
 
         super().save(*args, **kwargs)
 
-        if not track_price or not had_previous:
+        if previous is None:
             return
-        if previous == self.default_isk_per_lp:
-            return
-        IndustryLoyaltyPointPriceHistory.objects.create(
-            loyalty_point=self,
-            account=None,
-            old_isk_per_lp=previous,
-            new_isk_per_lp=self.default_isk_per_lp,
-            changed_by=self.history_changed_by,
-        )
+        for field, tier in tracked:
+            old, new = previous[field], getattr(self, field)
+            if old == new:
+                continue
+            IndustryLoyaltyPointPriceHistory.objects.create(
+                loyalty_point=self,
+                account=None,
+                tier=tier,
+                old_isk_per_lp=old,
+                new_isk_per_lp=new,
+                changed_by=self.history_changed_by,
+            )
 
 
 class IndustryLoyaltyPointAccount(models.Model):
@@ -197,6 +216,11 @@ class IndustryLoyaltyPointPriceHistory(models.Model):
             "Empty for published currency default rate changes; set for "
             "account offer price changes."
         ),
+    )
+    tier = models.CharField(
+        max_length=16,
+        default="standard",
+        help_text="Which currency price changed: standard or express.",
     )
     old_isk_per_lp = models.PositiveIntegerField(null=True, blank=True)
     new_isk_per_lp = models.PositiveIntegerField(null=True, blank=True)
@@ -491,6 +515,10 @@ class IndustryLpStoreOfferRequiredItem(models.Model):
         return f"offer {self.offer_id}: type={self.type_id} x{self.quantity}"
 
 
+# Sentinel: the order's status was not loaded (deferred), so it is unknown.
+_STATUS_UNKNOWN = object()
+
+
 class IndustryLoyaltyPointMarketOrder(models.Model):
     """Buy or sell offer for a loyalty-point currency (site LP buyback book)."""
 
@@ -506,6 +534,10 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
+    class Tier(models.TextChoices):
+        STANDARD = "standard", "Standard"
+        EXPRESS = "express", "Express"
+
     loyalty_point = models.ForeignKey(
         IndustryLoyaltyPoint,
         on_delete=models.CASCADE,
@@ -514,6 +546,15 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     side = models.CharField(max_length=8, choices=Side.choices, db_index=True)
     quantity = models.BigIntegerField()
     isk_per_lp = models.PositiveIntegerField()
+    tier = models.CharField(
+        max_length=16,
+        choices=Tier.choices,
+        default=Tier.STANDARD,
+        help_text=(
+            "Standard fills with volume and the market; express settles "
+            "within 24 hours at the express price."
+        ),
+    )
     status = models.CharField(
         max_length=16,
         choices=Status.choices,
@@ -540,6 +581,17 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    status_changed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="When status last changed; drives stalled-order reminders.",
+    )
+    stalled_reminder_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last stalled-order reminder; cleared on status change.",
+    )
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -551,6 +603,67 @@ class IndustryLoyaltyPointMarketOrder(models.Model):
                 name="industry_lp_mkt_status_side",
             ),
         ]
+
+    @property
+    def status_just_changed(self) -> bool:
+        """True right after a save() that changed status (or created)."""
+        return getattr(self, "_status_just_changed", False)
+
+    def set_cancel_notice(self, *, cancelled_by_id=None, reason: str = ""):
+        """Who/why for the Discord cancel post sent after the next save."""
+        self._cancel_notice = (cancelled_by_id, reason)
+
+    @property
+    def cancel_notice(self) -> tuple[int | None, str]:
+        return getattr(self, "_cancel_notice", (None, ""))
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        # Deferred status stays unknown; save() then reads it from the DB.
+        # pylint: disable-next=protected-access
+        instance._loaded_status = instance.__dict__.get(
+            "status", _STATUS_UNKNOWN
+        )
+        return instance
+
+    def refresh_from_db(self, using=None, fields=None, from_queryset=None):
+        super().refresh_from_db(
+            using=using, fields=fields, from_queryset=from_queryset
+        )
+        # Django copies fresh values onto self without calling our from_db.
+        if fields is None or "status" in fields:
+            self._loaded_status = self.status
+
+    def _status_changed_since_load(self) -> bool:
+        if self._state.adding:
+            return True
+        loaded = getattr(self, "_loaded_status", _STATUS_UNKNOWN)
+        if loaded is _STATUS_UNKNOWN:
+            loaded = (
+                type(self)
+                .objects.filter(pk=self.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+        return loaded != self.status
+
+    def save(self, *args, **kwargs):
+        status_changed = self._status_changed_since_load()
+        # Read by the post_save Discord signal (cancel notice).
+        self._status_just_changed = status_changed
+        if status_changed:
+            self.status_changed_at = timezone.now()
+            self.stalled_reminder_at = None
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {
+                    *update_fields,
+                    "status_changed_at",
+                    "stalled_reminder_at",
+                }
+        super().save(*args, **kwargs)
+        self._loaded_status = self.status
 
     def __str__(self) -> str:
         return (

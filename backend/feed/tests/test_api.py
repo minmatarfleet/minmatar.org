@@ -65,3 +65,48 @@ class FeedApiTestCase(TestCase):
         self.assertIn("minmatar_contested", data)
         self.assertIn("changes_24h", data)
         self.assertIn("has_full_24h_window", data)
+
+
+class FeedHidesMembersOnlyFleetsTestCase(TestCase):
+    """A members-only tribe fleet must not show up in the public feed."""
+
+    def _fleet_kills_card(self, fleet, title):
+        return FeedEvent.objects.create(
+            kind=FeedEvent.Kind.FLEET_KILLS,
+            occurred_at=timezone.now(),
+            title=title,
+            accent=FeedEvent.Accent.COMBAT,
+            rollup_code="fleet_kills",
+            cluster_key=f"fleet_kills:{fleet.id}",
+            payload={"fleet_id": fleet.id},
+        )
+
+    def test_members_only_group_fleet_card_is_hidden(self):
+        # pylint: disable=import-outside-toplevel
+        from fleets.models import EveFleet
+        from tribes.models import Tribe, TribeGroup
+
+        tribe = Tribe.objects.create(name="Capitals", slug="capitals")
+        group = TribeGroup.objects.create(tribe=tribe, name="Dreads")
+        start = timezone.now() - timedelta(hours=1)
+        alliance = EveFleet.objects.create(type="training", start_time=start)
+        hidden = EveFleet.objects.create(
+            type="training", start_time=start, host_group=group
+        )
+        open_fleet = EveFleet.objects.create(
+            type="training",
+            start_time=start,
+            host_group=group,
+            open_to_alliance=True,
+        )
+        self._fleet_kills_card(alliance, "alliance card")
+        self._fleet_kills_card(hidden, "members-only card")
+        self._fleet_kills_card(open_fleet, "open card")
+
+        titles = [
+            item["title"]
+            for item in Client().get("/api/feed/").json()["items"]
+        ]
+        self.assertIn("alliance card", titles)
+        self.assertIn("open card", titles)
+        self.assertNotIn("members-only card", titles)

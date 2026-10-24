@@ -2,21 +2,30 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_post_publishable_groups, get_publish_as_context } from '@helpers/fetching/post_publishing'
+import {
+    selected_host,
+    post_publishing_params,
+    post_visibility_value,
+    visibility_field,
+    announce_field,
+    type PostVisibility,
+} from '@helpers/post_publishing'
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+// Posting as a tribe group needs that group's publishing right, not `posts.create`.
+const publishable_groups = await get_post_publishable_groups(auth_token)
+
+const can_manage_posts = can(gates, 'posts.create') || publishable_groups.length > 0
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()
@@ -30,15 +39,17 @@ const param = Astro.params.post_id
 const post_id = param === 'new' ? 0 : parseInt(param ?? '')
 
 if (isNaN(post_id))
-    return Astro.redirect(translatePath('/alliance/post/new'))
+    return Astro.redirect(translatePath('/posts/new'))
 
 let post:Post | null = null
 let submitted_post_data:PostParams = {}
 let alert:Alert | false = false
+let submitted_form:FormData | null = null
 
 if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
+        submitted_form = data
 
         const submitted_post_id = parseInt(data.get('post_id') as string)
         const tag_ids = data.getAll('tag_ids').map(tag_id => parseInt(tag_id as string))
@@ -51,6 +62,7 @@ if (Astro.request.method === "POST") {
             state: data.get('state') as string,
             tag_ids: tag_ids,
             tribe_group_ids: tribe_group_ids,
+            ...post_publishing_params({ get: (name) => data.get(name), groups: publishable_groups }),
         } as PostParams
 
         console.log(submitted_post_data)
@@ -94,7 +106,7 @@ try {
 
 if (!post && post_id) {
     try {
-        post = await get_post(post_id)
+        post = await get_post(post_id, auth_token)
     } catch (error) {
         const get_post_error = error.message
 
@@ -118,6 +130,34 @@ const {
 
 const selected_tribe_group_ids = new Set(tribe_group_ids)
 
+// "Publish as": shown only to pilots who can post as a tribe group.
+const existing_host = post?.host_group ?? null
+// A post's host is set at creation: an existing alliance post keeps today's editor.
+const show_publish_as = post_id > 0 ? existing_host !== null : publishable_groups.length > 0
+const submitted_host = submitted_form?.get('host')?.toString()
+const selected_publish_host = selected_host(submitted_host ?? Astro.url.searchParams.get('host'), publishable_groups)
+
+const visibility_by_group:Record<number, PostVisibility> = {}
+const announce_by_group:Record<number, boolean> = {}
+const publish_group_ids = existing_host ? [existing_host.id] : publishable_groups.map(group => group.id)
+for (const group_id of publish_group_ids) {
+    visibility_by_group[group_id] = submitted_form
+        ? post_visibility_value(submitted_form.get(visibility_field(group_id)))
+        : (existing_host && post?.members_only ? 'members' : 'alliance')
+    if (submitted_form)
+        announce_by_group[group_id] = submitted_form.has(announce_field(group_id))
+}
+
+const publish_as = show_publish_as
+    ? await get_publish_as_context({
+        access_token: auth_token as string,
+        user_id: user.user_id,
+        groups: publishable_groups,
+        discord_group_ids: existing_host ? [existing_host.id] : publishable_groups.map(group => group.id),
+        t: t,
+    })
+    : null
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -130,6 +170,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
+import PostPublishAs from '@components/blocks/PostPublishAs.astro';
 import TuiEditor from '@components/blocks/TuiEditor.astro';
 import StylessTextArea from '@components/blocks/StylessTextArea.astro';
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
@@ -183,7 +224,6 @@ const page_title = post?.title ?? t('new_post')
                 slot="header"
                 justification='space-between'
                 class="[ w-full ]"
-                x-bind:class="{ '!items-start': !sticky }"
             >
                 <TextBox>
                     <PageTitle>
@@ -228,6 +268,18 @@ const page_title = post?.title ?? t('new_post')
             <Flexblock>
                 <TextBox>
                     <Flexblock gap='var(--space-s)'>
+                        {publish_as &&
+                            <PostPublishAs
+                                groups={publishable_groups}
+                                hosts={publish_as.hosts}
+                                selected={selected_publish_host}
+                                existing_host={existing_host}
+                                visibility_by_group={visibility_by_group}
+                                announce_by_group={announce_by_group}
+                                discord_by_group={publish_as.discord_by_group}
+                                show_announce={post?.state !== 'published'}
+                            />
+                        }
                         <Flexblock gap='0'>
                             <StylessTextArea
                                 name="excerpt"

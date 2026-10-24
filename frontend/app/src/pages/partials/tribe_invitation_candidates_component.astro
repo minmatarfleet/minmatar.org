@@ -1,0 +1,195 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '')
+const group_name = Astro.url.searchParams.get('group_name') ?? ''
+const q = (Astro.url.searchParams.get('q') ?? '').trim()
+
+if (isNaN(tribe_id) || isNaN(group_id))
+    return HTTP_400_Bad_Request()
+
+import type { TribeInvitationCandidate } from '@dtypes/api.minmatar.org'
+import { get_invitation_candidates } from '@helpers/api.minmatar.org/tribes'
+import { candidate_reason } from '@helpers/tribe_invitations'
+import { query_string } from '@helpers/string'
+
+let candidates: TribeInvitationCandidate[] = []
+let fetch_error: Error | false = false
+
+if (q.length >= 2) {
+    try {
+        candidates = await get_invitation_candidates(auth_token, tribe_id, group_id, q)
+    } catch (error) {
+        fetch_error = error
+    }
+}
+
+const MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const CANDIDATES_PARTIAL_URL = translatePath(`/partials/tribe_invitation_candidates_component?${query_string({ tribe_id, group_id, group_name, q })}`)
+
+import Button from '@components/blocks/Button.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: CANDIDATES_PARTIAL_URL,
+            error: fetch_error,
+            delay: 0,
+        }}
+    />
+    : q.length < 2 ?
+        <small class="[ text-muted ]">{t('tribes.invite.search_hint')}</small>
+    : candidates.length === 0 ?
+        <EmptyState title={t('tribes.invite.no_matches')} />
+    :
+    <ul class="[ invite-candidates ]" role="list">
+        {candidates.map((candidate) => {
+            const reason = candidate_reason(candidate, group_name, t, lang)
+            const alt = candidate.matched_character_name
+                ? t('tribes.invite.matched_alt').replace('{name}', candidate.matched_character_name)
+                : ''
+
+            return (
+                <li>
+                    {candidate.blocker === null ?
+                        <button
+                            type="button"
+                            class="[ invite-candidate invite-candidate--pick ]"
+                            x-on:click={`toggle_pick(${candidate.user_id}, ${JSON.stringify(candidate.character_name)}, ${candidate.character_id})`}
+                            x-bind:aria-pressed={`is_picked(${candidate.user_id})`}
+                            aria-pressed="false"
+                            aria-label={t('tribes.invite.pick').replace('{name}', candidate.character_name)}
+                        >
+                            <span class="[ invite-candidate__box ]" aria-hidden="true"></span>
+                            <CharacterPicture
+                                character_id={candidate.character_id}
+                                character_name={candidate.character_name}
+                                size={64}
+                            />
+                            <span class="[ invite-candidate__text ]">
+                                <b>{candidate.character_name}</b>
+                                <small>{alt ? `${alt} · ${reason}` : reason}</small>
+                            </span>
+                        </button>
+                        :
+                        <div class:list={['[ invite-candidate ]', { 'invite-candidate--blocked': candidate.blocker !== 'applied' }]}>
+                            <span class="[ invite-candidate__box invite-candidate__box--off ]" aria-hidden="true"></span>
+                            <CharacterPicture
+                                character_id={candidate.character_id}
+                                character_name={candidate.character_name}
+                                size={64}
+                            />
+                            <span class="[ invite-candidate__text ]">
+                                <b>{candidate.character_name}</b>
+                                <small class:list={[{ 'text-fleet-yellow': candidate.blocker === 'applied' }]}>{alt ? `${alt} · ${reason}` : reason}</small>
+                            </span>
+                            {candidate.blocker === 'applied' && candidate.membership_id &&
+                                <Button
+                                    size='sm'
+                                    color='green'
+                                    type="button"
+                                    hx-post={`${MEMBERSHIPS_PARTIAL_URL}&${query_string({ membership_id: candidate.membership_id, status: 'approve' })}`}
+                                    hx-target="#members"
+                                    hx-indicator=".loader"
+                                    hx-swap="outerHTML transition:true"
+                                    x-on:click="$el.setAttribute('disabled','')"
+                                >
+                                    {t('tribes.invite.approve_instead')}
+                                </Button>
+                            }
+                        </div>
+                    }
+                </li>
+            )
+        })}
+    </ul>
+}
+
+<style lang="scss">
+    .invite-candidates {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: solid 1px var(--border-color);
+    }
+
+    .invite-candidates > li + li {
+        border-top: solid 1px var(--hairline);
+    }
+
+    .invite-candidate {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-s);
+        width: 100%;
+        padding: var(--space-2xs) var(--space-s);
+        text-align: start;
+        color: inherit;
+        background: transparent;
+        border: none;
+    }
+
+    .invite-candidate--pick {
+        cursor: pointer;
+        transition: background-color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--surface-sunken);
+            }
+        }
+    }
+
+    .invite-candidate--blocked {
+        opacity: 0.6;
+    }
+
+    .invite-candidate__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        small {
+            color: var(--text-muted);
+        }
+
+        .text-fleet-yellow {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .invite-candidate :global(img) {
+        width: var(--space-xl);
+        height: var(--space-xl);
+    }
+
+    .invite-candidate__box {
+        width: var(--space-s);
+        height: var(--space-s);
+        border: solid 1px var(--highlight);
+    }
+
+    .invite-candidate__box--off {
+        border-color: var(--border-color);
+    }
+
+    .invite-candidate--pick[aria-pressed="true"] .invite-candidate__box {
+        background-color: var(--highlight);
+    }
+</style>

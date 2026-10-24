@@ -1,0 +1,37 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
+
+/**
+ * The fleet form's Discord start ping preview. The form page renders it once
+ * (so DiscordEmbedPreview's styles are bundled; htmx 1.9 drops a partial's
+ * CSS) and partials/discord_preview_component re-renders it as fields change.
+ */
+interface Props {
+    preview:        FleetPingPreviewUI;
+}
+
+const { preview } = Astro.props
+
+import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
+---
+
+<DiscordEmbedPreview
+    kind="fleet_ping"
+    channel_name={preview.channel_name}
+    role_name={preview.role_name}
+    payload={preview.payload}
+/>
+{preview.error &&
+    <small class="[ fleet-ping-preview__error ]">{t('fleets.host.preview_error')}</small>
+}
+
+<style lang="scss">
+    .fleet-ping-preview__error {
+        display: block;
+        margin-top: var(--space-2xs);
+        color: var(--text-muted);
+    }
+</style>

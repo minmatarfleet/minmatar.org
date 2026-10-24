@@ -4,6 +4,7 @@ const { translatePath } = i18n(Astro.url)
 
 import type { WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
 import { get_adjacent_issues } from '@/data/warzone'
+import { ISK_REPORT_MILLIONS, format_compact } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
@@ -51,12 +52,7 @@ function militia_label(id: WarzoneMilitiaId): string {
     return id === 'minmatar' ? 'Minmatar' : 'Amarr'
 }
 
-function format_isk(value: number): string {
-    if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`
-    if (value >= 100_000_000_000) return `${Math.round(value / 1_000_000_000)}B`
-    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
-    return `${(value / 1_000_000).toFixed(0)}M`
-}
+const format_isk = (value: number) => format_compact(value, ISK_REPORT_MILLIONS)
 
 function percent(part: number, total: number): number {
     return total === 0 ? 0 : Math.round((part / total) * 1000) / 10
@@ -403,19 +399,19 @@ const featured_guides = issue.get_involved.featured_guides
                                         </span>
                                     </span>
                                 </td>
-                                <td class="[ wz-table__bar ]">
+                                <td class="[ wz-table__bar ]" data-label="Ships destroyed">
                                     <div class="[ wz-bar ]">
                                         <span class:list={['wz-bar__fill', `wz-bar__fill--${row.holds_today}`]} style={`width: ${percent(row.ships, max_traffic)}%`}></span>
                                     </div>
                                     <b>{number_thousand_separator(row.ships)}</b>
                                 </td>
-                                <td class="[ wz-table__num ]">
+                                <td class="[ wz-table__num ]" data-label={vs_label}>
                                     <span class:list={['wz-delta', row.vs_last_month >= 0 ? 'wz-delta--up' : 'wz-delta--down']}>
                                         <span class="[ wz-delta__arrow ]">{row.vs_last_month >= 0 ? '▲' : '▼'}</span>
                                         <span class="[ wz-delta__num ]">{number_thousand_separator(Math.abs(row.vs_last_month))}</span>
                                     </span>
                                 </td>
-                                <td class="[ wz-table__num ]">{row.isk_label}</td>
+                                <td class="[ wz-table__num ]" data-label="ISK">{row.isk_label}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -914,8 +910,8 @@ const featured_guides = issue.get_involved.featured_guides
         --wz-minmatar: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
         --wz-amarr: var(--fleet-yellow);
         --wz-other: color-mix(in srgb, var(--alliance-blue) 70%, white 30%);
-        --wz-track: rgba(255, 255, 255, 0.06);
-        --wz-rule: rgba(255, 255, 255, 0.08);
+        --wz-track: var(--hairline);
+        --wz-rule: var(--hairline-medium);
 
         display: flex;
         flex-direction: column;
@@ -1825,6 +1821,80 @@ const featured_guides = issue.get_involved.featured_guides
             td[data-label="Ships"] {
                 grid-column: 1;
             }
+        }
+    }
+
+    /* Phones: stack each system as a card — name, bar, then the numbers with their labels. */
+    @media (max-width: 48rem) {
+        .wz-table--traffic {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--wz-rule);
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                display: block;
+                padding: 0;
+                border: none;
+                background: transparent;
+                white-space: normal !important;
+                text-align: left !important;
+                min-width: 0;
+            }
+
+            td:nth-child(1),
+            td:nth-child(2) {
+                grid-column: 1 / -1;
+            }
+
+            td.wz-table__bar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0 var(--space-xs);
+                width: auto;
+                min-width: 0;
+
+                &::before {
+                    flex-basis: 100%;
+                }
+
+                > .wz-bar {
+                    flex: 1;
+                }
+
+                > b {
+                    margin-top: 0;
+                }
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+        }
+    }
+
+    /* Phones: the stacked group cards read cleaner without the global table-cell tint. */
+    @media (max-width: 48rem) {
+        .wz-table--groups td {
+            background: transparent;
         }
     }
 

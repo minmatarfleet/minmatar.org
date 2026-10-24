@@ -1,24 +1,34 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { eve_day, eve_clock } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_404_Not_Found, HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_page = is_superuser ||
-    user_permissions.includes('fleets.add_evefleet') ||
-    user_permissions.includes('fleets.manage_any_fleet')
+const can_create_alliance_fleets = can(gates, 'fleets.create')
+
+import { get_publishable_groups } from '@helpers/api.minmatar.org/tribes'
+import type { PublishableGroup } from '@dtypes/api.minmatar.org'
+
+// Tribe groups this pilot can schedule fleets for. A group fleet is edited by
+// its FC or a manager of its group, who need not have fleets.create.
+let host_groups:PublishableGroup[] = []
+try {
+    host_groups = await get_publishable_groups(auth_token as string, 'fleet')
+} catch (error) {
+    console.log(`Skipping fleet host groups: ${error.message}`)
+}
+
+const can_view_page = can_create_alliance_fleets || can(gates, 'fleets.manage_any') || host_groups.length > 0
 
 if (!can_view_page)
     return HTTP_403_Forbidden()
@@ -32,9 +42,12 @@ import { update_fleet, get_audiences, get_locations, start_fleet } from '@helper
 import type { FleetPatchRequest, FleetTypes, Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
+import { ALLIANCE_HOST, fleet_host_fields, ping_preview_request } from '@helpers/fleet_hosts'
+import { fetch_fleet_ping_preview, type FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
 
 let update_fleet_error
 let alert:Alert | false = false
+let posted_host:string | null = null
 
 if (Astro.request.method === "POST") {
     try {
@@ -48,17 +61,25 @@ if (Astro.request.method === "POST") {
         const campaign = data.get('campaign_id') as string | null
         const campaign_id = campaign !== null ? (campaign !== '-1' ? parseInt(campaign) : null) : undefined
 
+        // Null when the form had no Host row: the PATCH then leaves the
+        // fleet's host and flags alone, exactly as before.
+        const host_fields = fleet_host_fields(data, host_groups)
+        posted_host = data.get('host') as string | null
+        const is_group_fleet = Boolean(host_fields?.host_group_id)
+
         const fleet_data = {
             doctrine_id: doctrine_id,
             ...(campaign_id !== undefined && { campaign_id: campaign_id }),
             description: data.get('description') as string,
             objective: data.get('objective') as string,
-            start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`),
+            start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`).toJSON(),
             type: data.get('fleet_type') as FleetTypes,
-            audience_id: parseInt(data.get('audience_id') as string),
+            // A group fleet has no audience.
+            ...(!is_group_fleet && { audience_id: parseInt(data.get('audience_id') as string) }),
             location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
             hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
+            ...(host_fields && host_fields),
         } as FleetPatchRequest
         
         const updated_fleet = await update_fleet(auth_token as string, fleet_data, fleet_id)
@@ -120,6 +141,42 @@ try {
 
 const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
 
+// A group fleet's own group stays on offer even when the editor (its FC)
+// can no longer publish for it, so re-saving doesn't move the fleet.
+const current_group = fleet?.host_group ?? null
+const form_host_groups:PublishableGroup[] = current_group && !host_groups.some((group) => group.id === current_group.id) ?
+    [ ...host_groups, {
+        ...current_group,
+        member_count: 0,
+        allow_alliance_posts: false,
+        allow_open_fleets: Boolean(fleet?.open_to_alliance),
+    } ] :
+    host_groups
+const show_host_row = form_host_groups.length > 0
+const selected_host = posted_host ?? (current_group ? String(current_group.id) : ALLIANCE_HOST)
+// Moving a group fleet back to the alliance needs fleets.create.
+const allow_alliance_host = can_create_alliance_fleets || !current_group
+
+let ping_preview:FleetPingPreviewUI | null = null
+if (show_host_row && fleet && !fetch_doctrines_error) {
+    const preview_group = form_host_groups.find((group) => String(group.id) === selected_host) ?? null
+    const fleet_audience = (audiences ?? []).find((audience) => audience.display_name === fleet?.audience)
+    const fleet_location = locations.find((location) => location.location_name === fleet?.location)
+    const preview_form = new Map<string, string>([
+        [ 'host', selected_host ],
+        [ 'fleet_type', fleet.type ],
+        [ 'description', fleet.description ?? '' ],
+        [ 'objective', fleet.objective ?? '' ],
+        [ 'location_id', String(fleet_location?.location_id ?? '') ],
+        [ 'audience_id', String(fleet_audience?.id ?? '') ],
+    ])
+    ping_preview = await fetch_fleet_ping_preview(
+        auth_token as string,
+        ping_preview_request({ get: (name:string) => preview_form.get(name) ?? null }),
+        preview_group?.tribe_id ?? null,
+    )
+}
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -146,8 +203,8 @@ const eve_datetime = timer ? new Date(timer) : new Date()
 if (!timer) eve_datetime.setMinutes(eve_datetime.getMinutes() + 15)
 
 // The form labels these as EVE time, so both parts must come from UTC
-const eve_date = eve_datetime.toISOString().slice(0, 10)
-const eve_time = eve_datetime.toISOString().slice(11, 16)
+const eve_date = eve_day(eve_datetime)
+const eve_time = eve_clock(eve_datetime)
 ---
 
 <Viewport
@@ -214,6 +271,13 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                         disable_motd={fleet?.disable_motd}
                         hide_volunteers={fleet?.hide_volunteers}
                         lang={lang}
+                        host_groups={form_host_groups}
+                        selected_host={selected_host}
+                        allow_alliance_host={allow_alliance_host}
+                        open_to_alliance={Boolean(fleet?.open_to_alliance)}
+                        on_schedule={Boolean(fleet?.on_schedule)}
+                        cancel_href={show_host_row ? translatePath(`/fleets/upcoming/${fleet_id}`) : null}
+                        ping_preview={ping_preview}
                     />:
                     <DebugTag>{t('fleet_unexpected_error')}</DebugTag>
                 }</>

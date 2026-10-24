@@ -3,14 +3,17 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 import { account_user_id_query } from '@helpers/account_user_query'
-import { get_api_url, get_app_url } from '@helpers/env'
+import { get_request_user } from '@helpers/request_user'
+import { get_public_api_url, get_app_url } from '@helpers/env'
+import { SCOPE_GROUPS_COOKIE, chosen_scope_groups, scope_groups_query } from '@helpers/esi_scope_groups'
 
 const redirect = Astro.url.searchParams.get('redirect')
 
 if (redirect)
     Astro.cookies.set('redirect_after_add_primary_pilot', redirect, { path: '/' })
 
-const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
+const chosen = chosen_scope_groups(Astro.cookies.get(SCOPE_GROUPS_COOKIE)?.value)
 
-return Astro.redirect(`${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic${account_user_query}`)
+return Astro.redirect(`${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic${scope_groups_query(chosen)}${account_user_query}`)
 ---

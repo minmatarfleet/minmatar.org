@@ -1,0 +1,225 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Doctrine } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
+
+/**
+ * The Ships tab for the FC when the fleet has no ships yet: pick a doctrine
+ * here, or build a custom lineup from catalog fits and pasted EFT.
+ *
+ * Carries the #fleet-ships id so the Manage doctrine modal's first add swaps
+ * this card out for the ships list, same as it does once ships exist.
+ */
+interface Props {
+    fleet_id:   number;
+    doctrines:  Doctrine[];
+}
+
+const {
+    fleet_id,
+    doctrines,
+} = Astro.props
+
+const fits = (doctrine:Doctrine) =>
+    doctrine.primary_fittings.length + doctrine.secondary_fittings.length +
+    doctrine.support_fittings.length + (doctrine.utility_fittings?.length ?? 0)
+
+const sorted = [...doctrines].sort((a, b) => a.name.localeCompare(b.name))
+
+const DOCTRINE_URL = `${translatePath('/partials/fleet_doctrine_component')}?${query_string({ fleet_id })}`
+const ADD_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_add_ships_modal_component/')}?${query_string({ fleet_id })}`
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<section id="fleet-ships" class="[ fleet-ships-setup ]" aria-labelledby="fleet-ships-setup-title">
+    <header>
+        <h2 id="fleet-ships-setup-title">{t('fleets.ships_setup.title')}</h2>
+    </header>
+
+    <div class="[ fleet-ships-setup__options ]">
+        <form
+            class="[ fleet-ships-setup__card ]"
+            hx-post={DOCTRINE_URL}
+            hx-target="find .fleet-ships-setup__result"
+            hx-swap="innerHTML"
+        >
+            <h3>{t('fleets.ships_setup.doctrine')}</h3>
+            <small>{t('fleets.ships_setup.doctrine_hint')}</small>
+            <fieldset x-data="{ query: '' }">
+                <legend class="[ visually-hidden ]">{t('fleets.ships_setup.doctrine')}</legend>
+                <input
+                    type="search"
+                    x-model="query"
+                    placeholder={t('search')}
+                    aria-label={t('search')}
+                    class="[ fleet-ships-setup__search ]"
+                />
+                <div class="[ fleet-ships-setup__doctrines ]">
+                    {sorted.map((doctrine, index) =>
+                        <label
+                            class="[ fleet-ships-setup__doctrine ]"
+                            x-show={`!query || ${JSON.stringify(doctrine.name.toLowerCase())}.includes(query.toLowerCase())`}
+                        >
+                            <input type="radio" name="doctrine_id" value={doctrine.id} required checked={index === 0} />
+                            {doctrine.primary_fittings[0] &&
+                                <img src={get_item_icon(doctrine.primary_fittings[0].ship_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                            }
+                            <span>{doctrine.name}</span>
+                            <small>{t('fleets.ships_setup.fits').replace('{count}', fits(doctrine).toString())}</small>
+                        </label>
+                    )}
+                </div>
+            </fieldset>
+            <div class="[ fleet-ships-setup__actions ]">
+                <span class="[ fleet-ships-setup__result ]" role="status"></span>
+                <Button type="submit" color="green" size="sm">{t('fleets.ships_setup.use')}</Button>
+            </div>
+        </form>
+
+        <section class="[ fleet-ships-setup__card ]" aria-labelledby="fleet-custom-title">
+            <h3 id="fleet-custom-title">{t('fleets.ships_setup.custom')}</h3>
+            <small>{t('fleets.ships_setup.custom_hint')}</small>
+            <ol class="[ fleet-ships-setup__steps ]">
+                <li><b>{t('fleets.ships_setup.custom_step_1')}</b><small>{t('fleets.ships_setup.custom_step_1_hint')}</small></li>
+                <li><b>{t('fleets.ships_setup.custom_step_2')}</b><small>{t('fleets.ships_setup.custom_step_2_hint')}</small></li>
+                <li><b>{t('fleets.ships_setup.custom_step_3')}</b><small>{t('fleets.ships_setup.custom_step_3_hint')}</small></li>
+            </ol>
+            <div class="[ fleet-ships-setup__actions ]">
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    x-on:click={`show_modal({ partial: '${ADD_SHIPS_MODAL_URL}' })`}
+                >
+                    {t('fleets.ships_setup.start_custom')}
+                </Button>
+            </div>
+        </section>
+    </div>
+
+    <p class="[ fleet-ships-setup__open ]">{t('fleets.ships_setup.leave_open')}</p>
+</section>
+
+<style lang="scss">
+    .fleet-ships-setup {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-col-width);
+
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            max-width: var(--max-text-width, 70ch);
+        }
+    }
+
+    .fleet-ships-setup__options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+        gap: var(--space-s);
+        align-items: stretch;
+    }
+
+    .fleet-ships-setup__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        fieldset {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0;
+            border: 0;
+        }
+    }
+
+    .fleet-ships-setup__search {
+        min-height: 2.75rem;
+        padding: 0 var(--space-xs);
+        background: var(--background);
+        border: 1px solid var(--border-color-hover);
+        color: var(--highlight);
+        font: inherit;
+    }
+
+    .fleet-ships-setup__doctrines {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        max-height: 22rem;
+        overflow-y: auto;
+    }
+
+    .fleet-ships-setup__doctrine {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        gap: var(--space-xs);
+        align-items: center;
+        min-height: 2.75rem;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+
+        span {
+            color: var(--highlight);
+        }
+
+        &:has(input:checked) {
+            border-color: var(--fleet-yellow);
+        }
+
+        input {
+            accent-color: var(--fleet-red);
+        }
+    }
+
+    .fleet-ships-setup__steps {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin: 0;
+        padding-inline-start: var(--space-m);
+        list-style: decimal;
+
+        li {
+            display: list-item;
+
+            small {
+                display: block;
+            }
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-ships-setup__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+        justify-content: space-between;
+        margin-top: auto;
+    }
+
+    .fleet-ships-setup__open {
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid var(--border-color);
+    }
+</style>

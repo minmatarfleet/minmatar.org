@@ -1,0 +1,70 @@
+---
+import type { FleetTypes } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+/** The FC's portrait with the fleet-type flag in its top-left corner. */
+interface Props {
+    character_id:   number;
+    character_name: string;
+    type?:          FleetTypes;
+    /** Edge length in px. */
+    size?:          number;
+    [propName: string]: any;
+}
+
+const {
+    character_id,
+    character_name,
+    type,
+    size = 112,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const flag_size = Math.round(Math.max(22, size * 0.36))
+
+import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro';
+---
+
+<span
+    class:list={['[ fleet-portrait ]', Astro.props.class]}
+    style={`--portrait-size: ${size}px`}
+    {...attributes}
+>
+    <img
+        src={get_player_icon(character_id, size > 64 ? 256 : 128)}
+        alt={character_name}
+        width={size}
+        height={size}
+        loading="lazy"
+    />
+    <FleetTypeFlag
+        class="[ fleet-portrait__flag ]"
+        type={type}
+        size={flag_size}
+    />
+</span>
+
+<style lang="scss">
+    .fleet-portrait {
+        position: relative;
+        display: block;
+        flex: 0 0 auto;
+        width: var(--portrait-size);
+        height: var(--portrait-size);
+
+        img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .fleet-portrait :global(.fleet-portrait__flag) {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+</style>

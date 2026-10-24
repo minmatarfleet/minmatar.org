@@ -116,7 +116,7 @@ export function conversion_for_side(
         quantity: offer.quantity,
         market_price: market_price_for_side(offer, side),
         input_cost_isk: offer.input_cost_isk,
-        input_freight_isk: offer.input_freight_isk,
+        costs: offer.conversion_costs?.[side],
         isk_cost: offer.isk_cost,
         other_cost: offer.other_cost,
         net_isk_per_lp: net_with_all_costs,
@@ -189,13 +189,6 @@ export function offer_lp_for_volume(
         return 0
     const qty = offer.quantity || 1
     return Math.ceil(volume / qty) * offer.lp_cost
-}
-
-/** Weekly LP volume below this is treated as thin / dangerous liquidity. */
-export const LOW_WEEKLY_LP_VOLUME_THRESHOLD = 1_000_000
-
-export function offer_is_low_weekly_lp_volume(offer: LoyaltyOffer): boolean {
-    return offer_lp_for_volume(offer, offer.volume_7d) < LOW_WEEKLY_LP_VOLUME_THRESHOLD
 }
 
 export function compute_loyalty_offers_metrics(

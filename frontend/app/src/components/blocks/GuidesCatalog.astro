@@ -9,9 +9,9 @@ import {
 import type { GuideMeta } from '@/data/guides/types'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 
 import GuideCard from '@components/blocks/GuideCard.astro'
 
@@ -90,21 +90,17 @@ const filters_json = JSON.stringify(filters)
             </Flexblock>
         }
 
-        <XFadeScroll>
-            <FlexInline gap="var(--space-3xs)" class="[ guides-catalog__chips ]">
-                {filters.map((filter) => (
-                    <button
-                        type="button"
-                        class="[ guides-catalog__chip ]"
-                        x-bind:class={`category === ${JSON.stringify(filter.id)} && 'is-active'`}
-                        x-on:click={`set_category(${JSON.stringify(filter.id)})`}
-                        x-bind:aria-pressed={`category === ${JSON.stringify(filter.id)} ? 'true' : 'false'`}
-                    >
-                        {filter.label}
-                    </button>
-                ))}
-            </FlexInline>
-        </XFadeScroll>
+        <ChipGroup>
+            {filters.map((filter) => (
+                <FilterChip
+                    x-bind:class={`category === ${JSON.stringify(filter.id)} && 'is-active'`}
+                    x-on:click={`set_category(${JSON.stringify(filter.id)})`}
+                    x-bind:aria-pressed={`category === ${JSON.stringify(filter.id)} ? 'true' : 'false'`}
+                >
+                    {filter.label}
+                </FilterChip>
+            ))}
+        </ChipGroup>
 
         <Grid
             class="[ w-full grid-fill ]"
@@ -128,59 +124,6 @@ const filters_json = JSON.stringify(filters)
 <style lang="scss">
     .guides-catalog__title {
         font-size: var(--step-2);
-    }
-
-    .guides-catalog__chips {
-        flex-wrap: nowrap;
-        padding-block: var(--space-3xs);
-    }
-
-    .guides-catalog__chip {
-        appearance: none;
-        display: inline-flex;
-        align-items: center;
-        flex-shrink: 0;
-        margin: 0;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
-        background: transparent;
-        color: var(--fleet-yellow);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-decoration: none;
-        text-transform: uppercase;
-        white-space: nowrap;
-        cursor: pointer;
-        transition:
-            border-color var(--fast-transition),
-            background-color var(--fast-transition),
-            color var(--fast-transition);
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-                color: var(--fleet-yellow);
-            }
-
-            &.is-active:hover {
-                background: var(--fleet-yellow);
-                color: var(--background);
-            }
-        }
-
-        &:focus-visible {
-            outline: 1px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
     }
 
     .guides-catalog__item {

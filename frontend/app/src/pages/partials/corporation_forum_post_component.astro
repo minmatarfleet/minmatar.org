@@ -1,0 +1,222 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationForumPost } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    ForumPostError,
+    get_corporation_forum_post,
+    update_corporation_forum_post,
+} from '@helpers/api.minmatar.org/recruitment'
+import {
+    forum_post_error_key,
+    forum_post_link_text,
+    forum_post_section_summary,
+    parse_forum_post_action,
+    RECRUITMENT_CENTER_URL,
+} from '@helpers/corporations/forum_post_settings'
+import type { ForumPostFlash } from '@helpers/corporations/forum_post_settings'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+
+const ROOT_ID = 'corporation-forum-post'
+const URL_HELP_ID = 'corp-forum-post-url-help'
+// Lives in the accordion header on the corporation page; refreshed out of band.
+const SUMMARY_ID = 'corporation-settings-forum-summary'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_forum_post_component/?${query_string({
+    corporation_id: String(corporation_id),
+})}`)
+
+let flash: ForumPostFlash | null = null
+// The typed URL survives a failed save.
+let draft_url: string | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = parse_forum_post_action(form.get('action'))
+    const typed_url = String(form.get('url') ?? '').trim()
+    try {
+        await update_corporation_forum_post(auth_token, corporation_id, {
+            url: action === 'remove' ? '' : typed_url,
+        })
+        flash = {
+            kind: 'success',
+            key: action === 'remove' || !typed_url
+                ? 'corporations.forum_post.removed'
+                : 'corporations.forum_post.saved',
+        }
+    } catch (error) {
+        draft_url = typed_url
+        flash = {
+            kind: 'error',
+            key: error instanceof ForumPostError
+                ? forum_post_error_key(error.message)
+                : 'corporations.settings.error_save',
+        }
+    }
+}
+
+const post = await get_corporation_forum_post(auth_token, corporation_id) as CorporationForumPost | null
+if (!post) return HTTP_403_Forbidden()
+
+const url_value = draft_url ?? post.url ?? ''
+const summary = forum_post_section_summary(post, {
+    not_linked: t('corporations.forum_post.summary_not_linked'),
+    linked: t('corporations.forum_post.summary_linked'),
+})
+---
+
+<span id={SUMMARY_ID} hx-swap-oob="true">{summary}</span>
+
+<div id={ROOT_ID} class="[ corp-forum-post ]">
+    <Flexblock gap="var(--space-l)">
+        <p class="[ corp-forum-post__leading ]">{t('corporations.forum_post.leading')}</p>
+
+        {flash &&
+            <p
+                class:list={['[ corp-forum-post__flash ]', { 'is-error': flash.kind === 'error' }]}
+                role={flash.kind === 'error' ? 'alert' : 'status'}
+            >
+                {t(flash.key)}
+            </p>
+        }
+
+        <section class="[ corp-forum-post__panel ]" aria-labelledby="corp-forum-post-thread">
+            <Flexblock gap="var(--space-xs)">
+                <h3 id="corp-forum-post-thread">{t('corporations.forum_post.thread')}</h3>
+                {post.exists && post.url ?
+                    <a
+                        class="[ corp-forum-post__thread ]"
+                        href={post.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                    >{forum_post_link_text(post)}</a>
+                    :
+                    <p class="[ corp-forum-post__muted ]">{t('corporations.forum_post.not_linked')}</p>
+                }
+                {post.exists && !post.title &&
+                    <small class="[ corp-forum-post__muted ]">{t('corporations.forum_post.title_unavailable')}</small>
+                }
+            </Flexblock>
+        </section>
+
+        <form
+            method="post"
+            action={PARTIAL_URL}
+            hx-post={PARTIAL_URL}
+            hx-target={`#${ROOT_ID}`}
+            hx-swap="outerHTML"
+        >
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <FlexInline gap="var(--space-xs)" justification="space-between">
+                        <label class="[ corp-forum-post__label ]" for="corp-forum-post-url">
+                            {t('corporations.forum_post.url_label')}
+                        </label>
+                        <a href={RECRUITMENT_CENTER_URL} target="_blank" rel="noreferrer noopener">
+                            <small>{t('corporations.forum_post.recruitment_center')}</small>
+                        </a>
+                    </FlexInline>
+                    <Input
+                        id="corp-forum-post-url"
+                        name="url"
+                        type="url"
+                        inputmode="url"
+                        autocomplete="off"
+                        placeholder="https://forums.eveonline.com/t/…"
+                        value={url_value}
+                        aria-describedby={URL_HELP_ID}
+                        aria-invalid={flash?.kind === 'error' ? 'true' : undefined}
+                        required
+                    />
+                    <small id={URL_HELP_ID} class="[ corp-forum-post__muted ]">
+                        {t('corporations.forum_post.url_help')}
+                    </small>
+                </Flexblock>
+
+                <FlexInline gap="var(--space-m)">
+                    <Button type="submit" name="action" value="save" color="fleet-red" size="sm" off_disable={true}>
+                        {t('corporations.forum_post.save')}
+                    </Button>
+                    {post.exists &&
+                        <Button
+                            type="submit"
+                            name="action"
+                            value="remove"
+                            formnovalidate
+                            color="transparent"
+                            size="sm"
+                            narrow={true}
+                            off_disable={true}
+                        >
+                            {t('corporations.forum_post.remove')}
+                        </Button>
+                    }
+                </FlexInline>
+            </Flexblock>
+        </form>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .corp-forum-post {
+        max-width: var(--max-text-width);
+    }
+
+    // Flexblock spaces children with margin-block-start; keep that intact.
+    h3,
+    p {
+        margin-block-end: 0;
+    }
+
+    h3 {
+        font-size: var(--step-0);
+    }
+
+    .corp-forum-post__leading {
+        color: var(--highlight);
+    }
+
+    .corp-forum-post__muted {
+        color: var(--faded);
+    }
+
+    .corp-forum-post__label {
+        font-family: var(--button-font);
+        color: var(--highlight);
+    }
+
+    .corp-forum-post__thread {
+        overflow-wrap: anywhere;
+    }
+
+    .corp-forum-post__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+
+    .corp-forum-post__panel {
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+</style>

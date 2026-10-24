@@ -2,24 +2,22 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_user_posts } from '@helpers/fetching/posts'
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates } from '@helpers/gates'
+import { can_manage_own_posts } from '@helpers/fetching/post_publishing'
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+const can_manage_posts = await can_manage_own_posts(gates, auth_token)
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()
@@ -30,7 +28,7 @@ let fetch_user_posts_error: Error | false = false
 try {
     posts = await fetch_user_posts({
         user_id: user.user_id,
-    })
+    }, auth_token)
     posts = posts.filter(post => post.state !== 'trash')
 } catch (error) {
     fetch_user_posts_error = error
@@ -100,7 +98,6 @@ const page_title = t('posts.page_title');
             slot="header"
             justification='space-between'
             class="[ w-full ]"
-            x-bind:class="{ '!items-start': !sticky }"
         >
             <Flexblock gap="var(--space-3xs)">
                 <PageTitle>

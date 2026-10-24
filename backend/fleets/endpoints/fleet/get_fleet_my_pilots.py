@@ -10,7 +10,13 @@ from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
 
 from fleets.endpoints.helpers import _fleet_authorized
-from fleets.endpoints.schemas import MyFleetPilotResponse, ShipSelection
+from fleets.endpoints.schemas import (
+    MyFleetPilotResponse,
+    ShipSelection,
+    ShipSuggestionResponse,
+)
+from fleets.helpers.composition import fleet_composition
+from fleets.helpers.ship_suggestions import suggest_ships
 from fleets.models import (
     EveFleet,
     EveFleetInstanceMember,
@@ -25,7 +31,10 @@ ROUTE_SPEC = {
     "response": {200: List[MyFleetPilotResponse], 403: None, 404: None},
     "description": (
         "The caller's characters, flagged when they joined a tracked fleet in "
-        "the last 30 days, with the ship each one is currently volunteered for."
+        "the last 30 days, with the ship each one is currently volunteered for. "
+        "Until the caller has volunteered any character, recent characters "
+        "carry a suggestion: the composition hull they flew most in past "
+        "fleets."
     ),
 }
 
@@ -53,11 +62,20 @@ def get_fleet_my_pilots(request, fleet_id: int):
             character_id=v.character_id,
             fitting_id=v.fitting_id,
             fleet_fitting_id=v.fleet_fitting_id,
+            ship_type_id=v.ship_type_id,
+            bursts=list(v.bursts or []),
         )
         for v in EveFleetShipVolunteer.objects.filter(
             eve_fleet=fleet, character_id__in=character_ids
         ).order_by("id")
     }
+    # Only before the first save, and only for characters shown by default:
+    # a hidden character must not sign up just because Save was pressed.
+    suggestions = {}
+    if not selections:
+        suggestions = suggest_ships(
+            fleet, list(last_seen), fleet_composition(fleet)
+        )
     # Recently active characters first, most recent fleet first.
     characters.sort(
         key=lambda c: (
@@ -76,6 +94,11 @@ def get_fleet_my_pilots(request, fleet_id: int):
             character_name=c.character_name,
             recent_fleets=c.character_id in last_seen,
             selection=selections.get(c.character_id),
+            suggestion=(
+                ShipSuggestionResponse(**vars(suggestions[c.character_id]))
+                if c.character_id in suggestions
+                else None
+            ),
         )
         for c in characters
     ]

@@ -1,0 +1,92 @@
+---
+// no-error-refetch: resolving a paste; the form keeps working if this fails.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import { resolve_fleet_invite_names, type FleetResolvedPilot } from '@helpers/api.minmatar.org/fleets'
+
+let matched:FleetResolvedPilot[] = []
+let not_found:string[] = []
+let error:string | false = false
+
+if (Astro.request.method === 'POST') {
+    try {
+        const form = await Astro.request.formData()
+        const text = ((form.get('names') as string) ?? '').trim()
+        if (text) {
+            const result = await resolve_fleet_invite_names(auth_token as string, fleet_id, text)
+            matched = result.matched
+            not_found = result.not_found
+        }
+    } catch (e) {
+        error = e.message
+    }
+}
+
+const picks_json = JSON.stringify(matched.map(pilot => ({
+    kind: pilot.kind,
+    id: pilot.id,
+    name: pilot.name,
+})))
+---
+
+<div
+    class="[ invite-resolve ]"
+    aria-live="polite"
+    {...(matched.length > 0 ? {
+        'x-data': `{ added: false }`,
+        'x-init': `
+            if (added) return;
+            added = true;
+            const found = ${picks_json};
+            found.forEach(pick => $dispatch('pick-candidate', pick));
+        `,
+    } : {})}
+>
+    {error && <small class="[ invite-resolve__error ]" role="alert">{error}</small>}
+
+    {!error && matched.length === 0 && not_found.length === 0 &&
+        <small class="[ text-muted ]">{t('fleets.private.paste_empty')}</small>
+    }
+
+    {matched.length > 0 &&
+        <small>
+            {t('fleets.private.paste_added').replace('{count}', matched.length.toString())}
+        </small>
+    }
+
+    {not_found.length > 0 &&
+        <small class="[ invite-resolve__missing ]" role="status">
+            {t('fleets.private.paste_missing').replace('{names}', not_found.join(', '))}
+        </small>
+    }
+</div>
+
+<style lang="scss">
+    .invite-resolve {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .invite-resolve__error,
+    .invite-resolve__missing {
+        color: var(--fleet-yellow);
+    }
+
+    .invite-resolve__error {
+        color: var(--fleet-red);
+    }
+</style>

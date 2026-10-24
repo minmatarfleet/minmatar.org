@@ -3,6 +3,8 @@ import type { PageFinderUI, Permissions } from '@dtypes/layout_components'
 import sitemap from '@json/sitemap.json'
 import { guides } from '@/data/guides'
 import { getGuideCanonicalPath } from '@/data/guides/seo'
+import { campaigns } from '@/data/campaigns'
+import { ratChronicleChapters } from '@/data/rat-chronicle'
 import { get_prod_url } from '@helpers/env'
 
 export function escapeXml(value: string): string {
@@ -26,12 +28,13 @@ function hasRestrictedPermissions(permissions: Permissions): boolean {
     if (permissions.group_officer) return true
     if (permissions.team_director) return true
     if (permissions.superuser) return true
-    if (permissions.user?.length) return true
+    if (permissions.gate) return true
     return false
 }
 
 export function isPublicCrawlablePage(page: PageFinderUI): boolean {
     if (!page.publish) return false
+    if (page.sitemap === false) return false
     if (!page.permissions) return true
     return !hasRestrictedPermissions(page.permissions)
 }
@@ -49,8 +52,19 @@ export function getPublicSitemapPagePaths(): string[] {
         paths.add(page.path)
     }
 
+    // A coming-soon guide has a catalog card but no page yet (404).
     for (const guide of guides) {
+        if (guide.comingSoon) continue
         paths.add(getGuideCanonicalPath(guide))
+    }
+
+    // The page finder's short campaign links and /alliance/story/ redirect here.
+    for (const campaign of campaigns) {
+        paths.add(campaign.path)
+    }
+
+    for (const chapter of ratChronicleChapters) {
+        paths.add(`/alliance/story/${chapter.id}/`)
     }
 
     return [...paths].sort()

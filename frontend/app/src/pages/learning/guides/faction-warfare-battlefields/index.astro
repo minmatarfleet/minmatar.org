@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
 const { t, translatePath, lang } = i18n(Astro.url)
 
 import { getGuideBySlug } from '@/data/guides'
@@ -148,7 +149,7 @@ const shell_subtitle = guide.section
                                     {fields_doctrines.map((doctrine) => (
                                         <a
                                             class="[ doctrine-card-container ]"
-                                            href={translatePath(`/ships/doctrines/${doctrine.id}/`)}
+                                            href={translatePath(doctrine_path(doctrine.id, doctrine.name))}
                                         >
                                             <DoctrineCard
                                                 doctrine={doctrine}

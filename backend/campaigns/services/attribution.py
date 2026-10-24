@@ -26,10 +26,12 @@ from campaigns.models import (
     KillmailOutcome,
 )
 from campaigns.services import structures as structure_service
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS
+from eveonline.models import EveCharacter
 
 logger = logging.getLogger(__name__)
 
-POD_GROUP_TYPE_IDS = {670, 33328}  # Capsule, Capsule - Genolution
+POD_GROUP_TYPE_IDS = CAPSULE_TYPE_IDS
 
 
 def attribute_feed_killmail(
@@ -122,6 +124,9 @@ def _attribute_one(
         ship_type_id=ship_type_id,
     )
     killer = final_blow(attackers)
+    known_names = _known_character_names(
+        victim_character_id, killer.get("character_id")
+    )
 
     with transaction.atomic():
         mail, created = CampaignKillmail.objects.get_or_create(
@@ -132,11 +137,17 @@ def _attribute_one(
                 "killmail_time": moment,
                 "solar_system_id": feed_killmail.solar_system_id,
                 "victim_character_id": victim_character_id,
+                "victim_character_name": known_names.get(
+                    victim_character_id, ""
+                ),
                 "victim_corporation_id": victim.get("corporation_id"),
                 "victim_alliance_id": victim.get("alliance_id"),
                 "victim_faction_id": victim.get("faction_id"),
                 "victim_ship_type_id": ship_type_id,
                 "killer_character_id": killer.get("character_id"),
+                "killer_character_name": known_names.get(
+                    killer.get("character_id"), ""
+                ),
                 "killer_faction_id": killer.get("faction_id"),
                 "isk_value": int(zkb.get("totalValue") or 0),
                 "is_pod": is_pod,
@@ -160,6 +171,10 @@ def _attribute_one(
                 mail.sources = list(mail.sources or []) + [source]
                 update_fields.append("sources")
                 changed = True
+            changed = (
+                _mark_seen_on_zkillboard(mail, source, update_fields)
+                or changed
+            )
             # Re-resolve: characters move between users and pilots enlist
             # mid-campaign, so a sweep can legitimately change the outcome.
             if mail.outcome != outcome or (
@@ -181,6 +196,16 @@ def _attribute_one(
                 mail.structure = matched_structure
                 update_fields.append("structure")
                 changed = True
+            changed = (
+                _fill_blank_names(
+                    mail,
+                    known_names,
+                    victim_character_id,
+                    killer.get("character_id"),
+                    update_fields,
+                )
+                or changed
+            )
             if changed:
                 mail.save(update_fields=update_fields)
 
@@ -195,6 +220,49 @@ def _attribute_one(
             structure_service.mark_destroyed(matched_structure, mail)
 
     return created
+
+
+def _mark_seen_on_zkillboard(mail, source: str, update_fields: list) -> bool:
+    """A later stream sighting means zKill has the mail ESI found first."""
+    if source != "stream" or mail.on_zkillboard:
+        return False
+    mail.on_zkillboard = True
+    update_fields.append("on_zkillboard")
+    return True
+
+
+def _fill_blank_names(
+    mail,
+    known_names: dict[int, str],
+    victim_character_id: int | None,
+    killer_id: int | None,
+    update_fields: list,
+) -> bool:
+    """Copy a name we already hold onto a mail that arrived without one."""
+    changed = False
+    victim_name = known_names.get(victim_character_id, "")
+    if victim_name and not mail.victim_character_name:
+        mail.victim_character_name = victim_name
+        update_fields.append("victim_character_name")
+        changed = True
+    killer_name = known_names.get(killer_id, "")
+    if killer_name and not mail.killer_character_name:
+        mail.killer_character_name = killer_name
+        update_fields.append("killer_character_name")
+        changed = True
+    return changed
+
+
+def _known_character_names(*character_ids: int | None) -> dict[int, str]:
+    """Names we already hold, so the killfeed does not wait on ESI."""
+    ids = [character_id for character_id in character_ids if character_id]
+    if not ids:
+        return {}
+    return dict(
+        EveCharacter.objects.filter(character_id__in=ids)
+        .exclude(character_name="")
+        .values_list("character_id", "character_name")
+    )
 
 
 def final_blow(attackers: list) -> dict:

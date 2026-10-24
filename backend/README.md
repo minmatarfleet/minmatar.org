@@ -26,7 +26,7 @@ See also [Discord setup](../docs/developer_discord_setup.md) and [data seeding](
 
 ## Setting your user as admin
 ```python
-python3 manage.py shell_plus
+# pipenv run python manage.py shell_plus
 user = User.objects.all()[0]
 user.is_superuser = True
 user.is_staff = True
@@ -38,7 +38,7 @@ It is also possible to make and use a standalone test
 user that doesn't use Discord for authentication.
 
 ```
-python manage.py shell_plus
+pipenv run python manage.py shell_plus
 ```
 Then...
 ```
@@ -59,6 +59,49 @@ Note that this only works if you have access to the server's secret key.
 Also note that some APIs require Discord for correct operation regardless of authentication.
 
 ## Testing
+
+### Running backend tests
+
+Run from `backend/`. This is the command CI runs
+(`.github/workflows/pr-check.yml`):
+
+```bash
+pipenv run python manage.py test --settings=app.settings_test
+```
+
+- One app or test: `pipenv run python manage.py test eveonline --settings=app.settings_test`,
+  or a dotted path such as `eveonline.tests.test_models.EvePlayerTestCase`.
+- Faster full runs: add `--parallel 4 --keepdb` and set
+  `TEST_DB_NAME=.test-db/test_db.sqlite3` so the migrated SQLite schema is reused.
+  Delete `.test-db/` after adding a migration.
+- With coverage and the summary file: `./test.sh` (or
+  `pipenv run coverage run manage.py test --settings=app.settings_test --testrunner="testrunner.Runner"`
+  then `cat testresults.txt`).
+- `manage.py test` now defaults to `app.settings_test` when no `--settings` is
+  given, and `pipenv run pytest` uses it too (`pytest.ini`). Never run tests with
+  `--settings=app.settings`: that is MySQL plus whatever Discord, ESI and Reddit
+  tokens your `.env` holds.
+
+What the test settings give you:
+
+- **SQLite**, in memory unless `TEST_DB_NAME` is set. No MySQL rights needed.
+- **No network.** `app/test_network_guard.py` blocks every non-loopback
+  connection; a test that reaches ESI, zKillboard or Discord fails with
+  `NetworkAccessBlocked`. Seed the eveuniverse rows it needs, mock the client,
+  or gate the production call with `live_esi_allowed()`. Set
+  `ALLOW_NETWORK_IN_TESTS=True` only for a deliberate live run.
+- Blank Discord tokens, a placeholder guild, eager Celery, and the developer
+  switches (`FAKE_LOGIN_USER_ID`, `MOCK_ESI`, `SETUP_TEST_DATA`) forced off.
+  `SETUP_TEST_DATA=True` in `standalone.env` therefore no longer seeds rows
+  into the test database.
+- New test modules must sit in a package (a folder with `__init__.py`), or
+  Django's runner silently skips them. `app/tests/test_test_discovery.py`
+  checks this.
+- If a `--parallel` failure shows no traceback, rerun that module with
+  `--parallel 1`: the worker could not pickle the traceback.
+
+### How the suite deals with Discord and ESI
+
 The backend Python code includes three main external integrations...
 
 1. The database
@@ -89,6 +132,9 @@ As they cannot be easily tested, they should contain minimal logic.
 Some of the background Celery tasks identify a set of entities and then create another asynchronous task instance for each
 of those entities. The outer tasks are therefore generally not tested.
 
+Queues, routing and the task standards (dedupe, `expires`, `cooldown`,
+`exclusive`) are in [docs/architecture/celery-queues.md](../docs/architecture/celery-queues.md).
+
 You can also use an annotation to disable signals for a test...
 ```
 import factory
@@ -101,9 +147,11 @@ from django.db.models import signals
 
 The backend can run as a standalone server using an embeded sqlite database.
 
-To configure this, the Django settings have the following values...
+To configure this, set these in `.env` (they only take effect while
+`DEBUG=True`; with `DEBUG` off they are ignored)...
 
 ```
+DEBUG=True
 SECRET_KEY=testing
 FAKE_LOGIN_USER_ID=1
 MOCK_ESI=True
@@ -121,13 +169,11 @@ Calls to the Eve Swagger Interface (ESI) will be mocked.
 ```for x in $(sed -e 's/#.*//' .env.local | grep '=') ; do export $x ; done``` 
 
 ### Run tests with result and coverage reporting
-```
-coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults.txt && coverage html
-```
+See [Running backend tests](#running-backend-tests). In short: `./test.sh`.
 
 ### Setup test data
 ```
-./manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
+pipenv run python manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
 ```
 
 ### Reference fixtures
@@ -147,7 +193,7 @@ pipenv run python manage.py load_reference_fixtures
 
 Use `--clear` to remove existing reference rows before loading. Use `--skip-eve-type-check` only if you know referenced types exist locally.
 
-**Regenerate (maintainers with `production_readonly` access):**
+**Regenerate (maintainers with `production_readonly` access; set `DB_READONLY_*` in `.env`, see `backend/.env.example`):**
 
 ```bash
 pipenv run python manage.py export_reference_fixtures
@@ -167,12 +213,9 @@ pipenv run python manage.py sync_pilot_features
 
 ### Create a test admin user and display JWT
 ```
-./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
+pipenv run python manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"
 ```
 
 ## Code cleanup tasks
 
-* Remove `EveFleetLocation`, `EveFreightLocation` and `EveMarketLocation`
-* Remove `EvePrimaryCharacter`
-* Remove `EveCharacter.tokens` property
 * Remove `EveCharacter.is_primary`

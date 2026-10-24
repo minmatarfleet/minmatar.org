@@ -13,6 +13,7 @@ from creators.post_import import (
     candidate_from_reddit,
     classify_reddit,
     fetch_youtube_window,
+    parse_youtube_playlist_item,
     partition_candidates,
     reddit_image_url,
     reddit_post_content,
@@ -306,3 +307,26 @@ class CreatorPostImportTestCase(TestCase):
         result = fetch_youtube_window(account, cutoff=_published())
         rss_window.assert_called_once_with("UCexample", _published())
         self.assertEqual(result, [{"id": "SK0jimasEuc"}])
+
+    def test_playlist_item_skips_unlisted_and_private_videos(self):
+        def item(privacy):
+            return {
+                "contentDetails": {
+                    "videoId": "IIZpQzg37vY",
+                    "videoPublishedAt": "2026-10-11T14:49:11Z",
+                },
+                "snippet": {"title": "Town Hall"},
+                "status": {"privacyStatus": privacy},
+            }
+
+        cutoff = _published()
+        self.assertIsNotNone(
+            parse_youtube_playlist_item(item("public"), cutoff)
+        )
+        self.assertIsNone(
+            parse_youtube_playlist_item(item("unlisted"), cutoff)
+        )
+        self.assertIsNone(parse_youtube_playlist_item(item("private"), cutoff))
+        no_status = item("public")
+        del no_status["status"]
+        self.assertIsNone(parse_youtube_playlist_item(no_status, cutoff))

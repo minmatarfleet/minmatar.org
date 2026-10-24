@@ -1,34 +1,37 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
-
 import { get_discord_oauth_start_url } from '@helpers/env'
+import { get_site_origin, page_seo_for_path, pathname_from_return_target } from '@helpers/seo'
+import Viewport from '@layouts/Viewport.astro'
+import PageCover from '@components/page/partials/PageCover.astro'
+import DiscordLoginNotice from '@components/blocks/DiscordLoginNotice.astro'
+
+const { t } = i18n(Astro.url)
 
 const redirect = Astro.url.searchParams.get('redirect_url')
 
 if (redirect)
     Astro.cookies.set('redirect_after_auth', redirect, { path: '/' })
 
+const return_path = redirect ? pathname_from_return_target(redirect, Astro.url.origin) : null
+const page_seo = return_path ? page_seo_for_path(return_path, t) : null
+const title = page_seo?.title ?? t('discord_login_notice_title')
+const meta_description = page_seo?.description ?? t('discord_login_notice_meta')
+const canonical_url = page_seo && return_path
+    ? new URL(return_path, get_site_origin(Astro.url.origin)).href
+    : undefined
+
 const AUTH_URL = get_discord_oauth_start_url()
-const HOME_URL = translatePath('/')
 const DISCORD_LOGIN_NOTICE_STORAGE_KEY = 'discord_login_notice_accepted'
 const DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE = '1'
-
-import Viewport from '@layouts/Viewport.astro'
-import PageCover from '@components/page/partials/PageCover.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Wrapper from '@components/compositions/Wrapper.astro'
-import Button from '@components/blocks/Button.astro'
-import Markdown from '@components/blocks/Markdown.astro'
-import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 ---
 
 <Viewport
-    title={t('discord_login_notice_title')}
+    title={title}
     neocom={false}
-    meta_description={t('discord_login_notice_meta')}
+    meta_description={meta_description}
+    canonical_url={canonical_url}
+    robots="noindex, nofollow"
 >
     <script is:inline define:vars={{ AUTH_URL, DISCORD_LOGIN_NOTICE_STORAGE_KEY, DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE }}>
         try {
@@ -47,69 +50,8 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
     <main
         id="content"
         class="[ auth-init ]"
-        x-data={`{
-            understand_leave_deletes_account: false,
-            storage_key: ${JSON.stringify(DISCORD_LOGIN_NOTICE_STORAGE_KEY)},
-            accepted_value: ${JSON.stringify(DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE)},
-            auth_url: ${JSON.stringify(AUTH_URL)},
-            home_url: ${JSON.stringify(HOME_URL)},
-            accept_notice() {
-                if (!this.understand_leave_deletes_account) return
-                try {
-                    localStorage.setItem(this.storage_key, this.accepted_value)
-                } catch (e) {}
-                window.location.href = this.auth_url
-            },
-            cancel_notice() {
-                window.location.href = this.home_url
-            }
-        }`}
     >
-        <Wrapper
-            class="[ light-transparency card border ]"
-            centered={true}
-            padding_block="var(--space-xl)"
-            padding_inline="var(--space-l)"
-            max_width="70rem"
-        >
-            <Flexblock gap="var(--space-l)">
-                <Flexblock gap="var(--space-m)">
-                    <h1 class="[ auth-init-title ]">{t('discord_login_notice_title')}</h1>
-                    
-                    <Markdown
-                        class="[ prose ]"
-                        markdown={t('discord_login_notice_body')}
-                        element='div'
-                    />
-                    
-                    <RadioCheckInput
-                        id="discord-login-notice-leave-checkbox"
-                        type="checkbox"
-                        x-model="understand_leave_deletes_account"
-                    >
-                        <span>{t('discord_login_notice_leave_checkbox')}</span>
-                    </RadioCheckInput>
-                </Flexblock>
-
-                <FlexInline justification="flex-end">
-                    <Button
-                        type="button"
-                        color="fleet-red"
-                        x-on:click="cancel_notice()"
-                    >
-                        {t('cancel')}
-                    </Button>
-                    <Button
-                        type="button"
-                        color="green"
-                        x-bind:disabled="!understand_leave_deletes_account"
-                        x-on:click="accept_notice()"
-                    >
-                        {t('continue_to_discord')}
-                    </Button>
-                </FlexInline>
-            </Flexblock>
-        </Wrapper>
+        <DiscordLoginNotice />
     </main>
 </Viewport>
 
@@ -121,9 +63,5 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    .auth-init-title {
-        font-size: var(--step-3);
     }
 </style>

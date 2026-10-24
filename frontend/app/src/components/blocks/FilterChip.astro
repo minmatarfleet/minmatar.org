@@ -1,0 +1,90 @@
+---
+/**
+ * A filter toggle chip. As a button (client-side filters) it reports its
+ * state with aria-pressed: pass `active` for the server-rendered state and
+ * bind `x-bind:class` / `x-bind:aria-pressed` for an Alpine filter. With
+ * `href` it is a link to a filtered view and marks the current one with
+ * aria-current.
+ */
+interface Props {
+    active?:            boolean;
+    href?:              string;
+    [propName: string]: any;
+}
+
+const {
+    active = false,
+    href,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.class]
+---
+
+{href ?
+    <a
+        href={href}
+        class:list={chip_class}
+        aria-current={active ? 'page' : undefined}
+        {...attributes}
+    ><slot /></a>
+    :
+    <button
+        type="button"
+        class:list={chip_class}
+        aria-pressed={active ? 'true' : 'false'}
+        {...attributes}
+    ><slot /></button>
+}
+
+<style lang="scss">
+    .filter-chip {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+        margin: 0;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        text-transform: uppercase;
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+            border-color var(--fast-transition),
+            background-color var(--fast-transition),
+            color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                color: var(--fleet-yellow);
+            }
+
+            &.is-active:hover {
+                background: var(--fleet-yellow);
+                color: var(--background);
+            }
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+</style>

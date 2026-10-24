@@ -1,0 +1,215 @@
+---
+// no-error-refetch: a form; a failed save shows inline, and a failed load shows the empty list.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const can_manage = Astro.url.searchParams.get('can_manage') === 'true'
+const can_invite = can_manage && Astro.url.searchParams.get('can_invite') === 'true'
+const mode = Astro.url.searchParams.get('mode') ?? ''
+const is_new = Astro.url.searchParams.get('target_id') === 'new'
+const target_id = parseInt(Astro.url.searchParams.get('target_id') ?? '')
+const add_type_id = parseInt(Astro.url.searchParams.get('add_type_id') ?? '') || undefined
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import {
+    get_fleet_targets,
+    get_target_line_owners,
+    get_target_suggestions,
+    get_unmatched_hulls,
+    put_fleet_targets,
+    send_fleet_wave,
+    type ShipTargetLine,
+    type ShipTargetProgress,
+    type TargetLineOwner,
+    type TargetSuggestions,
+    type UnmatchedHull,
+} from '@helpers/api.minmatar.org/fleets'
+import { get_ship_groups, get_ship_hull_group_ids, get_ship_hulls } from '@helpers/sde/ships'
+import type { ShipHull } from '@dtypes/layout_components'
+
+const as_line = (target:ShipTargetProgress):ShipTargetLine => ({
+    name: target.name,
+    target: target.target,
+    ship_type_ids: target.ship_type_ids,
+    group_ids: target.group_ids,
+})
+const ids = (values:FormDataEntryValue[]) => values.map(value => parseInt(value as string)).filter(id => !isNaN(id))
+
+let targets:ShipTargetProgress[] = []
+let status:string | false = false
+let error:string | false = false
+let view:'list' | 'edit' | 'find' =
+    mode === 'edit' && can_manage ? 'edit' :
+    mode === 'find' && can_invite ? 'find' :
+    'list'
+
+try {
+    targets = await get_fleet_targets(auth_token as string, fleet_id)
+} catch (e) {
+    console.log(`Ship targets: ${e.message}`)
+}
+
+const save = async (lines:ShipTargetLine[], message:string) => {
+    try {
+        const saved = await put_fleet_targets(auth_token as string, fleet_id, lines)
+        if (!saved) throw new Error(t('fleets.targets.save_failed'))
+        targets = saved
+        status = message
+        return true
+    } catch (e) {
+        error = e.message
+        return false
+    }
+}
+
+if (Astro.request.method === 'POST' && can_manage) {
+    const form = await Astro.request.formData()
+
+    if (mode === 'save_line') {
+        const type_ids = ids(form.getAll('type_ids'))
+        const group_ids = ids(form.getAll('group_ids'))
+        const line:ShipTargetLine = {
+            name: ((form.get('name') as string) ?? '').trim(),
+            target: parseInt((form.get('target') as string) ?? '') || 0,
+            ship_type_ids: type_ids,
+            group_ids,
+        }
+        // Picking a hull or group another line has moves it here; a line
+        // left with nothing to count goes.
+        const lines:ShipTargetLine[] = []
+        for (const target of targets) {
+            if (target.id === target_id) {
+                lines.push(line)
+                continue
+            }
+            const other = {
+                ...as_line(target),
+                ship_type_ids: target.ship_type_ids.filter(id => !type_ids.includes(id)),
+                group_ids: target.group_ids.filter(id => !group_ids.includes(id)),
+            }
+            if (other.ship_type_ids.length + other.group_ids.length > 0)
+                lines.push(other)
+        }
+        if (is_new)
+            lines.push(line)
+        if (!await save(lines, t('fleets.targets.saved')))
+            view = 'edit'
+    } else if (mode === 'delete_line') {
+        await save(targets.filter(target => target.id !== target_id).map(as_line), t('fleets.targets.saved'))
+    } else if (mode === 'start') {
+        const rows = parseInt((form.get('rows') as string) ?? '0') || 0
+        const lines:ShipTargetLine[] = []
+        for (let index = 0; index < rows; index++) {
+            const count = parseInt((form.get(`target_${index}`) as string) ?? '')
+            const name = ((form.get(`name_${index}`) as string) ?? '').trim()
+            const ships = ((form.get(`ships_${index}`) as string) ?? '').split(',')
+            if (!count || !name) continue
+            lines.push({ name, target: count, ship_type_ids: ids(ships), group_ids: [] })
+        }
+        if (lines.length)
+            await save(lines, t('fleets.targets.saved'))
+        else
+            error = t('fleets.targets.no_counts')
+    } else if (mode === 'copy') {
+        const from_fleet_id = parseInt((form.get('from_fleet_id') as string) ?? '')
+        const suggestions = await get_target_suggestions(auth_token as string, fleet_id)
+        const source = suggestions.past_fleets.find(fleet => fleet.fleet_id === from_fleet_id)
+        if (source)
+            await save(source.lines, t('fleets.targets.saved'))
+    } else if (mode === 'invite' && can_invite) {
+        const user_ids = ids(form.getAll('user_ids'))
+        try {
+            const wave = await send_fleet_wave(auth_token as string, fleet_id, { user_ids })
+            if (!wave) throw new Error(t('fleets.targets.invite_failed'))
+            status = t('fleets.targets.invited')
+                .replace('{count}', wave.invited.toString())
+                .replace('{number}', wave.number.toString())
+        } catch (e) {
+            error = e.message
+            view = 'find'
+        }
+    }
+}
+
+const target = targets.find(target => target.id === target_id) ?? null
+if (view === 'find' && !target)
+    view = 'list'
+
+// What each view needs, fetched only for that view.
+let hulls:ShipHull[] = []
+let groups:ShipHull[] = []
+let hull_groups = new Map<number, number>()
+let owners:TargetLineOwner[] = []
+let unmatched:UnmatchedHull[] = []
+let suggestions:TargetSuggestions | null = null
+
+if (view === 'edit') {
+    ;[hulls, groups, hull_groups] = await Promise.all([get_ship_hulls(), get_ship_groups(), get_ship_hull_group_ids()])
+} else if (view === 'find') {
+    try {
+        owners = await get_target_line_owners(auth_token as string, fleet_id, target!.id)
+    } catch (e) {
+        error = e.message
+    }
+} else if (can_manage) {
+    if (targets.length) {
+        unmatched = await get_unmatched_hulls(auth_token as string, fleet_id).catch(() => [])
+    } else {
+        ;[suggestions, hulls] = await Promise.all([
+            get_target_suggestions(auth_token as string, fleet_id).catch(() => null),
+            get_ship_hulls(),
+        ])
+    }
+}
+
+import FleetShipTargets from '@components/blocks/FleetShipTargets.astro'
+import FleetShipTargetLine from '@components/blocks/FleetShipTargetLine.astro'
+import FleetShipTargetOwners from '@components/blocks/FleetShipTargetOwners.astro'
+---
+
+{view === 'edit' ?
+    <FleetShipTargetLine
+        fleet_id={fleet_id}
+        can_manage={can_manage}
+        can_invite={can_invite}
+        target={is_new ? null : target}
+        others={targets.filter(other => is_new || other.id !== target_id)}
+        hulls={hulls}
+        groups={groups}
+        hull_groups={hull_groups}
+        add_type_id={add_type_id}
+        error={error}
+    />
+: view === 'find' ?
+    <FleetShipTargetOwners
+        fleet_id={fleet_id}
+        can_manage={can_manage}
+        can_invite={can_invite}
+        target={target!}
+        owners={owners}
+        error={error}
+    />
+:
+    <FleetShipTargets
+        fleet_id={fleet_id}
+        targets={targets}
+        can_manage={can_manage}
+        can_invite={can_invite}
+        unmatched={unmatched}
+        suggestions={suggestions}
+        hull_names={new Map(hulls.map(hull => [hull.type_id, hull.name]))}
+        status={status}
+        error={error}
+    />
+}

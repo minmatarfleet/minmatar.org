@@ -1,13 +1,19 @@
 """Tests for tribes router endpoints."""
 
-import jwt
-from django.conf import settings
+from unittest.mock import patch
+
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase
 
+from discord.models import DiscordUser
 from eveonline.models import EveCharacter
+from notifications.models import (
+    NotificationChannel,
+    NotificationDelivery,
+    NotificationPreference,
+)
 from tribes.models import (
     Tribe,
     TribeGroup,
@@ -16,13 +22,9 @@ from tribes.models import (
     TribeGroupMembershipCharacterHistory,
     TribeGroupRank,
 )
+from app.testing import make_token
 
 BASE_URL = "/api/tribes"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def setUpModule():
@@ -108,7 +110,7 @@ class MembershipApplyTestCase(TestCase):
             codename="add_tribegroupmembership", content_type=content_type
         )
         self.user.user_permissions.add(perm)
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.character = EveCharacter.objects.create(
             character_id=10001, character_name="Miner One", user=self.user
         )
@@ -124,6 +126,60 @@ class MembershipApplyTestCase(TestCase):
         data = response.json()
         self.assertEqual(data["status"], "pending")
         self.assertEqual(data["user_id"], self.user.pk)
+
+    def _apply(self):
+        return self.client.post(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships",
+            data={"character_ids": [self.character.pk]},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def _make_chief(self):
+        chief = User.objects.create_user(username="chief")
+        DiscordUser.objects.create(id=777, discord_tag="chief#1", user=chief)
+        self.tribe_group.chief = chief
+        self.tribe_group.save()
+        return chief
+
+    @patch("notifications.service.deliver_notification")
+    @patch("notifications.channels.DiscordClient")
+    def test_apply_notifies_chief_after_commit(self, discord_cls, deliver):
+        chief = self._make_chief()
+
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self._apply()
+        self.assertEqual(response.status_code, 200)
+        # Nothing is sent to Discord inside the request.
+        discord_cls.assert_not_called()
+        deliver.delay.assert_not_called()
+
+        delivery = NotificationDelivery.objects.get(
+            user=chief, notification_type="tribes.membership_requested"
+        )
+        self.assertEqual(NotificationChannel.DISCORD, delivery.channel)
+        # Same words as the old plain DM.
+        self.assertEqual(
+            "**New tribe membership application** for **Mining** "
+            "(Mining): miner has applied. Please review in the admin "
+            "panel.",
+            delivery.payload["discord_message"],
+        )
+        for callback in callbacks:
+            callback()
+        deliver.delay.assert_called_once_with(delivery.id)
+
+    def test_chief_can_mute_application_pings(self):
+        chief = self._make_chief()
+        NotificationPreference.objects.create(
+            user=chief,
+            notification_type="tribes.membership_requested",
+            channel=NotificationChannel.DISCORD,
+            enabled=False,
+        )
+        response = self._apply()
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(NotificationDelivery.objects.exists())
 
     def test_apply_twice_returns_400(self):
         self.client.post(
@@ -203,7 +259,7 @@ class MembershipApprovalTestCase(TestCase):
         )
 
     def test_chief_can_approve(self):
-        token = _make_token(self.chief)
+        token = make_token(self.chief)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}/approve"
         response = self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 200)
@@ -213,13 +269,13 @@ class MembershipApprovalTestCase(TestCase):
         )
 
     def test_random_user_cannot_approve(self):
-        token = _make_token(self.random)
+        token = make_token(self.random)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}/approve"
         response = self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 403)
 
     def test_chief_can_deny(self):
-        token = _make_token(self.chief)
+        token = make_token(self.chief)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}/deny"
         response = self.client.post(url, HTTP_AUTHORIZATION=f"Bearer {token}")
         self.assertEqual(response.status_code, 200)
@@ -244,7 +300,7 @@ class MembershipLeaveTestCase(TestCase):
         )
 
     def test_user_can_leave_own_membership(self):
-        token = _make_token(self.user)
+        token = make_token(self.user)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}"
         response = self.client.delete(
             url, HTTP_AUTHORIZATION=f"Bearer {token}"
@@ -260,7 +316,7 @@ class MembershipLeaveTestCase(TestCase):
         self.tribe_group.chief = chief
         self.tribe_group.save()
 
-        token = _make_token(chief)
+        token = make_token(chief)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}"
         response = self.client.delete(
             url, HTTP_AUTHORIZATION=f"Bearer {token}"
@@ -313,7 +369,7 @@ class MembershipListTestCase(TestCase):
     def test_chief_list_returns_all_without_requirement_status_by_default(
         self,
     ):
-        token = _make_token(self.chief)
+        token = make_token(self.chief)
         response = self.client.get(
             self.list_url, HTTP_AUTHORIZATION=f"Bearer {token}"
         )
@@ -327,7 +383,7 @@ class MembershipListTestCase(TestCase):
                 self.assertIsNone(character.get("missing_assets"))
 
     def test_mine_returns_only_caller_membership_with_characters(self):
-        token = _make_token(self.chief)
+        token = make_token(self.chief)
         # Chief has no membership of their own — empty list.
         response = self.client.get(
             f"{self.list_url}?mine=true",
@@ -336,7 +392,7 @@ class MembershipListTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
 
-        token = _make_token(self.member)
+        token = make_token(self.member)
         response = self.client.get(
             f"{self.list_url}?mine=true",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -353,7 +409,7 @@ class MembershipListTestCase(TestCase):
         self.assertIsNone(data[0]["characters"][0].get("qualifies"))
 
     def test_include_requirements_adds_qualify_flags_for_chief(self):
-        token = _make_token(self.chief)
+        token = make_token(self.chief)
         response = self.client.get(
             f"{self.list_url}?include_requirements=true",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -366,7 +422,7 @@ class MembershipListTestCase(TestCase):
         self.assertTrue(member_row["characters"][0]["qualifies"])
 
     def test_member_cannot_force_full_roster_via_include_requirements(self):
-        token = _make_token(self.member)
+        token = make_token(self.member)
         response = self.client.get(
             f"{self.list_url}?include_requirements=true",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -387,7 +443,7 @@ class MembershipCharacterTestCase(TestCase):
             tribe=self.tribe, name="Mining"
         )
         self.user = User.objects.create_user(username="miner")
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.membership = TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
@@ -466,7 +522,7 @@ class CurrentUserTribesTestCase(TestCase):
         )
 
     def test_current_returns_user_tribes(self):
-        token = _make_token(self.user)
+        token = make_token(self.user)
         response = self.client.get(
             f"{BASE_URL}/current", HTTP_AUTHORIZATION=f"Bearer {token}"
         )

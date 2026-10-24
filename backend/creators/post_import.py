@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from creators.clients.reddit import normalize_reddit_username
+from creators.clients.youtube import is_public_playlist_item
 from creators.models import CreatorAccount, CreatorProvider
 from creators.oauth import OAuthError, refresh_access_token
 from posts.models import EvePost, EveTag
@@ -409,7 +410,7 @@ def _youtube_playlist_window(
     while page_count < 20:
         page_count += 1
         params: dict[str, Any] = {
-            "part": "snippet,contentDetails",
+            "part": "snippet,contentDetails,status",
             "playlistId": uploads_id,
             "maxResults": 50,
         }
@@ -460,6 +461,8 @@ def parse_youtube_playlist_item(
         content.get("videoPublishedAt") or snippet.get("publishedAt")
     )
     if not video_id or published is None or published < cutoff:
+        return None
+    if not is_public_playlist_item(item):
         return None
     return {
         "id": video_id,

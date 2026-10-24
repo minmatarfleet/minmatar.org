@@ -2,11 +2,22 @@
   "api_base_url": "https://api.minmatar.org/api",
   "corporation_types": ["alliance", "associate"],
   "discord_invite": "discord.gg/minmatar",
+  "tracked_links": {
+    "_note": "Targets must match frontend/app/src/json/scout-links.json. Link text stays the url; the href is <link_base><target>.",
+    "targets": {
+      "discord": "discord.gg/minmatar",
+      "learning": "https://my.minmatar.org/learning/",
+      "corporations": "https://my.minmatar.org/alliance/corporations/",
+      "warzone": "https://my.minmatar.org/warzone/",
+      "amamake": "https://my.minmatar.org/amamake-market/",
+      "freight": "https://my.minmatar.org/market/freight/contracts/history/"
+    }
+  },
   "proof_videos": {
     "always": {
       "title": "Bring Fun Shit",
       "url": "https://youtu.be/7-eGTtq9vWo",
-      "use_for": "every send"
+      "use_for": "every r/evejobs and forum send"
     },
     "mining": {
       "title": "Rock Hoppin'",
@@ -30,6 +41,7 @@
   ],
   "proof_pages": {
     "warzone": "https://my.minmatar.org/warzone/",
+    "amamake": "https://my.minmatar.org/amamake-market/",
     "corporations": "https://my.minmatar.org/alliance/corporations/",
     "freight": "https://my.minmatar.org/market/freight/contracts/history/",
     "auga_siege": "https://my.minmatar.org/alliance/campaigns/auga-yc128/"

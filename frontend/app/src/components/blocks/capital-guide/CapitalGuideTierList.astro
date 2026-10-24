@@ -200,4 +200,17 @@ function row_label(row: TierRow): string | null {
             font-size: var(--step--1);
         }
     }
+
+    /* Phones: wrap the ship chips instead of scrolling the row sideways. */
+    @media (max-width: 48rem) {
+        .cap-tiers-block,
+        .cap-tiers {
+            --cap-chip-width: 7rem;
+        }
+
+        .cap-tiers__ships {
+            flex-wrap: wrap;
+            width: auto;
+        }
+    }
 </style>

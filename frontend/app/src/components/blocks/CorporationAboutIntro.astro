@@ -1,0 +1,168 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import { tenure_parts } from '@helpers/corporations/about'
+
+import TextBox from '@components/layout/TextBox.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+
+interface Props {
+    corporation: CorporationInfo
+    biography?: string
+    [propName: string]: any
+}
+
+const { corporation, biography = '' } = Astro.props
+
+const summary = corporation.public_summary
+const tenure = tenure_parts(corporation.about?.tenure?.average_days)
+const pilots = corporation.human_count ?? summary?.community?.humans ?? null
+
+interface Vital {
+    value: string
+    // Small unit after the number ("years"), so long values never wrap.
+    unit?: string
+    label: string
+    detail: string
+}
+
+const vitals: Vital[] = [
+    pilots != null && {
+        value: String(pilots),
+        label: t('corporations.about.pilots'),
+        detail: corporation.member_count != null
+            ? t('corporations.about.characters').replace('~COUNT', String(corporation.member_count))
+            : '',
+    },
+    summary && {
+        value: String(summary.fleet_participation.fleet_instances),
+        label: t('corporations.about.fleets'),
+        detail: t('corporations.about.last_90_days'),
+    },
+    summary && {
+        value: String(summary.kills.killmails),
+        label: t('corporations.about.kills'),
+        detail: t('corporations.about.last_90_days'),
+    },
+    tenure && {
+        value: tenure.value,
+        unit: t(
+            tenure.unit === 'years' ? 'corporations.about.word_years'
+            : tenure.unit === 'months' ? 'corporations.about.word_months'
+            : 'corporations.about.word_weeks',
+        ),
+        label: t('corporations.about.average_tenure'),
+        detail: t('corporations.about.mains_only'),
+    },
+].filter(Boolean) as Vital[]
+---
+
+{(corporation.introduction || biography || vitals.length > 0) &&
+    <section class="intro">
+        <div class="words">
+            {corporation.introduction &&
+                <p class="lede">{corporation.introduction}</p>
+            }
+            {biography &&
+                <TextBox max_width="100%">
+                    <Markdown markdown={biography} />
+                </TextBox>
+            }
+        </div>
+        {vitals.length > 0 &&
+            <dl class="vitals">
+                {vitals.map((vital) => (
+                    <div class="vital">
+                        <dt class="vital-label">{vital.label}</dt>
+                        <dd class="vital-value">
+                            {vital.value}
+                            {vital.unit && <span class="vital-unit">{vital.unit}</span>}
+                        </dd>
+                        {vital.detail && <dd class="vital-detail">{vital.detail}</dd>}
+                    </div>
+                ))}
+            </dl>
+        }
+    </section>
+}
+
+<style lang="scss">
+    .intro {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+        gap: var(--space-xl);
+        align-items: start;
+    }
+
+    .words {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .lede {
+        margin: 0;
+        font-size: var(--step-1);
+        color: var(--highlight);
+        max-width: var(--max-text-width);
+    }
+
+    // The same cards as By the numbers: eyebrow, big number, quiet detail line.
+    .vitals {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-s);
+    }
+
+    .vital {
+        container-type: inline-size;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        background: var(--component-background);
+        min-width: 0;
+
+        dd {
+            margin: 0;
+        }
+
+        @media (max-width: 30rem) {
+            padding: var(--space-s);
+        }
+    }
+
+    .vital-label {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    // Scales with the card, so four digits or a unit never clip on a phone.
+    .vital-value {
+        font-family: var(--heading-font);
+        font-size: min(var(--step-4), 28cqi);
+        line-height: 1;
+        white-space: nowrap;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .vital-unit {
+        margin-inline-start: var(--space-3xs);
+        font-size: 0.45em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .vital-detail {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

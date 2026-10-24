@@ -49,14 +49,21 @@ def order_location_short_label(order: IndustryOrder) -> str:
 
 
 def format_isk_billions_trimmed(isk: Decimal) -> str:
-    """ISK as billions string like ``2`` or ``4.5`` with ``B`` suffix (no `` profit``)."""
-    if isk <= 0:
+    """ISK as billions string like ``2``, ``4.5`` or ``-0.3`` with ``B`` suffix."""
+    if isk == 0:
         return "0B"
-    billions = isk / BILLION
+    sign = "-" if isk < 0 else ""
+    billions = abs(isk) / BILLION
     text = f"{billions:.2f}".rstrip("0").rstrip(".")
-    return f"{text}B"
+    if text == "0":
+        return "0B"
+    return f"{sign}{text}B"
 
 
-def format_margin_profit_parenthetical(isk: Decimal) -> str:
-    """``(2B profit)`` style from target margin ISK."""
+def format_profit_parenthetical(isk: Decimal | None) -> str:
+    """``(2B profit)`` / ``(0.3B loss)``; empty when no profit snapshot exists."""
+    if isk is None:
+        return ""
+    if isk < 0:
+        return f"({format_isk_billions_trimmed(-isk)} loss)"
     return f"({format_isk_billions_trimmed(isk)} profit)"

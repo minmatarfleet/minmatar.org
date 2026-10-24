@@ -6,12 +6,14 @@ from __future__ import annotations
 FEATURE_LABELS: dict[str, str] = {
     "industry": "Industry",
     "fleets": "Fleets",
+    "tribes": "Tribes",
 }
 
 # Discord embed accent colors (decimal).
 FEATURE_COLORS: dict[str, int] = {
     "industry": 0xC45C26,  # Minmatar-ish orange
     "fleets": 0xB91C1C,  # fleet red
+    "tribes": 0x2B6CB0,  # alliance blue
 }
 
 _DEFAULT_COLOR = 0x4A5568
@@ -66,6 +68,12 @@ def _description_starts_with_title(description: str, title: str) -> bool:
     if not description or not title:
         return False
     first_line = description.lstrip().split("\n", 1)[0]
-    # Strip markdown heading markers / backticks for a loose match.
-    normalized = first_line.replace("#", "").replace("`", "").strip().lower()
+    # Strip markdown heading / bold markers and backticks for a loose match.
+    normalized = (
+        first_line.replace("#", "")
+        .replace("`", "")
+        .replace("*", "")
+        .strip()
+        .lower()
+    )
     return normalized == title.lower() or normalized.startswith(title.lower())

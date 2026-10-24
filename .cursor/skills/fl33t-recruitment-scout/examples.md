@@ -4,6 +4,33 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-10-18 r/eve is a content plug
+
+Recruiter correction. The 27 Sep rule (one short answer, at most one proof link, name a corp in one clause) still left r/eve comments sounding like recruitment. On r/eve, do not name a corporation, do not link an r/evejobs ad, and do not drop Discord, Bring Fun Shit, or Rock Hoppin'.
+
+The comment answers the thread in one or two sentences and hands them one piece of content. That piece is the tie back.
+
+| Thread is about | Plug |
+|-----------------|------|
+| Fights, faction warfare, where the action is | Newest kit AAR, bare Reddit URL |
+| Capitals or a dread | Cap-feed AAR (Ahbazon 700B until a newer cap brawl posts) |
+| How the war is going, what changed | `https://my.minmatar.org/warzone/` |
+| Mining, market, ISK, the station economy | `https://my.minmatar.org/amamake-market/` |
+
+Section 3 still records the seat. The copy block is only the plug. r/evejobs and the forums keep the full pitch.
+
+The 27 Sep entries below are historical sends. Do not copy the corp-name clause from them.
+
+---
+
+## 2026-10-16 tracked links
+
+Discord and my.minmatar.org links now carry a per-reply code (see "Tracked links" in SKILL.md). The visible text is unchanged; only the href moves to `https://my.minmatar.org/go/<code>/<target>`. Older entries below show plain `http://discord.gg/minmatar` hrefs. Those are historical sends, not the current shape.
+
+When a run's stats show a reply with clicks and the pilot joined, note the reply here. Clicks are the signal for which openings and seats land.
+
+---
+
 ## 2026-10-05 no named industry contact
 
 Recruiter correction after the 5 Oct scout. Forum drafts for the highsec miner, the retired nullsec PvE pilot, and the hisec RP character closed with `ask for Keldor00`. That person is not on the Minmatar Extraction Company roster. Do not name them. Do not use the older `Keldor` shorthand, or `Keldar Atram` / `keldar_atram` from the German industry reply.

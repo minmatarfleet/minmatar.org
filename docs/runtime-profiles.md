@@ -2,7 +2,7 @@
 
 ## Local development (default)
 
-**One terminal:** from the repo root, run `./dev.sh` or `make dev`. This starts MariaDB/Redis, Django, Celery (all queues), Beat, frontend, and mobile.
+**One terminal:** from the repo root, run `./dev.sh` or `make dev`. This starts MariaDB/Redis, Django, Celery (all queues), Beat and frontend. Add `--mobile` (or `make dev MOBILE=1`) to also start the dormant mobile proof of concept.
 
 | Component | How it runs |
 | --- | --- |
@@ -15,7 +15,7 @@ Uses your own Discord app and ESI credentials. See [developer data seeding](deve
 
 ## Production
 
-Everything runs in Docker via `docker-compose-prod.yml`: Django (gunicorn), frontend, Celery workers, Beat, bot, Redis, Metabase, etc.
+Everything runs in Docker via `docker-compose-prod.yml`: Django (gunicorn), frontend, Celery workers (one service per queue; see [architecture/celery-queues.md](architecture/celery-queues.md)), Beat, bot, Redis, Metabase, etc.
 
 (Former Mumble/Murmur stack: see [mumble-architecture.md](mumble-architecture.md).)
 

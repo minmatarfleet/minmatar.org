@@ -10,8 +10,21 @@ class TribeGroup(models.Model):
     A multi-focus tribe (e.g. Capitals) has several (Dreads, Carriers, Fax).
     """
 
+    # Who may publish posts, fleets or events as the group. Chiefs (anyone
+    # who can manage the group) always can.
+    POLICY_CHIEFS = "chiefs"
+    POLICY_CHOSEN = "chosen"
+    POLICY_MEMBERS = "members"
+    POLICY_CHOICES = [
+        (POLICY_CHIEFS, "Chiefs only"),
+        (POLICY_CHOSEN, "Chiefs and chosen pilots"),
+        (POLICY_MEMBERS, "Every active member"),
+    ]
+
     TOKEN_TYPE_CHOICES = [
-        (t.value, t.value) for t in TokenType if t != TokenType.PUBLIC
+        (t.value, t.value)
+        for t in TokenType
+        if t not in (TokenType.PUBLIC, TokenType.CAMPAIGN)
     ]
 
     tribe = models.ForeignKey(
@@ -80,6 +93,47 @@ class TribeGroup(models.Model):
             "(currently Alliance and Associate)."
         ),
     )
+
+    post_policy = models.CharField(
+        max_length=16, choices=POLICY_CHOICES, default=POLICY_CHIEFS
+    )
+    fleet_policy = models.CharField(
+        max_length=16, choices=POLICY_CHOICES, default=POLICY_CHIEFS
+    )
+    event_policy = models.CharField(
+        max_length=16, choices=POLICY_CHOICES, default=POLICY_CHIEFS
+    )
+    post_publishers = models.ManyToManyField(
+        "auth.User",
+        blank=True,
+        related_name="tribe_group_post_publisher_of",
+        help_text="Chosen pilots who may post as the group.",
+    )
+    fleet_publishers = models.ManyToManyField(
+        "auth.User",
+        blank=True,
+        related_name="tribe_group_fleet_publisher_of",
+        help_text="Chosen pilots who may schedule group fleets.",
+    )
+    event_publishers = models.ManyToManyField(
+        "auth.User",
+        blank=True,
+        related_name="tribe_group_event_publisher_of",
+        help_text="Chosen pilots who may create group events.",
+    )
+    allow_alliance_posts = models.BooleanField(
+        default=True,
+        help_text="Off: every post published as the group is members only.",
+    )
+    allow_open_fleets = models.BooleanField(
+        default=False,
+        help_text="Publishers may open group fleets to the whole alliance.",
+    )
+
+    @property
+    def effective_discord_channel_id(self) -> int | None:
+        """The group's channel, or its tribe's when the group has none."""
+        return self.discord_channel_id or self.tribe.discord_channel_id
 
     def save(self, *args, **kwargs):
         if not self.code:

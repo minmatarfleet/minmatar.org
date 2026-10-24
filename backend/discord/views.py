@@ -8,8 +8,14 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.shortcuts import redirect
 
+from app.dev_switches import fake_login_user_id
+
 from .client import DiscordClient, DiscordError, discord_authorize_url
 from users.helpers import make_user_objects
+from users.redirects import (
+    default_login_redirect_url,
+    safe_login_redirect_url,
+)
 
 discord = DiscordClient()
 
@@ -33,12 +39,9 @@ def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
     1) Admin page access
     2) Authentication during the ESI SSO process for getting/refreshing tokens
     """
-    if (
-        hasattr(settings, "FAKE_LOGIN_USER_ID")
-        and settings.FAKE_LOGIN_USER_ID
-        and settings.FAKE_LOGIN_USER_ID > ""
-    ):
-        return fake_login(request, settings.FAKE_LOGIN_USER_ID)
+    fake_user_id = fake_login_user_id()
+    if fake_user_id:
+        return fake_login(request, int(fake_user_id))
 
     # get next and store in session
     logger.debug("Adding redirect URL to session: %s", request.GET.get("next"))
@@ -93,10 +96,10 @@ def discord_login_redirect(request: HttpRequest):
 
 def redirect_to_error_page(request, error_code, error_id=None):
     """Redirects to a frontend authentication error page"""
-    try:
-        redirect_url = request.session["authentication_redirect_url"]
-    except KeyError:
-        redirect_url = "https://my.minmatar.org/auth/login"
+    redirect_url = safe_login_redirect_url(
+        request.session.get("authentication_redirect_url"),
+        default_login_redirect_url(),
+    )
 
     redirect_url = redirect_url + "?error=" + error_code
     if error_id:

@@ -1,0 +1,600 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { earlier_rounds, round_bars, round_opponents, round_window, seconds_since, eve_clock } from '@helpers/fleet_fights'
+import { query_string } from '@helpers/string'
+
+/**
+ * The Fights tab: a fleet's killmails as rounds. While the fleet is out it
+ * leads with the round happening now and refreshes itself every 30 s; once
+ * it is over it shows the whole night and every round in order.
+ *
+ * The page renders it first, so its styles reach the page; the partial
+ * (fleet_fights_component) replaces it on each refresh and after an edit.
+ */
+interface Props {
+    fights:             FleetFights;
+    fleet_id:           number;
+    [propName: string]: any;
+}
+
+const {
+    fights,
+    fleet_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_fights_component')}?fleet_id=${fleet_id}`
+const EDIT_URL = `${translatePath('/partials/fleet_fights_edit_component')}?fleet_id=${fleet_id}`
+// Each engagement opens the fleet's battle report scoped to its window.
+const REPORT_URL = translatePath(`/fleets/history/${fleet_id}/report`)
+const round_href = (position: number) => {
+    const round = fights.rounds[position - 1]
+    return round ? `${REPORT_URL}?${query_string(round_window(round))}` : REPORT_URL
+}
+
+const building = fights.status === 'building'
+const live = fights.live
+const rounds = fights.rounds
+const latest = live && rounds.length ? rounds[rounds.length - 1] : null
+const listed = live ? earlier_rounds(fights) : rounds
+const now = new Date()
+
+const quiet_seconds = latest ? seconds_since(latest.end, now) : 0
+const latest_state = !latest ? '' :
+    latest.fighting ?
+        (quiet_seconds < 120 ?
+            t('fleets.fights.fighting').replace('{seconds}', quiet_seconds.toString()) :
+            t('fleets.fights.fighting_minutes').replace('{minutes}', Math.round(quiet_seconds / 60).toString())) :
+        t('fleets.fights.quiet').replace('{minutes}', Math.round(quiet_seconds / 60).toString())
+const latest_name = !latest ? '' : latest.kind === 'round' ?
+    t('fleets.fights.round').replace('{number}', (latest.number ?? 0).toString()) :
+    t('fleets.fights.skirmish')
+const latest_bars = latest ? round_bars(latest, latest.fighting ? now.toISOString() : latest.end) : []
+const latest_groups = latest ? round_opponents(latest) : []
+const newest = latest ? latest.killmails.filter(mail => !mail.pod).reverse().slice(0, 6) : []
+
+const feed_behind_minutes = fights.feed_behind_since ? Math.round(seconds_since(fights.feed_behind_since, now) / 60) : 0
+
+const totals = fights.totals
+// Engagements in order; skirmishes fold into one group after them.
+const listed_engagements = listed.filter(round => round.kind === 'round')
+const listed_skirmishes = listed.filter(round => round.kind !== 'round')
+const skirmish_isk = listed_skirmishes.reduce((sum, round) => sum + round.isk_lost + round.isk_destroyed, 0)
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import FleetFightRound from '@components/blocks/FleetFightRound.astro'
+import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
+import GroupLogos from '@components/blocks/GroupLogos.astro'
+---
+
+{building ?
+    <div
+        id="fleet-fights"
+        class:list={['[ fleet-fights ]', Astro.props.class]}
+        hx-get={PARTIAL_URL}
+        hx-trigger="load delay:5s"
+        hx-swap="outerHTML"
+        {...attributes}
+    >
+        <p class="[ loading ]">{t('fleets.fights.building')}</p>
+    </div>
+    :
+    <div
+        id="fleet-fights"
+        class:list={['[ fleet-fights ]', Astro.props.class]}
+        hx-get={live ? PARTIAL_URL : undefined}
+        hx-trigger={live ? 'every 30s' : undefined}
+        hx-swap={live ? 'outerHTML' : undefined}
+        {...attributes}
+    >
+        {feed_behind_minutes >= 3 &&
+            <p class="[ fleet-fights__behind ]" role="status">
+                <b>{t('fleets.fights.feed_behind').replace('{minutes}', feed_behind_minutes.toString())}</b>
+                {t('fleets.fights.feed_behind_note')}
+            </p>
+        }
+
+        {latest &&
+            <section class="[ fleet-fights__section ]" aria-labelledby="fleet-fights-now">
+                <header>
+                    <h2 id="fleet-fights-now">{t('fleets.fights.right_now')}</h2>
+                    <small aria-live="polite">{t('fleets.fights.updated').replace('{time}', eve_clock(now))}</small>
+                </header>
+                <article class:list={['[ fleet-fights__now ]', { 'fleet-fights__now--fighting': latest.fighting }]}>
+                    <div class="[ fleet-fights__now-main ]">
+                        <div>
+                            <span class="[ fleet-fights__state ]">
+                                {latest.fighting && <span class="[ fleet-fights__dot ]" aria-hidden="true" />}
+                                {latest_state}
+                            </span>
+                            <h3>{latest_name}</h3>
+                            <span>
+                                {(latest.fighting ? t('fleets.fights.span_live') : t('fleets.fights.span'))
+                                    .replace('{start}', eve_clock(latest.start))
+                                    .replace('{end}', eve_clock(latest.end))
+                                    .replace('{minutes}', latest.minutes.toString())}
+                                · {latest.systems.map(system => system.name).join(', ')}
+                            </span>
+                        </div>
+                        <dl class="[ fleet-fights__score ]">
+                            <div>
+                                <dt>{t('fleets.fights.kills')}</dt>
+                                <dd><b class="[ fleet-fights__kill ]">{latest.ships_destroyed}</b>{t('fleets.fights.destroyed').replace('{isk}', format_isk(latest.isk_destroyed))}</dd>
+                            </div>
+                            <div>
+                                <dt>{t('fleets.fights.losses')}</dt>
+                                <dd><b class="[ fleet-fights__loss ]">{latest.ships_lost}</b>{t('fleets.fights.lost').replace('{isk}', format_isk(latest.isk_lost))}</dd>
+                            </div>
+                        </dl>
+                        {latest.efficiency !== null &&
+                            <div class="[ fleet-fights__efficiency ]">
+                                <span role="img" aria-label={t('fleets.fights.efficiency_label').replace('{pct}', latest.efficiency.toString())}>
+                                    <span style={`width: ${latest.efficiency}%`} />
+                                </span>
+                                <small>{t('fleets.fights.efficiency').replace('{pct}', latest.efficiency.toString())}</small>
+                            </div>
+                        }
+                        <div class="[ fleet-fights__mini ]" aria-label={t('fleets.fights.per_minute')}>
+                            <small class="[ fleet-fights__label ]">{t('fleets.fights.per_minute')}</small>
+                            <div style={`grid-template-columns: repeat(${latest_bars.length}, minmax(0, 1fr))`} aria-hidden="true">
+                                {latest_bars.map(bar =>
+                                    <span>
+                                        <span class="[ fleet-fights__mini-up ]"><span style={`height: ${Math.round(bar.up * 100)}%`} /></span>
+                                        <span class="[ fleet-fights__mini-down ]"><span style={`height: ${Math.round(bar.down * 100)}%`} /></span>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        {latest_groups.length > 0 &&
+                            <div>
+                                <small class="[ fleet-fights__label ]">{t('fleets.fights.hostile_pilots')}</small>
+                                <p><GroupLogos groups={latest_groups} /></p>
+                            </div>
+                        }
+                    </div>
+                    <div class="[ fleet-fights__now-side ]">
+                        <small class="[ fleet-fights__label ]">{t('fleets.fights.newest')}</small>
+                        <ul class="[ fleet-fights__mails ]">
+                            {newest.map(mail =>
+                                <li>
+                                    <small>{new Date(mail.time).toISOString().slice(11, 19)}</small>
+                                    {mail.ship_type_id ? <img src={get_item_icon(mail.ship_type_id, 32)} alt="" width="32" height="32" loading="lazy" /> : <span />}
+                                    <span>
+                                        <span><b class={mail.outcome === 'kill' ? 'fleet-fights__kill' : 'fleet-fights__loss'}>{mail.outcome === 'kill' ? t('fleets.fights.kill') : t('fleets.fights.loss')}</b>{' '}{mail.ship_name}</span>
+                                        <small>{[mail.victim_name, mail.outcome === 'kill' ? mail.group_name : '', mail.system_name, mail.pilots ? t('fleets.fights.of_ours').replace('{count}', mail.pilots.toString()) : ''].filter(Boolean).join(' · ')}</small>
+                                    </span>
+                                    <span>{mail.pending ? t('fleets.fights.value_pending') : format_isk(mail.isk)}</span>
+                                </li>
+                            )}
+                        </ul>
+                        <div class="[ fleet-fights__report-links ]">
+                            <span>
+                                <a href={REPORT_URL}>{t('fleets.fights.report_so_far')}</a>
+                            </span>
+                        </div>
+                    </div>
+                </article>
+            </section>
+        }
+
+        {fights.chart && rounds.length > 0 &&
+            <section class="[ fleet-fights__section ]" aria-labelledby="fleet-fights-night">
+                <header>
+                    <h2 id="fleet-fights-night">{live ? t('fleets.fights.so_far') : t('fleets.fights.night')}</h2>
+                    {!live && <a href={REPORT_URL}>{t('fleets.fights.whole_report')} →</a>}
+                    {live && totals &&
+                        <span set:html={t('fleets.fights.kills_losses').replace('{kills}', totals.ships_destroyed.toString()).replace('{losses}', totals.ships_lost.toString()) + ` · ${format_isk(totals.isk_destroyed)} / ${format_isk(totals.isk_lost)}`} />
+                    }
+                </header>
+                <FleetFightsChart fights={fights} round_href={round_href} />
+            </section>
+        }
+
+        {rounds.length === 0 ?
+            <EmptyState title={live ? t('fleets.fights.none_live') : t('fleets.fights.none')} />
+            :
+            listed.length > 0 &&
+                <section class="[ fleet-fights__section ]" aria-labelledby="fleet-fights-rounds">
+                    <header>
+                        <h2 id="fleet-fights-rounds">{live ? t('fleets.fights.earlier') : t('fleets.fights.rounds')}</h2>
+                        {fights.can_edit &&
+                            <button
+                                type="button"
+                                class="[ fleet-fights__edit ]"
+                                hx-get={EDIT_URL}
+                                hx-target="#fleet-fights"
+                                hx-swap="outerHTML"
+                                hx-disabled-elt="this"
+                            >
+                                {t('fleets.fights.edit')}
+                            </button>
+                        }
+                    </header>
+                    <div class="[ fleet-fights__list ]">
+                        {listed_engagements.map(round =>
+                            <FleetFightRound round={round} href={round_href(rounds.indexOf(round) + 1)} />
+                        )}
+                    </div>
+                    {listed_skirmishes.length > 0 &&
+                        <details class="[ fleet-fights__skirmishes ]">
+                            <summary>
+                                <span class="[ fleet-fights__caret ]" aria-hidden="true" />
+                                <b>{listed_skirmishes.length === 1 ? t('fleets.fights.skirmishes_one') : t('fleets.fights.skirmishes').replace('{count}', listed_skirmishes.length.toString())}</b>
+                                {skirmish_isk > 0 && <span>{format_isk(skirmish_isk)}</span>}
+                            </summary>
+                            <div class="[ fleet-fights__list ]">
+                                {listed_skirmishes.map(round =>
+                                    <FleetFightRound round={round} href={round_href(rounds.indexOf(round) + 1)} />
+                                )}
+                            </div>
+                        </details>
+                    }
+                </section>
+        }
+    </div>
+}
+
+<style lang="scss">
+    .fleet-fights {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-fights__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        > header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--space-2xs) var(--space-m);
+
+            :global(b) {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .fleet-fights__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .fleet-fights__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fleet-fights__label {
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .fleet-fights__behind {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+        margin: 0;
+        padding: var(--space-s) var(--space-m);
+        background-color: color-mix(in srgb, var(--tech-ii) 15%, transparent);
+        border: 1px solid var(--tech-ii);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-fights__now {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-s);
+            padding: var(--space-m);
+        }
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-3);
+            line-height: 1.05;
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-fights__now--fighting {
+        border-color: color-mix(in srgb, var(--fleet-red) 60%, transparent);
+    }
+
+    .fleet-fights__now-side {
+        border-left: 1px solid var(--border-color);
+    }
+
+    .fleet-fights__state {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fleet-fights__now:not(.fleet-fights__now--fighting) .fleet-fights__state {
+        color: var(--text-muted);
+    }
+
+    .fleet-fights__dot {
+        width: 0.6em;
+        height: 0.6em;
+        border-radius: 50%;
+        background-color: var(--fleet-red);
+        animation: fleet-fights-pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes fleet-fights-pulse {
+        50% { opacity: 0.35; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .fleet-fights__dot { animation: none; }
+    }
+
+    .fleet-fights__score {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0;
+
+        dt {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        dd {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-xs);
+            margin: 0;
+
+            b {
+                font-family: var(--heading-font);
+                font-size: var(--step-4);
+                font-weight: 400;
+                line-height: 1.1;
+            }
+        }
+    }
+
+    .fleet-fights__efficiency {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        > span {
+            display: flex;
+            height: var(--space-2xs);
+            background-color: var(--fleet-red);
+
+            span {
+                background-color: var(--alliance-blue);
+            }
+        }
+    }
+
+    .fleet-fights__mini {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        > div {
+            display: grid;
+            gap: 2px;
+
+            > span {
+                display: flex;
+                flex-direction: column;
+            }
+        }
+    }
+
+    .fleet-fights__mini-up,
+    .fleet-fights__mini-down {
+        display: flex;
+        height: var(--space-l);
+
+        span {
+            width: 100%;
+        }
+    }
+
+    .fleet-fights__mini-up {
+        align-items: flex-end;
+        border-bottom: 1px solid var(--hairline-strong);
+
+        span { background-color: var(--alliance-blue); }
+    }
+
+    .fleet-fights__mini-down {
+        align-items: flex-start;
+
+        span { background-color: var(--fleet-red); }
+    }
+
+    .fleet-fights__mails {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 4.5rem 32px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-3xs) var(--space-xs);
+            background-color: var(--surface-sunken);
+            font-variant-numeric: tabular-nums;
+
+            > span:nth-child(3) {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+
+                > span {
+                    color: var(--highlight);
+                }
+
+                small {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+            }
+
+            > span:last-child {
+                color: var(--highlight);
+                text-align: right;
+            }
+        }
+    }
+
+    .fleet-fights__report-links {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin-top: auto;
+
+        > span {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+        }
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            min-height: 2.75rem;
+            padding: 0 var(--space-s);
+            border: 1px solid var(--hairline-strong);
+            color: var(--foreground);
+            font-weight: 700;
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                border-color: var(--foreground);
+            }
+        }
+    }
+
+    .fleet-fights__edit {
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--foreground);
+        }
+    }
+
+    .fleet-fights__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fleet-fights__skirmishes {
+        > summary {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-3xs) var(--space-s);
+            padding: var(--space-2xs) var(--space-m);
+            background-color: color-mix(in srgb, var(--component-background) 50%, transparent);
+            cursor: pointer;
+
+            b {
+                font-family: var(--heading-font);
+                font-weight: 400;
+                color: var(--highlight);
+            }
+
+            span {
+                font-size: var(--step--1);
+                font-variant-numeric: tabular-nums;
+            }
+
+            &:hover {
+                background-color: var(--component-background);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--fleet-yellow);
+                outline-offset: 2px;
+            }
+        }
+
+        > .fleet-fights__list {
+            margin-top: var(--space-3xs);
+        }
+
+        &[open] .fleet-fights__caret {
+            transform: rotate(90deg);
+        }
+    }
+
+    .fleet-fights__caret {
+        align-self: center;
+        width: 0;
+        height: 0;
+        border-block: 0.35em solid transparent;
+        border-inline-start: 0.5em solid currentColor;
+        transition: transform var(--fast-transition);
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-fights__now-side {
+            border-left: 0;
+            border-top: 1px solid var(--border-color);
+        }
+    }
+</style>

@@ -1,0 +1,253 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+const { auth_token } = get_request_user(Astro)
+
+import type { Product, ProductBuild, ProductInsights } from '@dtypes/api.minmatar.org'
+import { get_product_build, get_product_by_id, get_product_insights } from '@helpers/api.minmatar.org/industry'
+
+const product_id = parseInt(Astro.params.id ?? '0')
+
+let product: Product | null = null
+let build: ProductBuild | null = null
+let fetching_error: Error | false = false
+
+try {
+    if (isNaN(product_id) || product_id <= 0)
+        throw new Error(t('invalid_product_id'), { cause: 400 })
+
+    product = await get_product_by_id(product_id)
+} catch (error) {
+    fetching_error = error
+}
+
+if (fetching_error && (fetching_error.cause === 404 || fetching_error.cause === 400))
+    return Astro.redirect(translatePath('/industry/products/'))
+
+// Nothing to build without a blueprint or reaction: the overview has it all.
+if (product && !product.blueprint_or_reaction_type_id)
+    return Astro.redirect(translatePath(`/industry/products/${product_id}/`))
+
+if (product) {
+    try {
+        build = await get_product_build(product_id)
+    } catch (error) {
+        if (error.cause === 404)
+            return Astro.redirect(translatePath(`/industry/products/${product_id}/`))
+        fetching_error = error
+    }
+}
+
+// Same warm-cache rule as the overview: render the queue here so its styles ship.
+let insights: ProductInsights | null = null
+
+if (product && auth_token) {
+    try {
+        insights = await get_product_insights(auth_token, product_id)
+    } catch {
+        // The partial below retries and shows the error.
+    }
+}
+
+import { query_string } from '@helpers/string'
+import { format_isk } from '@helpers/numbers'
+
+const QUEUE_PARTIAL_URL = `${translatePath('/partials/product_insights_component')}?${query_string({
+    product_id,
+    view: 'build',
+    build: 1,
+})}`
+const PLANNER_PATH = product
+    ? translatePath(`/industry/orders/planner?${query_string({ type_id: product.type_id })}`)
+    : translatePath('/industry/orders/planner')
+
+// Who has delivered the most of this, by ISK value, pilots and corporations together.
+const regulars = product
+    ? [
+        ...(product.character_producers ?? []).map(producer => ({
+            id: producer.id,
+            name: producer.name,
+            total_value_isk: producer.total_value_isk ?? 0,
+            is_corporation: false,
+        })),
+        ...(product.corporation_producers ?? []).map(producer => ({
+            id: producer.id,
+            name: producer.name,
+            total_value_isk: producer.total_value_isk ?? 0,
+            is_corporation: true,
+        })),
+    ]
+        .filter(producer => producer.total_value_isk > 0)
+        .sort((a, b) => b.total_value_isk - a.total_value_isk)
+        .slice(0, 8)
+    : []
+
+const strategy_path = (strategy: string) => strategy === 'produced'
+    ? '/industry/products/'
+    : `/industry/products?strategy=${strategy}`
+
+const page_title = product ? `${product.name} · ${t('industry.product.view_build')}` : t('industry.products.page_title')
+const breadcrumbs = [
+    { page_title: t('industry.page_title'), accumulated_path: '/industry/' },
+    {
+        page_title: t('industry.products.page_title'),
+        accumulated_path: product ? strategy_path(product.strategy) : '/industry/products/',
+    },
+    ...(product ? [{ page_title: product.name, accumulated_path: translatePath(`/industry/products/${product_id}/`) }] : []),
+    { page_title: t('industry.product.view_build'), accumulated_path: Astro.url.pathname },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CorporationPicture from '@components/blocks/CorporationPicture.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ProductBuildCost from '@components/blocks/ProductBuildCost.astro'
+import ProductBuildMaterials from '@components/blocks/ProductBuildMaterials.astro'
+import ProductBuildQueue from '@components/blocks/ProductBuildQueue.astro'
+import ProductHeader from '@components/blocks/ProductHeader.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.product.build_meta_description').replace('{name}', product?.name ?? '')}
+>
+    <PageWide
+        cover={{
+            image: "/images/blueprint-cover.jpg",
+            image_990: "/images/blueprint-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        {product ?
+            <ProductHeader slot="header" product={product} view="build" />
+            :
+            <PageTitle slot="header">{page_title}</PageTitle>
+        }
+
+        {fetching_error !== false || !product || !build ?
+            <ErrorRefetch
+                args={{
+                    partial: QUEUE_PARTIAL_URL,
+                    error: fetching_error || new Error(t('invalid_product_id')),
+                    delay: 0,
+                }}
+            />
+            :
+            <Flexblock gap="var(--space-xl)">
+                <Grid min_item_width="min(100%, 26rem)" row_gap="var(--space-l)" column_gap="var(--space-l)" class="[ items-start ]">
+                    {auth_token && insights?.ready ?
+                        <ProductBuildQueue insights={insights} />
+                        : auth_token ?
+                        <div
+                            hx-get={QUEUE_PARTIAL_URL}
+                            hx-trigger="load"
+                            hx-swap="outerHTML"
+                        >
+                            <p class="[ loading muted ]">{t('industry.product.loading_insights')}</p>
+                        </div>
+                        :
+                        <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+                            <Flexblock gap="var(--space-s)">
+                                <p class="[ muted ]">{t('industry.product.login_for_queue')}</p>
+                                <div><ButtonAuth size="sm">{t('industry.orders.assign_log_in')}</ButtonAuth></div>
+                            </Flexblock>
+                        </ComponentBlock>
+                    }
+
+                    <ProductBuildCost build={build} planner_path={PLANNER_PATH} />
+                </Grid>
+
+                <ProductBuildMaterials build={build} />
+
+                {regulars.length > 0 &&
+                    <section class="[ regulars ]" aria-labelledby="regulars-heading">
+                        <header class="[ regulars-header ]">
+                            <h3 id="regulars-heading">{t('industry.product.ask_a_regular')}</h3>
+                            <small>{t('industry.product.ask_a_regular_hint')}</small>
+                        </header>
+                        <ul class="[ regular-list ]" role="list">
+                            {regulars.map(regular =>
+                                <li class="[ regular ]">
+                                    {regular.is_corporation ?
+                                        <CorporationPicture corporation_id={regular.id} corporation_name={regular.name} size={32} />
+                                        :
+                                        <CharacterPicture character_id={regular.id} character_name={regular.name} size={32} icon_quality={64} />
+                                    }
+                                    <Flexblock gap="0" class="[ min-w-0 ]">
+                                        <span class="[ regular-name truncate ]">{regular.name}</span>
+                                        <small class="[ muted ]">
+                                            {t('industry.product.isk_delivered').replace('{isk}', format_isk(regular.total_value_isk))}
+                                        </small>
+                                    </Flexblock>
+                                </li>
+                            )}
+                        </ul>
+                    </section>
+                }
+            </Flexblock>
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .muted {
+        color: var(--foreground);
+    }
+
+    .regulars {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .regulars-header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
+    .regular-list {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+        gap: var(--space-xs);
+        padding: 0;
+        margin: 0;
+    }
+
+    .regular {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        border: solid 1px var(--border-color);
+        background: var(--component-background);
+    }
+
+    .regular-name {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+</style>

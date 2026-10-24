@@ -9,6 +9,8 @@ from feed.models import FeedEvent
 from feed.rollups.registry import ROLLUP_PROCESSORS, build_context, run_rollup
 from feed.rollups.writer import write_rollup_results
 
+DURABLE_ROLLUPS = {"fleet_kills"}
+
 
 class Command(BaseCommand):
     help = "Rebuild derived FeedEvent rows from facts/clusters"
@@ -31,8 +33,17 @@ class Command(BaseCommand):
         since = now - timedelta(hours=since_hours)
         ctx = build_context(since, now)
 
+        # fleet_kills cards outlive their killmails and the 48h window, so
+        # rebuilding them from facts would lose older fleets. Name it
+        # explicitly to touch it.
         codes = (
-            [rollup_code] if rollup_code else list(ROLLUP_PROCESSORS.keys())
+            [rollup_code]
+            if rollup_code
+            else [
+                code
+                for code in ROLLUP_PROCESSORS
+                if code not in DURABLE_ROLLUPS
+            ]
         )
         if options["wipe"]:
             deleted, _ = FeedEvent.objects.filter(

@@ -14,6 +14,9 @@ interface Props {
     hidden?:        boolean;
     id?:            string;
     filterable?:    boolean;
+    /** Prefills the killmail link, e.g. from a fleet's after-action report. */
+    external_killmail_link?: string;
+    label?:         string;
 }
 
 const {
@@ -25,6 +28,8 @@ const {
     hidden = false,
     id,
     filterable = false,
+    external_killmail_link = '',
+    label,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -61,7 +66,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     hidden={hidden}
     id={id ? id : undefined}
 >
-    {t('add_killmail')}
+    {label ?? t('add_killmail')}
 
     <form
         slot="dialog" 
@@ -72,7 +77,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         hx-swap="outerHTML transition:true"
         x-data={`{
             is_corp_ship: false,
-            external_killmail_link: '',
+            external_killmail_link: '${external_killmail_link}',
             category: '',
             comments: '',
             gziped_combatlog: '',

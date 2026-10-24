@@ -2,11 +2,9 @@ import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { expect, test, vi, beforeEach, afterEach, describe, it } from "vitest";
 import CharacterInfo from "@components/blocks/CharacterInfo.astro";
 
-import { get_user_permissions } from "@helpers/permissions";
 import { get_character_by_id } from "@helpers/api.eveonline/characters";
 import { get_character_faction, get_race_cover_image } from "@helpers/eve";
 
-vi.mock("@helpers/permissions");
 vi.mock("@helpers/api.eveonline/characters");
 vi.mock("@helpers/eve");
 
@@ -36,12 +34,6 @@ describe("CharacterInfo", async () => {
   });
 
   it("should dispaly fireworks for birthdays", async () => {
-    vi.mocked(get_user_permissions).mockImplementation(async (id) => {
-      expect(id).toBe(908);
-
-      return ["cluck", "bagok"];
-    });
-
     vi.mocked(get_character_by_id).mockImplementation(async (id) => {
       expect(id).toBe(908);
 

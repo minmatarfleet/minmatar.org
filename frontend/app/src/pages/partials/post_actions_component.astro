@@ -1,15 +1,12 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
 if (!auth_token || !user)
     return HTTP_403_Forbidden()
@@ -19,11 +16,11 @@ import { fetch_user_post } from '@helpers/fetching/posts'
 import { delete_post, update_post } from '@helpers/api.minmatar.org/posts'
 import { post_states } from '@dtypes/api.minmatar.org'
 import type { PostStates } from '@dtypes/api.minmatar.org'
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
+const can_manage_posts = can(gates, 'posts.create')
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()
@@ -118,7 +115,7 @@ import Tag from '@components/blocks/Tag.astro';
         <Tag
             hx-swap-oob="true"
             id={`post-tag-${(post as PostListUI).post_id}`}
-            text={t((post as PostListUI).state as any) ?? (post as PostListUI).state}
+            text={t(dynamic_key((post as PostListUI).state)) ?? (post as PostListUI).state}
             color={(post as PostListUI).state === 'published' ? 'green' : undefined}
         />
     }

@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.http import urlencode
 from eveuniverse.models import EveType
 
+from fittings.eft import item_quantities, parse_eft_header
 from fittings.models import EveFittingRefit
 from market.helpers.price_viability import is_price_viable
 from market.helpers.pricing import (
@@ -30,7 +31,6 @@ from market.models import (
 from market.models.item import (
     _get_consumable_items,
     get_effective_item_expectations,
-    parse_eft_items,
 )
 
 SOURCE_REFIT = "refit"
@@ -124,12 +124,7 @@ def _fetch_sell_order_stats(
 
 def _fitting_ship_name(eft_format: str) -> str | None:
     """Ship hull name from the first line of an EFT fitting string."""
-    lines = eft_format.strip().split("\n")
-    if not lines:
-        return None
-    header = lines[0].strip()
-    ship_name = header.split(",")[0].strip().strip("[]")
-    return ship_name or None
+    return parse_eft_header(eft_format)[0] or None
 
 
 def _stock_level(row: dict) -> str | None:
@@ -240,7 +235,7 @@ def get_sell_order_recommendations(location) -> list[dict]:
                 }
             )
         for refit in refits_by_fitting.get(fitting.pk, []):
-            for item_name, qty in parse_eft_items(refit.eft_format).items():
+            for item_name, qty in item_quantities(refit.eft_format).items():
                 key = ("refit", item_name, refit.pk, fitting.pk)
                 if key in seen:
                     continue

@@ -7,7 +7,6 @@ import type {
     CampaignLeaderboardMetric,
     CampaignLeaderboardPeriod,
 } from '@dtypes/api.minmatar.org'
-import { format_isk } from '@helpers/numbers'
 import { get_player_icon } from '@helpers/eve_image_server'
 
 interface Props {
@@ -28,21 +27,22 @@ const {
 
 delete attributes.class
 
-const metrics:CampaignLeaderboardMetric[] = [ 'kills', 'isk', 'sites', 'advantage', 'fleets' ]
+const metrics:CampaignLeaderboardMetric[] = [ 'kills', 'sites', 'advantage', 'fcs' ]
 const periods:CampaignLeaderboardPeriod[] = [ 'week', 'rolling7', 'all' ]
 
 const partial_url = (next_metric:CampaignLeaderboardMetric, next_period:CampaignLeaderboardPeriod) =>
     translatePath(`/partials/campaign_leaderboard_component?slug=${slug}&metric=${next_metric}&period=${next_period}`)
 
-const format_value = (value:number) => metric === 'isk' ? format_isk(value) : value.toFixed(0)
+const format_value = (value:number) => value.toFixed(0)
 
-const haystack = (row:CampaignLeaderboardRow) => `${row.character_name} ${row.username}`.toLowerCase()
+const pilot_name = (row:CampaignLeaderboardRow) => row.character_name || t('unknown_pilot')
+const haystack = (row:CampaignLeaderboardRow) => pilot_name(row).toLowerCase()
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 <Flexblock
@@ -114,7 +114,7 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
     {rows.length === 0 ?
         <small>{t('campaigns.leaderboard.none')}</small>
         :
-        <CampaignTable
+        <DataGrid
             min_width='24rem'
             template='2.5rem 1fr 6rem'
             numeric={[ 0, 2 ]}
@@ -125,9 +125,9 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
             ]}
         >
             {rows.map(row =>
-                <div class="[ campaign-table-row ]" role="row" data-pilot={haystack(row)}>
-                    <span role="cell" class="[ campaign-table-numeric ]">{row.rank}</span>
-                    <div class="[ campaign-cell-media ]" role="cell">
+                <div class="[ data-grid-row ]" role="row" data-pilot={haystack(row)}>
+                    <span role="cell" class="[ data-grid-numeric ]">{row.rank}</span>
+                    <div class="[ data-grid-media ]" role="cell">
                         {row.character_id &&
                             <img
                                 loading='lazy'
@@ -137,19 +137,19 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                                 alt=''
                             />
                         }
-                        <span>{row.character_name || row.username}</span>
+                        <span>{pilot_name(row)}</span>
                     </div>
-                    <span role="cell" class="[ campaign-table-numeric ]">{format_value(row.value)}</span>
+                    <span role="cell" class="[ data-grid-numeric ]">{format_value(row.value)}</span>
                 </div>
             )}
-        </CampaignTable>
+        </DataGrid>
     }
 
     {rows.length > 0 && <small class="[ campaign-leaderboard-empty ]" x-show="matches === 0" x-cloak>{t('campaigns.leaderboard.no_match')}</small>}
 </Flexblock>
 
 <style lang="scss">
-    .campaign-leaderboard :global(.campaign-table-row[hidden]) {
+    .campaign-leaderboard :global(.data-grid-row[hidden]) {
         display: none;
     }
 

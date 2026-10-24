@@ -7,13 +7,11 @@ import type { Producer } from '@dtypes/api.minmatar.org'
 interface Props {
     character_producers?:       Producer[];
     corporation_producers?:     Producer[];
-    init_tooltips:              boolean;
 }
 
 const {
     character_producers = [],
     corporation_producers = [],
-    init_tooltips,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -31,7 +29,6 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
     <div
         class="[ text-highlight h-[32px] ]"
         data-tippy-content={t('industrialists')}
-        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         <IndustrialistIcon size={32} />
     </div>
@@ -41,7 +38,6 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
             <TippyProducer
                 producer_name={producer.name}
                 money={producer.total_value_isk}
-                init_tooltip={init_tooltips}
             >
                 <CharacterPicture
                     character_id={producer.id}
@@ -55,7 +51,6 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
             <TippyProducer
                 producer_name={producer.name}
                 money={producer.total_value_isk}
-                init_tooltip={init_tooltips}
             >
                 <CorporationPicture
                     corporation_id={producer.id}

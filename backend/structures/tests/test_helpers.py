@@ -1,19 +1,15 @@
 import unittest
 from unittest.mock import patch
-import factory
 from datetime import datetime, timezone
 
-from django.db.models import signals
 
 from esi.models import Token, Scope
 from eveonline.client import EsiResponse
 from eveonline.models import EveCorporation, EveCharacter
-from eveonline.scopes import DIRECTOR_SCOPES
 from structures.models import EveStructure, EveStructurePing
 from structures.helpers import (
     get_skyhook_details,
     get_structure_details,
-    get_notification_characters,
     parse_structure_notification,
     is_new_event,
     discord_message_for_ping,
@@ -81,23 +77,6 @@ class StructureHelperTest(unittest.TestCase):
             ),
         )
         self.assertEqual(get_structure_details(selected_item_window), expected)
-
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_get_notification_characters(self):
-        corp = EveCorporation.objects.create(
-            corporation_id=1001,
-            name="MegaCorp",
-        )
-        # Helper returns characters that have all DIRECTOR_SCOPES and this corp
-        make_character(2001, corp, list(DIRECTOR_SCOPES))
-        make_character(2002, corp, [])  # no scopes
-        make_character(2003, corp, list(DIRECTOR_SCOPES))
-        make_character(2004, corp, list(DIRECTOR_SCOPES))
-        make_character(2005, None, list(DIRECTOR_SCOPES))  # wrong corp
-
-        chars = get_notification_characters(corp.corporation_id)
-
-        self.assertEqual(3, chars.count())
 
     def test_parse_notification(self):
         text = """
@@ -222,6 +201,10 @@ class StructureHelperTest(unittest.TestCase):
         self.assertFalse(is_new_event(event, now))
 
     def test_structure_ping_discord_message(self):
+        # Plain unittest: nothing is rolled back, so don't assume a pk.
+        corp, _ = EveCorporation.objects.get_or_create(
+            corporation_id=1002, defaults={"name": "Structure Corp"}
+        )
         structure = EveStructure.objects.create(
             id=20001,
             name="Homebase",
@@ -230,7 +213,7 @@ class StructureHelperTest(unittest.TestCase):
             type_id=1234,
             type_name="Bouncy Castle",
             reinforce_hour=12,
-            corporation_id=1,
+            corporation=corp,
         )
         ping = EveStructurePing.objects.create(
             notification_id=10001,

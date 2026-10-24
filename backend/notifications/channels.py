@@ -163,7 +163,11 @@ def _send_discord(
     # Prefer an explicit embed; otherwise brand with feature author + body.
     embed = payload.get("discord_embed") or discord_embed_from_payload(payload)
     discord_payload: dict[str, Any] = {"embeds": [embed]}
-    if delivery_id is not None:
+    # A type with its own buttons (e.g. a tribe invite's Open invite and
+    # Decline) sends them instead of Mark as read.
+    if payload.get("discord_components") is not None:
+        discord_payload["components"] = payload["discord_components"]
+    elif delivery_id is not None:
         discord_payload["components"] = mark_as_read_components(delivery_id)
 
     try:

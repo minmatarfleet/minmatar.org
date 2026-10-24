@@ -1,6 +1,6 @@
 # Market pricing
 
-How we store and choose EVE market prices. Agents and developers should use this when implementing appraisals, LP economics, industry costs, or market UI.
+How we store and choose EVE market prices. Agents and developers should use this when implementing appraisals, LP economics, industry costs, or market UI. LP buyback orders (standard and express tiers, reminders, auto-cancel) are described in [industry/lp-buyback.md](industry/lp-buyback.md).
 
 ## Naming cheat sheet
 
@@ -44,6 +44,8 @@ Stored as `EveMarketItemLocationPrice`.
 
 **Use for:** structure/hub market UIs, comparing local book vs guide, industry sell when a synced baseline sell exists, and buyback Jita buy (via `get_baseline_buy_prices`, which falls back to history when buy/split are empty — PR #2548).
 
+**Reading the baseline (Jita) book:** call `market.helpers.pricing.baseline_book(type_ids)`, which returns `{type_id: BaselineBookRow(sell, buy, split)}` as stored Decimals. Don't query `EveMarketItemLocationPrice` at the baseline yourself. Apply your feature's documented fallback on top of it: buyback buy → split → history, industry sell → history, LP sell/buy → history. `baseline_location()` and `baseline_region_id()` are the shared `price_baseline` lookups. `enqueue_history_for_types(type_ids, stale_before=...)` queues a history fetch for types the daily sync doesn't cover.
+
 **Sync:** `fetch_market_location_prices` for locations with `prices_active=True` (not `market_active`). Jita can sync LocationPrice without enabling alliance market flows.
 
 ## Location flags (`EveLocation`)
@@ -76,6 +78,17 @@ Need industry planner material “Jita sell”?
 Only need a coarse average / “has any price”?
   → EveMarketPrice is acceptable; prefer history helpers when building ISK values users see
 ```
+
+### Which helper each member-facing value uses
+
+| Value | Helper |
+|-------|--------|
+| Product page Build tab (base blueprint numbers: materials, sells for, margin) | `jita_sell_unit_prices_by_type_id`, the unrounded form of the planner's Jita sell |
+| Planner / order profit (ME, jobs, taxes, freight) | `plan_costing.plan_item_cost` / `cost_build_plan` |
+| Product insights hull value ("ISK lost"), producers "ISK delivered", tribe mining ISK | `get_history_averages_by_type_id` (Jita guide, unrounded) |
+| Moon revenue (Metenox) | `get_history_averages_by_type_id`, with `enqueue_history_for_types` keeping moon products fresh |
+
+`EveMarketPrice` is read directly only for EIV (`build_planner`), market-availability filters (`compressed_ore`) and as the fallback inside the history helpers.
 
 ## Correct examples in-repo
 

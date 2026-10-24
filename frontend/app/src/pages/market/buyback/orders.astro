@@ -1,18 +1,16 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { login_redirect } from '@helpers/http_responses'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
 import type { Alert } from '@dtypes/layout_components'
-import * as jose from 'jose'
-import { get_auth_url } from '@helpers/env'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 const is_logged_in = !!(user && auth_token)
 
 if (!is_logged_in || !auth_token)
-    return Astro.redirect(get_auth_url(Astro.url.toString()))
+    return login_redirect(Astro)
 
 Astro.response.headers.set('Cache-Control', 'no-store')
 

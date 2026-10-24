@@ -3,17 +3,22 @@
 from groups.helpers.feature_access import can_use_feature
 from tribes.models import TribeGroup, TribeGroupMembership
 
-# Matches the frontend alliance gate (eveonline.add_evecharactertag).
-ALLIANCE_MEMBER_PERM = "eveonline.add_evecharactertag"
+# Same feature the site's roster gate checks.
+ROSTER_VIEW_FEATURE = "tribes.roster.view"
 
 
-def user_is_alliance_member(user) -> bool:
-    """Return True if the user is an alliance member (or superuser)."""
+def user_can_view_alliance_rosters(user) -> bool:
+    """Return True if the user may see alliance-visible rosters.
+
+    This checks the tribes.roster.view feature, not alliance affiliation.
+    """
     if not getattr(user, "is_authenticated", False) or not user.pk:
         return False
-    if user.is_superuser:
-        return True
-    return user.has_perm(ALLIANCE_MEMBER_PERM)
+    return can_use_feature(user, ROSTER_VIEW_FEATURE)
+
+
+# Old name; it never checked alliance membership. Prefer the name above.
+user_is_alliance_member = user_can_view_alliance_rosters
 
 
 def user_is_tribe_chief(user, tribe) -> bool:
@@ -57,7 +62,7 @@ def user_can_view_group_roster(user, tribe_group: TribeGroup) -> bool:
         if user_can_manage_group(user, tribe_group):
             return True
         return user_in_tribe_group(user, tribe_group)
-    return user_is_alliance_member(user)
+    return user_can_view_alliance_rosters(user)
 
 
 def user_in_tribe_group(user, tribe_group: TribeGroup) -> bool:

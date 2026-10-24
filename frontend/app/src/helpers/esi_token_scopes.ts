@@ -1,6 +1,6 @@
 /** Mirrors backend/eveonline/scopes.py for UI tooltips. */
 
-const BASIC_SCOPES = [
+export const BASIC_SCOPES = [
     'esi-corporations.read_structures.v1',
     'esi-fleets.read_fleet.v1',
     'esi-fleets.write_fleet.v1',
@@ -9,13 +9,12 @@ const BASIC_SCOPES = [
     'esi-skills.read_skillqueue.v1',
     'esi-characters.read_loyalty.v1',
     'esi-killmails.read_killmails.v1',
-    'esi-characters.read_fw_stats.v1',
     'esi-clones.read_clones.v1',
     'esi-clones.read_implants.v1',
     'esi-search.search_structures.v1',
 ] as const
 
-const DIRECTOR_SCOPES = [
+export const DIRECTOR_SCOPES = [
     'esi-characters.read_notifications.v1',
     'esi-corporations.read_corporation_membership.v1',
     'esi-corporations.read_blueprints.v1',
@@ -25,6 +24,7 @@ const DIRECTOR_SCOPES = [
     'esi-corporations.read_facilities.v1',
     'esi-corporations.read_fw_stats.v1',
     'esi-corporations.read_medals.v1',
+    'esi-corporations.read_projects.v1',
     'esi-corporations.read_standings.v1',
     'esi-corporations.read_starbases.v1',
     'esi-corporations.read_titles.v1',
@@ -35,7 +35,7 @@ const DIRECTOR_SCOPES = [
     'esi-wallet.read_corporation_wallets.v1',
 ] as const
 
-const INDUSTRY_SCOPES = [
+export const INDUSTRY_SCOPES = [
     'esi-characters.read_blueprints.v1',
     'esi-characters.read_agents_research.v1',
     'esi-planets.manage_planets.v1',
@@ -46,9 +46,7 @@ const INDUSTRY_SCOPES = [
     'esi-industry.read_corporation_mining.v1',
 ] as const
 
-const MARKET_SCOPES = [
-    'esi-wallet.read_character_wallet.v1',
-    'esi-wallet.read_corporation_wallets.v1',
+export const MARKET_SCOPES = [
     'esi-contracts.read_character_contracts.v1',
     'esi-contracts.read_corporation_contracts.v1',
     'esi-markets.read_character_orders.v1',
@@ -56,21 +54,46 @@ const MARKET_SCOPES = [
     'esi-markets.structure_markets.v1',
 ] as const
 
+/** Mirrors backend FLEET_COMMANDER_SCOPES. */
+export const FLEET_COMMANDER_SCOPES = [
+    'esi-fittings.write_fittings.v1',
+] as const
+
+/** Mirrors backend DESKTOP_SCOPES. Optional, on by default for new characters. */
+export const DESKTOP_SCOPES = [
+    'esi-ui.write_waypoint.v1',
+    'esi-ui.open_window.v1',
+    'esi-location.read_location.v1',
+    'esi-location.read_ship_type.v1',
+    'esi-location.read_online.v1',
+    'esi-characters.read_fatigue.v1',
+] as const
+
 const EXECUTOR_SCOPES = [
     'esi-mail.send_mail.v1',
+] as const
+
+/** Mirrors backend FACTION_WARFARE_SCOPES. Requested for every new character. */
+export const FACTION_WARFARE_SCOPES = [
+    'esi-characters.read_fw_stats.v1',
+    'esi-characters.read_notifications.v1',
 ] as const
 
 const TOKEN_SCOPES: Record<string, readonly string[]> = {
     Basic: BASIC_SCOPES,
     Director: [...BASIC_SCOPES, ...DIRECTOR_SCOPES],
     Industry: [...BASIC_SCOPES, ...INDUSTRY_SCOPES],
-    Market: [...BASIC_SCOPES, ...DIRECTOR_SCOPES, ...MARKET_SCOPES],
+    Market: [...BASIC_SCOPES, ...MARKET_SCOPES],
     Executor: [
         ...BASIC_SCOPES,
         ...DIRECTOR_SCOPES,
         ...MARKET_SCOPES,
         ...EXECUTOR_SCOPES,
     ],
+    FleetCommander: [...BASIC_SCOPES, ...FLEET_COMMANDER_SCOPES],
+    FactionWarfare: [...BASIC_SCOPES, ...FACTION_WARFARE_SCOPES],
+    Desktop: [...BASIC_SCOPES, ...DESKTOP_SCOPES],
+    Campaign: [...BASIC_SCOPES, ...FACTION_WARFARE_SCOPES],
     Public: ['publicData'],
 }
 

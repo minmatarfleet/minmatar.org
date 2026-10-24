@@ -1,0 +1,44 @@
+---
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import {
+    get_fleet_missing_signups,
+    nudge_fleet_missing_signups,
+    type MissingSignups,
+} from '@helpers/api.minmatar.org/fleets'
+
+let nudge_error:string | false = false
+let queued = 0
+
+if (Astro.request.method === 'POST') {
+    try {
+        queued = (await nudge_fleet_missing_signups(auth_token as string, fleet_id)).pilots
+    } catch (error) {
+        nudge_error = error.message
+    }
+}
+
+// Not the FC, or the fleet is gone: an empty card.
+let data:MissingSignups = { pilots: [], last_nudge: null, next_nudge_at: null }
+try {
+    data = await get_fleet_missing_signups(auth_token as string, fleet_id)
+} catch (error) {
+    console.log(`Skipping missing signups: ${error.message}`)
+}
+
+import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro'
+---
+
+<FleetMissingSignups fleet_id={fleet_id} data={data} queued={queued} nudge_error={nudge_error} />

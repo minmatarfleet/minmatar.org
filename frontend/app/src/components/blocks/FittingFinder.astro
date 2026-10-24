@@ -1,36 +1,15 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-import type { FittingItem } from '@dtypes/layout_components'
-import { fetch_fittings } from '@helpers/fetching/ships'
-
-let fittings:FittingItem[] = []
-let get_fittings_error: Error | false = false
-
-try {
-    fittings = await fetch_fittings()
-} catch (error) {
-    get_fittings_error = error
-}
-
-import { SHIP_TYPES_SORTED } from '@helpers/eve'
-const sorted_location_fittings = fittings.sort((a, b) => {
-    return SHIP_TYPES_SORTED.indexOf(a.ship_type) - SHIP_TYPES_SORTED.indexOf(b.ship_type)
-})
+// Results load from a partial as the pilot types: every page renders this
+// finder, and inlining the fitting library made each page ~640 KB heavier.
+const FITTINGS_FINDER_LIST_PARTIAL_URL = translatePath('/partials/fittings_finder_list_component')
 
 interface Props {
     [propName: string]: any;
 
 }
-
-import { get_item_icon } from '@helpers/eve_image_server';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -38,8 +17,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Dialog from '@components/blocks/Dialog.astro';
 import Kbd from '@components/blocks/Kbd.astro';
 import Input from '@components/blocks/Input.astro';
-import Badge from '@components/blocks/Badge.astro';
-import FittingLink from '@components/blocks/FittingLink.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 ---
@@ -49,25 +26,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
     x-data={`{
         fittings_finder_open: false,
         search: '',
-        filtered_fittings: [ false ],
-        fittings: ${JSON.stringify(fittings)},
-        fitting_filter() {
-            if (this.search === '') {
-                this.filtered_fittings = [ false ]
-                return
-            }
-
-            const filtered_fittings = []
-
-            this.fittings.forEach( (fitting) => {
-                const search = fitting.fitting_name.toLowerCase()
-                
-                if ( this.search !== '' && search.includes(this.search.toLowerCase()) )
-                    filtered_fittings.push(fitting.id)
-            })
-            
-            this.filtered_fittings = filtered_fittings
-        },
         async ctrl_shift_g(e) {
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyG') {
                 e.preventDefault()
@@ -89,8 +47,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     return
 
                 search = ''
-                filtered_fittings = [ false ]
-                
+
                 var clickEvent = new MouseEvent("click", {
                     "view": window,
                     "bubbles": true,
@@ -112,8 +69,14 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         <Flexblock gap="0">
             <Input
                 placeholder={t('find_fitting_placeholder')}
+                autocomplete="off"
+                name="search"
                 x-model="search"
-                x-on:keyup="fitting_filter()"
+                hx-get={FITTINGS_FINDER_LIST_PARTIAL_URL}
+                hx-trigger="keyup changed delay:0.2s"
+                hx-target="#fittings-finder-list"
+                hx-sync="this:replace"
+                hx-indicator=".loader"
                 class="[ relative z-10 ]"
             >
                 <MagnifierIcon slot="icon" />
@@ -121,33 +84,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
             <div class="[ relative ]">
                 <Flexblock gap='var(--space-3xs)'>
-                    <Flexblock
+                    <div
+                        id="fittings-finder-list"
                         class="[ fitting-finder-list ][ light-transparency w-full ]"
-                        gap='var(--space-3xs)'
                         x-show="(search !== '')"
-                    >
-                        <div
-                            class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]"
-                            x-show="search !== '' && filtered_fittings.length === 0"
-                        >
-                            <span>{t('no_fittings')}</span>
-                        </div>
-                        {sorted_location_fittings.map((fitting) =>
-                            <FittingLink
-                                fitting_id={fitting.id}
-                                fitting-finder-action="accept"
-                                fitting-finder-data={fitting.id}
-                                x-on:click="(search = '')"
-                                x-show={`filtered_fittings.includes(${fitting.id})`}
-                            >
-                                <Badge
-                                    title={fitting.fitting_name}
-                                    image={get_item_icon(fitting.ship_id)}
-                                    subtitle={fitting.ship_type}
-                                />
-                            </FittingLink>
-                        )}
-                    </Flexblock>
+                    />
 
                     <FlexInline justification='center'>
                         <FlexInline gap="var(--space-3xs)">
@@ -185,11 +126,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         pointer-events: none !important;
     }
 
-    picture {
-        aspect-ratio: 1/1;
-        width: 48px;
-    }
-
     :global(.fitting-finder-list [style="display: none;"] ~ button) {
         margin-block-start: 0 !important;
     }
@@ -222,27 +158,20 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         }
     }
 
-    [fitting-finder-action="accept"] {
+    /* Results are swapped in from a partial, so these can't be scoped. */
+    :global(.fittings-finder [fitting-finder-action="accept"]) {
         background-color: transparent;
         cursor: pointer;
         border: none;
         padding: 0;
+    }
 
-        &:focus-within {
-            outline: none;
-            background-color: var(--component-background);
-        }
+    :global(.fittings-finder [fitting-finder-action="accept"]:focus-within) {
+        outline: none;
+        background-color: var(--component-background);
+    }
 
-        span {
-            color: var(--highlight);
-        }
-
-        small {
-            color: var(--foreground);
-        }
-        
-        &:hover {
-            background-color: var(--component-background);
-        }
+    :global(.fittings-finder [fitting-finder-action="accept"]:hover) {
+        background-color: var(--component-background);
     }
 </style>

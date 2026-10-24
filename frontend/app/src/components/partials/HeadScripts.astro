@@ -28,10 +28,10 @@ import AllianceHealthPilotAlpine from '@components/partials/AllianceHealthPilotA
 
 <link
 	rel="stylesheet"
-	href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+	href="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.css"
 />
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js"></script>
 
 <!-- Tippy before Alpine so x-init="tippy(...)" never races a Vite ESM assign -->
 <script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
@@ -46,9 +46,16 @@ import AllianceHealthPilotAlpine from '@components/partials/AllianceHealthPilotA
 
 <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
 
+<!-- Partial responses carry their CSS in what DOMParser treats as <head>, which htmx drops. -->
+<script>
+	import { bind_partial_styles } from '@helpers/htmx_partial_styles'
+
+	bind_partial_styles(window)
+</script>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.css">
 <script is:inline src="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.js"></script>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 
-<script src="https://cdn.jsdelivr.net/npm/medium-zoom/dist/medium-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script>

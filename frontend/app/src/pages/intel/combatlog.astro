@@ -2,17 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = user ? user?.is_superuser : false
+const { auth_token, user } = get_request_user(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = user ? await get_user_permissions(user.username) : []
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const gates = await get_gates(Astro)
+const can_view_fleets = can(gates, 'fleets.view')
 
 import type { SelectOptions } from '@dtypes/layout_components'
 import type { Fitting, SavedCombatLog } from '@dtypes/api.minmatar.org'

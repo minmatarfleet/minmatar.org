@@ -1,20 +1,35 @@
+import difflib
+
 from django import forms
 from django.contrib import admin
 from django.contrib import messages
+from django.db.models import Exists, Max, OuterRef
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.html import format_html, format_html_join
 
+from reddit import approval, rotation, schedule
 from reddit.client import RedditClient
-from reddit.models import RedditScheduledPost
+from reddit.markdown import blocking_problems
+from reddit.models import (
+    RedditAccount,
+    RedditPost,
+    RedditPostChangeRequest,
+    RedditPostTemplate,
+    RedditSchedule,
+    RedditScheduleChange,
+)
 from reddit.service import link_reddit_post_to_discord, RedditService
 
 reddit_client = RedditClient()
 reddit_service = RedditService()
 
 
-class RedditScheduledPostAdminForm(forms.ModelForm):
+class RedditPostTemplateAdminForm(forms.ModelForm):
     """On edit, populate flair dropdown from the instance's subreddit."""
 
     class Meta:
-        model = RedditScheduledPost
+        model = RedditPostTemplate
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
@@ -39,37 +54,175 @@ class RedditScheduledPostAdminForm(forms.ModelForm):
                 "Save with a subreddit first; on next edit the flair dropdown will be set from that subreddit."
             )
 
+    def clean_content(self):
+        content = approval.normalize_text(self.cleaned_data["content"])
+        # The textarea sends CRLF; an unchanged body is not a change.
+        if self.instance.pk and content == approval.normalize_text(
+            self.instance.content
+        ):
+            return self.instance.content
+        # Only on change, so older posts can still be rescheduled as-is.
+        if "content" in self.changed_data:
+            problems = blocking_problems(content)
+            if problems:
+                raise forms.ValidationError(
+                    [
+                        f"Line {p.line}: Reddit can't render {p.excerpt!r} "
+                        f"({p.code.replace('_', ' ')})."
+                        for p in problems
+                    ]
+                )
+        return content
 
-class RedditPostAdmin(admin.ModelAdmin):
-    """Custom admin model for RedditScheduledPost entities"""
 
-    form = RedditScheduledPostAdminForm
+class RedditPostInline(admin.TabularInline):
+    """What happened each time the template came due (newest first)."""
+
+    model = RedditPost
+    extra = 0
+    max_num = 0
+    can_delete = False
+    fields = [
+        "slot_date",
+        "scheduled_for",
+        "status",
+        "fallback_reason",
+        "title",
+        "reddit_url",
+        "delivered_at",
+    ]
+    readonly_fields = fields
+    ordering = ["-slot_date", "-created_at"]
+
+
+@admin.register(RedditPostTemplate)
+class RedditPostTemplateAdmin(admin.ModelAdmin):
+    """A corporation's recurring Reddit post and its delivery history."""
+
+    form = RedditPostTemplateAdminForm
     list_display = [
         "title",
+        "corporation",
         "subreddit",
-        "posting_day",
-        "discord_channel_id",
-        "flair_id",
-        "last_post_at",
-        "last_reddit_post_url",
+        "priority",
+        "paused",
+        "posting_window",
+        "delivery_method",
+        "approved",
+        "change_pending",
+        "discord_channel",
+        "last_delivered_at",
     ]
-    list_filter = ["posting_day", "subreddit"]
+    list_editable = ["priority", "paused", "posting_window"]
+    list_filter = [
+        "priority",
+        "paused",
+        "approved",
+        "delivery_method",
+        "subreddit",
+    ]
+    list_select_related = ["corporation", "discord_channel"]
+    search_fields = ["title", "corporation__name", "corporation__ticker"]
+    autocomplete_fields = ["corporation", "discord_channel"]
+    readonly_fields = [
+        "approved_by",
+        "approved_at",
+        "pending_change_link",
+        "updated_at",
+    ]
+    inlines = [RedditPostInline]
+
+    def get_queryset(self, request):
+        pending = RedditPostChangeRequest.objects.filter(
+            template=OuterRef("pk"), status=RedditPostChangeRequest.PENDING
+        )
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                last_delivered_at=Max("posts__delivered_at"),
+                change_pending=Exists(pending),
+            )
+        )
+
+    @admin.display(ordering="last_delivered_at")
+    def last_delivered_at(self, obj):
+        return obj.last_delivered_at
+
+    @admin.display(boolean=True, ordering="change_pending")
+    def change_pending(self, obj):
+        return obj.change_pending
+
+    @admin.display(description="Waiting for review")
+    def pending_change_link(self, obj):
+        change = approval.pending_change(obj)
+        if change is None:
+            return "-"
+        url = reverse(
+            "admin:reddit_redditpostchangerequest_change", args=[change.pk]
+        )
+        return format_html(
+            '<a href="{}">Review the CEO\'s change from {}</a>',
+            url,
+            f"{change.created_at:%d %b %H:%M}",
+        )
+
     actions = [
+        "action_approve",
         "action_manually_submit_post",
         "action_manually_link_to_discord",
     ]
 
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if not request.user.is_superuser:
+            fields.append("approved")
+        return fields
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("action_approve", None)
+        return actions
+
+    def save_model(self, request, obj, form, change):
+        if "approved" in form.changed_data:
+            approval.approval_saved(obj, request.user)
+        super().save_model(request, obj, form, change)
+        # Priority, pausing and the window show in the drafts straight away.
+        schedule.refresh_drafts()
+
+    @admin.action(description="Approve post or waiting change")
+    def action_approve(self, request, queryset):
+        if not request.user.is_superuser:
+            return
+        count = sum(
+            approval.approve_template(template, request.user)
+            for template in queryset
+        )
+        self.message_user(
+            request, f"Approved {count} post(s).", messages.SUCCESS
+        )
+
     @admin.action(description="Manually submit post")
     def action_manually_submit_post(self, request, queryset):
         done = 0
-        for scheduled_post in queryset:
+        for template in queryset:
             try:
-                reddit_service.post_recriutment_ad(scheduled_post)
-                done += 1
+                post = reddit_service.post_recriutment_ad(template)
             except Exception as e:
                 self.message_user(
                     request,
-                    f"Failed to submit '{scheduled_post.title}': {e}",
+                    f"Failed to submit '{template.title}': {e}",
+                    messages.ERROR,
+                )
+                continue
+            if post.status == RedditPost.POSTED:
+                done += 1
+            else:
+                self.message_user(
+                    request,
+                    f"Reddit rejected '{template.title}'.",
                     messages.ERROR,
                 )
         if done:
@@ -83,21 +236,27 @@ class RedditPostAdmin(admin.ModelAdmin):
     def action_manually_link_to_discord(self, request, queryset):
         done = 0
         skipped = 0
-        for scheduled_post in queryset:
-            if not scheduled_post.discord_channel_id:
+        for template in queryset:
+            if not template.discord_channel_id:
                 skipped += 1
                 continue
-            url = scheduled_post.last_reddit_post_url
-            title = scheduled_post.last_reddit_post_title
-            if not url or not title:
+            post = (
+                template.posts.filter(status=RedditPost.POSTED)
+                .exclude(reddit_url="")
+                .first()
+            )
+            if post is None:
                 self.message_user(
                     request,
-                    f"'{scheduled_post.title}' has no last Reddit post URL/title. Submit a post first.",
+                    f"'{template.title}' has never been posted to Reddit. "
+                    "Submit a post first.",
                     messages.WARNING,
                 )
                 skipped += 1
                 continue
-            if link_reddit_post_to_discord(scheduled_post, url, title):
+            if link_reddit_post_to_discord(
+                template, post.reddit_url, post.title
+            ):
                 done += 1
         if done:
             self.message_user(
@@ -113,4 +272,407 @@ class RedditPostAdmin(admin.ModelAdmin):
             )
 
 
-admin.site.register(RedditScheduledPost, RedditPostAdmin)
+def _diff_html(old: str, new: str):
+    old_lines = approval.normalize_text(old).splitlines()
+    new_lines = approval.normalize_text(new).splitlines()
+    rows = []
+    for line in difflib.unified_diff(
+        old_lines, new_lines, "approved", "requested", lineterm="", n=2
+    ):
+        if line.startswith(("---", "+++")):
+            continue
+        if line.startswith("+"):
+            style = "color: var(--message-success-bg, #2e7d32)"
+        elif line.startswith("-"):
+            style = "color: var(--error-fg, #ba2121)"
+        elif line.startswith("@@"):
+            style = "color: var(--body-quiet-color, #666)"
+        else:
+            style = ""
+        rows.append((style, line))
+    if not rows:
+        return "No change to the body."
+    return format_html(
+        '<pre style="white-space: pre-wrap; max-width: 60rem">{}</pre>',
+        format_html_join("\n", '<span style="{}">{}</span>', rows),
+    )
+
+
+class ChangeReviewForm(forms.ModelForm):
+    """Approve or reject a waiting change from its page."""
+
+    APPROVE = "approve"
+    REJECT = "reject"
+    decision = forms.ChoiceField(
+        choices=[
+            ("", "Leave it waiting"),
+            (APPROVE, "Approve: post these words from now on"),
+            (REJECT, "Reject: keep posting the approved words"),
+        ],
+        required=False,
+        widget=forms.RadioSelect,
+    )
+
+    class Meta:
+        model = RedditPostChangeRequest
+        fields = ["review_note"]
+
+
+@admin.register(RedditPostChangeRequest)
+class RedditPostChangeRequestAdmin(admin.ModelAdmin):
+    """CEO edits to approved Reddit posts, and new posts, waiting for a
+    superuser. The approved words keep going out until a change is
+    approved."""
+
+    form = ChangeReviewForm
+    list_display = [
+        "corporation",
+        "title",
+        "status",
+        "submitted_by",
+        "created_at",
+        "updated_at",
+        "reviewed_by",
+    ]
+    list_filter = ["status"]
+    list_select_related = ["template__corporation", "submitted_by"]
+    search_fields = ["title", "template__corporation__name"]
+    actions = ["action_approve", "action_reject"]
+    readonly_fields = [
+        "template",
+        "status",
+        "submitted_by",
+        "created_at",
+        "updated_at",
+        "notified_at",
+        "reviewed_by",
+        "reviewed_at",
+        "approved_title",
+        "title",
+        "content_changes",
+        "content",
+    ]
+    fieldsets = [
+        (
+            None,
+            {
+                "fields": [
+                    "template",
+                    "status",
+                    "submitted_by",
+                    "created_at",
+                    "updated_at",
+                ]
+            },
+        ),
+        (
+            "What changes",
+            {
+                "fields": [
+                    "approved_title",
+                    "title",
+                    "content_changes",
+                    "content",
+                ]
+            },
+        ),
+        (
+            "Review",
+            {
+                "fields": [
+                    "decision",
+                    "review_note",
+                    "reviewed_by",
+                    "reviewed_at",
+                    "notified_at",
+                ]
+            },
+        ),
+    ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        if not request.user.is_superuser:
+            return False
+        return obj is None or obj.status == RedditPostChangeRequest.PENDING
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = super().get_fieldsets(request, obj)
+        if self.has_change_permission(request, obj):
+            return fieldsets
+        # Read-only: the decision field only exists on the form.
+        return [
+            (
+                name,
+                {"fields": [f for f in options["fields"] if f != "decision"]},
+            )
+            for name, options in fieldsets
+        ]
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not request.user.is_superuser:
+            actions.pop("action_approve", None)
+            actions.pop("action_reject", None)
+        return actions
+
+    @admin.display(ordering="template__corporation__name")
+    def corporation(self, obj):
+        return obj.template.corporation
+
+    @admin.display(description="Approved title")
+    def approved_title(self, obj):
+        if not obj.template.approved:
+            return "(Never approved)"
+        return obj.template.title
+
+    @admin.display(description="Body changes")
+    def content_changes(self, obj):
+        if not obj.template.approved:
+            return "First approval: the whole body is new."
+        return _diff_html(obj.template.content, obj.content)
+
+    def save_model(self, request, obj, form, change):
+        decision = form.cleaned_data.get("decision")
+        note = form.cleaned_data.get("review_note", "")
+        if decision == ChangeReviewForm.REJECT:
+            approval.reject(obj, request.user, note)
+            return
+        if "review_note" in form.changed_data:
+            RedditPostChangeRequest.objects.filter(pk=obj.pk).update(
+                review_note=note
+            )
+        if decision == ChangeReviewForm.APPROVE:
+            approval.approve(obj, request.user)
+
+    @admin.action(description="Approve")
+    def action_approve(self, request, queryset):
+        count = sum(approval.approve(c, request.user) for c in queryset)
+        self.message_user(
+            request, f"Approved {count} change(s).", messages.SUCCESS
+        )
+
+    @admin.action(description="Reject")
+    def action_reject(self, request, queryset):
+        count = sum(approval.reject(c, request.user) for c in queryset)
+        self.message_user(
+            request, f"Rejected {count} change(s).", messages.SUCCESS
+        )
+
+
+class SlotForm(forms.ModelForm):
+    """A confirmed slot still ahead can be moved to another corporation or
+    time; anything else is read-only."""
+
+    class Meta:
+        model = RedditPost
+        fields = ["template", "scheduled_for"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        post = self.instance
+        self.editable = bool(
+            post.pk
+            and post.status == RedditPost.CONFIRMED
+            and post.scheduled_for
+            and post.scheduled_for > timezone.now()
+        )
+        if not self.editable:
+            for field in self.fields.values():
+                field.disabled = True
+
+    def clean(self):
+        cleaned = super().clean()
+        template = cleaned.get("template")
+        when = cleaned.get("scheduled_for")
+        if not self.editable or not template or not when:
+            return cleaned
+        if not self.has_changed():
+            return cleaned
+        clash = (
+            RedditPost.objects.filter(
+                template=template, status__in=schedule.LIVE_STATUSES
+            )
+            .exclude(pk=self.instance.pk)
+            .filter(
+                scheduled_for__gt=when - rotation.COOLDOWN,
+                scheduled_for__lt=when + rotation.COOLDOWN,
+            )
+            .first()
+        )
+        if clash:
+            raise forms.ValidationError(
+                f"{template.corporation.name} already posts on "
+                f"{clash.scheduled_for:%d %b}; slots must be at least "
+                f"{rotation.COOLDOWN.days} days apart."
+            )
+        return cleaned
+
+
+class SlotInline(admin.TabularInline):
+    model = RedditPost
+    form = SlotForm
+    fk_name = "schedule"
+    extra = 0
+    max_num = 0
+    can_delete = False
+    fields = [
+        "slot_date",
+        "template",
+        "scheduled_for",
+        "status",
+        "heads_up_sent_at",
+        "fallback_reason",
+    ]
+    readonly_fields = [
+        "slot_date",
+        "status",
+        "heads_up_sent_at",
+        "fallback_reason",
+    ]
+    ordering = ["slot_date"]
+    autocomplete_fields = ["template"]
+
+
+class ScheduleChangeInline(admin.TabularInline):
+    model = RedditScheduleChange
+    extra = 0
+    max_num = 0
+    can_delete = False
+    fields = [
+        "created_at",
+        "slot_date",
+        "from_template",
+        "to_template",
+        "reason",
+        "detail",
+    ]
+    readonly_fields = fields
+
+
+@admin.register(RedditSchedule)
+class RedditScheduleAdmin(admin.ModelAdmin):
+    """The rotation, month by month. Drafts are worked out automatically;
+    move a published slot by editing it here."""
+
+    list_display = [
+        "month",
+        "status",
+        "slot_count",
+        "generated_at",
+        "published_at",
+    ]
+    list_filter = ["status"]
+    readonly_fields = [
+        "month",
+        "status",
+        "weights",
+        "quotas",
+        "inputs_hash",
+        "generated_at",
+        "published_at",
+        "published_by",
+    ]
+    inlines = [SlotInline, ScheduleChangeInline]
+    actions = ["action_publish", "action_regenerate"]
+
+    def has_add_permission(self, request):
+        return False
+
+    @admin.display(description="Slots")
+    def slot_count(self, obj):
+        return obj.slots.count()
+
+    def changelist_view(self, request, extra_context=None):
+        # Opening the list makes sure this month and next have drafts.
+        schedule.refresh_drafts()
+        return super().changelist_view(request, extra_context)
+
+    def save_formset(self, request, form, formset, change):
+        moves = []
+        for slot_form in formset.forms:
+            if not getattr(slot_form, "editable", False):
+                continue
+            if not slot_form.has_changed():
+                continue
+            old_template = RedditPostTemplate.objects.get(
+                pk=slot_form.initial["template"]
+            )
+            moves.append(
+                (
+                    slot_form.instance,
+                    old_template,
+                    slot_form.initial["scheduled_for"],
+                )
+            )
+        super().save_formset(request, form, formset, change)
+        for post, old_template, old_time in moves:
+            schedule.move_slot(
+                post, post.template, post.scheduled_for, old_template, old_time
+            )
+
+    @admin.action(description="Publish (confirm slots)")
+    def action_publish(self, request, queryset):
+        for month in queryset.filter(status=RedditSchedule.DRAFT):
+            confirmed = schedule.publish(month, user=request.user)
+            self.message_user(
+                request,
+                f"Published {month.month:%B %Y}: {confirmed} slot(s).",
+                messages.SUCCESS,
+            )
+
+    @admin.action(description="Work out the draft again")
+    def action_regenerate(self, request, queryset):
+        drafts = queryset.filter(status=RedditSchedule.DRAFT)
+        drafts.update(inputs_hash="")
+        for month in drafts:
+            schedule.refresh_month(month.month, timezone.now())
+        self.message_user(
+            request, f"Updated {drafts.count()} draft(s).", messages.SUCCESS
+        )
+
+
+@admin.register(RedditPost)
+class RedditPostAdmin(admin.ModelAdmin):
+    """Read-only log of every Reddit post and reminder."""
+
+    list_display = [
+        "template",
+        "slot_date",
+        "scheduled_for",
+        "status",
+        "fallback_reason",
+        "reddit_url",
+        "delivered_at",
+    ]
+    list_filter = ["status", "fallback_reason", "schedule"]
+    list_select_related = ["template__corporation"]
+    search_fields = ["template__title", "template__corporation__name"]
+    date_hierarchy = "scheduled_for"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(RedditAccount)
+class RedditAccountAdmin(admin.ModelAdmin):
+    """Linked Reddit accounts. The refresh token is never displayed."""
+
+    list_display = ["reddit_username", "user", "token_invalid", "updated_at"]
+    search_fields = ["reddit_username", "user__username"]
+    exclude = ["refresh_token"]
+    readonly_fields = [
+        "user",
+        "reddit_username",
+        "scopes",
+        "created_at",
+        "updated_at",
+    ]
+
+    def has_add_permission(self, request):
+        return False

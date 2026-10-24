@@ -93,4 +93,19 @@ const {
         font-size: var(--step--1);
         color: var(--highlight);
     }
+
+    @media (max-width: 48rem) {
+        .buyback-purchase-orders__scroll {
+            overflow-x: visible;
+            mask-image: none;
+        }
+
+        .buyback-purchase-orders__grid {
+            min-width: 0;
+        }
+
+        .buyback-purchase-orders__header {
+            display: none;
+        }
+    }
 </style>

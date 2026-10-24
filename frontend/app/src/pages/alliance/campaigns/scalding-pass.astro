@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { COVER_IMAGE } from '@/data/campaigns/scalding-pass'
 import { buildScaldingPassCampaignJsonLd } from '@/data/campaigns/scalding-pass-seo'
+import { get_site_origin } from '@helpers/seo'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -19,8 +20,9 @@ const page_description = t('campaigns.scalding_pass.leading_text')
 const meta_title = t('campaigns.scalding_pass.meta_title')
     .replace('{site}', t('index.page_title'))
 const meta_description = t('campaigns.scalding_pass.meta_description')
-const canonical_url = new URL(translatePath('/campaigns/scalding-pass/'), Astro.url.origin).href
-const meta_image = new URL(COVER_IMAGE, Astro.url.origin).href
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath('/alliance/campaigns/scalding-pass/'), site_origin).href
+const meta_image = new URL(COVER_IMAGE, site_origin).href
 
 import {
     get_location_video_cover,
@@ -32,7 +34,7 @@ import {
 const structured_data = buildScaldingPassCampaignJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     metaTitle: page_title,
     metaDescription: meta_description,
     metaImage: meta_image,

@@ -8,14 +8,12 @@ interface Props {
     ships:          ShipRef[];
     max?:           number;
     size?:          number;
-    init_tooltips?: boolean;
 }
 
 const {
     ships = [],
     max = 10,
     size = 24,
-    init_tooltips = false,
 } = Astro.props
 
 const shown = ships.slice(0, max)
@@ -35,7 +33,6 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
             <span
                 class="[ useful-for-ships__icon ]"
                 data-tippy-content={ship.fitting_name}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
                 <ItemPicture
                     item_id={ship.ship_id}
@@ -49,7 +46,6 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
             <span
                 class="[ useful-for-ships__more ]"
                 data-tippy-content={extra_title}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >+{extra}</span>
         }
     </FlexInline>

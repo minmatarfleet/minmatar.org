@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
+
+/**
+ * The top of the After Action Report tab: the FC's write-up (add or edit its
+ * link, or go write one in #aars) and the whole fleet on the outside tools.
+ */
+interface Props {
+    fleet:              FleetUI;
+    fights:             FleetFights | null;
+    /** The FC and fleet managers add and edit the AAR link. */
+    can_edit:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    fleet,
+    fights,
+    can_edit,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const links = fights?.links
+const outside = [
+    { name: t('fleets.fights.zkillboard'), url: links?.zkillboard },
+    { name: t('fleets.fights.brtools'), url: links?.brtools },
+    { name: t('fleets.fights.evekill'), url: links?.evekill },
+    { name: t('fleets.aar.roam_report'), url: fleet.roam_report_url },
+].flatMap(link => link.url ? [{ name: link.name, url: link.url }] : [])
+
+import AARLinkButton from '@components/blocks/AARLinkButton.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<div class:list={['[ fleet-aar ]', Astro.props.class]} {...attributes}>
+    {(can_edit || fleet.aar_link) &&
+        <section class="[ fleet-aar__writeup ]" aria-labelledby="fleet-aar-title">
+            <h2 id="fleet-aar-title" class="visually-hidden">{t('fleets.tabs.fights')}</h2>
+            {can_edit && !fleet.aar_link && fleet.aar_forum_url &&
+                <Button href={fleet.aar_forum_url} target="_blank" rel="noopener noreferrer" color="green" size="sm">
+                    {t('fleets.aar.write')} ↗
+                </Button>
+            }
+            <AARLinkButton
+                aarlink={fleet.aar_link ? fleet.aar_link : undefined}
+                fleet_id={fleet.id}
+                can_edit={can_edit}
+            />
+        </section>
+    }
+
+    {outside.length > 0 &&
+        <p class="[ fleet-aar__outside ]">
+            <span class="[ fleet-aar__label ]">{t('fleets.aar.whole_fleet')}</span>
+            {outside.map((link, index) =>
+                <>
+                    {index > 0 && <span aria-hidden="true">·</span>}
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">{link.name} ↗</a>
+                </>
+            )}
+        </p>
+    }
+</div>
+
+<style lang="scss">
+    .fleet-aar {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .fleet-aar__writeup {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .fleet-aar__outside {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-xs);
+        margin: 0;
+
+        a {
+            font-weight: 700;
+        }
+    }
+
+    .fleet-aar__label {
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+</style>

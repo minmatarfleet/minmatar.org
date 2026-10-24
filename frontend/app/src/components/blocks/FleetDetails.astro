@@ -1,11 +1,12 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
-import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics, Contract } from '@dtypes/api.minmatar.org'
-import type { FleetRoleVolunteer, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply } from '@helpers/api.minmatar.org/fleets'
+import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+import type { FleetRoleCoverage, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply, FleetKills as FleetKillsData, FleetSrpLoss, FleetFights as FleetFightsData, FleetParticipants } from '@helpers/api.minmatar.org/fleets'
+import type { Doctrine } from '@dtypes/api.minmatar.org'
 
 interface Props {
     fleet:                      FleetUI;
@@ -16,17 +17,25 @@ interface Props {
     can_manage?:                boolean;
     fleet_composition?:         FleetCompositionUI[];
     fleet_radar?:               FleetRadarUI[];
-    volunteers:                 FleetRoleVolunteer[],
+    /** Fleet roles from ships; null on a completed fleet. */
+    roles?:                     FleetRoleCoverage | null,
     pilots:                     SummaryCharacter[],
     update_cover:               boolean;
     fleet_metrics:              FleetMetrics | undefined;
     fleet_commander_metrics:    FleetCommanderMetrics | undefined;
-    supply_contracts?:          Contract[];
-    init_tooltips:              boolean;
     ship_volunteers?:           FleetShipVolunteer[];
     refits?:                    FleetRefit[];
     composition?:               FleetCompositionEntry[];
     supply?:                    FleetSupply;
+    /** A completed fleet's killmails, fetched by the page; null loads them through the partial. */
+    fleet_kills?:               FleetKillsData | null;
+    srp_losses?:                FleetSrpLoss[] | null;
+    /** The Fights tab; null when the viewer may not see it (a live fleet they are not in). */
+    fights?:                    FleetFightsData | null;
+    /** A finished fleet's Participants tab; null hides it. */
+    participants?:              FleetParticipants | null;
+    /** Doctrines the FC can pick when the fleet has no ships yet. */
+    doctrines?:                 Doctrine[];
 }
 
 const {
@@ -37,47 +46,166 @@ const {
     can_manage = is_fleet_commander,
     fleet_composition,
     fleet_radar,
-    volunteers,
+    roles = null,
     pilots,
     update_cover,
     fleet_metrics,
     fleet_commander_metrics,
-    supply_contracts = [],
-    init_tooltips,
     ship_volunteers = [],
     refits = [],
     composition = [],
     supply,
+    fleet_kills = null,
+    srp_losses = null,
+    fights = null,
+    participants = null,
+    doctrines = [],
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
 
-import { minutes_to } from '@helpers/date';
 
-const diff_time = minutes_to(fleet.start_time)
-const minutes_to_fleet = diff_time < 0 ? Math.abs(diff_time) : 0
-const pre_pingable = minutes_to_fleet >= 30
 
-import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
-const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
-import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
 // import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
-import TextGroup from '@components/blocks/TextGroup.astro';
-import FleetStatus from '@components/blocks/FleetStatus.astro';
-import SRPTable from '@components/blocks/SRPTable.astro';
-import FleetHero from '@components/blocks/FleetHero.astro';
-import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
-import AARLinkButton from '@components/blocks/AARLinkButton.astro';
+import FleetFacts from '@components/blocks/FleetFacts.astro';
+import SectionTabs from '@components/blocks/SectionTabs.astro';
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro';
+import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
 import FleetShips from '@components/blocks/FleetShips.astro';
+import FleetFights from '@components/blocks/FleetFights.astro';
+import FleetOverview from '@components/blocks/FleetOverview.astro';
+import FleetSignups from '@components/blocks/FleetSignups.astro';
+import FleetShipsSetup from '@components/blocks/FleetShipsSetup.astro';
+import FleetCommand from '@components/blocks/FleetCommand.astro';
+import FleetSettings from '@components/blocks/FleetSettings.astro';
+import FleetParticipantsDone from '@components/blocks/FleetParticipantsDone.astro';
+import FleetAfterAction from '@components/blocks/FleetAfterAction.astro';
+import FleetKillFeed from '@components/blocks/FleetKillFeed.astro';
+import FleetDoctrineFlown from '@components/blocks/FleetDoctrineFlown.astro';
+import FleetPrivateBanner from '@components/blocks/FleetPrivateBanner.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
 
-const eve_time = new Date(fleet.start_time);
-const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
+// A finished fleet with no kills or losses has no Fights tab.
+const show_fights = Boolean(fights && (fights.status === 'building' || fights.live || fights.rounds.length > 0))
+const fighting_round = fights?.live ? [...(fights.rounds ?? [])].reverse().find(round => round.fighting && round.number) : undefined
+const fights_meta = fighting_round ?
+    { meta: t('fleets.fights.badge_live').replace('{number}', String(fighting_round.number)), flag: 'live' as const } :
+    fights && fights.round_count > 0 ?
+        { meta: fights.round_count === 1 ? t('fleets.fights.badge_round') : t('fleets.fights.badge_rounds').replace('{count}', fights.round_count.toString()) } :
+        {}
+
+const cancelled = fleet.status === 'cancelled'
+const has_ships = composition.length > 0
+const show_my_pilots = !history && !cancelled && has_ships && pilots.length > 0
+const live = Boolean(fleet.tracking?.start_time) && !fleet.tracking?.end_time
+const signed_up = new Set(ship_volunteers.map(volunteer => volunteer.character_id)).size
+
+import { command_steps, next_command_step } from '@helpers/fleet_command'
+import { role_tally } from '@helpers/fleet_roles'
+const steps = command_steps({
+    start_time: fleet.start_time,
+    tracking: fleet.tracking,
+    disable_motd: fleet.disable_motd,
+    has_ships,
+}, t)
+const next_step = next_command_step(steps)
+// The FC lands on Command until the setup is done; strategic FCs and pilots on Overview.
+const show_command = can_manage
+const default_tab = is_fleet_commander && !cancelled && next_step ? 'command' : 'overview'
+
+// A private fleet: the opsec banner until it's declassified, and the Invites
+// tab for its FC and Strategic FCs (docs/fleets/private-fleets.md).
+const still_private = Boolean(fleet.invite_only && !fleet.declassified_at)
+const show_invites = Boolean(fleet.invite_only && fleet.can_manage_invites)
+const invites_tab = show_invites ? [{ id: 'invites', label: t('fleets.tabs.invites') }] : []
+const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?fleet_id=${fleet.id}`
+
+const tally = roles ? role_tally(roles, composition, { logi_fc: t('fleets.after.logi_fc'), cynos: t('fleets.after.cyno') }) : null
+const show_in_fleet = is_fleet_commander
+
+const fleet_tabs = [
+    { id: 'overview', label: t('fleets.tabs.overview') },
+    {
+        id: 'ships',
+        label: t('fleets.tabs.ships'),
+        ...(has_ships ?
+            { meta: t('fleets.tabs.fits_meta').replace('{count}', composition.length.toString()) } :
+            { meta: t('fleets.tabs.not_set'), ...(can_manage && !cancelled ? { flag: 'attention' as const } : {}) }),
+    },
+    {
+        id: 'participants',
+        label: t('fleets.tabs.participants'),
+        meta: live && fleet_metrics?.members ?
+            t('fleets.tabs.in_fleet_meta').replace('{count}', fleet_metrics.members.toString()) :
+            signed_up > 0 ? signed_up.toString() : undefined,
+    },
+    ...(show_fights ? [{ id: 'fights', label: t('fleets.tabs.fights'), ...fights_meta }] : []),
+    ...(show_command ? [{
+        id: 'command',
+        label: t('fleets.tabs.command'),
+        ...(cancelled ? {} : next_step ? { meta: next_step.short_label, flag: 'attention' as const } : { meta: t('fleets.tabs.all_set') }),
+    }] : []),
+    ...invites_tab,
+    // Edit, who sees names, MOTD and cancel: a gear at the end of the row.
+    ...(show_command ? [{ id: 'settings', label: t('fleets.tabs.settings'), icon: 'cog' as const }] : []),
+]
+
+const participant_tabs = [
+    ...(roles ? [{ id: 'participants-roles', label: t('fleets.participants.roles'), ...(tally && tally.total > 0 ? { meta: t('fleets.participants.roles_meta').replace('{filled}', tally.filled.toString()).replace('{total}', tally.total.toString()) } : {}) }] : []),
+    { id: 'participants-signed-up', label: t('fleets.participants.signed_up'), meta: signed_up.toString() },
+    ...(show_in_fleet ? [{
+        id: 'participants-in-fleet',
+        label: t('fleets.participants.in_fleet'),
+        ...(live && fleet_metrics?.members ? { meta: fleet_metrics.members.toString() } : {}),
+    }] : []),
+]
+
+// A finished fleet: Overview, what it flew, who flew, every killmail, and the
+// after action report last.
+const show_kills = Boolean(fleet_kills?.tracked && fleet_kills.killmails.length > 0)
+const show_history_settings = Boolean(fleet.can_copy) || (still_private && show_invites)
+const show_history_ships = has_ships || Boolean(fleet.doctrine) || (participants?.doctrine_flown?.length ?? 0) > 0
+const history_tabs = [
+    { id: 'overview', label: t('fleets.tabs.overview') },
+    ...(show_history_ships ? [{
+        id: 'ships',
+        label: t('fleets.tabs.ships'),
+        ...(has_ships ? { meta: t('fleets.tabs.fits_meta').replace('{count}', composition.length.toString()) } : {}),
+    }] : []),
+    ...(participants ? [{ id: 'participants', label: t('fleets.tabs.participants'), meta: t('fleets.tabs.pilots_meta').replace('{count}', participants.people.toString()) }] : []),
+    ...(show_kills && fleet_kills ? [{ id: 'kills', label: t('fleets.tabs.kills'), meta: t('fleets.tabs.kills_meta').replace('{count}', fleet_kills.killmails.length.toString()) }] : []),
+    { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : {}) },
+    ...invites_tab,
+    // Run it again, or declassify a private fleet.
+    ...(show_history_settings ? [{ id: 'settings', label: t('fleets.tabs.settings'), icon: 'cog' as const }] : []),
+]
+
+// Old links (Discord, the hub) still open the right tab.
+const tab_aliases = {
+    'participants-': 'participants',
+    'your-pilots': 'ships',
+    'fights': 'aar',
+}
+
+import { query_string } from '@helpers/string'
+const TARGETS_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({
+    fleet_id: fleet.id,
+    can_manage: Boolean(can_manage && !cancelled),
+    // Find pilots sends a wave: private fleets that haven't ended.
+    can_invite: Boolean(still_private && show_invites && !cancelled && !history),
+})}`
+const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
+    fleet_id: fleet.id,
+    ...(can_manage && { can_manage: true }),
+})}`
+
+
 ---
 
 <BlockList
@@ -88,144 +216,318 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     @tracking_started="tracking_started = true"
     @is_fleet_time="document.getElementById('preping-button')?.remove()"
 >
-    <FleetHero
-        fleet={{
-            audience: fleet.audience,
-            doctrine_id: fleet?.doctrine?.id,
-            fleet_commander_id: fleet.fleet_commander_id,
-            fleet_commander_name: fleet.fleet_commander_name,
-            id: fleet.id,
-            start_time: fleet.start_time,
-            description: fleet.description,
-            location: fleet.location,
-            objective: fleet.objective,
-            status: fleet.status,
-            tracking: fleet.tracking,
-            type: fleet.type,
-            corporation_id: fleet_commander_metrics?.corporation_id ?? 0,
-            corporation_name: fleet_commander_metrics?.corporation_name ?? t('unknown_corporation'),
-            fleet_commander_fleet_count: fleet_commander_metrics?.fleet_count,
-            members_count: fleet_metrics?.members ?? 0,
-            campaign_slug: fleet.campaign_slug,
-            campaign_name: fleet.campaign_name,
-        }}
-        doctrine={fleet.doctrine}
-        supply_contracts={history ? supply_contracts : []}
-        show_fittings={history}
-        update_cover={update_cover}
-        cover_overlay={true}
-    >
-        <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-            {eve_time_text}
-        </TextGroup>
-        <LocalTimeGroup eve_time={eve_time} />
-    </FleetHero>
+    <FleetFacts
+        fleet={fleet}
+        history={history}
+        masthead={!history}
+        corporation_id={fleet_commander_metrics?.corporation_id ?? 0}
+        corporation_name={fleet_commander_metrics?.corporation_name ?? ''}
+        fleet_count={fleet_commander_metrics?.fleet_count}
+        members_count={participants ? participants.people : fleet_metrics?.members}
+    />
 
-    <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
-        <FleetStatus
-            fleet_id={fleet.id}
-            start_time={fleet.start_time}
-            fleet_tracking={fleet.tracking}
-            fleet_status={fleet.status}
-            is_fleet_commander={is_fleet_commander}
-            fleet_tracking_texts={fleet_tracking_texts}
-            init_tooltips={init_tooltips}
-        />
-    </div>
+    {still_private && <FleetPrivateBanner fleet={fleet} />}
 
     {history &&
-        <Wrapper
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
+        <SectionTabs
+            aria_label={t('fleets.tabs.label')}
+            id_prefix="fleet"
+            tabs={history_tabs}
+            hash_aliases={tab_aliases}
         >
-            <AARLinkButton
-                aarlink={fleet.aar_link ? fleet.aar_link : undefined}
-                fleet_id={fleet.id}
-                can_edit={can_remove_fleet}
-            />
-        </Wrapper>
+            <SectionTabPanel id="overview" id_prefix="fleet" is_default={true}>
+                <FleetOverview
+                    fleet={fleet}
+                    composition={composition}
+                    pilots={[]}
+                    ship_volunteers={[]}
+                    roles={null}
+                    can_pick={false}
+                    history={true}
+                    fleet_kills={fleet_kills}
+                    srp_losses={srp_losses}
+                    fights={fights}
+                    flown_doctrines={[...new Set((participants?.doctrine_flown ?? []).flatMap(segment => segment.doctrine_name ? [segment.doctrine_name] : []))]}
+                />
+            </SectionTabPanel>
+
+            {show_history_ships &&
+                <SectionTabPanel id="ships" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <BlockList gap="var(--space-xl)">
+                            {participants && participants.doctrine_flown.length > 0 &&
+                                <FleetDoctrineFlown
+                                    segments={participants.doctrine_flown}
+                                    engagements={participants.engagements}
+                                    planned={fleet.doctrine ?? null}
+                                    start={fleet.tracking?.start_time ?? null}
+                                    end={fleet.tracking?.end_time ?? null}
+                                />
+                            }
+                            {has_ships &&
+                                <FleetShips
+                                    fleet_id={fleet.id}
+                                    composition={composition}
+                                    volunteers={[]}
+                                    refits={[]}
+                                    pilots={[]}
+                                    readonly={true}
+                                    can_manage={false}
+                                    doctrine_name={fleet?.doctrine?.name ?? null}
+                                    show_volunteers={false}
+                                />
+                            }
+                        </BlockList>
+                    </Wrapper>
+                </SectionTabPanel>
+            }
+
+            {participants &&
+                <SectionTabPanel id="participants" id_prefix="fleet">
+                    <FleetParticipantsDone participants={participants} fleet_id={fleet.id} />
+                </SectionTabPanel>
+            }
+
+            {show_kills && fleet_kills &&
+                <SectionTabPanel id="kills" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <FleetKillFeed fleet_kills={fleet_kills} fleet_id={fleet.id} rounds={fights?.rounds ?? []} />
+                    </Wrapper>
+                </SectionTabPanel>
+            }
+
+            <SectionTabPanel id="aar" id_prefix="fleet">
+                <Wrapper
+                    padding_block='0'
+                    padding_inline='0'
+                    max_width='var(--max-col-width)'
+                >
+                    <BlockList gap="var(--space-xl)">
+                        <FleetAfterAction
+                            fleet={fleet}
+                            fights={fights}
+                            can_edit={can_remove_fleet}
+                        />
+                        {show_fights && fights &&
+                            <FleetFights fights={fights} fleet_id={fleet.id} />
+                        }
+                    </BlockList>
+                </Wrapper>
+            </SectionTabPanel>
+
+            {show_invites &&
+                <SectionTabPanel id="invites" id_prefix="fleet">
+                    <LazyPartial url={INVITES_URL} trigger="reveal">
+                        <p class="[ loading ]">{t('fleets.tabs.invites')}</p>
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            {show_history_settings &&
+                <SectionTabPanel id="settings" id_prefix="fleet">
+                    <FleetSettings fleet={fleet} />
+                </SectionTabPanel>
+            }
+        </SectionTabs>
     }
-    
-    <hr class="[ border-bottom animate-fade-in animate-duration-250 animate-delay-1000 ]" />
 
     {!history &&
-        <Wrapper
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+        <SectionTabs
+            aria_label={t('fleets.tabs.label')}
+            id_prefix="fleet"
+            tabs={fleet_tabs}
+            default_tab={default_tab}
+            hash_aliases={tab_aliases}
         >
-            <FleetRoles
-                volunteers={volunteers}
-                pilots={pilots}
-                fleet_id={fleet.id}
-                readonly={fleet.status === 'cancelled'}
-                is_fleet_commander={can_manage}
-            />
-        </Wrapper>
-    }
-
-    {!history && (composition.length > 0 || can_manage) &&
-        <Wrapper
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-        >
-            <FleetShips
-                fleet_id={fleet.id}
-                composition={composition}
-                volunteers={ship_volunteers}
-                refits={refits}
-                pilots={pilots}
-                supply={supply}
-                readonly={fleet.status === 'cancelled'}
-                can_manage={can_manage}
-                doctrine_name={fleet?.doctrine?.name ?? null}
-            />
-        </Wrapper>
-    }
-
-    {is_fleet_commander &&
-        <Wrapper
-            padding_block='0'
-            padding_inline='0'
-            max_width='var(--max-col-width)'
-            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            x-data={`{
-                global_collapse: $persist(false),
-            }`}
-        >
-            {fleet?.tracking &&
-                <FleetCompositionBlock
-                    composition={fleet_composition ?? []}
-                    fleet_radar={fleet_radar ?? []}
-                    fleet_id={fleet.id}
+            <SectionTabPanel id="overview" id_prefix="fleet" is_default={default_tab === 'overview'}>
+                <FleetOverview
+                    fleet={fleet}
+                    composition={composition}
+                    pilots={pilots}
+                    ship_volunteers={ship_volunteers}
+                    roles={roles}
+                    can_pick={show_my_pilots}
                 />
+            </SectionTabPanel>
+
+            <SectionTabPanel id="ships" id_prefix="fleet">
+                <Wrapper
+                    padding_block='0'
+                    padding_inline='0'
+                    max_width='var(--max-col-width)'
+                >
+                    <BlockList gap="var(--space-xl)">
+                        <LazyPartial url={TARGETS_URL} trigger="reveal" indicator={false} />
+
+                        {show_my_pilots &&
+                            <div
+                                id="fleet-ships-picker"
+                                hx-get={PICK_SHIPS_URL}
+                                hx-trigger="load"
+                                hx-swap="innerHTML"
+                            >
+                                <p class="[ loading ]">{t('fleets.tabs.loading_picker')}</p>
+                            </div>
+                        }
+
+                        {!has_ships && can_manage && !cancelled && !fleet.doctrine ?
+                            <FleetShipsSetup fleet_id={fleet.id} doctrines={doctrines} />
+                            :
+                            <FleetShips
+                                fleet_id={fleet.id}
+                                composition={composition}
+                                volunteers={ship_volunteers}
+                                refits={refits}
+                                pilots={pilots}
+                                supply={supply}
+                                readonly={cancelled}
+                                can_manage={can_manage}
+                                doctrine_name={fleet?.doctrine?.name ?? null}
+                            />
+                        }
+                    </BlockList>
+                </Wrapper>
+            </SectionTabPanel>
+
+            <SectionTabPanel id="participants" id_prefix="fleet">
+                <SectionTabs
+                    aria_label={t('fleets.participants.label')}
+                    id_prefix="fleet-people"
+                    tabs={participant_tabs}
+                    variant="pills"
+                >
+                    {roles &&
+                        <SectionTabPanel id="participants-roles" id_prefix="fleet-people" is_default={true}>
+                            <Wrapper
+                                padding_block='0'
+                                padding_inline='0'
+                                max_width='var(--max-col-width)'
+                            >
+                                <FleetRoles
+                                    roles={roles}
+                                    composition={composition}
+                                    pilots={pilots}
+                                    fleet_id={fleet.id}
+                                    readonly={cancelled}
+                                    is_fleet_commander={can_manage}
+                                />
+                            </Wrapper>
+                        </SectionTabPanel>
+                    }
+
+                    <SectionTabPanel id="participants-signed-up" id_prefix="fleet-people" is_default={!roles}>
+                        <FleetSignups
+                            volunteers={ship_volunteers}
+                            pilots={pilots}
+                            hide_names={fleet.hide_volunteers && !can_manage}
+                        />
+                    </SectionTabPanel>
+
+                    {show_in_fleet &&
+                        <SectionTabPanel id="participants-in-fleet" id_prefix="fleet-people">
+                            <Wrapper
+                                padding_block='0'
+                                padding_inline='0'
+                                max_width='var(--max-col-width)'
+                                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+                                x-data={`{
+                                    global_collapse: $persist(false),
+                                }`}
+                            >
+                                <BlockList gap="var(--space-l)">
+                                    {live &&
+                                        <FleetMissingSignups fleet_id={fleet.id} />
+                                    }
+
+                                    {fleet?.tracking &&
+                                        <FleetCompositionBlock
+                                            composition={fleet_composition ?? []}
+                                            fleet_radar={fleet_radar ?? []}
+                                            fleet_id={fleet.id}
+                                        />
+                                    }
+
+                                    {!fleet?.tracking &&
+                                        <p x-show="!tracking_started">{t('fleets.tabs.fleet_pending')}</p>
+                                    }
+
+                                    {!fleet?.tracking &&
+                                        <template
+                                            x-if="tracking_started"
+                                        >
+                                            <div
+                                                x-data={`{
+                                                    init() {
+                                                        htmx.process($el)
+                                                    }
+                                                }`}
+                                                hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                                                hx-trigger="load delay:30s once"
+                                                hx-indicator=".loader"
+                                                hx-swap="innerHTML transition:true"
+                                            >
+                                                <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+                                            </div>
+                                        </template>
+                                    }
+                                </BlockList>
+                            </Wrapper>
+                        </SectionTabPanel>
+                    }
+                </SectionTabs>
+            </SectionTabPanel>
+
+            {show_fights && fights &&
+                <SectionTabPanel id="fights" id_prefix="fleet">
+                    <Wrapper
+                        padding_block='0'
+                        padding_inline='0'
+                        max_width='var(--max-col-width)'
+                    >
+                        <FleetFights fights={fights} fleet_id={fleet.id} />
+                    </Wrapper>
+                </SectionTabPanel>
             }
 
-            {!fleet?.tracking &&
-                <template
-                    x-if="tracking_started"
-                >
-                    <div
-                        x-data={`{
-                            init() {
-                                htmx.process($el)
-                            }
-                        }`}
-                        hx-get={FLEET_COMPOSITION_PARTIAL_URL}
-                        hx-trigger="load delay:30s once"
-                        hx-indicator=".loader"
-                        hx-swap="innerHTML transition:true"
-                    >
-                        <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-                    </div>
-                </template>
+            {show_command &&
+                <SectionTabPanel id="command" id_prefix="fleet" is_default={default_tab === 'command'}>
+                    <FleetCommand
+                        fleet={fleet}
+                        steps={steps}
+                        is_fleet_commander={is_fleet_commander}
+                    />
+                </SectionTabPanel>
             }
-        </Wrapper>
+
+            {show_invites &&
+                <SectionTabPanel id="invites" id_prefix="fleet">
+                    <LazyPartial url={INVITES_URL} trigger="reveal">
+                        <p class="[ loading ]">{t('fleets.tabs.invites')}</p>
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            {show_command &&
+                <SectionTabPanel id="settings" id_prefix="fleet">
+                    <FleetSettings fleet={fleet} />
+                </SectionTabPanel>
+            }
+        </SectionTabs>
     }
 
 </BlockList>
+<style lang="scss">
+    /* The Ships tab's own picker carries the pick-ships button; one is enough. */
+    :global(body:has(#fleet-ships-picker) .fleet-ships-pick) {
+        display: none;
+    }
+
+</style>

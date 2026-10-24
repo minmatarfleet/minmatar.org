@@ -2,11 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 
 import type { Tribe, TribeGroup, TribeMembership } from '@dtypes/api.minmatar.org'
 import { get_tribes, get_tribe_groups, get_memberships } from '@helpers/api.minmatar.org/tribes'
@@ -120,7 +118,6 @@ const leading_text = t('tribes.leading_text')
                     directory_groups={directory_groups}
                     tribes={tribes}
                     initial_tribe_slug={initial_tribe_slug}
-                    init_tooltips={false}
                 />
             }
         </Flexblock>

@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Sequence
 
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -8,9 +8,13 @@ from pydantic import BaseModel
 from audit.models import AuditEntry
 from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
+from eveonline.helpers.characters.identity import primary_character_for_user
 from eveonline.scopes import (
+    NEW_CHARACTER_SCOPE_GROUPS,
     TokenType,
+    scope_names,
     scopes_for_groups,
+    token_satisfies_type,
     token_type_str,
 )
 from tribes.models import (
@@ -29,23 +33,22 @@ class CharacterResponse(BaseModel):
     is_primary: bool = False
 
 
-class CorporationCharacterResponse(BaseModel):
-    character_id: int
-    character_name: str
-    is_registered: bool = False
-    is_primary: bool = False
-
-
 def user_primary_character(user: User) -> EveCharacter | None:
-    """Returns the primary character for a particular User"""
-    player = user_player(user)
-    if player and player.primary_character:
-        return player.primary_character
-    return None
+    """Returns the primary character for a particular User.
+
+    One query per call; for many users use
+    :func:`eveonline.helpers.characters.identity.primary_characters_for_users`.
+    """
+    return primary_character_for_user(user)
 
 
 def user_characters(user: User) -> List[EveCharacter]:
-    """Returns all the EveCharacters for a particular User"""
+    """Returns all the EveCharacters for a particular User.
+
+    Only characters whose ``EveCharacter.user`` is this user: legacy
+    characters linked through their token alone are not listed here (they
+    still count as the user's in the batch helpers in ``identity``).
+    """
     return EveCharacter.objects.filter(user=user).all()
 
 
@@ -64,9 +67,12 @@ def character_primary(character: EveCharacter) -> EveCharacter | None:
     """Returns the primary character for a character"""
     if not character:
         return None
-    if character.user:
+    if character.user_id:
         return user_primary_character(character.user)
-    return user_primary_character(character.token.user)
+    token = character.token
+    if token is not None and token.user_id:
+        return user_primary_character(token.user)
+    return None
 
 
 def set_primary_character(user: User, character: EveCharacter):
@@ -128,13 +134,14 @@ def orphan_character(
     Token.objects.filter(character_id=character.character_id).delete()
 
 
-def player_characters(player: EvePlayer) -> List[EveCharacter]:
-    return user_characters(player.user)
-
-
 def _normalize_token_level(level: str) -> str:
     """Map legacy token level names to current TokenType values."""
-    legacy = {"CEO": "Director", "Freight": "Market", "Advanced": "Industry"}
+    legacy = {
+        "CEO": "Director",
+        "Freight": "Market",
+        "Advanced": "Industry",
+        "Campaign": "FactionWarfare",
+    }
     return legacy.get(level, level)
 
 
@@ -173,12 +180,73 @@ def character_desired_scopes(character: EveCharacter) -> List[str]:
 def scope_groups_for_token_add(
     character: EveCharacter | None,
     token_type: TokenType,
+    extra_groups: Sequence[TokenType] = (),
 ) -> List[str]:
-    """Scope groups to request in SSO when adding token_type to a character."""
+    """Scope groups to request in SSO when adding token_type to a character.
+
+    extra_groups are the ones picked in the add-character dialog. A character
+    added without naming one also gets the new-character groups. Public is
+    the guest login and never widens.
+    """
+    if token_type == TokenType.PUBLIC:
+        return merge_scope_groups([], token_type_str(token_type))
     existing: List[str] = []
     if character is not None:
         existing = character_configured_scope_groups(character)
-    return merge_scope_groups(existing, token_type_str(token_type))
+    groups = merge_scope_groups(
+        existing,
+        token_type_str(token_type),
+        *(group.value for group in extra_groups),
+    )
+    if character is None:
+        groups = merge_scope_groups(
+            groups, *(group.value for group in NEW_CHARACTER_SCOPE_GROUPS)
+        )
+    return groups
+
+
+def scope_groups_granted(
+    token: Token,
+    token_type: TokenType,
+    extra_groups: Sequence[TokenType] = (),
+) -> List[str]:
+    """The group that was asked for, plus every other one the token holds.
+
+    The callback reads the extra and new-character groups off the token
+    rather than assuming the SSO request carried them.
+    """
+    groups = merge_scope_groups([], token_type_str(token_type))
+    if token_type == TokenType.PUBLIC:
+        return groups
+    for group in [*extra_groups, *NEW_CHARACTER_SCOPE_GROUPS]:
+        if token_satisfies_type(token, group):
+            groups = merge_scope_groups(groups, group.value)
+    return groups
+
+
+def scopes_for_token_add(
+    character: EveCharacter | None,
+    token_type: TokenType,
+    extra_groups: Sequence[TokenType] = (),
+) -> List[str]:
+    """Scopes to request so a re-auth cannot come back narrower than today.
+
+    The callback keeps a new token only when it has at least as many scopes as
+    the one it would replace. Asking for the configured groups alone drops
+    scopes the pilot already granted, the new token is discarded, and the
+    page they returned to looks unchanged.
+    """
+    scopes = set(
+        scopes_for_groups(
+            scope_groups_for_token_add(character, token_type, extra_groups)
+        )
+    )
+    token = (
+        getattr(character, "token", None) if character is not None else None
+    )
+    if token is not None:
+        scopes.update(scope_names(token))
+    return sorted(scopes)
 
 
 def character_has_market_scopes(character: EveCharacter) -> bool:

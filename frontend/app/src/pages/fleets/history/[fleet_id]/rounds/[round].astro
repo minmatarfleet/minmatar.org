@@ -1,0 +1,33 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
+const position = parseInt(Astro.params.round ?? '0')
+
+if (isNaN(fleet_id) || isNaN(position))
+    return HTTP_404_Not_Found()
+
+import { get_fleet_fights } from '@helpers/api.minmatar.org/fleets'
+import { round_window } from '@helpers/fleet_fights'
+import { query_string } from '@helpers/string'
+
+/**
+ * Old links to one engagement's report: the battle report now covers the
+ * whole fleet, so send them to that engagement's window, or to the whole
+ * fleet when the engagement is gone or the fights can't be read.
+ */
+const report_path = translatePath(`/fleets/history/${fleet_id}/report`)
+const fights = await get_fleet_fights(auth_token as string, fleet_id).catch(() => null)
+const round = fights?.rounds[position - 1]
+
+return Astro.redirect(round ? `${report_path}?${query_string(round_window(round))}` : report_path, 302)
+---

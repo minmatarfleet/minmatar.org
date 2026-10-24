@@ -1,0 +1,421 @@
+---
+import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetCompositionEntry, FleetRoleCoverage, FleetShipVolunteer, FleetKills, FleetSrpLoss, FleetFights } from '@helpers/api.minmatar.org/fleets'
+import { role_tally } from '@helpers/fleet_roles'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { format_isk } from '@helpers/numbers'
+
+/**
+ * The Overview tab: what the fleet is (type, doctrine, campaign) and the
+ * briefing beside where to form up. Before and during the fleet, one card
+ * per other tab says what is still open there; once it is over, the outcome
+ * takes their place.
+ */
+interface Props {
+    fleet:              FleetUI;
+    composition:        FleetCompositionEntry[];
+    pilots:             SummaryCharacter[];
+    ship_volunteers:    FleetShipVolunteer[];
+    roles:              FleetRoleCoverage | null;
+    /** Pilots may pick ships (the fleet has ships and is not cancelled). */
+    can_pick:           boolean;
+    /** The fleet is over: show its outcome instead of what is still open. */
+    history?:           boolean;
+    /** A completed fleet's killmails; null loads the outcome through the partial. */
+    fleet_kills?:       FleetKills | null;
+    srp_losses?:        FleetSrpLoss[] | null;
+    fights?:            FleetFights | null;
+    /** Doctrines a finished fleet actually flew, in order. */
+    flown_doctrines?:   string[];
+}
+
+const {
+    fleet,
+    composition,
+    pilots,
+    ship_volunteers,
+    roles,
+    can_pick,
+    history = false,
+    fleet_kills = null,
+    srp_losses = null,
+    fights = null,
+    flown_doctrines = [],
+} = Astro.props
+
+const type_label =
+    fleet.type === 'strategic' ? t('strategic_fleet') :
+    fleet.type === 'training' ? t('training_fleet') :
+    fleet.type === 'npsi' ? t('npsi_fleet') :
+    t('non_strategic_fleet')
+
+const my_ids = new Set(pilots.map(pilot => pilot.character_id))
+const my_flying = new Set(ship_volunteers.filter(volunteer => my_ids.has(volunteer.character_id)).map(volunteer => volunteer.character_id)).size
+const signed_up = new Set(ship_volunteers.map(volunteer => volunteer.character_id)).size
+
+const tally = roles ? role_tally(roles, composition, { logi_fc: t('fleets.after.logi_fc'), cynos: t('fleets.after.cyno') }) : null
+
+const flying_text = my_flying === 1 ? t('fleets.before.flying_one') : t('fleets.before.flying').replace('{count}', my_flying.toString())
+const signed_text = signed_up === 0 ? t('fleets.before.nobody_yet') : signed_up === 1 ? t('fleets.signups.summary_one') : t('fleets.signups.summary').replace('{count}', signed_up.toString())
+
+// The outcome of a finished fleet. Pods count towards ISK but not ships.
+const outcome = history && fleet_kills?.tracked ? (() => {
+    const total = fleet_kills.isk_destroyed + fleet_kills.isk_lost
+    return {
+        efficiency: total > 0 ? Math.round(100 * fleet_kills.isk_destroyed / total) : null,
+    }
+})() : null
+const engagements = fights?.round_count ?? 0
+const systems = [...new Set((fights?.rounds ?? []).flatMap(round => round.systems.map(system => system.name)))]
+const outcome_meta = [
+    engagements === 1 ? t('fleets.fights.badge_round') : engagements > 1 ? t('fleets.fights.badge_rounds').replace('{count}', engagements.toString()) : '',
+    systems.join(', '),
+].filter(Boolean).join(' · ')
+const FLEET_KILLS_PARTIAL_URL = `${translatePath('/partials/fleet_kills_component')}?fleet_id=${fleet.id}&summary_only=1`
+
+import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
+import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
+import FleetNumbers from '@components/blocks/FleetNumbers.astro'
+import FleetFormUp from '@components/blocks/FleetFormUp.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<div class="[ fleet-overview ]">
+    <dl class="[ fleet-overview__facts ]">
+        <div>
+            <dt>{t('fleets.overview.type')}</dt>
+            <dd class="[ fleet-overview__with-icon ]">
+                <FleetTypeFlag type={fleet.type} size={30} />
+                <span>
+                    <b>{type_label}</b>
+                    {fleet.audience && <small>{t('fleets.overview.open_to').replace('{audience}', fleet.audience)}</small>}
+                </span>
+            </dd>
+        </div>
+
+        <div>
+            <dt>{t('doctrine')}</dt>
+            <dd class="[ fleet-overview__with-icon ]">
+                {fleet.doctrine ?
+                    <>
+                        {fleet.doctrine.primary_fittings[0] &&
+                            <img src={get_item_icon(fleet.doctrine.primary_fittings[0].ship_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                        }
+                        <span>
+                            <a href={translatePath(doctrine_path(fleet.doctrine.id, fleet.doctrine.name))}><b>{fleet.doctrine.name}</b></a>
+                            <a href="#ships"><small>{t('fleets.overview.fits_link').replace('{count}', composition.length.toString())}</small></a>
+                        </span>
+                    </>
+                    :
+                    <span>
+                        <b>{t('fleets.overview.not_set')}</b>
+                        {flown_doctrines.length > 0 ?
+                            <a href="#ships"><small>{t('fleets.overview.flew').replace('{doctrines}', flown_doctrines.join(', '))}</small></a>
+                            : composition.length > 0 && <a href="#ships"><small>{t('fleets.overview.fits_link').replace('{count}', composition.length.toString())}</small></a>
+                        }
+                    </span>
+                }
+            </dd>
+        </div>
+
+        {fleet.campaign_slug &&
+            <div>
+                <dt>{t('campaign')}</dt>
+                <dd>
+                    <b>{fleet.campaign_name ?? fleet.campaign_slug}</b>
+                    <a href={translatePath(`/campaigns/${fleet.campaign_slug}/`)}><small>{t('fleets.overview.counts_toward')}</small></a>
+                </dd>
+            </div>
+        }
+    </dl>
+
+    <div class="[ fleet-overview__pair ]">
+        <section class="[ fleet-overview__card ]" aria-labelledby="fleet-briefing-title">
+            <h2 id="fleet-briefing-title">{t('fleets.briefing')}</h2>
+            {fleet.description ?
+                <Markdown markdown={fleet.description} /> :
+                <p class="[ fleet-overview__muted ]">—</p>
+            }
+        </section>
+
+        <FleetFormUp fleet={fleet} show_characters={!history} />
+    </div>
+
+    {history && fleet.tracking &&
+        <section class="[ fleet-overview__before ]" aria-labelledby="fleet-outcome-title">
+            <header class="[ fleet-overview__section-head ]">
+                <h2 id="fleet-outcome-title">{t('fleets.outcome.title')}</h2>
+                {outcome_meta && <small>{outcome_meta}</small>}
+            </header>
+
+            {!fleet_kills ?
+                <div
+                    id="fleet-kills"
+                    hx-get={FLEET_KILLS_PARTIAL_URL}
+                    hx-trigger="load"
+                    hx-swap="outerHTML transition:true"
+                >
+                    <p class="[ loading ]">{t('fleets.kills.loading')}</p>
+                </div>
+            : !outcome ?
+                <small>{t('fleets.kills.untracked')}</small>
+            :
+                <>
+                    <div class="[ fleet-overview__cards fleet-overview__cards--outcome ]">
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.outcome.destroyed')}</span>
+                            <b class="[ fleet-overview__big fleet-overview__kill ]">{format_isk(fleet_kills.isk_destroyed)}</b>
+                            <small>{t('fleets.outcome.ships').replace('{count}', fleet_kills.ships_destroyed.toString())}</small>
+                        </div>
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.outcome.lost')}</span>
+                            <b class="[ fleet-overview__big fleet-overview__loss ]">{format_isk(fleet_kills.isk_lost)}</b>
+                            <small>{t('fleets.outcome.ships').replace('{count}', fleet_kills.ships_lost.toString())}</small>
+                        </div>
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.history.isk_efficiency')}</span>
+                            <b class="[ fleet-overview__big ]">{outcome.efficiency !== null ? `${outcome.efficiency}%` : '—'}</b>
+                            {outcome.efficiency !== null &&
+                                <span
+                                    class="[ fleet-overview__efficiency ]"
+                                    role="img"
+                                    aria-label={t('fleets.fights.efficiency_label').replace('{pct}', outcome.efficiency.toString())}
+                                ><span style={`width: ${outcome.efficiency}%`} /></span>
+                            }
+                        </div>
+                        <div class="[ fleet-overview__card ]">
+                            <span class="[ fleet-overview__label ]">{t('fleets.numbers.title')}</span>
+                            <FleetNumbers our_pilots={fights?.our_pilots} hostile_pilots={fights?.hostile_pilots} />
+                        </div>
+                    </div>
+
+                    {srp_losses && srp_losses.length > 0 &&
+                        <FleetSrpLosses srp_losses={srp_losses} fleet_id={fleet.id} />
+                    }
+
+                    <p class="[ fleet-overview__next ]">
+                        <a href="#aar" class="[ fleet-overview__link ]">{t('fleets.outcome.read_aar')} →</a>
+                        {fleet_kills.killmails.length > 0 && <a href="#kills" class="[ fleet-overview__link ]">{t('fleets.outcome.every_kill')} →</a>}
+                        {fleet.aar_link && <a href={fleet.aar_link} target="_blank" rel="noopener noreferrer" class="[ fleet-overview__link ]">{t('fleets.outcome.fc_aar')} ↗</a>}
+                    </p>
+                </>
+            }
+        </section>
+    }
+
+    {!history && fleet.status !== 'cancelled' &&
+        <section class="[ fleet-overview__before ]" aria-labelledby="fleet-before-title">
+            <h2 id="fleet-before-title">{t('fleets.before.title')}</h2>
+            <div class="[ fleet-overview__cards ]">
+                <div class:list={['[ fleet-overview__card ]', { 'fleet-overview__card--attention': can_pick && my_flying === 0 }]}>
+                    <span class="[ fleet-overview__label ]">{t('fleets.before.your_ships')}</span>
+                    {!can_pick ?
+                        <>
+                            <b>{t('fleets.before.no_ships')}</b>
+                            <small>{t('fleets.before.no_ships_hint')}</small>
+                        </>
+                        : my_flying === 0 ?
+                        <>
+                            <b>{t('fleets.before.not_picked')}</b>
+                            <small>{t('fleets.before.pick_hint')}</small>
+                            <Button href="#ships" color="green" size="sm" class="[ fleet-overview__cta ]">{t('fleets.spotlight.pick_ships')}</Button>
+                        </>
+                        :
+                        <>
+                            <b>{flying_text}</b>
+                            <small>{t('fleets.before.change_hint')}</small>
+                            <a href="#ships" class="[ fleet-overview__link ]">{t('fleets.before.change_ships')} →</a>
+                        </>
+                    }
+                </div>
+
+                {tally && tally.total > 0 &&
+                    <div class="[ fleet-overview__card ]">
+                        <span class="[ fleet-overview__label ]">{t('fleets.before.roles')}</span>
+                        <b>{t('fleets.before.roles_filled').replace('{filled}', tally.filled.toString()).replace('{total}', tally.total.toString())}</b>
+                        <small>{tally.open.length > 0 ? t('fleets.before.roles_open').replace('{roles}', tally.open.join(', ')) : t('fleets.before.roles_all')}</small>
+                        <a href="#participants-roles" class="[ fleet-overview__link ]">{t('fleets.before.see_roles')} →</a>
+                    </div>
+                }
+
+                <div class="[ fleet-overview__card ]">
+                    <span class="[ fleet-overview__label ]">{t('fleets.before.signed_up')}</span>
+                    <b>{signed_text}</b>
+                    <a href="#participants-signed-up" class="[ fleet-overview__link ]">{t('fleets.before.see_signups')} →</a>
+                </div>
+            </div>
+        </section>
+    }
+</div>
+
+<style lang="scss">
+    .fleet-overview {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        max-width: var(--max-col-width);
+    }
+
+    .fleet-overview__facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+        gap: 1px;
+        margin: 0;
+        background-color: var(--border-color);
+        border: 1px solid var(--border-color);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-s) var(--space-m);
+            background-color: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        dd {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            margin: 0;
+        }
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            line-height: 1.1;
+            text-transform: uppercase;
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-overview__facts .fleet-overview__with-icon {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-xs);
+
+        > span {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .fleet-overview__pair,
+    .fleet-overview__cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+        gap: var(--space-s);
+        align-items: stretch;
+    }
+
+    .fleet-overview__cards {
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    }
+
+    .fleet-overview__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        b {
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-overview__card--attention {
+        box-shadow: inset 0 3px 0 var(--security-status-point-4);
+    }
+
+    .fleet-overview__before {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        h2 {
+            font-size: var(--step-0);
+            letter-spacing: 0.08em;
+        }
+    }
+
+    .fleet-overview__section-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .fleet-overview__cards--outcome {
+        grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+    }
+
+    .fleet-overview__card .fleet-overview__big {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        font-weight: 400;
+        line-height: 1.05;
+    }
+
+    .fleet-overview__card .fleet-overview__kill {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .fleet-overview__card .fleet-overview__loss {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fleet-overview__efficiency {
+        display: flex;
+        height: var(--space-2xs);
+        background-color: var(--fleet-red);
+
+        span {
+            background-color: var(--alliance-blue);
+        }
+    }
+
+    .fleet-overview__next {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-l);
+        margin: 0;
+    }
+
+    .fleet-overview__label {
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    .fleet-overview__link,
+    .fleet-overview__card :global(.fleet-overview__cta) {
+        margin-top: auto;
+        align-self: flex-start;
+    }
+
+    .fleet-overview__link {
+        font-weight: 700;
+    }
+
+    .fleet-overview__muted {
+        opacity: 0.6;
+    }
+</style>

@@ -17,7 +17,6 @@ from eveonline.client import (
     esi_provider,
     live_esi_allowed,
 )
-from eveonline.models import EveLocation
 from industry.helpers.lp_catalog import (
     ensure_eve_types,
     expand_with_navy_hull_type_ids,
@@ -28,9 +27,7 @@ from industry.models import (
     IndustryLpStoreOfferRequiredItem,
     IndustryProduct,
 )
-from market.helpers.pricing import JITA_REGION_ID
-from market.models.history import EveMarketItemHistory
-from market.tasks import fetch_market_item_history_for_type
+from market.helpers.pricing import enqueue_history_for_types
 
 logger = logging.getLogger(__name__)
 
@@ -80,19 +77,6 @@ class NavyBpcCost:
 class _OfferBuild:
     offer: IndustryLpStoreOffer
     required: Tuple[Tuple[int, int], ...]  # (type_id, quantity)
-
-
-def is_pure_lp_isk_offer(row: dict) -> bool:
-    """True for LP+ISK offers with no required items and no ak_cost (navy BPC)."""
-    if not isinstance(row, dict):
-        return False
-    if row.get("required_items"):
-        return False
-    if int(row.get("ak_cost") or 0) > 0:
-        return False
-    lp_cost = int(row.get("lp_cost") or 0)
-    isk_cost = int(row.get("isk_cost") or 0)
-    return lp_cost > 0 and isk_cost > 0
 
 
 def corporation_ids_to_sync() -> List[int]:
@@ -206,36 +190,6 @@ def _builds_from_rows(
     return builds
 
 
-def _enqueue_history_for_missing_types(type_ids: Set[int]) -> None:
-    """Bootstrap Forge history for LP catalog types missing recent rows."""
-    if not type_ids:
-        return
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    region_id = (
-        baseline.region_id
-        if baseline and baseline.region_id
-        else JITA_REGION_ID
-    )
-    existing = set(
-        EveMarketItemHistory.objects.filter(
-            region_id=region_id,
-            item_id__in=type_ids,
-        )
-        .values_list("item_id", flat=True)
-        .distinct()
-    )
-    missing = sorted(tid for tid in type_ids if tid not in existing)
-    for type_id in missing:
-        fetch_market_item_history_for_type.apply_async(
-            args=[type_id], queue="market"
-        )
-    if missing:
-        logger.info(
-            "Enqueued Forge history bootstrap for %s LP catalog type(s)",
-            len(missing),
-        )
-
-
 def sync_loyalty_store_offers(
     corporation_ids: Sequence[int] | None = None,
     *,
@@ -299,7 +253,7 @@ def sync_loyalty_store_offers(
     catalog_types = expand_with_navy_hull_type_ids(catalog_types)
     ensure_eve_types(catalog_types)
     if enqueue_history:
-        _enqueue_history_for_missing_types(catalog_types)
+        enqueue_history_for_types(catalog_types)
     logger.info(
         "Synced %s loyalty-store offer(s) for corp(s) %s",
         len(builds),

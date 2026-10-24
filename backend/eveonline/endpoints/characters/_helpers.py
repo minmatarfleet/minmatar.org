@@ -2,6 +2,7 @@
 
 import logging
 from typing import List
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
@@ -15,6 +16,7 @@ from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
 from eveonline.endpoints.characters.schemas import UserCharacter
 from eveonline.helpers.characters import (
     merge_scope_groups,
+    scope_groups_granted,
     set_primary_character,
     user_primary_character,
 )
@@ -26,6 +28,7 @@ from eveonline.models import (
     EveCorporation,
 )
 from eveonline.scopes import (
+    parse_scope_groups,
     scope_group,
     TokenType,
     token_type_str,
@@ -80,7 +83,9 @@ def discord_account_mismatch_redirect(
         request.user.id,
         expected,
     )
-    return redirect(f"{redirect_url}?error=wrong_discord_account")
+    return redirect(
+        redirect_with_params(redirect_url, error="wrong_discord_account")
+    )
 
 
 def owner_for_added_character(request, token: Token) -> User | None:
@@ -186,6 +191,22 @@ def set_or_remove_session_value(request, key, value):
         request.session.pop(key, None)
 
 
+def redirect_with_params(url: str, **params: str) -> str:
+    """Add query params without dropping a query or fragment already on the url."""
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query.update(params)
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query),
+            parts.fragment,
+        )
+    )
+
+
 def check_add_character_session_match(request, token):
     if "add_character_id" not in request.session:
         return None
@@ -199,21 +220,12 @@ def check_add_character_session_match(request, token):
         error_id,
     )
     return redirect(
-        request.session["redirect_url"]
-        + "?error=wrong_character&error_id="
-        + error_id
+        redirect_with_params(
+            request.session["redirect_url"],
+            error="wrong_character",
+            error_id=error_id,
+        )
     )
-
-
-def fixup_character_token_level(character, token_count):
-    if not character.esi_token_level:
-        if token_count == 1 and not character.token:
-            character.token = Token.objects.filter(
-                character_id=character.character_id
-            ).first()
-        if character.token:
-            character.esi_token_level = scope_group(character.token)
-            character.save(update_fields=["esi_token_level"])
 
 
 def _linked_token_level(token: Token, fallback_group: str) -> str:
@@ -230,45 +242,45 @@ def _delete_other_character_tokens(
     ).delete()
 
 
-def apply_token_to_existing_character(character, token, token_type, user=None):
+def apply_token_to_existing_character(
+    character, token, token_type, user=None, extra_groups=()
+):
     owner = user if user is not None else token.user
     group_name = token_type_str(token_type)
-    character.esi_scope_groups = merge_scope_groups(
+    merged_groups = merge_scope_groups(
         getattr(character, "esi_scope_groups", None),
-        group_name,
+        *scope_groups_granted(token, token_type, extra_groups),
     )
 
     new_scope_count = token.scopes.count()
     old_token = character.token
     level = _linked_token_level(token, group_name)
+    keeps_new_token = (
+        old_token is None
+        or old_token == token
+        or new_scope_count >= old_token.scopes.count()
+    )
+    if not keeps_new_token:
+        # A narrower grant must not replace the token, and it must not be
+        # recorded as if the pilot had added the scope group.
+        logger.info(
+            "Discarding narrower token for %s (%s scopes < %s)",
+            token.character_id,
+            new_scope_count,
+            old_token.scopes.count(),
+        )
+        token.delete()
+        return
 
-    if (
-        old_token
-        and old_token != token
-        and new_scope_count >= old_token.scopes.count()
-    ):
+    character.esi_scope_groups = merged_groups
+    character.esi_token_level = level
+    character.esi_suspended = False
+    if old_token != token:
         logger.info("Replacing token for %s", token.character_id)
         character.token = token
         character.user = owner
-        character.esi_token_level = level
-        character.esi_suspended = False
-        character.save()
-        _delete_other_character_tokens(character.character_id, token)
-    elif not old_token:
-        character.token = token
-        character.user = owner
-        character.esi_token_level = level
-        character.esi_suspended = False
-        character.save()
-        _delete_other_character_tokens(character.character_id, token)
-    elif old_token == token:
-        character.esi_token_level = level
-        character.esi_suspended = False
-        character.save()
-        _delete_other_character_tokens(character.character_id, token)
-    elif token != old_token:
-        token.delete()
-        character.save(update_fields=["esi_scope_groups"])
+    character.save()
+    _delete_other_character_tokens(character.character_id, token)
 
 
 def maybe_populate_ceo_corporation(character, token_type):
@@ -292,17 +304,22 @@ def handle_add_character_esi_callback(request, token, token_type):
     if wrong_char_redirect is not None:
         return wrong_char_redirect
     owner = owner_for_added_character(request, token)
+    extra_groups = parse_scope_groups(
+        ",".join(request.session.pop("add_scope_groups", None) or [])
+    )
     if EveCharacter.objects.filter(character_id=token.character_id).exists():
         character = EveCharacter.objects.get(character_id=token.character_id)
         apply_token_to_existing_character(
-            character, token, token_type, user=owner
+            character, token, token_type, user=owner, extra_groups=extra_groups
         )
     else:
         character = EveCharacter.objects.create(
             character_id=token.character_id,
             character_name=token.character_name,
             esi_token_level=token_type_str(token_type),
-            esi_scope_groups=[token_type_str(token_type)],
+            esi_scope_groups=scope_groups_granted(
+                token, token_type, extra_groups
+            ),
             token=token,
             user=owner,
         )
@@ -318,5 +335,12 @@ def handle_add_character_esi_callback(request, token, token_type):
     )
     if user_primary_character(request.user) is None:
         set_primary_character(request.user, character)
-    maybe_populate_ceo_corporation(character, token_type)
+    maybe_populate_ceo_corporation(
+        character,
+        (
+            TokenType.DIRECTOR
+            if TokenType.DIRECTOR in extra_groups
+            else token_type
+        ),
+    )
     return redirect(request.session["redirect_url"])

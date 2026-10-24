@@ -1,0 +1,199 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { ProductInsights } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    insights:           ProductInsights;
+    [propName: string]: any;
+}
+
+const {
+    insights,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { number_thousand_separator } from '@helpers/numbers'
+import { from_now_diff } from '@helpers/date'
+
+const n = (value: number) => number_thousand_separator(value)
+
+// Open orders, the ones still missing a builder first.
+const open_orders = insights.orders.recent
+    .filter(order => !order.fulfilled_at)
+    .map(order => ({
+        ...order,
+        unclaimed: Math.max(0, order.quantity - order.assigned),
+        claimed: Math.max(0, order.assigned - order.delivered),
+    }))
+    .sort((a, b) => b.unclaimed - a.unclaimed
+        || (a.needed_by ?? '9999').localeCompare(b.needed_by ?? '9999'))
+
+const unclaimed_total = Math.max(0, insights.orders.open_units - insights.orders.open_assigned_units)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ build-queue ]', Astro.props.class]} {...attributes}>
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+        <Flexblock gap="var(--space-xs)">
+            <FlexInline justification="space-between" gap="var(--space-3xs) var(--space-s)" class="[ flex-wrap items-baseline ]">
+                <h3>{t('industry.product.needed_now')}</h3>
+                {unclaimed_total > 0 &&
+                    <span class="[ unclaimed-total ]">{t('industry.product.n_without_builder').replace('{n}', n(unclaimed_total))}</span>
+                }
+            </FlexInline>
+            {open_orders.length === 0 ?
+                <p class="[ empty ]">{t('industry.product.no_open_orders')}</p>
+                :
+                <ul class="[ queue ]" role="list">
+                    {open_orders.map(order =>
+                        <li class="[ queue-row ]">
+                            <span class:list={['[ queue-count ]', { 'is-zero': order.unclaimed === 0 }]}>{n(order.unclaimed)}</span>
+                            <Flexblock gap="var(--space-3xs)" class="[ min-w-0 ]">
+                                <a class="[ queue-link ]" href={translatePath(`/industry/orders/${order.order_id}/`)}>
+                                    {order.public_short_code ? `#${order.public_short_code}` : `#${order.order_id}`}
+                                    {order.character_name && <span class="[ muted ]"> {order.character_name}</span>}
+                                </a>
+                                <small class="[ muted ]">
+                                    {t('industry.product.queue_detail')
+                                        .replace('{due}', order.needed_by
+                                            ? t('industry.product.order_due').replace('{date}', new Date(order.needed_by).toLocaleDateString(lang, { month: 'short', day: 'numeric', timeZone: 'UTC' }))
+                                            : t('industry.product.order_no_date'))
+                                        .replace('{ordered}', n(order.quantity))
+                                        .replace('{delivered}', n(order.delivered))
+                                        .replace('{claimed}', n(order.claimed))}
+                                </small>
+                            </Flexblock>
+                            <Button
+                                size="sm"
+                                color={order.unclaimed > 0 ? 'fleet-red' : 'transparent'}
+                                href={translatePath(`/industry/orders/${order.order_id}/`)}
+                            >
+                                {order.unclaimed > 0
+                                    ? t('industry.product.claim_n').replace('{n}', n(order.unclaimed))
+                                    : t('industry.product.view_order')}
+                            </Button>
+                        </li>
+                    )}
+                </ul>
+            }
+            <small class="[ muted ]">{t('industry.product.claim_hint')}</small>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+        <Flexblock gap="var(--space-xs)">
+            <FlexInline justification="space-between" gap="var(--space-3xs) var(--space-s)" class="[ flex-wrap items-baseline ]">
+                <h3>{t('industry.product.running_now')}</h3>
+                {insights.built.running_units > 0 &&
+                    <small class="[ muted ]">
+                        {t('industry.product.running_summary')
+                            .replace('{n}', n(insights.built.running_units))
+                            .replace('{jobs}', n(insights.built.running_jobs))}
+                    </small>
+                }
+            </FlexInline>
+            {insights.running.length === 0 ?
+                <p class="[ empty ]">{t('industry.product.none_in_production')}</p>
+                :
+                <ul class="[ jobs ]" role="list">
+                    {insights.running.map(job =>
+                        <li class="[ job ]">
+                            <CharacterPicture
+                                character_id={job.character_id}
+                                character_name={job.character_name}
+                                size={32}
+                                icon_quality={64}
+                            />
+                            <Flexblock gap="0" class="[ grow min-w-0 ]">
+                                <span class="[ truncate ]">
+                                    {job.character_name || t('industry.product.unknown_pilot')}
+                                    {job.corporation_name && <span class="[ muted ]"> · {job.corporation_name}</span>}
+                                </span>
+                                <small class="[ muted ]">{(job.units === 1 ? t('industry.product.one_unit') : t('industry.product.n_units')).replace('{n}', n(job.units))}</small>
+                            </Flexblock>
+                            <small class="[ job-eta ]">{t('industry.product.done_when').replace('{when}', from_now_diff(lang, new Date(job.ends_at)))}</small>
+                        </li>
+                    )}
+                </ul>
+            }
+            <small class="[ muted ]">{t('industry.product.running_hint')}</small>
+        </Flexblock>
+    </ComponentBlock>
+</Flexblock>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .muted,
+    .empty {
+        color: var(--foreground);
+    }
+
+    .unclaimed-total {
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: color-mix(in srgb, var(--fleet-red) 55%, white);
+    }
+
+    .queue,
+    .jobs {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+    }
+
+    .queue-row {
+        display: grid;
+        grid-template-columns: var(--space-xl) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-s);
+        border-bottom: solid 1px var(--border-color);
+    }
+
+    .queue-count {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        text-align: center;
+        color: color-mix(in srgb, var(--fleet-red) 60%, white);
+
+        &.is-zero {
+            color: var(--foreground);
+        }
+    }
+
+    .queue-link {
+        display: inline-block;
+        padding-block: var(--space-3xs);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .job {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding-block: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+    }
+
+    .job-eta {
+        white-space: nowrap;
+        color: var(--highlight);
+    }
+</style>

@@ -11,8 +11,9 @@ from campaigns.helpers import (
     day_bounds,
     week_bounds,
 )
-from campaigns.services.streaks import prime_time_label
+from campaigns.services.prime_time import prime_time_label
 from eveonline.models import EvePlayer
+from fleets.endpoints.helpers import time_region
 
 
 def moment(year, month, day, hour, minute=0):
@@ -82,3 +83,20 @@ class PrimeTimeTests(TestCase):
         stated = {code for code, _ in EvePlayer.prime_choices}
         for hour in range(24):
             self.assertIn(prime_time_label(hour), stated, hour)
+
+    def test_the_roster_buckets_hours_like_the_corporation_page(self):
+        """Observed prime time on the roster and on the corp page agree,
+        hour for hour."""
+        expected = (
+            (["US"] * 5 + ["US_AP"] * 5 + ["AP"] * 5 + ["EU"] * 5)
+            + ["EU_US"] * 2
+            + ["US"] * 2
+        )
+        self.assertEqual(
+            [prime_time_label(hour) for hour in range(24)], expected
+        )
+        for hour in range(24):
+            self.assertEqual(
+                prime_time_label(hour),
+                time_region(moment(2026, 1, 1, hour)),
+            )

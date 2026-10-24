@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# electron-builder's buildResources (the exe/installer icon). The repo root ignores build/ for Python.
+!build/

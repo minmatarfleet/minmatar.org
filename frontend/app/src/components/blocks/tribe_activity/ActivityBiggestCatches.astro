@@ -1,0 +1,140 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TribeShowcaseCatch } from '@dtypes/api.minmatar.org'
+import { get_corporation_logo, get_item_icon } from '@helpers/eve_image_server'
+import { format_date_short } from '@helpers/date'
+import { plural } from '@helpers/tribe_activity'
+
+interface Props {
+    catches: TribeShowcaseCatch[]
+}
+
+const { catches } = Astro.props
+
+const SUPER_CLASSES = new Set(['Titan', 'Supercarrier'])
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Grid from '@components/compositions/Grid.astro'
+---
+
+<ActivityBlock
+    title={t('tribes.activity.fishermen.catches_title')}
+    caption={t('tribes.activity.fishermen.catches_caption')}
+>
+    {catches.length === 0 ?
+        <EmptyState title={t('tribes.activity.fishermen.catches_empty')} />
+        :
+        <Grid min_item_width="20rem" row_gap="var(--space-xs)" column_gap="var(--space-xs)">
+            {catches.map((kill) =>
+                <a
+                    class:list={['[ catch-card ]', { 'catch-card--super': SUPER_CLASSES.has(kill.ship_class) }]}
+                    href={`https://zkillboard.com/kill/${kill.killmail_id}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <img
+                        class="[ catch-card__render ]"
+                        src={get_item_icon(kill.ship_type_id, 128)}
+                        alt=""
+                        loading="lazy"
+                        width="72"
+                        height="72"
+                    />
+                    <span class="[ catch-card__body ]">
+                        <span class="[ catch-card__class ]">{kill.ship_class}</span>
+                        <span class="[ catch-card__name ]">
+                            {kill.victim_corporation_id &&
+                                <img
+                                    class="[ catch-card__corp ]"
+                                    src={get_corporation_logo(kill.victim_corporation_id, 32)}
+                                    alt=""
+                                    loading="lazy"
+                                    width="20"
+                                    height="20"
+                                />
+                            }
+                            {kill.ship_name}
+                        </span>
+                        <span class="[ catch-card__meta ]">
+                            {format_date_short(lang, kill.killed_at)} · {plural(t, kill.hunters, 'tribes.activity.fishermen.catch_hunters')}
+                        </span>
+                    </span>
+                </a>
+            )}
+        </Grid>
+    }
+</ActivityBlock>
+
+<style lang="scss">
+    .catch-card {
+        --catch-accent: rgba(255, 255, 255, 0.18);
+
+        display: flex;
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        border: 1px solid var(--catch-accent);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: border-color var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .catch-card--super {
+        --catch-accent: var(--fleet-yellow);
+    }
+
+    @media (hover: hover) {
+        .catch-card:hover {
+            border-color: var(--highlight);
+        }
+    }
+
+    .catch-card__render {
+        flex: none;
+        inline-size: var(--space-3xl);
+        block-size: var(--space-3xl);
+        background: var(--component-background);
+    }
+
+    .catch-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-inline-size: 0;
+    }
+
+    .catch-card__class {
+        align-self: flex-start;
+        max-inline-size: 100%;
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--catch-accent);
+        font-size: var(--step--2);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .catch-card__name {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--highlight);
+    }
+
+    .catch-card__corp {
+        inline-size: var(--space-s);
+        block-size: var(--space-s);
+    }
+
+    .catch-card__meta {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

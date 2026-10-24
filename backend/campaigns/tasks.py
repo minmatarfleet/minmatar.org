@@ -1,8 +1,9 @@
 """Scheduled work for campaigns.
 
 Nothing here is the only path to a fact. The stream attributes kills as they
-land, the sweep re-attributes the last two days, the payout poll finds site
-completions and the cross-check confirms we did not miss a kill.
+land, the sweep re-attributes the last two days, the recent-killmails poll
+recovers a mail the stream missed, the payout poll finds site completions
+and the cross-check confirms we did not miss a kill.
 """
 
 from __future__ import annotations
@@ -36,6 +37,9 @@ from campaigns.services import (
 )
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacterFwLpPayout
+from eveonline.utils import get_esi_downtime_countdown
+from feed.helpers.ingest import upsert_feed_killmail_from_raw
+from feed.models import FeedKillmail
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,29 @@ def _live_campaigns():
     )
 
 
-@app.task()
+def _included_character_rows(order_field: str):
+    """Active enlisted characters, least-recently polled first."""
+    return (
+        CampaignEnlistmentCharacter.objects.filter(
+            enlistment__status="active",
+            enlistment__campaign__status__in=["scheduled", "active"],
+            included_until__isnull=True,
+        )
+        .select_related("character")
+        .order_by(F(order_field).asc(nulls_first=True))
+    )
+
+
+def _defer_for_downtime(kind: str) -> dict | None:
+    """Skip an ESI poll that would run across the 11:00 UTC downtime."""
+    countdown = get_esi_downtime_countdown()
+    if countdown <= 0:
+        return None
+    logger.info("Skipping %s poll during ESI downtime (%ss)", kind, countdown)
+    return {"polled": 0, "stored": 0, "skipped": 0, "deferred": countdown}
+
+
+@app.task(exclusive=30 * 60)
 def sweep_campaign_killmails(hours: int = 4) -> dict:
     """Re-attribute recent feed killmails so nothing is lost.
 
@@ -73,7 +99,7 @@ def poll_campaign_snapshots() -> dict:
     return result
 
 
-@app.task()
+@app.task(exclusive=30 * 60)
 def poll_frontlines_advantage() -> dict:
     """Advantage per system, read off CCP's frontlines page instead of pilots."""
     result = frontlines.record_advantage()
@@ -91,37 +117,29 @@ def poll_frontlines_advantage() -> dict:
 
 
 @app.task()
-def poll_campaign_payouts(limit: int = 200) -> dict:
+def poll_campaign_payouts(limit: int | None = None) -> dict:
     """Read FW LP payout notifications for every included character.
 
     Character notifications sit in a 15-token bucket per character per 15
-    minutes, so one character costs a fifth of its budget per poll and the
-    gate holds the rest back for everything else.
+    minutes. The shared gate is the stop: a paused character is skipped and
+    the rest of the roster is still read. ``limit`` is an operator cap.
     """
-    # Least-recently-polled first, so a campaign larger than one batch still
-    # gets every character read instead of the same alphabetical prefix.
-    rows = (
-        CampaignEnlistmentCharacter.objects.filter(
-            enlistment__status="active",
-            enlistment__campaign__status__in=["scheduled", "active"],
-            included_until__isnull=True,
-        )
-        .select_related("character")
-        .order_by(F("payouts_polled_at").asc(nulls_first=True))
-    )
+    deferred = _defer_for_downtime("payout")
+    if deferred is not None:
+        return deferred
 
     polled = 0
     stored = 0
     skipped = 0
     seen: set[int] = set()
 
-    for row in rows.iterator():
+    for row in _included_character_rows("payouts_polled_at").iterator():
         character = row.character
         # A pilot can have the same character in two campaigns; ESI does not
         # care, and neither should our budget.
         if character.character_id in seen:
             continue
-        if polled >= limit:
+        if limit is not None and polled >= limit:
             break
         if character.esi_suspended or character.esi_deleted:
             skipped += 1
@@ -144,16 +162,18 @@ def poll_campaign_payouts(limit: int = 200) -> dict:
             esi_gate.record_error()
             continue
 
-        esi_gate.spend("char-notification", character.character_id)
+        esi_gate.note_response(
+            "char-notification", character.character_id, response
+        )
         polled += 1
 
-        if not response.success():
-            esi_gate.record_error()
-            logger.info(
-                "Notification poll failed for %s: %s",
-                character.character_name,
-                response.error_text(),
-            )
+        if response.response_code == 304 or not response.success():
+            if not response.success():
+                logger.info(
+                    "Notification poll failed for %s: %s",
+                    character.character_name,
+                    response.error_text(),
+                )
             continue
 
         for notification in response.results() or []:
@@ -161,6 +181,7 @@ def poll_campaign_payouts(limit: int = 200) -> dict:
             if payout:
                 stored += 1
 
+    _apply_seeded_event_codes()
     attributed = attribute_new_payouts()
     return {
         "polled": polled,
@@ -168,6 +189,156 @@ def poll_campaign_payouts(limit: int = 200) -> dict:
         "skipped": skipped,
         **attributed,
     }
+
+
+@app.task()
+def poll_campaign_recent_killmails(limit: int | None = None) -> dict:
+    """Fetch recent killmails for enlisted characters the feed does not have.
+
+    The stream is still the fast path. This poll only asks ESI for mails
+    missing from ``FeedKillmail``, then hands them to the same ingest path
+    the stream uses. Known ids are the cache; django-esi ETags stay off.
+    """
+    deferred = _defer_for_downtime("recent killmail")
+    if deferred is not None:
+        return deferred
+
+    polled = 0
+    fetched = 0
+    ingested = 0
+    skipped = 0
+    seen: set[int] = set()
+
+    for row in _included_character_rows("killmails_polled_at").iterator():
+        character = row.character
+        if character.character_id in seen:
+            continue
+        if limit is not None and polled >= limit:
+            break
+        if character.esi_suspended or character.esi_deleted:
+            skipped += 1
+            continue
+        if not esi_gate.can_spend("char-killmail", character.character_id):
+            skipped += 1
+            continue
+
+        seen.add(character.character_id)
+        CampaignEnlistmentCharacter.objects.filter(character=character).update(
+            killmails_polled_at=timezone.now()
+        )
+
+        try:
+            response = EsiClient(character).get_recent_killmails()
+        except Exception:  # pragma: no cover - one bad row, not the batch
+            logger.exception(
+                "Recent killmail poll raised for %s", character.character_name
+            )
+            esi_gate.record_error()
+            continue
+
+        esi_gate.note_response(
+            "char-killmail", character.character_id, response
+        )
+        polled += 1
+        if not response.success():
+            logger.info(
+                "Recent killmail poll failed for %s: %s",
+                character.character_name,
+                response.error_text(),
+            )
+            continue
+
+        found = _ingest_missing_killmails(character, response.results() or [])
+        fetched += found["fetched"]
+        ingested += found["ingested"]
+        skipped += found["skipped"]
+
+    return {
+        "polled": polled,
+        "fetched": fetched,
+        "ingested": ingested,
+        "skipped": skipped,
+    }
+
+
+def _ingest_missing_killmails(character, entries: list) -> dict:
+    """Fetch ESI details for recent mails the feed has not stored yet."""
+    fetched = 0
+    ingested = 0
+    skipped = 0
+    for entry in entries:
+        killmail_id, killmail_hash = _recent_killmail_identity(entry)
+        if killmail_id is None:
+            continue
+        if FeedKillmail.objects.filter(killmail_id=killmail_id).exists():
+            continue
+        if not esi_gate.can_spend("killmail"):
+            skipped += 1
+            break
+        stored = _fetch_and_ingest_killmail(
+            character, killmail_id, killmail_hash
+        )
+        if stored is None:
+            continue
+        fetched += 1
+        if stored:
+            ingested += 1
+    return {"fetched": fetched, "ingested": ingested, "skipped": skipped}
+
+
+def _fetch_and_ingest_killmail(
+    character, killmail_id: int, killmail_hash: str
+):
+    """One public killmail fetch. None when the call failed, else ingested."""
+    try:
+        detail = EsiClient(character).get_character_killmail(
+            killmail_id, killmail_hash
+        )
+    except Exception:  # pragma: no cover
+        logger.exception(
+            "Killmail %s fetch raised for %s",
+            killmail_id,
+            character.character_name,
+        )
+        esi_gate.record_error()
+        return None
+
+    esi_gate.note_response("killmail", None, detail)
+    if not detail.success():
+        return None
+    raw = detail.results()
+    if not isinstance(raw, dict):
+        return None
+    raw = dict(raw)
+    raw.setdefault("killmail_id", killmail_id)
+    stored = upsert_feed_killmail_from_raw(
+        raw,
+        zkb_meta={"hash": killmail_hash},
+        source="esi",
+    )
+    return stored is not None
+
+
+def _recent_killmail_identity(entry) -> tuple[int | None, str | None]:
+    if not isinstance(entry, dict):
+        return None, None
+    killmail_hash = entry.get("killmail_hash") or entry.get("hash")
+    if not killmail_hash:
+        return None, None
+    try:
+        return int(entry.get("killmail_id")), str(killmail_hash)
+    except (TypeError, ValueError):
+        return None, None
+
+
+def _apply_seeded_event_codes() -> None:
+    """Seed payout codes the migration has not reached, then relabel sites.
+
+    A code that was still unknown when its completions were stored gets its
+    name here. A human confirmation is never overwritten.
+    """
+    if sites.seed_event_codes():
+        sites.rescore_completions()
 
 
 def attribute_new_payouts(hours: int = 72) -> dict:
@@ -181,7 +352,7 @@ def attribute_new_payouts(hours: int = 72) -> dict:
     return result
 
 
-@app.task()
+@app.task(exclusive=30 * 60)
 def link_campaign_fleets() -> dict:
     """Attach campaign mails to the fleet their pilots were flying in."""
     linked = 0
@@ -193,7 +364,7 @@ def link_campaign_fleets() -> dict:
     return {"linked": linked}
 
 
-@app.task()
+@app.task(exclusive=30 * 60)
 def materialise_campaign_stats() -> dict:
     """Rebuild today's and yesterday's rows, then the roll-ups and ranks."""
     written = 0
@@ -213,7 +384,7 @@ def materialise_campaign_stats() -> dict:
     }
 
 
-@app.task()
+@app.task(exclusive=30 * 60)
 def mirror_campaign_feed_events() -> dict:
     mirrored = 0
     for campaign in _live_campaigns():
@@ -266,7 +437,7 @@ def generate_campaign_orders() -> dict:
     return {"created": created}
 
 
-@app.task()
+@app.task(expires=60, exclusive=5 * 60)
 def run_campaign_lifecycle() -> dict:
     """Scheduled becomes active on time; active completes at the end.
 
@@ -318,7 +489,7 @@ def run_campaign_lifecycle() -> dict:
     return {"started": started, "completed": completed}
 
 
-@app.task()
+@app.task(exclusive=15 * 60)
 def campaign_health() -> dict:
     """What the KPI panel reads, and what pages an operator when it slips."""
     day = campaign_day()

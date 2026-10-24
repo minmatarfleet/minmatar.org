@@ -1,14 +1,13 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
+import { login_redirect } from '@helpers/http_responses'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
-const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+if (!user) return login_redirect(Astro)
 
 import { query_string } from '@helpers/string';
 
@@ -37,7 +36,6 @@ import {
     get_fleet_role_volunteers,
     create_fleet_role_volunteer,
     delete_fleet_role_volunteer,
-    assign_fleet_role_volunteer_system,
     type FleetRoleVolunteer,
 } from '@helpers/api.minmatar.org/fleets'
 
@@ -61,7 +59,7 @@ if (Astro.request.method === 'POST') {
         const create_fleet_role_volunteer_error = error.message
         
         alert = {
-            title: subtype ? (t(`${subtype}_links` as any) ?? subtype) : (t(role as any) ?? role),
+            title: subtype ? (t(t_key('', subtype, '_links')) ?? subtype) : (t(dynamic_key(role)) ?? role),
             content: create_fleet_role_volunteer_error as string,
         }
     }
@@ -81,30 +79,8 @@ if (Astro.request.method === 'DELETE') {
         const delete_fleet_role_volunteer_error = error.message
 
         alert = {
-            title: subtype ? (t(`${subtype}_links` as any) ?? subtype) : (t(role as any) ?? role),
+            title: subtype ? (t(t_key('', subtype, '_links')) ?? subtype) : (t(dynamic_key(role)) ?? role),
             content: delete_fleet_role_volunteer_error as string,
-        }
-    }
-}
-
-if (Astro.request.method === 'PATCH') {
-    const volunteer_id = parseInt(Astro.url.searchParams.get('volunteer_id') ?? '')
-    const clear_system = Astro.url.searchParams.get('clear_system') === 'true'
-    const solar_system_id = parseInt(Astro.url.searchParams.get('solar_system_id') ?? '')
-    const solar_system_name = Astro.url.searchParams.get('solar_system_name') ?? ''
-
-    try {
-        if (isNaN(volunteer_id))
-            throw new Error(t('invalid_remove_id'))
-
-        await assign_fleet_role_volunteer_system(auth_token as string, fleet_id, volunteer_id, clear_system ?
-            { solar_system_id: null, solar_system_name: null } :
-            { solar_system_id: isNaN(solar_system_id) ? null : solar_system_id, solar_system_name: solar_system_name }
-        )
-    } catch (error) {
-        alert = {
-            title: t('assign_cyno_system'),
-            content: error.message as string,
         }
     }
 }
@@ -164,7 +140,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
     :
     <FleetRoleItem
         id={id}
-        title={subtype ? (t(`${subtype}_links` as any) ?? subtype) : (t(`${role}_label` as any) ?? role)}
+        title={subtype ? (t(t_key('', subtype, '_links')) ?? subtype) : (t(t_key('', role, '_label')) ?? role)}
         fleet_id={fleet_id}
         role={role as FleetRoles}
         subtype={subtype ? subtype as FleetRolesSubtypes : undefined}

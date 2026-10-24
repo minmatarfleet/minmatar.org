@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import statistics
 from collections import defaultdict
 from datetime import timedelta
@@ -22,6 +23,8 @@ from industry.helpers.type_breakdown import (
 )
 from industry.models import IndustryOrder
 
+logger = logging.getLogger(__name__)
+
 
 def demand_quantities_from_recent_orders(
     *, lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS
@@ -29,6 +32,7 @@ def demand_quantities_from_recent_orders(
     """type_id → aggregated 90d import-leaf quantity from industry orders."""
     since = timezone.now() - timedelta(days=lookback_days)
     totals: dict[int, int] = defaultdict(int)
+    failed_type_ids: set[int] = set()
     orders = IndustryOrder.objects.filter(
         created_at__gte=since
     ).prefetch_related("items__eve_type")
@@ -38,7 +42,17 @@ def demand_quantities_from_recent_orders(
                 leaves = resolve_type_to_demand_import_leaves(
                     item.eve_type, item.quantity
                 )
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
+                # Skip the item, but say so: a skipped item lowers demand.
+                if item.eve_type_id not in failed_type_ids:
+                    logger.warning(
+                        "Buyback demand: could not resolve import leaves "
+                        "for type %s (order %s)",
+                        item.eve_type_id,
+                        order.pk,
+                        exc_info=True,
+                    )
+                failed_type_ids.add(item.eve_type_id)
                 continue
             for type_id, qty in leaves.items():
                 totals[int(type_id)] += int(qty)
@@ -59,7 +73,12 @@ def demand_quantity_for_accepted_item(
 
     try:
         materials = ore_materials_per_portion(type_name)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Buyback demand: no ore materials for %s; demand counted as 0",
+            type_name,
+            exc_info=True,
+        )
         return 0
     if not materials:
         return 0
@@ -101,6 +120,7 @@ def refresh_accepted_item_metrics(
     lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS,
     stockpile_quantities: dict[int, int] | None = None,
     seed: bool = True,
+    fetch_stockpile: bool = True,
 ) -> dict[str, int]:
     """Seed allowlist (optional), then write demand + stockpile onto accepted items."""
     seed_result = {"created": 0, "updated": 0, "seeded": 0}
@@ -110,11 +130,10 @@ def refresh_accepted_item_metrics(
     leaf_quantities = demand_quantities_from_recent_orders(
         lookback_days=lookback_days
     )
-    hangar_qty = (
-        stockpile_quantities
-        if stockpile_quantities is not None
-        else fetch_stockpile_quantities()
-    )
+    # fetch_stockpile=False: the caller already tried and the read failed.
+    hangar_qty = stockpile_quantities
+    if hangar_qty is None and fetch_stockpile:
+        hangar_qty = fetch_stockpile_quantities()
 
     active_items = list(
         BuybackAcceptedItem.objects.filter(active=True).select_related(
@@ -145,16 +164,17 @@ def refresh_accepted_item_metrics(
         item.demand_status = status_by_pk.get(
             item.pk, BuybackAcceptedItem.DemandStatus.SURPLUS
         )
-        item.stockpile_quantity = int(hangar_qty.get(item.eve_type_id, 0))
+        update_fields = [
+            "demand_quantity",
+            "demand_status",
+            "metrics_updated_at",
+        ]
+        # Unreadable assets keep the last known stockpile instead of zero.
+        if hangar_qty is not None:
+            item.stockpile_quantity = int(hangar_qty.get(item.eve_type_id, 0))
+            update_fields.append("stockpile_quantity")
         item.metrics_updated_at = now
-        item.save(
-            update_fields=[
-                "demand_quantity",
-                "demand_status",
-                "stockpile_quantity",
-                "metrics_updated_at",
-            ]
-        )
+        item.save(update_fields=update_fields)
         updated += 1
 
     return {

@@ -1,0 +1,231 @@
+---
+import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
+import { eve_day_short } from '@helpers/date'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+
+/**
+ * The fleet at a glance: when (EVE and local), the countdown or how long it
+ * ran, staging, doctrine or campaign, and the FC with the fleet-type flag.
+ * As the page header (`masthead`) it keeps only who and when; staging,
+ * doctrine and campaign live in the Overview tab.
+ */
+interface Props {
+    fleet:                  FleetUI;
+    history?:               boolean;
+    corporation_id?:        number;
+    corporation_name?:      string;
+    fleet_count?:           number;
+    members_count?:         number;
+    masthead?:              boolean;
+}
+
+const {
+    fleet,
+    history = false,
+    corporation_id = 0,
+    corporation_name = '',
+    fleet_count,
+    members_count,
+    masthead = false,
+} = Astro.props
+
+const live = !history && Boolean(fleet.tracking?.start_time) && !fleet.tracking?.end_time
+const cancelled = fleet.status === 'cancelled'
+const counted_from = live && fleet.tracking?.start_time ? fleet.tracking.start_time : fleet.start_time
+const [ system, station ] = fleet.location?.split(' - ') ?? []
+
+const day = eve_day_short(lang, fleet.start_time, { weekday: true })
+
+const length_minutes = fleet.tracking?.start_time && fleet.tracking?.end_time ?
+    Math.round((new Date(fleet.tracking.end_time).getTime() - new Date(fleet.tracking.start_time).getTime()) / 60000) :
+    null
+const length_text = length_minutes === null ? '—' :
+    `${Math.floor(length_minutes / 60)}h ${(length_minutes % 60).toString().padStart(2, '0')}m`
+
+import FleetPortrait from '@components/blocks/FleetPortrait.astro'
+import Countdown from '@components/blocks/Countdown.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import CorporationBadge from '@components/blocks/CorporationBadge.astro'
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import Tag from '@components/blocks/Tag.astro'
+import FleetIcon from '@components/icons/FleetIcon.astro'
+---
+
+<dl class="[ fleet-facts ]">
+    <div>
+        <dt>{history ? t('fleets.facts.day_eve').replace('{day}', day) : t('fleets.facts.form_up')}</dt>
+        <dd>
+            <b>{eve_clock(fleet.start_time)}</b>
+            <small>{!history && <>{day} · </>}<LocalTime eve_time={fleet.start_time} format="time" show_label={true} /></small>
+        </dd>
+    </div>
+
+    <div>
+        <dt>{history ? t('fleets.history.column_length') : live ? t('fleets.spotlight.running_for') : t('fleets.facts.starts_in')}</dt>
+        <dd>
+            {history ?
+                <b>{length_text}</b> :
+                cancelled ?
+                    <b style="color: var(--fleet-red)">{t('cancelled')}</b> :
+                    <Countdown date={counted_from} id={fleet.id} tag='countdown-facts' />
+            }
+            {history && members_count !== undefined &&
+                <small>{t('fleets.facts.pilots').replace('{count}', members_count.toString())}</small>
+            }
+            {live && fleet.tracking?.start_time &&
+                <small>{t('fleets.spotlight.started_at').replace('{time}', eve_clock(fleet.tracking.start_time))}</small>
+            }
+        </dd>
+    </div>
+
+    {!masthead &&
+    <div>
+        <dt>{t('staging')}</dt>
+        <dd>
+            <b>{system}</b>
+            {station && <small>{station}</small>}
+        </dd>
+    </div>
+    }
+
+    {!masthead && (fleet.doctrine || fleet.campaign_slug) &&
+        <div>
+            <dt>{fleet.doctrine ? t('doctrine') : t('campaign')}</dt>
+            <dd>
+                {fleet.doctrine &&
+                    <StylessButton href={translatePath(doctrine_path(fleet.doctrine.id, fleet.doctrine.name))}>
+                        <ItemBadge
+                            type_id={fleet.doctrine.primary_fittings[0]?.ship_id}
+                            item_name={fleet.doctrine.name}
+                            size={32}
+                        />
+                    </StylessButton>
+                }
+                {fleet.campaign_slug &&
+                    <StylessButton href={translatePath(`/campaigns/${fleet.campaign_slug}/`)}>
+                        <Tag color='militia-purple' text={fleet.campaign_name ?? fleet.campaign_slug} />
+                    </StylessButton>
+                }
+            </dd>
+        </div>
+    }
+
+    <div class="[ fleet-facts__fc ]">
+        <dt>{t('fleet_commander')}</dt>
+        <dd>
+            <FleetPortrait
+                character_id={fleet.fleet_commander_id}
+                character_name={fleet.fleet_commander_name}
+                type={fleet.type}
+                size={64}
+            />
+            <span class="[ fleet-facts__fc-text ]">
+                <b>{fleet.fleet_commander_name}</b>
+                <span class="[ fleet-facts__fc-meta ]">
+                    {corporation_id > 0 &&
+                        <CorporationBadge
+                            corporation={{ id: corporation_id, name: corporation_name, size: 'xs' }}
+                            show_modal={true}
+                        />
+                    }
+                    {Boolean(fleet_count) &&
+                        <span
+                            class="[ fleet-facts__count ]"
+                            data-tippy-content={t('fleet_commander_fleets')}
+                        >
+                            <FleetIcon size={16} />
+                            {fleet_count}
+                        </span>
+                    }
+                </span>
+            </span>
+        </dd>
+    </div>
+</dl>
+
+<style lang="scss">
+    .fleet-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1px;
+        margin: 0;
+        background-color: var(--border-color);
+        border: 1px solid var(--border-color);
+
+        > div {
+            flex: 1 1 11rem;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-s) var(--space-m);
+            background-color: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            opacity: 0.8;
+        }
+
+        dd {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            margin: 0;
+
+            b {
+                font-family: var(--heading-font);
+                font-size: var(--step-2);
+                line-height: 1.1;
+                color: var(--highlight);
+            }
+        }
+
+        :global(.countdown) {
+            font-size: var(--step-1);
+            letter-spacing: 2px;
+            text-indent: 0;
+        }
+    }
+
+    .fleet-facts > .fleet-facts__fc {
+        flex: 2 1 18rem;
+    }
+
+    .fleet-facts .fleet-facts__fc dd {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-s);
+
+        b {
+            font-family: var(--default-font);
+            font-size: var(--step-0);
+            font-weight: 700;
+        }
+    }
+
+    .fleet-facts__fc-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .fleet-facts__fc-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .fleet-facts__count {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--highlight);
+    }
+</style>

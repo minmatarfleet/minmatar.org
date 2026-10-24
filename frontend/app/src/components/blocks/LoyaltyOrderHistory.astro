@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-import type { LoyaltyCurrency, LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import { number_thousand_separator } from '@helpers/numbers'
 import { query_string } from '@helpers/string'
 import {
@@ -13,19 +13,18 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import LoyaltyOrderCard from '@components/blocks/LoyaltyOrderCard.astro'
 import LoyaltyOrderList from '@components/blocks/LoyaltyOrderList.astro'
 import Select from '@components/blocks/Select.astro'
-import Button from '@components/blocks/Button.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 
 const { t, lang, translatePath } = i18n(Astro.url)
 
 interface Props {
     /** Current page of history rows, already sorted by the API. */
     orders: LoyaltyMarketOrder[]
-    currencies: LoyaltyCurrency[]
     total: number
     filters: LoyaltyHistoryFilters
 }
 
-const { orders, currencies, total, filters } = Astro.props
+const { orders, total, filters } = Astro.props
 
 const SECTION_ID = 'loyalty-order-history'
 const TARGET = `#${SECTION_ID}`
@@ -49,7 +48,6 @@ const page_status = t('industry.loyalty.history.page_status')
     .replace('{to}', number_thousand_separator(range_to))
     .replace('{total}', number_thousand_separator(total))
 
-const sorted_currencies = [...currencies].sort((a, b) => a.name.localeCompare(b.name))
 const status_options: { value: LoyaltyHistoryFilters['status'], label: string }[] = [
     { value: 'completed', label: t('industry.loyalty.history.filter.status_completed') },
     { value: 'cancelled', label: t('industry.loyalty.history.filter.status_cancelled') },
@@ -68,29 +66,6 @@ const rows = orders
         >
             <h2>{t('industry.loyalty.history.title')}</h2>
             <FlexInline class="[ loyalty-history__filters ]" gap="var(--space-2xs)">
-                    <Select
-                        name="loyalty_point_id"
-                        size="sm"
-                        width="16rem"
-                        aria-label={t('industry.loyalty.history.filter.currency')}
-                        hx-get={PARTIAL}
-                        hx-target={TARGET}
-                        hx-swap="outerHTML"
-                        hx-trigger="change"
-                        hx-include={FILTER_INPUTS}
-                    >
-                        <option value="" selected={filters.loyalty_point_id == null}>
-                            {t('industry.loyalty.history.filter.currency_all')}
-                        </option>
-                        {sorted_currencies.map((currency) => (
-                            <option
-                                value={currency.id}
-                                selected={filters.loyalty_point_id === currency.id}
-                            >
-                                {currency.name}
-                            </option>
-                        ))}
-                    </Select>
                     <Select
                         name="status"
                         size="sm"
@@ -125,35 +100,14 @@ const rows = orders
         )}
 
         {(total > page_size || filters.page > 1) && (
-            <FlexInline
-                justification="space-between"
-                class="[ loyalty-history__pager w-full ]"
-                gap="var(--space-s)"
+            <HtmxPager
+                page={page}
+                total_pages={total_pages}
+                url_for={(to) => partial_url({ page: to })}
+                target={TARGET}
             >
-                <small class="[ loyalty-history__page-status ]">{page_status}</small>
-                <FlexInline gap="var(--space-3xs)">
-                    <Button
-                        size="sm"
-                        color="transparent"
-                        disabled={page <= 1}
-                        hx-get={partial_url({ page: page - 1 })}
-                        hx-target={TARGET}
-                        hx-swap="outerHTML"
-                    >
-                        {t('industry.loyalty.history.prev')}
-                    </Button>
-                    <Button
-                        size="sm"
-                        color="transparent"
-                        disabled={page >= total_pages}
-                        hx-get={partial_url({ page: page + 1 })}
-                        hx-target={TARGET}
-                        hx-swap="outerHTML"
-                    >
-                        {t('industry.loyalty.history.next')}
-                    </Button>
-                </FlexInline>
-            </FlexInline>
+                <small slot="status" class="[ loyalty-history__page-status ]">{page_status}</small>
+            </HtmxPager>
         )}
     </Flexblock>
 </section>
@@ -175,10 +129,6 @@ const rows = orders
     }
 
     .loyalty-history__filters {
-        align-items: center;
-    }
-
-    .loyalty-history__pager {
         align-items: center;
     }
 

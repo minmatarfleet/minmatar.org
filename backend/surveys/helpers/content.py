@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from fleets.helpers.visibility import alliance_fleets_q
 from fleets.models import EveFleet
 from learning.models import Learning
 
@@ -66,7 +67,9 @@ def content_bracket_context(bracket: str) -> dict:
             window = timezone.now() - timedelta(days=90)
             qs = (
                 EveFleet.objects.filter(
-                    type=fleet_type, start_time__gte=window
+                    alliance_fleets_q(),
+                    type=fleet_type,
+                    start_time__gte=window,
                 )
                 .select_related(
                     "created_by__eveplayer__primary_character",

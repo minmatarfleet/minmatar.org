@@ -2,20 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath, lang } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : null
-const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user)
-    return Astro.redirect(
-        `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`,
-    )
+    return login_redirect(Astro)
 
 import type {
     AllianceHealthAttention,

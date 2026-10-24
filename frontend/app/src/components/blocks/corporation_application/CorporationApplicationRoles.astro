@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -47,7 +47,7 @@ const fieldName = (key: string) =>
                 x-model="roles"
                 x-on:change="updateApplicationStatus()"
             >
-                <Markdown markdown={t(`l3arn_application_role_${role}` as any)} inline={true} inline_element='span' />
+                <Markdown markdown={t(t_key('l3arn_application_role_', role))} inline={true} inline_element='span' />
             </RadioCheckInput>
         ))}
     </Flexblock>

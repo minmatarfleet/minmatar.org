@@ -1,0 +1,66 @@
+/* Campaigns window. One fixed column grid per system so the bars line up and compare at a glance;
+   colour only on the 24h move, always next to an arrow so it never relies on red vs green. */
+.campaign-group { margin-top: 12px; }
+.campaign-group:first-child { margin-top: 0; }
+.campaign-heading { display: flex; justify-content: space-between; gap: 8px; padding: 2px 8px; background: var(--eve-group); color: var(--eve-text); font-size: 12px; }
+
+.system {
+    display: grid; grid-template-columns: 16px 124px minmax(0, 1fr) 64px; column-gap: 10px; align-items: center;
+    height: 40px; padding: 0 8px; border-bottom: 1px solid var(--eve-line); cursor: default;
+}
+.system:hover { background: var(--eve-hover); }
+.system:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
+.system__holder { width: 16px; height: 16px; object-fit: contain; }
+.system__names { display: flex; flex-direction: column; min-width: 0; }
+.system__name, .system__objective { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.system__name { color: var(--eve-text-strong); }
+.system__objective { color: var(--eve-text-dim); font-size: 12px; }
+
+.meter { position: relative; height: 4px; background: rgba(255, 255, 255, 0.08); }
+.meter__fill, .meter__delta { position: absolute; top: 0; bottom: 0; }
+.meter__fill { left: 0; background: #a8a8a8; }
+.meter__delta--up { background: var(--eve-live); }
+.meter__delta--down { background: rgba(224, 54, 42, 0.35); }
+
+.change { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--eve-text-dim); }
+.change svg { width: 8px; height: 8px; fill: currentColor; stroke: currentColor; stroke-width: 0; }
+.change--steady svg { fill: none; stroke-width: 2; }
+.change__period { margin-left: -2px; font-size: 10px; color: var(--eve-text-dim); }
+.change--up { color: var(--eve-live); }
+.change--down { color: var(--eve-danger); }
+
+.pilots { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 0 0; }
+.pilot { display: block; width: 32px; height: 32px; padding: 0; border: 0; background: rgba(255, 255, 255, 0.04); outline: 1px solid rgba(255, 255, 255, 0.1); cursor: default; }
+.pilot img { display: block; width: 32px; height: 32px; }
+.pilot:hover { outline-color: rgba(255, 255, 255, 0.6); }
+.pilot:focus-visible { outline: 1px solid var(--eve-gold); }
+.pilots__more, .pilots__label { display: none; }
+.pilots-empty { margin: 0; padding: 10px 8px 0; color: var(--eve-text); }
+
+/* Photon tooltip: flat panel, thin border, no shadow. Positioned by campaigns.js. */
+.pilot-tip {
+    position: fixed; z-index: 2; display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;
+    white-space: nowrap; font-size: 12px; pointer-events: none;
+    background: rgba(18, 18, 18, 0.97); border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.pilot-tip[hidden] { display: none; }
+.pilot-tip__name { color: var(--eve-text-strong); font-size: 13px; }
+
+.system--skeleton:hover { background: none; }
+.system--skeleton .skeleton { width: 80%; }
+
+/* Narrow window: one line per system and a stack of faces. */
+@media (max-width: 359px) {
+    .system { grid-template-columns: 14px 76px minmax(0, 1fr) 52px; column-gap: 8px; height: 28px; padding: 0 6px; }
+    .system__holder { width: 14px; height: 14px; }
+    .system__objective { display: none; }
+    .change__period { display: none; }
+    .pilots { flex-wrap: nowrap; gap: 0; padding: 8px 6px 0; }
+    .pilot, .pilot img, .pilots__more { width: 26px; height: 26px; }
+    .pilot { border: 1px solid #0a0a0a; }
+    .pilot + .pilot, .pilots__more { margin-left: -6px; }
+    .pilot:nth-child(n+6) { display: none; }
+    .pilots__more { display: grid; place-items: center; background: #262626; border: 1px solid #0a0a0a; color: var(--eve-text); font-size: 11px; }
+    .pilots__more[hidden] { display: none; }
+    .pilots__label { display: inline; margin-left: 10px; color: var(--eve-text-dim); font-size: 12px; white-space: nowrap; }
+}

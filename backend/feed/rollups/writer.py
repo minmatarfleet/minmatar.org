@@ -27,6 +27,7 @@ def write_rollup_results(results: list[RollupResult]) -> int:
     for result in results:
         event = _upsert_event(result)
         _sync_killmail_links(event, result.killmail_ids)
+        _sync_fleet_links(event, result.fleet_instance_ids)
         _maybe_notify_amarr_fleet(event)
         written += 1
     return written
@@ -249,3 +250,15 @@ def _sync_killmail_links(event: FeedEvent, killmail_ids: list[int]) -> None:
         FeedEventKillmailLink.objects.bulk_create(
             to_create, ignore_conflicts=True
         )
+
+
+def _sync_fleet_links(event: FeedEvent, fleet_instance_ids: list[int]) -> None:
+    if not fleet_instance_ids:
+        return
+    FeedEventFleetLink.objects.bulk_create(
+        [
+            FeedEventFleetLink(feed_event=event, fleet_instance_id=instance_id)
+            for instance_id in fleet_instance_ids
+        ],
+        ignore_conflicts=True,
+    )

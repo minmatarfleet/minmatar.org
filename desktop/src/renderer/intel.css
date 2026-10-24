@@ -1,0 +1,140 @@
+/* Intel window. Type scale: 11 meta / 12 secondary / 13 body / 15 titles / 22 stats.
+   Fleet red = primary action and threats, gold = selection and your system, green = live. */
+.intel { display: flex; flex-direction: column; gap: 14px; padding-top: 2px; }
+.intel-title { display: flex; align-items: center; gap: 8px; color: var(--eve-text-strong); font-size: 15px; }
+.intel-range { -webkit-app-region: no-drag; height: 20px; padding: 0 7px; border: 1px solid rgba(255, 255, 255, 0.14); background: none; color: var(--eve-text-dim); font-size: 11px; }
+.intel-range:hover { color: var(--eve-text-strong); }
+.intel-range:focus-visible, .intel-button:focus-visible, .intel-row__open:focus-visible, .intel-more:focus-visible, .intel-chip:focus-visible, .intel-tab:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 1px; }
+.intel-live::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--eve-live); vertical-align: 1px; }
+.intel-live.is-error::before { background: var(--eve-danger); }
+
+/* paste bar */
+.intel-paste { height: 44px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px dashed rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.03); color: var(--eve-text-strong); text-align: left; }
+.intel-paste svg { width: 16px; height: 16px; flex: none; stroke: var(--eve-text-dim); stroke-width: 1.2; fill: none; }
+.intel-paste kbd { white-space: nowrap; padding: 1px 5px; font: inherit; font-size: 11px; color: var(--eve-text-dim); border: 1px solid rgba(255, 255, 255, 0.16); }
+.intel-paste__where { margin-left: auto; white-space: nowrap; font-size: 12px; color: var(--eve-text-dim); }
+.intel-paste__where b, .intel-gold { font-weight: 400; color: var(--eve-gold); }
+
+/* section headings */
+.intel-heading { height: 20px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--eve-text-dim); }
+.intel-heading .eve-link { letter-spacing: 0; text-transform: none; font-size: 12px; text-decoration: none; }
+.intel-list { display: flex; flex-direction: column; }
+
+/* rows */
+.intel-row { position: relative; display: flex; gap: 12px; align-items: center; margin: 0 -8px; padding: 8px; border-top: 1px solid var(--eve-line); }
+.intel-row:hover { background: var(--eve-hover); }
+.intel-row__open { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; background: none; }
+/* Clicks on the picture and text fall through to the row's open button; only "+N" takes its own. */
+.intel-row .intel-thumb, .intel-row .intel-row__text { pointer-events: none; }
+.intel-row .intel-more-wrap { pointer-events: auto; }
+.intel-row--compact { gap: 10px; padding: 6px 8px; }
+.intel-thumb { position: relative; width: 40px; height: 40px; flex: none; }
+.intel-row--compact .intel-thumb { width: 32px; height: 32px; }
+.intel-thumb img, .intel-thumb__blank { width: 100%; height: 100%; display: block; background: #141414; outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; }
+.intel-thumb--ping img, .intel-thumb--ping .intel-thumb__blank { outline-color: rgba(224, 54, 42, 0.75); }
+.intel-thumb__count { position: absolute; right: -3px; bottom: -3px; min-width: 16px; padding: 0 3px; font-size: 10px; font-weight: 600; line-height: 14px; text-align: center; color: var(--eve-text-strong); background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.2); }
+.intel-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.intel-row__top { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.intel-row__system { color: var(--eve-text-strong); font-weight: 500; }
+.intel-meta { font-size: 11px; color: var(--eve-text-dim); white-space: nowrap; }
+.intel-row__ago { margin-left: auto; font-variant-numeric: tabular-nums; }
+.intel-new { width: 6px; height: 6px; align-self: center; flex: none; background: var(--eve-gold); }
+.intel-row__summary { min-height: 20px; display: flex; align-items: center; color: #cfcfcf; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intel-row__source { font-size: 11px; color: var(--eve-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intel-kind { color: #a3a3a3; }
+.intel-kind--ping { color: var(--eve-danger); font-weight: 500; }
+
+/* hull strip + "+N" */
+.intel-strip { height: 20px; display: flex; align-items: center; gap: 10px; }
+.intel-hull { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #cfcfcf; font-variant-numeric: tabular-nums; }
+.intel-hull img { width: 20px; height: 20px; display: block; outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; }
+.intel-row--compact .intel-strip { height: 18px; }
+.intel-row--compact .intel-hull img { width: 18px; height: 18px; }
+.intel-more-wrap { position: relative; z-index: 1; display: flex; }
+.intel-more { height: 20px; padding: 0 6px; font-size: 11px; font-weight: 500; color: #cfcfcf; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.18); }
+.intel-more-wrap:hover .intel-more, .intel-more-wrap:focus-within .intel-more, .intel-more-wrap.is-open .intel-more { color: var(--eve-gold); border-color: var(--eve-gold); background: rgba(241, 217, 160, 0.14); }
+.intel-pop { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 3; width: 176px; padding: 8px 10px; flex-direction: column; gap: 6px; background: #161616; border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); }
+.intel-pop--up { top: auto; bottom: calc(100% + 6px); }
+.intel-more-wrap:hover .intel-pop, .intel-more-wrap:focus-within .intel-pop, .intel-more-wrap.is-open .intel-pop { display: flex; }
+.intel-pop__title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--eve-text-dim); }
+.intel-pop__row { display: flex; align-items: center; gap: 8px; }
+.intel-pop__row img { width: 24px; height: 24px; outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; }
+.intel-pop__row span:first-of-type { flex: 1; }
+.intel-num { color: var(--eve-text-strong); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* toolbars, buttons */
+.intel-toolbar { display: flex; align-items: center; gap: 8px; }
+.intel-chips { display: flex; border: 1px solid rgba(255, 255, 255, 0.14); }
+.intel-chip { height: 26px; padding: 0 10px; border: 0; background: transparent; color: #a3a3a3; font-size: 12px; }
+.intel-chip[aria-pressed="true"] { background: rgba(241, 217, 160, 0.14); color: var(--eve-gold); }
+.intel-chip span { margin-left: 2px; color: #737373; }
+.intel-chip[aria-pressed="true"] span { color: var(--eve-gold); }
+.intel-back { display: flex; align-items: center; gap: 6px; }
+.intel-back h2 { margin: 0; font-size: 15px; font-weight: 500; color: var(--eve-text-strong); }
+.intel-actions { margin-top: auto; display: flex; gap: 8px; }
+.intel-button { flex: 1; height: 36px; border: 1px solid rgba(255, 255, 255, 0.16); background: none; color: var(--eve-text); }
+.intel-button:hover { background: var(--eve-hover); }
+.intel-button--primary { flex: 2; border: 0; background: var(--eve-accent); color: var(--eve-text-strong); font-weight: 500; }
+.intel-button--primary:hover { background: #c94428; }
+.intel-button:disabled { opacity: 0.5; }
+.intel-hint { font-size: 11px; color: var(--eve-text-dim); text-align: center; }
+.intel-status { display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 10px; font-size: 12px; background: rgba(79, 191, 74, 0.1); border: 1px solid rgba(79, 191, 74, 0.35); }
+.intel-status .eve-link { margin-left: auto; }
+
+/* draft form */
+.intel-form { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px 12px; align-items: center; }
+.intel-form label, .intel-form > span { font-size: 12px; color: var(--eve-text-dim); }
+.intel-form input { height: 30px; padding: 0 10px; font: inherit; color: var(--eve-text-strong); background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.14); outline-color: var(--eve-gold); }
+.intel-form input::placeholder { color: #737373; }
+.intel-preview-counts { display: flex; gap: 20px; font-size: 12px; color: #a3a3a3; }
+.intel-preview-counts b { font-size: 15px; font-weight: 500; color: var(--eve-text-strong); }
+.intel-preview-hulls { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.intel-preview-hulls figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: #a3a3a3; }
+.intel-preview-hulls img { width: 48px; height: 48px; outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; }
+.intel-note { padding: 10px 12px; font-size: 12px; color: #a3a3a3; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--eve-line); }
+
+/* report detail */
+.intel-byline { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--eve-text-dim); }
+.intel-byline b { font-weight: 400; color: var(--eve-text); }
+.intel-byline q { font-size: 13px; color: #cfcfcf; }
+.intel-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--eve-line); border-bottom: 1px solid var(--eve-line); }
+.intel-stats > div { padding: 8px 12px; display: flex; flex-direction: column; border-left: 1px solid var(--eve-line); }
+.intel-stats > div:first-child { padding-left: 0; border-left: 0; }
+.intel-stats b { font-size: 22px; font-weight: 500; line-height: 1.1; color: var(--eve-text-strong); }
+.intel-stats span, .intel-stats small { font-size: 11px; color: var(--eve-text-dim); }
+.intel-stats img { width: 36px; height: 36px; }
+.intel-stats--logos > div { flex-direction: row; align-items: center; gap: 10px; }
+.intel-stats--logos b { font-size: 17px; }
+.intel-tabs { display: flex; gap: 16px; border-bottom: 1px solid var(--eve-line); }
+.intel-tab { height: 30px; margin-bottom: -1px; padding: 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--eve-text-dim); font-size: 12px; }
+.intel-tab[aria-selected="true"] { color: var(--eve-text-strong); border-bottom-color: var(--eve-gold); }
+.intel-class { display: flex; flex-direction: column; gap: 6px; }
+.intel-hull-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
+.intel-hull-cell { display: flex; align-items: center; gap: 10px; }
+.intel-hull-cell img, .intel-logo { width: 32px; height: 32px; flex: none; outline: 1px solid rgba(255, 255, 255, 0.1); outline-offset: -1px; }
+.intel-hull-cell span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intel-logo--blank { display: grid; place-items: center; font-size: 9px; font-weight: 600; color: var(--eve-text-dim); background: #161616; }
+.intel-raw { margin: 0; padding: 8px 10px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 11px; line-height: 1.6; color: #a3a3a3; background: rgba(255, 255, 255, 0.03); white-space: pre; overflow: hidden; }
+.intel-bar { display: flex; height: 6px; gap: 2px; }
+.intel-bar__hostile { background: var(--eve-danger); }
+.intel-bar__neutral { background: #5c5c5c; }
+.intel-bar__friendly { background: #5aa9e6; }
+.intel-standing { width: 14px; height: 14px; flex: none; display: grid; place-items: center; }
+.intel-standing svg { width: 8px; height: 8px; stroke-width: 2; fill: none; }
+.intel-standing--hostile { background: var(--eve-danger); }
+.intel-standing--hostile svg { stroke: #fff; }
+.intel-standing--neutral { background: #3a3a3a; }
+.intel-standing--friendly { background: #5aa9e6; }
+.intel-standing--friendly svg { stroke: #0a0a0a; }
+.intel-alliance { display: flex; align-items: center; gap: 10px; height: 34px; }
+.intel-alliance > span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.intel-bloc__groups { display: flex; flex-wrap: wrap; gap: 2px 10px; padding-left: 42px; font-size: 11px; color: var(--eve-text-dim); }
+.intel-bloc__groups small, .intel-likely { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--eve-text-dim); }
+.intel-up { color: var(--eve-danger); font-weight: 500; }
+
+.intel-section { display: flex; flex-direction: column; gap: 12px; }
+.intel-footer-actions { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.intel-hint--left { text-align: left; }
+.intel-big { font-size: 22px; font-weight: 500; color: var(--eve-text-strong); }
+.intel-spacer { margin-left: auto; }
+.intel-logo--lg { width: 36px; height: 36px; }

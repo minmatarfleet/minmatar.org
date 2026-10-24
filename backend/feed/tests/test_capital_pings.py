@@ -27,7 +27,6 @@ from feed.helpers.capital_pings import (
     build_capital_alert_payload,
     build_capital_ping_payload,
     maybe_notify_capital_kill,
-    send_capital_ping_discord,
 )
 from feed.helpers.capital_ships import (
     is_capital_ship_type,
@@ -287,6 +286,47 @@ class CapitalPingTestCase(TestCase):
         self.assertNotIn("(attacking)", embed["description"])
         self.assertNotIn("Kills:", embed["description"])
 
+    def test_build_capital_alert_payload_names_a_confirmed_bloc(self):
+        # pylint: disable=import-outside-toplevel
+        from intel.affiliations.resolve import invalidate
+        from intel.models import IntelAffiliation, IntelBloc, IntelEntity
+
+        main = IntelEntity.objects.create(kind="alliance", eve_id=99000000)
+        bloc = IntelBloc.objects.create(name="Snuffed Out", anchor=main)
+        for eve_id, status in (
+            (99000001, "confirmed"),
+            (99000002, "suggested"),
+        ):
+            IntelAffiliation.objects.create(
+                entity=IntelEntity.objects.create(
+                    kind="alliance", eve_id=eve_id
+                ),
+                bloc=bloc,
+                relation="pet",
+                status=status,
+            )
+        invalidate()
+        built = build_capital_alert_payload(
+            system_name="Amamake",
+            distance_ly=0.0,
+            capitals=[],
+            composition={
+                "attacker_count": 20,
+                "group_counts": {
+                    "alliance:99000000": 9,
+                    "alliance:99000001": 5,
+                    # Only suggested: a ping is never edited, so no guesses.
+                    "alliance:99000002": 4,
+                    "corporation:98000001": 2,
+                },
+            },
+            kills=[],
+        )
+        self.assertIn(
+            "**Bloc:** Snuffed Out · 14 of 20 attackers",
+            built["embeds"][0]["description"],
+        )
+
     def test_build_capital_alert_payload_includes_kills_when_multiple(self):
         built = build_capital_alert_payload(
             system_name="Amamake",
@@ -412,7 +452,7 @@ class CapitalPingTestCase(TestCase):
         self.assertNotIn("content", built)
 
     @patch("feed.helpers.capital_pings.DiscordClient")
-    def test_maybe_notify_creates_once_then_edits(self, mock_client_cls):
+    def test_maybe_notify_posts_once_and_never_edits(self, mock_client_cls):
         mock_client = MagicMock()
         create_response = MagicMock()
         create_response.json.return_value = {"id": "999888777"}
@@ -445,20 +485,16 @@ class CapitalPingTestCase(TestCase):
         self.assertEqual(FeedCapitalAlert.objects.count(), 1)
         self.assertEqual(FeedCapitalPing.objects.count(), 2)
         mock_client.create_message.assert_called_once()
-        mock_client.update_message.assert_called_once()
+        mock_client.update_message.assert_not_called()
 
+        # The row still collects every kill for the intel recent list.
         alert = FeedCapitalAlert.objects.get()
         self.assertEqual(len(alert.kills), 2)
         self.assertEqual(len(alert.systems), 1)
         self.assertEqual(alert.systems[0]["system_name"], "Amamake")
-        edit_payload = mock_client.update_message.call_args.kwargs["payload"]
-        self.assertIn(
-            "Kills: Exequror Navy Issue (17:00), Exequror Navy Issue (17:01)",
-            edit_payload["embeds"][0]["description"],
-        )
 
     @patch("feed.helpers.capital_pings.DiscordClient")
-    def test_same_capital_crossing_systems_edits_chain(self, mock_client_cls):
+    def test_same_capital_crossing_systems_chains_alert(self, mock_client_cls):
         mock_client = MagicMock()
         create_response = MagicMock()
         create_response.json.return_value = {"id": "999888780"}
@@ -500,18 +536,13 @@ class CapitalPingTestCase(TestCase):
         self.assertEqual(FeedCapitalAlert.objects.count(), 1)
         self.assertEqual(FeedCapitalPing.objects.count(), 2)
         mock_client.create_message.assert_called_once()
-        mock_client.update_message.assert_called_once()
+        mock_client.update_message.assert_not_called()
 
         alert = FeedCapitalAlert.objects.get()
         self.assertEqual(alert.solar_system_id, AMAMAKE_SOLAR_SYSTEM_ID)
         self.assertEqual(
             [entry["system_name"] for entry in alert.systems],
             ["Aset", "Amamake"],
-        )
-        edit_payload = mock_client.update_message.call_args.kwargs["payload"]
-        self.assertIn(
-            "**System:** Aset → Amamake",
-            edit_payload["embeds"][0]["description"],
         )
 
     @patch("feed.helpers.capital_pings.DiscordClient")
@@ -721,7 +752,7 @@ class CapitalPingTestCase(TestCase):
         self.assertEqual(FeedCapitalAlert.objects.count(), 1)
         self.assertEqual(FeedCapitalPing.objects.count(), 30)
         mock_client.create_message.assert_called_once()
-        self.assertEqual(mock_client.update_message.call_count, 29)
+        mock_client.update_message.assert_not_called()
         alert = FeedCapitalAlert.objects.get()
         self.assertEqual(len(alert.capitals[0]["characters"]), 30)
         self.assertEqual(alert.composition["attacker_count"], 1)
@@ -836,26 +867,3 @@ class CapitalPingTestCase(TestCase):
         self.assertEqual(FeedCapitalAlert.objects.count(), 2)
         self.assertEqual(mock_client.create_message.call_count, 2)
         mock_client.update_message.assert_not_called()
-
-    @patch("feed.helpers.capital_pings.DiscordClient")
-    def test_send_capital_ping_discord(self, mock_client_cls):
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"id": "1234567890"}
-        mock_client.create_message.return_value = mock_response
-        mock_client_cls.return_value = mock_client
-
-        payload = make_killmail_payload(
-            136500005,
-            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
-            ship_type_id=73790,
-        )
-
-        message_ids = send_capital_ping_discord(
-            payload["killmail"],
-            zkb=payload["zkb"],
-            distance_ly=0.0,
-            discord_client=mock_client,
-        )
-        self.assertEqual(message_ids, [1234567890])
-        mock_client.create_message.assert_called_once()

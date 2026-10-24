@@ -1,0 +1,72 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TribeAbout } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { fill_template } from '@helpers/tribe_activity'
+import { month_short, trim_leading_zeros } from '@helpers/tribe_about'
+
+interface Props {
+    about: Pick<TribeAbout, 'growth' | 'corporations'>
+    title?: string
+    caption?: string
+}
+
+const {
+    about,
+    title = t('tribes.about.growth.title'),
+    caption = t('tribes.about.growth.caption'),
+} = Astro.props
+
+const months = about.growth.months.map((month, index) => ({
+    month: month.month,
+    people: about.growth.counts[index] ?? 0,
+}))
+const bars = trim_leading_zeros(months, (row) => row.people).map((row) => ({
+    label: month_short(row.month, lang),
+    value: row.people,
+    title: fill_template(t('tribes.about.growth.month_people'), {
+        month: month_short(row.month, lang),
+        n: number_thousand_separator(row.people),
+    }),
+}))
+const first = bars[0]
+const last = bars[bars.length - 1]
+const growth_note = first && last && last.value > first.value
+    ? fill_template(t('tribes.about.growth.note'), {
+        from: number_thousand_separator(first.value),
+        to: number_thousand_separator(last.value),
+        month: first.label,
+    })
+    : undefined
+
+import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
+import TribeMonthBars from '@components/blocks/tribe_about/TribeMonthBars.astro'
+import TribeRankedBars from '@components/blocks/tribe_about/TribeRankedBars.astro'
+---
+
+{(bars.length > 1 || about.corporations.length > 0) &&
+    <TribeAboutSection title={title} caption={caption}>
+        <div class="[ tribe-about-row ]">
+            {bars.length > 1 &&
+                <article class="[ tribe-about-card ]">
+                    <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.growth.people_by_month')}</h3>
+                    <TribeMonthBars bars={bars} note={growth_note} />
+                </article>
+            }
+            {about.corporations.length > 0 &&
+                <article class="[ tribe-about-card ]">
+                    <TribeRankedBars
+                        title={t('tribes.about.growth.corporations')}
+                        rows={about.corporations.map((corp) => ({
+                            label: corp.ticker ? `[${corp.ticker}] ${corp.name}` : corp.name,
+                            value: corp.people,
+                            display: number_thousand_separator(corp.people),
+                        }))}
+                    />
+                </article>
+            }
+        </div>
+    </TribeAboutSection>
+}

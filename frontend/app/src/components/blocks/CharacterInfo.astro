@@ -2,11 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { user } = get_request_user(Astro)
 
 interface Props {
     character_id:   number;
@@ -30,8 +28,8 @@ let get_character_error: Error | false = false
 let race:CharacterRaces | null = null
 let cover:string | null = null
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 try {
     character = await get_character_by_id(character_id);
@@ -213,7 +211,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                         <CharacterLinks
                             character_id={character_id}
                             user={user}
-                            user_permissions={user_permissions}
+                            gates={gates}
                             is_alliance={is_alliance}
                         />
                     </FlexInline>

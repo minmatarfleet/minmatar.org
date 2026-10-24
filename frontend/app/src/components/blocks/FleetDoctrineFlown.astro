@@ -1,0 +1,237 @@
+---
+import { i18n } from '@helpers/i18n'
+import { doctrine_path } from '@helpers/ship_paths'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { DoctrineType } from '@dtypes/layout_components'
+import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fleet_fights'
+
+/**
+ * What a finished fleet actually flew over time: one segment per stretch of
+ * engagements, named after the doctrine whose hulls most pilots were in, on
+ * a band from the fleet's start to its end.
+ */
+interface Props {
+    segments:           FleetParticipants['doctrine_flown'];
+    /** Engagement numbers by rounds position, to name a segment's engagements. */
+    engagements:        FleetParticipants['engagements'];
+    /** The doctrine the FC set, if any. */
+    planned:            DoctrineType | null;
+    start:              string | Date | null;
+    end:                string | Date | null;
+    [propName: string]: any;
+}
+
+const {
+    segments: all_segments,
+    engagements,
+    planned,
+    start,
+    end,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+// A segment without both ends can't be placed on the band.
+const segments = all_segments.flatMap(segment => segment.start && segment.end ? [{ ...segment, start: segment.start, end: segment.end }] : [])
+
+const begin = new Date(start ?? segments[0]?.start ?? 0).getTime()
+const finish = new Date(end ?? segments[segments.length - 1]?.end ?? 0).getTime()
+const span = Math.max(1, finish - begin)
+const percent = (moment: string) => Math.min(100, Math.max(0, 100 * (new Date(moment).getTime() - begin) / span))
+
+const number_at = new Map(engagements.map(item => [item.position, item.number]))
+const positions_label = (positions: number[]) => {
+    const numbers = positions.flatMap(position => number_at.has(position) ? [number_at.get(position) as number] : [])
+    if (numbers.length === 0) return ''
+    const first = Math.min(...numbers)
+    const last = Math.max(...numbers)
+    return first === last ?
+        t('fleets.fights.round').replace('{number}', first.toString()) :
+        t('fleets.doctrine_flown.engagements').replace('{first}', first.toString()).replace('{last}', last.toString())
+}
+
+const rows = segments.map(segment => {
+    const left = percent(segment.start)
+    return {
+        ...segment,
+        left,
+        // A one-minute engagement still needs a visible sliver.
+        width: Math.max(1.5, percent(segment.end) - left),
+        name: segment.doctrine_name ?? t('fleets.doctrine_flown.mixed'),
+        when: positions_label(segment.positions),
+    }
+})
+const flown_ids = new Set(segments.map(segment => segment.doctrine_id).filter(Boolean))
+const switched = flown_ids.size > 1
+const off_plan = Boolean(planned && flown_ids.size > 0 && !flown_ids.has(planned.id))
+---
+
+<section class:list={['[ doctrine-flown ]', Astro.props.class]} aria-labelledby="doctrine-flown-title" {...attributes}>
+    <header>
+        <h2 id="doctrine-flown-title">{t('fleets.doctrine_flown.title')}</h2>
+        {planned && (switched || off_plan) &&
+            <small>{t('fleets.doctrine_flown.planned').replace('{name}', planned.name)}</small>
+        }
+    </header>
+
+    <div class="[ doctrine-flown__band ]" aria-hidden="true">
+        {rows.map(row =>
+            <span
+                class:list={['[ doctrine-flown__segment ]', { 'doctrine-flown__segment--mixed': !row.doctrine_id }]}
+                style={`left: ${row.left}%; width: ${row.width}%`}
+                data-tippy-content={`${row.name} · ${eve_clock(row.start)}–${eve_clock(row.end)}`}
+            ><span>{row.name}</span></span>
+        )}
+    </div>
+    <div class="[ doctrine-flown__axis ]" aria-hidden="true">
+        <small>{eve_clock(new Date(begin).toISOString())}</small>
+        <small>{eve_clock(new Date(finish).toISOString())}</small>
+    </div>
+
+    <ol class="[ doctrine-flown__list ]">
+        {rows.map(row =>
+            <li>
+                <span class="[ doctrine-flown__when ]">
+                    <b>{eve_clock(row.start)}–{eve_clock(row.end)}</b>
+                    {row.when && <small>{row.when}</small>}
+                </span>
+                <span class="[ doctrine-flown__name ]">
+                    {row.doctrine_id ?
+                        <a href={translatePath(doctrine_path(row.doctrine_id, row.name))}><b>{row.name}</b></a> :
+                        <b>{row.name}</b>
+                    }
+                    <small>
+                        {row.doctrine_id ?
+                            t('fleets.doctrine_flown.share').replace('{share}', row.share.toString()).replace('{pilots}', row.pilots.toString()) :
+                            t('fleets.doctrine_flown.pilots').replace('{pilots}', row.pilots.toString())
+                        }
+                    </small>
+                </span>
+                <span class="[ doctrine-flown__hulls ]">
+                    {row.hulls.map(hull =>
+                        <span data-tippy-content={hull.ship_name}>
+                            <img src={get_item_icon(hull.ship_type_id, 32)} alt={hull.ship_name} width="28" height="28" loading="lazy" />
+                            <b>×{hull.count}</b>
+                        </span>
+                    )}
+                </span>
+            </li>
+        )}
+    </ol>
+</section>
+
+<style lang="scss">
+    .doctrine-flown {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        > header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-2xs) var(--space-s);
+        }
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+
+    .doctrine-flown__band {
+        position: relative;
+        height: var(--space-l);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border-color);
+    }
+
+    .doctrine-flown__segment {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        padding-inline: var(--space-2xs);
+        background-color: var(--highlight);
+        border-right: 2px solid var(--background);
+        color: var(--background);
+        font-size: var(--step--1);
+        font-weight: 700;
+        white-space: nowrap;
+
+        > span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .doctrine-flown__axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: calc(-1 * var(--space-2xs));
+        font-variant-numeric: tabular-nums;
+    }
+
+    .doctrine-flown__segment--mixed {
+        background-color: var(--hairline-strong);
+        color: var(--foreground);
+    }
+
+    .doctrine-flown__list {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: minmax(8rem, auto) minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-s);
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+            border: 1px solid var(--border-color);
+
+            @media (max-width: 40rem) {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+    }
+
+    .doctrine-flown__when,
+    .doctrine-flown__name {
+        display: flex;
+        flex-direction: column;
+        font-variant-numeric: tabular-nums;
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .doctrine-flown__hulls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+        }
+
+        b {
+            font-size: var(--step--1);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+</style>

@@ -17,6 +17,7 @@ from fittings.helpers.change_request_display import (
 )
 
 from fittings.helpers.doctrine_changes import (
+    apply_doctrine_payload,
     approve_doctrine_change_request,
     cancel_doctrine_change_request,
     reject_doctrine_change_request,
@@ -33,7 +34,6 @@ from fittings.helpers.permissions import (
     can_approve_fitting_request,
     effective_protection_tier,
     protection_tier_for_doctrine,
-    users_who_can_approve_fitting_request,
 )
 from fittings.models import (
     ChangeRequestStatus,
@@ -46,6 +46,7 @@ from fittings.models import (
     EveFitting,
     EveFittingHistory,
     EveFittingRefit,
+    composition_snapshot_for_doctrine,
 )
 
 
@@ -412,6 +413,106 @@ class DoctrineChangeRequestTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         primary_ids = [f["id"] for f in response.json()["primary_fittings"]]
         self.assertEqual([live_fitting.pk], primary_ids)
+
+
+class DoctrineUtilityRoleTestCase(TestCase):
+    """Utility fits (cynos, boosters) are a fourth doctrine role."""
+
+    def setUp(self):
+        super().setUp()
+        self.doctrine = EveDoctrine.objects.create(
+            name="Utility Doc",
+            type=DOCTRINE_TYPE_EXPERIMENTAL,
+            description="",
+        )
+        self.primary = EveFitting.objects.create(
+            name="Hurricane Fleet",
+            eft_format="[Hurricane, Hurricane Fleet]",
+            ship_id=24702,
+            description="",
+        )
+        self.cyno = EveFitting.objects.create(
+            name="Atron Cyno",
+            eft_format="[Atron, Atron Cyno]",
+            ship_id=608,
+            description="",
+        )
+
+    def _payload(self, composition):
+        return {
+            "name": "Utility Doc",
+            "type": DOCTRINE_TYPE_EXPERIMENTAL,
+            "description": "",
+            "composition": composition,
+            "location_ids": [],
+        }
+
+    def test_apply_payload_links_utility_fits(self):
+        apply_doctrine_payload(
+            self.doctrine,
+            self._payload(
+                {"primary": [self.primary.pk], "utility": [self.cyno.pk]}
+            ),
+        )
+        self.assertEqual(
+            "utility",
+            EveDoctrineFitting.objects.get(
+                doctrine=self.doctrine, fitting=self.cyno
+            ).role,
+        )
+        self.assertEqual(
+            [self.cyno.pk],
+            composition_snapshot_for_doctrine(self.doctrine)["utility"],
+        )
+
+        # A later payload without utility drops the link.
+        apply_doctrine_payload(
+            self.doctrine, self._payload({"primary": [self.primary.pk]})
+        )
+        self.assertFalse(
+            EveDoctrineFitting.objects.filter(
+                doctrine=self.doctrine, role="utility"
+            ).exists()
+        )
+
+    def test_api_returns_utility_fittings(self):
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.primary, role="primary"
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.cyno, role="utility"
+        )
+        for url in (f"/api/doctrines/{self.doctrine.id}", "/api/doctrines/"):
+            body = self.client.get(url).json()
+            doctrine = body[0] if isinstance(body, list) else body
+            self.assertEqual(
+                [self.cyno.pk], [f["id"] for f in doctrine["utility_fittings"]]
+            )
+            self.assertEqual(
+                [self.primary.pk],
+                [f["id"] for f in doctrine["primary_fittings"]],
+            )
+
+    def test_change_request_html_shows_utility(self):
+        self.user.user_permissions.add(_perm("change_doctrine_strategic"))
+        req = submit_doctrine_change_request(
+            EveDoctrine.objects.create(
+                name="Strat Utility",
+                type=DOCTRINE_TYPE_STRATEGIC,
+                description="",
+            ),
+            {
+                "name": "Strat Utility",
+                "type": DOCTRINE_TYPE_STRATEGIC,
+                "description": "",
+                "composition": {"utility": [self.cyno.pk]},
+                "location_ids": [],
+            },
+            self.user,
+        )
+        html = format_doctrine_change_request_html(req)
+        self.assertIn("Utility", html)
+        self.assertIn("Atron Cyno", html)
 
 
 class FittingChangeRequestTestCase(TestCase):
@@ -888,36 +989,6 @@ class FittingChangeRequestTestCase(TestCase):
         self.assertEqual("before", fitting.description)
 
 
-class ApproverRecipientTestCase(TestCase):
-    """Who receives change-request review eligibility."""
-
-    def _create_user(self, username, *, is_staff=False):
-        return User.objects.create(username=username, is_staff=is_staff)
-
-    def test_users_who_can_approve_fitting_non_strategic(self):
-        skirmish = self._create_user("skirmish", is_staff=True)
-        skirmish.user_permissions.add(
-            _perm("approve_doctrine_fitting_non_strategic")
-        )
-        recipients = users_who_can_approve_fitting_request("non_strategic")
-        self.assertIn(skirmish, recipients)
-
-    def test_notify_recipients_exclude_non_staff(self):
-        staff_approver = self._create_user("staff_approver")
-        staff_approver.is_staff = True
-        staff_approver.save(update_fields=["is_staff"])
-        staff_approver.user_permissions.add(
-            _perm("approve_doctrine_fitting_strategic")
-        )
-        non_staff = self._create_user("non_staff_approver")
-        non_staff.user_permissions.add(
-            _perm("approve_doctrine_fitting_strategic")
-        )
-        recipients = users_who_can_approve_fitting_request("strategic")
-        self.assertIn(staff_approver, recipients)
-        self.assertNotIn(non_staff, recipients)
-
-
 class ChangeRequestDisplayTestCase(TestCase):
     def test_doctrine_change_request_display_shows_readable_diff(self):
         self.user.user_permissions.add(_perm("change_doctrine_strategic"))
@@ -1087,6 +1158,101 @@ class ChangeRequestAdminActionsTestCase(TestCase):
         doctrine.refresh_from_db()
         self.assertEqual(ChangeRequestStatus.APPROVED, change_request.status)
         self.assertEqual("Self Approved", doctrine.name)
+
+
+class DoctrineAdminAddTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_staff", "is_superuser"])
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.fitting = EveFitting.objects.create(
+            name="[FL33T] Inquisitor",
+            ship_id=12034,
+            eft_format="[Inquisitor, Inquisitor]",
+            description="",
+        )
+        self.location = EveLocation.objects.create(
+            location_id=60008494,
+            location_name="Amamake",
+            short_name="Amamake",
+            solar_system_id=30003067,
+            solar_system_name="Amamake",
+        )
+
+    def _doctrine_post(self, **overrides):
+        data = {
+            "name": "Plexing",
+            "type": DOCTRINE_TYPE_NON_STRATEGIC,
+            "description": "Mixture of armor ships.",
+            "primary_fittings": [self.fitting.pk],
+            "secondary_fittings": [self.fitting.pk],
+            "support_fittings": [],
+            "utility_fittings": [],
+            "locations": [self.location.pk],
+            "_save": "Save",
+        }
+        data.update(overrides)
+        return data
+
+    def test_add_non_strategic_doctrine_queues_without_500(self):
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_add"),
+            self._doctrine_post(),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine = EveDoctrine.objects.get(name="Plexing")
+        self.assertFalse(
+            EveDoctrineFitting.objects.filter(doctrine=doctrine).exists()
+        )
+        self.assertFalse(doctrine.locations.exists())
+        change_request = doctrine.change_requests.get()
+        self.assertEqual(ChangeRequestStatus.PENDING, change_request.status)
+        self.assertEqual(
+            [self.fitting.pk],
+            change_request.payload["composition"]["primary"],
+        )
+        self.assertEqual(
+            [self.location.pk], change_request.payload["location_ids"]
+        )
+
+    def test_change_protected_doctrine_does_not_publish_locations(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Plexing",
+            type=DOCTRINE_TYPE_NON_STRATEGIC,
+            description="old",
+        )
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_change", args=[doctrine.pk]),
+            self._doctrine_post(description="updated"),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine.refresh_from_db()
+        self.assertEqual("old", doctrine.description)
+        self.assertFalse(doctrine.locations.exists())
+        change_request = doctrine.change_requests.get()
+        self.assertEqual(
+            [self.location.pk], change_request.payload["location_ids"]
+        )
+
+    def test_add_experimental_doctrine_applies_immediately(self):
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_add"),
+            self._doctrine_post(type=DOCTRINE_TYPE_EXPERIMENTAL),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine = EveDoctrine.objects.get(name="Plexing")
+        self.assertTrue(
+            EveDoctrineFitting.objects.filter(
+                doctrine=doctrine, fitting=self.fitting, role="primary"
+            ).exists()
+        )
+        self.assertTrue(
+            doctrine.locations.filter(pk=self.location.pk).exists()
+        )
+        self.assertFalse(doctrine.change_requests.exists())
 
 
 class HistoryDisplayTestCase(TestCase):

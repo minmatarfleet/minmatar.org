@@ -197,6 +197,59 @@ class CreatorAccountsTestCase(TestCase):
             "BearThatCares",
         )
 
+    def test_cannot_take_another_members_reddit_username(self):
+        self._grant_thinkspeak()
+        owner = User.objects.create(username="original-poster")
+        account = CreatorAccount.objects.create(
+            user=owner,
+            provider=CreatorProvider.REDDIT,
+            platform_user_id="thinkspeakpilot",
+            platform_username="ThinkspeakPilot",
+        )
+        CreatorItem.objects.create(
+            account=account,
+            provider=CreatorProvider.REDDIT,
+            external_id="owned1",
+            kind=CreatorItemKind.REDDIT_POST,
+            title="Owner's post",
+        )
+
+        response = self.client.put(
+            "/api/creators/reddit",
+            data={"username": "u/thinkspeakPILOT"},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(CreatorAccount.objects.filter(id=account.id).exists())
+        self.assertTrue(
+            CreatorItem.objects.filter(external_id="owned1").exists()
+        )
+        self.assertFalse(
+            CreatorAccount.objects.filter(
+                user=self.user, provider=CreatorProvider.REDDIT
+            ).exists()
+        )
+
+    def test_relinking_your_own_reddit_username_still_works(self):
+        self._grant_thinkspeak()
+        for username in ("ThinkspeakPilot", "u/thinkspeakpilot"):
+            response = self.client.put(
+                "/api/creators/reddit",
+                data={"username": username},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            CreatorAccount.objects.filter(
+                provider=CreatorProvider.REDDIT,
+                platform_user_id="thinkspeakpilot",
+            ).count(),
+            1,
+        )
+
     @patch("creators.service.list_user_submitted")
     def test_link_reddit_username_and_sync(self, list_submitted):
         self._grant_thinkspeak()
@@ -346,6 +399,7 @@ class CreatorAccountsTestCase(TestCase):
                         "high": {"url": "https://i.ytimg.com/vi/ytVid1/hq.jpg"}
                     },
                 },
+                "status": {"privacyStatus": "public"},
             }
         ]
         count = sync_youtube_videos(account)
@@ -355,6 +409,48 @@ class CreatorAccountsTestCase(TestCase):
         )
         self.assertEqual(item.kind, CreatorItemKind.VIDEO)
         self.assertEqual(item.url, "https://www.youtube.com/watch?v=ytVid1")
+
+    @patch("creators.service.ensure_valid_access_token", return_value="yt-tok")
+    @patch("creators.service.YouTubeClient")
+    def test_sync_youtube_videos_drops_unlisted(
+        self, client_cls, ensure_token
+    ):
+        del ensure_token
+        account = CreatorAccount.objects.create(
+            user=self.user,
+            provider=CreatorProvider.YOUTUBE,
+            platform_user_id="UC123",
+            platform_username="FL33T Vids",
+            extra={"uploads_playlist_id": "UU123"},
+            access_token="yt-tok",
+            token_expires_at=timezone.now() + timedelta(hours=1),
+        )
+        CreatorItem.objects.create(
+            account=account,
+            provider=CreatorProvider.YOUTUBE,
+            kind=CreatorItemKind.VIDEO,
+            external_id="townHall01",
+            title="Town Hall",
+            url="https://www.youtube.com/watch?v=townHall01",
+        )
+        client_cls.return_value.list_playlist_items.return_value = [
+            {
+                "contentDetails": {"videoId": "townHall01"},
+                "snippet": {"title": "Town Hall"},
+                "status": {"privacyStatus": "unlisted"},
+            },
+            {
+                "contentDetails": {"videoId": "private001"},
+                "snippet": {"title": "Draft cut"},
+                "status": {"privacyStatus": "private"},
+            },
+        ]
+        self.assertEqual(sync_youtube_videos(account), 0)
+        self.assertFalse(
+            CreatorItem.objects.filter(
+                provider=CreatorProvider.YOUTUBE
+            ).exists()
+        )
 
     def test_connect_redirects_for_thinkspeak_member(self):
         self._grant_thinkspeak()

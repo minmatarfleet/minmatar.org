@@ -1,0 +1,92 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { EvEImageServiceSize } from '@dtypes/layout_components'
+import { get_group_logo } from '@helpers/eve_image_server'
+
+/**
+ * Alliance and corporation logos in a row, biggest first, with "+N" for the
+ * rest. Every name is in a tooltip and in the accessible label, so a fight
+ * with fifty groups still fits on one line.
+ */
+interface Props {
+    groups:             { id: number | null, name: string, kind?: string | null }[];
+    max?:               number;
+    size?:              number;
+    [propName: string]: any;
+}
+
+const {
+    groups,
+    max = 6,
+    size = 28,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const known = groups.filter(group => group.id)
+const unknown = groups.length - known.length
+const shown = known.slice(0, max)
+const rest = [...known.slice(max).map(group => group.name), ...(unknown > 0 ? [t('fleets.fights.unknown_groups')] : [])]
+const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
+---
+
+<span class:list={['[ group-logos ]', Astro.props.class]} {...attributes}>
+    {shown.map(group =>
+        <img
+            src={get_group_logo(group.id as number, image_size, group.kind)}
+            alt={group.name}
+            data-tippy-content={group.name}
+            width={size}
+            height={size}
+            loading="lazy"
+        />
+    )}
+    {rest.length > 0 &&
+        <button
+            type="button"
+            class="[ group-logos__more ]"
+            data-tippy-content={rest.join(', ')}
+            aria-label={t('fleets.fights.others_label').replace('{names}', rest.join(', '))}
+        >
+            {shown.length > 0 ?
+                t('fleets.fights.others').replace('{count}', rest.length.toString()) :
+                rest.length === 1 ? rest[0] : t('fleets.fights.groups').replace('{count}', rest.length.toString())
+            }
+        </button>
+    }
+</span>
+
+<style lang="scss">
+    .group-logos {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-3xs);
+
+        img {
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-sunken);
+        }
+    }
+
+    .group-logos__more {
+        white-space: nowrap;
+        min-height: 1.75rem;
+        padding: 0 var(--space-2xs);
+        background: transparent;
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font: inherit;
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: help;
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+</style>

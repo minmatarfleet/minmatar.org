@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -396,12 +396,43 @@ def coverage_by_hour(campaign: Campaign, days: int = 7) -> list[dict]:
     ]
 
 
+# Per-pilot counts the roster carries and the corporation roll-up sums.
+ROSTER_COUNTS = (
+    "kills",
+    "losses",
+    "isk_destroyed",
+    "complexes",
+    "advantage_sites",
+    "fleets_attended",
+)
+
+# A pilot counts as active in the roll-up if they had an active campaign day
+# (CampaignParticipantDay.active: any scored activity, a loss included) this
+# many campaign days ago or later. Not the alliance-health "active", which is
+# any fleet, kill or supply signal in 90 days.
+ROSTER_ACTIVE_DAYS = 7
+
+
+def tracked_character_counts(user_ids) -> dict[int, int]:
+    """Characters per pilot whose notifications we can read, which is what
+    site completions are attributed from. Worked out live, never stored."""
+    return dict(
+        EveCharacter.objects.filter(
+            user_id__in=list(user_ids),
+            token__scopes__name="esi-characters.read_notifications.v1",
+        )
+        .values_list("user_id")
+        .annotate(n=Count("id", distinct=True))
+        .values_list("user_id", "n")
+    )
+
+
 def roster_rows(campaign: Campaign) -> list[dict]:
     """The roster, in a handful of queries rather than three per pilot."""
     enlistments = list(
-        CampaignEnlistment.objects.filter(campaign=campaign, status="active")
-        .select_related("user")
-        .annotate(
+        CampaignEnlistment.objects.filter(
+            campaign=campaign, status="active"
+        ).annotate(
             included=Count(
                 "characters", filter=Q(characters__included_until__isnull=True)
             )
@@ -432,15 +463,7 @@ def roster_rows(campaign: Campaign) -> list[dict]:
             ]
         ).values_list("corporation_id", "name")
     )
-    tracked_by_user = dict(
-        EveCharacter.objects.filter(
-            user_id__in=user_ids,
-            token__scopes__name="esi-characters.read_notifications.v1",
-        )
-        .values_list("user_id")
-        .annotate(n=Count("id", distinct=True))
-        .values_list("user_id", "n")
-    )
+    tracked_by_user = tracked_character_counts(user_ids)
 
     rows = []
     for enlistment in enlistments:
@@ -451,7 +474,6 @@ def roster_rows(campaign: Campaign) -> list[dict]:
         rows.append(
             {
                 "user_id": enlistment.user_id,
-                "username": enlistment.user.username,
                 "primary_character": (
                     primary.character_name if primary else ""
                 ),
@@ -467,11 +489,14 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                     stat.observed_prime_time if stat else ""
                 ),
                 "last_active_day": stat.last_active_day if stat else None,
-                "streak_days": stat.streak_days if stat else 0,
                 "characters_included": enlistment.included,
                 "characters_tracked": tracked_by_user.get(
                     enlistment.user_id, 0
                 ),
+                **{
+                    field: getattr(stat, field) if stat else 0
+                    for field in ROSTER_COUNTS
+                },
             }
         )
 
@@ -484,7 +509,84 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                 if row["last_active_day"] is None
                 else -row["last_active_day"].toordinal()
             ),
-            -row["streak_days"],
-            row["username"].lower(),
+            row["primary_character"].lower(),
+            row["user_id"],
+        ),
+    )
+
+
+# Pooled per corporation from the mails and fleets themselves rather than
+# summed, so thirty members on one kill or in one fleet count it once.
+ROSTER_POOLED_COUNTS = ("kills", "isk_destroyed", "fleets_attended")
+
+
+def roster_corporations(
+    rows: list[dict],
+    today: date,
+    *,
+    mails_by_user: dict[int, dict[int, int]],
+    fleets_by_user: dict[int, set[int]],
+) -> list[dict]:
+    """Roll the roster up by each pilot's primary character's corporation.
+
+    Pilots with no primary character land in one row with no corporation,
+    last. The biggest corporations come first. ``today`` is the campaign
+    day. Kills and ISK are distinct mails (``stats.kill_mails_by_user``)
+    and fleets are distinct campaign fleets (``fleets.fleet_ids_by_user``),
+    so a corporation's fleets are not its pilots' fleet-days summed.
+    """
+    active_since = today - timedelta(days=ROSTER_ACTIVE_DAYS)
+    corporations: dict[int | None, dict] = {}
+    pooled_mails: dict[int | None, dict[int, int]] = {}
+    pooled_fleets: dict[int | None, set[int]] = {}
+    for row in rows:
+        corporation = corporations.setdefault(
+            row["corporation_id"],
+            {
+                "corporation_id": row["corporation_id"],
+                "corporation_name": row["corporation_name"],
+                "pilots": 0,
+                "active_pilots": 0,
+                "characters_included": 0,
+                "last_active_day": None,
+                **{field: 0 for field in ROSTER_COUNTS},
+            },
+        )
+        corporation["pilots"] += 1
+        corporation["characters_included"] += row["characters_included"]
+        for field in ROSTER_COUNTS:
+            if field not in ROSTER_POOLED_COUNTS:
+                corporation[field] += row[field]
+        pooled_mails.setdefault(row["corporation_id"], {}).update(
+            mails_by_user.get(row["user_id"], {})
+        )
+        pooled_fleets.setdefault(row["corporation_id"], set()).update(
+            fleets_by_user.get(row["user_id"], ())
+        )
+
+        last_active = row["last_active_day"]
+        if last_active is None:
+            continue
+        if last_active >= active_since:
+            corporation["active_pilots"] += 1
+        if (
+            corporation["last_active_day"] is None
+            or last_active > corporation["last_active_day"]
+        ):
+            corporation["last_active_day"] = last_active
+
+    for corporation_id, corporation in corporations.items():
+        mails = pooled_mails[corporation_id]
+        corporation["kills"] = len(mails)
+        corporation["isk_destroyed"] = sum(mails.values())
+        corporation["fleets_attended"] = len(pooled_fleets[corporation_id])
+
+    return sorted(
+        corporations.values(),
+        key=lambda row: (
+            row["corporation_id"] is None,
+            -row["pilots"],
+            -row["kills"],
+            row["corporation_name"].lower(),
         ),
     )

@@ -4,7 +4,7 @@ from typing import List
 
 from authentication import AuthBearer
 
-from fleets.endpoints.helpers import _fleet_authorized
+from fleets.endpoints.helpers import _fleet_manager
 
 from fleets.endpoints.schemas import EveFleetMemberResponse
 from fleets.models import EveFleet, EveFleetInstanceMember
@@ -14,7 +14,10 @@ METHOD = "get"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: List[EveFleetMemberResponse], 403: None, 404: None},
-    "description": "Get fleet members. Requires fleets.view_evefleet.",
+    "description": (
+        "Get fleet members: the roster. Only the fleet's FC and fleet "
+        "managers (Strategic FCs) may read it."
+    ),
 }
 
 
@@ -22,7 +25,7 @@ def get_fleet_members(request, fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
         return 404, None
-    if not _fleet_authorized(request, fleet):
+    if not _fleet_manager(request, fleet):
         return 403, None
 
     response = []

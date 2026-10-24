@@ -31,3 +31,4 @@ class RollupResult:
     is_active: bool = False
     expires_at: datetime | None = None
     killmail_ids: list[int] = field(default_factory=list)
+    fleet_instance_ids: list[int] = field(default_factory=list)

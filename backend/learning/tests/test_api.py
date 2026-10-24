@@ -1,7 +1,5 @@
 """Tests for Learning Center helpers and API endpoints."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.utils import timezone
@@ -28,13 +26,9 @@ from learning.models import (
     UserLearningPreference,
     UserLearningProgress,
 )
+from app.testing import make_token
 
 BASE = "/api/learning"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class LearningHelpersTestCase(TestCase):
@@ -211,8 +205,12 @@ class LearningApiTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="apiuser", password="x")
-        self.token = _make_token(self.user)
+        self.token = make_token(self.user)
         self.auth = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+
+        # Migrations seed the Alliance Onboarding lesson; start from empty.
+        Certificate.objects.all().delete()
+        Learning.objects.all().delete()
 
         self.l1 = Learning.objects.create(
             slug="fw-basics",

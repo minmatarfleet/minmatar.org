@@ -27,10 +27,10 @@ const partial_url = (next_page:number) => translatePath(`/partials/campaign_site
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import CampaignSitesTable from '@components/blocks/CampaignSitesTable.astro'
-import CampaignPager from '@components/blocks/CampaignPager.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 ---
 
 <Flexblock id='campaign-sites' gap='var(--space-s)' class:list={['[ campaign-sites ]', Astro.props.class]} {...attributes}>
     <CampaignSitesTable sites={sites} />
-    <CampaignPager page={page} has_more={has_more} url_for={partial_url} target='#campaign-sites' />
+    <HtmxPager page={page} has_more={has_more} url_for={partial_url} target='#campaign-sites' />
 </Flexblock>

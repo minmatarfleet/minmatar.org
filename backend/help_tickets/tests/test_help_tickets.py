@@ -1,7 +1,5 @@
 """Tests for help ticket bot API endpoints."""
 
-import jwt
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from unittest import mock
@@ -14,20 +12,19 @@ from help_tickets.models import (
     HelpTicketPanel,
 )
 from tribes.models import Tribe, TribeGroup
+from app.testing import make_token
 
 BASE_URL = "/api/help-tickets"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 class HelpTicketPanelConfigTestCase(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(username="bot", password="x")
-        self.token = _make_token(self.user)
+        # The Discord bot's service account.
+        self.user = User.objects.create_user(
+            username="bot", password="x", is_staff=True
+        )
+        self.token = make_token(self.user)
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.enabled_group = TribeGroup.objects.create(
             tribe=self.tribe,
@@ -83,8 +80,11 @@ class HelpTicketPanelConfigTestCase(TestCase):
 class HelpTicketApiTestCase(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(username="bot", password="x")
-        self.token = _make_token(self.user)
+        # The Discord bot's service account.
+        self.user = User.objects.create_user(
+            username="bot", password="x", is_staff=True
+        )
+        self.token = make_token(self.user)
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
@@ -275,3 +275,105 @@ class HelpTicketApiTestCase(TestCase):
             if item["id"] == category.pk
         )
         self.assertEqual(general["mention_discord_ids"], [555444333])
+
+
+class HelpTicketBotOnlyTestCase(TestCase):
+    """Opening, closing and moving the panel are for the bot, not members."""
+
+    def setUp(self):
+        self.client = Client()
+        self.member = User.objects.create_user(username="member", password="x")
+        self.token = make_token(self.member)
+        tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        group = TribeGroup.objects.create(
+            tribe=tribe, name="Technology", code="pulse.technology"
+        )
+        self.category = HelpRequestCategory.objects.create(
+            title="Contact the technology team",
+            code="pulse.technology",
+            tribe_group=group,
+        )
+        self.ticket = HelpTicket.objects.create(
+            category=self.category,
+            opener_discord_id=1,
+            thread_id=100,
+            thread_name="someone-else",
+            body="Help",
+            status=HelpTicket.STATUS_OPEN,
+        )
+
+    @mock.patch("help_tickets.router.discord")
+    def test_member_cannot_close_someone_elses_ticket(self, discord_mock):
+        response = self.client.patch(
+            f"{BASE_URL}/{self.ticket.id}/close/",
+            data={"closed_by_discord_id": 1, "close_reason": "resolved"},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        discord_mock.close_thread.assert_not_called()
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, HelpTicket.STATUS_OPEN)
+
+    def test_member_cannot_open_ticket_as_someone_else(self):
+        response = self.client.post(
+            f"{BASE_URL}/",
+            data={
+                "category_id": self.category.id,
+                "opener_discord_id": 42,
+                "thread_id": 200,
+                "thread_name": "forged",
+                "body": "Forged",
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(HelpTicket.objects.filter(thread_id=200).exists())
+
+    def test_member_cannot_read_bot_only_endpoints(self):
+        for path in (
+            "/open",
+            f"/{self.ticket.id}/",
+            "/panel-state",
+            "/panel-config",
+        ):
+            response = self.client.get(
+                f"{BASE_URL}{path}",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(response.status_code, 403, path)
+            self.assertNotIn(b"thread_id", response.content, path)
+
+    def test_bot_can_still_read_them(self):
+        bot = User.objects.create_user(
+            username="bot", password="x", is_staff=True
+        )
+        for path in (
+            "/open",
+            f"/{self.ticket.id}/",
+            "/panel-state",
+            "/panel-config",
+        ):
+            response = self.client.get(
+                f"{BASE_URL}{path}",
+                HTTP_AUTHORIZATION=f"Bearer {make_token(bot)}",
+            )
+            self.assertEqual(response.status_code, 200, path)
+
+    def test_member_cannot_move_the_panel(self):
+        response = self.client.put(
+            f"{BASE_URL}/panel-state",
+            data={
+                "channel_id": 1,
+                "message_id": 2,
+                "content_hash": "x",
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertNotEqual(HelpTicketPanel.get_solo().message_id, 2)

@@ -59,7 +59,7 @@ Most capital pilots have three accounts, on average. The thing that people often
 - Triple boxing [faction warfare sites](/learning/guides/faction-warfare-plexing/) is 300–500m/hr
 - Triple boxing [abyssal sites](/learning/guides/abyssals/) is 500–1000m/hr
 
-This continues to scale, even if you're someone like [Casper Sullivan](/characters/2120307642/) or [Flooded](/characters/2114290680/) who is running 10–15 accounts.
+This continues to scale, even if you're someone like [Casper Sullivan](https://zkillboard.com/character/2120307642/) or [Flooded](https://zkillboard.com/character/2114290680/) who is running 10–15 accounts.
 
 Once you've learned how to make ISK with multiple accounts, you're able to feed tons of capitals every single week without even caring.
 

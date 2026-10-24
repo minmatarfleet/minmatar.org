@@ -1,0 +1,74 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { TribeShowcaseWelcomed } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    welcomed: TribeShowcaseWelcomed[]
+}
+
+const { welcomed } = Astro.props
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Grid from '@components/compositions/Grid.astro'
+---
+
+<ActivityBlock
+    title={t('tribes.activity.advocates.welcomed_title')}
+    caption={t('tribes.activity.advocates.welcomed_caption')}
+>
+    {welcomed.length === 0 ?
+        <EmptyState title={t('tribes.activity.advocates.welcomed_empty')} />
+        :
+        <Grid min_item_width="8rem" row_gap="var(--space-xs)" column_gap="var(--space-xs)">
+            {welcomed.map((pilot) =>
+                <div class="[ welcomed-card ]">
+                    <img
+                        class="[ welcomed-card__portrait ]"
+                        src={get_player_icon(pilot.character_id, 128)}
+                        alt=""
+                        loading="lazy"
+                        width="64"
+                        height="64"
+                    />
+                    <span class="[ welcomed-card__name ]">{pilot.character_name}</span>
+                    <span class="[ welcomed-card__date ]">{format_date_short(lang, pilot.promoted_at)}</span>
+                </div>
+            )}
+        </Grid>
+    }
+</ActivityBlock>
+
+<style lang="scss">
+    .welcomed-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding: var(--space-xs);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+    }
+
+    .welcomed-card__portrait {
+        inline-size: var(--space-2xl);
+        block-size: var(--space-2xl);
+        background: var(--component-background);
+    }
+
+    .welcomed-card__name {
+        max-inline-size: 100%;
+        overflow-wrap: anywhere;
+        color: var(--highlight);
+        line-height: 1.2;
+    }
+
+    .welcomed-card__date {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

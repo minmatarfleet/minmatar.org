@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def _admin_site_base() -> str:
-    return getattr(settings, "MINMATAR_ADMIN_BASE_URL", "").rstrip("/")
+    return settings.MINMATAR_ADMIN_BASE_URL.rstrip("/")
 
 
 def _discord_user_id_for_user(user) -> str | None:

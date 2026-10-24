@@ -7,6 +7,7 @@ import type {
     CampaignWeek,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignKillmail,
     CampaignSite,
     CampaignRoster,
@@ -20,10 +21,12 @@ interface Props {
     week:               CampaignWeek | null;
     fleets:             CampaignFleet[];
     leaderboard:        CampaignLeaderboardRow[];
+    corporation_board:  CampaignCorporationLeaderboardRow[];
     killmails:          { rows:CampaignKillmail[]; has_more:boolean };
     sites:              { rows:CampaignSite[]; has_more:boolean };
     roster:             CampaignRoster | null;
     readiness:          CampaignReadiness | null;
+    token_error?:       string | false;
     [propName: string]: any;
 }
 
@@ -32,10 +35,12 @@ const {
     week,
     fleets,
     leaderboard,
+    corporation_board,
     killmails,
     sites,
     roster,
     readiness,
+    token_error = false,
     ...attributes
 } = Astro.props
 
@@ -59,12 +64,13 @@ const structures_tracking = t('campaigns.structures.tracking')
     .replace('{remaining}', String(structures_remaining))
 const has_systems = systems.length > 0 || areas.length > 0
 /** Structures lead strategic; FW systems (and any theater systems) show when attached. */
-const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'you' )[] = [
+const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'projects' | 'you' )[] = [
     ...(is_strategic ? ['structures'] as const : []),
     ...(has_systems || !is_strategic ? ['systems'] as const : []),
     'fleets',
     'activity',
     'pilots',
+    'projects',
     'you',
 ]
 const tab_label = (tab:string) => t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
@@ -72,6 +78,8 @@ const default_tab = TABS[0]
 const show_systems_tab = TABS.includes('systems')
 const show_structures_tab = TABS.includes('structures')
 
+// Corporation projects directors put toward the campaign; loaded when the tab opens.
+const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(campaign.slug)}`)
 const SCHEDULE_FLEET_URL = translatePath(`/fleets/add/?campaign_id=${campaign.id}`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -89,69 +97,24 @@ import CampaignFleetsTable from '@components/blocks/CampaignFleetsTable.astro'
 import CampaignSites from '@components/blocks/CampaignSites.astro'
 import CampaignLeaderboard from '@components/blocks/CampaignLeaderboard.astro'
 import CampaignKillfeed from '@components/blocks/CampaignKillfeed.astro'
-import CampaignRosterTable from '@components/blocks/CampaignRosterTable.astro'
+import CampaignCorporationBoard from '@components/blocks/CampaignCorporationBoard.astro'
 import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
 <Flexblock gap='var(--space-l)' class:list={['[ campaign-detail ]', Astro.props.class]} {...attributes}>
     <CampaignOrdersHero campaign={campaign} week={week} />
 
-    <div
-        class="[ campaign-tabs ]"
-        x-data={`{
-            tabs: ${JSON.stringify(TABS)},
-            tab: '${default_tab}',
-            init() {
-                const hash = window.location.hash.replace('#', '')
-                if (this.tabs.includes(hash)) this.tab = hash
-                else if (hash.startsWith('campaign-system-')) this.tab = 'systems'
-            },
-            select(tab) {
-                this.tab = tab
-                history.replaceState(null, '', '#' + tab)
-                this.$nextTick(() => this.$refs['tab-' + tab]?.focus())
-            },
-            step(offset) {
-                const index = this.tabs.indexOf(this.tab)
-                this.select(this.tabs[(index + offset + this.tabs.length) % this.tabs.length])
-            },
-        }`}
+    <SectionTabs
+        tabs={TABS.map((tab) => ({ id: tab, label: tab_label(tab) }))}
+        aria_label={t('campaigns.tabs.label')}
+        id_prefix="campaign"
+        hash_aliases={{ 'campaign-system-': 'systems' }}
     >
-        <div class="[ campaign-tabs-list ]" role="tablist" aria-label={t('campaigns.tabs.label')}>
-            {TABS.map((tab, index) =>
-                <button
-                    type="button"
-                    role="tab"
-                    id={`campaign-tab-${tab}`}
-                    class:list={['[ campaign-tab ]', { 'is-active': index === 0 }]}
-                    aria-controls={`campaign-panel-${tab}`}
-                    aria-selected={index === 0 ? 'true' : 'false'}
-                    tabindex={index === 0 ? 0 : -1}
-                    x-ref={`tab-${tab}`}
-                    x-bind:class={`{ 'is-active': tab === '${tab}' }`}
-                    x-bind:aria-selected={`tab === '${tab}' ? 'true' : 'false'`}
-                    x-bind:tabindex={`tab === '${tab}' ? 0 : -1`}
-                    x-on:click={`select('${tab}')`}
-                    x-on:keydown.arrow-right.prevent="step(1)"
-                    x-on:keydown.arrow-left.prevent="step(-1)"
-                    x-on:keydown.home.prevent="select(tabs[0])"
-                    x-on:keydown.end.prevent="select(tabs[tabs.length - 1])"
-                >
-                    {tab_label(tab)}
-                </button>
-            )}
-        </div>
-
         {show_systems_tab &&
-            <section
-                id="campaign-panel-systems"
-                role="tabpanel"
-                aria-labelledby="campaign-tab-systems"
-                class="[ campaign-panel ]"
-                x-bind:hidden="tab !== 'systems'"
-                hidden={default_tab !== 'systems'}
-            >
+            <SectionTabPanel id="systems" id_prefix="campaign" is_default={default_tab === 'systems'}>
                 {systems.length === 0 && areas.length === 0 ?
                     <small>{t('campaigns.systems.none')}</small>
                     :
@@ -198,18 +161,11 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                         }
                     </Flexblock>
                 }
-            </section>
+            </SectionTabPanel>
         }
 
         {show_structures_tab &&
-            <section
-                id="campaign-panel-structures"
-                role="tabpanel"
-                aria-labelledby="campaign-tab-structures"
-                class="[ campaign-panel ]"
-                hidden={default_tab !== 'structures'}
-                x-bind:hidden="tab !== 'structures'"
-            >
+            <SectionTabPanel id="structures" id_prefix="campaign" is_default={default_tab === 'structures'}>
                 <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                     <CampaignStructuresTable
                         structures={structures}
@@ -218,17 +174,10 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                         tracking={structures_tracking}
                     />
                 </ComponentBlock>
-            </section>
+            </SectionTabPanel>
         }
 
-        <section
-            id="campaign-panel-fleets"
-            role="tabpanel"
-            aria-labelledby="campaign-tab-fleets"
-            class="[ campaign-panel ]"
-            hidden
-            x-bind:hidden="tab !== 'fleets'"
-        >
+        <SectionTabPanel id="fleets" id_prefix="campaign" is_default={default_tab === 'fleets'}>
             <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                 <Flexblock gap='var(--space-s)'>
                     <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
@@ -243,16 +192,9 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     <CampaignFleetsTable fleets={fleets} />
                 </Flexblock>
             </ComponentBlock>
-        </section>
+        </SectionTabPanel>
 
-        <section
-            id="campaign-panel-activity"
-            role="tabpanel"
-            aria-labelledby="campaign-tab-activity"
-            class="[ campaign-panel ]"
-            hidden
-            x-bind:hidden="tab !== 'activity'"
-        >
+        <SectionTabPanel id="activity" id_prefix="campaign" is_default={default_tab === 'activity'}>
             <Flexblock gap='var(--space-m)'>
 
                 <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
@@ -277,16 +219,9 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     </ComponentBlock>
                 }
             </Flexblock>
-        </section>
+        </SectionTabPanel>
 
-        <section
-            id="campaign-panel-pilots"
-            role="tabpanel"
-            aria-labelledby="campaign-tab-pilots"
-            class="[ campaign-panel ]"
-            hidden
-            x-bind:hidden="tab !== 'pilots'"
-        >
+        <SectionTabPanel id="pilots" id_prefix="campaign" is_default={default_tab === 'pilots'}>
             <Flexblock gap='var(--space-m)'>
                 <Flexblock gap='var(--space-2xs)'>
                     <small class="[ campaign-panel-label ]">{t('campaigns.totals.title')}</small>
@@ -309,12 +244,17 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                         <Flexblock gap='var(--space-s)'>
                             <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
-                                <h3>{t('campaigns.roster.title')}</h3>
+                                <h3>{t('campaigns.corporations.title')}</h3>
                                 <Button size='sm' color='transparent' href={translatePath(`/campaigns/${campaign.slug}/roster/`)}>
-                                    {t('campaigns.roster.view_full')}
+                                    {t('campaigns.corporations.view_full')}
                                 </Button>
                             </FlexInline>
-                            <CampaignRosterTable pilots={roster?.pilots ?? []} limit={10} />
+                            <CampaignCorporationBoard
+                                slug={campaign.slug}
+                                rows={corporation_board}
+                                metric='kills'
+                                period='week'
+                            />
                         </Flexblock>
                     </ComponentBlock>
                 </Grid>
@@ -323,19 +263,22 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
                     <CampaignCoverageChart coverage={roster?.coverage ?? []} />
                 </ComponentBlock>
             </Flexblock>
-        </section>
+        </SectionTabPanel>
 
-        <section
-            id="campaign-panel-you"
-            role="tabpanel"
-            aria-labelledby="campaign-tab-you"
-            class="[ campaign-panel ]"
-            hidden
-            x-bind:hidden="tab !== 'you'"
-        >
-            <CampaignYouPanel campaign={campaign} readiness={readiness} />
-        </section>
-    </div>
+        <SectionTabPanel id="projects" id_prefix="campaign" is_default={default_tab === 'projects'}>
+            <div
+                hx-get={PROJECTS_PARTIAL_URL}
+                hx-trigger="intersect once"
+                hx-swap="outerHTML"
+            >
+                <p class="[ campaign-panel-label ]">{t('campaigns.projects.loading')}</p>
+            </div>
+        </SectionTabPanel>
+
+        <SectionTabPanel id="you" id_prefix="campaign" is_default={default_tab === 'you'}>
+            <CampaignYouPanel campaign={campaign} readiness={readiness} flash={token_error} />
+        </SectionTabPanel>
+    </SectionTabs>
 </Flexblock>
 
 <style lang="scss">
@@ -345,71 +288,9 @@ import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
         color: var(--highlight);
     }
 
-    .campaign-tabs {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-m);
-    }
-
-    .campaign-tabs-list {
-        display: flex;
-        gap: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color-hover);
-    }
-
-    .campaign-tab {
-        appearance: none;
-        background: transparent;
-        border: 0;
-        border-bottom: 3px solid transparent;
-        margin-block-end: -1px;
-        padding: var(--space-2xs) var(--space-s);
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-        color: var(--foreground);
-        cursor: pointer;
-
-        &.is-active {
-            color: var(--highlight);
-            border-bottom-color: var(--fleet-red);
-        }
-
-        &:focus-visible {
-            outline: solid 2px var(--fleet-yellow);
-            outline-offset: -2px;
-        }
-    }
-
-    @media (hover: hover) {
-        .campaign-tab:hover {
-            color: var(--highlight);
-        }
-    }
-
-    .campaign-panel[hidden] {
-        display: none;
-    }
-
     .campaign-panel-label {
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: var(--foreground);
-    }
-
-
-
-    @media screen and (max-width: 767px) {
-        .campaign-tabs-list {
-            gap: 0;
-        }
-
-        .campaign-tab {
-            flex: 1 1 0;
-            text-align: center;
-            padding-inline: var(--space-2xs);
-            font-size: var(--step-0);
-        }
     }
 </style>

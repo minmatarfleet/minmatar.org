@@ -35,6 +35,7 @@ from feed.helpers.ingest import parse_r2z2_payload
 from feed.helpers.killmail_classify import attacker_pilot_count, is_npc_kill
 from feed.helpers.system_distance import light_years_between_systems
 from feed.models import FeedCapitalAlert, FeedCapitalPing
+from intel.affiliations.resolve import bloc_for_group, bloc_map
 from requests.exceptions import HTTPError
 
 logger = logging.getLogger(__name__)
@@ -511,6 +512,28 @@ def _merge_composition(
     )
 
 
+def _bloc_line(composition: dict[str, Any]) -> str | None:
+    """The confirmed bloc most of the attackers fly for, from the intel
+    affiliation database (pings are never edited, so no guesses)."""
+    blocs = bloc_map()
+    attackers: Counter[int] = Counter()
+    names: dict[int, str] = {}
+    for key, count in (composition.get("group_counts") or {}).items():
+        parsed = _parse_group_count_key(key)
+        if parsed is None:
+            continue
+        entry = bloc_for_group(*parsed, confirmed_only=True, blocs=blocs)
+        if entry is not None:
+            attackers[entry["id"]] += int(count)
+            names[entry["id"]] = entry["name"]
+    if not attackers:
+        return None
+    bloc_id, count = attackers.most_common(1)[0]
+    total = int(composition.get("attacker_count") or 0)
+    of_total = f" of {total}" if total >= count else ""
+    return f"**Bloc:** {names[bloc_id]} · {count}{of_total} attackers"
+
+
 def _composition_description_lines(
     composition: dict[str, Any] | None,
 ) -> list[str]:
@@ -524,6 +547,9 @@ def _composition_description_lines(
     main_group_name = main_group.get("name")
     if main_group_name:
         lines.append(f"**Main group:** {main_group_name}")
+    bloc_line = _bloc_line(composition)
+    if bloc_line:
+        lines.append(bloc_line)
     top_ship = composition.get("top_ship") or {}
     top_ship_name = top_ship.get("name")
     if top_ship_name:
@@ -664,43 +690,6 @@ def _post_alert_messages(
     return messages
 
 
-def _edit_alert_messages(
-    alert: FeedCapitalAlert,
-    payload: dict[str, Any],
-    *,
-    discord_client: DiscordClient,
-) -> None:
-    for entry in alert.discord_messages or []:
-        channel_id = entry.get("channel_id")
-        message_id = entry.get("message_id")
-        if not channel_id or not message_id:
-            continue
-        discord_client.update_message(
-            channel_id=int(channel_id),
-            message_id=int(message_id),
-            payload=payload,
-        )
-
-
-def send_capital_ping_discord(
-    raw: dict[str, Any],
-    *,
-    zkb: dict[str, Any],
-    distance_ly: float,
-    discord_client: DiscordClient | None = None,
-) -> list[int]:
-    """Post a fresh capital presence alert. Returns Discord message ids."""
-    channel_ids = _capital_ping_channel_ids()
-    if not channel_ids:
-        logger.info("Capital ping skipped: no Discord channels configured")
-        return []
-
-    payload = build_capital_ping_payload(raw, zkb=zkb, distance_ly=distance_ly)
-    client = discord_client or DiscordClient()
-    messages = _post_alert_messages(payload, discord_client=client)
-    return [message["message_id"] for message in messages]
-
-
 def _age_gate_blocks(raw: dict[str, Any]) -> bool:
     killmail_time_str = raw.get("killmail_time")
     killmail_time = (
@@ -764,8 +753,8 @@ def _update_capital_alert(
     capitals: list[dict[str, Any]],
     kill: dict[str, Any],
     composition: dict[str, Any],
-    discord_client: DiscordClient,
 ) -> FeedCapitalAlert:
+    """Fold a follow-up kill into the alert; the Discord message is not edited."""
     alert.capitals = _merge_capitals(alert.capitals or [], capitals)
     alert.kills = list(alert.kills or []) + [kill]
     alert.composition = _merge_composition(alert.composition, composition)
@@ -779,15 +768,6 @@ def _update_capital_alert(
     alert.distance_ly = distance_ly
     alert.system_name = system_name
     alert.last_activity_at = timezone.now()
-    discord_payload = build_capital_alert_payload(
-        system_name=alert.system_name,
-        distance_ly=alert.distance_ly,
-        capitals=alert.capitals,
-        kills=alert.kills,
-        systems=alert.systems,
-        composition=alert.composition,
-    )
-    _edit_alert_messages(alert, discord_payload, discord_client=discord_client)
     alert.save(
         update_fields=[
             "solar_system_id",
@@ -843,7 +823,11 @@ def _upsert_capital_alert_for_notify(
     composition: dict[str, Any],
     discord_client: DiscordClient,
 ) -> FeedCapitalAlert | None:
-    """Create or update a capital alert; soft-fail expected Discord HTTP errors."""
+    """Post a new capital alert, or fold the kill into the live one.
+
+    Discord gets one message per alert; follow-up kills only update the row.
+    Soft-fails expected Discord HTTP errors.
+    """
     try:
         if existing is None:
             return _create_capital_alert(
@@ -863,11 +847,10 @@ def _upsert_capital_alert_for_notify(
             capitals=capitals,
             kill=kill,
             composition=composition,
-            discord_client=discord_client,
         )
     except Exception as exc:
-        # Stale Discord message IDs (400/404) or transient 5xx on PATCH
-        # (CELERY-KD / JM). Do not logger.exception — Sentry noise.
+        # Transient Discord 4xx/5xx on post (CELERY-KD / JM).
+        # Do not logger.exception — Sentry noise.
         if _is_discord_edit_soft_fail(exc):
             logger.warning(
                 "Capital ping Discord HTTP %s for killmail %s: %s",
@@ -890,8 +873,9 @@ def maybe_notify_capital_kill(
 ) -> bool | None:
     """Evaluate an R2Z2 payload and create/update a capital presence alert.
 
-    Returns True if a Discord message was created or edited, False if skipped
-    (not eligible), and None if skipped solely due to the killmail age gate.
+    Returns True if the kill was posted to Discord or folded into a live alert
+    (whose message is left as posted), False if skipped (not eligible), and
+    None if skipped solely due to the killmail age gate.
     """
     if not _capital_ping_channel_ids():
         return False

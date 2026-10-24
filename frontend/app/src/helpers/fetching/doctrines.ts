@@ -33,6 +33,7 @@ export async function fetch_doctrine_options(): Promise<DoctrineType[]> {
         primary_fittings: [],
         secondary_fittings: [],
         support_fittings: [],
+        utility_fittings: [],
         location_ids: doctrine.location_ids ?? [],
     }))
 }
@@ -78,6 +79,7 @@ export async function fetch_doctrines() {
             primary_fittings: await Promise.all(doctrine.primary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
             secondary_fittings: await Promise.all(doctrine.secondary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
             support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
+            utility_fittings: await Promise.all((doctrine.utility_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
             location_ids: doctrine.location_ids ?? []
         } as DoctrineType
     }))
@@ -98,6 +100,7 @@ export async function fetch_doctrine_by_id(id:number) {
         primary_fittings: await Promise.all(doctrine.primary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         secondary_fittings: await Promise.all(doctrine.secondary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
+        utility_fittings: await Promise.all((doctrine.utility_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
         location_ids: doctrine.location_ids ?? []
     } as DoctrineType
 }

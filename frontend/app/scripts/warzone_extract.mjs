@@ -23,6 +23,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
+import { resolve_sde_path } from '../src/helpers/sde_path.mjs'
 
 const args = Object.fromEntries(
     process.argv.slice(2).reduce((p, t, i, l) => (t.startsWith('--') && p.push([t.slice(2), l[i + 1]]), p), []),
@@ -103,7 +104,7 @@ const bucket_for = (n) => (n <= 1 ? 'solo' : n <= 10 ? 'small_gang' : n >= 25 ? 
 await mkdir(CACHE, { recursive: true })
 
 // SDE: system -> {name, region, constellation}
-const sde = new Database(path.join(ROOT, 'src', 'data', 'sde-3316380.sqlite'), { readonly: true })
+const sde = new Database(resolve_sde_path({ root: ROOT }).path, { readonly: true, fileMustExist: true })
 const sde_row = sde.prepare(`
     SELECT s.solarSystemName AS name, r.regionName AS region, c.constellationName AS constellation
     FROM mapSolarSystems s

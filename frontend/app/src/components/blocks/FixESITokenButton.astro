@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, ESITokenRoles } from '@dtypes/api.minmatar.org'
@@ -21,10 +21,11 @@ const {
     narrow = false,
 } = Astro.props
 
-import { get_api_url, get_app_url } from '@helpers/env'
+import { get_public_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
-const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
-const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}${account_user_query}`
+import { get_request_user } from '@helpers/request_user'
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
+const FIX_CHARACTER_URL = `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}${account_user_query}`
 
 import { esi_token_roles } from '@dtypes/api.minmatar.org'
 
@@ -72,16 +73,16 @@ import Tag from '@components/blocks/Tag.astro';
                     <Select x-model="esi_token">
                         <option value="">{t('select_group_to_add')}</option>
                         {esi_tokens_roles.map(role =>
-                            <option value={role}>{t(role as any) ?? role}</option>
+                            <option value={role}>{t(dynamic_key(role)) ?? role}</option>
                         )}
                     </Select>
                 </Grid>
                 
                 <Flexblock gap='var(--space-2xs)'>
                     <h4>{t('requested_groups')}</h4>
-                    {character.requested_groups.length > 0 ?
+                    {(character.requested_groups ?? []).length > 0 ?
                         <FlexInline gap='var(--space-3xs)'>
-                            {character.requested_groups.map(group =>
+                            {(character.requested_groups ?? []).map(group =>
                                 <Tag text={group} />
                             )}
                         </FlexInline> :

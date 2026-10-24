@@ -1,0 +1,102 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeShowcaseFixedTicket } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { fill_template, fix_time } from '@helpers/tribe_activity'
+
+interface Props {
+    fixed: TribeShowcaseFixedTicket[]
+}
+
+const { fixed } = Astro.props
+
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<ActivityBlock
+    title={t('tribes.activity.technology.fixed_title')}
+    caption={t('tribes.activity.technology.fixed_caption')}
+>
+    {fixed.length === 0 ?
+        <EmptyState title={t('tribes.activity.technology.fixed_empty')} />
+        :
+        <ul class="[ fixed-list ]">
+            {fixed.map((ticket) =>
+                <li class="[ fixed-list__row ]">
+                    {ticket.pilot_character_id ?
+                        <img
+                            class="[ fixed-list__portrait ]"
+                            src={get_player_icon(ticket.pilot_character_id, 64)}
+                            alt=""
+                            loading="lazy"
+                            width="36"
+                            height="36"
+                        />
+                        :
+                        <span class="[ fixed-list__portrait ]" aria-hidden="true"></span>
+                    }
+                    <span class="[ fixed-list__text ]">
+                        <span class="[ fixed-list__pilot ]">{ticket.pilot_name || t('tribes.activity.technology.unknown_pilot')}</span>
+                        <span class="[ fixed-list__detail ]">
+                            {fill_template(t('tribes.activity.technology.fixed_by'), {
+                                name: ticket.closed_by,
+                            })}
+                        </span>
+                    </span>
+                    <span class="[ fixed-list__time ]">{fix_time(t, ticket.hours)}</span>
+                </li>
+            )}
+        </ul>
+    }
+</ActivityBlock>
+
+<style lang="scss">
+    .fixed-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .fixed-list__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-s);
+
+        & + & {
+            border-block-start: 1px solid rgba(255, 255, 255, 0.07);
+        }
+    }
+
+    .fixed-list__portrait {
+        flex: none;
+        inline-size: var(--space-l);
+        block-size: var(--space-l);
+        background: var(--component-background);
+    }
+
+    .fixed-list__text {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-inline-size: 0;
+    }
+
+    .fixed-list__pilot {
+        color: var(--highlight);
+    }
+
+    .fixed-list__detail,
+    .fixed-list__time {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .fixed-list__time {
+        white-space: nowrap;
+    }
+</style>

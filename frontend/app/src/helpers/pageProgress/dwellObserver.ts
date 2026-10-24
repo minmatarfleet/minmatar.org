@@ -36,28 +36,6 @@ export function isSufficientlyVisible(
     )
 }
 
-/** Manual viewport check used when a dwell timer fires. */
-export function isElementSufficientlyVisible(
-    el: Element,
-    visibleRatio: number = VISIBLE_RATIO,
-    viewportHeight: number = 0,
-): boolean {
-    const rootHeight = viewportHeight || (typeof window !== 'undefined' ? window.innerHeight : 0)
-    if (rootHeight <= 0) return false
-
-    const rect = el.getBoundingClientRect()
-    const visibleTop = Math.max(rect.top, 0)
-    const visibleBottom = Math.min(rect.bottom, rootHeight)
-    const visibleHeight = Math.max(0, visibleBottom - visibleTop)
-    if (visibleHeight <= 0) return false
-
-    const ratioOfElement = visibleHeight / Math.max(rect.height, 1)
-    if (ratioOfElement >= visibleRatio) return true
-
-    // Tall section: enough of the viewport is covered by this element.
-    return rect.height > rootHeight && visibleHeight >= rootHeight * visibleRatio
-}
-
 export function clearDwellTimer(timers: DwellTimers, sectionId: string): void {
     const timer = timers[sectionId]
     if (timer === undefined) return

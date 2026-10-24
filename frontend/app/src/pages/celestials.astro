@@ -4,14 +4,9 @@ const { t } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-if (!user_is_superadmin)
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+if (!can(gates, 'site.debug_pages'))
     return HTTP_404_Not_Found()
 
 import Viewport from '@layouts/Viewport.astro';

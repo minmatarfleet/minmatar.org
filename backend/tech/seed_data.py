@@ -343,6 +343,7 @@ def sync_production_fittings():
             ("primary_fittings", "primary"),
             ("support_fittings", "support"),
             ("secondary_fittings", "secondary"),
+            ("utility_fittings", "utility"),
         ]
 
         for fitting_key, role in fitting_types:
@@ -411,17 +412,3 @@ def sync_post_tags():
             tags_created += 1
 
     logger.info(f"Post tags synced successfully ({tags_created} created)")
-
-
-def find_discord_channel_id(channel_name, discord_channels):
-    """Find Discord channel ID by name (case insensitive)"""
-    if not channel_name:
-        return None
-
-    for channel in discord_channels:
-        if (
-            channel["name"].lower() == channel_name.lower()
-            and channel["type"] == "text"
-        ):
-            return channel["id"]
-    return None

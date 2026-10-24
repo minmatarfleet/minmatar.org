@@ -1,0 +1,210 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ExternalReferralLink } from '@dtypes/api.minmatar.org'
+import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
+
+interface Props {
+    links:      ExternalReferralLink[];
+    stats:      ReferralLinkStatsUI[];
+    /** The pilot's `?ref=` query, appended to any site link. */
+    ref_code:   string;
+}
+
+const {
+    links,
+    stats,
+    ref_code,
+} = Astro.props
+
+// One table: each shareable guide with its clicks (most clicked first), then
+// the other pages people reached through the pilot's code.
+const clicks_for = (name: string) => stats.find((stat) => stat.name === name)?.count ?? 0
+const guide_rows = links
+    .map((link) => ({ ...link, count: clicks_for(link.slug) }))
+    .sort((a, b) => b.count - a.count)
+const guide_slugs = new Set(links.map((link) => link.slug))
+const other_rows = stats
+    .filter((stat) => !stat.name || !guide_slugs.has(stat.name))
+    .sort((a, b) => b.count - a.count)
+const total_clicks = stats.reduce((sum, stat) => sum + stat.count, 0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<Flexblock gap="var(--space-l)">
+    <ComponentBlock>
+        <div class="[ account-referrals__intro ]">
+            <Flexblock gap="var(--space-xs)">
+                <h2>{t('account.referrals_title')}</h2>
+                <p>{t('account.referrals_description')}</p>
+                <div class="[ account-referrals__code ]">
+                    <code>{ref_code}</code>
+                    <ClipboardButton id="referral-code" color="transparent" text={t('account.copy_code')}>{ref_code}</ClipboardButton>
+                </div>
+            </Flexblock>
+            <div class="[ account-referrals__total ]">
+                <span class="[ account-referrals__total-number ]">{total_clicks}</span>
+                <small>{t('account.clicks_all_time')}</small>
+            </div>
+        </div>
+    </ComponentBlock>
+
+    <ComponentBlock>
+        <Flexblock gap="0">
+            <h2 class="[ account-referrals__heading ]">{t('account.your_links')}</h2>
+            <div class="[ account-referrals__row account-referrals__columns ]" aria-hidden="true">
+                <span>{t('account.column_page')}</span>
+                <span>{t('account.column_type')}</span>
+                <span>{t('account.column_clicks')}</span>
+                <span></span>
+            </div>
+            {guide_rows.map((row) =>
+                <div class="[ account-referrals__row ]">
+                    <a href={row.target} target="_blank" rel="nofollow noopener noreferrer" class="[ truncate ]">{row.name}</a>
+                    <small class="[ account-referrals__muted ]">{row.decription}</small>
+                    <span class:list={['[ account-referrals__count ]', { 'account-referrals__muted': row.count === 0 }]}>{row.count}</span>
+                    <ClipboardButton id={`referral-${row.slug}`} color="transparent">{row.link}</ClipboardButton>
+                </div>
+            )}
+            {guide_rows.length === 0 && <EmptyState title={t('no_referrals')} />}
+
+            {other_rows.length > 0 &&
+                <h3 class="[ account-referrals__group ]">{t('account.other_pages')}</h3>
+            }
+            {other_rows.map((row) =>
+                <div class="[ account-referrals__row account-referrals__row--plain ]">
+                    {row.target ?
+                        <a href={row.target} class="[ truncate ]">{row.title}</a> :
+                        <span class="[ truncate ]">{row.title}</span>
+                    }
+                    <small class="[ account-referrals__muted ]">{row.target ? t('account.site_page') : t('deprecated')}</small>
+                    <span class="[ account-referrals__count ]">{row.count}</span>
+                    <span></span>
+                </div>
+            )}
+        </Flexblock>
+    </ComponentBlock>
+</Flexblock>
+
+<style lang="scss">
+    .account-referrals__intro {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-l);
+        align-items: center;
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .account-referrals__code {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+
+        code {
+            padding: var(--space-3xs) var(--space-2xs);
+            background: var(--surface-sunken);
+            border: 1px solid var(--border-color);
+            color: var(--highlight);
+        }
+    }
+
+    .account-referrals__total {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-3xs);
+        padding-inline-start: var(--space-l);
+        border-inline-start: 1px solid var(--border-color);
+
+        @media (max-width: 48rem) {
+            align-items: flex-start;
+            padding-inline-start: 0;
+            border-inline-start: 0;
+        }
+    }
+
+    .account-referrals__total-number {
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .account-referrals__heading {
+        padding-block-end: var(--space-s);
+    }
+
+    .account-referrals__muted {
+        color: var(--text-muted);
+    }
+
+    .account-referrals__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 8rem 5rem 8rem;
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        border-block-start: 1px solid var(--border-color);
+
+        > :last-child {
+            justify-self: end;
+        }
+    }
+
+    .account-referrals__row--plain {
+        border-block-start: 0;
+        padding-block: var(--space-3xs);
+    }
+
+    .account-referrals__columns {
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+
+        > :nth-child(3) {
+            text-align: right;
+        }
+    }
+
+    .account-referrals__count {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .account-referrals__group {
+        padding-block: var(--space-s) var(--space-3xs);
+        border-block-start: 1px solid var(--border-color);
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    @media (max-width: 48rem) {
+        .account-referrals__columns {
+            display: none;
+        }
+
+        .account-referrals__row {
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            > :nth-child(2) {
+                display: none;
+            }
+        }
+
+        .account-referrals__row:not(.account-referrals__row--plain) {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+        }
+    }
+</style>

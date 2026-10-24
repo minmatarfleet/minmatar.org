@@ -23,14 +23,21 @@ ROUTE_SPEC = {
         403: ErrorResponse,
         400: ErrorResponse,
     },
-    "description": "Create a new fleet, type/location/audience is from other endpoints. Must have fleets.add_evefleet permission",
+    "description": (
+        "Create a new fleet, type/location/audience is from other "
+        "endpoints. Must have fleets.add_evefleet permission, or, with "
+        "host_group_id, be able to schedule fleets for that tribe group."
+    ),
 }
 
 
 def create_fleet(request, payload: CreateEveFleetRequest):
-    denied = require_feature(request.user, "fleets.create")
-    if denied:
-        return denied
+    # A tribe group fleet needs the group's fleet publishing right instead
+    # (checked in create_scheduled_fleet).
+    if not payload.host_group_id:
+        denied = require_feature(request.user, "fleets.create")
+        if denied:
+            return denied
 
     result = create_scheduled_fleet(user=request.user, payload=payload)
     if isinstance(result, tuple):

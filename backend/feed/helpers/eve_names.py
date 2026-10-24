@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import Iterable
 
 from eveonline.client import EsiClient
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from eveonline.models import EveCharacter
 from eveuniverse.models import EveType
 
 from feed.models import FeedCharacterAffiliation
 
 CAPSULE_GROUP_NAME = "Capsule"
-KNOWN_CAPSULE_TYPE_IDS = frozenset({670})
+KNOWN_CAPSULE_TYPE_IDS = CAPSULE_TYPE_IDS
 
 _HULL_CLASS_PLURALS = {
     "Frigate": "frigates",
@@ -171,20 +172,6 @@ def top_ships_from_counts(
         }
         for type_id, count in parsed_rows
     ]
-
-
-def format_top_ships_phrase(
-    ships: list[dict[str, int | str]], *, limit: int = 3
-) -> str:
-    parts: list[str] = []
-    for ship in ships[:limit]:
-        name = str(ship["name"])
-        count = int(ship["count"])
-        if count > 1:
-            parts.append(f"{name} ×{count}")
-        else:
-            parts.append(name)
-    return ", ".join(parts)
 
 
 def top_hull_classes_from_counts(

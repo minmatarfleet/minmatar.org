@@ -16,7 +16,7 @@ from creators.clients.reddit import (
     normalize_reddit_username,
 )
 from creators.clients.twitch import TwitchClient
-from creators.clients.youtube import YouTubeClient
+from creators.clients.youtube import YouTubeClient, is_public_playlist_item
 from creators.models import (
     CreatorAccount,
     CreatorItem,
@@ -182,17 +182,28 @@ def disconnect_account(user: User, provider: str) -> bool:
     return True
 
 
+class RedditUsernameTaken(Exception):
+    """Another member already linked this Reddit username."""
+
+
 def link_reddit_username(user: User, username: str) -> CreatorAccount:
     """Store a Reddit username for public-post polling (no user OAuth)."""
     name = normalize_reddit_username(username)
     if not name:
         raise ValueError("username_required")
 
-    # Case-insensitive uniqueness across users.
+    # Case-insensitive uniqueness across users. Nothing proves who owns a
+    # Reddit name, so first come keeps it: never delete another member's
+    # account (and with it their creator posts).
     platform_user_id = name.lower()
-    CreatorAccount.objects.filter(
-        provider=CreatorProvider.REDDIT, platform_user_id=platform_user_id
-    ).exclude(user=user).delete()
+    if (
+        CreatorAccount.objects.filter(
+            provider=CreatorProvider.REDDIT, platform_user_id=platform_user_id
+        )
+        .exclude(user=user)
+        .exists()
+    ):
+        raise RedditUsernameTaken(name)
 
     account, _ = CreatorAccount.objects.update_or_create(
         user=user,
@@ -341,6 +352,11 @@ def sync_youtube_videos(account: CreatorAccount) -> int:
         snippet = item.get("snippet") or {}
         video_id = content.get("videoId") or ""
         if not video_id:
+            continue
+        if not is_public_playlist_item(item):
+            CreatorItem.objects.filter(
+                provider=CreatorProvider.YOUTUBE, external_id=video_id
+            ).delete()
             continue
         thumbs = snippet.get("thumbnails") or {}
         thumb = (

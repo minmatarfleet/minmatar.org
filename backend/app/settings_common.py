@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -6,32 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Celery beat
 BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
 CACHE_URL = "redis://localhost:6379/2"
-CELERY_IMPORTS = (
-    "eveonline.tasks",
-    "structures.tasks",
-    "groups.tasks",
-    "discord.tasks",
-    "fleets.tasks",
-    "reminders.tasks",
-    "moons.tasks",
-    "market.tasks",
-    "industry.tasks",
-    "reddit.tasks",
-    "creators.tasks",
-    "tribes.tasks",
-    "feed.tasks",
-    "notifications.tasks",
-    "buyback.tasks",
-    "alliance.tasks",
-    "fittings.tasks",
-    "surveys.tasks",
-    "campaigns.tasks",
-)
 
-
-# Crispy forms
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # ESI
 # LOGIN_URL="/authentication/login"
@@ -50,6 +26,7 @@ INSTALLED_APPS = [
     "django_admin_tabs",
     "django_extensions",
     "django_celery_beat",
+    "app",
     "safedelete",
     "esi",
     # Discord auth
@@ -102,9 +79,12 @@ INSTALLED_APPS = [
     "audit",
     # Reddit integration
     "reddit",
+    # Corporation recruitment threads on the EVE Online forums
+    "recruitment.apps.RecruitmentConfig",
     # Creator Twitch / YouTube / Reddit OAuth + ingest
     "creators.apps.CreatorsConfig",
     "feed.apps.FeedConfig",
+    "intel.apps.IntelConfig",
     "help_tickets.apps.HelpTicketsConfig",
     # Quarterly community surveys
     "surveys.apps.SurveysConfig",
@@ -120,6 +100,8 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     # Answer browser CORS preflight (OPTIONS) before URL routing → 405.
     "app.cors.SimpleCorsMiddleware",
+    # Count which desktop versions call the API (X-Minmatar-Client).
+    "app.client_versions.ClientVersionMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -221,3 +203,34 @@ ESI_ALWAYS_CREATE_TOKEN = True
 # Janice (https://janice.e-351.com) - optional; get key from kukki#3914 on Discord
 JANICE_API_KEY = ""
 JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"
+
+# Which answer the site gates pages on: "legacy" (Django permission strings),
+# "shadow" (legacy, but report where pilot features disagree), or "features".
+# Read by GET /api/users/me/gates; change it and restart the app to flip.
+FRONTEND_GATE_SOURCE = os.environ.get("FRONTEND_GATE_SOURCE", "legacy")
+
+# Optional integrations, read directly as settings.X. Empty means "not
+# configured". They live here so every settings file, including local
+# copies of settings.py, defines them.
+#
+# Base URL of the Django admin; when set, doctrine/fitting change DMs link
+# to the review queues there.
+MINMATAR_ADMIN_BASE_URL = os.environ.get("MINMATAR_ADMIN_BASE_URL", "")
+# Bot invite link shown to corporations; defaults to one built from
+# DISCORD_CLIENT_ID.
+DISCORD_BOT_INVITE_URL = os.environ.get("DISCORD_BOT_INVITE_URL", "")
+# SDE sqlite for campaign area names; defaults to the newest
+# frontend/app/src/data/sde-*.sqlite.
+EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")
+
+# Reverse proxies in front of the app that each append the address they saw
+# to X-Forwarded-For. Production runs one nginx hop (proxy/); set this to 0
+# if the app is reached directly, or add one per extra hop (e.g. a CDN).
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+
+# The daily alliance health snapshot prune deletes rows (older than 35 days,
+# down to one per day), so it only runs when this is turned on. Off by
+# default: no snapshot history is deleted without sign-off.
+ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED = os.environ.get(
+    "ALLIANCE_HEALTH_SNAPSHOT_PRUNE_ENABLED", ""
+).strip().lower() in {"1", "true", "yes", "on"}

@@ -8,6 +8,7 @@ interface Props {
     corporations?:          CorporationObject[];
     user_corporation_id?:   number;
     disable_applications?:  boolean;
+    link_to_page?:          boolean;
     [propName: string]:     any;
 }
 
@@ -15,6 +16,7 @@ const {
     corporations = [],
     user_corporation_id = 0,
     disable_applications = false,
+    link_to_page = false,
     ...atributes
 } = Astro.props
 
@@ -37,6 +39,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
                 corporation={corporation}
                 is_user_corporation={corporation.corporation_id === user_corporation_id}
                 disable_applications={disable_applications}
+                link_to_page={link_to_page}
             />
         </ComponentBlock>
     )}

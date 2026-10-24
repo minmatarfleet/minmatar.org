@@ -8,10 +8,10 @@ from django.db import transaction
 from ninja import Router
 from pydantic import BaseModel
 
+from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 
-from .discord import notify_application_transferred
 from .l3arn import (
     is_l3arn_corporation,
     validate_application_description,
@@ -24,6 +24,7 @@ from .models import (
     open_application_for_user,
 )
 from .prime_time import apply_application_prime_time
+from .tasks import notify_application_transferred_task
 from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
@@ -56,10 +57,6 @@ class CorporationApplicationRequest(BaseModel):
 
 class TransferCorporationApplicationRequest(BaseModel):
     corporation_id: int
-
-
-class ErrorResponse(BaseModel):
-    detail: str
 
 
 class OpenCorporationApplicationResponse(BaseModel):
@@ -333,10 +330,13 @@ def transfer_corporation_application(
     application.corporation_id = target_corporation_id
     application.save()
 
-    notify_application_transferred(
-        application,
-        previous_corporation_id=previous_corporation_id,
-        transferred_by_username=request.user.username,
+    transferred_by_username = request.user.username
+    transaction.on_commit(
+        lambda: notify_application_transferred_task.delay(
+            application.id,
+            previous_corporation_id,
+            transferred_by_username,
+        )
     )
 
     logger.info(

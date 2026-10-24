@@ -1,3 +1,23 @@
+import type { components } from './generated/api'
+
+/**
+ * Backend schemas, generated from the API's OpenAPI document (npm run gen:api).
+ * New API types come from here, never as a hand-written copy:
+ *     export type Thing = ApiResponse<'ThingResponse'>
+ */
+type Schemas = components['schemas']
+
+/** Every field present, all the way down: Ninja serializes the whole model, sending null for an unset field. */
+type Complete<T> = T extends (infer Item)[] ? Complete<Item>[]
+    : T extends object ? { [Key in keyof T]-?: Complete<T[Key]> }
+    : T
+
+/** A response body. The API sends every field (null when unset), so none is optional. */
+export type ApiResponse<Name extends keyof Schemas> = Complete<Schemas[Name]>
+
+/** A request body: fields with a default may be left out. */
+export type ApiRequest<Name extends keyof Schemas> = Schemas[Name]
+
 export interface Skill {
     active_skill_level:   number;
     skill_id:             number;
@@ -23,12 +43,7 @@ export interface TribeCharacterRef {
     character_name: string;
 }
 
-export interface TribeQualifyingAssetType {
-    type_id:        number;
-    type_name:      string;
-    minimum_count:  number;
-    location_id:    number | null;
-}
+export type TribeQualifyingAssetType = ApiResponse<'QualifyingAssetTypeSchema'>
 
 export interface TribeQualifyingSkill {
     skill_type_id:  number;
@@ -54,29 +69,33 @@ export interface TribeAffiliationRef {
     name: string;
 }
 
-export interface TribeGroup {
-    id:                     number;
-    tribe_id:               number;
-    tribe_name:             string;
-    code?:                  string;
-    name:                   string;
-    description:            string;
-    content?:               string;
-    discord_channel_id:     number | null;
-    chief:                  TribeCharacterRef | null;
-    ship_type_ids:          number[];
-    blueprint_type_ids:     number[];
-    is_active:              boolean;
-    member_count:           number;
-    requirements:           TribeRequirement[];
-    ranks?:                 TribeGroupRank[];
-    required_token_type?:   string | null;
-    require_off_trial?:     boolean;
-    allowed_affiliations?:  TribeAffiliationRef[];
-        can_apply?:             boolean;
-        can_manage?:            boolean;
-        roster_hidden?:         boolean;
-    }
+export type TribeGroup = ApiResponse<'TribeGroupSchema'>
+
+// Tribe publishing (docs/tribes/tribe-publishing.md)
+export type HostGroupRef = ApiResponse<'HostGroupRef'>
+/** 403 body for a members-only fleet or post: names the group, hides the content. */
+export type RestrictedResponse = ApiResponse<'RestrictedResponse'>
+export type PublishingKind = ApiResponse<'PublishingKind'>
+export type PublishingPolicy = ApiResponse<'PublishingPolicy'>
+export type TribeGroupPublisher = ApiResponse<'PublisherSchema'>
+export type TribeGroupPublishing = ApiResponse<'TribeGroupPublishingSchema'>
+export type TribeGroupPublishingPatch = ApiRequest<'TribeGroupPublishingPatch'>
+export type PublishableGroup = ApiResponse<'PublishableGroupSchema'>
+export type DiscordChannelKind = ApiResponse<'DiscordChannelKind'>
+export type DiscordChannel = ApiResponse<'DiscordChannelSchema'>
+export type TribeEventRecurrence = ApiResponse<'EventRecurrence'>
+export type TribeEventWhereKind = ApiResponse<'EventWhereKind'>
+export type TribeEventStatus = ApiResponse<'EventStatus'>
+export type TribeEvent = ApiResponse<'TribeEventSchema'>
+export type TribeEventCreate = ApiRequest<'TribeEventCreate'>
+export type TribeEventPatch = ApiRequest<'TribeEventPatch'>
+export type TribeEventPreview = ApiResponse<'TribeEventPreviewSchema'>
+export type TribeEventAnnouncementPreview = ApiResponse<'TribeEventAnnouncementPreview'>
+
+// Tribe group invitations (docs/tribes/tribe-invitations.md)
+export type TribeInvitation = ApiResponse<'InvitationSchema'>
+export type TribeInvitationCandidate = ApiResponse<'InvitationCandidateSchema'>
+export type TribeInvitationsSend = ApiRequest<'SendInvitationsRequest'>
 
 export interface Tribe {
     id:                     number;
@@ -106,16 +125,76 @@ export interface TribeGroupRosterEntry {
     approved_at:                string | null;
 }
 
-export interface TribeGroupGrowth {
-    months:     { month: string; label: string }[];
-    counts:     number[];
-}
-
 export interface TribeGroupShowcaseContributor {
     character_id:       number | null;
     character_name:     string;
     metric_key:         string;
     metric_value:       number | string;
+    values:             Record<string, number>;
+}
+
+export interface TribeShowcaseBestMonth {
+    month:              string;
+    value:              number;
+}
+
+export interface TribeShowcaseHull {
+    type_id:            number;
+    name:               string;
+    count:              number;
+}
+
+export interface TribeShowcaseWeek {
+    week_start:         string;
+    lp:                 number;
+}
+
+export interface TribeShowcaseWelcomed {
+    character_id:       number;
+    character_name:     string;
+    promoted_at:        string;
+}
+
+export interface TribeShowcaseFixedTicket {
+    pilot_character_id: number | null;
+    pilot_name:         string;
+    category:           string;
+    closed_by:          string;
+    hours:              number;
+}
+
+export interface TribeShowcaseWork {
+    kind:               'post' | 'video' | 'vod' | 'stream';
+    title:              string;
+    post_id:            number | null;
+    url:                string;
+    thumbnail_url:      string;
+    published_at:       string;
+    author:             string;
+}
+
+export interface TribeShowcaseCatch {
+    killmail_id:            number;
+    ship_type_id:           number;
+    ship_name:              string;
+    ship_class:             string;
+    victim_corporation_id:  number | null;
+    killed_at:              string;
+    hunters:                number;
+}
+
+/** Group-page extras; which keys exist depends on the group. */
+export interface TribeShowcaseHighlights {
+    best_month?:        TribeShowcaseBestMonth | null;
+    best_quarter?:      number;
+    record_week_lp?:    number;
+    all_time?:          Record<string, number | null>;
+    hulls?:             TribeShowcaseHull[];
+    weekly?:            TribeShowcaseWeek[];
+    welcomed?:          TribeShowcaseWelcomed[];
+    fixed?:             TribeShowcaseFixedTicket[];
+    latest_work?:       TribeShowcaseWork[];
+    catches?:           TribeShowcaseCatch[];
 }
 
 export interface TribeGroupShowcase {
@@ -126,10 +205,117 @@ export interface TribeGroupShowcase {
     period_start:       string | null;
     period_end:         string | null;
     manual:             boolean;
+    warming?:           boolean;
     message:            string;
     totals:             Record<string, number | string>;
     columns:            string[];
     contributors:       TribeGroupShowcaseContributor[];
+    highlights:         TribeShowcaseHighlights;
+}
+
+export interface TribeAboutPilot {
+    character_id:       number | null;
+    character_name:     string;
+    value:              number;
+}
+
+/** One group's last 12 months; ``totals`` keys depend on the group's report. */
+export interface TribeAboutGroup {
+    id:                 number;
+    code:               string;
+    name:               string;
+    member_count:       number;
+    manual:             boolean;
+    totals:             Record<string, number | string>;
+    highlights:         TribeShowcaseHighlights;
+    top_pilots:         TribeAboutPilot[];
+}
+
+export interface TribeAboutCorporation {
+    corporation_id:     number;
+    name:               string;
+    ticker:             string;
+    people:             number;
+}
+
+export interface TribeAboutHull {
+    type_id:            number;
+    name:               string;
+    count:              number;
+}
+
+export interface TribeAboutHangarGroup {
+    group_id:           number;
+    code:               string;
+    name:               string;
+    total:              number;
+    hulls:              TribeAboutHull[];
+}
+
+export interface TribeAboutCapitalKill {
+    killmail_id:        number;
+    ship_type_id:       number;
+    ship_name:          string;
+    ship_class:         string;
+    system:             string;
+    killed_at:          string;
+}
+
+export interface TribeAboutCapitals {
+    hangar:                 TribeAboutHangarGroup[];
+    kills_by_month:         { month: string, kills: number }[];
+    year_kills:             number;
+    all_time_kills:         number;
+    first_kill:             string | null;
+    victim_classes:         { name: string, kills: number }[];
+    capital_kills_year:     number;
+    recent_capital_kills:   TribeAboutCapitalKill[];
+    systems:                { name: string, kills: number }[];
+    fleets_year:            number;
+    median_turnout:         number;
+    hours:                  number[];
+}
+
+export interface TribeAboutSupply {
+    mining_by_month:    { month: string, volume_m3: number }[];
+    ores:               { name: string, volume_m3: number }[];
+}
+
+/** A year of the tribe; ``ready`` is false until the backend cache is built. */
+export interface TribeAbout {
+    tribe_id:           number;
+    slug:               string;
+    ready:              boolean;
+    generated_at:       string | null;
+    period_start:       string | null;
+    period_end:         string | null;
+    people:             number;
+    multi_group_people: number;
+    growth:             { months: { month: string, label: string }[], counts: number[] };
+    corporations:       TribeAboutCorporation[];
+    corporation_count:  number;
+    character_count:    number;
+    isk_destroyed:      number;
+    groups:             TribeAboutGroup[];
+    capitals:           TribeAboutCapitals | null;
+    supply:             TribeAboutSupply | null;
+}
+
+/**
+ * A year of one group, for its About tab; ``ready`` is false until the cache
+ * is built. The blocks the schema leaves as dicts share the tribe's shapes.
+ */
+export type TribeGroupAbout = Omit<
+    ApiResponse<'TribeGroupAboutSchema'>,
+    'growth' | 'corporations' | 'year' | 'capitals' | 'supply'
+> & {
+    growth:             TribeAbout['growth'];
+    corporations:       TribeAboutCorporation[];
+    year:               TribeAboutGroup | null;
+    /** The group's own slice of the capital line (capital groups only). */
+    capitals:           TribeAboutCapitals | null;
+    /** Ore by month and kind (Mining only). */
+    supply:             TribeAboutSupply | null;
 }
 
 export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
@@ -204,35 +390,11 @@ export interface TribeExternalGuildJoin {
     status: TribeExternalGuildSeatStatus;
 }
 
-export interface SigRequest {
-    id:             number;
-    user:           number;
-    sig_id:         number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-    approved_at:    Date;
-}
-
-export interface TeamRequest {
-    id:             number;
-    user:           number;
-    team_id:        number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-    approved_at:    Date;
-}
-
 export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 
 export type CorporationLeadershipRole = 'ceo' | 'director' | 'recruiter' | 'steward'
 
-export interface CorporationLeadershipMember {
-    character_id:           number;
-    character_name:         string;
-    role:                   CorporationLeadershipRole | string;
-    prime_time?:            string | null;
-    observed_prime_times?:  string[];
-}
+export type CorporationLeadershipMember = ApiResponse<'CorporationLeadershipResponse'>
 
 export interface TimezoneBucketCount {
     bucket:     string;
@@ -283,6 +445,155 @@ export interface CorporationOpenApplication {
     created_at: string;
 }
 
+/** An in-game corporation project's ESI state. */
+export type CorporationProjectState = 'Unspecified' | 'Active' | 'Closed' | 'Completed' | 'Expired' | 'Deleted'
+
+export interface CorporationProjectTarget {
+    /** The configuration key: locations, ships, factions, identities, items, materials, corporations */
+    kind:   string;
+    names:  string[];
+}
+
+export interface CorporationProjectContributor {
+    character_id:   number;
+    character_name: string;
+    contributed:    number;
+}
+
+export interface CorporationProjectCampaign {
+    slug:   string;
+    name:   string;
+    status: string;
+}
+
+export interface CorporationProject {
+    project_id:                 string;
+    corporation_id:             number;
+    corporation_name:           string;
+    name:                       string;
+    description:                string;
+    state:                      CorporationProjectState | string;
+    /** ESI configuration key, e.g. capture_fw_complex, destroy_ship, manual */
+    kind:                       string;
+    targets:                    CorporationProjectTarget[];
+    creator_id:                 number | null;
+    creator_name:               string;
+    progress_current:           number;
+    progress_desired:           number;
+    reward_initial:             number | null;
+    reward_remaining:           number | null;
+    reward_per_contribution:    number | null;
+    participation_limit:        number | null;
+    created:                    string | null;
+    expires:                    string | null;
+    finished:                   string | null;
+    last_modified:              string;
+    contributors:               CorporationProjectContributor[];
+    campaigns:                  CorporationProjectCampaign[];
+}
+
+export interface CorporationProjects {
+    corporation_id: number;
+    /** CEO or director: may put a project toward a campaign */
+    can_manage:     boolean;
+    /** A CEO or director token holds esi-corporations.read_projects.v1 */
+    has_token:      boolean;
+    synced_at:      string | null;
+    refreshing:     boolean;
+    projects:       CorporationProject[];
+    /** Scheduled and active campaigns a project can be put toward */
+    campaigns:      CorporationProjectCampaign[];
+}
+
+/** alliance: posted as u/MinmatarFleet; automatic: posted from the CEO's linked account */
+export type RedditDeliveryMethod = 'alliance' | 'automatic' | 'discord_reminder'
+
+export type RedditPriority = 'high' | 'normal'
+
+export type RedditRotationStatus = 'active' | 'paused' | 'admin_paused' | 'not_set_up'
+
+export interface RedditUpcomingSlot {
+    scheduled_for:  string;
+    /** false: an estimate from next month's draft, which can still move */
+    confirmed:      boolean;
+}
+
+export interface RedditScheduleChange {
+    created_at:     string;
+    slot_date:      string;
+    scheduled_for:  string;
+    /** true: the post gained this slot; false: it lost it */
+    gained:         boolean;
+    reason:         'rotation' | 'paused' | 'admin';
+}
+
+export type RedditAutomaticStatus = 'ready' | 'not_approved' | 'no_account' | 'account_invalid' | 'unscheduled'
+
+export interface LinkedRedditAccount {
+    username:       string;
+    token_invalid:  boolean;
+}
+
+export type RedditMarkdownProblemCode = 'html' | 'image' | 'footnote' | 'task_list' | 'soft_line_break' | 'fenced_code' | 'heading_space'
+
+export interface RedditMarkdownProblem {
+    code:       RedditMarkdownProblemCode;
+    line:       number;
+    excerpt:    string;
+    blocking:   boolean;
+}
+
+export interface CorporationRedditPost {
+    corporation_id:         number;
+    exists:                 boolean;
+    title:                  string;
+    content:                string;
+    delivery_method:        RedditDeliveryMethod;
+    subreddit:              string;
+    paused:                 boolean;
+    priority:               RedditPriority;
+    rotation_status:        RedditRotationStatus;
+    interval_days:          number | null;
+    upcoming:               RedditUpcomingSlot[];
+    recent_changes:         RedditScheduleChange[];
+    approved:               boolean;
+    approved_at:            string | null;
+    /** The CEO's edits to an approved post, waiting for a superuser; the approved words keep posting meanwhile. */
+    change_pending:         boolean;
+    change_submitted_at:    string | null;
+    /** Set when their last change was rejected; empty when no note was left. */
+    change_rejected_note:   string | null;
+    automatic_status:       RedditAutomaticStatus;
+    last_post_at:           string | null;
+    last_reddit_post_url:   string | null;
+    last_reminder_at:       string | null;
+    reddit_account:         LinkedRedditAccount | null;
+    discord_linked:         boolean;
+    markdown_problems:      RedditMarkdownProblem[];
+}
+
+export interface CorporationRedditPostUpdate {
+    title:              string;
+    content:            string;
+    delivery_method:    RedditDeliveryMethod;
+    /** Take the post out of the rotation, or put it back. Omit to leave it. */
+    paused?:            boolean;
+}
+
+export interface CorporationForumPost {
+    corporation_id:     number;
+    exists:             boolean;
+    url:                string | null;
+    topic_id:           number | null;
+    title:              string;
+    updated_at:         string | null;
+    last_bumped_at:     string | null;
+}
+
+export interface CorporationForumPostUpdate {
+    url:                string;
+}
+
 export interface CorporationPublicSummary {
     window_days:            number;
     community: {
@@ -304,64 +615,47 @@ export interface CorporationPublicSummary {
     };
 }
 
-export interface Corporation {
-    corporation_id:     number;
-    corporation_name:   string;
-    alliance_id:        number;
-    alliance_name:      string;
-    faction_id:         number;
-    faction_name:       string;
-    type:               CorporationType;
-    introduction:       string;
-    biography:          string;
-    executor_notes?:    string;
-    timezones:          string[];
-    requirements:       string[];
-    members:            CharacterCorp[];
-    active:             boolean;
-    trial:              boolean;
-    ticker?:            string | null;
-    member_count?:      number | null;
-    human_count?:       number | null;
-    ceo?:               CorporationCeo | null;
-    leadership?:        CorporationLeadershipMember[];
-    timezone_distribution?: TimezoneBucketCount[];
-    weekday_distribution?: WeekdayCount[];
-    highlights?:        string | null;
-    activity_summary?:  string | null;
-    media?:             CorporationMediaItem[];
-    discord_invite_url?: string | null;
+export type CorporationPrimeWindow = ApiResponse<'CorporationPrimeWindow'>
+
+export interface CorporationTenureBand {
+    key:    'two_years' | 'one_year' | 'three_months' | 'new';
+    count:  number;
 }
 
-export interface CorporationInfo {
-    corporation_id:     number;
-    corporation_name:   string;
-    alliance_id:        number;
-    alliance_name:      string;
-    faction_id:         number;
-    faction_name:       string;
-    type:               CorporationType;
-    introduction:       string;
-    biography:          string;
-    executor_notes?:    string;
-    timezones:          string[];
-    requirements:       string[];
-    active:             boolean;
-    trial:              boolean;
-    ticker?:            string | null;
-    member_count?:      number | null;
-    human_count?:       number | null;
-    ceo?:               CorporationCeo | null;
-    leadership?:        CorporationLeadershipMember[];
-    timezone_distribution?: TimezoneBucketCount[];
-    weekday_distribution?: WeekdayCount[];
-    highlights?:        string | null;
-    activity_summary?:  string | null;
-    media?:             CorporationMediaItem[];
-    discord_invite_url?: string | null;
-    public_summary?:    CorporationPublicSummary | null;
-    application_process?: CorporationApplicationProcess | null;
+export interface CorporationLeaderRow {
+    character_id:   number;
+    character_name: string;
+    value:          number;
 }
+
+export interface CorporationAbout {
+    founded?:       string | null;
+    home_system?:   { name: string; share: number } | null;
+    /** 7 rows (Monday first) x 24 EVE-time hours of people on fleets. */
+    heatmap?:       number[][];
+    prime_windows?: CorporationPrimeWindow[];
+    tenure?: {
+        mains:          number;
+        average_days:   number | null;
+        bands:          CorporationTenureBand[];
+    } | null;
+    founders?:      number;
+    hulls?:         { type_id: number; name: string; pilots: number }[];
+    records?: {
+        biggest_turnout?:   { pilots: number; date: string | null; title: string } | null;
+        busiest_month?:     { month: string; fleets: number } | null;
+    } | null;
+    leaderboards?: {
+        fleets:     CorporationLeaderRow[];
+        kills:      CorporationLeaderRow[];
+        fleets_led: CorporationLeaderRow[];
+    } | null;
+    tribe_groups?:  { name: string; members: number }[];
+}
+
+export type Corporation = ApiResponse<'CorporationResponse'>
+
+export type CorporationInfo = ApiResponse<'CorporationInfoResponse'>
 
 export interface CorporationMemberDetails {
     character_id:           number;
@@ -380,38 +674,24 @@ export interface CorporationMemberDetails {
     prime_time?:            string | null;
     observed_prime_times?:  string[];
     community_status?:      string | null;
+    corp_joined_at?:        string | null;
+    last_fleet_at?:         string | null;
+    /** Distinct fleets for the person (alts folded), repeated on each of their characters. */
+    person_fleets_90d?:     number | null;
+    /** The person's distinct fleets per week, oldest first, ending this week. */
+    weekly_fleets?:         number[];
+    top_hull_id?:           number | null;
+    top_hull_name?:         string | null;
+    tribe_groups?:          string[];
+    status_history?:        { to_status: string; changed_at: string }[];
+    /** The latest alliance health trial review would approve them. */
+    trial_ready?:           boolean;
+    trial_reason?:          string | null;
     characters_hidden?:     boolean;
     hidden_character_count?: number;
 }
 
-export interface CorporationMembersTop {
-    metric:     string;
-    members:    CorporationMemberDetails[];
-}
-
-export interface CorporationAdmin {
-    corporation_id:     number;
-    executor_notes?:    string | null;
-    discord_bot_present: boolean;
-    discord_guild_name?: string | null;
-    discord_invite_url?: string | null;
-    bot_invite_url?:    string | null;
-    humans?:            number | null;
-    active_90d?:        number | null;
-    active_90d_pct?:    number | null;
-    growth_90d_pct?:    number | null;
-    stewards:           { character_id: number; character_name: string }[];
-    leadership_missing_prime_time: CorporationLeadershipMember[];
-}
-
-export interface CharacterCorp {
-    character_id:           number;
-    character_name:         string;
-    primary_character_id:   number;
-    primary_character_name: string;
-    registered:             boolean;
-    exempt:                 boolean;
-}
+export type CharacterCorp = ApiResponse<'CorporationMemberResponse'>
 
 export interface CorporationApplication {
     status:         string;
@@ -451,6 +731,17 @@ export interface UserProfile {
     community_status?:     string | null;
     eve_character_profile: EveCharacterProfile | null;
     discord_user_profile:  DiscordUserProfile | null;
+}
+
+export type GateSource = 'legacy' | 'shadow' | 'features'
+
+export interface UserGates {
+    features:    string[];
+    legacy:      {
+        permissions:  string[];
+        is_superuser: boolean;
+    };
+    gate_source: GateSource;
 }
 
 export interface DiscordUserProfile {
@@ -587,6 +878,7 @@ export interface Doctrine {
     primary_fittings:   Fitting[];
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
+    utility_fittings?:  Fitting[];
     sig_ids:            number[];
     location_ids:       number[];
 }
@@ -597,36 +889,17 @@ export type FleetStatus = typeof fleet_status[number]
 export const fleet_types = ['strategic', 'non_strategic', 'training', 'npsi'] as const
 export type FleetTypes = typeof fleet_types[number]
 
-export interface Fleet {
-    id:                 number;
-    type:               FleetTypes;
-    audience?:          string;
-    description:        string;
-    objective?:         string;
-    start_time:         Date;
-    fleet_commander?:   number;
-    doctrine_id:        number;
-    location:           string;
-    disable_motd:       boolean;
-    hide_volunteers:    boolean;
-    tracking?:          Tracking;
-    status?:            TrackingStatus;
-    aar_link:           string;
-    roam_report_url?:   string | null;
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-}
-
-export interface FleetBasic {
-    id:                 number;
-    audience:           string;
-}
+export type Fleet = ApiResponse<'EveFleetResponse'>
+/** One fleet from GET /fleets/{id}, with what the viewer may do with it. */
+export type FleetDetail = ApiResponse<'EveFleetDetailResponse'>
 
 export interface Tracking {
     id:             number;
     start_time:     Date;
     end_time:       Date | null;
     is_registered:  boolean;
+    is_free_move?:  boolean;
+    has_motd?:      boolean;
 }
 
 export interface FleetRequest {
@@ -641,34 +914,19 @@ export interface FleetRequest {
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     campaign_id?:       number | null;
+    host_group_id?:     number | null;
+    open_to_alliance?:  boolean;
+    on_schedule?:       boolean;
 }
 
-export interface FleetPatchRequest {
-    type?:              FleetTypes;
-    description?:       string;
-    objective?:         string;
-    start_time?:        Date;
-    doctrine_id?:       number | null;
-    location_id?:       number;
-    audience_id?:       number;
-    disable_motd?:      boolean;
-    hide_volunteers?:   boolean;
-    immediate_ping?:    boolean;
-    status?:            TrackingStatus;
-    aar_link?:          string;
-    roam_report_url?:   string | null;
-    campaign_id?:       number | null;
-}
+export type FleetPatchRequest = ApiRequest<'UpdateEveFleetRequest'>
+export type FleetPingPreviewRequest = ApiRequest<'FleetPingPreviewRequest'>
+export type FleetPingPreview = ApiResponse<'FleetPingPreviewResponse'>
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
 export type TrackingStatus = typeof tracking_status[number]
 
-export interface Audience {
-    id:                     number;
-    display_name:           string;
-    display_channel_name:   string;
-    image_url:              string | null;
-}
+export type Audience = ApiResponse<'EveFleetChannelResponse'>
 
 export interface FleetMember {
     character_id:       number;
@@ -701,23 +959,7 @@ export interface FleetUsers {
     user_ids: number[];
 }
 
-export interface StructureTimer {
-    id:                 number;
-    name:               string;
-    state:              string;
-    type:               string;
-    timer:              Date;
-    created_at:         Date;
-    updated_at:         Date;
-    created_by:         number;
-    updated_by:         number;
-    system_name:        string;
-    corporation_name:   string;
-    alliance_name:      string;
-    structure_id:       number;
-    campaign_id:        number | null;
-    fitting?:           string | null;
-}
+export type StructureTimer = ApiResponse<'EveStructureTimerResponse'>
 
 export const structure_states = [ 'anchoring', 'armor', 'hull', 'unanchoring' ] as const
 export type StructureState = typeof structure_states[number]
@@ -775,29 +1017,9 @@ export interface CampaignStructureAttachRequest {
     selected_item_window?:  string;
 }
 
-export interface VerifyStructureTimerRequest {
-    corporation_name:   string;
-    alliance_name:      string;
-}
+export type VerifyStructureTimerRequest = ApiRequest<'EveStructureTimerVerificationRequest'>
 
-export interface Post {
-    post_id:            number;
-    state:              PostStates;
-    title:              string;
-    seo_description:    string;
-    slug:               string;
-    content?:           string;
-    image?:             string;
-    date_posted:        Date;
-    user_id:            number;
-    author_character_id: number;
-    author_character_name: string;
-    tag_ids:            number[];
-    tribe_group_ids?:   number[];
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-    campaign_name?:     string | null;
-}
+export type Post = ApiResponse<'EvePostResponse'>
 
 export interface PostParams {
     title?:             string;
@@ -807,6 +1029,9 @@ export interface PostParams {
     tag_ids?:           number[];
     tribe_group_ids?:   number[];
     campaign_id?:       number | null;
+    host_group_id?:     number | null;
+    members_only?:      boolean;
+    announce?:          boolean;
 }
 
 export interface PostTag {
@@ -841,13 +1066,7 @@ export interface RouteCost {
 }
 
 
-export interface SystemMoon {
-    id:         number;
-    system:     string;
-    planet:     string;
-    moon:       number;
-    detail:     SystemMoonDetails;
-}
+export type SystemMoon = ApiResponse<'MoonViewResponse'>
 
 export interface SystemMoonDetails {
     monthly_revenue?:   number;
@@ -995,71 +1214,16 @@ export interface History {
     quantity:   number;
 }
 
-export interface MarketCorporation {
-    corporation_id:     number;
-    corporation_name:   string;
-}
-
-export interface MarketExpectation {
-    expectation_id:     number;
-    fitting_id:         number;
-    fitting_name:       string;
-    location_id:        number;
-    location_name:      string;
-    quantity:           number;
-}
-
-export interface MarketLocation {
-    id:             number;
-    name:           string;
-    system_name:    string;
-    contracts:      number;
-    expectations:   number;
-    structure_id:   number;
-}
-
 export interface DoctrineFitting {
     fitting_id:         number;
     fitting_name:       string;
     role:               string;
 }
 
-export interface MarketDoctrine {
-    doctrine_id:        number;
-    doctrine_name:      string;
-    fittings:           DoctrineFitting[];
-}
-
-export interface MarketLocationDoctrine {
-    location_id:        number;
-    location_name:      string;
-    solar_system_name:  string;
-    short_name:         string;
-    doctrines:          MarketDoctrine[];
-}
-
 export const srp_status = [ 'pending', 'approved', 'rejected', 'withdrawn' ] as const
 export type SRPStatus = typeof srp_status[number]
 
-export interface SRP {
-    id:                         number;
-    fleet_id:                   number;
-    external_killmail_link:     string;
-    status:                     SRPStatus;
-    character_id:               number;
-    character_name:             string;
-    primary_character_id:       number;
-    primary_character_name:     string;
-    ship_type_id:               number;
-    ship_name:                  string;
-    killmail_id:                number;
-    amount:                     number;
-    is_corp_ship:               boolean;
-    corp_id:                    number;
-    comments:                   string;
-    category:                   SRPCategory;
-    combat_log_id:              number;
-}
+export type SRP = ApiResponse<'SrpRequestResponse'>
 
 export interface SRPFilter {
     fleet_id?:  number;
@@ -1118,44 +1282,17 @@ export type ESITokenStatus = typeof esi_token_status[number]
 
 export const character_errors = [ 'MAIN_NOT_IN_FL33T', 'NO_TOKEN_LEVEL', 'ESI_SUSPENDED', 'NO_MAIN_SET', 'NO_TAGS' ] as const
 export type CharacterErrors = typeof character_errors[number]
-export interface SummaryCharacter {
-    character_id:       number;
-    character_name:     string;
-    is_primary:         boolean;
-    corp_id:            number;
-    corp_name:          string;
-    alliance_id:        number;
-    alliance_name:      string;
-    esi_token:          string;
-    token_status:       ESITokenStatus;
-    flags:              CharacterErrors[];
-    requested_groups:   string[];
-    actual_groups:      string[];
+/** UserCharacter, plus the ESI scope groups get_characters_summary_sorted (fetching/characters.ts) adds from the token info, and the role titles get_account_characters adds. */
+export type SummaryCharacter = ApiResponse<'UserCharacter'> & {
+    requested_groups?:  string[];
+    actual_groups?:     string[];
+    /** Character role titles, added by get_account_characters for the account page. */
+    role_titles?:       string[];
 }
 
-export interface CharacterESITokens {
-    id:                 number;
-    created:            Date;
-    expires:            Date;
-    can_refresh:        boolean;
-    owner_hash:         string;
-    scopes:             string[];
-    level:              string;
-    requested_groups:   string[];
-    actual_groups:      string[];
-    requested_count:    number;
-    actual_count:       number;
-    token_state:        string;
-    requested_level:    string;
-    actual_level:       string;
-}
+export type CharacterESITokens = ApiResponse<'CharacterTokenInfo'>
 
-export interface CharacterTag {
-    id:             number;
-    title:          string;
-    description:    string;
-    image_name:     string;
-}
+export type CharacterTag = ApiResponse<'CharacterTagResponse'>
 
 export const esi_token_roles = [ 'Director', 'Public', 'Basic', 'Industry', 'Market', 'Executor', 'FleetCommander' ] as const
 export type ESITokenRoles = typeof esi_token_roles[number]
@@ -1163,13 +1300,7 @@ export type ESITokenRoles = typeof esi_token_roles[number]
 export const prime_times = [ 'US', 'AP', 'EU' ] as const
 export type PrimeTime = typeof prime_times[number]
 
-export interface Player {
-    id:                     number;
-    nickname:               string;
-    user_id:                number;
-    primary_character_id:   number;
-    prime_time:             PrimeTime | null;
-}
+export type Player = ApiResponse<'EvePlayerResponse'>
 
 export const srp_categories = [ 'logistics', 'support', 'dps', 'capital' ] as const
 export type SRPCategory = typeof srp_categories[number]
@@ -1177,7 +1308,7 @@ export type SRPCategory = typeof srp_categories[number]
 export interface SRPRequest {
     external_killmail_link:     string;
     fleet_id?:                  number;
-    combatlog_id?:              number;
+    combat_log_id?:             number;
     is_corp_ship:               boolean;
     category?:                  SRPCategory;
     comments?:                  string;
@@ -1207,15 +1338,150 @@ export interface ProductBase {
     name:       string;
 }
 
-export interface Product extends ProductBase {
-    strategy:                       string;
-    volume:                         number;
-    blueprint_or_reaction_type_id:  number;
-    supplied_for:                   ProductBase[];
-    supplies:                       ProductBase[];
-    /** Present on GET /products/{id}; omitted from list responses. */
-    character_producers?:           Producer[];
-    corporation_producers?:         Producer[];
+export type Product = ApiResponse<'IndustryProductDetail'>
+
+export interface ProductBuilder {
+    character_id:       number;
+    character_name:     string;
+    units:              number;
+    jobs:               number;
+    last_built_at:      string | null;
+}
+
+export interface ProductBuilderCorporation {
+    corporation_id:     number;
+    corporation_name:   string;
+    units:              number;
+}
+
+export interface ProductOrderLine {
+    order_id:           number;
+    public_short_code:  string | null;
+    character_id:       number | null;
+    character_name:     string;
+    created_at:         string;
+    needed_by:          string | null;
+    fulfilled_at:       string | null;
+    quantity:           number;
+    assigned:           number;
+    delivered:          number;
+}
+
+export interface ProductLocationCount {
+    location_name:      string;
+    units:              number;
+}
+
+export interface ProductLoss {
+    killmail_id:        number;
+    killmail_time:      string;
+    character_id:       number | null;
+    character_name:     string;
+    solar_system_id:    number | null;
+}
+
+export interface ProductFight {
+    solar_system_id:    number;
+    solar_system_name:  string;
+    started_at:         string;
+    ended_at:           string;
+    units:              number;
+    killmail_id:        number;
+}
+
+export interface ProductRunningJob {
+    character_id:       number;
+    character_name:     string;
+    corporation_name:   string;
+    units:              number;
+    ends_at:            string;
+}
+
+export interface ProductBuildMaterial {
+    type_id:                number;
+    name:                   string;
+    quantity:               number;
+    unit_price:             number | null;
+    line_cost:              number | null;
+    strategy:               string | null;
+    industry_product_id:    number | null;
+}
+
+/** One run at average prices: base SDE quantities and time, no ME/TE. */
+export interface ProductBuild {
+    product_id:         number;
+    type_id:            number;
+    blueprint_type_id:  number;
+    activity:           'manufacturing' | 'reaction';
+    products_per_run:   number;
+    time_seconds:       number;
+    sell_price:         number | null;
+    material_cost:      number | null;
+    margin:             number | null;
+    prices_complete:    boolean;
+    materials:          ProductBuildMaterial[];
+}
+
+export interface ProductWeek {
+    week_start:         string;
+    built:              number;
+    sold:               number;
+    lost:               number;
+}
+
+/** GET /products/{id}/insights; cached, ready=false while the rollup runs. */
+export interface ProductInsights {
+    ready:              boolean;
+    generated_at:       string | null;
+    is_ship:            boolean;
+    window_days:        number;
+    recent_days:        number;
+    unit_price:         number | null;
+    built: {
+        units_30d:          number;
+        units_90d:          number;
+        jobs_90d:           number;
+        builders_90d:       number;
+        running_units:      number;
+        running_jobs:       number;
+        last_built_at:      string | null;
+    };
+    builders:           ProductBuilder[];
+    corporations:       ProductBuilderCorporation[];
+    running:            ProductRunningJob[];
+    orders: {
+        open_orders:            number;
+        open_units:             number;
+        open_assigned_units:    number;
+        open_delivered_units:   number;
+        ordered_units_90d:      number;
+        recent:                 ProductOrderLine[];
+    };
+    sales: {
+        market_units_30d:       number;
+        market_units_90d:       number;
+        contract_units_30d:     number;
+        contract_units_90d:     number;
+        listed_units:           number;
+        lowest_listed_price:    number | null;
+        outstanding_contracts:  number;
+        locations:              ProductLocationCount[];
+    };
+    /** Only ships are tracked in hangars and losses; null otherwise. */
+    hangars: {
+        units:          number;
+        pilots:         number;
+        locations:      ProductLocationCount[];
+    } | null;
+    losses: {
+        units_30d:              number;
+        units_90d:              number;
+        recent:                 ProductLoss[];
+        fights:                 ProductFight[];
+        small_fight_units:      number;
+        small_fight_systems:    number;
+    } | null;
+    weekly:             ProductWeek[];
 }
 
 /** Planetary (PI) API types */
@@ -1224,60 +1490,8 @@ export interface PlanetaryCharacterRef {
     character_name: string;
 }
 
-export interface HarvestOverviewItem {
-    type_id:                number;
-    name:                   string;
-    total_extractors:       number;
-    total_daily_quantity?:  number | null;
-}
-
-export interface HarvestDrillDownItem {
-    primary_character:  PlanetaryCharacterRef;
-    actual_character:   PlanetaryCharacterRef;
-    extractor_count:    number;
-    daily_quantity?:    number | null;
-}
-
-export interface ProductionOverviewItem {
-    type_id:                number;
-    name:                   string;
-    total_factories:        number;
-    total_daily_quantity?:  number | null;
-}
-
-export interface ProductionDrillDownItem {
-    primary_character:  PlanetaryCharacterRef;
-    actual_character:   PlanetaryCharacterRef;
-    factory_count:      number;
-    daily_quantity?:    number | null;
-}
-
 /** One colony on a planet (primary + actual character). */
 export interface ColonyEntry {
-    primary_character:  PlanetaryCharacterRef;
-    actual_character:   PlanetaryCharacterRef;
-}
-
-/** One planet with list of characters that have colonies on it. */
-export interface PlanetWithColoniesItem {
-    planet_id:        number;
-    solar_system_id:  number;
-    planet_type:     string;
-    colonies:        ColonyEntry[];
-}
-
-export interface HarvestDrillDownResponse {
-    characters:  PlanetaryCharacterRef[];
-    entries:     HarvestDrillDownItem[];
-}
-
-export interface ProductionDrillDownResponse {
-    characters:  PlanetaryCharacterRef[];
-    entries:     ProductionDrillDownItem[];
-}
-
-/** @deprecated Use PlanetWithColoniesItem for GET /planetary/planets */
-export interface PlanetSummaryItem {
     primary_character:  PlanetaryCharacterRef;
     actual_character:   PlanetaryCharacterRef;
 }
@@ -1287,24 +1501,10 @@ export interface RootItem {
     eve_type_name:              string;
     quantity:                   number;
     target_unit_price?:         string | null;
-    target_estimated_margin?:   string | null;
+    estimated_profit_per_unit?: number | null;
 }
 
-export interface IndustryOrder {
-    id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
-    public_short_code:  string;
-    character_id:       number | null;
-    character_name:     string;
-    location:           BaseLocation;
-    items:              RootItem[];
-    assigned_to:        Character[];
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-    campaign_name?:     string | null;
-}
+export type IndustryOrder = ApiResponse<'OrderListItemResponse'>
 
 export interface OrderCapabilities {
     can_submit:     boolean;
@@ -1379,28 +1579,9 @@ export interface OrdersProfitSummary {
 export const freight_contract_statuses = [ 'outstanding', 'in_progress', 'finished'  ] as const
 export type FreightContractStatus = typeof freight_contract_statuses[number]
 
-export interface FreightContract {
-    contract_id:                    number;
-    status:                         FreightContractStatus;
-    start_location_name:            string;
-    end_location_name:              string;
-    volume:                         number;
-    collateral:                     number;
-    reward:                         number;
-    date_issued:                    Date;
-    date_completed:                 Date | null;
-    issuer_id:                      number;
-    issuer_character_name:          string;
-    completed_by_id:                number;
-    completed_by_character_name:    string | null;
-    updated_at:                     Date | null;
-}
+export type FreightContract = ApiResponse<'FreightContractResponse'>
 
-export interface SpaceTruckerStatistics {
-    primary_character_id:       number;
-    primary_character_name:     string;
-    completed_contracts_count:  number;
-}
+export type SpaceTruckerStatistics = ApiResponse<'FreightCharacterStatResponse'>
 
 export interface MarketOperatorStatistics {
     primary_character_id:       number | null;
@@ -1639,11 +1820,7 @@ export type BlueprintOwnerEntity = typeof blueprint_owner_entity[number]
 export const blueprint_location_flag = [ 'Hangar', 'Cargo', 'AssetSafety', 'FleetHangar', 'Deliveries', 'CorpSAG'  ] as const
 export type BlueprintLocationFlag = typeof blueprint_location_flag[number]
 
-export interface BlueprintOwner {
-    entity_id:              number;
-    entity_type:            BlueprintOwnerEntity;
-    primary_character_id:   number;
-}
+export type BlueprintOwner = ApiResponse<'BlueprintOwnerResponse'>
 
 export interface Blueprint {
     item_id:                number;
@@ -1658,60 +1835,6 @@ export interface Blueprint {
     owner:                  BlueprintOwner;
     in_job:                 boolean;
     activity_id:            number | null;
-}
-
-export type BlueprintIndustryJobSource = 'character' | 'corporation'
-
-export interface BlueprintIndustryJob {
-    job_id:                 number;
-    source:                 BlueprintIndustryJobSource;
-    activity_id:            number;
-    blueprint_type_id:      number;
-    status:                 string;
-    installer_id:           number;
-    start_date:             string;
-    end_date:               string;
-    completed_date:         string | null;
-    duration:               number;
-    runs:                   number;
-    licensed_runs:          number;
-    cost:                   string | null;
-    location_id:            number;
-    output_location_id:     number;
-    blueprint_location_id:  number;
-    facility_id:            number;
-    character_id:           number | null;
-    character_name:         string | null;
-    corporation_id:         number | null;
-    corporation_name:       string | null;
-}
-
-export interface BlueprintDetail extends Blueprint {
-    quantity:               number;
-    is_original:            boolean;
-    current_jobs:           BlueprintIndustryJob[];
-    historical_jobs:        BlueprintIndustryJob[];
-}
-
-export interface ContractHealthProblem {
-    location_id:        number;
-    location_name:      string;
-    short_name:         string;
-    fitting_id:         number;
-    fitting_name:       string;
-    ship_id:            number;
-    current_quantity:   number;
-    viable_quantity:    number;
-    expected_quantity:  number;
-    shortfall:          number;
-    readiness:          string;
-    expectation_id:     number;
-    units_1d:           number;
-    units_3d:           number;
-    weekly_units:       number;
-    units_30d:          number;
-    units_90d:          number;
-    days_of_stock:      number | null;
 }
 
 export interface SellOrderHealthGap {
@@ -1806,34 +1929,6 @@ export interface LiveSellOrderSupply {
     rows:               SellOrderHealthGap[];
 }
 
-export interface InferredSalesVolumeBucket {
-    date:   string;
-    units:  number;
-}
-
-export interface InferredSalesVelocity {
-    long_days:                  number;
-    short_days:                 number;
-    days_of_data:               number;
-    median_daily_units:         number;
-    short_mean_daily_units:     number;
-    total_units:                number;
-}
-
-export interface InferredSalesTopMover {
-    type_id:    number;
-    item_name:  string;
-    units:      number;
-}
-
-export interface InferredSalesVolume {
-    location_id:    number;
-    days:           number;
-    buckets:        InferredSalesVolumeBucket[];
-    velocity:       InferredSalesVelocity;
-    top_movers:     InferredSalesTopMover[];
-}
-
 export interface InferredSalesMonthlyVolumeClass {
     slug: string
     label: string
@@ -1872,47 +1967,9 @@ export interface InferredSalesMonthlyVolumePage {
     rows: InferredSalesMonthlyVolumeRow[]
 }
 
-export interface OrderAssignmentsBreakdownItem {
-    name:                   string;
-    type_id:                number;
-    quantity:               number;
-    source:                 string;
-    depth:                  number;
-    children:               OrderAssignmentsBreakdownItem[],
-    industry_product_id:    number;
-}
+export type OrderAssignment = ApiResponse<'AssignmentResponse'>
 
-export interface OrderAssignmentsBreakdown {
-    character_id:       number;
-    character_name:     string;
-    quantity:           number;
-    breakdown:          OrderAssignmentsBreakdownItem;
-}
-
-export interface OrderAssignment {
-    id:                         number;
-    character_id:               number;
-    character_name:             string;
-    quantity:                   number;
-    target_unit_price:          number | null;
-    target_estimated_margin:    number | null;
-    delivered_quantity:         number;
-    delivered_at:               Date | null;
-    has_blueprints:             boolean;
-}
-
-export interface RootSingleItem {
-    id:                             number;
-    eve_type_id:                    number;
-    eve_type_name:                  string;
-    quantity:                       number;
-    unassigned_quantity:            number;
-    self_assign_maximum:            number | null;
-    self_assign_window_ends_at:     Date;
-    target_unit_price:              string | null,
-    target_estimated_margin:        string | null,
-    assignments:                    OrderAssignment[];
-}
+export type RootSingleItem = ApiResponse<'OrderItemResponse'>
 
 export interface BuildPack {
     title:          string;
@@ -1921,29 +1978,7 @@ export interface BuildPack {
     location_name:  string | null;
 }
 
-export interface IndustrySingleOrder {
-    id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
-    public_short_code:  string;
-    contract_to:        string;
-    character_id:       number | null;
-    character_name:     string;
-    location:           BaseLocation;
-    items:              RootSingleItem[];
-    lp_stockpiles:      OrderLpStockpile[];
-    blueprint_coordinators: OrderBlueprintCoordinator[];
-    mineral_coordinators?: OrderBlueprintCoordinator[];
-    pi_coordinators?: OrderBlueprintCoordinator[];
-    mineral_options?: OrderBlueprintCoordinatorEveType[];
-    pi_options?: OrderBlueprintCoordinatorEveType[];
-    profit_breakdown_computed_at?: Date | string | null;
-    can_refresh_profit_breakdown?: boolean;
-    campaign_id?:       number | null;
-    campaign_slug?:     string | null;
-    campaign_name?:     string | null;
-}
+export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
 
 export interface OrderLpStockpileContact {
     character_name:     string;
@@ -1968,16 +2003,22 @@ export interface LoyaltyCurrency {
     name:               string;
     corporation_id:     number;
     default_isk_per_lp: number;
+    /** Express (<24h) rate; null when express is switched off. */
+    express_isk_per_lp: number | null;
     is_active:          boolean;
     allow_buy:          boolean;
     allow_sell:         boolean;
 }
+
+export type LoyaltyOrderTier = 'standard' | 'express'
 
 export interface LoyaltyMarketOrderClaim {
     id:                              number;
     amount:                          number;
     destination_character_name:      string;
     destination_corporation_name:    string;
+    /** Resolved from the name for its logo; null when unknown. */
+    destination_corporation_id?:     number | null;
     claimed_by_user_id:              number | null;
     claimed_by_name:                 string | null;
     claimed_by_character_id:         number | null;
@@ -1994,6 +2035,9 @@ export interface LoyaltyMarketOrder {
     quantity_claimed:           number;
     quantity_remaining:         number;
     isk_per_lp:                 number;
+    tier:                       LoyaltyOrderTier;
+    /** Express SLA deadline; null for standard or cancelled orders. */
+    express_due_at:             Date | string | null;
     status:                     string;
     created_by_user_id:         number | null;
     created_by_name:            string | null;
@@ -2002,7 +2046,11 @@ export interface LoyaltyMarketOrder {
     claimed_by_name:            string | null;
     claimed_by_character_id:    number | null;
     destination_character_name: string;
+    /** Logo id for the corporation the LP goes to; null when unknown. */
+    destination_corporation_id?: number | null;
     discord_thread_id:          number | null;
+    /** Only on GET /orders/{id}: link to the order's Discord thread. */
+    discord_thread_url?:        string;
     notes:                      string;
     claims:                     LoyaltyMarketOrderClaim[];
     created_at:                 Date | string;
@@ -2010,33 +2058,56 @@ export interface LoyaltyMarketOrder {
     completed_at:               Date | string | null;
 }
 
+export interface LoyaltyOrderStatsTier {
+    /** Non-cancelled orders posted in the window. */
+    orders:             number;
+    /** Orders completed in the window (close time / price sample). */
+    completed:          number;
+    avg_close_seconds:  number | null;
+    median_close_seconds?: number | null;
+    /** Completed orders paid within 24 hours of posting. */
+    paid_within_day?:   number;
+    lp_completed?:      number;
+    isk_completed?:     number;
+    /** LP-weighted over completed orders. */
+    avg_isk_per_lp:     number | null;
+}
+
+export interface LoyaltyOrderStatsWeek {
+    /** Monday the week starts on (YYYY-MM-DD). */
+    week_start: string;
+    lp:         number;
+}
+
+export interface LoyaltyOrderStatsConverter {
+    user_id:                number;
+    name:                   string;
+    character_id:           number | null;
+    orders:                 number;
+    lp:                     number;
+    isk:                    number;
+    /** First claim to paid, median. */
+    median_settle_seconds:  number | null;
+}
+
+export interface LoyaltyOrderStats extends LoyaltyOrderStatsTier {
+    days:       number;
+    /** Posted to first claim, median over completed orders. */
+    median_claim_seconds?:  number | null;
+    /** First claim to paid, median over completed orders. */
+    median_settle_seconds?: number | null;
+    standard:   LoyaltyOrderStatsTier;
+    express:    LoyaltyOrderStatsTier;
+    /** LP completed per week, the last 12 weeks, oldest first. */
+    weekly?:     LoyaltyOrderStatsWeek[];
+    converters?: LoyaltyOrderStatsConverter[];
+}
+
 export interface LoyaltyMarketOrdersList {
     items:  LoyaltyMarketOrder[];
     total:  number;
     limit:  number | null;
     offset: number;
-}
-
-export interface LoyaltyLedgerEntry {
-    id:                     number;
-    account_id:             number;
-    account_name:           string;
-    account_role:           string;
-    loyalty_point_id:       number;
-    loyalty_point_name:     string;
-    corporation_id:         number;
-    amount:                 number;
-    isk_per_lp:             number;
-    balance_after:          number;
-    notes:                  string;
-    market_order_id:        number | null;
-    seller_user_id:         number | null;
-    seller_character_name:  string;
-    counterparty_user_id:   number | null;
-    counterparty_character_name: string;
-    created_by_user_id:     number | null;
-    created_by_name:        string | null;
-    created_at:             Date | string;
 }
 
 export interface LoyaltyOffer {
@@ -2059,12 +2130,16 @@ export interface LoyaltyOffer {
     conversion_isk_per_lp_sell:     number | null;
     conversion_isk_per_lp_buy:      number | null;
     conversion_isk_per_lp_avg_7d:   number | null;
+    /** Per-LP tax and freight inside each side's net, keyed by side (backend plan_costing). */
+    conversion_costs?:              Partial<Record<'sell' | 'buy' | 'avg_7d', LoyaltyOfferConversionCosts>>;
     volume_1d:                      number | null;
     volume_7d:                      number | null;
     volume_30d:                     number | null;
     kind:                           string;
     updated_at:                     Date | string;
 }
+
+export type LoyaltyOfferConversionCosts = ApiResponse<'LoyaltyOfferConversionCosts'>
 
 export interface LoyaltyOffersList {
     items:  LoyaltyOffer[];
@@ -2098,14 +2173,7 @@ export interface FleetMetrics {
     audience_name:      string;
 }
 
-export interface FleetCommanderMetrics {
-    user_id:                    number;
-    primary_character_id:       number;
-    primary_character_name:     string;
-    corporation_id:             number | null;
-    corporation_name:           string | null;
-    fleet_count:                number;
-}
+export type FleetCommanderMetrics = ApiResponse<'EveFleetCommanderMetric'>
 
 export interface CandidateFleetCommander {
     character_id:           number;
@@ -2114,14 +2182,7 @@ export interface CandidateFleetCommander {
     corporation_name:       string;
 }
 
-export interface CandidateFleet {
-    id:                         number;
-    type:                       string;
-    start_time:                 Date;
-    objective:                  string;
-    audience:                   string;
-    fleet_commander:            CandidateFleetCommander;
-}
+export type CandidateFleet = ApiResponse<'CandidateFleetResponse'>
 
 export interface EVEType {
     id:     number;
@@ -2145,13 +2206,7 @@ export interface SRPCurrentAmount {
     created_at:     string;
 }
 
-export interface SRPProgram {
-    id:                 number;
-    eve_type:           EVEType;
-    eve_group:          EVEGroup;
-    eve_category:       EVECAtegory;
-    current_amount:     SRPCurrentAmount;
-}
+export type SRPProgram = ApiResponse<'ShipReimbursementProgramResponse'>
 
 export interface KillmailResolve {
     killmail_time:                  Date;
@@ -2163,11 +2218,7 @@ export interface KillmailResolve {
     candidate_fleets:               CandidateFleet[];
 }
 
-export interface SRPStatsOverview {
-    pending_requests:           number;
-    pending_total:              number;
-    average_response_days:      number;
-}
+export type SRPStatsOverview = ApiResponse<'SrpStatsOverviewResponse'>
 
 export interface SRPStatsHistoryRequests {
     total:      number;
@@ -2267,16 +2318,7 @@ export interface PageProgressImportResponse {
     skipped:            number;
 }
 
-export interface CharacterMembership {
-    id:                 number;
-    character_id:       number;
-    character_name:     string;
-    committed_at:       string;
-    left_at:            string;
-    qualifies:          boolean;
-    missing_skills:     boolean;
-    missing_assets:     boolean;
-}
+export type CharacterMembership = ApiResponse<'MembershipCharacterSchema'>
 
 export type LearningPersona = 'alliance' | 'militia' | 'other'
 
@@ -2607,11 +2649,6 @@ export interface AllianceHealthCohortRow {
     fleet_3_30d_pct:        number;
 }
 
-export interface AllianceHealthCohorts {
-    computed_at:    string;
-    cohorts:        AllianceHealthCohortRow[];
-}
-
 export interface CreatorAccount {
     provider:           string;
     platform_user_id:   string;
@@ -2628,7 +2665,7 @@ export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
 export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
 export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
 export type CampaignSystemPriority = 'high' | 'medium' | 'low'
-export type CampaignLeaderboardMetric = 'kills' | 'isk' | 'sites' | 'advantage' | 'fleets'
+export type CampaignLeaderboardMetric = 'kills' | 'sites' | 'advantage' | 'fcs'
 export type CampaignLeaderboardPeriod = 'week' | 'rolling7' | 'all'
 export type CampaignCharacterState = 'ready' | 'needs_update' | 'lapsed' | 'removed' | 'missing'
 export type CampaignKillmailOutcome = 'kill' | 'loss'
@@ -2794,48 +2831,11 @@ export interface CampaignDetail {
     fittings:                   CampaignFitting[];
     totals:                     CampaignTotals;
     is_enlisted:                boolean;
-    my_streak:                  number;
     characters_included:        number;
     characters_tracked:         number;
     standing_fleet_up:          boolean;
     standing_fleet_members:     number;
     standing_fleet_boss:        string | null;
-}
-
-export interface CampaignHostileGang {
-    title:          string;
-    system:         string;
-    occurred_at:    string;
-}
-
-export interface CampaignTickerEntry {
-    killmail_id:    number;
-    outcome:        CampaignKillmailOutcome;
-    isk_value:      number;
-    killmail_time:  string;
-}
-
-export interface CampaignGangForming {
-    id:             number;
-    ships:          string;
-    system:         string | null;
-    note:           string;
-    started_by:     string;
-    occurred_at:    string;
-}
-
-export interface CampaignRightNow {
-    active_pilots:          number;
-    system_heat:            number;
-    hostile_gangs:          CampaignHostileGang[];
-    standing_fleet_up:      boolean;
-    standing_fleet_members: number;
-    standing_fleet_boss:    string | null;
-    gangs_forming:          CampaignGangForming[];
-    my_streak:              number;
-    my_orders_done:         number;
-    my_orders_total:        number;
-    ticker:                 CampaignTickerEntry[];
 }
 
 export interface CampaignWeekTarget {
@@ -2859,6 +2859,10 @@ export interface CampaignWeekTarget {
     my_structures_reported?: number;
 }
 
+export type CampaignObjectiveCode = CampaignWeekObjectiveRow['objective']
+
+export type CampaignWeekObjectiveRow = ApiResponse<'WeekObjectiveRowOut'>
+
 export interface CampaignWeekProgress {
     system:                 string;
     system_id:              number;
@@ -2868,6 +2872,8 @@ export interface CampaignWeekProgress {
     victory_points_now:     number | null;
     advantage_our_start?:   number | null;
     advantage_our_now?:     number | null;
+    /** Changed hands since the week opened: ours now, or theirs. */
+    flipped?:               'captured' | 'lost' | null;
 }
 
 export interface CampaignWeekSummary {
@@ -2885,19 +2891,10 @@ export interface CampaignWeek {
     day_index:              number;
     targets:                CampaignWeekTarget[];
     progress?:              CampaignWeekProgress[];
+    /** The week's objective rows, built and ordered by the backend for the website and the desktop window. */
+    objective_rows?:        CampaignWeekObjectiveRow[];
     commander_order_text:   string;
     summary:                CampaignWeekSummary;
-}
-
-export interface CampaignOrder {
-    id:                 number;
-    kind:               string;
-    label:              string;
-    params:             Record<string, any>;
-    system:             string | null;
-    gap_share_pct:      number;
-    progress:           number;
-    completed:          boolean;
 }
 
 export interface CampaignFleet {
@@ -2921,10 +2918,18 @@ export interface CampaignFleet {
 export interface CampaignLeaderboardRow {
     rank:           number;
     user_id:        number;
-    username:       string;
     character_id:   number | null;
     character_name: string;
     value:          number;
+}
+
+export interface CampaignCorporationLeaderboardRow {
+    rank:               number;
+    corporation_id:     number | null;
+    corporation_name:   string;
+    /** Pilots who scored on this metric in the window. */
+    pilots:             number;
+    value:              number;
 }
 
 export interface CampaignKillmail {
@@ -2955,7 +2960,6 @@ export interface CampaignSite {
     site_kind:      string;
     amount_lp:      number;
     system:         string;
-    username:       string | null;
     character_id:   number | null;
     character_name: string;
     plex_class:     string;
@@ -2977,7 +2981,6 @@ export interface CampaignTimelineEvent {
 
 export interface CampaignRosterPilot {
     user_id:                number;
-    username:               string;
     primary_character:      string;
     character_id:           number | null;
     corporation_id:         number | null;
@@ -2985,9 +2988,31 @@ export interface CampaignRosterPilot {
     prime_time:             string;
     observed_prime_time:    string;
     last_active_day:        string | null;
-    streak_days:            number;
     characters_included:    number;
     characters_tracked:     number;
+    kills:                  number;
+    losses:                 number;
+    isk_destroyed:          number;
+    complexes:              number;
+    advantage_sites:        number;
+    fleets_attended:        number;
+}
+
+/** The roster rolled up by each pilot's primary character's corporation. */
+export interface CampaignRosterCorporation {
+    corporation_id:         number | null;
+    corporation_name:       string;
+    pilots:                 number;
+    /** Pilots active in the last 7 days. */
+    active_pilots:          number;
+    characters_included:    number;
+    kills:                  number;
+    losses:                 number;
+    isk_destroyed:          number;
+    complexes:              number;
+    advantage_sites:        number;
+    fleets_attended:        number;
+    last_active_day:        string | null;
 }
 
 export interface CampaignCoverageHour {
@@ -2998,6 +3023,7 @@ export interface CampaignCoverageHour {
 
 export interface CampaignRoster {
     pilots:         CampaignRosterPilot[];
+    corporations:   CampaignRosterCorporation[];
     coverage:       CampaignCoverageHour[];
     by_prime_time:  Record<string, number>;
 }
@@ -3025,7 +3051,6 @@ export interface CampaignEnlistRequest {
     notify_gang_forming?:       boolean;
     notify_standing_fleet?:     boolean;
     notify_activity_nearby?:    boolean;
-    notify_streak_at_risk?:     boolean;
     digest_hour?:               number;
 }
 
@@ -3049,9 +3074,95 @@ export interface CampaignAdvantageResponse {
     net_pct:    number | null;
 }
 
-export interface CampaignGangRequest {
-    ships:              string;
-    solar_system_id?:   number | null;
-    note?:              string;
-    voice_channel_id?:  number | null;
+export interface IntelHull {
+    type_id:            number;
+    name:               string;
+    count:              number;
+    rank?:              number;
+}
+
+export interface IntelShipClass {
+    name:               string;
+    count:              number;
+    rank:               number;
+    hulls:              IntelHull[];
+}
+
+export interface IntelOtherItem {
+    type_id:            number;
+    name:               string;
+    group:              string;
+    count:              number;
+}
+
+export interface IntelDscanSummary {
+    objects:            number;
+    ships:              number;
+    capsules:           number;
+    other:              number;
+    classes:            IntelShipClass[];
+    hulls:              IntelHull[];
+    other_items:        IntelOtherItem[];
+}
+
+export type IntelStanding = 'hostile' | 'neutral' | 'friendly';
+
+export interface IntelLocalAlliance {
+    id:                 number | null;
+    name:               string;
+    count:              number;
+    standing:           IntelStanding;
+    /** Reports shared before the affiliation database have no bloc. */
+    bloc?:              IntelBlocRef | null;
+}
+
+export interface IntelLocalSummary {
+    pilots:             number;
+    resolved:           boolean;
+    unknown?:           number;
+    standings?:         Record<IntelStanding, number>;
+    militia?:           { amarr: number; minmatar: number; none: number };
+    alliances?:         IntelLocalAlliance[];
+    /** Pilots outside an alliance, by corporation (newer reports only). */
+    corporations?:      (IntelLocalAlliance & { id: number })[];
+    /** Pilots by bloc (newer reports only). */
+    blocs?:             IntelLocalBloc[];
+}
+
+// Intel affiliation database: blocs, pets, alts, allies and associates.
+export type IntelBlocRef = ApiResponse<'BlocRef'>
+export type IntelEntityRef = ApiResponse<'EntityRef'>
+export type IntelAffiliation = ApiResponse<'AffiliationSchema'>
+export type IntelAffiliationReview = ApiResponse<'ReviewResponse'>
+export type IntelQueueStats = ApiResponse<'QueueStatsSchema'>
+export type IntelBlocSummary = ApiResponse<'BlocSummarySchema'>
+export type IntelBlocDetail = ApiResponse<'BlocDetailResponse'>
+export type IntelMemberCrosscheck = ApiResponse<'MemberCrosscheckRow'>
+export type IntelEntitySearchResult = ApiResponse<'EntitySearchResult'>
+export type IntelEntityProfile = ApiResponse<'EntityProfileResponse'>
+export type IntelPartner = ApiResponse<'PartnerSchema'>
+export type IntelInvestigation = ApiResponse<'InvestigateResponse'>
+export type IntelDecisionRequest = ApiRequest<'DecisionRequest'>
+export type IntelManualAffiliationRequest = ApiRequest<'ManualAffiliationRequest'>
+export type IntelBlocPatch = ApiRequest<'BlocPatchRequest'>
+export type IntelRelation = IntelManualAffiliationRequest['relation']
+export type IntelEntityKind = IntelManualAffiliationRequest['kind']
+/** A bloc row of a Local report summary (an untyped dict from the API). */
+export type IntelLocalBloc = IntelBlocRef & {
+    count:              number;
+    groups:             (IntelEntityRef & { count: number; likely: boolean })[];
+}
+
+export interface IntelReport {
+    report_id:          string;
+    kind:               'dscan' | 'local';
+    system_id:          number | null;
+    system_name:        string;
+    reporter_name:      string;
+    note:               string;
+    created_at:         string;
+    summary_line:       string;
+    summary:            IntelDscanSummary | IntelLocalSummary;
+    raw:                string;
+    previous?:          { report_id: string; created_at: string; hostile: number; hostile_delta: number } | null;
 }

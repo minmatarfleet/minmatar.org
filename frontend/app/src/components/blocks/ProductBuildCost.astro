@@ -1,0 +1,156 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ProductBuild } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    build:              ProductBuild;
+    planner_path:       string;
+    [propName: string]: any;
+}
+
+const {
+    build,
+    planner_path,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
+
+const n = (value: number) => number_thousand_separator(value)
+const isk = (value: number | null) => format_isk(value)
+
+const run_value = build.sell_price !== null ? build.sell_price * build.products_per_run : null
+
+const duration = (seconds: number) => {
+    const days = Math.floor(seconds / 86400)
+    const hours = Math.floor((seconds % 86400) / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return [
+        days ? `${days}${t('industry.product.unit_day')}` : '',
+        hours ? `${hours}${t('industry.product.unit_hour')}` : '',
+        !days && minutes ? `${minutes}${t('industry.product.unit_minute')}` : '',
+    ].filter(Boolean).join(' ') || '—'
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+import IndustryIcon from '@components/icons/IndustryIcon.astro'
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ build-cost ]', Astro.props.class]} {...attributes}>
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+        <Flexblock gap="var(--space-s)">
+            <header class="[ panel-header ]">
+                <h3>{t('industry.product.worth_building')}</h3>
+                <small>
+                    {build.products_per_run > 1
+                        ? t('industry.product.one_run_of').replace('{n}', n(build.products_per_run))
+                        : t('industry.product.one_run')}
+                </small>
+            </header>
+
+            <dl class="[ economics ]">
+                <div>
+                    <dt>{t('industry.product.sells_for')}</dt>
+                    <dd>{isk(run_value)}</dd>
+                </div>
+                <div>
+                    <dt>{t('industry.product.materials_cost')}</dt>
+                    <dd class:list={{ 'is-partial': !build.prices_complete }}>{isk(build.material_cost)}</dd>
+                </div>
+                <div>
+                    <dt>{t('industry.product.margin')}</dt>
+                    <dd class:list={{ 'is-good': (build.margin ?? 0) > 0, 'is-bad': (build.margin ?? 0) < 0 }}>
+                        {isk(build.margin)}
+                    </dd>
+                </div>
+                <div>
+                    <dt>{t('industry.product.build_time')}</dt>
+                    <dd>{duration(build.time_seconds)}</dd>
+                </div>
+            </dl>
+
+            <small class="[ muted ]">
+                {build.prices_complete ? t('industry.product.base_numbers_hint') : t('industry.product.missing_prices_hint')}
+            </small>
+
+            <div>
+                <Button size="sm" color="fleet-red" href={planner_path}>
+                    <IndustryIcon slot="icon" size={24} />
+                    {t('industry.product.open_planner')}
+                </Button>
+            </div>
+        </Flexblock>
+    </ComponentBlock>
+
+</Flexblock>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .panel-header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
+    .muted,
+    .empty {
+        color: var(--foreground);
+    }
+
+    .economics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1px;
+        margin: 0;
+        background: var(--border-color);
+        border: solid 1px var(--border-color);
+
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-s);
+            background: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--foreground);
+        }
+
+        dd {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+
+            &.is-partial {
+                color: var(--foreground);
+            }
+
+            &.is-good {
+                color: color-mix(in srgb, var(--green) 65%, white);
+            }
+
+            &.is-bad {
+                color: color-mix(in srgb, var(--fleet-red) 60%, white);
+            }
+        }
+    }
+</style>

@@ -2,9 +2,11 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
+from tribes.schemas import HostGroupRef
 
 
 class EveFleetType(str, Enum):
@@ -30,6 +32,8 @@ class EveFleetTrackingResponse(BaseModel):
     start_time: datetime
     end_time: Optional[datetime] = None
     is_registered: bool
+    is_free_move: bool = False
+    has_motd: bool = False
 
     class Config:
         from_attributes = True
@@ -45,7 +49,13 @@ class EveFleetResponse(BaseModel):
     objective: Optional[str] = None
     start_time: Optional[datetime] = None
     fleet_commander: int
+    # The FC's primary character and the doctrine's name, so a schedule
+    # needs no profile or doctrine lookups. None when the FC has no primary
+    # character or the fleet has no doctrine.
+    fleet_commander_character_id: Optional[int] = None
+    fleet_commander_name: Optional[str] = None
     doctrine_id: Optional[int] = None
+    doctrine_name: Optional[str] = None
     location: str
     disable_motd: bool = False
     hide_volunteers: bool = False
@@ -54,8 +64,41 @@ class EveFleetResponse(BaseModel):
     campaign_id: Optional[int] = None
     campaign_slug: Optional[str] = None
     roam_report_url: Optional[str] = None
+    # The #aars forum, where the FC writes the AAR (fleet detail only).
+    aar_forum_url: Optional[str] = None
+    # Tribe group fleets (docs/tribes/tribe-publishing.md).
+    host_group: Optional[HostGroupRef] = None
+    open_to_alliance: bool = False
+    on_schedule: bool = False
 
     tracking: Optional[EveFleetTrackingResponse] = None
+
+
+class EveFleetDetailResponse(EveFleetResponse):
+    """One fleet, with what the viewer may do with it."""
+
+    # The viewer may copy this fleet to a new date (POST /{id}/copy).
+    can_copy: bool = False
+    # A private fleet (docs/fleets/private-fleets.md).
+    invite_only: bool = False
+    declassified_at: Optional[datetime] = None
+    # The viewer's own invite: "pending", "in" or "out"; null if not invited.
+    my_invite_answer: Optional[str] = None
+    my_invite_wave: Optional[int] = None
+    # The FC and Strategic FCs manage invites (the Invites tab).
+    can_manage_invites: bool = False
+    # The private coordination thread, for pilots who are in and managers.
+    discord_thread_url: Optional[str] = None
+
+
+class EveFleetCopyResponse(EveFleetResponse):
+    """The new fleet, plus what could not be copied onto its date."""
+
+    copied_from: int
+    # "campaign" (ended by then), "location" (no longer a fleet staging,
+    # the default staging is used) or "open_to_alliance" (the group no
+    # longer opens fleets).
+    not_copied: List[str] = []
 
 
 class EveFleetMemberResponse(BaseModel):
@@ -90,10 +133,23 @@ class CreateEveFleetRequest(BaseModel):
     audience_id: int
     location_id: Optional[int] = None
     disable_motd: bool = False
-    hide_volunteers: bool = False
+    hide_volunteers: bool = True
     immediate_ping: bool = False
     status: Optional[str] = None
     campaign_id: Optional[int] = None
+    # A tribe group fleet: audience_id and immediate_ping are ignored.
+    host_group_id: Optional[int] = None
+    open_to_alliance: bool = False
+    on_schedule: bool = False
+    # A private fleet: off the schedule and every list; Strategic FCs only.
+    # docs/fleets/private-fleets.md.
+    invite_only: bool = False
+
+
+class CopyEveFleetRequest(BaseModel):
+    """The copy's start time; every other setting comes from the fleet."""
+
+    start_time: datetime
 
 
 class UpdateEveFleetRequest(BaseModel):
@@ -109,6 +165,29 @@ class UpdateEveFleetRequest(BaseModel):
     status: Optional[str] = None
     aar_link: Optional[str] = None
     campaign_id: Optional[int] = None
+    # Left out: unchanged. host_group_id null moves a group fleet back to
+    # an alliance audience (audience_id required).
+    host_group_id: Optional[int] = None
+    open_to_alliance: Optional[bool] = None
+    on_schedule: Optional[bool] = None
+
+
+class FleetPingPreviewRequest(BaseModel):
+    """The fleet form's fields that shape the start ping."""
+
+    type: EveFleetType
+    description: str = ""
+    objective: Optional[str] = None
+    location_id: Optional[int] = None
+    audience_id: Optional[int] = None
+    host_group_id: Optional[int] = None
+
+
+class FleetPingPreviewResponse(BaseModel):
+    """The start ping exactly as the bot would post it."""
+
+    channel_name: Optional[str] = None
+    payload: Dict[str, Any]
 
 
 class EveFleetMetric(BaseModel):
@@ -187,14 +266,34 @@ class AssignRoleVolunteerSystemRequest(BaseModel):
     solar_system_name: Optional[str] = Field(default=None, max_length=255)
 
 
+class EveFleetFitRolesResponse(BaseModel):
+    """Roles a composition fit fills. Burst counts are keyed by kind."""
+
+    links: bool = False
+    burst_slots: int = 0
+    bursts_online: Dict[str, int] = {}
+    bursts_fitted: Dict[str, int] = {}
+    cyno: bool = False
+    logi: bool = False
+
+
 class EveFleetShipVolunteerResponse(BaseModel):
     id: int
     character_id: int
     character_name: str
     fitting_id: Optional[int] = None
     fleet_fitting_id: Optional[int] = None
+    # The fit's name; for an off-doctrine hull, the hull's name.
     fitting_name: str
     ship_id: int
+    # Set when the pilot brings a hull outside the composition.
+    ship_type_id: Optional[int] = None
+    off_doctrine: bool = False
+    # Command bursts the pilot will run online (kinds, canonical order).
+    bursts: List[str] = []
+    # FC-assigned cyno system; only serialized for the FC and the pilot.
+    solar_system_id: Optional[int] = None
+    solar_system_name: Optional[str] = None
 
 
 class EveFleetFittingRefitOption(BaseModel):
@@ -217,6 +316,7 @@ class EveFleetCompositionEntryResponse(BaseModel):
     eft_format: str
     refits: List[EveFleetFittingRefitOption]
     module_slots: Dict[str, str] = {}
+    fit_roles: EveFleetFitRolesResponse = EveFleetFitRolesResponse()
 
 
 class CreateEveFleetFittingRequest(BaseModel):
@@ -293,11 +393,26 @@ class EveFleetSupplyResponse(BaseModel):
 
 
 class ShipSelection(BaseModel):
-    """Which composition entry a character brings (both ids null = not flying)."""
+    """
+    Which composition entry a character brings, or ``ship_type_id``: a hull
+    outside the composition. All three null = not flying.
+    """
 
     character_id: int
     fitting_id: Optional[int] = None
     fleet_fitting_id: Optional[int] = None
+    ship_type_id: Optional[int] = None
+    # Command bursts to run online. Omitted: the fit's online bursts.
+    bursts: Optional[List[str]] = None
+
+
+class ShipSuggestionResponse(BaseModel):
+    """The hull a character usually flies, as a composition entry."""
+
+    fitting_id: Optional[int] = None
+    fleet_fitting_id: Optional[int] = None
+    ship_name: str
+    fleets: int
 
 
 class MyFleetPilotResponse(BaseModel):
@@ -305,6 +420,8 @@ class MyFleetPilotResponse(BaseModel):
     character_name: str
     recent_fleets: bool
     selection: Optional[ShipSelection] = None
+    # Pre-pick until the caller has saved a ship on this fleet. Not saved.
+    suggestion: Optional[ShipSuggestionResponse] = None
 
 
 class SetMyShipVolunteersRequest(BaseModel):
@@ -318,3 +435,474 @@ class MyFleetFittingResponse(BaseModel):
     ship_id: int
     ship_name: str
     eft_format: str
+
+
+class EveFleetKillmailResponse(BaseModel):
+    killmail_id: int
+    killmail_time: datetime
+    outcome: str
+    solar_system_id: int
+    solar_system_name: str
+    victim_ship_type_id: int | None = None
+    victim_ship_name: str
+    victim_character_id: int | None = None
+    victim_character_name: str
+    isk_value: int
+    fleet_pilots: int
+    is_capsule: bool
+
+
+class EveFleetKillsResponse(BaseModel):
+    fleet_id: int
+    tracked: bool
+    isk_destroyed: int
+    isk_lost: int
+    ships_destroyed: int
+    pods_destroyed: int
+    ships_lost: int
+    pods_lost: int
+    killmails: List[EveFleetKillmailResponse]
+
+
+class EveFleetRolePilot(BaseModel):
+    """A pilot filling a role, from a ship volunteer or their ship in fleet."""
+
+    character_id: int
+    character_name: str
+    ship_id: int
+    ship_name: str
+    fitting_name: str = ""
+    source: str  # volunteer | in_fleet
+    in_fleet: bool = False
+    # Bursts of the row's kind this pilot runs (links rows only).
+    count: int = 0
+    # Set for a volunteered ship; the FC assigns cyno systems through it.
+    ship_volunteer_id: Optional[int] = None
+    solar_system_id: Optional[int] = None
+    solar_system_name: Optional[str] = None
+
+
+class EveFleetLinkCoverage(BaseModel):
+    kind: str
+    label: str
+    pilots: List[EveFleetRolePilot]
+
+
+class EveFleetRoleCoverageResponse(BaseModel):
+    """Who fills each fleet role, worked out from ships."""
+
+    logi_fc: List[EveFleetRoleVolunteerResponse]
+    links: List[EveFleetLinkCoverage]
+    cynos: List[EveFleetRolePilot]
+    logi: List[EveFleetRolePilot]
+
+
+class FleetWindowFleet(BaseModel):
+    id: int
+    type: str
+    type_label: str
+    title: str
+    description: str = ""
+    doctrine_name: Optional[str] = None
+    location_name: Optional[str] = None
+    location_system_id: Optional[int] = None
+    location_system_name: Optional[str] = None
+    start_time: Optional[datetime] = None
+    status: Optional[str] = None
+    live: bool
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    fc_character_id: Optional[int] = None
+    fc_name: Optional[str] = None
+    fc_system_id: Optional[int] = None
+    fc_system_name: Optional[str] = None
+
+
+class FleetWindowShip(BaseModel):
+    """One doctrine fit with live and signed-up counts."""
+
+    key: str
+    name: str
+    ship_type_id: int
+    ship_name: str
+    role: str
+    role_label: str
+    flying: int
+    signed_up: int
+
+
+class FleetWindowRole(BaseModel):
+    role: str  # links | cyno | logi
+    covered: bool
+
+
+class FleetWindowNeed(BaseModel):
+    kind: str  # ship | role
+    count: int
+    label: str
+    ship_type_id: Optional[int] = None
+
+
+class FleetWindowPilot(BaseModel):
+    character_id: int
+    character_name: str
+    ship_type_id: int
+    ship_name: str
+    solar_system_id: int
+    solar_system_name: str
+    docked: bool
+    doctrine: bool
+    capsule: bool
+
+
+class FleetWindowAttention(BaseModel):
+    # capsule | off_doctrine | docked | away | not_in_fleet (signed up)
+    reason: str
+    names: List[str]
+
+
+class FleetWindowLoss(BaseModel):
+    killmail_id: int
+    killmail_time: datetime
+    ship_type_id: Optional[int] = None
+    ship_name: str
+    isk_value: int
+    solar_system_name: str
+    srp_filed: bool
+    # False when SRP has no program for the hull: no File SRP button.
+    srp_covered: bool = True
+
+
+class FleetWindowFeedRow(BaseModel):
+    """One killmail in the FC's kill feed."""
+
+    killmail_id: int
+    killmail_time: datetime
+    outcome: str  # kill | loss
+    ship_type_id: Optional[int] = None
+    ship_name: str = ""
+    victim_name: str = ""
+    isk_value: int = 0
+    solar_system_name: str = ""
+    fleet_pilots: int = 0
+    capsule: bool = False
+
+
+class FleetWindowMe(BaseModel):
+    character_ids: List[int]
+    characters: List[FleetWindowPilot]
+    ship_volunteers: Dict[int, str]  # character id -> composition key
+    last_loss: Optional[FleetWindowLoss] = None
+
+
+class FleetWindowCounts(BaseModel):
+    in_fleet: int
+    with_fc: int
+    kills: int
+    losses: int
+    isk_destroyed: int
+    isk_lost: int
+
+
+class FleetWindowAfterAction(BaseModel):
+    pilots: int
+    duration_seconds: int
+    losses: int
+    srp_filed: int
+    aar_link: Optional[str] = None
+
+
+class FleetWindowFightHostile(BaseModel):
+    name: str
+    pilots: int
+
+
+class FleetWindowRound(BaseModel):
+    kind: str  # round | skirmish
+    number: Optional[int] = None
+    start: datetime
+    end: datetime
+    minutes: int
+    kills: int
+    losses: int
+    isk_destroyed: int
+    isk_lost: int
+    efficiency: Optional[int] = None
+    fighting: bool
+    systems: List[str]
+    hostiles: List[FleetWindowFightHostile]
+
+
+class FleetWindowLatestRound(FleetWindowRound):
+    # Ships killed and lost per bar, oldest first.
+    bins: List[List[int]]
+
+
+class FleetWindowFights(BaseModel):
+    round_count: int
+    skirmish_count: int
+    latest: FleetWindowLatestRound
+    earlier: List[FleetWindowRound]  # newest first
+
+
+class FleetWindowResponse(BaseModel):
+    """Everything the desktop fleet window shows, for one viewer."""
+
+    mode: str  # fc | member | viewer
+    fleet: FleetWindowFleet
+    counts: FleetWindowCounts
+    ships: List[FleetWindowShip]
+    roles: List[FleetWindowRole]
+    needs: List[FleetWindowNeed]
+    me: FleetWindowMe
+    # FC only: everyone else gets empty lists.
+    pilots: List[FleetWindowPilot] = []
+    attention: List[FleetWindowAttention] = []
+    after_action: Optional[FleetWindowAfterAction] = None
+    feed: List[FleetWindowFeedRow] = []
+    # FC and pilots in fleet only; None before the first fight.
+    fights: Optional[FleetWindowFights] = None
+
+
+class MyFleetLoss(BaseModel):
+    killmail_id: int
+    killmail_time: datetime
+    ship_type_id: Optional[int] = None
+    ship_name: str = ""
+    isk_value: int = 0
+    solar_system_name: str = ""
+    srp_status: str  # none | pending | approved | rejected
+    srp_amount: int = 0
+    # False when SRP has no program for the hull: not owed, no File SRP button.
+    srp_covered: bool = True
+
+
+class MyRecentFleet(BaseModel):
+    fleet_id: int
+    title: str
+    type: str = ""
+    type_label: str
+    fc_character_id: Optional[int] = None
+    fc_name: Optional[str] = None
+    started_at: datetime
+    ended_at: Optional[datetime] = None
+    live: bool
+    was_fc: bool
+    kills: int
+    losses: int
+    isk_destroyed: int
+    isk_lost: int
+    aar_link: Optional[str] = None
+    my_losses: List[MyFleetLoss] = []
+
+
+class MyFleetSignup(BaseModel):
+    fleet_id: int
+    character_id: int
+    character_name: str
+    fit_name: str = ""
+    ship_type_id: Optional[int] = None
+
+
+class MyFleetsResponse(BaseModel):
+    """The desktop window's Recent tab and the user's ship sign-ups."""
+
+    fleets: List[MyRecentFleet] = []
+    srp_owed: int = 0
+    signups: List[MyFleetSignup] = []
+
+
+class CurrentFleetWindowResponse(BaseModel):
+    window: Optional[FleetWindowResponse] = None
+
+
+class EveFleetResultResponse(BaseModel):
+    """Stored kill totals for one fleet; pods count towards ISK, not ships."""
+
+    fleet_id: int
+    isk_destroyed: int
+    isk_lost: int
+    ships_destroyed: int
+    pods_destroyed: int
+    ships_lost: int
+    pods_lost: int
+
+
+class EveFleetSrpLossResponse(BaseModel):
+    """A ship the caller lost in a fleet, on a hull SRP covers."""
+
+    killmail_id: int
+    killmail_time: datetime
+    character_id: int
+    character_name: str
+    ship_type_id: int
+    ship_name: str
+    amount: int
+    filed: bool
+
+
+class FleetFightSystem(BaseModel):
+    id: int
+    name: str
+    mails: int
+
+
+class FleetFightHull(BaseModel):
+    type_id: int | None = None
+    name: str
+    count: int
+    isk: int
+
+
+class FleetFightHostile(BaseModel):
+    group_id: int | None = None
+    # "alliance" or "corporation", for the logo; older payloads lack it.
+    kind: str | None = None
+    name: str
+    pilots: int
+    ships_killed: int
+    isk_killed: int
+
+
+class FleetFightKillmail(BaseModel):
+    killmail_id: int
+    time: datetime
+    outcome: str
+    system_id: int
+    system_name: str
+    ship_type_id: int | None = None
+    ship_name: str
+    victim_name: str
+    group_name: str
+    isk: int
+    pending: bool
+    pod: bool
+    pilots: int
+
+
+class FleetFightLinks(BaseModel):
+    zkillboard: str
+    brtools: str
+    evekill: str | None = None
+
+
+class FleetFightSplitGap(BaseModel):
+    at: datetime
+    after: datetime
+    seconds: int
+    before_kills: int
+    before_losses: int
+    after_kills: int
+    after_losses: int
+
+
+class FleetFightTotals(BaseModel):
+    ships_destroyed: int
+    pods_destroyed: int
+    ships_lost: int
+    pods_lost: int
+    isk_destroyed: int
+    isk_lost: int
+    isk_pending: int
+    efficiency: int | None = None
+
+
+class FleetFightRound(FleetFightTotals):
+    kind: str
+    number: int | None = None
+    start: datetime
+    end: datetime
+    minutes: int
+    systems: List[FleetFightSystem]
+    mails: int
+    our_pilots: int
+    hostile_pilots: int
+    hostiles: List[FleetFightHostile]
+    hulls_killed: List[FleetFightHull]
+    hulls_lost: List[FleetFightHull]
+    biggest: List[FleetFightKillmail]
+    killmails: List[FleetFightKillmail]
+    links: FleetFightLinks
+    split_gaps: List[FleetFightSplitGap]
+    fighting: bool
+    merge_edit_ids: List[int]
+    split_edit_ids: List[int]
+
+
+class FleetFightEventShip(BaseModel):
+    name: str
+    count: int
+
+
+class FleetFightEvent(BaseModel):
+    kind: str
+    at: datetime
+    count: int
+    ships: List[FleetFightEventShip]
+
+
+class FleetFightChart(BaseModel):
+    start: datetime
+    end: datetime
+    bin_minutes: int
+    bins: List[List[int]]
+
+
+class FleetFightEdit(BaseModel):
+    id: int
+    kind: str
+    start: datetime
+    end: datetime | None = None
+    created_by: str | None = None
+    created_at: datetime
+
+
+class EveFleetFightsResponse(BaseModel):
+    """A fleet's killmails cut into rounds. ``status`` is building (not
+    ready yet, ask again shortly), live, settling (ended, still filling in
+    late killmails) or settled."""
+
+    fleet_id: int
+    status: str
+    live: bool = False
+    can_edit: bool = False
+    computed_at: datetime | None = None
+    settled_at: datetime | None = None
+    feed_behind_since: datetime | None = None
+    start: datetime | None = None
+    end: datetime | None = None
+    totals: FleetFightTotals | None = None
+    round_count: int = 0
+    skirmish_count: int = 0
+    rounds: List[FleetFightRound] = []
+    # The whole fleet's battle report links; missing on older payloads.
+    links: FleetFightLinks | None = None
+    events: List[FleetFightEvent] = []
+    chart: FleetFightChart | None = None
+    edits: List[FleetFightEdit] = []
+    # Pilots tracked in the fleet, and hostiles seen on its killmails.
+    our_pilots: int | None = None
+    hostile_pilots: int | None = None
+
+
+class FleetFightMergeRequest(BaseModel):
+    start: datetime
+    end: datetime
+
+
+class FleetFightSplitRequest(BaseModel):
+    at: datetime
+
+
+class FleetBattleSegmentRequest(BaseModel):
+    # Blank saves the window's times as its name.
+    name: str = ""
+    start: datetime
+    end: datetime
+
+
+class FleetBattleSegment(BaseModel):
+    id: int
+    name: str
+    start: datetime
+    end: datetime

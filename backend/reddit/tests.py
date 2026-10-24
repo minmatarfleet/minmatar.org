@@ -1,56 +1,59 @@
 from unittest.mock import patch
 
 from app.test import TestCase
+from eveonline.models import EveCorporation
 
 from reddit.client import RedditClient
+from reddit.models import RedditPost, RedditPostTemplate
 from reddit.service import RedditService
-from reddit.models import RedditScheduledPost
 
 
 class RedditServiceTestCase(TestCase):
     """Unit tests for the Reddit service"""
 
-    @patch("reddit.service.client")
-    def test_mocked_reddit_post(self, client):
+    def make_template(self, title):
+        corporation = EveCorporation.objects.create(
+            corporation_id=98000100, name="Service Corp"
+        )
+        return RedditPostTemplate.objects.create(
+            corporation=corporation,
+            title=title,
+            content="Testing",
+            subreddit="foo",
+        )
+
+    @patch("reddit.scheduling.RedditClient")
+    def test_mocked_reddit_post(self, client_class):
+        client = client_class.return_value
         client.submit_post.return_value = {
             "url": "https://www.reddit.com/r/foo/comments/abc123/test/",
             "id": "abc123",
         }
+        template = self.make_template("Test 1 - {ID}")
 
-        rsp = RedditScheduledPost.objects.create(
-            title="Test 1 - {ID}",
-            content="Testing",
-            subreddit="foo",
-            posting_day="monday",
-        )
+        post = RedditService().post_recriutment_ad(template)
 
-        title = RedditService().post_recriutment_ad(rsp)
-
-        self.assertEqual(20, len(title))
-        rsp.refresh_from_db()
+        # No CEO account linked, so it goes out as the alliance.
+        client_class.assert_called_once_with()
+        post.refresh_from_db()
+        self.assertEqual(20, len(post.title))
+        self.assertEqual(RedditPost.POSTED, post.status)
+        self.assertIsNone(post.scheduled_for)
+        self.assertIsNotNone(post.delivered_at)
         self.assertEqual(
-            rsp.last_reddit_post_url, client.submit_post.return_value["url"]
-        )
-        self.assertEqual(rsp.last_reddit_post_title, title)
-        self.assertIsNotNone(rsp.last_post_at)
-
-    @patch("reddit.service.client")
-    def test_mocked_reddit_post_no_url_when_submit_fails(self, client):
-        client.submit_post.return_value = None
-
-        rsp = RedditScheduledPost.objects.create(
-            title="Test 2 - {ID}",
-            content="Testing",
-            subreddit="foo",
-            posting_day="monday",
+            post.reddit_url, client.submit_post.return_value["url"]
         )
 
-        RedditService().post_recriutment_ad(rsp)
+    @patch("reddit.scheduling.RedditClient")
+    def test_mocked_reddit_post_no_url_when_submit_fails(self, client_class):
+        client_class.return_value.submit_post.return_value = None
+        template = self.make_template("Test 2 - {ID}")
 
-        rsp.refresh_from_db()
-        self.assertIsNone(rsp.last_reddit_post_url)
-        self.assertIsNone(rsp.last_reddit_post_title)
-        self.assertIsNotNone(rsp.last_post_at)
+        post = RedditService().post_recriutment_ad(template)
+
+        post.refresh_from_db()
+        self.assertEqual(RedditPost.FAILED, post.status)
+        self.assertEqual("", post.reddit_url)
 
 
 class RedditClientTestCase(TestCase):

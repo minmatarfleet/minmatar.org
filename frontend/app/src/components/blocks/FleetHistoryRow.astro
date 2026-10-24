@@ -1,0 +1,240 @@
+---
+import { i18n } from '@helpers/i18n'
+import { eve_day_short } from '@helpers/date'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetScheduleDoctrine } from '@helpers/fetching/fleet_schedule'
+import type { FleetResult } from '@helpers/api.minmatar.org/fleets'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+import { format_isk } from '@helpers/numbers'
+import { marked } from 'marked'
+
+/** One finished fleet: when, who, how long, how many, and what it killed and lost. */
+interface Props {
+    fleet:          FleetItem;
+    doctrine?:      FleetScheduleDoctrine | null;
+    result?:        FleetResult | null;
+    [propName: string]: any;
+}
+
+const {
+    fleet,
+    doctrine = null,
+    result = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+// Tracking that runs this long was almost always left on by accident.
+const LEFT_ON_HOURS = 8
+
+const started = fleet.tracking?.start_time ?? fleet.start_time
+const length_minutes = fleet.tracking?.start_time && fleet.tracking?.end_time ?
+    Math.round((new Date(fleet.tracking.end_time).getTime() - new Date(fleet.tracking.start_time).getTime()) / 60000) :
+    null
+const length_text = length_minutes === null ? '—' :
+    `${Math.floor(length_minutes / 60)}h ${(length_minutes % 60).toString().padStart(2, '0')}m`
+const left_on = length_minutes !== null && length_minutes > LEFT_ON_HOURS * 60
+
+const day = eve_day_short(lang, started, { weekday: true })
+const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
+const fc_line = [ fleet.fleet_commander_name, doctrine?.name ].filter(Boolean).join(' · ')
+
+const destroyed = result?.isk_destroyed ?? 0
+const lost = result?.isk_lost ?? 0
+const efficiency = destroyed + lost > 0 ? Math.round(100 * destroyed / (destroyed + lost)) : null
+const ship_counts = result ?
+    t('fleets.history.ship_counts')
+        .replace('{kills}', result.ships_destroyed.toString())
+        .replace('{losses}', result.ships_lost.toString()) :
+    ''
+
+import FleetPortrait from '@components/blocks/FleetPortrait.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
+---
+
+<a
+    href={translatePath(`/fleets/history/${fleet.id}`)}
+    class:list={['[ fleet-history-row ]', Astro.props.class]}
+    {...attributes}
+>
+    <span class="[ fleet-history-row__when ]">
+        <b>{day}</b>
+        <small>{t('fleets.eve_clock').replace('{time}', eve_clock(started))}</small>
+    </span>
+
+    <span class="[ fleet-history-row__fleet ]">
+        <span class="[ fleet-history-row__title ]">
+            <b set:html={objective} />
+            {fleet.aar_link && <span class="[ fleet-history-row__tag ]">{t('fleets.history.aar')}</span>}
+            <FleetHostTags fleet={fleet} />
+        </span>
+        <span class="[ fleet-history-row__fc ]">
+            <FleetPortrait
+                character_id={fleet.fleet_commander_id}
+                character_name={fleet.fleet_commander_name}
+                type={fleet.type}
+                size={28}
+            />
+            <small>{fc_line}</small>
+        </span>
+        {left_on &&
+            <small class="[ fleet-history-row__warning ]">
+                {t('fleets.history.left_on').replace('{length}', length_text)}
+            </small>
+        }
+    </span>
+
+    <span class="[ fleet-history-row__number ]">{length_text}</span>
+    <span class="[ fleet-history-row__number ]">{fleet.members_count ?? '—'}</span>
+
+    <span class="[ fleet-history-row__result ]">
+        {result === null ?
+            <small class="[ fleet-history-row__muted ]" title={t('fleets.history.no_tally')}>—</small> :
+        efficiency === null ?
+            <small class="[ fleet-history-row__muted ]">
+                {result.ships_lost > 0 ?
+                    t('fleets.history.losses_only').replace('{count}', result.ships_lost.toString()) :
+                    t('fleets.history.no_kills')
+                }
+            </small>
+            :
+            <>
+                <span class="[ fleet-history-row__isk ]">
+                    <span class="[ fleet-history-row__killed ]">{format_isk(destroyed)}</span>
+                    <span class="[ fleet-history-row__lost ]">{format_isk(lost)}</span>
+                </span>
+                <span class="[ fleet-history-row__bar ]" aria-hidden="true">
+                    <span style={`width: ${efficiency}%`} />
+                </span>
+                <small class="[ fleet-history-row__muted ]">
+                    {t('fleets.history.efficiency').replace('{percent}', efficiency.toString())} · {ship_counts}
+                </small>
+            </>
+        }
+    </span>
+</a>
+
+<style lang="scss">
+    .fleet-history-row {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr) 5rem 4rem 13rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-xs) var(--space-s);
+        background-color: var(--component-background);
+        border-top: 1px solid var(--border-color);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: background-color var(--fast-transition);
+    }
+
+    @media (hover: hover) {
+        .fleet-history-row:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+    }
+
+    .fleet-history-row__when {
+        display: flex;
+        flex-direction: column;
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-history-row__fleet {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .fleet-history-row__title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-history-row__tag {
+        padding: 0 var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        background-color: var(--alliance-blue);
+        color: var(--highlight);
+    }
+
+    .fleet-history-row__fc {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .fleet-history-row__warning {
+        color: var(--fleet-red);
+    }
+
+    .fleet-history-row__number {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .fleet-history-row__result {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fleet-history-row__isk {
+        display: flex;
+        justify-content: space-between;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Kills blue, losses red, as on the Fights tab. */
+    .fleet-history-row__killed {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .fleet-history-row__lost {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fleet-history-row__bar {
+        display: flex;
+        height: 6px;
+        background-color: var(--fleet-red);
+
+        span {
+            background-color: var(--alliance-blue);
+        }
+    }
+
+    .fleet-history-row__muted {
+        opacity: 0.75;
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-history-row {
+            grid-template-columns: 5.5rem minmax(0, 1fr);
+            gap: var(--space-2xs) var(--space-xs);
+        }
+
+        .fleet-history-row__number {
+            display: none;
+        }
+
+        .fleet-history-row__result {
+            grid-column: 2;
+        }
+    }
+</style>

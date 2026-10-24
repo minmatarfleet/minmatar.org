@@ -3,47 +3,122 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { TribeGroupShowcase } from '@dtypes/api.minmatar.org'
-import type { TribeActivitySpec } from '@helpers/tribe_activity'
+import { showcase_period_key, type TribeActivitySpec } from '@helpers/tribe_activity'
 
 interface Props {
     activity: TribeActivitySpec
     showcase: TribeGroupShowcase | null
+    can_see_names?: boolean
 }
 
 const {
     activity,
     showcase,
+    can_see_names = false,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
 import Grid from '@components/compositions/Grid.astro'
-import MetricStat from '@components/blocks/tribe_activity/MetricStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
+import ActivityAllTime from '@components/blocks/tribe_activity/ActivityAllTime.astro'
+import ActivityContributors from '@components/blocks/tribe_activity/ActivityContributors.astro'
+import ActivityHullTiles from '@components/blocks/tribe_activity/ActivityHullTiles.astro'
+import ActivityWeeklyBars from '@components/blocks/tribe_activity/ActivityWeeklyBars.astro'
+import ActivityWelcomedWall from '@components/blocks/tribe_activity/ActivityWelcomedWall.astro'
+import ActivityDoctrineGrid from '@components/blocks/tribe_activity/ActivityDoctrineGrid.astro'
+import ActivityFixedTickets from '@components/blocks/tribe_activity/ActivityFixedTickets.astro'
+import ActivityLatestWork from '@components/blocks/tribe_activity/ActivityLatestWork.astro'
+import ActivityTrophyCase from '@components/blocks/tribe_activity/ActivityTrophyCase.astro'
+import ActivityBiggestCatches from '@components/blocks/tribe_activity/ActivityBiggestCatches.astro'
+import ActivityBlock from '@components/blocks/tribe_activity/ActivityBlock.astro'
+import ActivityComingSoon from '@components/blocks/tribe_activity/ActivityComingSoon.astro'
 
-const metrics = activity.metrics(t, showcase?.totals ?? {})
+const has_data = Boolean(showcase && !showcase.manual)
+const show_board = has_data || Boolean(activity.coming_soon)
+const totals = has_data ? showcase?.totals ?? {} : {}
+const highlights = has_data ? showcase?.highlights ?? {} : {}
+const metrics = activity.metrics(t, totals, highlights)
+const all_time = has_data && activity.all_time
+    ? activity.all_time(t, highlights)
+    : null
+const contributor_spec = activity.contributors?.(t)
+const show_lower = Boolean(activity.block || contributor_spec || activity.coming_soon)
+// Lists that name pilots or quote tickets only reach roster viewers.
+const private_block_hidden = (activity.block === 'welcomed' && !highlights.welcomed)
+    || (activity.block === 'fixed' && !highlights.fixed)
 ---
 
 <section class="[ tribe-group-activity ]" aria-label={t('tribes.detail.activity')}>
     <Flexblock gap="var(--space-m)">
         <Flexblock gap="var(--space-3xs)">
             <h2>{t('tribes.detail.activity')}</h2>
-            <small>{t('tribes.showcase.last_30d')}</small>
+            {has_data && <small>{t(showcase_period_key(showcase?.period))}</small>}
         </Flexblock>
 
-        {!showcase ?
-            <p>{t('tribes.showcase.unavailable')}</p>
-            : showcase.manual ?
-                <p>{showcase.message || t('tribes.showcase.manual')}</p>
+        {!show_board ?
+            !showcase ?
+                <p>{t('tribes.showcase.unavailable')}</p>
                 :
+                showcase.warming ?
+                    <p>{t('tribes.showcase.warming')}</p>
+                    :
+                    <p>{showcase.message || t('tribes.showcase.manual')}</p>
+            :
+            <Flexblock gap="var(--space-l)">
                 <Grid
                     class="[ metric-stat-grid ]"
-                    min_item_width="220px"
+                    min_item_width="13rem"
                     row_gap="var(--space-s)"
                     column_gap="var(--space-s)"
                 >
                     {metrics.map((metric) =>
-                        <MetricStat label={metric.label} value={metric.value} />
+                        <StatCard
+                            label={metric.label}
+                            value={metric.value}
+                            hint={metric.hint}
+                            coming_soon={metric.coming_soon}
+                        />
                     )}
                 </Grid>
+
+                {show_lower &&
+                    <FluidFixed width="22rem" gap="var(--space-l)" breakpoint="55%">
+                        <Flexblock gap="var(--space-m)">
+                            {!private_block_hidden && <>
+                                {activity.block === 'hulls' && <ActivityHullTiles hulls={highlights.hulls ?? []} />}
+                                {activity.block === 'weekly' &&
+                                    <ActivityWeeklyBars
+                                        weekly={highlights.weekly ?? []}
+                                        record_week_lp={highlights.record_week_lp}
+                                    />
+                                }
+                                {activity.block === 'welcomed' && <ActivityWelcomedWall welcomed={highlights.welcomed ?? []} />}
+                                {activity.block === 'doctrine_grid' && <ActivityDoctrineGrid />}
+                                {activity.block === 'fixed' && <ActivityFixedTickets fixed={highlights.fixed ?? []} />}
+                                {activity.block === 'latest_work' && <ActivityLatestWork work={highlights.latest_work ?? []} />}
+                                {activity.block === 'trophy_case' && <ActivityTrophyCase />}
+                                {activity.block === 'catches' && <ActivityBiggestCatches catches={highlights.catches ?? []} />}
+                            </>}
+                            {all_time && <ActivityAllTime all_time={all_time} />}
+                        </Flexblock>
+
+                        <div>
+                            {contributor_spec ?
+                                <ActivityContributors
+                                    spec={contributor_spec}
+                                    contributors={showcase?.contributors ?? []}
+                                    can_see_names={can_see_names}
+                                />
+                                : activity.coming_soon &&
+                                    <ActivityBlock title={t('tribes.showcase.contributors')} muted>
+                                        <ActivityComingSoon />
+                                    </ActivityBlock>
+                            }
+                        </div>
+                    </FluidFixed>
+                }
+            </Flexblock>
         }
     </Flexblock>
 </section>

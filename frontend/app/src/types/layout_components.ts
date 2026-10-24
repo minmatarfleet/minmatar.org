@@ -14,9 +14,6 @@ export type EvEImageServiceSize = 32 | 64 | 128 | 256 | 512 | 1024
 export type ImageSize = 16 | 24 | 32 | 64 | 128 | 256 | 512 | 1024
 export type StructureSlots = 'High Power Slots' | 'Medium Power Slots' | 'Low Power Slots' | 'Rig Slots' | 'Service Slots' | 'Charges'
 export type CharacterRaces = 'caldari' | 'minmatar' | 'amarr' | 'gallente' | 'unknown'
-export type MetaGroupColors = 'tech-i' | 'tech-ii' | 'storyline' | 'faction' | 'officer' | 'deadspace' | 'tech-iii'
-                            | 'abyssal' | 'premium' | 'limited-time' | 'structure-faction' | 'structure-tech-ii' | 'structure-tech-i'
-
 export type spaces = '0' | '1px' | '2px' | 'var(--component-block-gap)' | 'var(--space-3xs)' | 'var(--space-2xs)' | 'var(--space-xs)' 
 | 'var(--space-s)' | 'var(--space-m)' | 'var(--space-l)' | 'var(--space-xl)' | 'var(--space-2xl)' | 'var(--space-3xl)' 
 | 'var(--space-3xs-2xs)' | 'var(--space-2xs-xs)' | 'var(--space-xs-s)' | 'var(--space-s-m)' | 'var(--space-m-l)' 
@@ -54,14 +51,6 @@ export interface ShipTypeFittingGroups {
     ship_groups:    ShipFittings[];
 }
 
-export interface DoctrineItemObj {
-    doctrine_name:  string;
-    href:           string;
-    id:             number;
-    tags:           Tag[];
-    fits:           Fit[];
-}
-
 export interface Fit {
     image: string;
     alt:   string;
@@ -75,49 +64,16 @@ export interface Tag {
     description: string;
 }
 
-/*export interface Slot {
-    name:    string;
-    modules: Module[];
-}
-
-export interface Module {
-    image?: string;
-    name:   string;
-    amount: number;
-}*/
-
-export interface ItemListProps {
-    title:  string;
-    items:  ItemListItem[];
-}
-
 export interface ItemListItem {
     image:  string;
     name:   string;
     alt:    string;
 }
 
-export interface FitDetails {
-    name:           string;
-    image:          string;
-    alt:            string;
-    description:    string;
-    fitting_eft:    string;
-}
-
-export interface FittingParsed {
-    [propName: string]: Fittable[];
-}
-
 export interface Fittable {
     name:   string;
     amount: number;
     image:  string;
-}
-
-export interface StructureFittingGroups {
-    name:       string;
-    fittables:  StructureFittable[];
 }
 
 export interface StructureFittable {
@@ -157,36 +113,12 @@ export interface Structure {
     fitting?:       string;
 }
 
-export interface FleetCompositionObj {
-    ship_name: string;
-    ship_id:   number;
-    fitting:   string;
-    pilots:    Pilot[];
-}
-
 export interface Pilot {
     name: string;
     id:   number;
 }
 
-export interface FreightCalculation {
-    name:             string;
-    ship_to:          string;
-    pick_up_station:  string;
-    reward:           number;
-    collateral:       number;
-    expiration:       string;
-    days_to_complete: string;
-}
-
 export type roles = 'pilot' | 'director' | 'administrator'
-
-export interface PersonaListData {
-    id:             number;
-    name:           string;
-    roles:          roles[];
-    character_id:   number;
-}
 
 export interface CorporationListData {
     id:             number;
@@ -249,27 +181,6 @@ export interface ViewportComponents {
 	personas_finder?:		boolean;
 	corporation_finder?:	boolean;
 	alliance_finder?:		boolean;
-}
-
-export interface GroupListObject {
-    id:             number;
-    name:           string;
-    description:    string;
-    image_url:      string;
-    status:         string;
-    members:        number;
-}
-
-export type GroupRequestType = 'join' | 'leave'
-
-export interface ApplicationOld {
-    id:                     number;
-    applied_corporation:    number;
-    character_name:         string;
-    corporation_id:         number;
-    corporation_name:       string;
-    description?:           string;
-    status:                 CorporationStatusType;
 }
 
 export interface CorporationApplications {
@@ -347,39 +258,24 @@ export type CorporationType = 'alliance' | 'associate' | 'militia' | 'public'
 export interface CorporationObject {
     corporation_id:         number;
     corporation_name:       string;
-    alliance_id:            number;
-    alliance_name:          string,
+    alliance_id:            number | null;
+    alliance_name:          string | null,
     active:                 boolean;
     trial?:                 boolean;
     corporation_type:       CorporationType;
     status?:                CorporationStatusType;
     application_updated?:   Date;
-    introduction?:          string;
-    biography?:             string;
-    executor_notes?:        string;
-    timezones?:             string[];
-    requirements?:          string[];
+    introduction?:          string | null;
+    biography?:             string | null;
+    executor_notes?:        string | null;
+    timezones?:             string[] | null;
+    requirements?:          string[] | null;
     open_application_corporation_name?: string;
 }
 
 export interface CorporationBasic {
     id:     number;
     name:   string;
-}
-
-export interface GroupRequest {
-    id:             number;
-    user:           number;
-    group:          number;
-    approved:       boolean | null;
-    approved_by:    number | null;
-}
-
-export interface GroupRequestListUI {
-    group_id:           number;
-    group_name:         string;
-    group_image:        string;
-    requests:           GroupRequestUI[];
 }
 
 export interface GroupRequestUI {
@@ -410,15 +306,6 @@ export interface CharacterBasic {
 
 export type GroupRequestAction = 'accept' | 'deny' | 'transfer'
 
-export interface ModalCover {
-    image:          string;
-    image_990:      string;
-    alt?:           string;
-    animated?:      boolean;
-    scrollable?:    boolean;
-    overlay?:       boolean;
-}
-
 export type BadgeSize = 'xs' | 'sm' | 'lg'
 
 export interface CorporationBadgeProps {
@@ -439,25 +326,6 @@ export interface CorporationHistoryItem {
     membership_time_text?:  string;
 }
 
-export type GroupItemType = 'group' | 'team'
-
-export interface GroupItemUI {
-    id:             number;
-    name:           string;
-    description:    string | null;
-    image_url:      string | null;
-    content?:       string | null;
-    status?:        GroupStatus;
-    last_update?:    Date;
-}
-
-export interface SkillsetUI {
-    id:             number;
-    name:           string;
-    progress:       number;
-    missing_skills: SkillsUI[];
-}
-
 export interface SkillsUI {
     skill_name:     string;
     skill_level:    number;
@@ -471,11 +339,6 @@ export interface SkillsetMissingSkillUI {
 export interface VideoWidgetCredits {
     character_id?:  number;
     character_name: string;
-}
-
-export interface AssetsLocationUI {
-    location_name: string;
-    assets:        AssetUI[];
 }
 
 export interface AssetUI {
@@ -534,15 +397,6 @@ export interface AssetGroup {
     count:  number;
 }
 
-export interface GroupMembersUI {
-    id:             number;
-    name:           string;
-    description:    string;
-    image_url:      string | null,
-    members:        MemberUI[];
-    officers:       number[];
-}
-
 export interface MemberUI {
     user_id?:           number;
     character_id:       number;
@@ -565,6 +419,8 @@ export interface PageFinderUI {
     icon?:          string;
     description?:   string;
     publish:        boolean;
+    /** `false` keeps a path that only redirects out of sitemap.xml. */
+    sitemap?:       boolean;
     permissions?:   Permissions;
 }
 
@@ -573,7 +429,8 @@ export interface Permissions {
     team_director?: boolean;
     superuser?:     boolean;
     auth?:          boolean;
-    user?:          string[];
+    /** Key in src/json/feature_gates.json */
+    gate?:          string;
 }
 
 export type MetaGroupType = 'Tech I' | 'Tech II' | 'Storyline' | 'Faction' | 'Officer' | 'Deadspace' | 'Tech III'
@@ -621,6 +478,12 @@ export interface ShipFitting {
 
 export type ShipsMetaType = 'Tech I' | 'Tech II' | 'Faction' | 'Tech III'
 
+/** A ship hull a pilot can bring off doctrine. */
+export interface ShipHull {
+    type_id:    number;
+    name:       string;
+}
+
 export interface ShipInfo {
     name:    string;
     type:    string;
@@ -638,12 +501,6 @@ export interface ShipMeta {
     meta:       string;
 }
 
-export interface ShipDNA {
-    model:  string;
-    skin:   string;
-    race:   string;
-}
-
 export interface Fitting {
     id:             number;
     name:           string;
@@ -653,13 +510,6 @@ export interface Fitting {
     updated_at:     Date;
     eft_format:     string;
     latest_version: string;
-}
-
-export interface GroupBasic {
-    id:             number;
-    name:           string;
-    image_url:      string;
-    description:    string;
 }
 
 export interface DoctrineType {
@@ -672,6 +522,7 @@ export interface DoctrineType {
     primary_fittings:       FittingItem[];
     secondary_fittings:     FittingItem[];
     support_fittings:       FittingItem[];
+    utility_fittings:       FittingItem[];
     location_ids:           number[];
 }
 
@@ -708,6 +559,11 @@ export interface FleetItem {
     status?:                        TrackingStatus;
     campaign_slug?:                 string | null;
     campaign_name?:                 string | null;
+    aar_link?:                      string | null;
+    /** The tribe group hosting the fleet; null for alliance fleets. */
+    host_group?:                    TribeGroupRefUI | null;
+    open_to_alliance?:              boolean;
+    on_schedule?:                   boolean;
 }
 
 import type { TrackingStatus } from '@dtypes/api.minmatar.org'
@@ -722,6 +578,8 @@ export interface FleetUI {
     fleet_commander_name:   string;
     location:               string;
     doctrine:               DoctrineType;
+    /** The fleet's doctrine id, set even when its doctrine failed to load. */
+    doctrine_id?:           number | null;
     tracking:               Tracking;
     audience:               string;
     disable_motd:           boolean;
@@ -729,9 +587,27 @@ export interface FleetUI {
     status?:                TrackingStatus;
     aar_link:               string;
     roam_report_url?:       string;
+    /** The #aars forum, where the FC writes the AAR. */
+    aar_forum_url?:         string;
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;
+    /** The tribe group hosting the fleet; null for alliance fleets. */
+    host_group?:            TribeGroupRefUI | null;
+    open_to_alliance?:      boolean;
+    on_schedule?:           boolean;
+    /** The viewer may copy this fleet to a new date (from the API). */
+    can_copy?:              boolean;
+    /** A private fleet (docs/fleets/private-fleets.md). */
+    invite_only?:           boolean;
+    declassified_at?:       string | null;
+    /** The viewer's invite: "pending", "in" or "out"; null if not invited. */
+    my_invite_answer?:      string | null;
+    my_invite_wave?:        number | null;
+    /** The FC and Strategic FCs see the Invites tab. */
+    can_manage_invites?:    boolean;
+    /** The private coordination thread, for pilots who are in and managers. */
+    discord_thread_url?:    string | null;
 }
 
 export interface Tracking {
@@ -739,6 +615,8 @@ export interface Tracking {
     start_time:     Date;
     end_time:       Date | null;
     is_registered:  boolean;
+    is_free_move?:  boolean;
+    has_motd?:      boolean;
 }
 
 export interface FleetCompositionUI {
@@ -764,12 +642,12 @@ export interface StructureTimerUI {
     id:                 number;
     name:               string;
     state:              string;
-    timer:              Date;
+    timer:              string;
     system_name:        string;
     alliance_id:        number;
-    alliance_name:      string;
-    corporation_name:   string;
-    structure_id:       number;
+    alliance_name:      string | null;
+    corporation_name:   string | null;
+    structure_id:       number | null;
     structure_type:     string;
     structure_type_id:  number;
     verified:           boolean;
@@ -791,14 +669,6 @@ export interface FreightRoutesData {
     route_translation:  RouteTranslate;
     stations:           RouteStations;
     route_details:      Record<string, FreightRouteDetails>;
-}
-
-export interface RoutesData {
-    [propName: string]: unknown;
-}
-
-export interface FreightSizes {
-    [propName: string]: SelectOptions[];
 }
 
 export interface RouteTranslate {
@@ -826,16 +696,6 @@ export interface SystemCardInfo {
     security:               number;
     moons_count?:           number;
     progress?:              number;
-}
-
-export interface RegionBasic {
-    id:      number;
-    name:    string;
-}
-
-export interface ConstellationBasic {
-    id:      number;
-    name:    string;
 }
 
 export interface MoonBasic {
@@ -870,11 +730,15 @@ export interface PostListUI {
     title:              string;
     state:              string;
     slug:               string;
-    date_posted:        Date;
+    date_posted:        string;
     user_id:            number;
     author:             CharacterBasic;
     tags:               string[];
-    image:              string;
+    /** Never filled: the posts API has no image, so cards show the author. */
+    image?:             string;
+    /** The tribe group a group post is published as; null or absent for alliance posts. */
+    host_group?:        TribeGroupRefUI | null;
+    members_only?:      boolean;
 }
 
 export interface PostUI {
@@ -882,12 +746,14 @@ export interface PostUI {
     state:              string;
     title:              string;
     slug:               string;
-    date_posted:        Date;
+    date_posted:        string;
     user_id:            number;
     excerpt:            string;
     content:            string;
     author:             CharacterBasic;
     tags:               string[];
+    host_group?:        TribeGroupRefUI | null;
+    members_only?:      boolean;
 }
 
 export interface CombatLogAnalysis {
@@ -935,15 +801,6 @@ export interface CombatLogMaxUI {
 }
 
 export interface FleetCombatLog {
-    id:             number;
-    uploaded_at:    Date;
-    user_id:        number;
-    logger:         CharacterBasic;
-    character_name: string;
-    system_name:    string;
-}
-
-export interface FittingCombatLog {
     id:             number;
     uploaded_at:    Date;
     user_id:        number;
@@ -1000,6 +857,8 @@ export interface Posts {
 }
 
 export interface ReferralLinkStatsUI {
+    /** The referral page key (an external-referrals.json name or a sitemap slug). */
+    name?:      string;
     title:      string;
     count:      number;
     target?:    string;
@@ -1040,13 +899,13 @@ export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
 import type { BaseLocation, RootItem, Producer } from '@dtypes/api.minmatar.org'
 export interface IndustryOrderUI {
     id:                 number;
-    created_at:         Date;
-    needed_by:          Date;
-    fulfilled_at:       Date | null;
+    created_at:         string;
+    needed_by:          string;
+    fulfilled_at:       string | null;
     public_short_code:  string;
     character_id:       number | null;
     character_name:     string;
-    location:           BaseLocation;
+    location:           BaseLocation | null;
     items:              RootItem[];
     assigned_to:        Producer[];
 }
@@ -1062,11 +921,6 @@ export interface FreightContractLocationDestination {
     contracts:      FreightContract[];
 }
 
-export interface FreightContractLocation {
-    location_name:  string;
-    destinations:   FreightContractLocationDestination[];
-}
-
 import type { ColonyEntry } from '@dtypes/api.minmatar.org'
 
 export interface ColonyPlanet {
@@ -1077,32 +931,7 @@ export interface ColonyPlanet {
     colonies:           ColonyEntry[];
 }
 
-export interface ColonySystems {
-    solar_system_id:        number;
-    solar_system_name:      string;
-    system_sun_type_id:     number;
-    planets:                ColonyPlanet[];
-}
-
-import type { BaseIndustryOrder, OrderAssignment } from '@dtypes/api.minmatar.org'
-
-export interface OrderBreakdownUI extends BaseIndustryOrder {
-    character_id:       number;
-    character_name:     string;
-    materials:          RootItem[];
-    copy_breakdown:     string;
-}
-
-export interface OrderBreakdownGroupedUI {
-    id:                             number;
-    eve_type_id:                    number;
-    eve_type_name:                  string;
-    quantity:                       number;
-    unassigned_quantity:            number;
-    self_assign_maximum:            number | null;
-    self_assign_window_ends_at:     Date;
-    assignments:                    OrderAssignment[];
-}
+import type { OrderAssignment } from '@dtypes/api.minmatar.org'
 
 export interface SRPTargetValue {
     name:       string;
@@ -1147,4 +976,123 @@ export interface DisplayItem {
     used_in?: { type_id: number; name: string }[]
     used_in_is_ore?: boolean
     in_demand?: boolean
+}
+// Discord preview: the payload shape the bot sends (fleet ping) and the
+// event card Discord shows under an event announcement.
+export interface DiscordPreviewButtonUI {
+    label:      string;
+    url?:       string;
+    disabled?:  boolean;
+}
+
+export interface DiscordPreviewPayloadUI {
+    content?:       string | null;
+    embeds?:        {
+        title?:         string;
+        description?:   string;
+        author?:        { name?: string; icon_url?: string };
+        footer?:        { text?: string };
+    }[];
+    components?:    { components?: DiscordPreviewButtonUI[] }[];
+}
+
+export interface DiscordPreviewEventUI {
+    title:              string;
+    when_label:         string;
+    where_label:        string;
+    recurrence_label?:  string | null;
+    cover_url?:         string | null;
+    interested_count?:  number;
+}
+
+/* Tribe publishing: view models for the shared blocks (not API shapes). */
+
+/** A tribe group as other items refer to it. */
+export interface TribeGroupRefUI {
+    id:             number;
+    code:           string;
+    name:           string;
+    tribe_id:       number;
+    tribe_name:     string;
+}
+
+/** A group reference that also carries the crest the page chose for it. */
+export interface TribeGroupCrestUI extends TribeGroupRefUI {
+    crest_url?:     string;
+}
+
+export type TribeVisibility = 'members_only' | 'open'
+
+export interface HostOptionUI {
+    value:          string;
+    label:          string;
+    sub?:           string;
+    image_url:      string;
+}
+
+export interface PostTileUI {
+    id:                     number;
+    title:                  string;
+    excerpt:                string;
+    image_url:              string | null;
+    href:                   string;
+    author_character_id:    number;
+    author_character_name:  string;
+    /** ISO date. */
+    date:                   string;
+    members_only:           boolean;
+    /** The post belongs to a pilot and was tagged with this group, rather than published by it. */
+    tagged:                 boolean;
+}
+
+export type TribeEventWhereKind = 'stage' | 'voice' | 'place'
+export type TribeEventStatus = 'scheduled' | 'cancelled' | 'completed'
+
+export interface TribeEventRowUI {
+    id:                     number;
+    title:                  string;
+    cover_url:              string | null;
+    /** ISO time; null while the date is not set. */
+    starts_at:              string | null;
+    ends_at:                string | null;
+    where_kind:             TribeEventWhereKind;
+    where_label:            string;
+    recurrence_label:       string | null;
+    status:                 TribeEventStatus;
+    interested_count:       number;
+    discord_event_url:      string | null;
+    edit_href:              string | null;
+}
+
+export interface DiscordChannelUI {
+    id:             string;
+    name:           string;
+    type:           'text' | 'voice' | 'stage';
+}
+
+/** One pilot row on a battle report side (FleetBattlePilotRow). */
+export interface BattlePilotRow {
+    character_id:       number;
+    name:               string;
+    icon_type_id:       number | null;
+    ship:               string;
+    /** The main hull's killmail, when it was lost. */
+    killmail_id:        number | null;
+    pod_killmail_id:    number | null;
+    pod_title:          string;
+    lost:               boolean;
+    loss:               string;
+    /** "2 hulls" when more than one was lost. */
+    loss_note:          string;
+    damage:             string;
+    share:              string;
+    damage_top:         boolean;
+    kills:              number;
+    kills_top:          boolean;
+    corporation_id:     number | null;
+    corporation_name:   string;
+    alliance_id:        number | null;
+    alliance_name:      string;
+    /** The other hulls they flew, shown as icons after the ship name. */
+    extras:             { type_id: number, title: string, lost: boolean, killmail_id: number | null }[];
 }

@@ -6,7 +6,10 @@ from app.errors import ErrorResponse
 from ninja import Query
 
 from industry.endpoints.loyalty.schemas import LoyaltyMarketOrdersListResponse
-from industry.endpoints.loyalty.serialization import market_order_response
+from industry.endpoints.loyalty.serialization import (
+    market_order_response,
+    order_context,
+)
 from industry.helpers.lp_market_orders import ACTIVE_STATUSES
 from industry.models import IndustryLoyaltyPointMarketOrder
 
@@ -76,8 +79,10 @@ def get_orders(
         rows = qs[offset:]
     else:
         rows = qs
+    rows = list(rows)
+    context = order_context(rows)
     return LoyaltyMarketOrdersListResponse(
-        items=[market_order_response(o) for o in rows],
+        items=[market_order_response(o, context) for o in rows],
         total=total,
         limit=limit,
         offset=offset,

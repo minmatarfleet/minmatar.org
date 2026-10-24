@@ -16,7 +16,10 @@ from campaigns.helpers import campaign_day
 from campaigns.models import CampaignKillmail, CampaignParticipantDay
 from campaigns.services import esi_gate, sites, snapshots, stats
 from campaigns.services.attribution import attribute_feed_killmail
-from campaigns.tasks import poll_campaign_payouts
+from campaigns.tasks import (
+    poll_campaign_payouts,
+    poll_campaign_recent_killmails,
+)
 from campaigns.tests.helpers import (
     KAMELA,
     enlist,
@@ -24,6 +27,7 @@ from campaigns.tests.helpers import (
     make_feed_killmail,
 )
 from eveonline.models import EveCharacterFwLpPayout
+from feed.helpers.monitored_systems import invalidate_monitored_systems_cache
 from feed.models import FeedKillmail
 
 
@@ -203,6 +207,33 @@ class EsiFailureTests(TestCase):
         self.assertEqual(result["polled"], 0)
         self.assertEqual(result["stored"], 0)
 
+    def test_a_not_modified_notification_is_not_stored(self):
+        response = mock.Mock()
+        response.success.return_value = True
+        response.response_code = 304
+        response.response = None
+        response.results.side_effect = AssertionError("304 has no body")
+
+        with mock.patch(
+            "eveonline.client.EsiClient.get_character_notifications",
+            return_value=response,
+        ):
+            result = self._poll()
+
+        self.assertEqual(result["polled"], 1)
+        self.assertEqual(result["stored"], 0)
+
+    def test_downtime_skips_the_payout_poll(self):
+        with mock.patch(
+            "campaigns.tasks.get_esi_downtime_countdown", return_value=90
+        ), mock.patch(
+            "eveonline.client.EsiClient.get_character_notifications"
+        ) as notifications:
+            result = self._poll()
+
+        notifications.assert_not_called()
+        self.assertEqual(result["deferred"], 90)
+
     def test_nonsense_from_esi_is_not_stored(self):
         response = mock.Mock()
         response.success.return_value = True
@@ -223,12 +254,77 @@ class EsiFailureTests(TestCase):
 
     def test_the_snapshot_poll_survives_a_dead_endpoint(self):
         with mock.patch(
-            "requests.get", side_effect=requests.RequestException("boom")
+            "eveonline.esi_http.requests.request",
+            side_effect=requests.RequestException("boom"),
         ):
             self.assertEqual(snapshots.fetch_fw_systems(), [])
             self.assertEqual(
                 snapshots.record_snapshots(), {"systems": 0, "written": 0}
             )
+
+
+class RecentKillmailPollTests(TestCase):
+    """ESI fills holes in the feed. Mails the feed already has are not fetched."""
+
+    def setUp(self):
+        cache.clear()
+        self.campaign = make_campaign()
+        self.user, self.character = enlist(self.campaign, "hunter", 9401)
+
+    def test_missing_mails_are_ingested_and_known_ones_are_skipped(self):
+        make_feed_killmail(43, victim_character_id=9999, attacker_ids=[9401])
+        invalidate_monitored_systems_cache()
+        client = mock.Mock()
+        recent = mock.Mock()
+        recent.success.return_value = True
+        recent.response_code = 200
+        recent.response = None
+        recent.results.return_value = [
+            {"killmail_id": 42, "killmail_hash": "hash42"},
+            {"killmail_id": 43, "killmail_hash": "hash43"},
+        ]
+        detail = mock.Mock()
+        detail.success.return_value = True
+        detail.response_code = 200
+        detail.response = None
+        detail.results.return_value = {
+            "killmail_id": 42,
+            "killmail_time": timezone.now().isoformat(),
+            "solar_system_id": KAMELA,
+            "victim": {
+                "character_id": 9999,
+                "corporation_id": 98000002,
+                "ship_type_id": 587,
+            },
+            "attackers": [
+                {
+                    "character_id": 9401,
+                    "damage_done": 100,
+                    "final_blow": True,
+                }
+            ],
+        }
+        client.get_recent_killmails.return_value = recent
+        client.get_character_killmail.return_value = detail
+
+        with mock.patch("campaigns.tasks.EsiClient", return_value=client):
+            result = poll_campaign_recent_killmails()
+
+        client.get_character_killmail.assert_called_once_with(42, "hash42")
+        self.assertEqual(result["fetched"], 1)
+        self.assertEqual(result["ingested"], 1)
+        mail = CampaignKillmail.objects.get(killmail_id=42)
+        self.assertEqual(mail.first_seen_via, "esi")
+        self.assertFalse(mail.on_zkillboard)
+
+    def test_downtime_skips_the_killmail_poll(self):
+        with mock.patch(
+            "campaigns.tasks.get_esi_downtime_countdown", return_value=60
+        ), mock.patch("campaigns.tasks.EsiClient") as esi:
+            result = poll_campaign_recent_killmails()
+
+        esi.assert_not_called()
+        self.assertEqual(result["deferred"], 60)
 
 
 class CacheOutageTests(TestCase):

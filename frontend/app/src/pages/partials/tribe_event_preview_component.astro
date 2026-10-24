@@ -1,0 +1,72 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import type { DiscordPreviewEventUI } from '@dtypes/layout_components'
+import { preview_event_announcement } from '@helpers/api.minmatar.org/tribes'
+import { event_create_body } from '@helpers/tribe_event_form'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+import { eve_clock, eve_day_short } from '@helpers/date'
+
+// no-error-refetch: a live form preview; a rejected draft says why in place of the preview.
+// The event form's Discord preview: the announcement and event card the bot
+// would post for the form as it stands (same builder as the real one).
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const group_id = parseInt(params.get('group_id') ?? '')
+const editing = params.get('mode') === 'edit'
+if (!Number.isFinite(group_id) || Astro.request.method !== 'POST')
+    return HTTP_400_Bad_Request()
+
+const form = await Astro.request.formData()
+const role_name = String(form.get('role_name') ?? '') || null
+// An edit never announces again; the preview shows the Discord event only.
+const body = { ...event_create_body(form), ...(editing && { announce: false }) }
+const incomplete = !body.title || !body.starts_at
+    || (body.where_kind === 'voice' ? !body.voice_channel_id : !body.location)
+
+let channel_name: string | null = null
+let content: string | null = null
+let event: DiscordPreviewEventUI | null = null
+let error: string | null = null
+
+if (!incomplete) {
+    try {
+        const preview = await preview_event_announcement(auth_token, group_id, body)
+        channel_name = preview.channel_name ?? null
+        content = preview.content ?? null
+        const starts = preview.event_preview.starts_at
+        event = {
+            title: preview.event_preview.title,
+            when_label: t('tribes.event_form.when')
+                .replace('{date}', eve_day_short(lang, starts, { weekday: true }))
+                .replace('{time}', eve_clock(starts)),
+            where_label: preview.event_preview.where_label,
+            recurrence_label: body.recurrence === 'none' ? null : preview.event_preview.recurrence_label,
+            cover_url: tribe_group_cover(group_id),
+        }
+    } catch (failure) {
+        error = (failure as Error).message.replace(/^Error previewing event announcement:\s*/, '')
+    }
+}
+
+import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
+---
+
+{event ?
+    <DiscordEmbedPreview
+        kind="event_announcement"
+        channel_name={channel_name}
+        role_name={role_name}
+        content={content}
+        event={event}
+    />
+    :
+    <p class="[ tribe-event-form__preview-note ]" role="status">
+        {error ? t('tribes.event_form.preview_error').replace('{error}', error) : t('tribes.event_form.preview_incomplete')}
+    </p>
+}

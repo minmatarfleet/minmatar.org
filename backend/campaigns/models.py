@@ -9,12 +9,14 @@ counted: kills, losses, complex captures, advantage sites, fleets. See
 from __future__ import annotations
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
 from campaigns.constants import (
     ADVANTAGE_DELTA_BY_SITE_KIND,
     CAMPAIGN_COVER_CHOICES,
+    RESERVED_SLUGS,
 )
 
 # The campaign week and campaign day both roll over at 11:00 UTC, which is
@@ -90,6 +92,17 @@ class SiteKind(models.TextChoices):
     BATTLEFIELD = "battlefield", "Battlefield"
     KILL = "kill", "Kill payout"
     UNKNOWN = "unknown", "Unknown"
+
+
+# Every site that moves advantage rather than victory points.
+ADVANTAGE_SITE_KINDS = (
+    SiteKind.ADVANTAGE_SITE,
+    SiteKind.RENDEZVOUS_POINT,
+    SiteKind.PROPAGANDA_BEACON,
+    SiteKind.LISTENING_OUTPOST,
+    SiteKind.SUPPLY_CACHE,
+    SiteKind.BATTLEFIELD,
+)
 
 
 class KillmailOutcome(models.TextChoices):
@@ -186,6 +199,11 @@ class Campaign(models.Model):
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def clean(self):
+        super().clean()
+        if self.slug in RESERVED_SLUGS:
+            raise ValidationError({"slug": f"{self.slug} is reserved"})
 
     @property
     def is_live(self) -> bool:
@@ -769,10 +787,13 @@ class CampaignEnlistment(models.Model):
         max_length=16, choices=Source.choices, default=Source.WEB
     )
 
+    # Not read by any sender yet, and no longer settable through the API.
+    # Kept so choices members already stored survive until campaign
+    # notification types exist (docs/campaigns/fw-campaigns-plan.md); move
+    # them to notifications.NotificationPreference then.
     notify_gang_forming = models.BooleanField(default=True)
     notify_standing_fleet = models.BooleanField(default=True)
     notify_activity_nearby = models.BooleanField(default=False)
-    notify_streak_at_risk = models.BooleanField(default=True)
     notify_fleets = models.BooleanField(default=True)
     notify_thresholds = models.BooleanField(default=True)
     notify_digest = models.BooleanField(default=True)
@@ -819,7 +840,12 @@ class CampaignEnlistmentCharacter(models.Model):
     payouts_polled_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="Drives the polling rotation so every character is read.",
+        help_text="Drives the payout polling rotation so every character is read.",
+    )
+    killmails_polled_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Drives the recent-killmail polling rotation.",
     )
 
     class Meta:
@@ -1279,15 +1305,9 @@ class CampaignParticipantStat(models.Model):
     standing_fleet_minutes = models.PositiveIntegerField(default=0)
     active_days = models.PositiveIntegerField(default=0)
 
-    streak_days = models.PositiveIntegerField(default=0)
-    best_streak_days = models.PositiveIntegerField(default=0)
-    shields_used_this_week = models.PositiveSmallIntegerField(default=0)
     last_active_day = models.DateField(null=True, blank=True)
 
     rank_points = models.PositiveIntegerField(null=True, blank=True)
-    characters_included = models.PositiveSmallIntegerField(default=0)
-    characters_tracked = models.PositiveSmallIntegerField(default=0)
-    characters_lapsed = models.PositiveSmallIntegerField(default=0)
 
     active_hours_utc = models.JSONField(default=list, blank=True)
     observed_prime_time = models.CharField(
@@ -1415,3 +1435,36 @@ class CampaignAward(models.Model):
 
     def __str__(self) -> str:
         return f"{self.label} — {self.user}"
+
+
+class CampaignProject(models.Model):
+    """An in-game corporation project a director put toward a campaign.
+
+    The project's own ISK is the reward; attaching it only puts the project
+    and its contributors on the campaign page.
+    """
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="projects"
+    )
+    project = models.ForeignKey(
+        "eveonline.EveCorporationProject",
+        on_delete=models.CASCADE,
+        related_name="campaign_links",
+    )
+    attached_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    attached_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-attached_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "project"],
+                name="campaign_project_unique",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.project_id} in {self.campaign.slug}"

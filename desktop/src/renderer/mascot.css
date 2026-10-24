@@ -1,0 +1,21 @@
+/* Sneak peeking over EVE's notification badge. He stays small and still: one slow breath, an occasional
+   duck-and-peek, and he pops up a little when you hover him. Nothing that pulls the eye mid-fight. */
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
+.sneak {
+    position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: pointer;
+    display: block; transform-origin: 50% 100%;
+    transition: opacity 90ms ease-out, transform 160ms ease-out;
+}
+body.is-hidden .sneak { opacity: 0; transform: translateY(40%); }
+.sneak img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: bottom; pointer-events: none;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); animation: sneak-breathe 6s ease-in-out infinite; transform-origin: 50% 100%; }
+.sneak.is-peeking img { animation: sneak-peek 1.6s ease-in-out 1, sneak-breathe 6s ease-in-out infinite 1.6s; }
+.sneak:hover { transform: translateY(-8%) rotate(-4deg); }
+.sneak:focus-visible { outline: 1px solid #f1d9a0; outline-offset: -1px; }
+
+@keyframes sneak-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.025); } }
+@keyframes sneak-peek { 0%, 100% { transform: translateY(0); } 25%, 55% { transform: translateY(70%); } 75% { transform: translateY(-6%); } }
+@media (prefers-reduced-motion: reduce) {
+    .sneak img, .sneak.is-peeking img { animation: none; }
+    .sneak, .sneak:hover { transition: opacity 90ms linear; transform: none; }
+}

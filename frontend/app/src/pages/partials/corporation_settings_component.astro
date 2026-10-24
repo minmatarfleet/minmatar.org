@@ -1,0 +1,781 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { CorporationRedditPost, RedditDeliveryMethod, RedditMarkdownProblem } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    RedditSettingsError,
+    disconnect_reddit_account,
+    get_corporation_reddit_post,
+    update_corporation_reddit_post,
+} from '@helpers/api.minmatar.org/reddit'
+import {
+    format_eve_datetime,
+    is_corporation_slug,
+    parse_delivery_method,
+    parse_paused,
+    REDDIT_FORMATTING_GUIDE_URL,
+    reddit_change_key,
+    reddit_connect_flash,
+    reddit_markdown_problem_key,
+    reddit_save_error_key,
+    reddit_section_summary,
+} from '@helpers/corporations/reddit_settings'
+import type { RedditFlash } from '@helpers/corporations/reddit_settings'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const ROOT_ID = 'corporation-settings'
+const PROBLEMS_ID = 'corp-settings-markdown-problems'
+const SCHEDULE_ID = 'corp-settings-schedule-panel'
+const AUTOMATIC_ID = 'corp-settings-automatic-panel'
+const STATUS_ID = 'corp-settings-save-status'
+const PREVIEW_ID = 'corp-settings-preview'
+const WRITE_ID = 'corp-settings-write'
+// Lives in the accordion header on the corporation page; refreshed out of band.
+const SUMMARY_ID = 'corporation-settings-reddit-summary'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+const slug = params.get('corporation')
+if (!corporation_id || !is_corporation_slug(slug)) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_settings_component/?${query_string({
+    corporation_id: String(corporation_id),
+    corporation: slug,
+})}`)
+const CONNECT_URL = translatePath(`/redirects/reddit_connect_init?${query_string({ corporation: slug })}`)
+const PREVIEW_URL = translatePath('/partials/reddit_markdown_preview_component/')
+// Autosaves only swap these in, so the fields keep focus while typing.
+const AUTOSAVE_TARGETS = [SCHEDULE_ID, PROBLEMS_ID, STATUS_ID, AUTOMATIC_ID]
+    .map((id) => `#${id}`)
+    .join(',')
+
+let flash: RedditFlash | null = reddit_connect_flash(params)
+// Unsaved edits survive a failed save or an unlink.
+let draft: { title: string, content: string, delivery_method: RedditDeliveryMethod, paused: boolean } | null = null
+let rejected_problems: RedditMarkdownProblem[] | null = null
+// The result of an autosave, shown next to the fields.
+let save_status: RedditFlash | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    draft = {
+        title: String(form.get('title') ?? ''),
+        content: String(form.get('content') ?? ''),
+        delivery_method: parse_delivery_method(form.get('delivery_method')),
+        paused: parse_paused(form.get('paused')),
+    }
+    try {
+        if (form.get('action') === 'disconnect') {
+            await disconnect_reddit_account(auth_token)
+            flash = { kind: 'success', key: 'corporations.settings.reddit_unlinked' }
+        } else {
+            await update_corporation_reddit_post(auth_token, corporation_id, {
+                title: draft.title,
+                content: draft.content,
+                delivery_method: draft.delivery_method,
+                paused: draft.paused,
+            })
+            save_status = { kind: 'success', key: 'corporations.settings.saved' }
+            draft = null
+        }
+    } catch (error) {
+        if (error instanceof RedditSettingsError && error.problems.length > 0)
+            rejected_problems = error.problems
+        const failure: RedditFlash = {
+            kind: 'error',
+            key: error instanceof RedditSettingsError
+                ? reddit_save_error_key(error.message)
+                : 'corporations.settings.error_save',
+        }
+        if (form.get('action') === 'disconnect') flash = failure
+        else save_status = failure
+    }
+}
+
+const settings = await get_corporation_reddit_post(auth_token, corporation_id) as CorporationRedditPost | null
+if (!settings) return HTTP_403_Forbidden()
+
+const title = draft?.title ?? settings.title
+const content = draft?.content ?? settings.content
+const delivery_method = parse_delivery_method(draft?.delivery_method ?? settings.delivery_method)
+const posts_automatically = delivery_method !== 'discord_reminder'
+const paused = draft?.paused ?? settings.paused
+const account = settings.reddit_account
+const subreddit = settings.subreddit.replace(/^\/?r\//, '')
+const has_estimates = settings.upcoming.some((slot) => !slot.confirmed)
+// A rejected save lists what Reddit can't render in the typed text; otherwise
+// any warnings about the saved text.
+const markdown_problems = rejected_problems ?? (draft ? [] : settings.markdown_problems)
+const has_blocking_problems = markdown_problems.some((problem) => problem.blocking)
+const summary = reddit_section_summary({ ...settings, delivery_method }, {
+    not_set_up: t('corporations.settings.summary_not_set_up'),
+    paused: t('corporations.settings.summary_paused'),
+    admin_paused: t('corporations.settings.summary_admin_paused'),
+    next: t('corporations.settings.summary_next'),
+    reminder: t('corporations.settings.summary_reminder'),
+    alliance: t('corporations.settings.summary_alliance'),
+    automatic: t('corporations.settings.summary_automatic'),
+    approved: t('corporations.settings.summary_approved'),
+    awaiting: t('corporations.settings.summary_awaiting'),
+}, lang)
+
+const status_text = (() => {
+    switch (settings.automatic_status) {
+        case 'ready':
+            return settings.delivery_method === 'alliance'
+                ? t('corporations.settings.status_ready_alliance')
+                : t('corporations.settings.status_ready').replace('~NAME', account?.username ?? '')
+        case 'not_approved':
+            return t('corporations.settings.status_not_approved')
+        case 'no_account':
+            return t('corporations.settings.status_no_account')
+        case 'account_invalid':
+            return t('corporations.settings.status_account_invalid')
+        default:
+            return ''
+    }
+})()
+---
+
+<span id={SUMMARY_ID} hx-swap-oob="true">{summary}</span>
+
+<div id={ROOT_ID} class="[ corp-settings ]">
+    <Flexblock gap="var(--space-l)">
+        <p class="[ corp-settings__leading ]">{t('corporations.settings.leading')}</p>
+
+        {flash &&
+            <p
+                class:list={['[ corp-settings__flash ]', { 'is-error': flash.kind === 'error' }]}
+                role={flash.kind === 'error' ? 'alert' : 'status'}
+            >
+                {t(flash.key)}
+            </p>
+        }
+
+        <section id={SCHEDULE_ID} class="[ corp-settings__panel ]" aria-labelledby="corp-settings-schedule">
+            <Flexblock gap="var(--space-xs)">
+                <h3 id="corp-settings-schedule">{t('corporations.settings.schedule')}</h3>
+                {settings.rotation_status === 'not_set_up' &&
+                    <p>{t('corporations.settings.not_set_up')}</p>
+                }
+                {settings.rotation_status === 'paused' &&
+                    <p>{t('corporations.settings.paused')}</p>
+                }
+                {settings.rotation_status === 'admin_paused' &&
+                    <p>{t('corporations.settings.admin_paused')}</p>
+                }
+                {settings.rotation_status === 'active' &&
+                    <Flexblock gap="var(--space-s)">
+                        <dl class="[ corp-settings__facts ]">
+                            <div>
+                                <dt>{t('corporations.settings.subreddit')}</dt>
+                                <dd>
+                                    <a
+                                        href={`https://www.reddit.com/r/${subreddit}/`}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                    >r/{subreddit}</a>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>{t('corporations.settings.priority')}</dt>
+                                <dd>
+                                    {settings.priority === 'high'
+                                        ? t('corporations.settings.priority_high')
+                                        : t('corporations.settings.priority_normal')}
+                                </dd>
+                            </div>
+                            {settings.interval_days &&
+                                <div>
+                                    <dt>{t('corporations.settings.frequency')}</dt>
+                                    <dd>
+                                        {t('corporations.settings.frequency_value')
+                                            .replace('~DAYS', String(settings.interval_days))}
+                                    </dd>
+                                </div>
+                            }
+                        </dl>
+
+                        <Flexblock gap="var(--space-3xs)">
+                            <p class="[ corp-settings__label ]">{t('corporations.settings.upcoming')}</p>
+                            {settings.upcoming.length > 0 ?
+                                <ul class="[ corp-settings__slots ]" role="list">
+                                    {settings.upcoming.map((slot) =>
+                                        <li>
+                                            <time datetime={slot.scheduled_for}>
+                                                {t('corporations.settings.eve_time').replace('~TIME', format_eve_datetime(slot.scheduled_for, lang))}
+                                            </time>
+                                            {slot.confirmed ?
+                                                <Tag text={t('corporations.settings.confirmed')} color="green" />
+                                                :
+                                                <Tag text={t('corporations.settings.estimate')} color="fleet-yellow" />
+                                            }
+                                        </li>
+                                    )}
+                                </ul>
+                                :
+                                <p>{t('corporations.settings.upcoming_none')}</p>
+                            }
+                            {has_estimates &&
+                                <small class="[ corp-settings__muted ]">{t('corporations.settings.estimate_note')}</small>
+                            }
+                        </Flexblock>
+
+                        {settings.recent_changes.length > 0 &&
+                            <Flexblock gap="var(--space-3xs)">
+                                <p class="[ corp-settings__label ]">{t('corporations.settings.changes')}</p>
+                                <ul class="[ corp-settings__changes ]">
+                                    {settings.recent_changes.map((change) =>
+                                        <li>
+                                            {t(reddit_change_key(change))
+                                                .replace('~DATE', format_eve_datetime(change.scheduled_for, lang))}
+                                        </li>
+                                    )}
+                                </ul>
+                            </Flexblock>
+                        }
+                    </Flexblock>
+                }
+                <small class="[ corp-settings__muted ]">{t('corporations.settings.schedule_note')}</small>
+            </Flexblock>
+        </section>
+
+        <form
+            class="[ corp-settings__form ]"
+            novalidate
+            hx-post={PARTIAL_URL}
+            hx-trigger="input delay:800ms"
+            hx-sync="this:queue last"
+            hx-swap="none"
+            hx-select-oob={AUTOSAVE_TARGETS}
+            x-data="{ pending: false }"
+            x-bind:class="{ 'is-pending': pending }"
+            x-on:input="pending = true"
+            {...{ 'x-on:htmx:before-request': 'if ($event.detail.elt === $el) pending = false' }}
+            x-on:submit.prevent
+        >
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <label class="[ corp-settings__label ]" for="corp-settings-title">
+                        {t('corporations.settings.title_label')}
+                    </label>
+                    <Input
+                        id="corp-settings-title"
+                        name="title"
+                        type="text"
+                        maxlength="250"
+                        autocomplete="off"
+                        value={title}
+                    />
+                </Flexblock>
+
+                <Flexblock gap="var(--space-3xs)" x-data="{ tab: 'write' }">
+                    <FlexInline gap="var(--space-xs)" justification="space-between">
+                        <label class="[ corp-settings__label ]" for="corp-settings-content">
+                            {t('corporations.settings.content_label')}
+                        </label>
+                        <a href={REDDIT_FORMATTING_GUIDE_URL} target="_blank" rel="noreferrer noopener">
+                            <small>{t('corporations.settings.markdown_guide')}</small>
+                        </a>
+                    </FlexInline>
+                    <div class="[ corp-settings__tabs ]" role="tablist" aria-label={t('corporations.settings.content_label')}>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-controls={WRITE_ID}
+                            x-bind:aria-selected="tab === 'write'"
+                            x-on:click="tab = 'write'"
+                        >
+                            {t('corporations.settings.tab_write')}
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-controls={PREVIEW_ID}
+                            aria-selected="false"
+                            x-bind:aria-selected="tab === 'preview'"
+                            x-on:click="tab = 'preview'"
+                            hx-post={PREVIEW_URL}
+                            hx-target={`#${PREVIEW_ID}`}
+                            hx-swap="innerHTML"
+                            hx-select-oob="unset"
+                        >
+                            {t('corporations.settings.tab_preview')}
+                        </button>
+                    </div>
+                    <div id={WRITE_ID} role="tabpanel" x-show="tab === 'write'">
+                        <MarkdownTextArea
+                            id="corp-settings-content"
+                            name="content"
+                            rows="16"
+                            maxlength="40000"
+                            guide_url={REDDIT_FORMATTING_GUIDE_URL}
+                            guide_label={t('corporations.settings.markdown_guide')}
+                            aria-describedby={PROBLEMS_ID}
+                        >{content}</MarkdownTextArea>
+                    </div>
+                    <div
+                        id={PREVIEW_ID}
+                        class="[ corp-settings__preview ]"
+                        role="tabpanel"
+                        x-show="tab === 'preview'"
+                        style="display: none"
+                    >
+                        <p class="[ corp-settings__muted ]">{t('corporations.settings.preview_loading')}</p>
+                    </div>
+                    <div
+                        id={PROBLEMS_ID}
+                        class:list={['[ corp-settings__problems ]', { 'is-blocking': has_blocking_problems }]}
+                        hidden={markdown_problems.length === 0}
+                    >
+                        {markdown_problems.length > 0 && !has_blocking_problems &&
+                            <p>{t('corporations.settings.markdown_warnings')}</p>
+                        }
+                        {markdown_problems.length > 0 &&
+                            <ul>
+                                {markdown_problems.map((problem) =>
+                                    <li class:list={[{ 'is-blocking': problem.blocking }]}>
+                                        <strong>{t('corporations.settings.markdown_line').replace('~LINE', String(problem.line))}</strong>
+                                        {' '}{t(reddit_markdown_problem_key(problem.code)).replace('~TEXT', problem.excerpt)}
+                                    </li>
+                                )}
+                            </ul>
+                        }
+                    </div>
+                </Flexblock>
+
+                <label class="[ corp-settings__option ]">
+                    <input type="checkbox" name="paused" checked={paused} />
+                    <span class="[ corp-settings__option-body ]">
+                        <strong>{t('corporations.settings.pause_label')}</strong>
+                        <small>{t('corporations.settings.pause_help')}</small>
+                    </span>
+                </label>
+
+                <fieldset class="[ corp-settings__delivery ]">
+                    <legend class="[ corp-settings__label ]">{t('corporations.settings.delivery_label')}</legend>
+                    <Flexblock gap="var(--space-xs)">
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
+                                value="alliance"
+                                checked={delivery_method === 'alliance'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_alliance')}</strong>
+                                <small>{t('corporations.settings.delivery_alliance_help')}</small>
+                            </span>
+                        </label>
+
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
+                                value="automatic"
+                                checked={delivery_method === 'automatic'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_automatic')}</strong>
+                                <small>{t('corporations.settings.delivery_automatic_help')}</small>
+                            </span>
+                        </label>
+
+                        <label class="[ corp-settings__option ]">
+                            <input
+                                type="radio"
+                                name="delivery_method"
+                                value="discord_reminder"
+                                checked={delivery_method === 'discord_reminder'}
+                            />
+                            <span class="[ corp-settings__option-body ]">
+                                <strong>{t('corporations.settings.delivery_reminder')}</strong>
+                                <small>{t('corporations.settings.delivery_reminder_help')}</small>
+                                {!settings.discord_linked &&
+                                    <small class="[ corp-settings__warning ]">{t('corporations.settings.no_discord')}</small>
+                                }
+                            </span>
+                        </label>
+                    </Flexblock>
+                </fieldset>
+
+                {/* Always rendered so autosave can swap it in when the method changes. */}
+                <section
+                    id={AUTOMATIC_ID}
+                    class="[ corp-settings__panel ]"
+                    aria-labelledby="corp-settings-automatic"
+                    hidden={!posts_automatically}
+                >
+                    {posts_automatically &&
+                    <Flexblock gap="var(--space-xs)">
+                        <h3 id="corp-settings-automatic">{t('corporations.settings.automatic_heading')}</h3>
+                        {settings.delivery_method === delivery_method && status_text &&
+                            <p class="[ corp-settings__status ]">{status_text}</p>
+                        }
+                        <dl class="[ corp-settings__facts ]">
+                            {delivery_method === 'automatic' &&
+                            <div>
+                                <dt>{t('corporations.settings.reddit_account')}</dt>
+                                <dd>
+                                    <FlexInline gap="var(--space-xs)">
+                                        {account ?
+                                            <span>{t('corporations.settings.reddit_linked').replace('~NAME', account.username)}</span>
+                                            :
+                                            <span class="[ corp-settings__muted ]">{t('corporations.settings.reddit_not_linked')}</span>
+                                        }
+                                        {(!account || account.token_invalid) &&
+                                            <Button href={CONNECT_URL} size="sm" color="fleet-red" narrow={true}>
+                                                {account ? t('corporations.settings.reconnect') : t('corporations.settings.connect')}
+                                            </Button>
+                                        }
+                                        {account &&
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                color="transparent"
+                                                narrow={true}
+                                                off_disable={true}
+                                                hx-post={PARTIAL_URL}
+                                                hx-vals='{"action": "disconnect"}'
+                                                hx-target={`#${ROOT_ID}`}
+                                                hx-swap="outerHTML"
+                                                hx-select-oob="unset"
+                                            >
+                                                {t('corporations.settings.disconnect')}
+                                            </Button>
+                                        }
+                                    </FlexInline>
+                                    {account?.token_invalid &&
+                                        <small class="[ corp-settings__warning ]">{t('corporations.settings.reddit_invalid')}</small>
+                                    }
+                                </dd>
+                            </div>
+                            }
+                            <div>
+                                <dt>{t('corporations.settings.approval')}</dt>
+                                <dd>
+                                    <FlexInline gap="var(--space-2xs)">
+                                        {settings.approved ?
+                                            <Tag
+                                                text={settings.approved_at
+                                                    ? t('corporations.settings.approved_on').replace('~DATE', format_eve_datetime(settings.approved_at, lang))
+                                                    : t('corporations.settings.approved')}
+                                                color="green"
+                                            />
+                                            :
+                                            <Tag text={t('corporations.settings.awaiting_approval')} color="fleet-yellow" />
+                                        }
+                                        {settings.change_pending &&
+                                            <Tag text={t('corporations.settings.change_pending')} color="fleet-yellow" />
+                                        }
+                                    </FlexInline>
+                                </dd>
+                            </div>
+                        </dl>
+                        {settings.change_rejected_note != null &&
+                            <p class="[ corp-settings__warning ]">
+                                {settings.change_rejected_note
+                                    ? t('corporations.settings.change_rejected_note').replace('~NOTE', settings.change_rejected_note)
+                                    : t('corporations.settings.change_rejected')}
+                            </p>
+                        }
+                        <small class="[ corp-settings__muted ]">
+                            {settings.change_pending
+                                ? t('corporations.settings.change_pending_note')
+                                : t('corporations.settings.approval_note')}
+                        </small>
+                    </Flexblock>
+                    }
+                </section>
+
+                <FlexInline gap="var(--space-m)">
+                    <p
+                        id={STATUS_ID}
+                        class:list={['[ corp-settings__save-status ]', { 'is-error': save_status?.kind === 'error' }]}
+                        role="status"
+                    >
+                        <span class="[ corp-settings__saving ]">{t('corporations.settings.saving')}</span>
+                        <span class="[ corp-settings__saved ]">
+                            {save_status ? t(save_status.key) : t('corporations.settings.autosave_note')}
+                        </span>
+                    </p>
+                    {settings.last_post_at &&
+                        <small class="[ corp-settings__muted ]">
+                            {t('corporations.settings.last_posted')}:
+                            {settings.last_reddit_post_url ?
+                                <a href={settings.last_reddit_post_url} target="_blank" rel="noreferrer noopener">
+                                    {format_eve_datetime(settings.last_post_at, lang)}
+                                </a>
+                                :
+                                format_eve_datetime(settings.last_post_at, lang)
+                            }
+                        </small>
+                    }
+                    {settings.last_reminder_at &&
+                        <small class="[ corp-settings__muted ]">
+                            {t('corporations.settings.last_reminded')}: {format_eve_datetime(settings.last_reminder_at, lang)}
+                        </small>
+                    }
+                </FlexInline>
+            </Flexblock>
+        </form>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .corp-settings {
+        max-width: var(--max-text-width);
+    }
+
+    // Flexblock spaces children with margin-block-start; keep that intact.
+    h2,
+    h3,
+    p,
+    dl {
+        margin-block-end: 0;
+    }
+
+    h3 {
+        font-size: var(--step-0);
+    }
+
+    .corp-settings__leading {
+        color: var(--highlight);
+    }
+
+    .corp-settings__muted {
+        color: var(--faded);
+    }
+
+    .corp-settings__label {
+        font-family: var(--button-font);
+        color: var(--highlight);
+    }
+
+    .corp-settings__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+
+    .corp-settings__panel {
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    .corp-settings__status {
+        color: var(--highlight);
+    }
+
+    .corp-settings__save-status {
+        font-size: var(--step--1);
+        color: var(--faded);
+
+        &.is-error .corp-settings__saved {
+            color: var(--fleet-red);
+        }
+    }
+
+    .corp-settings__saving {
+        display: none;
+        color: var(--fleet-yellow);
+    }
+
+    // Unsaved edits or a save in flight.
+    .corp-settings__form.is-pending,
+    .corp-settings__form.htmx-request {
+        .corp-settings__saving {
+            display: inline;
+        }
+
+        .corp-settings__saved {
+            display: none;
+        }
+    }
+
+    .corp-settings__tabs {
+        display: flex;
+        gap: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+
+        button {
+            padding: var(--space-3xs) var(--space-xs);
+            border: none;
+            border-bottom: solid var(--space-3xs) transparent;
+            margin-block-end: -1px;
+            background: none;
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            color: var(--faded);
+            cursor: pointer;
+            transition: color var(--fast-transition), border-color var(--fast-transition);
+
+            &[aria-selected="true"] {
+                border-bottom-color: var(--fleet-red);
+                color: var(--highlight);
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    color: var(--highlight);
+                }
+            }
+        }
+    }
+
+    .corp-settings__preview {
+        min-height: var(--space-3xl);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    .corp-settings__problems {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--fleet-yellow);
+        background-color: var(--component-background);
+        font-size: var(--step--1);
+
+        &.is-blocking {
+            border-left-color: var(--fleet-red);
+        }
+
+        p {
+            font-size: inherit;
+            color: var(--highlight);
+        }
+
+        ul {
+            margin: 0;
+            padding-inline-start: var(--space-s);
+        }
+
+        li + li {
+            margin-block-start: var(--space-3xs);
+        }
+
+        li.is-blocking strong {
+            color: var(--fleet-red);
+        }
+
+        strong {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .corp-settings__warning {
+        display: block;
+        color: var(--fleet-red);
+    }
+
+    .corp-settings__facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-s) var(--space-xl);
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+        }
+    }
+
+    .corp-settings__slots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            align-items: center;
+            color: var(--highlight);
+        }
+    }
+
+    .corp-settings__changes {
+        margin: 0;
+        padding-inline-start: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .corp-settings__delivery {
+        margin-inline: 0;
+        padding: 0;
+        border: none;
+
+        legend {
+            margin-bottom: var(--space-3xs);
+        }
+    }
+
+    .corp-settings__option {
+        display: flex;
+        gap: var(--space-xs);
+        align-items: flex-start;
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        cursor: pointer;
+        transition: border-color var(--fast-transition);
+
+        &:hover {
+            border-color: var(--border-color-hover);
+        }
+
+        &:has(input:checked) {
+            border-color: var(--fleet-yellow);
+        }
+
+        &:has(input:disabled) {
+            cursor: not-allowed;
+            opacity: 0.6;
+
+            &:hover {
+                border-color: var(--border-color);
+            }
+        }
+
+        input {
+            margin-top: var(--space-3xs);
+            accent-color: var(--fleet-red);
+        }
+    }
+
+    .corp-settings__option-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+</style>

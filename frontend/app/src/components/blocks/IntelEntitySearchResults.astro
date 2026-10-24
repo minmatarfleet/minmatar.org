@@ -1,0 +1,99 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelEntitySearchResult } from '@dtypes/api.minmatar.org'
+import { intel_entity_image, intel_entity_path, intel_bloc_path } from '@helpers/intel_affiliations'
+
+/**
+ * Name-search results for the affiliation database: each alliance,
+ * corporation or pilot links to its intel profile. The page renders this
+ * empty so its styles are there when intel_affiliation_search_component
+ * swaps results in.
+ */
+interface Props {
+    results:            IntelEntitySearchResult[];
+    /** The search text; nothing renders until it is long enough to search. */
+    query:              string;
+    [propName: string]: any;
+}
+
+const {
+    results,
+    query,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
+---
+
+<div class:list={['[ intel-search-results ]', Astro.props.class]} {...attributes}>
+    {query.length >= 3 && results.length === 0 &&
+        <EmptyState title={t('intel.affiliations.search.empty')} />
+    }
+    {results.length > 0 &&
+        <ul role="list">
+            {results.map(result =>
+                <li>
+                    <a href={translatePath(intel_entity_path(result.kind, result.id))}>
+                        <img src={intel_entity_image(result.kind, result.id, 64)} alt="" width="24" height="24" loading="lazy" />
+                        <span class="[ intel-search-results__name ]">{result.name}</span>
+                    </a>
+                    <span class="[ intel-search-results__kind ]">{t(t_key('intel.affiliations.kind.', result.kind))}</span>
+                    <span class="[ intel-search-results__status ]">{t(t_key('intel.affiliations.entity_status.', result.status))}</span>
+                    {result.bloc && <IntelBlocTag bloc={result.bloc} href={translatePath(intel_bloc_path(result.bloc.id))} />}
+                </li>
+            )}
+        </ul>
+    }
+</div>
+
+<style lang="scss">
+    .intel-search-results {
+        ul {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-3xs) var(--space-xs);
+            padding-block: var(--space-3xs);
+            border-block-end: 1px solid var(--hairline);
+        }
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            min-width: 0;
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover .intel-search-results__name,
+            &:focus-visible .intel-search-results__name {
+                text-decoration: underline;
+            }
+        }
+
+        img {
+            flex: none;
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+    }
+
+    .intel-search-results__kind,
+    .intel-search-results__status {
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+</style>

@@ -2,14 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
 const { fitting_id } = Astro.params;
 
 import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'
@@ -17,6 +9,7 @@ import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 import { get_ship_info } from '@helpers/sde/ships'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { fitting_path } from '@helpers/ship_paths'
 import { get_site_origin } from '@helpers/seo'
 
 let fitting:Fitting | null = null
@@ -37,7 +30,7 @@ if (!fitting)
     return HTTP_404_Not_Found()
 
 try {
-    saved_logs = [] // user && !fetch_fleets_error ? await get_fitting_combatlogs(auth_token as string, parseInt(fitting_id ?? '0')) : []
+    saved_logs = []
 } catch (error) {
     console.log(error)
 }
@@ -49,7 +42,7 @@ import { get_item_id } from '@helpers/sde/items'
 import { strip_markdown } from '@helpers/string'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
-import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
+import { parse_eft_for_render, parse_pod } from '@helpers/fit_parser.ts';
 import { format_fitting_tags_line } from '@helpers/fitting_tags'
 import {
     buildFittingDetailJsonLd,
@@ -58,7 +51,7 @@ import {
     type FittingDetailSeoInput,
 } from '@helpers/fitting_seo'
 
-const fitting_parsed = await parse_eft(fitting.eft_format ?? '')
+const fitting_parsed = await parse_eft_for_render(fitting.eft_format ?? '')
 
 if (!fitting_parsed)
     return HTTP_404_Not_Found()
@@ -76,7 +69,7 @@ const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitti
 
 const ship_id = await get_item_id(fitting_parsed.ship_name)
 
-const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
+const normal_view = translatePath(fitting_path(fitting.id, fitting.name))
 
 const fitting_display_name = fitting?.name ?? fitting_parsed.name
 const page_title = fitting_display_name;
@@ -98,7 +91,7 @@ const seo_input: FittingDetailSeoInput = {
     siteOrigin: site_origin,
     fittingsListUrl: new URL(translatePath('/ships/fittings/'), site_origin).href,
     shipsUrl: new URL(translatePath('/ships/'), site_origin).href,
-    canonicalUrl: new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), site_origin).href,
+    canonicalUrl: new URL(normal_view, site_origin).href,
     metaImage: ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : `${site_origin}/images/fits-cover.jpg`,
 }
 
@@ -200,7 +193,7 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                         </PageTitle>
                         <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
                         <FlexInline>                            
-                            <FittingShareButton fitting_id={parseInt(fitting_id ?? '0')} />
+                            <FittingShareButton fitting_id={fitting.id} fitting_name={fitting.name} />
                             <ClipboardButton id="fit-clipboard" text={t('copy_eft')}>
                                 {fitting?.eft_format as string}
                             </ClipboardButton>

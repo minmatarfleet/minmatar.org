@@ -76,26 +76,3 @@ def ack_delivery_for_requester(
             raise AckError("Not your notification", status_code=403)
 
     return _mark_read(delivery)
-
-
-def ack_delivery_for_discord_user(
-    delivery_id: int, discord_user_id: int
-) -> NotificationDelivery:
-    """
-    Mark a Discord delivery as read if the Discord user owns it.
-
-    Prefer ack_delivery_for_requester for API calls (auth-aware).
-    Idempotent when already read.
-    """
-    try:
-        delivery = NotificationDelivery.objects.select_related("user").get(
-            pk=delivery_id
-        )
-    except NotificationDelivery.DoesNotExist as exc:
-        raise AckError("Delivery not found", status_code=404) from exc
-
-    discord_user = DiscordUser.objects.filter(id=discord_user_id).first()
-    if not discord_user or discord_user.user_id != delivery.user_id:
-        raise AckError("Not your notification", status_code=403)
-
-    return _mark_read(delivery)

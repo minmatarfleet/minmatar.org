@@ -5,20 +5,19 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 
-from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
+from app.locks import single_flight
 from eveonline.client import EsiClient
+from eveonline.helpers.universe import ensure_eve_types
 from eveonline.models import EveLocation
 
 from market.helpers.inferred_sales import (
     infer_sales_from_snapshots,
     orders_from_db_rows,
     parse_esi_order,
-    prune_inferred_sales,
 )
-from market.helpers.orders import _ensure_eve_types
 from market.helpers.pricing import get_prices_by_type_id
 from market.models import (
     EveMarketInferredSale,
@@ -103,8 +102,7 @@ def apply_order_book_snapshot(
         baseline_by_type=baseline_by_type,
     )
 
-    types_cache: dict = {}
-    _ensure_eve_types(type_ids, types_cache)
+    types_cache = ensure_eve_types(type_ids, raise_on_error=True)
 
     sale_objs = [
         EveMarketInferredSale(
@@ -163,19 +161,22 @@ def sync_structure_order_book_for_location(
     character_id: int, location_id: int
 ) -> tuple[int, int] | None:
     """
-    Lock, fetch, apply snapshot, and prune old inferred sales for one location.
+    Lock, fetch and apply an order-book snapshot for one location.
+
+    Inferred sales are kept forever: the monthly market report reads them.
 
     Returns (sales_created, orders_written), or None if lock/fetch skipped.
     """
-    lock_key = _lock_key(location_id)
-    if not cache.add(lock_key, "1", timeout=ORDER_BOOK_SYNC_LOCK_TTL):
-        logger.info(
-            "Order book sync already in progress for location_id=%s, skipping",
-            location_id,
-        )
-        return None
+    with single_flight(
+        _lock_key(location_id), ORDER_BOOK_SYNC_LOCK_TTL
+    ) as acquired:
+        if not acquired:
+            logger.info(
+                "Order book sync already in progress for location_id=%s, skipping",
+                location_id,
+            )
+            return None
 
-    try:
         location = EveLocation.objects.filter(location_id=location_id).first()
         if not location:
             logger.warning(
@@ -190,7 +191,4 @@ def sync_structure_order_book_for_location(
             return None
 
         sales, orders = apply_order_book_snapshot(location, order_dicts)
-        prune_inferred_sales()
         return sales, orders
-    finally:
-        cache.delete(lock_key)

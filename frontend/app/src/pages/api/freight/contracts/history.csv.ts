@@ -1,16 +1,11 @@
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_internal_api_url } from '@helpers/env'
 
-const API_ENDPOINT = `${import.meta.env.API_URL}/api/freight`
+const API_ENDPOINT = `${get_internal_api_url()}/api/freight`
 
-export async function GET({ cookies }) {
-    const auth_token = cookies.has('auth_token')
-        ? cookies.get('auth_token').value
-        : false
-    const user: User | false = auth_token
-        ? jose.decodeJwt(auth_token) as User
-        : false
+export async function GET({ cookies, locals }) {
+    const { auth_token, user } = get_request_user({ cookies, locals })
 
     if (!auth_token || !user)
         return HTTP_403_Forbidden()

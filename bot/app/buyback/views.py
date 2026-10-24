@@ -8,12 +8,20 @@ import re
 
 import discord
 
+from app.custom_ids import (
+    BUYBACK_CANCEL_PREFIX,
+    BUYBACK_CANCEL_TEMPLATE,
+    BUYBACK_COMPLETE_PREFIX,
+    BUYBACK_COMPLETE_TEMPLATE,
+    custom_id,
+)
+
 from .service import DiscordAckError, discord_ack_order
 
 logger = logging.getLogger(__name__)
 
-COMPLETE_TEMPLATE = r"buyback:complete:(?P<order_id>[0-9]+)"
-CANCEL_TEMPLATE = r"buyback:cancel:(?P<order_id>[0-9]+)"
+COMPLETE_TEMPLATE = BUYBACK_COMPLETE_TEMPLATE
+CANCEL_TEMPLATE = BUYBACK_CANCEL_TEMPLATE
 
 THREAD_ARCHIVE_DELAY_SECONDS = 5
 
@@ -80,7 +88,7 @@ class CompleteButton(
             discord.ui.Button(
                 label="Complete",
                 style=discord.ButtonStyle.success,
-                custom_id=f"buyback:complete:{order_id}",
+                custom_id=custom_id(BUYBACK_COMPLETE_PREFIX, order_id),
             )
         )
         self.order_id = order_id
@@ -113,7 +121,7 @@ class CancelButton(
             discord.ui.Button(
                 label="Cancel",
                 style=discord.ButtonStyle.danger,
-                custom_id=f"buyback:cancel:{order_id}",
+                custom_id=custom_id(BUYBACK_CANCEL_PREFIX, order_id),
             )
         )
         self.order_id = order_id

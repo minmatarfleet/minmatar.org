@@ -28,26 +28,37 @@ def _character_committed_at(membership_id: int, character_id: int) -> str:
     return h.at.isoformat() if h else ""
 
 
+_LOOKUP = object()
+
+
 def serialize_membership(
     m: TribeGroupMembership,
     *,
     include_requirement_status: bool = False,
     include_characters: bool = True,
+    primary=_LOOKUP,
 ):
     """
     Serialize a TribeGroupMembership to MembershipSchema.
+
+    List callers pass ``primary`` (the user's main, or None) from one batch
+    lookup; otherwise it is looked up here.
 
     Always includes primary_character_id/primary_character_name for the
     membership's user. The characters list (committed alts) is only
     populated when include_characters is True (viewer has permission).
     """
-    primary = user_primary_character(m.user)
+    if primary is _LOOKUP:
+        primary = user_primary_character(m.user)
     primary_character_id = primary.character_id if primary else None
     primary_character_name = (primary.character_name or "") if primary else ""
 
     character_list = []
     if include_characters:
-        chars = m.characters.select_related("character__token").all()
+        if "characters" in getattr(m, "_prefetched_objects_cache", {}):
+            chars = m.characters.all()
+        else:
+            chars = m.characters.select_related("character__token").all()
         for c in chars:
             char_data = {
                 "id": c.pk,

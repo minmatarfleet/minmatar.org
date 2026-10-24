@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from eveonline.killmail_classes import CAPSULE_TYPE_IDS, is_capsule
+
 if TYPE_CHECKING:
     from fleets.models import (
         EveFleetInstance,
         EveFleetInstanceMember,
         EveFleetInstanceMemberShipSnapshot,
     )
-
-CAPSULE_TYPE_ID = 670
 
 
 def _fleet_models():
@@ -135,46 +135,10 @@ def last_non_capsule_ship_snapshot(
     _, ship_snapshot_model = _fleet_models()
     return (
         ship_snapshot_model.objects.filter(member=member)
-        .exclude(ship_type_id=CAPSULE_TYPE_ID)
+        .exclude(ship_type_id__in=CAPSULE_TYPE_IDS)
         .order_by("-created_at")
         .first()
     )
-
-
-def peak_concurrent_ship_count(
-    *,
-    member_ids: list[int],
-    ship_type_id: int,
-    snapshots: list[tuple[int, int, object]] | None = None,
-) -> int:
-    """Peak number of members simultaneously in ``ship_type_id``.
-
-    ``snapshots`` is an optional prefetched list of
-    ``(member_id, ship_type_id, created_at)`` ordered by ``created_at``.
-    """
-    if not member_ids:
-        return 0
-    _, ship_snapshot_model = _fleet_models()
-    if snapshots is None:
-        snapshots = list(
-            ship_snapshot_model.objects.filter(member_id__in=member_ids)
-            .order_by("created_at")
-            .values_list("member_id", "ship_type_id", "created_at")
-        )
-    else:
-        member_id_set = set(member_ids)
-        snapshots = [row for row in snapshots if row[0] in member_id_set]
-
-    if not snapshots:
-        return 0
-
-    current: dict[int, int] = {}
-    peak = 0
-    for member_id, snap_ship_type_id, _ in snapshots:
-        current[member_id] = int(snap_ship_type_id)
-        count = sum(1 for sid in current.values() if sid == ship_type_id)
-        peak = max(peak, count)
-    return peak
 
 
 def effective_fleet_ship(
@@ -186,7 +150,7 @@ def effective_fleet_ship(
     Returns the member's current ship unless they are in a capsule, in which
     case the most recent non-capsule snapshot is used when available.
     """
-    if member.ship_type_id != CAPSULE_TYPE_ID:
+    if not is_capsule(member.ship_type_id):
         return member.ship_type_id, member.ship_name
 
     prior = last_non_capsule_ship_snapshot(member)

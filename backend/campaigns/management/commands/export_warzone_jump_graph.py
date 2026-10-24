@@ -9,6 +9,9 @@ Run this once per SDE release:
 
     python manage.py export_warzone_jump_graph \\
         --sde ../frontend/app/src/data/sde-3316380.sqlite
+
+and ``export_intel_fixtures`` against the same file: the campaigns tests
+check that the two graphs agree.
 """
 
 from __future__ import annotations

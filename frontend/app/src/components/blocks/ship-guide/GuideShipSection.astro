@@ -1,0 +1,367 @@
+---
+import GuideFitCard from '@components/blocks/ship-guide/GuideFitCard.astro'
+import GuideMatchupCard from '@components/blocks/ship-guide/GuideMatchupCard.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import type {
+    GuideFitting,
+    MatchupVerdict,
+    OpponentShipResolver,
+    ShipGuide,
+} from '@/data/ship-guide/types'
+import { resolveGuideFittings } from '@helpers/guide_fittings'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    ship:               ShipGuide;
+    /** The guide's example fits for this hull (`getGuideFittingsForShip(ship.id)`). */
+    fittings:           GuideFitting[];
+    fitting_library?:   Fitting[];
+    /** Hull class shown in the kicker, e.g. `Frigate`. */
+    hull_class:         string;
+    /** Prefix for the copy-button ids, e.g. `nfg`. */
+    id_prefix:          string;
+    resolve_opponent:   OpponentShipResolver;
+    /** Optional line under the "Example fits" heading. */
+    fits_lead?:         string;
+}
+
+const {
+    ship,
+    fittings,
+    fitting_library = [],
+    hull_class,
+    id_prefix,
+    resolve_opponent,
+    fits_lead,
+} = Astro.props
+
+const fits = resolveGuideFittings(fittings, fitting_library)
+const self_ship = { shipId: ship.shipId, shipName: ship.name }
+
+const verdict_labels: Record<MatchupVerdict, string> = {
+    favoured: 'Favoured',
+    unfavoured: 'Unfavoured',
+    even: 'Coinflip',
+    bail: 'Disengage',
+    skill: 'Skill check',
+    unknown: '?',
+}
+---
+
+<section id={ship.id} data-section-id={ship.id} class="guide-ship" aria-labelledby={`${ship.id}-title`}>
+    <div class="guide-ship__hero">
+        <div class="guide-ship__hero-visual">
+            <ItemPicture
+                item_id={ship.shipId}
+                item_name={ship.name}
+                size={512}
+                narrow={true}
+                icon_quality={512}
+                mask={true}
+            />
+        </div>
+        <div class="guide-ship__stats">
+            <p class="guide-ship__stats-kicker">{ship.faction} {hull_class} · {ship.shortName}</p>
+            <h3 id={`${ship.id}-title`} class="guide-ship__stats-title">{ship.name}</h3>
+            <p class="guide-ship__tagline">{ship.tagline}</p>
+            <dl class="guide-ship__bonuses">
+                <dt class="guide-ship__bonuses-label">Ship bonuses (per skill level)</dt>
+                {
+                    ship.bonuses.map((bonus) => (
+                        <div class="guide-ship__bonus-row">
+                            <span class="guide-ship__bonus-value">{bonus.value}</span>
+                            <span class="guide-ship__bonus-text">{bonus.label}</span>
+                        </div>
+                    ))
+                }
+                <dt class="guide-ship__bonuses-label">Role bonus</dt>
+                <dd class="guide-ship__role-bonus">{ship.roleBonus}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="guide-ship__body">
+        {
+            ship.sections.map((section) => (
+                <section class="guide-ship__topic" aria-labelledby={`${ship.id}-${section.id}`}>
+                    <h4 id={`${ship.id}-${section.id}`} class="guide-ship__topic-title">{section.title}</h4>
+                    {
+                        section.paragraphs.map((paragraph) => (
+                            <p class="guide-ship__paragraph">{paragraph}</p>
+                        ))
+                    }
+                    {
+                        section.bullets && section.bullets.length > 0 && (
+                            <ul class="guide-ship__bullets">
+                                {section.bullets.map((bullet) => (
+                                    <li>{bullet}</li>
+                                ))}
+                            </ul>
+                        )
+                    }
+                </section>
+            ))
+        }
+
+        <section class="guide-ship__fits" aria-labelledby={`${ship.id}-fits-title`}>
+            <h4 id={`${ship.id}-fits-title`} class="guide-ship__fits-title">Example fits</h4>
+            {fits_lead && <p class="guide-ship__fits-lead">{fits_lead}</p>}
+            <div class="guide-ship__fits-grid">
+                {
+                    fits.map((fit) => (
+                        <GuideFitCard fit={fit} ship_name={ship.name} id_prefix={id_prefix} />
+                    ))
+                }
+            </div>
+        </section>
+
+        {
+            ship.matchups.map((group) => {
+                const groupSlug = group.title.replace(/\s+/g, '-').toLowerCase()
+                return (
+                    <section class="guide-ship__matchups" aria-labelledby={`${ship.id}-matchup-${groupSlug}`}>
+                        <h4 id={`${ship.id}-matchup-${groupSlug}`} class="guide-ship__section-title">
+                            Matchups · {group.title}
+                        </h4>
+                        {group.fitContext && <p class="guide-ship__matchup-context">{group.fitContext}</p>}
+                        <ul class="guide-ship__matchup-cards">
+                            {
+                                group.entries.map((entry) => (
+                                    <GuideMatchupCard
+                                        entry={entry}
+                                        verdict_labels={verdict_labels}
+                                        opponent_ship={resolve_opponent(entry.opponent, self_ship)}
+                                    />
+                                ))
+                            }
+                        </ul>
+                    </section>
+                )
+            })
+        }
+    </div>
+</section>
+
+<style lang="scss">
+    .guide-ship {
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
+        min-width: 0;
+        overflow-x: clip;
+        padding: var(--component-padding-block) var(--space-l-xl);
+        background: color-mix(in srgb, var(--component-background) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    }
+
+    @media (max-width: 48rem) {
+        .guide-ship {
+            padding-inline: var(--space-s);
+        }
+    }
+
+    .guide-ship__hero {
+        display: grid;
+        gap: var(--space-l);
+        margin-bottom: var(--space-l);
+        padding-bottom: var(--space-l);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        align-items: stretch;
+    }
+
+    @media (min-width: 48rem) {
+        .guide-ship__hero {
+            grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+            align-items: end;
+        }
+    }
+
+    .guide-ship__hero-visual {
+        display: flex;
+        justify-content: center;
+        overflow: hidden;
+        padding: var(--component-padding-block);
+        background:
+            radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--fleet-red) 12%, transparent), transparent 70%),
+            color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+
+        :global(picture) {
+            width: min(100%, 512px);
+            max-width: 100%;
+        }
+
+        :global(img) {
+            width: 100%;
+            height: auto;
+        }
+    }
+
+    .guide-ship__stats {
+        min-width: 0;
+        padding: var(--component-padding-block) var(--space-m);
+        background: color-mix(in srgb, var(--component-background) 92%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    }
+
+    .guide-ship__stats-kicker {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--2);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .guide-ship__stats-title {
+        margin: 0 0 var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .guide-ship__tagline {
+        margin: 0 0 var(--space-m);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--text-color-secondary, var(--faded));
+        font-style: italic;
+    }
+
+    .guide-ship__bonuses {
+        margin: 0;
+    }
+
+    .guide-ship__bonuses-label {
+        margin: var(--space-s) 0 var(--space-2xs);
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .guide-ship__bonus-row {
+        display: flex;
+        gap: var(--space-xs);
+        align-items: baseline;
+        margin-bottom: var(--space-3xs);
+    }
+
+    .guide-ship__bonus-value,
+    .guide-ship__bonus-text,
+    .guide-ship__role-bonus {
+        margin: 0;
+        font-size: var(--step--1);
+        line-height: 1.35;
+    }
+
+    .guide-ship__bonus-value {
+        flex-shrink: 0;
+        font-weight: 700;
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .guide-ship__bonus-text {
+        min-width: 0;
+    }
+
+    .guide-ship__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .guide-ship__topic {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding-bottom: var(--space-m);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+    }
+
+    .guide-ship__topic-title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .guide-ship__paragraph {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.65;
+        max-width: var(--max-text-width);
+    }
+
+    .guide-ship__bullets {
+        margin: 0;
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--step--1);
+        line-height: 1.6;
+    }
+
+    .guide-ship__fits,
+    .guide-ship__matchups {
+        padding-top: var(--space-s);
+    }
+
+    .guide-ship__fits-title,
+    .guide-ship__section-title {
+        margin: 0 0 var(--space-s);
+        padding-bottom: var(--space-2xs);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+        font-family: var(--heading-font);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .guide-ship__section-title {
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    .guide-ship__fits-title {
+        font-size: var(--step-0);
+        color: var(--fleet-yellow);
+    }
+
+    .guide-ship__fits-lead,
+    .guide-ship__matchup-context {
+        margin: 0 0 var(--space-s);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .guide-ship__fits-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .guide-ship__matchups {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .guide-ship__matchup-cards {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-3xs);
+        align-items: stretch;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    @media (min-width: 36rem) {
+        .guide-ship__matchup-cards {
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+        }
+    }
+</style>

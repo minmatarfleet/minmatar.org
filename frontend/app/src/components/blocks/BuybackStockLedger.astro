@@ -7,6 +7,7 @@ import {
     janice_tsv_from_stock_groups,
 } from '@helpers/buyback_ore'
 import { format_isk } from '@helpers/numbers'
+import { escape_html } from '@helpers/string'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -48,25 +49,13 @@ function format_qty(qty: number): string {
     return qty.toLocaleString()
 }
 
-function format_value(isk: number | null | undefined): string {
-    if (isk == null) return '—'
-    return `${format_isk(isk)} ISK`
-}
-
-function escape_html(value: string): string {
-    return value
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-}
 
 function variants_tip_html(variants: Array<{ name: string; quantity: number; isk_value?: number | null }>): string {
     const lines = [
         `<strong>${t('buyback.info.ore_variants')}</strong>`,
         ...variants.map((variant) => {
             const qty = format_qty(variant.quantity)
-            const isk = format_value(variant.isk_value)
+            const isk = format_isk(variant.isk_value, { suffix: ' ISK' })
             return `${escape_html(variant.name)}: ${qty} · ${isk}`
         }),
     ]
@@ -148,7 +137,7 @@ function variants_tip_html(variants: Array<{ name: string; quantity: number; isk
                                                     <BuybackRateBadge in_demand={group.in_demand} />
                                                 </FlexInline>
                                                 <span class="[ buyback-stock-ledger__qty ]">{format_qty(group.quantity)}</span>
-                                                <span class="[ buyback-stock-ledger__isk ]">{format_value(group.isk_value)}</span>
+                                                <span class="[ buyback-stock-ledger__isk ]">{format_isk(group.isk_value, { suffix: ' ISK' })}</span>
                                             </FlexInline>
                                         </li>
                                     )

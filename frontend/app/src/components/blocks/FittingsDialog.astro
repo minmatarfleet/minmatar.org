@@ -78,7 +78,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
                     min-shink-width='300px'
                     shrinkable-sibbling='first'
                 >
-                    <FittingLink fitting_id={fitting.id}>
+                    <FittingLink fitting_id={fitting.id} fitting_name={fitting.fitting_name}>
                         <ItemBadge
                             item_name={fitting.fitting_name}
                             type_id={fitting.ship_id}
@@ -89,7 +89,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
                         </ItemBadge>
                     </FittingLink>
                     <FlexInline>
-                        <FittingShareButton fitting_id={fitting.id} narrow={true} iconed={false} />
+                        <FittingShareButton fitting_id={fitting.id} fitting_name={fitting.fitting_name} narrow={true} iconed={false} />
                         <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
                     </FlexInline>
                 </FlexInlineSiblings>
@@ -145,6 +145,8 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
 </style>
 
 <style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
     .fitting-card {
         position: relative;
 
@@ -185,5 +187,9 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
 
     small {
         color:  var(--fleet-yellow);
+    }
+
+    .fitting-card {
+        @include phone_media_card('.fitting-card-body', '.ship-type-icon');
     }
 </style>

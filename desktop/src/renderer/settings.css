@@ -1,0 +1,20 @@
+.settings { padding-top: 0; }
+.settings__section { margin-bottom: 10px; }
+.settings__section .eve-section { margin: 10px 0 4px; padding: 3px 6px; background: var(--eve-group); font-size: 13px; font-weight: 400; }
+.settings__hint { margin: 4px 6px 6px; font-size: 12px; }
+.settings__notice { margin: 8px 6px 0; font-size: 11px; line-height: 1.4; color: var(--eve-text-dim); }
+
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 6px; border-bottom: 1px solid var(--eve-line); cursor: default; }
+.setting:hover:not(.setting--static) { background: var(--eve-hover); }
+.setting__title { display: block; color: var(--eve-text-strong); }
+.setting__text { display: block; font-size: 12px; color: var(--eve-text-dim); }
+
+/* EVE-style toggle */
+.switch { appearance: none; flex: none; width: 30px; height: 14px; margin: 0; position: relative; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.04); transition: background var(--eve-fade), border-color var(--eve-fade); }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; background: var(--eve-text-dim); transition: transform var(--eve-fade), background var(--eve-fade); }
+.switch:checked { border-color: var(--eve-accent); background: var(--eve-accent-soft); }
+.switch:checked::after { transform: translateX(16px); background: var(--eve-gold); }
+.switch:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 2px; }
+
+.account { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.account__portrait { width: 32px; height: 32px; outline: 1px solid var(--eve-line); background: rgba(255, 255, 255, 0.04); }

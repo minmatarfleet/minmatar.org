@@ -5,7 +5,6 @@ const { translatePath } = i18n(Astro.url)
 interface Props {
     producer_name:  string;
     money?:         number;
-    init_tooltip?:  boolean;
     placement?:     string;
     htmltag?:       string;
     width?:         string;
@@ -16,7 +15,6 @@ interface Props {
 const {
     producer_name,
     money,
-    init_tooltip = false,
     htmltag = 'div',
     placement = 'top',
     width = '340px',
@@ -39,7 +37,6 @@ import Tippy from '@components/blocks/Tippy.astro';
     height={width}
     width={height}
     element={htmltag}
-    init_tooltip={init_tooltip}
 >
     <slot />
 </Tippy>

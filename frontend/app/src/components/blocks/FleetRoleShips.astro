@@ -1,0 +1,188 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetRolePilot } from '@helpers/api.minmatar.org/fleets'
+
+/**
+ * A fleet role filled by ships, not sign-ups: who is bringing (or already
+ * flying) a ship that covers it. Pilots get here by volunteering a ship.
+ */
+interface Props {
+    id:                 string;
+    title:              string;
+    fleet_id:           number;
+    pilots:             FleetRolePilot[];
+    /** Ships in the composition that can fill this role. */
+    ship_names?:        string[];
+    /** How many pilots the fleet wants; omitted shows a plain count. */
+    wanted?:            number;
+    /** Links rows: show how many bursts of this kind each pilot runs. */
+    show_counts?:       boolean;
+    /** Cyno row, FC view: assign each cyno pilot a system. */
+    can_assign_system?: boolean;
+    readonly?:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    title,
+    fleet_id,
+    pilots,
+    ship_names = [],
+    wanted,
+    show_counts = false,
+    can_assign_system = false,
+    readonly = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const filled = wanted === undefined ? pilots.length > 0 : pilots.length >= wanted
+const count_text = wanted === undefined ?
+    t('role_count').replace('{count}', pilots.length.toString()) :
+    t('role_count_of_wanted')
+        .replace('{count}', pilots.length.toString())
+        .replace('{wanted}', wanted.toString())
+
+const show_system_controls = can_assign_system && !readonly
+
+import { query_string } from '@helpers/string'
+
+const clear_system_url = (ship_volunteer_id:number) => `${translatePath('/partials/fleet_role_component/')}?${query_string({
+    fleet_id: fleet_id,
+    readonly: false,
+    is_fleet_commander: true,
+    ship_volunteer_id: ship_volunteer_id,
+    clear_system: true,
+})}`
+
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import FleetRowAction from '@components/blocks/FleetRowAction.astro'
+import FleetCynoSystemButton from '@components/blocks/FleetCynoSystemButton.astro'
+import Square from '@components/blocks/Square.astro'
+import Badge from '@components/blocks/Badge.astro'
+---
+
+<div id={id} class:list={['[ fleet-role ][ light-transparency ]', Astro.props.class]} role="listitem" {...attributes}>
+    <div class="[ fleet-role__role ]">
+        <Badge title={title} size={40}>
+            <div slot="picture" class="[ fleet-role__icon ]">
+                <slot name="icon" />
+            </div>
+            <small class="[ fleet-role__count ]">
+                <Square color={filled ? 'green' : (wanted === undefined ? 'fleet-yellow' : 'fleet-red')} />
+                {count_text}
+            </small>
+        </Badge>
+    </div>
+
+    <div class="[ fleet-role__pilots ]">
+        {pilots.length === 0 && ship_names.length > 0 &&
+            <small class="[ fleet-role__hint ]">
+                {t('role_from_ships').replace('{ships}', ship_names.join(', '))}
+            </small>
+        }
+        {pilots.map(pilot =>
+            <span class="[ fleet-role__pilot ]">
+                <PilotBadge
+                    character_id={pilot.character_id}
+                    character_name={pilot.character_name}
+                    size={32}
+                    icon_quality={32}
+                >
+                    <small>
+                        {pilot.ship_name}{show_counts && pilot.count > 1 ? ` ×${pilot.count}` : ''}
+                        {pilot.in_fleet && <span class="[ fleet-role__live ]">· {t('role_in_fleet')}</span>}
+                    </small>
+                    {pilot.solar_system_name &&
+                        <small class="[ text-[var(--highlight)] ]">{pilot.solar_system_name}</small>
+                    }
+                </PilotBadge>
+                {show_system_controls && pilot.ship_volunteer_id &&
+                    <FleetCynoSystemButton
+                        target='fleet-roles'
+                        fleet_id={fleet_id}
+                        volunteer_id={pilot.ship_volunteer_id}
+                        character_name={pilot.character_name}
+                    />
+                }
+                {show_system_controls && pilot.ship_volunteer_id && pilot.solar_system_name &&
+                    <FleetRowAction
+                        title={t('clear_cyno_system')}
+                        hx-patch={clear_system_url(pilot.ship_volunteer_id)}
+                        hx-target='#fleet-roles'
+                        hx-indicator=".loader"
+                        hx-swap='outerHTML transition:true'
+                    >
+                        <span aria-hidden="true">✕</span>
+                    </FleetRowAction>
+                }
+            </span>
+        )}
+    </div>
+</div>
+
+<style lang="scss">
+    .fleet-role {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-2xs) var(--space-m);
+        align-items: center;
+        padding: var(--space-2xs) var(--space-xs);
+        border: solid 1px var(--border-color);
+    }
+
+    .fleet-role__role {
+        min-width: 0;
+    }
+
+    .fleet-role__icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        :global(img) {
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    .fleet-role__count {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        white-space: nowrap;
+    }
+
+    .fleet-role__pilots {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .fleet-role__pilot {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .fleet-role__pilot :global(.pilot-item span) {
+        font-size: var(--step--1);
+    }
+
+    .fleet-role__hint {
+        opacity: 0.7;
+        text-align: right;
+    }
+
+    .fleet-role__live {
+        color: var(--green);
+    }
+</style>

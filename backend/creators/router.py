@@ -10,6 +10,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.shortcuts import redirect
 from ninja import Router
 
+from app.links import site_url
 from app.errors import create_error_id
 from authentication import AuthBearer, AuthOptional
 from creators.models import (
@@ -29,6 +30,7 @@ from creators.schemas import (
 from creators.service import (
     disconnect_account,
     link_reddit_username,
+    RedditUsernameTaken,
     upsert_account_from_oauth,
 )
 from groups.helpers.feature_access import (
@@ -200,6 +202,7 @@ def list_feed(
         400: ErrorDetail,
         401: ErrorDetail,
         403: ErrorDetail,
+        409: ErrorDetail,
     },
     auth=AuthBearer(),
     summary="Link a Reddit username for public-post polling",
@@ -210,6 +213,11 @@ def put_reddit_username(request, payload: RedditUsernameRequest):
         return denied
     try:
         account = link_reddit_username(request.user, payload.username)
+    except RedditUsernameTaken:
+        return 409, {
+            "detail": "That Reddit username is already linked to another "
+            "member."
+        }
     except ValueError:
         return 400, {"detail": "username_required"}
     return _account_schema(account)
@@ -302,7 +310,7 @@ def _handle_callback(
     error: Optional[str],
 ):
     redirect_url = request.session.pop(
-        SESSION_REDIRECT_KEY, "https://my.minmatar.org/alliance/content/"
+        SESSION_REDIRECT_KEY, site_url("/alliance/content/")
     )
     expected_state = request.session.pop(SESSION_STATE_KEY, None)
     session_provider = request.session.pop(SESSION_PROVIDER_KEY, None)

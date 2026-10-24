@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
@@ -40,6 +40,9 @@ import Button from '@components/blocks/Button.astro';
             if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
             return root_data.show_alert_dialog({
                 title: ${JSON.stringify(dialog_title)},
+                accept_label: ${JSON.stringify(t('scope_groups.continue'))},
+                cancel_label: ${JSON.stringify(t('cancel'))},
+                show_cancel: true,
                 partial: ${JSON.stringify(`${translatePath('/partials/add_primary_pilot_dialog_disclaimer/')}?${query_string({
                     is_main: JSON.stringify(true),
                 })}`)},

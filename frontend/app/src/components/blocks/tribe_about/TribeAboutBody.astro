@@ -1,0 +1,96 @@
+---
+import type { spaces } from '@dtypes/layout_components'
+
+interface Props {
+    gap?: spaces
+    [propName: string]: any
+}
+
+const {
+    gap = 'var(--space-2xl)',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+<Flexblock gap={gap} class:list={['[ tribe-about ]', Astro.props.class]} {...attributes}>
+    <slot />
+</Flexblock>
+
+<style lang="scss" is:global>
+    // Shared by the tribe_about blocks so every card has one anatomy, on the
+    // tribe page and on a group's About tab alike.
+    .tribe-about {
+        .tribe-about-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+            gap: var(--space-s);
+        }
+
+        .tribe-about-card {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-s);
+            min-inline-size: 0;
+            padding: var(--space-m);
+            background: var(--component-background);
+        }
+
+        .tribe-about-eyebrow {
+            margin: 0;
+            font-family: var(--default-font);
+            font-size: var(--step--1);
+            font-weight: normal;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--fleet-yellow);
+        }
+
+        .tribe-about-record {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-3);
+            line-height: 1.1;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tribe-about-detail {
+            margin: 0;
+            font-size: var(--step--1);
+        }
+
+        .tribe-about-stats {
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+            gap: 1px;
+            background: var(--border-color-hover);
+            border: 1px solid var(--border-color-hover);
+
+            > div {
+                display: flex;
+                flex-direction: column-reverse;
+                gap: var(--space-3xs);
+                padding: var(--space-s) var(--space-m);
+                background: var(--component-background);
+            }
+
+            dt {
+                font-size: var(--step--1);
+            }
+
+            dd {
+                margin: 0;
+                font-family: var(--heading-font);
+                font-size: var(--step-3);
+                line-height: 1;
+                color: var(--highlight);
+                font-variant-numeric: tabular-nums;
+            }
+        }
+    }
+</style>

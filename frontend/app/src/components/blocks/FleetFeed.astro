@@ -2,20 +2,18 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token } = get_request_user(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const can_view_fleets = can(gates, 'fleets.view')
 
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { fleet_phase } from '@helpers/fleet_phase'
 
 let fleets:FleetItem[] = []
 let active_fleet_index:number = -1 // No active fleet
@@ -26,7 +24,7 @@ if (can_view_fleets) {
         fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
         fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
         fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-        active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+        active_fleet_index = fleets.findIndex(fleet => fleet_phase(fleet) === 'active')
     } catch (error) {
         console.log('Error fetching fleet feed:', error instanceof Error ? error.message : error)
     }

@@ -1,0 +1,259 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { CorporationInfo, CorporationLeaderRow } from '@dtypes/api.minmatar.org'
+import { month_label, month_year, short_date } from '@helpers/corporations/about'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    corporation: CorporationInfo
+    [propName: string]: any
+}
+
+const { corporation } = Astro.props
+
+const about = corporation.about
+const records = about?.records
+const founded = month_year(about?.founded, lang)
+
+interface RecordCard {
+    label: string
+    value: string
+    detail: string
+}
+
+const record_cards: RecordCard[] = [
+    records?.biggest_turnout && {
+        label: t('corporations.about.biggest_turnout'),
+        value: t('corporations.about.count_pilots').replace('~COUNT', String(records.biggest_turnout.pilots)),
+        detail: [records.biggest_turnout.title, short_date(records.biggest_turnout.date, lang)].filter(Boolean).join(' · '),
+    },
+    records?.busiest_month && {
+        label: t('corporations.about.busiest_month'),
+        value: t('corporations.about.count_fleets').replace('~COUNT', String(records.busiest_month.fleets)),
+        detail: month_label(records.busiest_month.month, lang),
+    },
+    (about?.founders ?? 0) > 0 && founded && {
+        label: t('corporations.about.founders'),
+        value: t('corporations.about.count_pilots').replace('~COUNT', String(about?.founders)),
+        detail: t('corporations.about.since').replace('~DATE', founded),
+    },
+].filter(Boolean) as RecordCard[]
+
+const boards = [
+    { title: t('corporations.about.most_fleets'), rows: about?.leaderboards?.fleets ?? [] },
+    { title: t('corporations.about.most_kills'), rows: about?.leaderboards?.kills ?? [] },
+    { title: t('corporations.about.most_fleets_led'), rows: about?.leaderboards?.fleets_led ?? [] },
+].filter((board) => board.rows.length > 0) as { title: string, rows: CorporationLeaderRow[] }[]
+
+const tribe_groups = about?.tribe_groups ?? []
+---
+
+{(record_cards.length > 0 || boards.length > 0 || tribe_groups.length > 0) &&
+    <section class="hall">
+        <header class="section-head">
+            <h2>{t('corporations.about.hall')}</h2>
+            <p>{t('corporations.about.hall_caption')}</p>
+        </header>
+
+        {record_cards.length > 0 &&
+            <div class="row">
+                {record_cards.map((card) => (
+                    <article class="card">
+                        <h3 class="eyebrow">{card.label}</h3>
+                        <p class="record-value">{card.value}</p>
+                        {card.detail && <p class="record-detail">{card.detail}</p>}
+                    </article>
+                ))}
+            </div>
+        }
+
+        {boards.length > 0 &&
+            <div class="row">
+                {boards.map((board) => (
+                    <article class="card">
+                        <h3 class="eyebrow">{board.title}</h3>
+                        <ol class="board">
+                            {board.rows.map((row, index) => (
+                                <li>
+                                    <span class="rank">{index + 1}</span>
+                                    <img
+                                        src={get_player_icon(row.character_id, 64)}
+                                        alt=""
+                                        width="40"
+                                        height="40"
+                                        loading="lazy"
+                                    />
+                                    <span class="name">{row.character_name}</span>
+                                    <span class="value">{row.value}</span>
+                                </li>
+                            ))}
+                        </ol>
+                    </article>
+                ))}
+            </div>
+        }
+
+        {tribe_groups.length > 0 &&
+            <article class="card">
+                <div class="tribes-head">
+                    <h3 class="eyebrow">{t('corporations.about.tribe_groups')}</h3>
+                    <a href={translatePath('/alliance/tribes/')}>{t('corporations.about.browse_tribes')}</a>
+                </div>
+                <ul class="tribes">
+                    {tribe_groups.map((group) => (
+                        <li>
+                            <span class="tribe-name">{group.name}</span>
+                            <span class="tribe-count">{group.members}</span>
+                        </li>
+                    ))}
+                </ul>
+            </article>
+        }
+    </section>
+}
+
+<style lang="scss">
+    .hall {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .section-head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h2 {
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: var(--space-s);
+    }
+
+    .card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-m);
+        background: var(--component-background);
+        min-width: 0;
+    }
+
+    .eyebrow {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        color: var(--faded);
+    }
+
+    .record-value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1.1;
+        color: var(--highlight);
+    }
+
+    .record-detail {
+        margin: 0;
+        font-size: var(--step--1);
+    }
+
+    .board {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-s);
+        }
+
+        img {
+            width: var(--space-xl);
+            height: var(--space-xl);
+            flex: none;
+        }
+    }
+
+    .rank {
+        width: var(--space-s);
+        font-family: var(--heading-font);
+        color: var(--faded);
+    }
+
+    .name {
+        flex: 1;
+        min-width: 0;
+        color: var(--highlight);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .value {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tribes-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-s);
+
+        a {
+            font-size: var(--step--1);
+        }
+    }
+
+    .tribes {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+        gap: 1px;
+
+        // Ruled cells, not a ruled background, so a short last row leaves no block.
+        li {
+            box-shadow: 0 0 0 1px var(--border-color-hover);
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: var(--space-xs);
+            padding: var(--space-xs) var(--space-s);
+            background: var(--component-background);
+        }
+    }
+
+    .tribe-name {
+        color: var(--highlight);
+    }
+
+    .tribe-count {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

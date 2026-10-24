@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { fitting_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FittingItem, ShipTypeFittingGroups } from '@dtypes/layout_components'
@@ -134,7 +135,7 @@ const structured_data = buildFittingsListJsonLd(
             id: fitting.id,
             name: fitting.fitting_name.replace(/^\[[^\]]+\]\s*/, ''),
             shipName: fitting.ship_name,
-            url: new URL(translatePath(`/ships/fittings/${fitting.id}`), site_origin).href,
+            url: new URL(translatePath(fitting_path(fitting.id, fitting.fitting_name)), site_origin).href,
         })),
         siteName: site_name,
         siteOrigin: site_origin,
@@ -359,5 +360,17 @@ const structured_data = buildFittingsListJsonLd(
         white-space: nowrap;
         left: 0;
         top: 0;
+    }
+
+    // Phones: let the compact card row (FittingsDialog trigger) span the column.
+    @media (max-width: 48rem) {
+        .fitting-card-container > :global(div) {
+            flex: 1 1 auto;
+            min-inline-size: 0;
+        }
+
+        .fitting-card-container > :global(div > button) {
+            inline-size: 100%;
+        }
     }
 </style>

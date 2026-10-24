@@ -1,0 +1,83 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'campaigns.view'))
+    return HTTP_403_Forbidden()
+
+import type { CorporationProject } from '@dtypes/api.minmatar.org'
+import { get_campaign_projects } from '@helpers/api.minmatar.org/campaigns'
+import { sort_projects } from '@helpers/corporations/projects'
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let fetch_projects_error:Error | false = false
+let projects:CorporationProject[] = []
+
+try {
+    projects = sort_projects(await get_campaign_projects(slug, auth_token as string) ?? [])
+} catch (error) {
+    fetch_projects_error = error
+}
+
+const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(slug)}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import CorporationProjectCard from '@components/blocks/CorporationProjectCard.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+<div id="campaign-projects">
+    {fetch_projects_error ?
+        <ErrorRefetch
+            args={{
+                partial: PROJECTS_PARTIAL_URL,
+                error: fetch_projects_error,
+                delay: delay,
+                target: '#campaign-projects',
+            }}
+        />
+        :
+        <Flexblock gap="var(--space-m)">
+            <p class="[ campaign-projects__leading ]">{t('campaigns.projects.leading')}</p>
+            {projects.length === 0 ?
+                <p class="[ campaign-projects__muted ]">{t('campaigns.projects.empty')}</p>
+                :
+                <Grid min_item_width="26rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
+                    {projects.map((project) =>
+                        <CorporationProjectCard project={project} show_corporation={true} contributors_open={true} />
+                    )}
+                </Grid>
+            }
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    p {
+        margin-block-end: 0;
+        max-width: var(--max-text-width);
+    }
+
+    .campaign-projects__leading {
+        color: var(--highlight);
+    }
+
+    .campaign-projects__muted {
+        color: var(--faded);
+    }
+</style>

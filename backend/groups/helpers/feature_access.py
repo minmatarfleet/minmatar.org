@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
+from django.db.models import Q
 
 from django.contrib.auth.models import AnonymousUser
 
@@ -30,6 +33,39 @@ class _FeatureSnapshot:
 
 _feature_cache: dict[str, _FeatureSnapshot] | None = None
 _feature_cache_at: float | None = None
+
+# Per-user lookups shared across one get_user_feature_codes() call. Outside
+# that call every lookup hits the database, as before, so long-lived user
+# objects never see stale affiliation or membership data.
+_batch_memo: ContextVar[dict | None] = ContextVar(
+    "feature_batch_memo", default=None
+)
+
+
+def _memoized(user, key: str, compute):
+    memo = _batch_memo.get()
+    if memo is None or memo.get("user_pk") != user.pk:
+        return compute()
+    if key not in memo:
+        memo[key] = compute()
+    return memo[key]
+
+
+@contextmanager
+def feature_batch(user):
+    """Share per-user lookups across many feature checks for one user.
+
+    Use it around a loop of can_use_feature calls (e.g. one per tribe
+    group) inside a single request; nothing outlives the block.
+    """
+    if _batch_memo.get() is not None or not getattr(user, "pk", None):
+        yield
+        return
+    token = _batch_memo.set({"user_pk": user.pk})
+    try:
+        yield
+    finally:
+        _batch_memo.reset(token)
 
 
 def clear_feature_cache() -> None:
@@ -118,21 +154,29 @@ def tribe_group_effective_affiliation_ids(
 def user_affiliation(user):
     if user is None or isinstance(user, AnonymousUser):
         return None
-    row = (
-        UserAffiliation.objects.filter(user=user)
-        .select_related("affiliation")
-        .first()
-    )
-    return row.affiliation if row else None
+
+    def compute():
+        row = (
+            UserAffiliation.objects.filter(user=user)
+            .select_related("affiliation")
+            .first()
+        )
+        return row.affiliation if row else None
+
+    return _memoized(user, "affiliation", compute)
 
 
 def user_community_status(user) -> str | None:
     if user is None or isinstance(user, AnonymousUser):
         return None
-    try:
-        return user.community_status.status
-    except UserCommunityStatus.DoesNotExist:
-        return None
+
+    def compute():
+        try:
+            return user.community_status.status
+        except UserCommunityStatus.DoesNotExist:
+            return None
+
+    return _memoized(user, "community_status", compute)
 
 
 def _has_legacy_permission(user, permission: str) -> bool:
@@ -160,6 +204,8 @@ def _evaluate_tribe_membership(
 ) -> bool:
     if not feature.tribe_group_ids:
         return False
+    if tribe_group is None and _batch_memo.get() is not None:
+        return bool(_active_tribe_group_ids(user) & feature.tribe_group_ids)
     qs = TribeGroupMembership.objects.filter(
         user=user,
         status=TribeGroupMembership.STATUS_ACTIVE,
@@ -168,6 +214,32 @@ def _evaluate_tribe_membership(
     if tribe_group is not None:
         qs = qs.filter(tribe_group_id=tribe_group.pk)
     return qs.exists()
+
+
+def _active_tribe_group_ids(user) -> frozenset[int]:
+    return _memoized(
+        user,
+        "active_tribe_group_ids",
+        lambda: frozenset(
+            TribeGroupMembership.objects.filter(
+                user=user,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            ).values_list("tribe_group_id", flat=True)
+        ),
+    )
+
+
+def _chief_tribe_group_ids(user) -> frozenset[int]:
+    """Tribe groups the user leads, directly or as chief of the tribe."""
+    return _memoized(
+        user,
+        "chief_tribe_group_ids",
+        lambda: frozenset(
+            TribeGroup.objects.filter(
+                Q(chief_id=user.pk) | Q(tribe__chief_id=user.pk)
+            ).values_list("pk", flat=True)
+        ),
+    )
 
 
 def _evaluate_tribe_group_target(
@@ -204,6 +276,8 @@ def _evaluate_tribe_chief(
         return tribe.chief_id == user.pk
     if not feature.tribe_group_ids:
         return False
+    if _batch_memo.get() is not None:
+        return bool(_chief_tribe_group_ids(user) & feature.tribe_group_ids)
     groups = TribeGroup.objects.filter(
         pk__in=feature.tribe_group_ids
     ).select_related("tribe")
@@ -216,7 +290,39 @@ def _evaluate_tribe_chief(
 
 
 def _user_auth_group_ids(user) -> set[int]:
-    return set(user.groups.values_list("pk", flat=True))
+    ids = _memoized(
+        user,
+        "auth_group_ids",
+        lambda: frozenset(user.groups.values_list("pk", flat=True)),
+    )
+    return set(ids)
+
+
+def fleet_hidden_from(user, fleet) -> bool:
+    """True for a members-only tribe group fleet, or a private fleet, this
+    user may not see.
+
+    Checked before any fleet-scoped feature (fleets.view, srp.submit), so
+    neither the RESOURCE_MATCH scope nor a legacy permission can reveal it.
+    """
+    if fleet is None:
+        return False
+    if getattr(fleet, "invite_only", False):
+        # Imported here: fleets helpers import this module.
+        from fleets.helpers.private_visibility import (  # pylint: disable=import-outside-toplevel
+            private_fleet_visible_to,
+        )
+
+        if not private_fleet_visible_to(user, fleet):
+            return True
+    if not getattr(fleet, "host_group_id", None):
+        return False
+    # Imported here: tribes.helpers imports this module.
+    from tribes.helpers.publishing import (  # pylint: disable=import-outside-toplevel
+        fleet_visible_to,
+    )
+
+    return not fleet_visible_to(user, fleet)
 
 
 def _evaluate_resource_match(feature: _FeatureSnapshot, user, fleet) -> bool:
@@ -296,6 +402,8 @@ def can_use_feature(
         return False
     if user.is_superuser:
         return True
+    if fleet_hidden_from(user, fleet):
+        return False
 
     feature = _get_feature(code)
     if feature is None:
@@ -352,6 +460,66 @@ def require_feature(
 def check_feature(request, code: str, **context):
     """Ninja helper: return error response tuple or None."""
     return require_feature(request.user, code, **context)
+
+
+def get_user_feature_codes(user) -> list[str]:
+    """Every registry feature code the user may use, with no resource context.
+
+    The result matches calling ``can_use_feature(user, code)`` for each code;
+    per-user lookups are just loaded once instead of once per feature. With
+    no resource, ``resource_match`` falls back to affiliation,
+    ``tribe_chief`` means chief of any wired group, and
+    ``tribe_group_target`` never passes.
+    """
+    if user is None or isinstance(user, AnonymousUser):
+        return []
+    if not user.is_active:
+        return []
+    token = _batch_memo.set({"user_pk": user.pk})
+    try:
+        return [
+            code
+            for code in sorted(FEATURE_DEFINITIONS)
+            if can_use_feature(user, code)
+        ]
+    finally:
+        _batch_memo.reset(token)
+
+
+def legacy_permissions_for_profile(user) -> set[str]:
+    """Permission strings the site profile should list for feature wiring.
+
+    Astro gates pages on Django permission strings from
+    ``user.get_all_permissions()``. Affiliation features such as
+    ``campaigns.view`` do not assign those permissions on auth groups, so a
+    wired member 403s on the page even though ``can_use_feature`` would
+    allow the API. Return the feature's ``legacy_permission`` when
+    affiliation scope passes.
+    """
+    if (
+        user is None
+        or isinstance(user, AnonymousUser)
+        or not getattr(user, "is_active", False)
+        or user.is_superuser
+    ):
+        return set()
+
+    affiliation = user_affiliation(user)
+    if affiliation is None:
+        return set()
+    status = user_community_status(user)
+    granted: set[str] = set()
+    for feature in _load_feature_cache().values():
+        if (
+            feature.scope != FeatureScope.AFFILIATION
+            or not feature.legacy_permission
+        ):
+            continue
+        if status and status in feature.deny_community_statuses:
+            continue
+        if affiliation.pk in feature.affiliation_ids:
+            granted.add(feature.legacy_permission)
+    return granted
 
 
 def user_has_legacy_perm(user, perm: str) -> bool:

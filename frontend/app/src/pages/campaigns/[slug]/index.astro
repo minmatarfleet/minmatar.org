@@ -1,18 +1,19 @@
 ---
+import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import type {
     CampaignDetail,
     CampaignWeek,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignKillmail,
     CampaignSite,
     CampaignRoster,
@@ -23,6 +24,7 @@ import {
     get_campaign_week,
     get_campaign_fleets,
     get_campaign_leaderboard,
+    get_campaign_corporation_leaderboard,
     get_campaign_killmails,
     get_campaign_sites,
     get_campaign_roster,
@@ -43,24 +45,26 @@ import Markdown from '@components/blocks/Markdown.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
-import CampaignSwapInit from '@components/partials/CampaignSwapInit.astro'
+import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
-const user_is_staff = Boolean(user && user.is_staff)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+const gates = await get_gates(Astro)
 
-const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
-const can_edit_in_admin = user_is_staff || is_superuser || user_permissions.includes('campaigns.change_campaign')
+const can_view_campaigns = can(gates, 'campaigns.view')
+const can_edit_in_admin = can(gates, 'campaigns.manage')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
 const slug = Astro.params.slug as string
+
+const token_error = Astro.url.searchParams.get('error')
+const token_error_message = token_error === 'wrong_character' || token_error === 'wrong_discord_account'
+    ? t(token_error)
+    : false
 
 // The You tab sends a character through the ESI sign-in and comes back here
 // with its id; including it now finishes the "Add to campaign" click.
@@ -71,7 +75,8 @@ if (Number.isFinite(include_id) && include_id > 0) {
     } catch (error) {
         console.log(`Could not include character ${include_id}: ${error.message}`)
     }
-    return Astro.redirect(`${translatePath(`/campaigns/${slug}/`)}#you`)
+    const error_query = token_error ? `?error=${encodeURIComponent(token_error)}` : ''
+    return Astro.redirect(`${translatePath(`/campaigns/${slug}/`)}${error_query}#you`)
 }
 
 let campaign:CampaignDetail | null = null
@@ -89,6 +94,7 @@ try {
 let week:CampaignWeek | null = null
 let fleets:CampaignFleet[] = []
 let leaderboard:CampaignLeaderboardRow[] = []
+let corporation_board:CampaignCorporationLeaderboardRow[] = []
 let killmails:{ rows:CampaignKillmail[]; has_more:boolean } = { rows: [], has_more: false }
 let sites:{ rows:CampaignSite[]; has_more:boolean } = { rows: [], has_more: false }
 let roster:CampaignRoster | null = null
@@ -104,6 +110,7 @@ if (campaign) {
         get_campaign_sites(slug, auth_token as string, ACTIVITY_PAGE_SIZE + 1),
         get_campaign_roster(slug, auth_token as string),
         get_campaign_readiness(auth_token as string),
+        get_campaign_corporation_leaderboard(slug, auth_token as string, 'kills', 'week'),
     ])
 
     week = results[0].status === 'fulfilled' ? results[0].value : null
@@ -113,12 +120,16 @@ if (campaign) {
     sites = paginate(results[4].status === 'fulfilled' ? results[4].value : [])
     roster = results[5].status === 'fulfilled' ? results[5].value : null
     readiness = results[6].status === 'fulfilled' ? results[6].value : null
+    corporation_board = results[7].status === 'fulfilled' ? results[7].value : []
 }
+
+/** Enlisting only makes sense while the campaign can still be joined. */
+const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'scheduled')
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
 const page_title = campaign ? campaign.name : t('campaigns.page_title')
-const api_base = import.meta.env.API_URL || ''
+const api_base = get_public_api_url()
 const admin_campaign_url = campaign
     ? `${api_base}/admin/campaigns/campaign/${campaign.id}/change/`
     : null
@@ -221,15 +232,20 @@ const breadcrumbs = [
                 week={week}
                 fleets={fleets}
                 leaderboard={leaderboard}
+                corporation_board={corporation_board}
                 killmails={killmails}
                 sites={sites}
                 roster={roster}
                 readiness={readiness}
+                token_error={token_error_message}
             />
         }
     </PageWide>
 
-    <CampaignSwapInit />
+    {show_enlist_bar && campaign &&
+        <CampaignEnlistBar campaign={campaign} leaderboard={leaderboard} user_id={user.user_id} />
+    }
+
 </Viewport>
 
 <style lang="scss">
@@ -273,6 +289,36 @@ const breadcrumbs = [
     @media screen and (max-width: 767px) {
         .campaign-header-countdown {
             text-align: left;
+        }
+    }
+
+    /* Phones: the countdown sits in the bottom action bar, so keep it to one or
+       two short lines ("Ends in 14 days · Oct 31") instead of a 3-line block. */
+    @media (max-width: 48rem) {
+        .campaign-header-countdown :global(.campaign-countdown) {
+            display: contents;
+        }
+
+        .campaign-header-countdown {
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: baseline;
+            column-gap: var(--space-2xs);
+            row-gap: 0;
+            /* Take the row's free space so the admin cog stays beside it, not on a second row. */
+            flex: 999 1 0;
+            min-width: 0;
+        }
+
+        .campaign-header-countdown :global(.campaign-countdown-text) {
+            font-size: var(--step-0);
+            white-space: normal;
+        }
+
+        .campaign-header-countdown :global(.countdown) {
+            font-size: var(--step-0);
+            letter-spacing: 0.1em;
+            text-indent: 0;
         }
     }
 </style>

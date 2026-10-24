@@ -4,9 +4,11 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from app.links import doctrine_url
 from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
+from fittings.eft import parse_eft_header
 from fittings.known_fitting import KnownFitting
 
 
@@ -57,9 +59,14 @@ def _eve_doctrine_scalar_equal(field: str, old_val, new_val) -> bool:
     return (old_val or "") == (new_val or "")
 
 
+# Doctrine fitting roles in display order. Utility holds ships a fleet
+# brings a few of regardless of doctrine size: cynos, boosters, scouts.
+DOCTRINE_FITTING_ROLES = ("primary", "secondary", "support", "utility")
+
+
 def composition_snapshot_for_doctrine(doctrine) -> dict:
-    """Snapshot primary/secondary/support fitting ids for a doctrine."""
-    composition = {"primary": [], "secondary": [], "support": []}
+    """Snapshot fitting ids per role for a doctrine."""
+    composition = {role: [] for role in DOCTRINE_FITTING_ROLES}
     for row in EveDoctrineFitting.objects.filter(doctrine=doctrine).values(
         "role", "fitting_id"
     ):
@@ -325,22 +332,13 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     @staticmethod
     def ship_name_from_eft(eft_format):
-        """Extract ship name from the first line of EFT format [ShipName, Fitting name]."""
-        first_line = eft_format.split("\n")[0]
-        return first_line.split(",")[0].strip().strip("[]")
+        """Ship name from the EFT header ``[ShipName, Fitting name]``."""
+        return parse_eft_header(eft_format)[0]
 
     @staticmethod
     def fitting_name_from_eft(eft_format):
-        """Extract fitting name from the first line of EFT format [ShipName, Fitting name]."""
-        if not (eft_format and eft_format.strip()):
-            return ""
-        parts = eft_format.split("\n")[0].split(",", 1)
-        if len(parts) < 2:
-            return ""
-        fitting_name = parts[1].strip()
-        if fitting_name.endswith("]"):
-            fitting_name = fitting_name[:-1].strip()
-        return fitting_name
+        """Fitting name from the EFT header ``[ShipName, Fitting name]``."""
+        return parse_eft_header(eft_format)[1]
 
 
 class EveFittingPod(MinmatarSoftDeleteModel):
@@ -588,7 +586,7 @@ class EveDoctrine(models.Model):
 
     @property
     def doctrine_link(self):
-        return f"https://my.minmatar.org/ships/doctrines/list/{self.id}"
+        return doctrine_url(self.id)
 
     def __str__(self):
         return str(self.name)
@@ -670,6 +668,7 @@ class EveDoctrineFitting(models.Model):
         ("primary", "Primary"),
         ("secondary", "Secondary"),
         ("support", "Support"),
+        ("utility", "Utility"),
     )
 
     doctrine = models.ForeignKey(EveDoctrine, on_delete=models.CASCADE)

@@ -32,6 +32,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Button from '@components/blocks/Button.astro'
 import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const page_title = t('staging_supply.ops.contracts.page_title')
 
@@ -83,69 +84,13 @@ const CONTRACTS_PARTIAL = translatePath(
                 delay: 0,
             }} />
             :
-            <div
+            <LazyPartial
                 id="ops-contracts-slot"
                 data-ops-contracts-deferred="1"
-                hx-get={CONTRACTS_PARTIAL}
-                hx-trigger="load"
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                aria-busy="true"
-                aria-live="polite"
+                url={CONTRACTS_PARTIAL}
             >
                 <MarketContractsSkeleton />
-            </div>
+            </LazyPartial>
         }
     </PageWide>
 </Viewport>
-
-<script>
-    function refreshOpsContractsSlot() {
-        const slot = document.getElementById('ops-contracts-slot')
-        if (!slot)
-            return
-
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof htmx !== 'undefined')
-            htmx.process(slot)
-        if (typeof Alpine !== 'undefined') {
-            Alpine.destroyTree(slot)
-            Alpine.initTree(slot)
-        }
-        tippy('#ops-contracts-slot [data-tippy-content]', tippy_options)
-    }
-
-    function isOpsContractsRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('ops_contracts_component')
-    }
-
-    function bindOpsContractsDeferred() {
-        const slot = document.getElementById('ops-contracts-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isOpsContractsRequest(event))
-                return
-            refreshOpsContractsSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isOpsContractsRequest(event))
-                return
-            if (!event.detail?.successful) {
-                document.getElementById('ops-contracts-slot')?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindOpsContractsDeferred()
-    document.addEventListener('astro:page-load', bindOpsContractsDeferred)
-</script>

@@ -1,0 +1,49 @@
+---
+/**
+ * "Nothing here" message for a list, table or panel with no rows.
+ *
+ * Plain:     <EmptyState title={t('x.empty')} />
+ *            -> one muted line (--faded, --step--1), left-aligned.
+ * Prominent: <EmptyState title={t('x.empty')} hint={t('x.empty_hint')} />
+ *            -> a highlighted title with a hint under it, for a panel whose
+ *               whole body is empty. `prominent` gives that look without a hint.
+ * An `action` slot renders under the prominent layout (a button or link).
+ *
+ * Styles live in src/styles/components/_empty-state.scss (loaded on every
+ * page), so EmptyState renders correctly inside htmx partials, whose own
+ * <style> blocks never reach the page. Errors from a fetch use ErrorRefetch.
+ */
+interface Props {
+    title?:     string;
+    hint?:      string;
+    prominent?: boolean;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    hint,
+    prominent = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const block = prominent || hint !== undefined || Astro.slots.has('action')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+{block ?
+    <Flexblock
+        gap="var(--space-2xs)"
+        class:list={['[ empty-state empty-state--prominent ]', Astro.props.class]}
+        {...attributes}
+    >
+        <p class="[ empty-state__title ]">{title}<slot /></p>
+        {hint && <small class="[ empty-state__hint ]">{hint}</small>}
+        <slot name="action" />
+    </Flexblock>
+    :
+    <p class:list={['[ empty-state ]', Astro.props.class]} {...attributes}>{title}<slot /></p>
+}

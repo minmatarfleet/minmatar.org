@@ -3,27 +3,18 @@ import type { PostListUI } from '@dtypes/layout_components'
 
 interface Props {
     posts:      PostListUI[];
-    small?:     boolean;
-    swiper_id?: string;
     is_video?:  boolean;
     editor_id?: number;
     is_editing: boolean;
-    has_cover?: boolean;
 }
 
 const {
     posts,
-    small = false,
-    swiper_id = 'posters-reel-swiper',
     is_video = false,
     editor_id,
     is_editing,
-    has_cover = false,
 } = Astro.props
 
-import Wrapper from '@components/compositions/Wrapper.astro';
-
-import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import PropagandaPostCardOrg from '@components/blocks/PropagandaPostCardOrg.astro';
 import PropagandaVideoPost from '@components/blocks/PropagandaVideoPost.astro';
 ---

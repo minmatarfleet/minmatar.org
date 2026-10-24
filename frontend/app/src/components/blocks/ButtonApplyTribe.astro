@@ -3,8 +3,9 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
-import { get_api_url, get_app_url } from '@helpers/env'
+import { get_public_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
+import { get_request_user } from '@helpers/request_user'
 
 interface Props {
     target_id:              string;
@@ -19,6 +20,10 @@ interface Props {
     styless?:               boolean;
     actions_ui?:            boolean;
     label?:                 string;
+    /** Invite mode: where the form posts (the invitation partial), and its wording. */
+    post_url?:              string;
+    subtitle?:              string;
+    submit_label?:          string;
     [propName: string]:     any;
 }
 
@@ -35,6 +40,9 @@ const {
     styless = false,
     actions_ui = false,
     label,
+    post_url,
+    subtitle,
+    submit_label,
     ...attributes
 } = Astro.props
 
@@ -42,8 +50,8 @@ const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(
     `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}${actions_ui ? '&ui=actions' : ''}`
 )
 const redirect_path = translatePath(`/alliance/tribes/${tribe_id}/${group_id}`)
-const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
-const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}${account_user_query}`
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
+const FIX_CHARACTER_URL = `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}${account_user_query}`
 
 const qualify_label = (available: TribeAvailableCharacter) => {
     if (available.missing_token && required_token_type) {
@@ -94,7 +102,7 @@ import Tag from '@components/blocks/Tag.astro';
     <form
         class="[ h-full ]"
         slot="dialog" 
-        hx-post={TRIBE_GROUP_STATUS_PARTIAL_URL}
+        hx-post={post_url ?? TRIBE_GROUP_STATUS_PARTIAL_URL}
         hx-trigger="submit"
         hx-target={`#${target_id}`}
         hx-indicator=".loader"
@@ -120,7 +128,7 @@ import Tag from '@components/blocks/Tag.astro';
         <Flexblock class="[ h-full justify-between! ]" gap="var(--space-l)">
             <Flexblock gap="var(--space-3xs)">
                 <h3>{title}</h3>
-                <small>{t('tribes.detail.apply')}</small>
+                <small>{subtitle ?? t('tribes.detail.apply')}</small>
             </Flexblock>
                 
             <Wrapper
@@ -167,14 +175,16 @@ import Tag from '@components/blocks/Tag.astro';
                                                             />
                                                         }
                                                         <h3>{pilot.character_name}</h3>
-                                                        <CorporationBadge
-                                                            corporation={{
-                                                                id: pilot.corp_id,
-                                                                name: pilot.corp_name,
-                                                                size: 'xs',
-                                                            }}
-                                                            highlight={false}
-                                                        />
+                                                        {pilot.corp_id !== null &&
+                                                            <CorporationBadge
+                                                                corporation={{
+                                                                    id: pilot.corp_id,
+                                                                    name: pilot.corp_name ?? undefined,
+                                                                    size: 'xs',
+                                                                }}
+                                                                highlight={false}
+                                                            />
+                                                        }
                                                     </Flexblock>
                                                 </CharacterCard>
                                                 :
@@ -194,14 +204,16 @@ import Tag from '@components/blocks/Tag.astro';
                                                             />
                                                         }
                                                         <h3>{pilot.character_name}</h3>
-                                                        <CorporationBadge
-                                                            corporation={{
-                                                                id: pilot.corp_id,
-                                                                name: pilot.corp_name,
-                                                                size: 'xs',
-                                                            }}
-                                                            highlight={false}
-                                                        />
+                                                        {pilot.corp_id !== null &&
+                                                            <CorporationBadge
+                                                                corporation={{
+                                                                    id: pilot.corp_id,
+                                                                    name: pilot.corp_name ?? undefined,
+                                                                    size: 'xs',
+                                                                }}
+                                                                highlight={false}
+                                                            />
+                                                        }
                                                     </Flexblock>
                                                 </SelectableCharacterCard>
                                             }
@@ -214,8 +226,8 @@ import Tag from '@components/blocks/Tag.astro';
                     <input type="hidden" name="character_ids" x-model="character_ids" value="[]" />
                 </div>
 
-                <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+                <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden! lg:block! ]"></div>
+                <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden! lg:block! ]"></div>
             </Wrapper>
 
             <FlexInline justification='flex-end'>
@@ -231,7 +243,7 @@ import Tag from '@components/blocks/Tag.astro';
                         off_disable={true}
                         disabled
                     >
-                        {t('apply')}
+                        {submit_label ?? t('apply')}
                     </Button>
                 </div>
 

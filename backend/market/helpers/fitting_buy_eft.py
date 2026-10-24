@@ -85,9 +85,3 @@ def effective_efts_for_lines(
         line.id: effective_eft_for_line(line, type_names=names)
         for line in lines
     }
-
-
-def bundle_effective_efts(lines: list[FittingBuyOrderLine]) -> str:
-    by_id = effective_efts_for_lines(lines)
-    blocks = [by_id[line.id].strip() for line in lines]
-    return "\n\n".join(block for block in blocks if block)

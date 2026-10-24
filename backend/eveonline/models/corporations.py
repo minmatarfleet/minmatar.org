@@ -4,8 +4,15 @@ from django.db import models
 from eveuniverse.models import EveFaction
 
 from eveonline.client import EsiClient
+from eveonline.constants import (
+    MINMATAR_FACTION_ID,
+    MINMATAR_FLEET_ALLIANCE_ID,
+    MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
+)
+from eveonline.helpers.esi import parse_esi_date
 from eveonline.models.alliances import EveAlliance
 from eveonline.models.characters import EveCharacter
+from eveonline.models.contracts import EsiContractFields
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +29,8 @@ class EveCorporation(models.Model):
     name = models.CharField(max_length=255, blank=True)
     ticker = models.CharField(max_length=255, blank=True, null=True)
     member_count = models.IntegerField(blank=True, null=True)
+    # From ESI; shown as "Founded" on the About tab.
+    date_founded = models.DateTimeField(blank=True, null=True)
     recruitment_active = models.BooleanField(default=True)
     trial = models.BooleanField(
         default=False,
@@ -64,11 +73,12 @@ class EveCorporation(models.Model):
 
     @property
     def type(self):
-        if self.alliance and self.alliance.alliance_id == 99011978:
+        alliance_id = self.alliance.alliance_id if self.alliance else None
+        if alliance_id == MINMATAR_FLEET_ALLIANCE_ID:
             return "alliance"
-        if self.alliance and self.alliance.alliance_id == 99012009:
+        if alliance_id == MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID:
             return "associate"
-        if self.faction and self.faction.id == 500002:
+        if self.faction and self.faction.id == MINMATAR_FACTION_ID:
             return "militia"
         return "public"
 
@@ -93,6 +103,7 @@ class EveCorporation(models.Model):
         self.name = esi_corporation["name"]
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]
+        self.date_founded = parse_esi_date(esi_corporation.get("date_founded"))
         esi_alliance_id = esi_corporation["alliance_id"]
         if esi_alliance_id:
             self.alliance = EveAlliance.objects.filter(
@@ -141,45 +152,12 @@ class EveCorporationMedia(models.Model):
         return f"{self.corporation} {self.kind}"
 
 
-class EveCorporationContract(models.Model):
+class EveCorporationContract(EsiContractFields):
     """Corporation contract from ESI (esi-contracts.read_corporation_contracts.v1)."""
 
-    contract_id = models.BigIntegerField(unique=True, primary_key=True)
     corporation = models.ForeignKey(
         EveCorporation, on_delete=models.CASCADE, related_name="contracts"
     )
-    type = models.CharField(max_length=32, db_index=True)
-    status = models.CharField(max_length=32, db_index=True)
-    availability = models.CharField(max_length=32, blank=True)
-    issuer_id = models.BigIntegerField()
-    issuer_corporation_id = models.BigIntegerField(null=True, blank=True)
-    assignee_id = models.BigIntegerField(null=True, blank=True)
-    acceptor_id = models.BigIntegerField(null=True, blank=True)
-    for_corporation = models.BooleanField(default=False)
-    date_issued = models.DateTimeField(null=True, blank=True)
-    date_expired = models.DateTimeField(null=True, blank=True)
-    date_accepted = models.DateTimeField(null=True, blank=True)
-    date_completed = models.DateTimeField(null=True, blank=True)
-    days_to_complete = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    reward = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    collateral = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    buyout = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    volume = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    start_location_id = models.BigIntegerField(null=True, blank=True)
-    end_location_id = models.BigIntegerField(null=True, blank=True)
-    title = models.CharField(blank=True, max_length=255)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [models.Index(fields=["corporation", "status"])]
@@ -322,6 +300,87 @@ class EveCorporationWalletJournalEntry(models.Model):
             f"Journal {self.ref_id} ({self.corporation.name}, "
             f"div {self.division}, {self.ref_type})"
         )
+
+
+class EveCorporationProject(models.Model):
+    """
+    An in-game corporation project from ESI (esi-corporations.read_projects.v1).
+
+    The corporation reserves ISK and pays it out per unit of progress. ESI is
+    read-only: projects are created and funded in game, and this row mirrors
+    the listing plus the detail call. ``kind`` is the configuration's key
+    (``capture_fw_complex``, ``destroy_ship``, ``manual`` ...) and
+    ``configuration`` keeps the filters under it as ESI returned them.
+    """
+
+    project_id = models.UUIDField(primary_key=True)
+    corporation = models.ForeignKey(
+        EveCorporation,
+        on_delete=models.CASCADE,
+        related_name="projects",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    state = models.CharField(max_length=16, db_index=True)
+    kind = models.CharField(max_length=32, blank=True, default="")
+    configuration = models.JSONField(default=dict, blank=True)
+    targets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="The configuration's filters with names resolved at sync: "
+        '[{"kind": "locations", "names": [...]}].',
+    )
+    career = models.CharField(max_length=32, blank=True, default="")
+    creator_id = models.BigIntegerField(null=True, blank=True)
+    creator_name = models.CharField(max_length=255, blank=True, default="")
+    progress_current = models.BigIntegerField(default=0)
+    progress_desired = models.BigIntegerField(default=0)
+    reward_initial = models.FloatField(null=True, blank=True)
+    reward_remaining = models.FloatField(null=True, blank=True)
+    reward_per_contribution = models.FloatField(null=True, blank=True)
+    participation_limit = models.BigIntegerField(null=True, blank=True)
+    submission_limit = models.BigIntegerField(null=True, blank=True)
+    submission_multiplier = models.FloatField(null=True, blank=True)
+    created = models.DateTimeField(null=True, blank=True)
+    expires = models.DateTimeField(null=True, blank=True)
+    finished = models.DateTimeField(null=True, blank=True)
+    last_modified = models.DateTimeField(
+        help_text="ESI's last_modified; contributions count as a change."
+    )
+    detail_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the detail and contributors were last fetched; "
+        "cleared when a fetch fails so the next sync retries.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-last_modified"]
+        indexes = [models.Index(fields=["corporation", "state"])]
+
+    def __str__(self):
+        return f"{self.name} ({self.corporation.name}, {self.state})"
+
+
+class EveCorporationProjectContributor(models.Model):
+    """One character's total progress on a corporation project."""
+
+    project = models.ForeignKey(
+        EveCorporationProject,
+        on_delete=models.CASCADE,
+        related_name="contributors",
+    )
+    character_id = models.BigIntegerField(db_index=True)
+    character_name = models.CharField(max_length=255)
+    contributed = models.BigIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-contributed", "character_name"]
+        unique_together = (("project", "character_id"),)
+
+    def __str__(self):
+        return f"{self.character_name}: {self.contributed}"
 
 
 class EveCorporationAllianceHistory(models.Model):

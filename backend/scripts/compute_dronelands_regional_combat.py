@@ -1,5 +1,4 @@
 """Compute zKill-aligned dronelands combat by region (Nov 2025 – Jun 2026)."""
-import ast
 import json
 from collections import defaultdict
 from datetime import datetime
@@ -14,6 +13,7 @@ from eveonline.models import (
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
 )
+from eveonline.helpers.killmail_text import parse_killmail_list
 from market.helpers.pricing import get_prices_by_type_id
 
 DB = "production_readonly"
@@ -75,15 +75,6 @@ PERIOD_DRONELANDS_ISK_LOSSES = 921_347_487_752
 ESI = "https://esi.evetech.net/latest"
 
 
-def month_range(year: int, month: int) -> tuple[datetime, datetime]:
-    start = timezone.make_aware(datetime(year, month, 1))
-    if month == 12:
-        end = timezone.make_aware(datetime(year + 1, 1, 1))
-    else:
-        end = timezone.make_aware(datetime(year, month + 1, 1))
-    return start, end
-
-
 def get_region_system_ids(region_id: int) -> set[int]:
     resp = requests.get(f"{ESI}/universe/regions/{region_id}/", timeout=30)
     resp.raise_for_status()
@@ -107,14 +98,8 @@ def collect_type_ids(items, out: set[int]) -> None:
 
 
 def parse_items(raw) -> list:
-    if isinstance(raw, list):
-        return raw
-    if isinstance(raw, str):
-        try:
-            return ast.literal_eval(raw)
-        except (SyntaxError, ValueError):
-            return []
-    return []
+    # Old rows hold Python repr, new rows JSON; the shared reader takes both.
+    return parse_killmail_list(raw)
 
 
 def val_killmail(km, prices: dict[int, float]) -> float:

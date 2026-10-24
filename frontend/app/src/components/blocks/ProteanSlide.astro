@@ -6,13 +6,11 @@ import type { CorporationObject } from '@dtypes/layout_components'
 
 interface Props {
     corporation:            CorporationObject;
-    is_user_corporation?:   boolean;
     picture_placement?:     'left' | 'right';
 }
 
 const {
     corporation,
-    is_user_corporation = false,
     picture_placement = 'left',
 } = Astro.props
 
@@ -26,7 +24,6 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     ceo_image={picture_placement === 'right' ? '/images/corporations/protean/ceo-flipped.png' : '/images/corporations/protean/ceo.png'}
     ceo_character_id={MOREPOWER_ID}
     corporation={corporation}
-    is_user_corporation={is_user_corporation}
     picture_placement={picture_placement}
 >
     <img slot="ships" class="[ nightmare ]" src="/images/corporations/protean/nightmare.png" />

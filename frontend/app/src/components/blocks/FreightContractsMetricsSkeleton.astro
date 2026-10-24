@@ -20,16 +20,11 @@ import Grid from '@components/compositions/Grid.astro'
 </section>
 
 <style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
     .freight-contracts-metrics-skeleton .skel {
         border-radius: 2px;
-        background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            rgba(255, 255, 255, 0.12) 50%,
-            rgba(255, 255, 255, 0.06) 100%
-        );
-        background-size: 200% 100%;
-        animation: freight-contracts-metrics-skel 1.1s ease-in-out infinite;
+        @include skeleton.shimmer;
     }
 
     .freight-contracts-metrics-skeleton__card {
@@ -38,7 +33,7 @@ import Grid from '@components/compositions/Grid.astro'
         gap: var(--space-3xs);
         padding: var(--space-m);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.22);
+        background: var(--surface-sunken);
     }
 
     .skel-label {
@@ -55,14 +50,5 @@ import Grid from '@components/compositions/Grid.astro'
     .skel-meta {
         width: 6rem;
         height: 0.75rem;
-    }
-
-    @keyframes freight-contracts-metrics-skel {
-        0% {
-            background-position: 100% 0;
-        }
-        100% {
-            background-position: -100% 0;
-        }
     }
 </style>

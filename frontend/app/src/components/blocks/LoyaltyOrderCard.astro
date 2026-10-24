@@ -3,23 +3,32 @@ import { i18n } from '@helpers/i18n'
 import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
 import { format_date_short } from '@helpers/date'
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { order_destination } from '@helpers/loyalty_desk'
 import { number_thousand_separator } from '@helpers/numbers'
+import {
+    EXPRESS_SLA_HOURS,
+    express_hours_left,
+    format_close_time,
+} from '@helpers/loyalty_order_stats'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import Tag from '@components/blocks/Tag.astro'
 
-const { t, lang } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
 
 interface Props {
     order: LoyaltyMarketOrder
     /** Must match the enclosing LoyaltyOrderList variant (column layout). */
     variant?: 'book' | 'history'
     highlighted?: boolean
+    /** Hidden until the enclosing book's ``show_all_rows`` (Alpine) is on. */
+    collapsed?: boolean
+    /** Start hidden (no flash) when the book starts collapsed. */
+    cloaked?: boolean
 }
 
-const { order, variant = 'book', highlighted = false } = Astro.props
+const { order, variant = 'book', highlighted = false, collapsed = false, cloaked = false } = Astro.props
 
 const STATUS_LABELS: Record<string, string> = {
     open: t('industry.loyalty.status.open'),
@@ -89,6 +98,11 @@ const order_purchasers = (row: LoyaltyMarketOrder): PurchaserIcon[] => {
 }
 
 const purchasers = order_purchasers(order)
+const destination = order_destination(order)
+const tracker_url = translatePath(`/industry/loyalty/orders/${order.id}/`)
+const tier_label = order.tier === 'express'
+    ? t('industry.loyalty.tier.express')
+    : t('industry.loyalty.tier.standard')
 const quantity_claimed = order.quantity_claimed ?? 0
 const quantity_remaining = order.quantity_remaining ?? order.quantity
 const lp_for_total = quantity_claimed > 0 ? quantity_claimed : order.quantity
@@ -112,6 +126,31 @@ const date_text = `${format_date_short(lang, row_date)} · ${row_time}`
 const date_label = variant === 'history'
     ? t('industry.loyalty.orders.settled_on')
     : t('industry.loyalty.orders.posted_on')
+// SLA line. Cancelled orders never carry one.
+const is_express = order.tier === 'express'
+let sla: { text: string, state: 'ok' | 'late' | 'neutral' } | null = null
+if (order.status === 'completed' && order.completed_at) {
+    const close_seconds = (
+        new Date(order.completed_at).getTime() - new Date(order.created_at).getTime()
+    ) / 1000
+    const late = is_express && close_seconds > EXPRESS_SLA_HOURS * 3600
+    sla = {
+        text: t('industry.loyalty.sla.closed_in').replace('{time}', format_close_time(close_seconds)),
+        state: is_express ? (late ? 'late' : 'ok') : 'neutral',
+    }
+} else if (order.status !== 'cancelled' && order.express_due_at) {
+    const hours_left = express_hours_left(order.express_due_at)
+    sla = hours_left >= 0
+        ? {
+            text: t('industry.loyalty.sla.due_in').replace('{time}', format_close_time(hours_left * 3600)),
+            state: 'ok',
+        }
+        : {
+            text: t('industry.loyalty.sla.overdue').replace('{time}', format_close_time(-hours_left * 3600)),
+            state: 'late',
+        }
+}
+
 const card_class = [
     'loyalty-order-card',
     `loyalty-order-card--${variant}`,
@@ -124,29 +163,47 @@ const card_class = [
     padding_block="var(--space-2xs)"
     padding_inline="var(--space-s)"
     id={`order-${order.id}`}
+    x-show={collapsed ? 'show_all_rows' : undefined}
+    style={collapsed && cloaked ? 'display: none' : undefined}
 >
     <div class="[ loyalty-order-card__grid ]">
         <FlexInline gap="var(--space-xs)" class="[ loyalty-order-card__identity ]">
-            <img
-                class="[ loyalty-order-card__logo ]"
-                loading="lazy"
-                src={get_corporation_logo(order.corporation_id, 64)}
-                width="32"
-                height="32"
-                alt={`${order.loyalty_point_name} ${t('corporation_logo')}`}
-            />
             <span class="[ loyalty-order-card__identity-text ]">
                 <span class="[ loyalty-order-card__title-row ]">
-                    <Tag text={side_label} color={side_color} narrow={true} />
-                    <strong class="[ loyalty-order-card__title ]">{order.loyalty_point_name}</strong>
+                    {!is_sell && <Tag text={side_label} color={side_color} narrow={true} />}
+                    <a
+                        class="[ loyalty-order-card__title ]"
+                        href={tracker_url}
+                        title={date_label}
+                        aria-label={`${t('industry.loyalty.orders.open_order').replace('{id}', String(order.id))}: ${date_text}`}
+                    >{date_text}</a>
                 </span>
-                <small class="[ loyalty-order-card__date ]" title={date_label}>
-                    {date_text}
-                </small>
+                <span class="[ loyalty-order-card__meta ]">
+                    {is_express && (
+                        <Tag
+                            text={t('industry.loyalty.tier.express')}
+                            color="militia-purple"
+                            narrow={true}
+                            title={t('industry.loyalty.tier.express_description')
+                                .replace('{hours}', String(EXPRESS_SLA_HOURS))}
+                        />
+                    )}
+                    <small class="[ loyalty-order-card__date ]">
+                        #{order.id}{!is_express && ` · ${tier_label}`}
+                        {sla && (
+                            <span class:list={[
+                                'loyalty-order-card__sla',
+                                `is-${sla.state}`,
+                            ]}>
+                                · {sla.text}
+                            </span>
+                        )}
+                    </small>
+                </span>
             </span>
         </FlexInline>
 
-        <span class="[ loyalty-order-card__numeric is-quantity ]">
+        <span class="[ loyalty-order-card__numeric is-quantity ]" data-label={t('industry.loyalty.orders.col.quantity')}>
             <span>{number_thousand_separator(order.quantity)}</span>
             {show_remaining && (
                 <small class="[ loyalty-order-card__remaining ]">
@@ -158,16 +215,16 @@ const card_class = [
             )}
         </span>
 
-        <span class="[ loyalty-order-card__numeric ]">{number_thousand_separator(order.isk_per_lp)}</span>
+        <span class="[ loyalty-order-card__numeric ]" data-label={t('industry.loyalty.orders.col.rate')}>{number_thousand_separator(order.isk_per_lp)}</span>
 
         <span class:list={[
             'loyalty-order-card__numeric',
             { 'is-due': order.status === 'awaiting_isk' },
-        ]}>
+        ]} data-label={t('industry.loyalty.orders.col.total')}>
             {number_thousand_separator(isk_total)}
         </span>
 
-        <span class="[ loyalty-order-card__status ]">
+        <span class="[ loyalty-order-card__status ]" data-label={t('industry.loyalty.orders.col.status')}>
             <Tag
                 text={status_label}
                 color={status_color}
@@ -176,21 +233,42 @@ const card_class = [
             />
         </span>
 
-        <FlexInline gap="var(--space-3xs)" class="[ loyalty-order-card__purchasers ]">
+        <span class="[ loyalty-order-card__purchasers ]" data-label={t('industry.loyalty.orders.col.converter')}>
             {purchasers.length > 0 ? (
-                purchasers.map((pilot) => (
-                    <CharacterPicture
-                        character_id={pilot.character_id}
-                        character_name={pilot.character_name}
-                        tooltip={pilot.character_name}
-                        size={32}
-                        icon_quality={64}
-                    />
-                ))
+                <>
+                    <span class="[ loyalty-order-card__faces ]">
+                        {purchasers.map((pilot) => (
+                            <img
+                                class="[ loyalty-order-card__face ]"
+                                src={get_player_icon(pilot.character_id, 64)}
+                                alt={pilot.character_name}
+                                title={pilot.character_name}
+                                width="32"
+                                height="32"
+                                loading="lazy"
+                            />
+                        ))}
+                        {destination?.corporation_id && (
+                            <img
+                                class="[ loyalty-order-card__corp ]"
+                                src={get_corporation_logo(destination.corporation_id, 64)}
+                                alt={destination.name}
+                                title={destination.name}
+                                width="24"
+                                height="24"
+                                loading="lazy"
+                            />
+                        )}
+                    </span>
+                    <span class="[ loyalty-order-card__people ]">
+                        <span>{purchasers.map((pilot) => pilot.character_name).join(', ')}</span>
+                        {destination && <small>{destination.name}</small>}
+                    </span>
+                </>
             ) : (
                 <span class="[ loyalty-order-card__none ]">{t('industry.loyalty.orders.no_purchasers')}</span>
             )}
-        </FlexInline>
+        </span>
 
         {variant === 'book' && (
             <span class="[ loyalty-order-card__actions ]">
@@ -222,16 +300,6 @@ const card_class = [
         flex-wrap: nowrap;
     }
 
-    .loyalty-order-card__logo {
-        flex-shrink: 0;
-        display: block;
-        width: 32px;
-        height: 32px;
-        object-fit: contain;
-        border-radius: var(--border-radius);
-        background-color: var(--background);
-    }
-
     .loyalty-order-card__identity-text {
         display: flex;
         flex-direction: column;
@@ -251,18 +319,45 @@ const card_class = [
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        line-height: 1.1;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
+        font-size: var(--step--1);
+        font-weight: 600;
+        line-height: 1.2;
         color: var(--highlight);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--fleet-yellow);
+                text-decoration: underline;
+            }
+        }
     }
 
     .loyalty-order-card__date {
         font-size: var(--step--2);
-        color: rgba(255, 255, 255, 0.55);
+        color: var(--text-muted);
         white-space: nowrap;
+    }
+
+    .loyalty-order-card__meta {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        :global(.tag) {
+            font-size: var(--step--2);
+        }
+    }
+
+    .loyalty-order-card__sla {
+        &.is-ok {
+            color: var(--green);
+        }
+
+        &.is-late {
+            color: var(--fleet-red);
+        }
     }
 
     .loyalty-order-card__numeric {
@@ -287,13 +382,62 @@ const card_class = [
     .loyalty-order-card__remaining {
         font-size: var(--step--2);
         font-weight: 400;
-        color: rgba(255, 255, 255, 0.55);
+        color: var(--text-muted);
     }
 
     .loyalty-order-card__purchasers {
-        justify-content: center;
+        display: flex;
         align-items: center;
-        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .loyalty-order-card__faces {
+        display: flex;
+        align-items: flex-end;
+        flex: none;
+    }
+
+    .loyalty-order-card__face {
+        display: block;
+        width: var(--space-l);
+        height: var(--space-l);
+        border-radius: 50%;
+
+        & + & {
+            margin-inline-start: calc(var(--space-2xs) * -1);
+        }
+    }
+
+    .loyalty-order-card__corp {
+        display: block;
+        width: var(--space-m);
+        height: var(--space-m);
+        margin-inline-start: calc(var(--space-xs) * -1);
+        border: 2px solid var(--component-background);
+        background-color: var(--background);
+    }
+
+    .loyalty-order-card__people {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        span,
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        span {
+            color: var(--highlight);
+        }
+
+        small {
+            font-size: var(--step--2);
+            color: var(--faded);
+        }
     }
 
     .loyalty-order-card__none {
@@ -321,6 +465,76 @@ const card_class = [
                 &:hover {
                     color: var(--fleet-yellow);
                 }
+            }
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .loyalty-order-card__grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "identity identity"
+                "quantity total"
+                "rate status"
+                "purchasers purchasers"
+                "actions actions";
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            padding-block: var(--space-3xs);
+        }
+
+        .loyalty-order-card__grid > :nth-child(1) { grid-area: identity; }
+        .loyalty-order-card__grid > :nth-child(2) { grid-area: quantity; }
+        .loyalty-order-card__grid > :nth-child(3) { grid-area: rate; }
+        .loyalty-order-card__grid > :nth-child(4) { grid-area: total; }
+        .loyalty-order-card__grid > :nth-child(5) { grid-area: status; }
+        .loyalty-order-card__grid > :nth-child(6) { grid-area: purchasers; }
+        .loyalty-order-card__grid > :nth-child(7) { grid-area: actions; }
+
+        .loyalty-order-card__title {
+            white-space: normal;
+        }
+
+        .loyalty-order-card__numeric {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .loyalty-order-card__purchasers {
+            justify-content: flex-start;
+        }
+
+        .loyalty-order-card__grid [data-label]::before {
+            content: attr(data-label);
+            display: block;
+            flex-basis: 100%;
+            font-family: var(--button-font);
+            font-size: var(--step--2);
+            font-weight: 400;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--faded);
+        }
+
+        .loyalty-order-card__status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .loyalty-order-card__actions {
+            justify-content: stretch;
+            border-top: solid 1px var(--border-color);
+            padding-top: var(--space-3xs);
+
+            :global(> *) {
+                flex: 1;
+            }
+
+            :global(button[data-appearance="plain"]) {
+                box-sizing: border-box;
+                width: 100%;
+                min-height: 44px;
             }
         }
     }

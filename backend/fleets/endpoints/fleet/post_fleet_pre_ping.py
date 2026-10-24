@@ -16,6 +16,7 @@ ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {
         202: str,
+        400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
         500: ErrorResponse,
@@ -34,6 +35,9 @@ def send_pre_ping(request, fleet_id):
         return 403, {
             "detail": "User does not have permission to delete this fleet"
         }
+
+    if fleet.invite_only:
+        return 400, ErrorResponse(detail="A private fleet never pre-pings")
 
     sent = send_discord_pre_ping(fleet)
 

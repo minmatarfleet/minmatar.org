@@ -139,3 +139,25 @@
 		transform: translatey(0px);
 	}
 }
+// Loading skeletons: use the mixins in styles/mixins/_skeleton.scss, which also
+// switch these off under prefers-reduced-motion.
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+@keyframes skeleton-pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+    }
+
+    50% {
+        opacity: 0.85;
+    }
+}

@@ -1,0 +1,173 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetScheduleDoctrine } from '@helpers/fetching/fleet_schedule'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { marked } from 'marked'
+
+/**
+ * One scheduled fleet: FC portrait with the type flag, EVE and local time,
+ * objective, doctrine. A `tags` slot sits after the objective (e.g. the
+ * VisibilityTag on a tribe group's Fleets tab).
+ */
+interface Props {
+    fleet:          FleetItem;
+    doctrine?:      FleetScheduleDoctrine | null;
+    /** Group chip + visibility tag; off on the group's own Fleets tab. */
+    show_host?:     boolean;
+    [propName: string]: any;
+}
+
+const {
+    fleet,
+    doctrine = null,
+    show_host = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const [ system ] = fleet.location?.split(' - ') ?? []
+const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
+const cancelled = fleet.status === 'cancelled'
+
+import FleetPortrait from '@components/blocks/FleetPortrait.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
+---
+
+<a
+    href={translatePath(`/fleets/upcoming/${fleet.id}`)}
+    class:list={['[ fleet-schedule-row ]', { 'fleet-schedule-row--cancelled': cancelled }, Astro.props.class]}
+    {...attributes}
+>
+    <FleetPortrait
+        character_id={fleet.fleet_commander_id}
+        character_name={fleet.fleet_commander_name}
+        type={fleet.type}
+        size={72}
+    />
+
+    <span class="[ fleet-schedule-row__time ]">
+        <b>{eve_clock(fleet.start_time)}</b>
+        <small><LocalTime eve_time={fleet.start_time} format="time" show_label={true} /></small>
+    </span>
+
+    <span class="[ fleet-schedule-row__fleet ]">
+        <span class="[ fleet-schedule-row__heading ]">
+            <b set:html={objective} />
+            {show_host && <FleetHostTags fleet={fleet} class="[ fleet-schedule-row__host ]" />}
+            <slot name="tags" />
+        </span>
+        <small>
+            {cancelled && <span style="color: var(--fleet-red)">{t('cancelled')} · </span>}
+            {[ fleet.fleet_commander_name, system ].filter(Boolean).join(' · ')}
+        </small>
+    </span>
+
+    <span class="[ fleet-schedule-row__doctrine ]">
+        {doctrine?.ship_id &&
+            <img src={get_item_icon(doctrine.ship_id, 32)} alt="" width="28" height="28" loading="lazy" />
+        }
+        <span>{doctrine?.name ?? t('fleets.doctrine_not_set')}</span>
+    </span>
+
+    <span class="[ fleet-schedule-row__chevron ]" aria-hidden="true">›</span>
+</a>
+
+<style lang="scss">
+    .fleet-schedule-row {
+        display: grid;
+        grid-template-columns: auto 7rem minmax(0, 1fr) 13rem 1rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s) var(--space-2xs) var(--space-2xs);
+        background-color: var(--component-background);
+        border-top: 1px solid var(--border-color);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: background-color var(--fast-transition);
+
+        &.fleet-schedule-row--cancelled {
+            opacity: 0.6;
+        }
+    }
+
+    @media (hover: hover) {
+        .fleet-schedule-row:hover {
+            background-color: var(--highlight-transparent, rgba(255, 255, 255, 0.04));
+        }
+    }
+
+    .fleet-schedule-row__time {
+        display: flex;
+        flex-direction: column;
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            line-height: 1.1;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .fleet-schedule-row__fleet {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+
+        :global(.fleet-schedule-row__host) {
+            margin-block: var(--space-3xs);
+        }
+
+        small {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .fleet-schedule-row__heading {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-2xs);
+        min-width: 0;
+    }
+
+    .fleet-schedule-row__doctrine {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        color: var(--highlight);
+    }
+
+    .fleet-schedule-row__chevron {
+        font-size: var(--step-2);
+        line-height: 1;
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-schedule-row {
+            grid-template-columns: auto 4.5rem minmax(0, 1fr);
+            gap: var(--space-2xs) var(--space-xs);
+        }
+
+        .fleet-schedule-row__doctrine,
+        .fleet-schedule-row__chevron {
+            display: none;
+        }
+
+        .fleet-schedule-row__time b {
+            font-size: var(--step-1);
+        }
+    }
+</style>

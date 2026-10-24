@@ -1,5 +1,6 @@
 ---
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetricsSkeleton.astro'
 ---
@@ -9,41 +10,59 @@ import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetric
         <LoyaltyOffersMetricsSkeleton />
         <ComponentBlock
             class="[ loyalty-offers-skeleton__body ]"
-            padding_block="var(--space-m)"
+            padding_block="var(--space-s)"
             padding_inline="var(--space-s)"
         >
-            <Flexblock gap="var(--space-l)">
-                <div class="[ loyalty-offers-skeleton__toolbar ]"></div>
-                <div class="[ loyalty-offers-skeleton__chips ]"></div>
-                <div class="[ loyalty-offers-skeleton__table ]">
-                    <div class="[ loyalty-offers-skeleton__header ]"></div>
-                    {Array.from({ length: 8 }).map(() => (
-                        <div class="[ loyalty-offers-skeleton__row ]"></div>
+            <FixedFluid width="16rem" breakpoint="65%" gap="var(--space-m)">
+                <div class="[ loyalty-offers-skeleton__rail ]">
+                    {Array.from({ length: 4 }).map(() => (
+                        <div class="[ loyalty-offers-skeleton__group ]">
+                            <div class="[ skel loyalty-offers-skeleton__legend ]"></div>
+                            <div class="[ skel loyalty-offers-skeleton__control ]"></div>
+                        </div>
                     ))}
                 </div>
-            </Flexblock>
+                <div class="[ loyalty-offers-skeleton__table ]">
+                    <div class="[ skel loyalty-offers-skeleton__header ]"></div>
+                    {Array.from({ length: 8 }).map(() => (
+                        <div class="[ skel loyalty-offers-skeleton__row ]"></div>
+                    ))}
+                </div>
+            </FixedFluid>
         </ComponentBlock>
     </Flexblock>
 </div>
 
 <style lang="scss">
-    .loyalty-offers-skeleton__toolbar,
-    .loyalty-offers-skeleton__chips,
-    .loyalty-offers-skeleton__header,
-    .loyalty-offers-skeleton__row {
-        background: color-mix(in srgb, var(--component-background) 70%, var(--foreground));
+    @use '../../styles/mixins/skeleton';
+
+    .skel {
         border-radius: 2px;
-        animation: loyalty-offers-pulse 1.2s ease-in-out infinite;
+        @include skeleton.pulse(color-mix(in srgb, var(--component-background) 70%, var(--foreground)));
     }
 
-    .loyalty-offers-skeleton__toolbar {
-        height: var(--space-2xl);
-        width: min(100%, 36rem);
+    .loyalty-offers-skeleton__rail {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
     }
 
-    .loyalty-offers-skeleton__chips {
+    .loyalty-offers-skeleton__group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .loyalty-offers-skeleton__legend {
+        width: 6rem;
+        height: var(--step--2);
+    }
+
+    .loyalty-offers-skeleton__control {
+        width: 100%;
         height: var(--space-l);
-        width: min(100%, 42rem);
     }
 
     .loyalty-offers-skeleton__table {
@@ -60,15 +79,5 @@ import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetric
     .loyalty-offers-skeleton__row {
         height: var(--space-xl);
         width: 100%;
-    }
-
-    @keyframes loyalty-offers-pulse {
-        0%,
-        100% {
-            opacity: 0.45;
-        }
-        50% {
-            opacity: 0.85;
-        }
     }
 </style>

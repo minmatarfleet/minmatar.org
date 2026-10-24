@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CampaignObjectiveRow as ObjectiveRow } from '@helpers/fetching/campaigns'
-import { objective_status_color, objective_status_i18n_key, holder_militia, progress_bar_color } from '@helpers/fetching/campaigns'
+import { objective_status_i18n_key, holder_militia } from '@helpers/fetching/campaigns'
 
 interface Props {
     row:                ObjectiveRow;
@@ -21,12 +21,25 @@ const owner = holder_militia(row.system)
 const owner_name = owner === 'minmatar' ? t('campaigns.system.held_by_minmatar')
     : owner === 'amarr' ? t('campaigns.system.held_by_amarr')
     : t('campaigns.system.held_by_unknown')
-const change_glyph = row.change_direction === 'up' ? '▲' : row.change_direction === 'down' ? '▼' : ''
-const color = row.kind === 'offense' || row.kind === 'defense'
-    ? progress_bar_color(row.kind, row.meter_percent)
-    : objective_status_color(row.status)
 const system_anchor = row.system ? `#campaign-system-${row.system.id}` : undefined
-const figure_title = [t('campaigns.objective.scale_now'), row.now_text, row.detail_text].filter(Boolean).join(' · ')
+const change_period = t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')
+// A system that changed hands this week shows the flip where the move would be.
+const flipped_text = row.flipped === 'captured' ? t('campaigns.objective.flipped_captured')
+    : row.flipped === 'lost' ? t('campaigns.objective.flipped_lost')
+    : ''
+// As in the desktop window: the bar is neutral and only the move is coloured, always beside an arrow.
+const change_tone = row.flipped === 'captured' ? 'up' : row.flipped === 'lost' ? 'down'
+    : row.change_direction === 'up' ? 'up' : row.change_direction === 'down' ? 'down' : 'steady'
+const show_change = row.change_text !== '' || flipped_text !== ''
+// Exact figures stay in the hover: progress, what it is made of, the week's move and the day's.
+const row_title = [
+    t(objective_status_i18n_key(row.status)),
+    row.now_text,
+    row.detail_text,
+    flipped_text,
+    row.change_text ? `${row.change_text} ${change_period}` : '',
+    row.change_24h_text ? t('campaigns.objective.change_24h').replace('{change}', row.change_24h_text) : '',
+].filter(Boolean).join(' · ')
 
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
 import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
@@ -38,57 +51,84 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
     class:list={['[ campaign-objective ]', Astro.props.class]}
     data-kind={row.kind}
     data-status={row.status}
-    title={t(objective_status_i18n_key(row.status))}
+    title={row_title}
     {...attributes}
 >
-    <div class="[ campaign-objective-where ]" title={owner_name}>
+    <div class="[ campaign-objective-where ]">
         {row.system && <CampaignPriorityIcon priority={row.system.priority} />}
         <span
             class:list={['[ campaign-system-owner ]', owner && `campaign-system-owner-${owner}`]}
             role="img"
             aria-label={owner_name}
+            title={owner_name}
         >
             {owner === 'minmatar' && <MinmatarLogo />}
             {owner === 'amarr' && <AmarrLogo />}
         </span>
-        {system_anchor ?
-            <a href={system_anchor} class="[ campaign-objective-system ]">{row.system_name}</a>
+        <span class="[ campaign-objective-names ]">
+            {system_anchor ?
+                <a href={system_anchor} class="[ campaign-objective-system ]">{row.system_name}</a>
+                :
+                <span class="[ campaign-objective-system ]">{row.system_name}</span>
+            }
+            <small class="[ campaign-objective-what ]">{row.label}</small>
+        </span>
+    </div>
+
+    <CampaignMeter
+        class="[ campaign-objective-meter ]"
+        percent={row.meter_percent}
+        marker_percent={row.marker_percent}
+        delta_from_percent={row.delta_from_percent}
+        color='color-mix(in srgb, var(--highlight) 62%, transparent)'
+        track_color='var(--border-color-hover)'
+        height='var(--space-3xs)'
+        label={`${row.system_name} · ${row.label} · ${row.now_text}`}
+    />
+
+    <span class="[ campaign-objective-change ]" data-tone={change_tone}>
+        {show_change ?
+            <>
+                <span class="[ campaign-objective-arrow ]" aria-hidden="true">
+                    {change_tone === 'up' && <svg viewBox="0 0 12 12"><path d="M6 2l5 8H1z"/></svg>}
+                    {change_tone === 'down' && <svg viewBox="0 0 12 12"><path d="M6 10l5-8H1z"/></svg>}
+                    {change_tone === 'steady' && <svg viewBox="0 0 12 12"><path d="M1.5 6h9"/></svg>}
+                </span>
+                {flipped_text ?
+                    <span>{flipped_text}</span>
+                    :
+                    <>
+                        <span>{row.change_text}</span>
+                        <small class="[ campaign-objective-period ]">{change_period}</small>
+                    </>
+                }
+            </>
             :
-            <span class="[ campaign-objective-system ]">{row.system_name}</span>
+            <span class="[ campaign-objective-figure ]">{row.now_text}</span>
         }
-    </div>
-
-    <div class="[ campaign-objective-what ]">{row.label}</div>
-
-    <div class="[ campaign-objective-progress ]">
-        <div class="[ campaign-objective-meter ]">
-            <CampaignMeter
-                percent={row.meter_percent}
-                marker_percent={row.marker_percent}
-                delta_from_percent={row.delta_from_percent}
-                fill_title={figure_title}
-                delta_title={row.change_text ? `${t(row.change_label === 'week' ? 'campaigns.objective.scale_week' : 'campaigns.objective.scale_change')} · ${change_glyph} ${row.change_text}`.trim() : undefined}
-                marker_title={row.target_text ? `${t('campaigns.objective.scale_target')} · ${row.target_text}` : undefined}
-                color={`var(--${color})`}
-                height='var(--space-s)'
-                label={`${row.system_name} · ${row.label} · ${figure_title}${row.target_text ? ` → ${row.target_text}` : ''}`}
-            />
-            {row.detail_text && <small>{row.detail_text}</small>}
-        </div>
-        <span class="[ campaign-objective-figure ]" style={`color: var(--${color})`} title={figure_title}>{row.now_text}</span>
-    </div>
+    </span>
 </div>
 
 <style lang="scss">
     .campaign-objective {
         display: grid;
         grid-template-columns: var(--campaign-objective-columns);
-        column-gap: var(--space-s);
-        row-gap: var(--space-2xs);
+        column-gap: var(--space-m);
         align-items: center;
         padding-block: var(--space-xs);
         border-top: solid 1px var(--border-color);
         font-variant-numeric: tabular-nums;
+        cursor: default;
+    }
+
+    @media (hover: hover) {
+        .campaign-objective:hover {
+            background-color: var(--border-color);
+        }
+
+        a.campaign-objective-system:hover {
+            text-decoration: underline;
+        }
     }
 
     .campaign-objective-where {
@@ -98,21 +138,28 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
         min-width: 0;
     }
 
+    .campaign-objective-names {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .campaign-objective-system,
+    .campaign-objective-what {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .campaign-objective-system {
         color: var(--highlight);
         font-size: var(--step-0);
         text-decoration: none;
     }
 
-    @media (hover: hover) {
-        a.campaign-objective-system:hover {
-            text-decoration: underline;
-        }
-    }
-
     .campaign-objective-what {
-        color: var(--highlight);
-        white-space: nowrap;
+        color: var(--faded);
+        font-size: var(--step--1);
     }
 
     .campaign-system-owner {
@@ -141,51 +188,59 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
         }
     }
 
-    .campaign-objective-progress {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-s);
-        min-width: 0;
+    .campaign-objective-change {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+        white-space: nowrap;
+        color: var(--faded);
+
+        &[data-tone="up"] {
+            color: var(--green);
+        }
+
+        &[data-tone="down"] {
+            color: var(--fleet-red);
+        }
     }
 
-    .campaign-objective-meter {
-        flex: 1 1 auto;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
+    .campaign-objective-arrow {
+        display: inline-flex;
+        align-self: center;
 
-        :global(.campaign-meter) {
-            cursor: help;
+        svg {
+            width: 0.6em;
+            height: 0.6em;
+            fill: currentColor;
         }
+    }
 
-        small {
-            color: var(--foreground);
-            font-size: var(--step--2);
-        }
+    [data-tone="steady"] .campaign-objective-arrow svg {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+    }
+
+    .campaign-objective-period {
+        color: var(--faded);
+        font-size: var(--step--2);
     }
 
     .campaign-objective-figure {
-        display: flex;
-        align-items: center;
-        flex: 0 0 4.5em;
-        height: var(--space-s);
-        white-space: nowrap;
-        font-size: var(--step--1);
-        justify-content: flex-end;
+        color: var(--faded);
     }
 
-    @media screen and (max-width: 991px) {
+    @media screen and (max-width: 767px) {
         .campaign-objective {
-            grid-template-columns: minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr) auto;
+            row-gap: var(--space-2xs);
         }
 
-        .campaign-objective-what {
-            color: var(--foreground);
-        }
-
-        .campaign-objective-progress {
+        .campaign-objective :global(.campaign-objective-meter) {
             grid-column: 1 / -1;
+            grid-row: 2;
         }
     }
 </style>

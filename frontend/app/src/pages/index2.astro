@@ -2,23 +2,15 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { user } = get_request_user(Astro)
 
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-if (!user_is_superadmin)
-    return HTTP_404_Not_Found()
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
-
-const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
+const can_view_fleets = can(gates, 'fleets.view')
 
 import type { Alert, StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
@@ -140,30 +132,20 @@ import PageLanding from '@components/page/PageLanding.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import FluidFixed from '@components/compositions/FluidFixed.astro';
 
-// import StationAssets from '@components/blocks/StationAssets.astro';
-import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
-import AmarrInfo from '@components/blocks/AmarrInfo.astro';
-import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
-import R6_2Info from '@components/blocks/R6_2Info.astro';
-import HomeCorporationsBig from '@components/blocks/HomeCorporationsBig.astro';
+import StagingInfo from '@components/blocks/StagingInfo.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro';
 import MediaFeed from '@components/blocks/MediaFeed.astro';
-import ComicsWidget from '@components/blocks/ComicsWidget.astro';
-import RatBibleWidget from '@components/blocks/RatBibleWidget.astro';
 import DiscordSmall from '@components/blocks/DiscordSmall.astro';
 import RedditSmall from '@components/blocks/RedditSmall.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
-import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
-import NewsFeed from '@components/blocks/NewsFeed.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ReferralLink from '@components/blocks/ReferralLink.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 import ExternalLink from '@components/blocks/ExternalLink.astro';
+import HomeCorporationsBig from '@components/blocks/HomeCorporationsBig.astro';
 import ContentTiles from '@components/blocks/ContentTiles.astro';
+import RatBibleWidget from '@components/blocks/RatBibleWidget.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
@@ -206,10 +188,7 @@ const page_description = t('index.leading_text');
 				class="[ station-info ][ !hidden xl:!block ]"
 				gap='0'
 			>
-				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
-					staging === 'amarr' ? <AmarrInfo /> :
-					<WatermellonInfo is_random={is_random_staging} />
-				}
+				<StagingInfo slug={staging} is_random={is_random_staging} />
 				<FlexInline gap='var(--space-3xs)'>
 					{/*(user && staging !== 'watermellon' && STAGINGS_STATIONS[staging]) &&
 						<StationAssets
@@ -283,18 +262,19 @@ const page_description = t('index.leading_text');
 					</Flexblock>
 
 					<FlexInline justification='center'>
-						<StylessButton href='#widgets' class="[ caret-down ]" />
+						<StylessButton href='#widgets' class="[ caret-down ]" aria-label={t('scroll_down')} />
 					</FlexInline>
 				</Flexblock>
 			</Wrapper>
 		</VerticalCenter>
 
 		<Wrapper
-			max_width='var(--max-content-width)'
+			max_width='90rem'
 			padding_inline='0'
 			padding_block="0"
 			class="[ content-section mt-2 ]"
 		>
+
 			<Flexblock
 				id="widgets"
 				gap='var(--space-3xl)'
@@ -321,7 +301,7 @@ const page_description = t('index.leading_text');
 				</Wrapper>
 
 				<Wrapper
-					max_width='800px'
+					max_width='920px'
 					centered={true}
 					padding_block='0'
 					padding_inline='0'

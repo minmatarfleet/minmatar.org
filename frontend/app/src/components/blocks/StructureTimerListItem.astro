@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
@@ -38,6 +38,7 @@ import Tag from '@components/blocks/Tag.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro';
+import StatusText from '@components/blocks/StatusText.astro';
 
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
 
@@ -47,11 +48,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 
 <Flexblock
     id={ITEM_ID}
-    class="[ card component border light-transparency ]"
+    class="[ structure-timer-list-item ][ card component border light-transparency ]"
     gap='0'
 >
     <Tile
-        title={structure_timer.corporation_name}
+        title={structure_timer.corporation_name ?? ''}
         cover={get_item_icon(structure_timer.structure_type_id ?? 0, 512)}
         transparent={true}
         soft={false}
@@ -63,7 +64,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     <Tag color='green' text={t('verified')} />
                 }
             </FlexInline>
-            <small>{t('structure_timer_template').replace('{state}', t(structure_timer.state as any) ?? structure_timer.state)}</small>
+            <small>{t('structure_timer_template').replace('{state}', t(dynamic_key(structure_timer.state)) ?? structure_timer.state)}</small>
         </Flexblock>
     </Tile>
 
@@ -84,7 +85,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         class="[ copy-button ]"
                         iconed={false}
                     >
-                        {`${structure_timer.timer}: ${t(structure_timer.structure_type as any) ?? structure_timer.structure_type} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
+                        {`${structure_timer.timer}: ${t(dynamic_key(structure_timer.structure_type)) ?? structure_timer.structure_type} [${structure_timer.corporation_name}] [${structure_timer.system_name} - ${remove_line_breaks(structure_timer.name)}]`}
                     </ClipboardButton>
 
                     {can_verify_timer && !structure_timer.verified &&
@@ -153,7 +154,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                             </TimeAlternator>
                         </Flexblock> :
                         <Flexblock gap='var(--space-2xs)'>
-                            <p class="[ timer-status-text ]">{t('expired')}</p>
+                            <StatusText tone='danger'>{t('expired')}</StatusText>
                             <small class="[ text-red ]">{eve_time_text}</small>
                         </Flexblock>
                     }
@@ -180,16 +181,10 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
 </Flexblock>
 
 <style lang="scss">
-    .timer-status-text {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        margin-left: -10px;
-        margin-right: -10px;
-        color: var(--fleet-red);
-		letter-spacing: 12px;
-        text-indent: 12px;
-		line-height: 1;
-        white-space: nowrap;
-        text-transform: uppercase;
+    @use './_phone_media_card.scss' as *;
+
+    // Phones: compact media-object card. See _phone_media_card.scss.
+    .structure-timer-list-item {
+        @include phone_tile_list_item;
     }
 </style>

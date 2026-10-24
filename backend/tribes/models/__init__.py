@@ -16,6 +16,8 @@ from tribes.models.tribe_group_membership_history import (
     TribeGroupMembershipHistory,
     TribeGroupMembershipCharacterHistory,
 )
+from tribes.models.tribe_event import TribeEvent
+from tribes.models.tribe_group_invitation import TribeGroupInvitation
 from tribes.models.tribe_external_guild import (
     TribeExternalGuild,
     TribeExternalGuildSeat,
@@ -34,4 +36,6 @@ __all__ = [
     "TribeGroupMembershipCharacterHistory",
     "TribeExternalGuild",
     "TribeExternalGuildSeat",
+    "TribeEvent",
+    "TribeGroupInvitation",
 ]

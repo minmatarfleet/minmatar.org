@@ -1,10 +1,12 @@
 import type {
     LoyaltyCurrency,
-    LoyaltyLedgerEntry,
+    LoyaltyMarketOrder,
     LoyaltyMarketOrdersList,
     LoyaltyOffersList,
+    LoyaltyOrderStats,
 } from '@dtypes/api.minmatar.org'
-import { get_error_message, query_string } from '@helpers/string'
+import { query_string } from '@helpers/string'
+import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/industry/loyalty`
 
@@ -31,32 +33,14 @@ export interface LoyaltyOffersQuery {
 
 export async function get_loyalty_capabilities(access_token: string) {
     const ENDPOINT = `${API_ENDPOINT}/capabilities`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access_token}`,
-    }
-    const response = await fetch(ENDPOINT, { headers })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as LoyaltyCapabilities
+    return await api_request<LoyaltyCapabilities>(ENDPOINT, {
+        token: access_token,
+    })
 }
 
 export async function get_loyalty_currencies() {
     const ENDPOINT = `${API_ENDPOINT}/currencies`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as LoyaltyCurrency[]
+    return await api_request<LoyaltyCurrency[]>(ENDPOINT)
 }
 
 export async function get_loyalty_offers(params?: LoyaltyOffersQuery) {
@@ -89,42 +73,7 @@ export async function get_loyalty_offers(params?: LoyaltyOffersQuery) {
         query.offset = String(params.offset)
     const qs = query_string(query)
     const ENDPOINT = `${API_ENDPOINT}/offers${qs ? `?${qs}` : ''}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as LoyaltyOffersList
-}
-
-export async function get_loyalty_ledger(params?: {
-    loyalty_point_id?: number
-    account_id?: number
-    limit?: number
-}) {
-    const query: Record<string, string> = {}
-    if (params?.loyalty_point_id != null)
-        query.loyalty_point_id = String(params.loyalty_point_id)
-    if (params?.account_id != null)
-        query.account_id = String(params.account_id)
-    if (params?.limit != null)
-        query.limit = String(params.limit)
-    const qs = query_string(query)
-    const ENDPOINT = `${API_ENDPOINT}/ledger${qs ? `?${qs}` : ''}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
-    })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as LoyaltyLedgerEntry[]
+    return await api_request<LoyaltyOffersList>(ENDPOINT)
 }
 
 export interface LoyaltyOrdersQuery {
@@ -148,14 +97,38 @@ export async function get_loyalty_orders(params?: LoyaltyOrdersQuery) {
     if (params?.offset != null) query.offset = String(params.offset)
     const qs = query_string(query)
     const ENDPOINT = `${API_ENDPOINT}/orders${qs ? `?${qs}` : ''}`
-    console.log(`Requesting: ${ENDPOINT}`)
-    const response = await fetch(ENDPOINT, {
-        headers: { 'Content-Type': 'application/json' },
+    return await api_request<LoyaltyMarketOrdersList>(ENDPOINT)
+}
+
+export async function get_loyalty_stats(loyalty_point_id?: number, days?: number) {
+    const query: Record<string, string> = {}
+    if (loyalty_point_id != null) query.loyalty_point_id = String(loyalty_point_id)
+    if (days != null) query.days = String(days)
+    const qs = query_string(query)
+    const ENDPOINT = `${API_ENDPOINT}/stats${qs ? `?${qs}` : ''}`
+    return await api_request<LoyaltyOrderStats>(ENDPOINT)
+}
+
+export async function get_loyalty_order(order_id: number) {
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}`
+    return await api_request<LoyaltyMarketOrder>(ENDPOINT)
+}
+
+export interface LoyaltyOrderPatch {
+    status?: string
+    notes?: string
+}
+
+/** Move an order on: the API checks the caller may take this step. */
+export async function patch_loyalty_order(
+    access_token: string,
+    order_id: number,
+    body: LoyaltyOrderPatch,
+) {
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}`
+    return await api_request<LoyaltyMarketOrder>(ENDPOINT, {
+        method: 'PATCH',
+        token: access_token,
+        body: body,
     })
-    if (!response.ok) {
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-            cause: response.status,
-        })
-    }
-    return await response.json() as LoyaltyMarketOrdersList
 }

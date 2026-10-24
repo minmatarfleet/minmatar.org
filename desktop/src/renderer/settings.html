@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.evetech.net; style-src 'self'; script-src 'self'">
+<link rel="stylesheet" href="eve-window.css">
+<link rel="stylesheet" href="settings.css">
+<title>Minmatar Fleet — Settings</title>
+</head>
+<body class="is-hidden">
+<section class="eve-window">
+    <header class="eve-window__header">
+        <img class="eve-window__icon" src="../assets/icon.png" alt="">
+        <h1 class="eve-window__title">Settings</h1>
+        <nav class="eve-window__controls">
+            <button class="eve-icon-button" data-command="window:close" aria-label="Close" title="Close"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+        </nav>
+    </header>
+    <main class="eve-window__body settings">
+        <section class="settings__section" aria-labelledby="windows-heading">
+            <h2 class="eve-section" id="windows-heading">Windows</h2>
+            <p class="eve-dim settings__hint">Choose which overlay windows you use.</p>
+            <div id="windows"></div>
+        </section>
+
+        <section class="settings__section" aria-labelledby="overlay-heading">
+            <h2 class="eve-section" id="overlay-heading">Overlay</h2>
+            <label class="setting"><span><span class="setting__title">Pin windows in place</span><span class="setting__text">Windows sit on EVE and show while a logged-in client is on screen. Unpin to drag them by the header and resize from the corner.</span></span>
+                <input type="checkbox" class="switch" data-setting="locked"></label>
+            <label class="setting"><span><span class="setting__title">Show Sneak</span><span class="setting__text">Sneak peeks over EVE's notification badge. Click him to open Settings. Without him, use the tray icon.</span></span>
+                <input type="checkbox" class="switch" data-setting="show_sneak"></label>
+            <label class="setting"><span><span class="setting__title">Fade on right-click</span><span class="setting__text">Windows near a right-click in EVE get out of the way so you can see and use the menu, and come back after your next click.</span></span>
+                <input type="checkbox" class="switch" data-setting="fade_on_right_click"></label>
+        </section>
+
+        <section class="settings__section" aria-labelledby="account-heading">
+            <h2 class="eve-section" id="account-heading">Account</h2>
+            <div class="setting setting--static">
+                <span class="account"><img class="account__portrait" id="portrait" alt=""><span><span class="setting__title" id="user"></span><span class="setting__text" id="api"></span></span></span>
+                <button class="eve-button" data-command="auth:sign-out">Sign out</button>
+            </div>
+            <p class="eve-dim settings__hint" id="sync"></p>
+        </section>
+
+        <section class="settings__section" aria-labelledby="about-heading">
+            <h2 class="eve-section" id="about-heading">About</h2>
+            <div class="setting setting--static">
+                <span><span class="setting__title" id="version"></span><span class="setting__text" id="update-text"></span></span>
+                <button class="eve-button" id="update-button" hidden></button>
+            </div>
+            <p class="settings__notice" id="notice"></p>
+        </section>
+    </main>
+</section>
+<script src="eve_window.js"></script>
+<script src="ui_helpers.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

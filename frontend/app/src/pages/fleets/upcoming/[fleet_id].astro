@@ -2,23 +2,20 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_400_Bad_Request, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_400_Bad_Request, HTTP_404_Not_Found, HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
 const user_agent = Astro.request.headers.get('user-agent')
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const can_view_fleets = can(gates, 'fleets.view')
 
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
@@ -29,8 +26,9 @@ if (isNaN(fleet_id))
     return HTTP_400_Bad_Request()
 
 import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
-import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
-import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
+import type { EveCharacterProfile, RestrictedResponse, TribeGroup } from '@dtypes/api.minmatar.org'
+import { fetch_fleet_access, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
+import { get_tribe_group } from '@helpers/api.minmatar.org/tribes'
 import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_system_id } from '@helpers/sde/map'
@@ -42,15 +40,18 @@ let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
 let is_fleet_commander = false
 let can_manage_fleet = false
+// A members-only tribe group fleet the viewer can't see: only its group.
+let restricted:RestrictedResponse | null = null
+let host_group_details:TribeGroup | null = null
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import {
-    get_fleet_role_volunteers,
+    get_fleet_roles,
     get_fleet_ship_volunteers,
     get_fleet_refits,
     get_fleet_composition,
-    type FleetRoleVolunteer,
+    type FleetRoleCoverage,
     type FleetShipVolunteer,
     type FleetRefit,
     type FleetCompositionEntry,
@@ -58,9 +59,15 @@ import {
 import {
     get_fleets_metrics,
     get_fleet_commander_metrics,
+    get_fleet_fights,
+    type FleetFights,
 } from '@helpers/api.minmatar.org/fleets'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import type { Doctrine } from '@dtypes/api.minmatar.org'
+let doctrines: Doctrine[] = []
+let fights: FleetFights | null = null
 let pilots: SummaryCharacter[] = []
-let volunteers: FleetRoleVolunteer[] = []
+let roles: FleetRoleCoverage | null = null
 let ship_volunteers: FleetShipVolunteer[] = []
 let refits: FleetRefit[] = []
 let composition: FleetCompositionEntry[] = []
@@ -68,43 +75,97 @@ let history: boolean = false
 let fleet_metrics: FleetMetrics | undefined
 let fleet_commander_metrics: FleetCommanderMetrics | undefined
 
+import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+import type { FleetSupply } from '@helpers/api.minmatar.org/fleets'
+import { settled_value } from '@helpers/settled'
+// fetch_fleet_supply never rejects; it falls back to EMPTY_SUPPLY.
+let supply_promise:Promise<FleetSupply> | null = null
+
+// Two rounds of backend calls: the fleet and the viewer's character, then
+// everything that needs the fleet. Results are read in the order the page
+// used to await them one by one, so a failure still lands where it did.
 try {
-    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
-    user_character = await get_user_character(user.user_id)
-    is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
-    const is_strategic_fc = is_superuser || user_permissions.includes('fleets.manage_any_fleet')
-    can_manage_fleet = is_fleet_commander || is_strategic_fc
+    const [fleet_result, user_character_result] = await Promise.allSettled([
+        fetch_fleet_access(auth_token as string, fleet_id),
+        get_user_character(user.user_id),
+    ])
+    const access = settled_value(fleet_result)
+    restricted = access.restricted
+    fleet = access.fleet
+    user_character = settled_value(user_character_result)
+    if (fleet) {
+        is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
+        const is_strategic_fc = can(gates, 'fleets.manage_any')
+        can_manage_fleet = is_fleet_commander || is_strategic_fc
 
-    if (is_fleet_commander) {
-        const staging_solar_system = fleet.location.split(' - ')[0]
-        const staging_solar_system_id = await get_system_id(staging_solar_system)
+        history = Boolean(fleet?.tracking?.end_time)
+        const loaded_fleet = fleet
 
-        const members = await get_fleet_members(auth_token as string, fleet_id)
-        fleet_composition = await group_members_by_ship(members)
-        fleet_radar = await group_members_by_location(members, staging_solar_system_id as number)
-    }
+        const load_fc_view = async () => {
+            const staging_solar_system = loaded_fleet.location.split(' - ')[0]
+            const staging_solar_system_id = await get_system_id(staging_solar_system)
 
-    history = Boolean(fleet?.tracking?.end_time)
+            const members = await get_fleet_members(auth_token as string, fleet_id)
+            return {
+                composition: await group_members_by_ship(members),
+                radar: await group_members_by_location(members, staging_solar_system_id as number),
+            }
+        }
 
-    if (!history) {
-        const summary = await get_characters_summary_sorted(auth_token as string)
-        volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
-        pilots = summary.characters ?? []
+        if (!history)
+            supply_promise = fetch_fleet_supply(auth_token as string, fleet_id)
 
-        const [fetched_composition, fetched_ship_volunteers, fetched_refits] = await Promise.all([
-            get_fleet_composition(auth_token as string, fleet_id),
-            get_fleet_ship_volunteers(auth_token as string, fleet_id),
-            get_fleet_refits(auth_token as string, fleet_id),
+        const [
+            fc_view_result,
+            summary_result,
+            roles_result,
+            composition_result,
+            ship_volunteers_result,
+            refits_result,
+            fleets_metrics_result,
+            fleet_commanders_metrics_result,
+            host_group_result,
+            fights_result,
+        ] = await Promise.allSettled([
+            is_fleet_commander ? load_fc_view() : null,
+            !history ? get_characters_summary_sorted(auth_token as string) : null,
+            !history ? get_fleet_roles(auth_token as string, fleet_id) : null,
+            !history ? get_fleet_composition(auth_token as string, fleet_id) : [],
+            !history ? get_fleet_ship_volunteers(auth_token as string, fleet_id) : [],
+            !history ? get_fleet_refits(auth_token as string, fleet_id) : [],
+            get_fleets_metrics(auth_token as string, fleet_id),
+            get_fleet_commander_metrics(auth_token as string),
+            loaded_fleet.host_group ? get_tribe_group(loaded_fleet.host_group.tribe_id, loaded_fleet.host_group.id, auth_token) : null,
+            // Live fleets only: managers and pilots in fleet get the Fights tab.
+            !history && loaded_fleet.tracking ? get_fleet_fights(auth_token as string, fleet_id) : null,
         ])
-        composition = fetched_composition
-        ship_volunteers = fetched_ship_volunteers
-        refits = fetched_refits
-    }
+        if (fights_result.status === 'fulfilled') fights = fights_result.value
 
-    const fleets_metrics = await get_fleets_metrics(auth_token as string)
-    fleet_metrics = fleets_metrics.find(metric => metric.fleet_id === fleet_id)
-    const fleet_commanders_metrics = await get_fleet_commander_metrics(auth_token as string)
-    fleet_commander_metrics = fleet_commanders_metrics.find(metric => metric.primary_character_id === fleet?.fleet_commander_id)
+        const fc_view = settled_value(fc_view_result)
+        if (fc_view) {
+            fleet_composition = fc_view.composition
+            fleet_radar = fc_view.radar
+        }
+
+        if (!history) {
+            const summary = settled_value(summary_result)
+            roles = settled_value(roles_result)
+            pilots = summary?.characters ?? []
+
+            composition = settled_value(composition_result)
+            ship_volunteers = settled_value(ship_volunteers_result)
+            refits = settled_value(refits_result)
+        }
+
+        // Filtered to this fleet by the API; find() keeps working against an
+        // API that still returns every fleet.
+        const fleets_metrics = settled_value(fleets_metrics_result)
+        fleet_metrics = fleets_metrics.find(metric => metric.fleet_id === fleet_id)
+        const fleet_commanders_metrics = settled_value(fleet_commanders_metrics_result)
+        fleet_commander_metrics = fleet_commanders_metrics.find(metric => metric.primary_character_id === fleet?.fleet_commander_id)
+        // Only the strip's member count and role name; the strip still renders without them.
+        host_group_details = host_group_result.status === 'fulfilled' ? host_group_result.value : null
+    }
 } catch (error) {
     if (error.cause === 404)
         return HTTP_404_Not_Found()
@@ -112,12 +173,24 @@ try {
     fetch_fleets_error = error
 }
 
-import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
-const supply = fleet && !history ? await fetch_fleet_supply(auth_token as string, fleet_id) : EMPTY_SUPPLY
+if (restricted?.host_group)
+    Astro.response.status = 403
 
-const can_remove_fleet = is_superuser ||
-                         user_permissions.includes('fleets.delete_evefleet') ||
-                         (user_character as EveCharacterProfile)?.character_id === (fleet as FleetUI).fleet_commander_id
+const supply = fleet && !history ? await (supply_promise ?? fetch_fleet_supply(auth_token as string, fleet_id)) : EMPTY_SUPPLY
+
+// The FC picks a doctrine on the Ships tab while the fleet has no ships.
+if (fleet && !history && can_manage_fleet && composition.length === 0 && !fleet.doctrine && fleet.status !== 'cancelled') {
+    try {
+        doctrines = await get_doctrines() ?? []
+    } catch (error) {
+        console.log(`Skipping doctrines: ${error.message}`)
+    }
+}
+
+// fleet is null when the fetch failed (e.g. the fleet's audience excludes
+// the viewer); the page then shows fetch_fleets_error instead of a 500.
+const can_remove_fleet = can(gates, 'fleets.delete') ||
+                         (fleet !== null && (user_character as EveCharacterProfile)?.character_id === (fleet as FleetUI).fleet_commander_id)
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(true)}`)
 
@@ -130,6 +203,13 @@ if (Astro.cookies.has('fleet_tracking_error'))
 const motd_refreshed = Astro.url.searchParams.get('motd_refreshed') === '1'
 const motd_error = Astro.url.searchParams.get('motd_error') === '1'
 const motd_alert = motd_refreshed ? { title: t('refresh_motd'), content: t('refresh_motd_success') } : motd_error ? { title: t('refresh_motd'), content: t('refresh_motd_error') } : null
+
+// Landing on a fleet the FC just copied: say so, and name any setting left off.
+import { copied_alert_content, parse_not_copied } from '@helpers/fleet_copy'
+const copied_alert = fleet && Astro.url.searchParams.has('copied_from') ?
+    { title: t('fleets.copy.copied_title'), content: copied_alert_content(parse_not_copied(Astro.url.searchParams.get('not_copied')), t) } :
+    null
+const page_alert = motd_alert ?? copied_alert
 
 import {
     get_location_video_cover,
@@ -151,10 +231,16 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FleetDetails from '@components/blocks/FleetDetails.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import FleetManageMenu from '@components/blocks/FleetManageMenu.astro';
+import FleetHostStrip from '@components/blocks/FleetHostStrip.astro';
+import FleetMembersOnlyGate from '@components/blocks/FleetMembersOnlyGate.astro';
+
+// Pilots pick ships at the top of the Ships tab; on phones the bottom
+// actions bar links straight to it. The FC's controls live in the Command tab.
+const can_pick_ships = Boolean(fleet) && !history && fleet?.status !== 'cancelled' && composition.length > 0 && pilots.length > 0
 
 
-const page_title = `${t('fleet')} ${fleet_id}`;
+// The gate names neither the fleet nor its number.
+const page_title = restricted ? t('fleets.host.gate_breadcrumb') : fleet?.objective ? fleet.objective : `${t('fleet')} ${fleet_id}`;
 const breadcrumbs = [
     { page_title: t('fleets'), accumulated_path: '/fleets/upcoming/' },
     { page_title: t('upcoming_fleets_short'), accumulated_path: '/fleets/upcoming/' },
@@ -182,26 +268,45 @@ const breadcrumbs = [
         }}
         x-init={[
             fleet_tracking_error_text ? `show_alert_dialog(${JSON.stringify({ title: t('start_fleet_tracking'), content: fleet_tracking_error_text })})` : '',
-            motd_alert ? `show_alert_dialog(${JSON.stringify(motd_alert)}); if($el.dataset.cleanUrl) history.replaceState(null,'',$el.dataset.cleanUrl)` : '',
+            page_alert ? `show_alert_dialog(${JSON.stringify(page_alert)}); if($el.dataset.cleanUrl) history.replaceState(null,'',$el.dataset.cleanUrl)` : '',
         ].filter(Boolean).join('; ') || undefined}
-        data-clean-url={motd_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
+        data-clean-url={page_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
         breadcrumbs={breadcrumbs}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
+                {!restricted &&
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                }
+                {fleet?.host_group &&
+                    <FleetHostStrip
+                        group={fleet.host_group}
+                        open_to_alliance={Boolean(fleet.open_to_alliance)}
+                        on_schedule={Boolean(fleet.on_schedule)}
+                        member_count={host_group_details?.member_count ?? null}
+                        role_name={host_group_details?.discord_role_name ?? null}
+                    />
+                }
             </Flexblock>
             <PageActions>
-                {fleet && can_manage_fleet &&
-                    <FleetManageMenu fleet={fleet} />
+                {can_pick_ships &&
+                    <Button
+                        href="#ships"
+                        color="green"
+                        class="[ xl:hidden! ]"
+                    >
+                        {t('fleets.spotlight.pick_ships')}
+                    </Button>
                 }
             </PageActions>
         </FlexInline>
 
 
-        {fetch_fleets_error ?
+        {restricted?.host_group ?
+            <FleetMembersOnlyGate host_group={restricted.host_group} /> :
+        fetch_fleets_error ?
             <ErrorRefetch
                 args={{
                     partial: FLEET_DETAIL_PARTIAL_URL,
@@ -218,15 +323,16 @@ const breadcrumbs = [
                 fleet_composition={fleet_composition}
                 fleet_radar={fleet_radar}
                 pilots={pilots}
-                volunteers={volunteers}
+                roles={roles}
                 update_cover={false}
                 fleet_metrics={fleet_metrics}
                 fleet_commander_metrics={fleet_commander_metrics}
-                init_tooltips={false}
                 ship_volunteers={ship_volunteers}
                 refits={refits}
                 composition={composition}
                 supply={supply}
+                fights={fights}
+                doctrines={doctrines}
             />
         }
     </PageWide>

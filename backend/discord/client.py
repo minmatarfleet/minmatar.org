@@ -186,6 +186,9 @@ class DiscordBaseClient:
         return response
 
 
+# Discord channel type of a private thread.
+PRIVATE_THREAD = 12
+
 DISCORD_OAUTH_SCOPES = "identify guilds.join"
 DISCORD_OAUTH_SCOPES_URL = "identify%20guilds.join"
 
@@ -322,12 +325,6 @@ class DiscordClient(DiscordBaseClient):
             json=payload,
         )
 
-    def get_message(self, channel_id, message_id):
-        """Get a message from a discord channel"""
-        return self.get(
-            f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
-        )
-
     def get_messages(self, channel_id, limit=100):
         """Get messages from a discord channel"""
         return self.get(
@@ -403,16 +400,47 @@ class DiscordClient(DiscordBaseClient):
             },
         )
 
+    def create_private_thread(self, channel_id, name: str) -> dict:
+        """Create a private thread in a text channel that only the bot can
+        add people to (invitable false)."""
+        return self.post(
+            f"{BASE_URL}/channels/{channel_id}/threads",
+            json={
+                "name": (name or "")[:100],
+                "type": PRIVATE_THREAD,
+                "invitable": False,
+                "auto_archive_duration": 10080,
+            },
+        ).json()
+
+    def add_thread_member(self, thread_id, discord_user_id):
+        """Add a user to a thread."""
+        return self.put(
+            f"{BASE_URL}/channels/{thread_id}/thread-members/{discord_user_id}",
+        )
+
+    def remove_thread_member(self, thread_id, discord_user_id):
+        """Remove a user from a thread (a missing member is not an error)."""
+        return self.delete(
+            f"{BASE_URL}/channels/{thread_id}/thread-members/{discord_user_id}",
+        )
+
+    def pin_message(self, channel_id, message_id):
+        """Pin a message in a channel or thread."""
+        return self.put(
+            f"{BASE_URL}/channels/{channel_id}/pins/{message_id}",
+        )
+
+    def get_active_threads(self):
+        """List active (unarchived) threads across the guild"""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/threads/active",
+        )
+
     def get_roles(self):
         """Get all roles from a discord server"""
         return self.get(
             f"{BASE_URL}/guilds/{self.guild_id}/roles",
-        )
-
-    def get_emojis(self):
-        """Get all emojis from a discord server"""
-        return self.get(
-            f"{BASE_URL}/guilds/{self.guild_id}/emojis",
         )
 
     def get_members(self):
@@ -488,15 +516,6 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}/roles/{role_id}",
         )
 
-    def create_guild_webhook(self, channel_id: int, name: str):
-        """Create a guild webhook"""
-        return self.post(
-            f"{BASE_URL}/channels/{channel_id}/webhooks",
-            json={
-                "name": name,
-            },
-        ).json()
-
     def get_guild_channels(self, guild_id=None):
         """Get all channels from a guild."""
         type_map = {
@@ -517,6 +536,30 @@ class DiscordClient(DiscordBaseClient):
             }
             for channel in channels
         ]
+
+    def create_scheduled_event(self, payload: dict) -> dict:
+        """Create a guild scheduled event; returns the event object.
+
+        The bot needs the Manage Events permission.
+        """
+        return self.post(
+            f"{BASE_URL}/guilds/{self.guild_id}/scheduled-events",
+            json=payload,
+        ).json()
+
+    def edit_scheduled_event(self, event_id, payload: dict) -> dict:
+        """Modify a guild scheduled event (status 4 cancels it)."""
+        return self.patch(
+            f"{BASE_URL}/guilds/{self.guild_id}/scheduled-events/{event_id}",
+            json=payload,
+        ).json()
+
+    def list_scheduled_events(self, with_user_count: bool = True) -> list:
+        """The guild's scheduled events, with interested counts."""
+        query = "?with_user_count=true" if with_user_count else ""
+        return self.get(
+            f"{BASE_URL}/guilds/{self.guild_id}/scheduled-events{query}"
+        )
 
     def get_bot_guilds(self):
         """Get all guilds the bot user is a member of."""

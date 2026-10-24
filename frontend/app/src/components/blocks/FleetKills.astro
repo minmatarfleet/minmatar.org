@@ -1,0 +1,474 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FleetKills, FleetKillmail, FleetSrpLoss } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { format_date_time } from '@helpers/date'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+
+/**
+ * What a completed fleet destroyed and lost, from the killmail feed: the
+ * result, how the fight went in 10-minute steps, and kills and losses
+ * grouped by hull. Totals count pods towards ISK but not ships.
+ */
+interface Props {
+    fleet_kills:        FleetKills;
+    fleet_id:           number;
+    /** The viewer's losses here on hulls SRP covers; null when they cannot file SRP. */
+    srp_losses?:        FleetSrpLoss[] | null;
+    /**
+     * Result and SRP only. A fleet with a Fights tab shows its minute-by-minute
+     * chart and its ships there, so the Overview keeps just the outcome.
+     */
+    summary_only?:      boolean;
+    [propName: string]: any;
+}
+
+const {
+    fleet_kills,
+    fleet_id,
+    srp_losses = null,
+    summary_only = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const kills = fleet_kills.killmails.filter(killmail => killmail.outcome === 'kill')
+const losses = fleet_kills.killmails.filter(killmail => killmail.outcome === 'loss')
+const total = fleet_kills.isk_destroyed + fleet_kills.isk_lost
+const efficiency = total > 0 ? Math.round(100 * fleet_kills.isk_destroyed / total) : null
+const biggest = kills.reduce<FleetKillmail | null>((best, killmail) => !best || killmail.isk_value > best.isk_value ? killmail : best, null)
+
+// 10-minute steps from the first killmail to the last.
+const STEP_MS = 10 * 60 * 1000
+const BAR_PX = 120
+const times = fleet_kills.killmails.map(killmail => new Date(killmail.killmail_time).getTime())
+const first = times.length ? Math.floor(Math.min(...times) / STEP_MS) * STEP_MS : 0
+const last = times.length ? Math.max(...times) : 0
+const steps = times.length ? Math.floor((last - first) / STEP_MS) + 1 : 0
+const buckets = Array.from({ length: steps }, (_, index) => ({ at: new Date(first + index * STEP_MS), destroyed: 0, lost: 0 }))
+fleet_kills.killmails.forEach(killmail => {
+    const bucket = buckets[Math.floor((new Date(killmail.killmail_time).getTime() - first) / STEP_MS)]
+    if (killmail.outcome === 'kill') bucket.destroyed += killmail.isk_value
+    else bucket.lost += killmail.isk_value
+})
+const peak = Math.max(1, ...buckets.map(bucket => Math.max(bucket.destroyed, bucket.lost)))
+const bar = (isk:number) => Math.round(BAR_PX * isk / peak)
+
+// One row per hull, most ISK first.
+const by_hull = (rows:FleetKillmail[]) => {
+    const hulls = new Map<string, { name:string, type_id:number | null, count:number, isk:number }>()
+    rows.forEach(killmail => {
+        const name = killmail.victim_ship_name || t('fleets.kills.unknown_ship')
+        const hull = hulls.get(name) ?? { name, type_id: killmail.victim_ship_type_id ?? null, count: 0, isk: 0 }
+        hull.count += 1
+        hull.isk += killmail.isk_value
+        hulls.set(name, hull)
+    })
+    return [...hulls.values()].sort((a, b) => b.isk - a.isk)
+}
+const HULLS_SHOWN = 8
+const sides = [
+    { key: 'kills', label: t('fleets.kills.tab_kills').replace('{count}', kills.length.toString()), hulls: by_hull(kills), rows: kills },
+    { key: 'losses', label: t('fleets.kills.tab_losses').replace('{count}', losses.length.toString()), hulls: by_hull(losses), rows: losses },
+]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
+---
+
+<Flexblock
+    id='fleet-kills'
+    gap='var(--space-l)'
+    class:list={['[ fleet-kills ]', Astro.props.class]}
+    x-data="{ side: 'kills', show_all: false }"
+    {...attributes}
+>
+    {!fleet_kills.tracked ?
+        <small>{t('fleets.kills.untracked')}</small>
+        :
+        <>
+            <dl class="[ fleet-kills__result ]">
+                <div>
+                    <dt>{t('fleets.kills.destroyed_ships').replace('{count}', fleet_kills.ships_destroyed.toString())}</dt>
+                    <dd>{format_isk(fleet_kills.isk_destroyed)}</dd>
+                </div>
+                <div>
+                    <dt>{t('fleets.kills.lost_ships').replace('{count}', fleet_kills.ships_lost.toString())}</dt>
+                    <dd>{format_isk(fleet_kills.isk_lost)}</dd>
+                </div>
+                {efficiency !== null &&
+                    <div>
+                        <dt>{t('fleets.history.isk_efficiency')}</dt>
+                        <dd>{efficiency}%</dd>
+                    </div>
+                }
+                {biggest &&
+                    <div class="[ fleet-kills__biggest ]">
+                        <dt>{t('fleets.kills.biggest')}</dt>
+                        <dd>
+                            {biggest.victim_ship_type_id &&
+                                <img src={get_item_icon(biggest.victim_ship_type_id, 64)} alt="" width="48" height="48" loading="lazy" />
+                            }
+                            <span>
+                                <b>{biggest.victim_ship_name || t('fleets.kills.unknown_ship')}</b>
+                                <small>{format_isk(biggest.isk_value)} · {biggest.solar_system_name}</small>
+                            </span>
+                        </dd>
+                    </div>
+                }
+            </dl>
+
+            {srp_losses && srp_losses.length > 0 &&
+                <FleetSrpLosses srp_losses={srp_losses} fleet_id={fleet_id} />
+            }
+
+            {!summary_only && buckets.length > 1 &&
+                <section class="[ fleet-kills__timeline ]" aria-labelledby="fleet-timeline-title">
+                    <header>
+                        <h3 id="fleet-timeline-title">{t('fleets.kills.timeline')}</h3>
+                        <small>
+                            <span class="[ fleet-kills__key fleet-kills__key--destroyed ]" aria-hidden="true" />{t('fleets.kills.isk_destroyed')}
+                            <span class="[ fleet-kills__key fleet-kills__key--lost ]" aria-hidden="true" />{t('fleets.kills.isk_lost')}
+                        </small>
+                    </header>
+                    <div
+                        class="[ fleet-kills__chart ]"
+                        role="img"
+                        aria-label={t('fleets.kills.timeline_label')}
+                    >
+                        {buckets.map(bucket =>
+                            <div class="[ fleet-kills__step ]">
+                                <small>{bucket.destroyed > 0 ? format_isk(bucket.destroyed) : ''}</small>
+                                <span class="[ fleet-kills__up ]"><span style={`height: ${bar(bucket.destroyed)}px`} /></span>
+                                <span class="[ fleet-kills__down ]"><span style={`height: ${bar(bucket.lost)}px`} /></span>
+                                <small class="[ fleet-kills__lost-label ]">{bucket.lost >= peak / 10 ? format_isk(bucket.lost) : ''}</small>
+                                <small class="[ fleet-kills__clock ]">{eve_clock(bucket.at)}</small>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            }
+
+            {summary_only ?
+                <a class="[ fleet-kills__to-fights ]" href="#aar">{t('fleets.kills.see_fights')}</a>
+                :
+                <>
+            <section class="[ fleet-kills__hulls ]" aria-labelledby="fleet-hulls-title">
+                <header>
+                    <h3 id="fleet-hulls-title">{t('fleets.kills.killmails')}</h3>
+                    <div role="tablist" aria-label={t('fleets.kills.killmails')}>
+                        {sides.map(s =>
+                            <button
+                                type="button"
+                                role="tab"
+                                x-bind:aria-selected={`side === '${s.key}'`}
+                                x-on:click={`side = '${s.key}'; show_all = false`}
+                            >
+                                {s.label}
+                            </button>
+                        )}
+                    </div>
+                </header>
+
+                {sides.map(s =>
+                    <div role="tabpanel" x-show={`side === '${s.key}'`} x-cloak={s.key !== 'kills' ? '' : undefined}>
+                        {s.hulls.length === 0 ?
+                            <small>{s.key === 'kills' ? t('fleets.kills.none') : t('fleets.kills.no_losses')}</small>
+                            :
+                            <>
+                                <ul class="[ fleet-kills__hull-list ]" x-show="!show_all">
+                                    {s.hulls.slice(0, HULLS_SHOWN).map(hull =>
+                                        <li>
+                                            {hull.type_id ?
+                                                <img src={get_item_icon(hull.type_id, 64)} alt="" width="40" height="40" loading="lazy" /> :
+                                                <span class="[ fleet-kills__no-icon ]" />
+                                            }
+                                            <b>{hull.name}</b>
+                                            <span>{hull.count}</span>
+                                            <span>{format_isk(hull.isk)}</span>
+                                        </li>
+                                    )}
+                                </ul>
+
+                                <ul class="[ fleet-kills__mail-list ]" x-show="show_all" x-cloak>
+                                    {s.rows.map(killmail =>
+                                        <li>
+                                            <small>{format_date_time(lang, killmail.killmail_time)}</small>
+                                            <a
+                                                href={`https://zkillboard.com/kill/${killmail.killmail_id}/`}
+                                                target='_blank'
+                                                rel='noopener noreferrer'
+                                            >
+                                                {killmail.victim_ship_name || t('fleets.kills.unknown_ship')}
+                                            </a>
+                                            <small>{killmail.victim_character_name || t('fleets.kills.unknown_pilot')} · {killmail.solar_system_name}</small>
+                                            <span>{format_isk(killmail.isk_value)}</span>
+                                        </li>
+                                    )}
+                                </ul>
+
+                                <button type="button" class="[ fleet-kills__more ]" x-on:click="show_all = !show_all">
+                                    <span x-show="!show_all">
+                                        {s.hulls.length > HULLS_SHOWN ?
+                                            t('fleets.kills.more_hulls').replace('{count}', (s.hulls.length - HULLS_SHOWN).toString()) :
+                                            t('fleets.kills.every_mail')
+                                        }
+                                    </span>
+                                    <span x-show="show_all" x-cloak>{t('fleets.kills.by_hull')}</span>
+                                </button>
+                            </>
+                        }
+                    </div>
+                )}
+            </section>
+
+                </>
+            }
+        </>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .fleet-kills__to-fights {
+        align-self: flex-start;
+        font-weight: 700;
+    }
+
+    .fleet-kills h3 {
+        font-size: var(--step-1);
+    }
+
+    .fleet-kills__result {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1px;
+        margin: 0;
+        background-color: var(--border-color);
+        border: 1px solid var(--border-color);
+
+        > div {
+            flex: 1 1 10rem;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-end;
+            gap: var(--space-3xs);
+            padding: var(--space-s) var(--space-m);
+            background-color: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            opacity: 0.8;
+        }
+
+        dd {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-3);
+            line-height: 1.1;
+            color: var(--highlight);
+        }
+
+        .fleet-kills__biggest {
+            flex: 1.5 1 14rem;
+
+            dd {
+                display: flex;
+                align-items: center;
+                gap: var(--space-s);
+                font-family: var(--default-font);
+                font-size: var(--step-0);
+
+                span {
+                    display: flex;
+                    flex-direction: column;
+                }
+            }
+        }
+    }
+
+    .fleet-kills__timeline header,
+    .fleet-kills__hulls header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-xs);
+        margin-bottom: var(--space-s);
+    }
+
+    .fleet-kills__key {
+        display: inline-block;
+        width: 0.75em;
+        height: 0.75em;
+        margin: 0 var(--space-3xs) 0 var(--space-xs);
+
+        &.fleet-kills__key--destroyed {
+            background-color: var(--alliance-blue);
+        }
+
+        &.fleet-kills__key--lost {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    .fleet-kills__chart {
+        display: flex;
+        gap: var(--space-3xs);
+        padding: var(--space-s);
+        overflow-x: auto;
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .fleet-kills__step {
+        flex: 1 0 3rem;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+
+        small {
+            min-height: 1.4em;
+            white-space: nowrap;
+        }
+    }
+
+    .fleet-kills__up,
+    .fleet-kills__down {
+        display: flex;
+        height: 120px;
+
+        span {
+            width: 100%;
+        }
+    }
+
+    .fleet-kills__up {
+        align-items: flex-end;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+
+        span {
+            background-color: var(--alliance-blue);
+        }
+    }
+
+    .fleet-kills__down {
+        align-items: flex-start;
+        height: 40px;
+
+        span {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    .fleet-kills__lost-label {
+        color: var(--fleet-red);
+        filter: brightness(1.5);
+    }
+
+    .fleet-kills__clock {
+        opacity: 0.7;
+    }
+
+    [role="tablist"] {
+        display: flex;
+        gap: var(--space-2xs);
+
+        button {
+            min-height: 2.5rem;
+            padding: 0 var(--space-s);
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--foreground);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+
+            &[aria-selected="true"] {
+                background-color: var(--foreground);
+                color: var(--background);
+            }
+        }
+    }
+
+    .fleet-kills__hull-list,
+    .fleet-kills__mail-list {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .fleet-kills__hull-list li {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr) 4rem 6rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s);
+        border-top: 1px solid var(--border-color);
+        font-variant-numeric: tabular-nums;
+
+        b {
+            color: var(--highlight);
+        }
+
+        span {
+            text-align: right;
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-kills__no-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .fleet-kills__mail-list li {
+        display: grid;
+        grid-template-columns: 9rem minmax(8rem, 1fr) minmax(0, 1.5fr) 6rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s);
+        border-top: 1px solid var(--border-color);
+
+        span {
+            text-align: right;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .fleet-kills__more {
+        display: block;
+        width: 100%;
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-top: 0;
+        color: var(--foreground);
+        font: inherit;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-kills__mail-list li {
+            grid-template-columns: minmax(0, 1fr) 5rem;
+
+            small:first-child {
+                display: none;
+            }
+        }
+    }
+</style>

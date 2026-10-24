@@ -17,35 +17,23 @@ from industry.helpers.order_lp_stockpiles import (
 )
 
 
-def first_list_item_targets_from_assignments(assignments):
-    """First non-null target price / margin on assignments (fallback for list tooltips)."""
-    unit: Decimal | None = None
-    margin: Decimal | None = None
-    for a in assignments:
-        if unit is None and a.target_unit_price is not None:
-            unit = a.target_unit_price
-        if margin is None and a.target_estimated_margin is not None:
-            margin = a.target_estimated_margin
-        if unit is not None and margin is not None:
-            break
-    return unit, margin
+def order_line_target_unit_price(item) -> Decimal | None:
+    """Target unit price for list API: order item row first, then any assignment."""
+    if item.target_unit_price is not None:
+        return item.target_unit_price
+    for a in item.assignments.all():
+        if a.target_unit_price is not None:
+            return a.target_unit_price
+    return None
 
 
-def order_line_list_targets(item):
-    """
-    Target price/margin for list API: order item row first, then any assignment.
-    """
-    unit = item.target_unit_price
-    margin = item.target_estimated_margin
-    if unit is None or margin is None:
-        a_unit, a_margin = first_list_item_targets_from_assignments(
-            item.assignments.all()
-        )
-        if unit is None:
-            unit = a_unit
-        if margin is None:
-            margin = a_margin
-    return unit, margin
+def order_line_profit_per_unit(
+    item, profit_by_type: dict[int, int] | None
+) -> int | None:
+    """Per-unit profit for a line from the order's stored profit breakdown."""
+    if profit_by_type is None:
+        return None
+    return profit_by_type.get(int(item.eve_type_id))
 
 
 def assignment_to_response(assignment) -> AssignmentResponse:
@@ -55,14 +43,15 @@ def assignment_to_response(assignment) -> AssignmentResponse:
         character_name=assignment.character.character_name,
         quantity=assignment.quantity,
         target_unit_price=assignment.target_unit_price,
-        target_estimated_margin=assignment.target_estimated_margin,
         delivered_quantity=assignment.delivered_quantity,
         delivered_at=assignment.delivered_at,
         has_blueprints=assignment.has_blueprints,
     )
 
 
-def order_item_to_response(order, item) -> OrderItemResponse:
+def order_item_to_response(
+    order, item, profit_by_type: dict[int, int] | None = None
+) -> OrderItemResponse:
     assignments = list(item.assignments.all())
     assigned_sum = sum(a.quantity for a in assignments)
     unassigned = max(0, item.quantity - assigned_sum)
@@ -75,7 +64,9 @@ def order_item_to_response(order, item) -> OrderItemResponse:
         self_assign_maximum=item.self_assign_maximum,
         self_assign_window_ends_at=self_assign_window_ends_at(order),
         target_unit_price=item.target_unit_price,
-        target_estimated_margin=item.target_estimated_margin,
+        estimated_profit_per_unit=order_line_profit_per_unit(
+            item, profit_by_type
+        ),
         assignments=[assignment_to_response(a) for a in assignments],
     )
 

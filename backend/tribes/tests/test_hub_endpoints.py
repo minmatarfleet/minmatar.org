@@ -1,10 +1,8 @@
 """Tests for tribe group hub endpoints (roster, growth, showcase)."""
 
-import jwt
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
@@ -22,13 +20,9 @@ from tribes.models import (
     TribeGroupMembershipHistory,
     TribeGroupRank,
 )
+from app.testing import make_token
 
 BASE_URL = "/api/tribes"
-
-
-def _make_token(user: User) -> str:
-    payload = {"user_id": user.pk}
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def setUpModule():
@@ -106,7 +100,7 @@ class TribeGroupRosterTestCase(TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_non_alliance_forbidden(self):
-        token = _make_token(self.member)
+        token = make_token(self.member)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -114,7 +108,7 @@ class TribeGroupRosterTestCase(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_alliance_sees_primary_only(self):
-        token = _make_token(self.alliance)
+        token = make_token(self.alliance)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -132,7 +126,7 @@ class TribeGroupRosterTestCase(TestCase):
     def test_hidden_roster_hides_names_from_alliance(self):
         self.group.roster_hidden = True
         self.group.save(update_fields=["roster_hidden"])
-        token = _make_token(self.alliance)
+        token = make_token(self.alliance)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -142,7 +136,7 @@ class TribeGroupRosterTestCase(TestCase):
     def test_hidden_roster_visible_to_active_member(self):
         self.group.roster_hidden = True
         self.group.save(update_fields=["roster_hidden"])
-        token = _make_token(self.member)
+        token = make_token(self.member)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -156,7 +150,7 @@ class TribeGroupRosterTestCase(TestCase):
         self.group.chief = chief
         self.group.roster_hidden = True
         self.group.save(update_fields=["chief", "roster_hidden"])
-        token = _make_token(chief)
+        token = make_token(chief)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -179,7 +173,7 @@ class TribeGroupRosterTestCase(TestCase):
         self.assertIsNone(data["chief"])
         self.assertGreaterEqual(data["member_count"], 1)
 
-        token = _make_token(self.member)
+        token = make_token(self.member)
         member_response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -238,8 +232,8 @@ class TribeGroupShowcaseTestCase(TestCase):
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
-            name="Thinkspeak",
-            code="pulse.thinkspeak",
+            name="Tournaments",
+            code="pulse.tournaments",
         )
         self.alliance = User.objects.create_user(username="ally")
         _grant_alliance_perm(self.alliance)
@@ -254,7 +248,7 @@ class TribeGroupShowcaseTestCase(TestCase):
         self.assertEqual(data["contributors"], [])
 
     def test_alliance_manual_still_empty_contributors(self):
-        token = _make_token(self.alliance)
+        token = make_token(self.alliance)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/showcase",
             HTTP_AUTHORIZATION=f"Bearer {token}",
@@ -264,9 +258,7 @@ class TribeGroupShowcaseTestCase(TestCase):
         self.assertTrue(data["manual"])
         self.assertEqual(data["contributors"], [])
 
-    @patch(
-        "tribes.endpoints.groups.get_tribe_group_showcase.build_group_showcase"
-    )
+    @patch("tribes.endpoints.groups.get_tribe_group_showcase.group_showcase")
     def test_hidden_roster_strips_contributor_names(self, mock_build):
         self.group.roster_hidden = True
         self.group.save(update_fields=["roster_hidden"])
@@ -290,7 +282,7 @@ class TribeGroupShowcaseTestCase(TestCase):
                 }
             ],
         }
-        token = _make_token(self.alliance)
+        token = make_token(self.alliance)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/showcase",
             HTTP_AUTHORIZATION=f"Bearer {token}",

@@ -1,0 +1,28 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
+import type { TribeShowcaseCatch } from '@dtypes/api.minmatar.org'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    catches: TribeShowcaseCatch[]
+}
+
+const { catches } = Astro.props
+
+const SUPER_CLASSES = new Set(['Titan', 'Supercarrier'])
+
+import TribeKillList from '@components/blocks/tribe_about/TribeKillList.astro'
+---
+
+<TribeKillList
+    columns={1}
+    kills={catches.map((kill) => ({
+        killmail_id: kill.killmail_id,
+        ship_type_id: kill.ship_type_id,
+        ship_name: kill.ship_name,
+        meta: `${kill.ship_class} · ${format_date_short(lang, kill.killed_at)}`,
+        trophy: SUPER_CLASSES.has(kill.ship_class),
+    }))}
+/>

@@ -21,10 +21,6 @@ interface Props {
 const { t, lang } = i18n(Astro.url)
 const { row, reason_label } = Astro.props
 
-function format_value(isk: number | null | undefined): string {
-    if (isk == null) return '—'
-    return format_isk(isk)
-}
 
 function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
     if (!buyer.counterparty_id) return null
@@ -39,7 +35,7 @@ function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
 ---
 
 <div class="[ buyback-stockpile-sale-item ]" role="row">
-    <div class="[ buyback-stockpile-sale-item__date ]" role="cell">
+    <div class="[ buyback-stockpile-sale-item__date ]" role="cell" data-label={t("buyback.ledger.col.date")}>
         <span class="[ whitespace-nowrap ]">{format_date(lang, row.day)}</span>
         {row.sale_count > 1 &&
             <div class="[ buyback-stockpile-sale-item__fills ]">
@@ -60,12 +56,12 @@ function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
         </FlexInline>
     </div>
 
-    <div class="[ buyback-stockpile-sale-item__quantity ]" role="cell">
+    <div class="[ buyback-stockpile-sale-item__quantity ]" role="cell" data-label={t("buyback.ledger.col.quantity")}>
         <span>{number_thousand_separator(row.quantity)}</span>
     </div>
 
-    <div class="[ buyback-stockpile-sale-item__total ]" role="cell">
-        <span>{format_value(row.isk_total)}</span> <span>ISK</span>
+    <div class="[ buyback-stockpile-sale-item__total ]" role="cell" data-label={t("buyback.ledger.col.total")}>
+        <span>{format_isk(row.isk_total)}</span> <span>ISK</span>
     </div>
 
     <div class="[ buyback-stockpile-sale-item__via ]" role="cell">
@@ -77,7 +73,7 @@ function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
         />
     </div>
 
-    <div class="[ buyback-stockpile-sale-item__buyers ]" role="cell">
+    <div class="[ buyback-stockpile-sale-item__buyers ]" role="cell" data-label={t("buyback.ledger.col.buyers")}>
         {row.buyers.length > 0 ? (
             <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
                 {row.buyers.map((buyer) => {
@@ -143,5 +139,36 @@ function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
         display: inline-flex;
         align-items: center;
         gap: var(--space-3xs);
+    }
+
+    @media (max-width: 48rem) {
+        .buyback-stockpile-sale-item {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-areas:
+                "item via"
+                "date quantity"
+                "total buyers";
+            gap: var(--space-2xs) var(--space-s);
+            align-items: start;
+            min-width: 0;
+            padding-block: var(--space-s);
+            padding-inline: 0;
+        }
+
+        .buyback-stockpile-sale-item__item { grid-area: item; min-width: 0; }
+        .buyback-stockpile-sale-item__via { grid-area: via; justify-self: end; }
+        .buyback-stockpile-sale-item__date { grid-area: date; }
+        .buyback-stockpile-sale-item__quantity { grid-area: quantity; }
+        .buyback-stockpile-sale-item__total { grid-area: total; }
+        .buyback-stockpile-sale-item__buyers { grid-area: buyers; min-width: 0; }
+
+        .buyback-stockpile-sale-item [data-label]::before {
+            content: attr(data-label);
+            display: block;
+            color: var(--faded);
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
     }
 </style>

@@ -57,6 +57,17 @@ class TribeGroupSchema(BaseModel):
     can_apply: bool = False
     can_manage: bool = False
     roster_hidden: bool = False
+    # Tribe publishing (docs/tribes/tribe-publishing.md). Viewer flags are
+    # False for anonymous viewers.
+    is_member: bool = False
+    can_post: bool = False
+    can_schedule_fleets: bool = False
+    can_create_events: bool = False
+    allow_alliance_posts: bool = True
+    allow_open_fleets: bool = False
+    # A string: Discord ids don't fit a JavaScript number.
+    effective_discord_channel_id: Optional[str] = None
+    discord_role_name: Optional[str] = None
 
 
 class TribeGroupReportSchema(BaseModel):
@@ -103,6 +114,7 @@ class TribeGroupShowcaseContributorSchema(BaseModel):
     character_name: str = ""
     metric_key: str = ""
     metric_value: Any = 0
+    values: dict = {}
 
 
 class TribeGroupShowcaseSchema(BaseModel):
@@ -113,7 +125,10 @@ class TribeGroupShowcaseSchema(BaseModel):
     period_start: Optional[str] = None
     period_end: Optional[str] = None
     manual: bool = False
+    # True while the first refresh is still running (manual is True too).
+    warming: bool = False
     message: str = ""
     totals: dict = {}
     columns: List[str] = []
     contributors: List[TribeGroupShowcaseContributorSchema] = []
+    highlights: dict = {}

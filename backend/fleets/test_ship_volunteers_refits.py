@@ -8,17 +8,22 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from app.testing import make_token
 from discord.models import DiscordUser
 from esi.models import Scope, Token
 
 from eveonline.client import SUCCESS, EsiResponse
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
+from fittings.eft import fitted_modules
 from fittings.models import (
     EveDoctrine,
     EveDoctrineFitting,
     EveFitting,
     EveFittingRefit,
+)
+from fleets.helpers.cyno_notifications import (
+    build_cyno_assignment_message,
 )
 from fleets.helpers.eft_items import (
     eft_to_dna,
@@ -31,10 +36,10 @@ from fleets.helpers.esi_fittings import (
     fitting_publisher,
 )
 from fleets.helpers.refits import (
-    eft_fitted_modules,
     parse_cargo_modules,
     refit_cargo_diff,
 )
+from fleets.endpoints.schemas import CreateEveFleetRequest
 from fleets.models import (
     EveFleet,
     EveFleetFitting,
@@ -54,16 +59,6 @@ from fleets.tests import (
     setup_fleet_reference_data,
 )
 from users.helpers import add_user_permission
-
-
-def token_for(user):
-    """Bearer token for an arbitrary test user."""
-    import jwt  # pylint: disable=import-outside-toplevel
-    from django.conf import settings  # pylint: disable=import-outside-toplevel
-
-    return jwt.encode(
-        {"user_id": user.id}, settings.SECRET_KEY, algorithm="HS256"
-    )
 
 
 def grant_fittings_scope(user, character_id, name):
@@ -102,6 +97,46 @@ def ensure_hurricane_type():
         id=24702,
         defaults={"name": "Hurricane", "published": True, "eve_group": group},
     )
+
+
+def ensure_rifter_type():
+    """A frigate outside every test doctrine, plus Tritanium (not a ship)."""
+    from eveuniverse.models import (  # pylint: disable=import-outside-toplevel
+        EveCategory,
+        EveGroup,
+        EveType,
+    )
+
+    ensure_hurricane_type()
+    ship = EveCategory.objects.get(id=6)
+    frigate, _ = EveGroup.objects.get_or_create(
+        id=25,
+        defaults={"name": "Frigate", "published": True, "eve_category": ship},
+    )
+    material, _ = EveCategory.objects.get_or_create(
+        id=4, defaults={"name": "Material", "published": True}
+    )
+    mineral, _ = EveGroup.objects.get_or_create(
+        id=18,
+        defaults={
+            "name": "Mineral",
+            "published": True,
+            "eve_category": material,
+        },
+    )
+    EveType.objects.get_or_create(
+        id=34,
+        defaults={
+            "name": "Tritanium",
+            "published": True,
+            "eve_group": mineral,
+        },
+    )
+    rifter, _ = EveType.objects.get_or_create(
+        id=587,
+        defaults={"name": "Rifter", "published": True, "eve_group": frigate},
+    )
+    return rifter
 
 
 def mock_esi_fittings(test_case, fitting_id=555):
@@ -168,12 +203,20 @@ Medium Trimark Armor Pump I
 Warrior II x5
 """
 
+CYNO_EFT = """[Devoter, Devoter [FL33T]]
+Damage Control II
+
+Warp Disruption Field Generator II
+
+Cynosural Field Generator I
+"""
+
 
 class RefitHelperTestCase(TestCase):
     """Pure helpers for EFT parsing and cargo diffs."""
 
     def test_eft_fitted_modules_skips_header_empty_and_cargo(self):
-        modules = eft_fitted_modules(BASE_EFT)
+        modules = fitted_modules(BASE_EFT)
         self.assertEqual(3, modules["720mm Howitzer Artillery II"])
         self.assertEqual(2, modules["Gyrostabilizer II"])
         self.assertNotIn("Warrior II", modules)
@@ -307,7 +350,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         self.fleet.doctrine = self.doctrine
         self.fleet.save()
         self.fc_client = Client()
-        self.fc_token = token_for(self.fc_user)
+        self.fc_token = make_token(self.fc_user)
         # Refits are saved in-game under the FC: scope + mocked ESI.
         self.fc_character = grant_fittings_scope(self.fc_user, 2001, "FC")
         self.esi = mock_esi_fittings(self)
@@ -443,6 +486,115 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         )
         self.assertEqual(400, response.status_code)
 
+    # --- ship suggestions -------------------------------------------------
+
+    def _flew(self, ship_type_id, doctrine=None, days_ago=7, snapshots=()):
+        """A past tracked fleet Pilot One joined in ``ship_type_id``."""
+        from fleets.models import (  # pylint: disable=import-outside-toplevel
+            EveFleetInstanceMember,
+            EveFleetInstanceMemberShipSnapshot,
+        )
+
+        when = timezone.now() - timedelta(days=days_ago)
+        past = make_test_fleet("Past", self.fc_user, start=when)
+        past.doctrine = doctrine
+        past.save()
+        instance = EveFleetInstance.objects.create(
+            id=9000 + EveFleetInstance.objects.count(),
+            eve_fleet=past,
+            boss_id=1234,
+        )
+        member = EveFleetInstanceMember.objects.create(
+            eve_fleet_instance=instance,
+            character_id=1001,
+            character_name="Pilot One",
+            role="squad_member",
+            role_name="Squad Member",
+            ship_type_id=ship_type_id,
+            ship_name="",
+            solar_system_id=1,
+            solar_system_name="X",
+            squad_id=1,
+            wing_id=1,
+        )
+        EveFleetInstanceMember.objects.filter(id=member.id).update(
+            join_time=when
+        )
+        for hull in snapshots:
+            EveFleetInstanceMemberShipSnapshot.objects.create(
+                member=member,
+                ship_type_id=hull,
+                ship_name="",
+                solar_system_id=1,
+                solar_system_name="X",
+            )
+        return past
+
+    def _my_pilots(self):
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/my-pilots", **self._auth()
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        return {p["character_id"]: p for p in response.json()}
+
+    def test_my_pilots_suggests_hull_flown_before_until_saved(self):
+        EveCharacter.objects.create(
+            character_id=1002, character_name="Pilot Two", user=self.user
+        )
+        self._flew(24702, doctrine=self.doctrine)
+
+        pilots = self._my_pilots()
+        suggestion = pilots[1001]["suggestion"]
+        self.assertEqual(self.fitting.id, suggestion["fitting_id"])
+        self.assertEqual("Hurricane", suggestion["ship_name"])
+        self.assertEqual(1, suggestion["fleets"])
+        self.assertIsNone(pilots[1001]["selection"])
+        # No tracked fleets: nothing to go on.
+        self.assertIsNone(pilots[1002]["suggestion"])
+
+        # Once anything is saved the picker shows what was saved, only.
+        self._volunteer(self.fitting.id, character_id=1002)
+        self.assertIsNone(self._my_pilots()[1001]["suggestion"])
+
+    def test_suggestion_ignores_hulls_outside_composition(self):
+        self._flew(587)  # Rifter, not in the doctrine
+        self.assertIsNone(self._my_pilots()[1001]["suggestion"])
+
+    def test_suggestion_prefers_same_doctrine_and_reads_snapshots(self):
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.other_fitting, role="support"
+        )
+        # Scythe in two fleets on other doctrines...
+        self._flew(631, days_ago=3)
+        self._flew(631, days_ago=5)
+        # ...but a Hurricane on this doctrine, before getting podded.
+        self._flew(670, doctrine=self.doctrine, days_ago=20, snapshots=[24702])
+
+        suggestion = self._my_pilots()[1001]["suggestion"]
+        self.assertEqual(self.fitting.id, suggestion["fitting_id"])
+
+    def test_suggestion_picks_last_volunteered_fit_on_shared_hull(self):
+        alt_fitting = EveFitting.objects.create(
+            name="Hurricane [Arty]",
+            ship_id=24702,
+            description="",
+            eft_format=BASE_EFT.replace("FL33T", "Arty"),
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=alt_fitting, role="primary"
+        )
+        past = self._flew(24702, doctrine=self.doctrine)
+        # "[Arty]" sorts first, so without history it would be suggested.
+        self.assertEqual(
+            alt_fitting.id, self._my_pilots()[1001]["suggestion"]["fitting_id"]
+        )
+
+        EveFleetShipVolunteer.objects.create(
+            eve_fleet=past, character_id=1001, fitting=self.fitting
+        )
+        suggestion = self._my_pilots()[1001]["suggestion"]
+        self.assertEqual(self.fitting.id, suggestion["fitting_id"])
+
     def test_ship_volunteer_rejects_fitting_outside_doctrine(self):
         response = self._volunteer(self.other_fitting.id)
         self.assertEqual(400, response.status_code)
@@ -577,19 +729,34 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
     # --- cyno system assignment -----------------------------------------
 
-    @patch("fleets.helpers.cyno_notifications.DiscordClient")
+    def _cyno_volunteer(self, character_id=1001, name="Pilot One"):
+        """A ship volunteer in a cyno fit that is part of the doctrine."""
+        cyno_fit = EveFitting.objects.filter(name="Devoter [FL33T]").first()
+        if cyno_fit is None:
+            cyno_fit = EveFitting.objects.create(
+                name="Devoter [FL33T]",
+                ship_id=12017,
+                description="",
+                eft_format=CYNO_EFT,
+            )
+            EveDoctrineFitting.objects.create(
+                doctrine=self.doctrine, fitting=cyno_fit, role="support"
+            )
+        return EveFleetShipVolunteer.objects.create(
+            eve_fleet=self.fleet,
+            character_id=character_id,
+            character_name=name,
+            fitting=cyno_fit,
+        )
+
+    @patch("discord.outbox.DiscordClient")
     def test_fc_assigns_and_clears_cyno_system(self, discord_mock):
         add_user_permission(self.fc_user, "view_evefleet")
         DiscordUser.objects.create(
             id=555, discord_tag="pilot#1", user=self.user
         )
-        volunteer = EveFleetRoleVolunteer.objects.create(
-            eve_fleet=self.fleet,
-            character_id=1001,
-            character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
-        )
-        url = f"{BASE_URL}/{self.fleet.id}/role-volunteers/{volunteer.id}"
+        volunteer = self._cyno_volunteer()
+        url = f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}"
 
         # Not the FC
         response = self.client.patch(
@@ -600,12 +767,13 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         )
         self.assertEqual(403, response.status_code)
 
-        response = self.fc_client.patch(
-            url,
-            {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
-            "application/json",
-            **self._auth(self.fc_token),
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.fc_client.patch(
+                url,
+                {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
         self.assertEqual(200, response.status_code, response.content)
         self.assertEqual("Sosala", response.json()["solar_system_name"])
         self.assertEqual(30003070, response.json()["solar_system_id"])
@@ -635,7 +803,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
         # The pilot's own user sees the assignment in the listing...
         response = self.client.get(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers", **self._auth()
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers", **self._auth()
         )
         self.assertEqual("Sosala", response.json()[0]["solar_system_name"])
 
@@ -643,8 +811,8 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         other = User.objects.create(username="other")
         add_user_permission(other, "view_evefleet")
         response = Client().get(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers",
-            **self._auth(token_for(other)),
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers",
+            **self._auth(make_token(other)),
         )
         self.assertEqual(200, response.status_code)
         self.assertIsNone(response.json()[0]["solar_system_name"])
@@ -652,18 +820,19 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
         # The FC sees it.
         response = self.fc_client.get(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers",
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers",
             **self._auth(self.fc_token),
         )
         self.assertEqual("Sosala", response.json()[0]["solar_system_name"])
 
         # Clear -> pilot is told the assignment was cleared.
-        response = self.fc_client.patch(
-            url,
-            {"solar_system_id": None, "solar_system_name": None},
-            "application/json",
-            **self._auth(self.fc_token),
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.fc_client.patch(
+                url,
+                {"solar_system_id": None, "solar_system_name": None},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
         self.assertEqual(200, response.status_code)
         self.assertIsNone(response.json()["solar_system_name"])
         self.assertEqual(2, send_dm.call_count)
@@ -671,23 +840,51 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         cynos = dict(_motd_role_volunteers(self.fleet))["Cynos"]
         self.assertEqual([(1001, "Pilot One")], cynos)
 
-    @patch("fleets.helpers.cyno_notifications.DiscordClient")
+    @patch("discord.outbox.send_discord_dm_task")
+    @patch("discord.outbox.DiscordClient")
+    def test_cyno_dm_is_queued_not_sent_in_request(
+        self, discord_mock, dm_task
+    ):
+        add_user_permission(self.fc_user, "view_evefleet")
+        DiscordUser.objects.create(
+            id=555, discord_tag="pilot#1", user=self.user
+        )
+        volunteer = self._cyno_volunteer()
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.fc_client.patch(
+                f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+                {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
+        self.assertEqual(200, response.status_code)
+        # The request itself never talks to Discord.
+        discord_mock.assert_not_called()
+        dm_task.apply_async.assert_not_called()
+        self.assertEqual(1, len(callbacks))
+        callbacks[0]()
+        dm_task.apply_async.assert_called_once()
+        args = dm_task.apply_async.call_args.kwargs["args"]
+        volunteer.refresh_from_db()
+        self.assertEqual("555", args[0])
+        self.assertEqual(
+            [build_cyno_assignment_message(self.fleet, volunteer)], args[1]
+        )
+        discord_mock.assert_not_called()
+
+    @patch("discord.outbox.DiscordClient")
     def test_cyno_assignment_without_discord_link_still_saves(
         self, discord_mock
     ):
         add_user_permission(self.fc_user, "view_evefleet")
-        volunteer = EveFleetRoleVolunteer.objects.create(
-            eve_fleet=self.fleet,
-            character_id=1001,
-            character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
-        )
-        response = self.fc_client.patch(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers/{volunteer.id}",
-            {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
-            "application/json",
-            **self._auth(self.fc_token),
-        )
+        volunteer = self._cyno_volunteer()
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.fc_client.patch(
+                f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
+                {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
+                "application/json",
+                **self._auth(self.fc_token),
+            )
         self.assertEqual(200, response.status_code)
         volunteer.refresh_from_db()
         self.assertEqual("Sosala", volunteer.solar_system_name)
@@ -695,21 +892,22 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
 
     def test_system_assignment_only_for_cynos(self):
         add_user_permission(self.fc_user, "view_evefleet")
-        volunteer = EveFleetRoleVolunteer.objects.create(
+        # A Hurricane is not a cyno fit.
+        volunteer = EveFleetShipVolunteer.objects.create(
             eve_fleet=self.fleet,
             character_id=1001,
             character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR,
+            fitting=self.fitting,
         )
         response = self.fc_client.patch(
-            f"{BASE_URL}/{self.fleet.id}/role-volunteers/{volunteer.id}",
+            f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
             {"solar_system_id": 30003070, "solar_system_name": "Sosala"},
             "application/json",
             **self._auth(self.fc_token),
         )
         self.assertEqual(400, response.status_code)
 
-    def test_hidden_roster_is_visible_only_to_strategic_fc(self):
+    def test_hidden_roster_is_visible_to_its_fc_and_strategic_fcs(self):
         self.fleet.hide_volunteers = True
         self.fleet.save()
         EveFleetShipVolunteer.objects.create(
@@ -722,7 +920,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             eve_fleet=self.fleet,
             character_id=1001,
             character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
+            role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR,
         )
         ship_url = f"{BASE_URL}/{self.fleet.id}/ship-volunteers"
         role_url = f"{BASE_URL}/{self.fleet.id}/role-volunteers"
@@ -737,16 +935,28 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             [1001], [row["character_id"] for row in response.json()]
         )
 
+        # Another pilot sees nobody else's names.
+        pilot = User.objects.create(username="other-pilot")
+        add_user_permission(pilot, "view_evefleet")
+        auth = self._auth(make_token(pilot))
+        self.assertEqual([], Client().get(ship_url, **auth).json())
+        self.assertEqual([], Client().get(role_url, **auth).json())
+
+        # The fleet's own FC sees everyone who signed up for it.
         add_user_permission(self.fc_user, "view_evefleet")
         response = self.fc_client.get(ship_url, **self._auth(self.fc_token))
-        self.assertEqual([], response.json())
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
         response = self.fc_client.get(role_url, **self._auth(self.fc_token))
-        self.assertEqual([], response.json())
+        self.assertEqual(
+            [1001], [row["character_id"] for row in response.json()]
+        )
 
         strategic = User.objects.create(username="strategic")
         add_user_permission(strategic, "view_evefleet")
         add_user_permission(strategic, "manage_any_fleet")
-        auth = self._auth(token_for(strategic))
+        auth = self._auth(make_token(strategic))
         response = Client().get(ship_url, **auth)
         self.assertEqual(
             [1001], [row["character_id"] for row in response.json()]
@@ -756,14 +966,135 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
             [1001], [row["character_id"] for row in response.json()]
         )
 
-    def test_hidden_roster_omitted_from_motd(self):
-        set_primary_character(self.fc_user, self.fc_character)
-        EveFleetRoleVolunteer.objects.create(
-            eve_fleet=self.fleet,
-            character_id=1001,
-            character_name="Pilot One",
-            role=EveFleetRoleVolunteer.ROLE_CYNO,
+    def test_new_fleets_hide_their_roster(self):
+        fleet = EveFleet.objects.create(
+            start_time=timezone.now(),
+            description="Default",
+            type="training",
+            created_by=self.fc_user,
         )
+        self.assertTrue(fleet.hide_volunteers)
+        default = CreateEveFleetRequest.model_fields["hide_volunteers"]
+        self.assertTrue(default.default)
+
+    def test_editing_the_fleet_keeps_ship_volunteers(self):
+        self.assertEqual(200, self._volunteer(self.fitting.id).status_code)
+        add_user_permission(self.fc_user, "add_evefleet")
+        # What the website's edit form sends after a time/briefing change.
+        response = self.fc_client.patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {
+                "doctrine_id": self.doctrine.id,
+                "description": "New briefing",
+                "objective": "",
+                "start_time": (
+                    timezone.now() + timedelta(hours=3)
+                ).isoformat(),
+                "type": self.fleet.type,
+                "audience_id": self.fleet.audience_id,
+                "location_id": self.fleet.location_id or 0,
+                "disable_motd": False,
+                "hide_volunteers": True,
+            },
+            "application/json",
+            **self._auth(self.fc_token),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/my-pilots", **self._auth()
+        )
+        picks = {
+            row["character_id"]: row["selection"] for row in response.json()
+        }
+        self.assertEqual(self.fitting.id, picks[1001]["fitting_id"])
+
+    def test_strategic_fc_sees_a_fleet_outside_their_audience(self):
+        # No fleets.view at all: only Strategic FC.
+        strategic = User.objects.create(username="strategic-outsider")
+        add_user_permission(strategic, "manage_any_fleet")
+        auth = self._auth(make_token(strategic))
+
+        outsider = User.objects.create(username="outsider")
+        response = Client().get(
+            f"{BASE_URL}/{self.fleet.id}",
+            **self._auth(make_token(outsider)),
+        )
+        self.assertEqual(403, response.status_code)
+
+        for path in ("", "/ship-volunteers", "/composition", "/roles"):
+            response = Client().get(
+                f"{BASE_URL}/{self.fleet.id}{path}", **auth
+            )
+            self.assertEqual(200, response.status_code, path)
+
+        response = Client().get(f"{BASE_URL}/v3?fleet_filter=upcoming", **auth)
+        self.assertEqual(200, response.status_code, response.content)
+        self.assertIn(self.fleet.id, [row["id"] for row in response.json()])
+
+    def test_volunteering_an_off_doctrine_hull(self):
+        rifter = ensure_rifter_type()
+        url = f"{BASE_URL}/{self.fleet.id}/my-ship-volunteers"
+        response = self.client.put(
+            url,
+            {
+                "selections": [
+                    {"character_id": 1001, "ship_type_id": rifter.id}
+                ]
+            },
+            "application/json",
+            **self._auth(),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        body = response.json()[0]
+        self.assertEqual("Rifter", body["fitting_name"])
+        self.assertEqual(587, body["ship_id"])
+        self.assertTrue(body["off_doctrine"])
+        self.assertIsNone(body["fitting_id"])
+
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/my-pilots", **self._auth()
+        )
+        pick = response.json()[0]["selection"]
+        self.assertEqual(587, pick["ship_type_id"])
+
+        # Switching back to a doctrine fit replaces the hull.
+        self.assertEqual(200, self._volunteer(self.fitting.id).status_code)
+        self.assertEqual(
+            [self.fitting.id],
+            list(
+                EveFleetShipVolunteer.objects.filter(
+                    eve_fleet=self.fleet
+                ).values_list("fitting_id", flat=True)
+            ),
+        )
+
+    def test_off_doctrine_hull_must_be_a_ship(self):
+        ensure_rifter_type()
+        url = f"{BASE_URL}/{self.fleet.id}/my-ship-volunteers"
+        for selection in (
+            {"character_id": 1001, "ship_type_id": 34},
+            {
+                "character_id": 1001,
+                "ship_type_id": 587,
+                "fitting_id": self.fitting.id,
+            },
+        ):
+            response = self.client.put(
+                url,
+                {"selections": [selection]},
+                "application/json",
+                **self._auth(),
+            )
+            self.assertEqual(400, response.status_code, selection)
+        self.assertFalse(
+            EveFleetShipVolunteer.objects.filter(eve_fleet=self.fleet).exists()
+        )
+
+    def test_hidden_roster_omitted_from_motd(self):
+        self.fleet.hide_volunteers = False
+        self.fleet.save()
+        set_primary_character(self.fc_user, self.fc_character)
+        self._cyno_volunteer()
         instance = EveFleetInstance.objects.create(
             id=9001, eve_fleet=self.fleet, boss_id=2001
         )
@@ -777,7 +1108,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         strategic = User.objects.create(username="strategic-edit")
         add_user_permission(strategic, "view_evefleet")
         add_user_permission(strategic, "manage_any_fleet")
-        auth = self._auth(token_for(strategic))
+        auth = self._auth(make_token(strategic))
         client = Client()
 
         response = client.patch(
@@ -813,7 +1144,7 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         add_user_permission(outsider, "view_evefleet")
         response = Client().delete(
             f"{BASE_URL}/{self.fleet.id}/ship-volunteers/{volunteer.id}",
-            **self._auth(token_for(outsider)),
+            **self._auth(make_token(outsider)),
         )
         self.assertEqual(403, response.status_code)
 
@@ -825,6 +1156,37 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
         self.assertFalse(
             EveFleetShipVolunteer.objects.filter(id=volunteer.id).exists()
         )
+
+    def test_other_fc_cannot_edit_or_cancel_someone_elses_fleet(self):
+        other_fc = User.objects.create(username="other-fc")
+        add_user_permission(other_fc, "add_evefleet")
+        auth = self._auth(make_token(other_fc))
+
+        response = Client().patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {"status": "cancelled", "description": "hijacked"},
+            "application/json",
+            **auth,
+        )
+
+        self.assertEqual(403, response.status_code, response.content)
+        self.fleet.refresh_from_db()
+        self.assertNotEqual("cancelled", self.fleet.status)
+        self.assertNotEqual("hijacked", self.fleet.description)
+
+    def test_fleet_owner_can_still_edit_their_fleet(self):
+        add_user_permission(self.fc_user, "add_evefleet")
+
+        response = self.fc_client.patch(
+            f"{BASE_URL}/{self.fleet.id}",
+            {"description": "Owner edit"},
+            "application/json",
+            **self._auth(self.fc_token),
+        )
+
+        self.assertEqual(200, response.status_code, response.content)
+        self.fleet.refresh_from_db()
+        self.assertEqual("Owner edit", self.fleet.description)
 
 
 class FleetCompositionRouterTestCase(TestCase):
@@ -881,7 +1243,7 @@ class FleetCompositionRouterTestCase(TestCase):
         add_user_permission(self.fc_user, "view_evefleet")
         self.fleet = make_test_fleet("Fleet", self.fc_user)
         self.fc_client = Client()
-        self.fc_token = token_for(self.fc_user)
+        self.fc_token = make_token(self.fc_user)
         self.fc_character = grant_fittings_scope(self.fc_user, 2001, "FC")
         self.esi = mock_esi_fittings(self)
 
@@ -1103,11 +1465,11 @@ class FleetCompositionRouterTestCase(TestCase):
         from market.models import (  # pylint: disable=import-outside-toplevel
             EveMarketItemOrder,
         )
-        from fleets.helpers.supply import (  # pylint: disable=import-outside-toplevel
-            eft_purchase_items,
+        from fittings.eft import (  # pylint: disable=import-outside-toplevel
+            purchase_items,
         )
 
-        needed = eft_purchase_items(BASE_EFT)
+        needed = purchase_items(BASE_EFT)
         self.assertEqual(1, needed["Hurricane"])
         self.assertEqual(3, needed["720mm Howitzer Artillery II"])
         self.assertNotIn("Warrior II", needed)
@@ -1206,6 +1568,48 @@ class FleetCompositionRouterTestCase(TestCase):
         # With a doctrine the MOTD keeps the doctrine link, no Fits section
         self.assertEqual([], _motd_composition(self.fleet))
 
+    def test_utility_fits_sort_after_support(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Doc", type="non_strategic", description=""
+        )
+        cyno = EveFitting.objects.create(
+            name="Atron Cyno",
+            ship_id=608,
+            description="",
+            eft_format="[Atron, Atron Cyno]\nCynosural Field Generator I\n",
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine, fitting=cyno, role="utility"
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine, fitting=self.catalog_fitting, role="support"
+        )
+        self.fleet.doctrine = doctrine
+        self.fleet.save()
+        response = self.fc_client.post(
+            f"{BASE_URL}/{self.fleet.id}/fittings",
+            {
+                "eft_format": "[Hurricane, Hurricane Booster]\n",
+                "role": "utility",
+            },
+            "application/json",
+            **self._auth(self.fc_token),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+
+        response = self.client.get(
+            f"{BASE_URL}/{self.fleet.id}/composition", **self._auth()
+        )
+        roles = [(e["source"], e["role"]) for e in response.json()]
+        self.assertEqual(
+            [
+                ("doctrine", "support"),
+                ("doctrine", "utility"),
+                ("manual", "utility"),
+            ],
+            roles,
+        )
+
 
 class EsiFittingsTestCase(TestCase):
     """EFT → ESI items / DNA, slot-swap refits, scope guard and cleanup."""
@@ -1297,7 +1701,7 @@ class EsiFittingsTestCase(TestCase):
         self.fleet.doctrine = self.doctrine
         self.fleet.save()
         self.fc_client = Client()
-        self.fc_token = token_for(self.fc_user)
+        self.fc_token = make_token(self.fc_user)
         self.esi = mock_esi_fittings(self)
 
     def _auth(self, token=None):

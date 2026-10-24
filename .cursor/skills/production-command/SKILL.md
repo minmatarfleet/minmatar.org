@@ -34,7 +34,7 @@ Working dir on `app` is `/opt/minmatar` (backend already). Quote `-c` with **sin
 | Need | Do |
 |------|----|
 | See a return value now (stats, counts) | Call the **Python helper** in `shell -c` and `print(...)` |
-| Enqueue for workers | `Task.delay()` (respects `QueueOnce`; may no-op if already running) |
+| Enqueue for workers | `Task.delay()` (deduped: returns a `REJECTED` result if the same call is already queued) |
 | Read-only from laptop | `production_readonly` locally — not this template |
 
 Prefer the helper over `.delay()` when the user wants to confirm it ran.
@@ -44,7 +44,7 @@ Prefer the helper over `.delay()` when the user wants to confirm it ran.
 | Service | Use for |
 |---------|---------|
 | `app` | Django shell, `manage.py`, in-process kickoff |
-| `celery` / `celery-eveonline` / `celery-market` | Live worker logs only |
+| `celery` (fast lane) and `celery-<queue>` (`feed`, `fleets`, `campaigns`, `eveonline`, `market`, `industry`, `community`) | Live worker logs only |
 | `beat` | Scheduler logs only |
 | `bot` | Discord bot (`working_dir` `/opt/bot`) |
 
@@ -67,6 +67,8 @@ Management command:
 ```bash
 docker compose -f docker-compose-prod.yml exec app python3 manage.py merge_supply_tribe --dry-run
 ```
+
+Queue depth, dedupe and lock repair: `python3 manage.py celery_queues status|dedupe|clear-locks` (see `docs/architecture/celery-queues.md`).
 
 ## Output
 

@@ -1,0 +1,716 @@
+"""Tribe About page: a year of the tribe, rolled up from its groups.
+
+Every number here comes from the group reports (12-month window) or from
+scans of killmails, fleets and mining ledgers, so it is far too slow for a
+page request. Celery refreshes it; a request only reads the cache and, on a
+miss, queues one refresh and renders without it (see ``tribe_about``).
+
+Shared blocks (people, growth, corporations, each group's year and its top
+pilots) work for any tribe. The Capitals and Supply tribes get one extra
+block each that tells their own story; Pulse's story is its groups.
+
+Each group's About tab is the same story told for one group: its year,
+its people, and the capital or ore block scoped to its roster. The tribe
+refresh builds and caches them too, so the year reports run once.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections import Counter, defaultdict
+from datetime import date, timedelta
+from statistics import median
+from typing import Any
+
+from django.db.models import Count, Q
+from django.utils import timezone
+
+from app.cache import CachedRollup
+from app.eve_time import month_key
+from eveonline.helpers.killmail_text import parse_killmail_list
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterAsset,
+    EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
+    EveCharacterMiningEntry,
+    EveCorporation,
+)
+from eveonline.models.characters import EvePlayer
+from eveuniverse.models import EveSolarSystem, EveType
+from fleets.models import EveFleetInstanceMember
+from market.helpers.pricing import get_prices_by_type_id
+from tribes.helpers.growth import (
+    group_membership_growth,
+    tribe_membership_growth,
+)
+from tribes.helpers.showcase import (
+    PRIVATE_HIGHLIGHT_KEYS,
+    _enrich_contributors,
+)
+from tribes.models import (
+    Tribe,
+    TribeGroup,
+    TribeGroupMembership,
+    TribeGroupRequirementAssetType,
+)
+from tribes.reports import ReportError, run_group_report
+from tribes.reports.period import parse_period
+from tribes.reports.registry import HIGHLIGHT_RUNNERS, binding_for_group
+from tribes.reports.roster import roster_character_eve_ids
+from tribes.reports.roster import roster_character_pks
+from tribes.reports.types import ReportView
+
+logger = logging.getLogger(__name__)
+
+ABOUT_PERIOD = "12m"
+ABOUT_TTL_SECONDS = 6 * 60 * 60
+REFRESH_LOCK_SECONDS = 10 * 60
+_ABOUT_KEY = "tribes:about:v2:{tribe_id}"
+_LOCK_KEY = "tribes:about:refreshing:{tribe_id}"
+_GROUP_ABOUT_KEY = "tribes:group-about:v1:{group_id}"
+_GROUP_LOCK_KEY = "tribes:group-about:refreshing:{group_id}"
+
+TOP_PILOTS = 3
+# A group's own About tab has room for more of its pilots.
+GROUP_TOP_PILOTS = 5
+# "New members" window. Every membership was migrated in March 2026, so a
+# 12-month count would just repeat the headcount.
+JOINED_WINDOW_DAYS = 90
+TOP_CORPORATIONS = 6
+
+# The number each group's top pilots are ranked by.
+GROUP_LEADER_METRIC = {
+    "capitals.dreads": "kill_count",
+    "capitals.carriers": "fleet_count",
+    "capitals.faxes": "fleet_count",
+    "supply.mining": "volume_m3",
+    "supply.planetary-interaction": "isk_pi_30d_estimate",
+    "supply.subcapital-production": "delivered_units",
+    "supply.capital-production": "delivered_units",
+    "supply.market": "fits_sold",
+    "supply.loyalty-points": "lp",
+    "pulse.advocates": "applications_accepted",
+    "pulse.readiness": "doctrine_changes",
+    "pulse.technology": "tickets_resolved",
+    "pulse.thinkspeak": "pieces",
+    "pulse.fishermen": "kill_count",
+    "pulse.fleet-commanders": "fleet_count",
+}
+
+CAPITAL_CLASSES = frozenset(
+    {
+        "Dreadnought",
+        "Lancer Dreadnought",
+        "Carrier",
+        "Force Auxiliary",
+        "Supercarrier",
+        "Titan",
+    }
+)
+RECENT_CAPITAL_KILLS = 6
+TOP_VICTIM_CLASSES = 6
+TOP_SYSTEMS = 5
+TOP_ORES = 5
+
+
+def _month_keys(now, months: int = 12) -> list[str]:
+    """The last ``months`` calendar months, oldest first, as YYYY-MM."""
+    keys = []
+    year, month = now.year, now.month
+    for _ in range(months):
+        keys.append(f"{year:04d}-{month:02d}")
+        month -= 1
+        if month == 0:
+            year, month = year - 1, 12
+    return list(reversed(keys))
+
+
+def _active_memberships(tribe: Tribe):
+    return TribeGroupMembership.objects.filter(
+        tribe_group__tribe=tribe,
+        tribe_group__is_active=True,
+        status=TribeGroupMembership.STATUS_ACTIVE,
+    )
+
+
+def _people(tribe: Tribe) -> dict[str, int]:
+    per_user = Counter(
+        _active_memberships(tribe).values_list("user_id", flat=True)
+    )
+    return {
+        "people": len(per_user),
+        "multi_group_people": sum(1 for n in per_user.values() if n > 1),
+    }
+
+
+def _character_ids(tribe: Tribe) -> list[int]:
+    """EVE ids of every character the tribe's people have registered."""
+    user_ids = _active_memberships(tribe).values_list("user_id", flat=True)
+    return list(
+        EveCharacter.objects.filter(user_id__in=user_ids).values_list(
+            "character_id", flat=True
+        )
+    )
+
+
+def _count_items(items, quantities: Counter) -> None:
+    for item in items or []:
+        # Blueprint copies have no market price.
+        if item.get("singleton") != 2 and item.get("item_type_id"):
+            quantities[item["item_type_id"]] += (
+                item.get("quantity_destroyed") or 0
+            ) + (item.get("quantity_dropped") or 0)
+        _count_items(item.get("items"), quantities)
+
+
+def _isk_destroyed(char_eve_ids: list[int]) -> int:
+    """Every kill one of these characters was on, valued like zKill does.
+
+    Hull plus destroyed and dropped items at the baseline guide price, each
+    killmail once. Covers what our ESI killmail sync has stored, so the
+    total starts when each character was registered. Ships our own
+    characters lost are left out.
+    """
+    if not char_eve_ids:
+        return 0
+    rows = (
+        EveCharacterKillmail.objects.filter(
+            pk__in=EveCharacterKillmailAttacker.objects.filter(
+                character_id__in=char_eve_ids
+            ).values("killmail_id")
+        )
+        .exclude(victim_character_id__in=char_eve_ids)
+        .values_list("killmail_id", "ship_type_id", "items")
+        .iterator(chunk_size=2000)
+    )
+    quantities: Counter = Counter()
+    seen: set[int] = set()
+    for killmail_id, ship_type_id, items in rows:
+        if killmail_id in seen:
+            continue
+        seen.add(killmail_id)
+        quantities[ship_type_id] += 1
+        _count_items(parse_killmail_list(items), quantities)
+    prices = get_prices_by_type_id(list(quantities))
+    return sum(
+        prices.get(type_id, 0) * quantity
+        for type_id, quantity in quantities.items()
+    )
+
+
+def _corporations(user_ids) -> tuple[list[dict[str, Any]], int]:
+    """Where these people come from, by their main's corporation."""
+    corp_ids = Counter(
+        corp_id
+        for corp_id in EvePlayer.objects.filter(
+            user_id__in=user_ids, primary_character__isnull=False
+        ).values_list("primary_character__corporation_id", flat=True)
+        if corp_id
+    )
+    corps = {
+        c.corporation_id: c
+        for c in EveCorporation.objects.filter(
+            corporation_id__in=list(corp_ids)
+        ).only("corporation_id", "name", "ticker")
+    }
+    rows = []
+    for corp_id, people in corp_ids.most_common(TOP_CORPORATIONS):
+        corp = corps.get(corp_id)
+        rows.append(
+            {
+                "corporation_id": corp_id,
+                "name": corp.name if corp else "",
+                "ticker": corp.ticker if corp else "",
+                "people": people,
+            }
+        )
+    return rows, len(corp_ids)
+
+
+def _run_year_report(group: TribeGroup):
+    try:
+        return run_group_report(
+            group,
+            view=ReportView.TOWN_HALL.value,
+            period=ABOUT_PERIOD,
+            scope="roster",
+        )
+    except ReportError as exc:
+        # Freight is measured across the whole program, not a roster.
+        if "program scope" in str(exc).lower():
+            return run_group_report(
+                group, view=ReportView.TOWN_HALL.value, period=ABOUT_PERIOD
+            )
+        raise
+
+
+def _year_highlights(group: TribeGroup) -> dict[str, Any]:
+    binding = binding_for_group(group)
+    runner = HIGHLIGHT_RUNNERS.get(binding.highlights) if binding else None
+    if not runner:
+        return {}
+    highlights = runner(group, parse_period(ABOUT_PERIOD)) or {}
+    return {
+        key: value
+        for key, value in highlights.items()
+        if key not in PRIVATE_HIGHLIGHT_KEYS
+    }
+
+
+def _top_pilots(
+    group: TribeGroup, rows: list[dict], limit: int = TOP_PILOTS
+) -> list[dict[str, Any]]:
+    metric = GROUP_LEADER_METRIC.get(group.code or "")
+    if not metric:
+        return []
+    for row in rows:
+        # Production rows name the main under a different key.
+        if "primary_character" in row and "primary_character_name" not in row:
+            row["primary_character_name"] = row["primary_character"]
+    ranked = sorted(
+        _enrich_contributors(rows, metric),
+        key=lambda c: c["metric_value"] or 0,
+        reverse=True,
+    )
+    return [
+        {
+            "character_id": c["character_id"],
+            "character_name": c["character_name"],
+            "value": c["metric_value"],
+        }
+        for c in ranked[:limit]
+    ]
+
+
+def _group_year(
+    group: TribeGroup, top_pilots: int = TOP_PILOTS
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "id": group.pk,
+        "code": group.code or "",
+        "name": group.name,
+        "member_count": TribeGroupMembership.objects.filter(
+            tribe_group=group, status=TribeGroupMembership.STATUS_ACTIVE
+        ).count(),
+        "roster_hidden": bool(group.roster_hidden),
+        "manual": False,
+        "totals": {},
+        "highlights": {},
+        "top_pilots": [],
+    }
+    if not binding_for_group(group):
+        entry["manual"] = True
+        return entry
+    try:
+        result = _run_year_report(group)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Tribe about: year report failed for %s", group.code)
+        return entry
+    if result.manual:
+        entry["manual"] = True
+        return entry
+    entry["totals"] = result.totals or {}
+    entry["top_pilots"] = _top_pilots(
+        group, list(result.rows or []), top_pilots
+    )
+    try:
+        entry["highlights"] = _year_highlights(group)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Tribe about: highlights failed for %s", group.code)
+    return entry
+
+
+def _type_groups(type_ids) -> dict[int, tuple[str, str]]:
+    """type id -> (type name, group name)."""
+    return {
+        row["id"]: (row["name"], row["eve_group__name"] or "")
+        for row in EveType.objects.filter(id__in=set(type_ids)).values(
+            "id", "name", "eve_group__name"
+        )
+    }
+
+
+def _system_names(system_ids) -> dict[int, str]:
+    return dict(
+        EveSolarSystem.objects.filter(id__in=set(system_ids)).values_list(
+            "id", "name"
+        )
+    )
+
+
+def capitals_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
+    """The capital line: hulls on roster, what they killed, how they turn out."""
+    now = now or timezone.now()
+    year_ago = now - timedelta(days=365)
+    hull_groups: dict[int, TribeGroup] = {}
+    for group in groups:
+        for type_id in TribeGroupRequirementAssetType.objects.filter(
+            requirement__tribe_group=group, eve_type_id__isnull=False
+        ).values_list("eve_type_id", flat=True):
+            hull_groups.setdefault(type_id, group)
+    if not hull_groups:
+        return {}
+
+    char_pks: set[int] = set()
+    char_eve_ids: set[int] = set()
+    for group in groups:
+        char_pks |= roster_character_pks(group)
+        char_eve_ids |= roster_character_eve_ids(group)
+
+    # Hangar: every qualifying hull the tribe's characters own.
+    owned = Counter(
+        dict(
+            EveCharacterAsset.objects.filter(
+                character_id__in=char_pks, type_id__in=list(hull_groups)
+            )
+            .values("type_id")
+            .annotate(n=Count("id"))
+            .values_list("type_id", "n")
+        )
+    )
+    type_info = _type_groups(hull_groups)
+    hangar = []
+    for group in groups:
+        hulls = sorted(
+            (
+                {
+                    "type_id": type_id,
+                    "name": type_info.get(type_id, ("", ""))[0],
+                    "count": owned.get(type_id, 0),
+                }
+                for type_id, g in hull_groups.items()
+                if g.pk == group.pk
+            ),
+            key=lambda h: (-h["count"], h["name"]),
+        )
+        hangar.append(
+            {
+                "group_id": group.pk,
+                "code": group.code or "",
+                "name": group.name,
+                "total": sum(h["count"] for h in hulls),
+                "hulls": hulls,
+            }
+        )
+
+    # Kills: one per killmail, whichever of our capitals were on it.
+    attackers = (
+        EveCharacterKillmailAttacker.objects.filter(
+            character_id__in=char_eve_ids,
+            ship_type_id__in=list(hull_groups),
+        )
+        .values_list(
+            "killmail__killmail_id",
+            "killmail__killmail_time",
+            "killmail__ship_type_id",
+            "killmail__solar_system_id",
+            "killmail__victim_character_id",
+            "character_id",
+        )
+        .iterator()
+    )
+    kills: dict[int, tuple] = {}
+    for km_id, at, ship_type, system, victim, char_id in attackers:
+        if char_id != victim:
+            kills.setdefault(km_id, (at, ship_type, system))
+    year_kills = {k: v for k, v in kills.items() if v[0] >= year_ago}
+    victim_types = _type_groups(v[1] for v in year_kills.values())
+    months = _month_keys(now)
+    by_month = Counter(month_key(v[0]) for v in year_kills.values())
+    classes = Counter(
+        victim_types.get(v[1], ("", "Unknown"))[1] or "Unknown"
+        for v in year_kills.values()
+    )
+    systems = Counter(v[2] for v in year_kills.values() if v[2])
+    system_names = _system_names(
+        list(systems) + [v[2] for v in year_kills.values()]
+    )
+    capital_kills = sorted(
+        (
+            (km_id, v)
+            for km_id, v in year_kills.items()
+            if victim_types.get(v[1], ("", ""))[1] in CAPITAL_CLASSES
+        ),
+        key=lambda item: item[1][0],
+        reverse=True,
+    )
+
+    # Fleets: distinct pilots in a qualifying hull per fleet.
+    turnout: dict[int, set[int]] = defaultdict(set)
+    fleet_start: dict[int, Any] = {}
+    for fleet_id, char_id, start in (
+        EveFleetInstanceMember.objects.filter(
+            character_id__in=char_eve_ids,
+            ship_type_id__in=list(hull_groups),
+        )
+        .values_list(
+            "eve_fleet_instance_id",
+            "character_id",
+            "eve_fleet_instance__start_time",
+        )
+        .iterator()
+    ):
+        turnout[fleet_id].add(char_id)
+        fleet_start.setdefault(fleet_id, start)
+    year_fleets = [
+        fid
+        for fid, start in fleet_start.items()
+        if start and start >= year_ago
+    ]
+    hours = [0] * 24
+    for fid in year_fleets:
+        hours[fleet_start[fid].hour] += 1
+
+    return {
+        "hangar": hangar,
+        "kills_by_month": [
+            {"month": key, "kills": by_month.get(key, 0)} for key in months
+        ],
+        "year_kills": len(year_kills),
+        "all_time_kills": len(kills),
+        "first_kill": (
+            min(v[0] for v in kills.values()).isoformat() if kills else None
+        ),
+        "victim_classes": [
+            {"name": name, "kills": n}
+            for name, n in classes.most_common(TOP_VICTIM_CLASSES)
+        ],
+        "capital_kills_year": len(capital_kills),
+        "recent_capital_kills": [
+            {
+                "killmail_id": km_id,
+                "ship_type_id": v[1],
+                "ship_name": victim_types.get(v[1], ("", ""))[0],
+                "ship_class": victim_types.get(v[1], ("", ""))[1],
+                "system": system_names.get(v[2], ""),
+                "killed_at": v[0].isoformat(),
+            }
+            for km_id, v in capital_kills[:RECENT_CAPITAL_KILLS]
+        ],
+        "systems": [
+            {"name": system_names.get(sid, ""), "kills": n}
+            for sid, n in systems.most_common(TOP_SYSTEMS)
+            if system_names.get(sid)
+        ],
+        "fleets_year": len(year_fleets),
+        "median_turnout": (
+            int(median(len(turnout[fid]) for fid in year_fleets))
+            if year_fleets
+            else 0
+        ),
+        "hours": hours,
+    }
+
+
+def supply_block(groups: list[TribeGroup], now=None) -> dict[str, Any]:
+    """Ore by month and by kind, from the Mining group's ledgers."""
+    now = now or timezone.now()
+    mining = next((g for g in groups if g.code == "supply.mining"), None)
+    if not mining:
+        return {}
+    char_pks = roster_character_pks(mining)
+    months = _month_keys(now)
+    year, month = months[0].split("-")
+    first_day = date(int(year), int(month), 1)
+    rows = list(
+        EveCharacterMiningEntry.objects.filter(
+            character_id__in=char_pks, date__gte=first_day
+        ).values_list("date", "eve_type_id", "quantity")
+    )
+    types = {
+        row["id"]: (row["volume"] or 0, row["eve_group__name"] or "")
+        for row in EveType.objects.filter(id__in={r[1] for r in rows}).values(
+            "id", "volume", "eve_group__name"
+        )
+    }
+    by_month: Counter = Counter()
+    by_ore: Counter = Counter()
+    for day, type_id, quantity in rows:
+        volume, ore = types.get(type_id, (0, ""))
+        m3 = (quantity or 0) * volume
+        by_month[month_key(day)] += m3
+        if ore:
+            by_ore[ore] += m3
+    return {
+        "mining_by_month": [
+            {"month": key, "volume_m3": round(by_month.get(key, 0))}
+            for key in months
+        ],
+        "ores": [
+            {"name": name, "volume_m3": round(m3)}
+            for name, m3 in by_ore.most_common(TOP_ORES)
+        ],
+    }
+
+
+def _tribe_group_entry(
+    group: TribeGroup, year: dict[str, Any] | None
+) -> dict[str, Any]:
+    year = year or _group_year(group)
+    return {**year, "top_pilots": year["top_pilots"][:TOP_PILOTS]}
+
+
+def compute_tribe_about(
+    tribe: Tribe, years: dict[int, dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """The tribe's year. ``years`` reuses group years already computed."""
+    now = timezone.now()
+    groups = list(
+        TribeGroup.objects.filter(tribe=tribe, is_active=True).order_by("name")
+    )
+    years = years or {}
+    period = parse_period(ABOUT_PERIOD)
+    corporations, corporation_count = _corporations(
+        set(_active_memberships(tribe).values_list("user_id", flat=True))
+    )
+    char_eve_ids = _character_ids(tribe)
+    payload: dict[str, Any] = {
+        "tribe_id": tribe.pk,
+        "slug": tribe.slug,
+        "generated_at": now.isoformat(),
+        "period_start": period.start.isoformat(),
+        "period_end": period.end.isoformat(),
+        **_people(tribe),
+        "growth": tribe_membership_growth(tribe, now=now),
+        "corporations": corporations,
+        "corporation_count": corporation_count,
+        "character_count": len(char_eve_ids),
+        "isk_destroyed": _isk_destroyed(char_eve_ids),
+        "groups": [
+            _tribe_group_entry(group, years.get(group.pk)) for group in groups
+        ],
+        "capitals": None,
+        "supply": None,
+    }
+    if tribe.slug == "capitals":
+        payload["capitals"] = capitals_block(groups, now) or None
+    elif tribe.slug == "supply":
+        payload["supply"] = supply_block(groups, now) or None
+    return payload
+
+
+def compute_group_about(
+    group: TribeGroup, year: dict[str, Any] | None = None, now=None
+) -> dict[str, Any]:
+    """One group's year: its numbers, its people, and its own block."""
+    now = now or timezone.now()
+    joined_since = now - timedelta(days=JOINED_WINDOW_DAYS)
+    period = parse_period(ABOUT_PERIOD)
+    memberships = TribeGroupMembership.objects.filter(
+        tribe_group=group, status=TribeGroupMembership.STATUS_ACTIVE
+    )
+    user_ids = set(memberships.values_list("user_id", flat=True))
+    joined = set(
+        memberships.filter(
+            Q(approved_at__gte=joined_since)
+            | Q(approved_at__isnull=True, created_at__gte=joined_since)
+        ).values_list("user_id", flat=True)
+    )
+    in_other_groups = set(
+        TribeGroupMembership.objects.filter(
+            tribe_group__tribe_id=group.tribe_id,
+            tribe_group__is_active=True,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+            user_id__in=user_ids,
+        )
+        .exclude(tribe_group=group)
+        .values_list("user_id", flat=True)
+    )
+    corporations, corporation_count = _corporations(user_ids)
+    code = group.code or ""
+    capitals = None
+    if code.startswith("capitals."):
+        capitals = capitals_block([group], now) or None
+    supply = None
+    if code == "supply.mining":
+        supply = supply_block([group], now) or None
+    return {
+        "group_id": group.pk,
+        "tribe_id": group.tribe_id,
+        "code": code,
+        "generated_at": now.isoformat(),
+        "period_start": period.start.isoformat(),
+        "period_end": period.end.isoformat(),
+        "people": len(user_ids),
+        "joined_recent": len(joined),
+        "in_other_groups": len(in_other_groups),
+        "growth": group_membership_growth(group, now=now),
+        "corporations": corporations,
+        "corporation_count": corporation_count,
+        "year": year or _group_year(group, GROUP_TOP_PILOTS),
+        "capitals": capitals,
+        "supply": supply,
+    }
+
+
+def refresh_tribe_about(tribe: Tribe) -> dict[str, Any]:
+    """Rebuild the tribe's About page and every group's About tab."""
+    now = timezone.now()
+    groups = list(TribeGroup.objects.filter(tribe=tribe, is_active=True))
+    years = {
+        group.pk: _group_year(group, GROUP_TOP_PILOTS) for group in groups
+    }
+    about = compute_tribe_about(tribe, years)
+    ABOUT.store(about, tribe_id=tribe.pk)
+    for group in groups:
+        try:
+            refresh_group_about(group, years[group.pk], now)
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Group about: refresh failed for %s", group.code)
+    return about
+
+
+def refresh_group_about(
+    group: TribeGroup, year: dict[str, Any] | None = None, now=None
+) -> dict[str, Any]:
+    about = compute_group_about(group, year, now)
+    GROUP_ABOUT.store(about, group_id=group.pk)
+    return about
+
+
+def tribe_about(tribe_id: int) -> dict[str, Any] | None:
+    """Cached About payload, or None after queueing a refresh."""
+    return ABOUT.get_or_queue(tribe_id=tribe_id)
+
+
+def group_about(group_id: int) -> dict[str, Any] | None:
+    """Cached group About payload, or None after queueing a refresh."""
+    return GROUP_ABOUT.get_or_queue(group_id=group_id)
+
+
+def _queue_refresh(tribe_id: int) -> None:
+    # Imported here: the task module imports this helper.
+    from tribes.tasks import (  # pylint: disable=import-outside-toplevel
+        refresh_tribe_about_page,
+    )
+
+    refresh_tribe_about_page.apply_async(args=[tribe_id])
+
+
+def _queue_group_refresh(group_id: int) -> None:
+    from tribes.tasks import (  # pylint: disable=import-outside-toplevel
+        refresh_tribe_group_about,
+    )
+
+    refresh_tribe_group_about.apply_async(args=[group_id])
+
+
+ABOUT = CachedRollup(
+    key=_ABOUT_KEY,
+    ttl=ABOUT_TTL_SECONDS,
+    lock_key=_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    # Late-bound so tests can patch _queue_refresh.
+    # pylint: disable-next=unnecessary-lambda
+    enqueue=lambda tribe_id: _queue_refresh(tribe_id),
+)
+
+GROUP_ABOUT = CachedRollup(
+    key=_GROUP_ABOUT_KEY,
+    ttl=ABOUT_TTL_SECONDS,
+    lock_key=_GROUP_LOCK_KEY,
+    lock_ttl=REFRESH_LOCK_SECONDS,
+    # pylint: disable-next=unnecessary-lambda
+    enqueue=lambda group_id: _queue_group_refresh(group_id),
+)

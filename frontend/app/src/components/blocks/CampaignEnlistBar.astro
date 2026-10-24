@@ -1,0 +1,204 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignDetail, CampaignLeaderboardRow } from '@dtypes/api.minmatar.org'
+
+/**
+ * The campaign's bottom bar, always on screen like the freight page's
+ * trucker reel. It rolls this week's top killers and keeps the one thing a
+ * pilot should do in reach: enlist, or, once enlisted, where they stand.
+ * Enlisting posts to the actions partial, which swaps this bar back in.
+ */
+interface Props {
+    campaign:           CampaignDetail;
+    leaderboard:        CampaignLeaderboardRow[];
+    user_id:            number;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    leaderboard,
+    user_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const actions_id = `campaign-actions-${campaign.slug}`
+const PARTIAL_URL = translatePath(`/partials/campaign_actions_component?slug=${campaign.slug}`)
+const pilots = leaderboard.filter(row => row.character_id)
+const mine = leaderboard.find(row => row.user_id === user_id)
+const kills_text = (count:number) => t(count === 1 ? 'campaigns.enlist_bar.kill' : 'campaigns.enlist_bar.kills').replace('{count}', String(count))
+const standing = campaign.is_enlisted
+    ? mine
+        ? t('campaigns.enlist_bar.your_rank').replace('{rank}', String(mine.rank)).replace('{kills}', kills_text(mine.value))
+        : t('campaigns.enlist_bar.no_kills_yet')
+    : t('campaigns.enlist_bar.enlisted_count').replace('{count}', String(campaign.totals.enlisted))
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Marquee from '@components/blocks/Marquee.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<div
+    id="campaign-enlist-bar"
+    class:list={['[ campaign-enlist-bar ]', Astro.props.class]}
+    data-enlisted={campaign.is_enlisted ? 'true' : 'false'}
+    {...attributes}
+>
+    <div class="[ campaign-enlist-bar-spacer ]" aria-hidden="true" />
+
+    {/* Under 1280px the page actions (the countdown) are also docked at the bottom; sit on top of them.
+        Keep comments out of x-init: Alpine only runs it as statements when it starts with const/let/if. */}
+    <div
+        class="[ campaign-enlist-bar-dock ][ card light-transparency animate-slide-in-bottom ]"
+        x-data="{}"
+        x-init={`
+            const actions = document.querySelector('.subheader-bar')
+            const place = () => {
+                const docked = actions && getComputedStyle(actions).position === 'fixed'
+                $el.style.bottom = docked ? actions.offsetHeight + 'px' : '0px'
+            }
+            place()
+            if (actions) new ResizeObserver(place).observe(actions)
+        `}
+    >
+        <Wrapper
+            neocom={true}
+            max_width='var(--max-content-width)'
+            centered={true}
+            padding_block='var(--space-2xs)'
+        >
+            <div class="[ campaign-enlist-bar-body ]">
+                <div class="[ campaign-enlist-bar-status ]">
+                    <h4>{t(campaign.is_enlisted ? 'campaigns.enlist_bar.enlisted' : 'campaigns.enlist_bar.not_enlisted')}</h4>
+                    <small>{standing}</small>
+                </div>
+
+                <div class="[ campaign-enlist-bar-reel ]" aria-label={t('campaigns.enlist_bar.reel_label')}>
+                    {pilots.length === 0 ?
+                        <small class="[ campaign-enlist-bar-empty ]">{t('campaigns.enlist_bar.reel_empty')}</small>
+                        : pilots.length >= 4 ?
+                        <Marquee separator_width='120px'>
+                            {pilots.map(row =>
+                                <FlexInline class="[ items-center! ]" gap='var(--space-xs)'>
+                                    <h2>{row.rank}</h2>
+                                    <PilotBadge character_id={row.character_id as number} character_name={row.character_name} size={32} class="[ items-center! ]">
+                                        <small>{kills_text(row.value)}</small>
+                                    </PilotBadge>
+                                </FlexInline>
+                            )}
+                        </Marquee>
+                        :
+                        <FlexInline gap='var(--space-l)'>
+                            {pilots.map(row =>
+                                <FlexInline class="[ items-center! ]" gap='var(--space-xs)'>
+                                    <h2>{row.rank}</h2>
+                                    <PilotBadge character_id={row.character_id as number} character_name={row.character_name} size={32} class="[ items-center! ]">
+                                        <small>{kills_text(row.value)}</small>
+                                    </PilotBadge>
+                                </FlexInline>
+                            )}
+                        </FlexInline>
+                    }
+                </div>
+
+                {campaign.is_enlisted ?
+                    <Button size='sm' href="#you" class="[ campaign-enlist-bar-action ]">
+                        {t('campaigns.enlist_bar.your_part')}
+                    </Button>
+                    :
+                    <Button
+                        size='sm'
+                        color='green'
+                        class="[ campaign-enlist-bar-action ]"
+                        hx-post={`${PARTIAL_URL}&action=enlist`}
+                        hx-target={`#${actions_id}`}
+                        hx-swap="outerHTML"
+                        hx-indicator=".loader"
+                    >
+                        {t('campaigns.enlist')}
+                    </Button>
+                }
+            </div>
+        </Wrapper>
+    </div>
+</div>
+
+<style lang="scss">
+    /* Holds the bar's height at the foot of the page so the fixed bar never covers the last row. */
+    .campaign-enlist-bar-spacer {
+        block-size: calc(32px + 2 * var(--space-2xs) + var(--space-m));
+    }
+
+    .campaign-enlist-bar-dock {
+        position: fixed;
+        inset-inline: 0;
+        inset-block-end: 0;
+        z-index: var(--sticky-z-index);
+        border-inline: 0;
+        border-block-end: 0;
+    }
+
+    [data-enlisted="false"] .campaign-enlist-bar-dock {
+        border-block-start: solid 2px var(--green);
+    }
+
+    .campaign-enlist-bar-body {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: var(--space-l);
+    }
+
+    .campaign-enlist-bar-status {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        white-space: nowrap;
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
+    [data-enlisted="true"] .campaign-enlist-bar-status h4::before {
+        content: '';
+        display: inline-block;
+        inline-size: 0.5em;
+        block-size: 0.5em;
+        margin-inline-end: var(--space-2xs);
+        vertical-align: middle;
+        border-radius: 50%;
+        background-color: var(--green);
+    }
+
+    .campaign-enlist-bar-reel {
+        min-width: 0;
+    }
+
+    .campaign-enlist-bar-empty {
+        color: var(--faded);
+    }
+
+    @media screen and (max-width: 991px) {
+        .campaign-enlist-bar-body {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .campaign-enlist-bar-reel {
+            display: none;
+        }
+    }
+
+    /* Phones: sit directly on top of the bottom action bar (PageHeader publishes its height). */
+    @media (max-width: 48rem) {
+        .campaign-enlist-bar-dock {
+            inset-block-end: var(--subheader-bar-height, 0px);
+        }
+    }
+</style>

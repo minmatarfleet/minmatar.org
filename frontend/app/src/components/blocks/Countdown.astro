@@ -4,7 +4,7 @@ import { countdown } from '@helpers/countdown';
 interface Props {
     id:             number;
     tag?:           string;
-    date:           Date;
+    date:           Date | string;
     expired_text?:  string;
     expired_class?: boolean;
     big_font?:      boolean;

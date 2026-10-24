@@ -6,6 +6,8 @@ import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
     fitting_id: number;
+    /** Names the URL (`/ships/fittings/normal/<id>-<name>/`); without it the page redirects there. */
+    fitting_name?: string | null;
     is_button?: boolean;
     size?:      ButtonSizes;
     color?:     ButtonColors;
@@ -15,6 +17,7 @@ interface Props {
 
 const {
     fitting_id,
+    fitting_name,
     is_button = false,
     size = 'sm',
     color = 'fleet-red',
@@ -24,8 +27,10 @@ const {
 
 const DOM_ELEMENT = is_button ? Button : 'a'
 
-const render_view = translatePath(`/ships/fittings/render/${fitting_id}`)
-const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
+import { fitting_path, fitting_render_path } from '@helpers/ship_paths'
+
+const render_view = translatePath(fitting_render_path(fitting_id, fitting_name))
+const normal_view = translatePath(fitting_path(fitting_id, fitting_name))
 
 import { is_disabled_ccpwgl } from '@helpers/env';
 
@@ -35,7 +40,7 @@ import Button from '@components/blocks/Button.astro';
 ---
 
 <DOM_ELEMENT
-    href={translatePath(`/ships/fittings/${fitting_id}`)}
+    href={normal_view}
     size={is_button ? size : undefined}
     color={is_button ? color : undefined}
     narrow={is_button ? narrow : undefined}

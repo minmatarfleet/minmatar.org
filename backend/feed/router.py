@@ -20,6 +20,28 @@ from feed.models import FeedEvent
 router = Router(tags=["Feed"])
 
 
+def members_only_fleet_ids(*, since: datetime) -> list[int]:
+    """Group fleets that aren't open to the alliance, and private fleets not
+    yet declassified, stay out of the public feed; their kills still show on
+    the fleet's own page for the people who can see it."""
+    # Imported here: fleets imports feed helpers, so a module-level import
+    # would close the loop.
+    from fleets.models import (  # pylint: disable=import-outside-toplevel
+        EveFleet,
+    )
+
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_visibility import private_hidden_q
+
+    return list(
+        EveFleet.objects.filter(
+            Q(host_group__isnull=False, open_to_alliance=False)
+            | private_hidden_q(),
+            start_time__gte=since - timedelta(days=2),
+        ).values_list("id", flat=True)
+    )
+
+
 class FeedEventItemSchema(Schema):
     id: str
     kind: str
@@ -106,6 +128,12 @@ def list_feed(
         .exclude(kind="militia_joins")
         .filter(Q(expires_at__isnull=True) | Q(expires_at__gte=now))
     )
+    hidden_fleet_ids = members_only_fleet_ids(since=window_start)
+    if hidden_fleet_ids:
+        qs = qs.exclude(
+            kind=FeedEvent.Kind.FLEET_KILLS,
+            payload__fleet_id__in=hidden_fleet_ids,
+        )
 
     cursor_time, cursor_id = _parse_cursor(cursor)
     if cursor_time and cursor_id:

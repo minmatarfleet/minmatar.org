@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from discord.client import DiscordClient
 
 from .helpers import offboard_group
+from .models import UserDesktopSettings
 
 discord = DiscordClient()
 
@@ -39,3 +40,11 @@ class GroupAdmin(BaseGroupAdmin):
             delete_discord_role_for_group(obj)
             self.log_deletion(request, obj, str(obj))
             offboard_group(obj.id)
+
+
+@admin.register(UserDesktopSettings)
+class UserDesktopSettingsAdmin(admin.ModelAdmin):
+    list_display = ("user", "updated_at")
+    search_fields = ("user__username",)
+    readonly_fields = ("updated_at",)
+    raw_id_fields = ("user",)

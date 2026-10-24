@@ -2,18 +2,16 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
+import { partial_redirect } from '@helpers/http_responses'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = user ? user.is_superuser : false
+const { auth_token, user } = get_request_user(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = user ? await get_user_permissions(user.username) : []
-const can_process_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
-const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
+const gates = await get_gates(Astro)
+const can_process_srp = can(gates, 'srp.process')
+const has_explicit_srp_change = can(gates, 'srp.process#strict')
 
 import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
 import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
@@ -27,7 +25,7 @@ if (
     ))
 ) {
     const return_to = encodeURIComponent(translatePath('/ships/srp/'))
-    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+    return partial_redirect(Astro.request, `${translatePath('/onboarding/')}?return=${return_to}`)
 }
 
 import type { SRPFrontendPrograms } from '@dtypes/layout_components'
@@ -67,7 +65,7 @@ if (Astro.request.method === "POST") {
 
         await create_fleet_srp(auth_token as string, {
             fleet_id: fleet_id,
-            combatlog_id: combat_log_analysis?.id,
+            combat_log_id: combat_log_analysis?.id,
             external_killmail_link: external_killmail_link,
             is_corp_ship: is_corp_ship,
         })

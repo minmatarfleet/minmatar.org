@@ -29,6 +29,8 @@ function kindIcon(kind: ActivityItem['kind']): keyof typeof MaterialCommunityIco
       return 'bullhorn-outline';
     case 'contested_change':
       return 'map-marker-radius-outline';
+    case 'fleet_kills':
+      return 'sword-cross';
   }
 }
 

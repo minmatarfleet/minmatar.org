@@ -1,12 +1,12 @@
 import logging
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 
-from discord.client import DiscordClient
+from app.links import fitting_url, fleet_edit_url
+from discord.outbox import queue_channel_message
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
@@ -14,9 +14,8 @@ from fittings.models import EveDoctrine, EveFitting, EveFittingRefit
 from fleets.helpers.member_ships import apply_esi_fleet_member
 from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
-from fleets.notifications import get_fleet_discord_notification
+from fleets.helpers.start_ping import build_start_ping
 
-discord = DiscordClient()
 logger = logging.getLogger(__name__)
 
 # ESI rejects fleet MOTDs longer than this (characters).
@@ -72,7 +71,9 @@ class EveFleet(models.Model):
         default=None,
     )
     disable_motd = models.BooleanField(null=True, default=False)
-    hide_volunteers = models.BooleanField(default=False)
+    # Pilots see their own sign-ups and the counts; names show only to the
+    # fleet's FC and Strategic FCs. On by default.
+    hide_volunteers = models.BooleanField(default=True)
 
     fleet_statuses = (
         ("pending", "Pending"),
@@ -85,6 +86,25 @@ class EveFleet(models.Model):
         max_length=32, choices=fleet_statuses, default="unknown"
     )
 
+    # A tribe group fleet: audience is None, the start ping goes to the
+    # group's channel and members-only ones are hidden from everyone else.
+    # See docs/tribes/tribe-publishing.md.
+    host_group = models.ForeignKey(
+        "tribes.TribeGroup",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hosted_fleets",
+    )
+    open_to_alliance = models.BooleanField(
+        default=False,
+        help_text="Group fleet anyone in the alliance can see and join.",
+    )
+    on_schedule = models.BooleanField(
+        default=False,
+        help_text="Open group fleet listed in the #schedule message.",
+    )
+
     campaign = models.ForeignKey(
         "campaigns.Campaign",
         on_delete=models.SET_NULL,
@@ -93,6 +113,14 @@ class EveFleet(models.Model):
         related_name="fleets",
         help_text="Counts this fleet towards a Faction Warfare campaign.",
     )
+
+    # A private fleet: only invited pilots, its FC and Strategic FCs know it
+    # exists until it is declassified. See docs/fleets/private-fleets.md.
+    invite_only = models.BooleanField(default=False)
+    declassified_at = models.DateTimeField(null=True, blank=True)
+    # The private coordination thread under the audience's channel.
+    discord_thread_id = models.BigIntegerField(null=True, blank=True)
+    discord_summary_message_id = models.BigIntegerField(null=True, blank=True)
 
     # Link to After Action Report in Discord
     # e.g. https://discord.com/channels/1041384161505722368/1398825964225695945
@@ -173,37 +201,67 @@ class EveFleet(models.Model):
         fleet_instance.update_eve_fleet(self.disable_motd)
         return fleet_instance
 
+    def start_ping(self):
+        """The start ping (fleets.helpers.start_ping), or None."""
+        return build_start_ping(
+            fleet_id=self.id,
+            fleet_type_label=self.get_type_display(),
+            location_name=(
+                self.formup_location.location_name
+                if self.formup_location
+                else None
+            ),
+            audience=None if self.host_group_id else self.audience,
+            host_group=self.host_group,
+            fc_character=self.fleet_commander,
+            description=self.description,
+            doctrine=None if self.type == "strategic" else self.doctrine,
+        )
+
     def notify_discord(self) -> None:
         """
-        Send the fleet notification to the audience's Discord channel, if configured.
+        Send the start ping to the audience's Discord channel (a group
+        fleet: the group's channel), if configured.
         """
-        if not self.audience or not self.audience.discord_channel_id:
+        if self.invite_only:
+            # A private fleet pings its own thread, never the audience.
+            # pylint: disable=import-outside-toplevel
+            from discord.outbox import on_commit_enqueue
+            from fleets.tasks import (
+                post_private_fleet_start_ping,
+                update_private_fleet_dms,
+            )
+
+            on_commit_enqueue(
+                post_private_fleet_start_ping,
+                (self.id,),
+                context=f"fleet {self.id} private start ping",
+            )
+            # After start() marks the fleet active, so the DMs say started.
+            on_commit_enqueue(
+                update_private_fleet_dms,
+                (self.id,),
+                context=f"fleet {self.id} private DMs",
+                countdown=30,
+            )
+            return
+        if not self.host_group_id and (
+            not self.audience or not self.audience.discord_channel_id
+        ):
             return
 
-        doctrine = None if self.type == "strategic" else self.doctrine
+        ping = self.start_ping()
+        if ping is None or not ping.channel_id:
+            return
         logger.info(
             "Sending fleet notification for fleet %s to discord channel %s",
             self.id,
-            self.audience.discord_channel_id,
+            ping.channel_id,
         )
-        discord.create_message(
-            self.audience.discord_channel_id,
-            payload=get_fleet_discord_notification(
-                fleet_id=self.id,
-                fleet_type=self.get_type_display(),
-                fleet_location=(
-                    self.formup_location.location_name
-                    if self.formup_location
-                    else "Ask FC"
-                ),
-                fleet_audience=self.audience.name,
-                fleet_commander_name=self.fleet_commander.character_name,
-                fleet_commander_id=self.fleet_commander.character_id,
-                fleet_description=self.description,
-                fleet_voice_channel=None,
-                fleet_voice_channel_link=None,
-                fleet_doctrine=doctrine,
-            ),
+        queue_channel_message(
+            ping.channel_id,
+            context=f"fleet {self.id} start ping",
+            payload=ping.payload,
         )
 
     def activate(self) -> None:
@@ -251,6 +309,11 @@ class EveFleetInstance(models.Model):
     @property
     def active(self):
         return self.end_time is None
+
+    @property
+    def has_motd(self) -> bool:
+        """True once a MOTD has been pushed to the in-game fleet."""
+        return bool(self.motd)
 
     def update_eve_fleet(self, disable_motd: bool):
         """Update fleet freemove and MOTD"""
@@ -328,38 +391,6 @@ class EveFleetInstance(models.Model):
         self.motd = motd
         self.save()
         return response.results() if response.data is not None else None
-
-    def update_free_move(self):
-        """
-        Update the free move status for the fleet
-        """
-        if not self.eve_fleet.token:
-            logger.warning(
-                "Unable to set free move for fleet without token, %d",
-                self.eve_fleet.id,
-            )
-            return None
-        # token = self.eve_fleet.token
-        # response = esi.client.Fleets.put_fleets_fleet_id(
-        #     fleet_id=self.id,
-        #     new_settings={"is_free_move": True},
-        #     token=token,
-        # ).results()
-        update = {"is_free_move": True}
-        response = self.esi_client().update_fleet_details(self.id, update)
-        if not response.success():
-            logger.warning(
-                "Error setting free move for fleet %d: %s (%s)",
-                self.id,
-                response.response,
-                response.response_code,
-            )
-            return None
-        response = response.results() if response.data is not None else None
-
-        self.is_free_move = True
-        self.save()
-        return response
 
     def update_is_registered_status(self):
         """
@@ -493,12 +524,6 @@ class EveFleetInstance(models.Model):
         self.eve_fleet.status = "complete"
         self.eve_fleet.save()
         close_fleet_cleanup(self.eve_fleet)
-        # Imported lazily: fleets.helpers.roam_report may import this module.
-        from fleets.helpers.roam_report import (  # pylint: disable=import-outside-toplevel
-            schedule_roam_report,
-        )
-
-        schedule_roam_report(self.eve_fleet.id)
 
 
 class EveFleetInstanceMember(models.Model):
@@ -582,6 +607,97 @@ class EveFleetInstanceMemberShipSnapshot(models.Model):
             f"{self.member.character_name} — {self.ship_name} "
             f"@ {self.created_at:%Y-%m-%d %H:%M}"
         )
+
+
+class EveFleetFightTimeline(models.Model):
+    """A fleet's killmails cut into rounds, rewritten by every rebuild.
+
+    ``killmails`` keeps the matched mails (names, ships, ISK, who was on
+    them), so the timeline outlives the feed's 30-day killmail purge and an
+    FC edit can re-cut the rounds without matching again. ``payload`` is the
+    cut result the API serves. See fleets.helpers.fights.
+
+    ``battle_killmails`` is the round battle report's snapshot: every feed
+    killmail in the matched mails' systems from the first matched mail minus
+    a minute to the last plus a minute, third parties included, as compact
+    rows (see fleets.helpers.fights.battle). ``battle_names`` holds the
+    character, corporation, alliance and ship names on them.
+    ``battle_collected_at`` is None until a rebuild (or the first report
+    request, for older timelines) has taken that snapshot.
+    """
+
+    eve_fleet = models.OneToOneField(
+        EveFleet, on_delete=models.CASCADE, related_name="fight_timeline"
+    )
+    killmails = models.JSONField(default=list, blank=True)
+    events = models.JSONField(default=list, blank=True)
+    names = models.JSONField(default=dict, blank=True)
+    payload = models.JSONField(default=dict, blank=True)
+    battle_links = models.JSONField(default=dict, blank=True)
+    battle_killmails = models.JSONField(default=list, blank=True)
+    battle_names = models.JSONField(default=dict, blank=True)
+    battle_collected_at = models.DateTimeField(null=True, blank=True)
+    computed_at = models.DateTimeField(null=True, blank=True)
+    swept_at = models.DateTimeField(null=True, blank=True)
+    settled_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Fight timeline for fleet {self.eve_fleet_id}"
+
+
+class EveFleetFightEdit(models.Model):
+    """An FC's change to where rounds start and end.
+
+    Edits are points in time, not round numbers, so they still hold when a
+    late killmail lands. A merge removes the automatic cuts between ``start``
+    and ``end``; a split adds a cut at ``start``.
+    """
+
+    class Kind(models.TextChoices):
+        MERGE = "merge", "Merge"
+        SPLIT = "split", "Split"
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="fight_edits"
+    )
+    kind = models.CharField(max_length=8, choices=Kind.choices)
+    start = models.DateTimeField()
+    end = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return f"{self.kind} on fleet {self.eve_fleet_id} at {self.start}"
+
+
+class EveFleetBattleSegment(models.Model):
+    """A window of a fleet's battle report the FC saved under a name.
+
+    Like fight edits, a segment is a time range, not a round number, so it
+    still holds when late killmails or an edit re-cut the rounds.
+    """
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="battle_segments"
+    )
+    name = models.CharField(max_length=64)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["start", "id"]
+
+    def __str__(self):
+        return f"{self.name} on fleet {self.eve_fleet_id}"
 
 
 class EveFleetInstanceMemberRole(models.Model):
@@ -758,6 +874,7 @@ class EveFleetFitting(models.Model):
         ("primary", "Primary"),
         ("secondary", "Secondary"),
         ("support", "Support"),
+        ("utility", "Utility"),
     )
 
     eve_fleet = models.ForeignKey(
@@ -837,6 +954,20 @@ class EveFleetShipVolunteer(models.Model):
         blank=True,
         related_name="ship_volunteers",
     )
+    # Command bursts this pilot will run online, by kind ("skirmish",
+    # "information", ...). Defaults to the fit's online bursts; the pilot can
+    # switch to any fitted ones (see fleets.helpers.fit_roles).
+    bursts = models.JSONField(default=list, blank=True)
+    # A hull outside the composition: the pilot brings this ship instead of
+    # one of the FC's fits. Set instead of ``fitting`` / ``fleet_fitting``.
+    ship_type_id = models.BigIntegerField(null=True, blank=True)
+    ship_name = models.CharField(max_length=255, blank=True, default="")
+    # FC-assigned cyno system for a cyno fit. Private: shown only to the FC
+    # and the pilot, DM'd on Discord, never in the MOTD.
+    solar_system_id = models.BigIntegerField(null=True, blank=True)
+    solar_system_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
@@ -849,11 +980,26 @@ class EveFleetShipVolunteer(models.Model):
                 fields=["eve_fleet", "character_id", "fleet_fitting"],
                 name="fleets_ship_volunteer_fleet_fitting_unique",
             ),
+            models.UniqueConstraint(
+                fields=["eve_fleet", "character_id", "ship_type_id"],
+                name="fleets_ship_volunteer_hull_unique",
+            ),
             models.CheckConstraint(
                 condition=(
-                    models.Q(fitting__isnull=False, fleet_fitting__isnull=True)
+                    models.Q(
+                        fitting__isnull=False,
+                        fleet_fitting__isnull=True,
+                        ship_type_id__isnull=True,
+                    )
                     | models.Q(
-                        fitting__isnull=True, fleet_fitting__isnull=False
+                        fitting__isnull=True,
+                        fleet_fitting__isnull=False,
+                        ship_type_id__isnull=True,
+                    )
+                    | models.Q(
+                        fitting__isnull=True,
+                        fleet_fitting__isnull=True,
+                        ship_type_id__isnull=False,
                     )
                 ),
                 name="fleets_ship_volunteer_one_target",
@@ -865,17 +1011,44 @@ class EveFleetShipVolunteer(models.Model):
         ordering = ["eve_fleet", "fitting", "fleet_fitting", "id"]
 
     @property
+    def is_off_doctrine(self) -> bool:
+        return bool(self.ship_type_id)
+
+    @property
+    def target_key(self) -> str:
+        """Matches ``CompositionEntry.key``; ``s:<type id>`` for a hull."""
+        if self.fitting_id:
+            return f"f:{self.fitting_id}"
+        if self.fleet_fitting_id:
+            return f"m:{self.fleet_fitting_id}"
+        return f"s:{self.ship_type_id}"
+
+    @property
     def target_name(self) -> str:
-        return (
-            self.fitting.name if self.fitting_id else self.fleet_fitting.name
-        )
+        if self.fitting_id:
+            return self.fitting.name
+        if self.fleet_fitting_id:
+            return self.fleet_fitting.name
+        return self.ship_name
 
     @property
     def target_ship_id(self) -> int:
+        if self.fitting_id:
+            return self.fitting.ship_id
+        if self.fleet_fitting_id:
+            return self.fleet_fitting.ship_id
+        return self.ship_type_id
+
+    @property
+    def target_eft(self) -> str:
+        if self.fitting_id:
+            return self.fitting.eft_format
+        if self.fleet_fitting_id:
+            return self.fleet_fitting.effective_eft
+        # No fit: the hull alone, so callers that read the EFT header still
+        # find the ship.
         return (
-            self.fitting.ship_id
-            if self.fitting_id
-            else self.fleet_fitting.ship_id
+            f"[{self.ship_name}, {self.ship_name}]" if self.ship_name else ""
         )
 
     def __str__(self):
@@ -985,29 +1158,35 @@ class EveFleetFittingRefit(models.Model):
 def _motd_role_volunteers(eve_fleet):
     """
     Build role_volunteers list for get_motd: Logi FC, Cynos.
-    The FC-assigned cyno system is intentionally NOT included: it is
-    private and delivered to the pilot by Discord DM.
+    Logi FC is a sign-up; cynos are the pilots in (or volunteered for) a
+    cyno fit. The FC-assigned cyno system is intentionally NOT included: it
+    is private and delivered to the pilot by Discord DM.
     """
-    critical_roles = [
-        (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR, "Logi FC"),
-        (EveFleetRoleVolunteer.ROLE_CYNO, "Cynos"),
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.role_coverage import fleet_role_pilots
+
+    logi_fc = EveFleetRoleVolunteer.objects.filter(
+        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR
+    ).order_by("id")
+    cynos = [p for p in fleet_role_pilots(eve_fleet) if p.roles.cyno]
+    return [
+        ("Logi FC", [(v.character_id, v.character_name) for v in logi_fc]),
+        ("Cynos", [(p.character_id, p.character_name) for p in cynos]),
     ]
-    result = []
-    for role_value, role_label in critical_roles:
-        volunteers = EveFleetRoleVolunteer.objects.filter(
-            eve_fleet=eve_fleet, role=role_value
-        ).order_by("id")
-        result.append(
-            (
-                role_label,
-                [(v.character_id, v.character_name) for v in volunteers],
-            )
-        )
-    return result
 
 
 def close_fleet_cleanup(eve_fleet) -> None:
     """Housekeeping when a fleet ends: drop the in-game fittings we saved."""
+    if eve_fleet.invite_only:
+        # pylint: disable=import-outside-toplevel
+        from discord.outbox import on_commit_enqueue
+        from fleets.tasks import close_private_fleet_thread
+
+        on_commit_enqueue(
+            close_private_fleet_thread,
+            (eve_fleet.id,),
+            context=f"fleet {eve_fleet.id} close thread",
+        )
     from fleets.helpers.esi_fittings import (  # pylint: disable=import-outside-toplevel
         cleanup_fleet_esi_fittings,
     )
@@ -1039,8 +1218,7 @@ def _fitting_web_url(fitting_id):
     """Public fitting page for a catalog fit; None for manual fits."""
     if not fitting_id:
         return None
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/ships/fittings/{fitting_id}"
+    return fitting_url(fitting_id)
 
 
 def _motd_composition(eve_fleet, in_game=True):
@@ -1067,8 +1245,7 @@ def _motd_composition(eve_fleet, in_game=True):
 
 def _motd_fleet_edit_url(eve_fleet):
     """URL to the fleet edit page for MOTD."""
-    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/edit/{eve_fleet.id}"
+    return fleet_edit_url(eve_fleet.id)
 
 
 class EveFleetAudience(models.Model):
@@ -1180,3 +1357,107 @@ class NpsiExternalEvent(models.Model):
 
     def __str__(self):
         return f"{self.summary} @ {self.start_time}"
+
+
+class EveFleetInviteWave(models.Model):
+    """One batch of private fleet invites the FC sent together."""
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="invite_waves"
+    )
+    number = models.PositiveSmallIntegerField()
+    sent_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    note = models.CharField(max_length=300, blank=True, default="")
+    # What the FC picked, kept so the Invites tab can label the wave.
+    tribe_group_ids = models.JSONField(default=list, blank=True)
+    corporation_ids = models.JSONField(default=list, blank=True)
+    user_ids = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    # Set when the paced sender has sent every DM in the wave.
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["eve_fleet", "number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "number"],
+                name="fleets_invite_wave_unique_number",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} wave {self.number}"
+
+
+class EveFleetInvite(models.Model):
+    """A player invited to a private fleet, and their answer."""
+
+    ANSWER_PENDING = "pending"
+    ANSWER_IN = "in"
+    ANSWER_OUT = "out"
+    ANSWER_CHOICES = (
+        (ANSWER_PENDING, "No answer"),
+        (ANSWER_IN, "In"),
+        (ANSWER_OUT, "Sitting out"),
+    )
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="invites"
+    )
+    wave = models.ForeignKey(
+        EveFleetInviteWave, on_delete=models.CASCADE, related_name="invites"
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="fleet_invites"
+    )
+    answer = models.CharField(
+        max_length=16, choices=ANSWER_CHOICES, default=ANSWER_PENDING
+    )
+    answered_at = models.DateTimeField(null=True, blank=True)
+    # The leak trace: when the pilot first opened the fleet page.
+    first_viewed_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    # None until the sender tries; False when the DM could not be sent.
+    dm_delivered = models.BooleanField(null=True, blank=True)
+    dm_channel_id = models.BigIntegerField(null=True, blank=True)
+    dm_message_id = models.BigIntegerField(null=True, blank=True)
+    reminded_at = models.DateTimeField(null=True, blank=True)
+    in_thread = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["eve_fleet", "wave", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "user"],
+                name="fleets_invite_unique_user",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} → {self.user_id} ({self.answer})"
+
+
+class EveFleetShipTarget(models.Model):
+    """
+    How many of a kind of ship the FC wants, e.g. 40 Dreads. A line counts
+    the hulls in ``ship_type_ids`` and every hull in an EVE group in
+    ``group_ids``; each signed-up character counts once per line.
+    """
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="ship_targets"
+    )
+    name = models.CharField(max_length=64)
+    target = models.PositiveSmallIntegerField()
+    order = models.PositiveSmallIntegerField(default=0)
+    ship_type_ids = models.JSONField(default=list, blank=True)
+    group_ids = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ["eve_fleet", "order", "id"]
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} {self.name} ×{self.target}"

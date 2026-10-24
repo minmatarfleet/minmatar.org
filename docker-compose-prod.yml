@@ -1,3 +1,12 @@
+x-celery-worker: &celery-worker
+    build:
+        context: ./backend/.
+        dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    depends_on:
+        - app
+
 services:
     app:
         build:
@@ -31,44 +40,57 @@ services:
         depends_on:
             - app
 
+    # Celery workers: one service per queue (backend/app/queues.py,
+    # docs/architecture/celery-queues.md). Concurrency is the host CPU count
+    # unless set; replicas are spread so the total stays about where it was.
     celery:
-        build:
-            context: ./backend/.
-            dockerfile: Dockerfile
-        restart: always
-        env_file: .env
+        # Fast lane: critical, user-facing tasks listed in FAST_TASKS.
+        <<: *celery-worker
         command: celery -A app worker -l info -Q celery
         deploy:
             mode: replicated
-            replicas: 4
-        depends_on:
-            - app
+            replicas: 2
+
+    celery-feed:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q feed --concurrency 4
+
+    celery-fleets:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q fleets
+
+    celery-intel:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q intel
+
+    celery-campaigns:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q campaigns
+        deploy:
+            mode: replicated
+            replicas: 2
 
     celery-eveonline:
-        build:
-            context: ./backend/.
-            dockerfile: Dockerfile
-        restart: always
-        env_file: .env
+        <<: *celery-worker
         command: celery -A app worker -l info -Q eveonline
         deploy:
             mode: replicated
-            replicas: 6
-        depends_on:
-            - app
+            replicas: 4
 
     celery-market:
-        build:
-            context: ./backend/.
-            dockerfile: Dockerfile
-        restart: always
-        env_file: .env
+        <<: *celery-worker
         command: celery -A app worker -l info -Q market
         deploy:
             mode: replicated
             replicas: 2
-        depends_on:
-            - app
+
+    celery-industry:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q industry
+
+    celery-community:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q community
 
     frontend:
         build:

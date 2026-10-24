@@ -17,6 +17,8 @@ interface Props {
     hidden?:        boolean;
     id?:            string;
     render?:        'order_item' | 'breakdown';
+    /** Plain trigger, for a host inside ActionMenu. */
+    styless?:       boolean;
 }
 
 const {
@@ -31,6 +33,7 @@ const {
     hidden = false,
     id,
     render = 'order_item',
+    styless = false,
 } = Astro.props
 
 import { hours_diff } from '@helpers/date'
@@ -84,6 +87,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
     narrow={false}
     size={size}
     hidden={hidden}
+    styless={styless}
     max_width='520px'
     disable_when_open={true}
 >
@@ -101,7 +105,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
         x-data={`{
             quantity: 0,
             claimed: ${claimed},
-            target_estimated_margin: ${item.target_estimated_margin},
+            estimated_profit_per_unit: ${item.estimated_profit_per_unit ?? 0},
             total_text: '0 ISK',
             total_text_template: '{value} ISK',
             units_plural_template: '${t('units_plural')}',
@@ -113,7 +117,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                 })
             },
             update_total_text() {
-                const total = (this.claimed + this.quantity) * this.target_estimated_margin
+                const total = (this.claimed + this.quantity) * this.estimated_profit_per_unit
                 this.total_text = this.total_text_template.replace('{value}', this.number_thousand_separator(total))
             }
         }`}
@@ -191,8 +195,8 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                             <small class="[ basis-[160px] text-right ]">{number_thousand_separator(parseInt(item.target_unit_price ?? '0') ?? 0)} ISK</small>
                         </FlexInline>
                         <FlexInline justification='flex-end'>
-                            <small>{t('target_estimated_margin')}</small>
-                            <small class="[ basis-[160px] text-right ]">{number_thousand_separator(parseInt(item.target_estimated_margin ?? '0') ?? 0)} ISK</small>
+                            <small>{t('estimated_profit_per_unit')}</small>
+                            <small class="[ basis-[160px] text-right ]">{number_thousand_separator(item.estimated_profit_per_unit ?? 0)} ISK</small>
                         </FlexInline>
                         <FlexInline justification='flex-end'>
                             <p class="[ basis-[160px] text-green text-right ]"><b x-text="total_text">0 ISK</b></p>

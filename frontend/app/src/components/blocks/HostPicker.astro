@@ -1,0 +1,116 @@
+---
+import type { HostOptionUI } from '@dtypes/layout_components'
+
+/**
+ * Who a post or fleet belongs to, as radio cards. The page decides which
+ * options exist (Alliance or "You" first) and passes the first as default.
+ * `input_attributes` is spread on every radio input: use it for `x-model`
+ * or `hx-get` / `hx-trigger="change"` / `hx-target`.
+ */
+interface Props {
+    name:               string;
+    hosts:              HostOptionUI[];
+    selected?:          string;
+    legend?:            string;
+    input_attributes?:  Record<string, any>;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    hosts,
+    selected = hosts[0]?.value,
+    legend,
+    input_attributes = {},
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Grid from '@components/compositions/Grid.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+---
+
+{hosts.length > 0 &&
+    <fieldset class:list={['[ host-picker ]', Astro.props.class]} {...attributes}>
+        {legend && <legend class="[ host-picker__legend ]">{legend}</legend>}
+        <Grid
+            class="[ host-picker__options ]"
+            min_item_width="14rem"
+            row_gap="var(--space-2xs)"
+            column_gap="var(--space-2xs)"
+        >
+            {hosts.map((host) =>
+                <OptionCard
+                    name={name}
+                    value={host.value}
+                    checked={host.value === selected}
+                    input_attributes={input_attributes}
+                >
+                    <img
+                        class="[ host-picker__image ]"
+                        src={host.image_url}
+                        alt=""
+                        width="40"
+                        height="40"
+                        loading="lazy"
+                        decoding="async"
+                    />
+                    <span class="[ host-picker__text ]">
+                        <b>{host.label}</b>
+                        {host.sub && <small>{host.sub}</small>}
+                    </span>
+                </OptionCard>
+            )}
+        </Grid>
+    </fieldset>
+}
+
+<style lang="scss">
+    .host-picker {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .host-picker__legend {
+        padding: 0;
+        margin-bottom: var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--highlight);
+    }
+
+    .host-picker__image {
+        flex: none;
+        display: block;
+        width: 2.5rem;
+        height: 2.5rem;
+        object-fit: cover;
+        border: 1px solid var(--hairline-strong);
+    }
+
+    .host-picker__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small {
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+</style>

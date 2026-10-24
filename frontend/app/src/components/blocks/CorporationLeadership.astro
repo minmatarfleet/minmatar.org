@@ -12,6 +12,7 @@ interface Props {
 const { leadership, show_heading = true } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
+import { leader_timezones } from '@helpers/corporations/leadership'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 
@@ -80,7 +81,9 @@ function prime_label(code: string | null) {
                     <span class="[ lead-card__count ]">{group.people.length}</span>
                 </header>
                 <ul class="[ lead-card__people ]">
-                    {group.people.map((person) => (
+                    {group.people.map((person) => {
+                        const zones = leader_timezones(person)
+                        return (
                         <li class="[ lead-person ]">
                             <img
                                 class="[ lead-person__portrait ]"
@@ -93,16 +96,24 @@ function prime_label(code: string | null) {
                             <span class="[ lead-person__text ]">
                                 <span class="[ lead-person__name ]">{person.character_name}</span>
                                 <span class="[ lead-person__zones ]">
-                                    {person.observed_prime_times.length > 0
-                                        ? person.observed_prime_times.map((code) => (
-                                            <span class="[ lead-tz ]">{prime_label(code)}</span>
-                                        ))
-                                        : <span class="[ lead-tz lead-tz--leave ]">{t('corporations.detail.fleet_inactive')}</span>
+                                    {zones.kind === 'on_leave' &&
+                                        <span class="[ lead-tz lead-tz--leave ]">{t('corporations.detail.fleet_inactive')}</span>
+                                    }
+                                    {zones.kind === 'observed' && zones.codes.map((code) => code === zones.declared
+                                        ? <span class="[ lead-tz lead-tz--declared ]" title={t('corporations.detail.declared')}>{prime_label(code)}</span>
+                                        : <span class="[ lead-tz ]">{prime_label(code)}</span>
+                                    )}
+                                    {zones.kind === 'declared' &&
+                                        <span class="[ lead-tz lead-tz--declared ]" title={t('corporations.detail.timezone_declared')}>{prime_label(zones.code)}</span>
+                                    }
+                                    {zones.kind === 'missing' &&
+                                        <span class="[ lead-tz lead-tz--missing ]">{t('corporations.detail.tz_missing')}</span>
                                     }
                                 </span>
                             </span>
                         </li>
-                    ))}
+                        )
+                    })}
                 </ul>
             </section>
         ))}
@@ -213,6 +224,18 @@ function prime_label(code: string | null) {
         letter-spacing: 0.03em;
         line-height: 1.4;
         white-space: nowrap;
+    }
+
+    .lead-tz--declared {
+        border-color: color-mix(in srgb, var(--alliance-blue) 60%, transparent);
+        background: color-mix(in srgb, var(--alliance-blue) 22%, transparent);
+        color: color-mix(in srgb, var(--alliance-blue) 45%, var(--highlight));
+    }
+
+    .lead-tz--missing {
+        border-color: var(--border-color);
+        background: transparent;
+        color: var(--faded);
     }
 
     .lead-tz--leave {

@@ -15,14 +15,12 @@ interface Props {
     directory_groups: DirectoryGroup[]
     tribes: Tribe[]
     initial_tribe_slug?: string
-    init_tooltips?: boolean
 }
 
 const {
     directory_groups,
     tribes,
     initial_tribe_slug = 'all',
-    init_tooltips = false,
 } = Astro.props
 
 const filters = [
@@ -115,6 +113,17 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             </div>
         </div>
 
+        {tribes.map((tribe) => (
+            <a
+                class="[ tribes-groups-catalog__about ]"
+                href={translatePath(`/alliance/tribes/${tribe.id}/`)}
+                x-show={`tribe === ${JSON.stringify(tribe.slug)}`}
+                x-cloak
+            >
+                {t('tribes.about.catalog_link').replace('{tribe}', tribe.name)}
+            </a>
+        ))}
+
         <Wrapper
             class="[ intel-reel ]"
             padding_block="0"
@@ -171,7 +180,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                         gap="var(--space-3xs)"
                                         class="[ tribes-groups-catalog__count items-center! ]"
                                         data-tippy-content={t('group_members')}
-                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                     >
                                         <span class="[ text-highlight h-[16px] ]" aria-hidden="true">
                                             <MemberIcon size={16} />
@@ -265,6 +273,16 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             flex: 1 1 100%;
             width: 100%;
             margin-inline-start: 0;
+        }
+    }
+
+    .tribes-groups-catalog__about {
+        align-self: flex-start;
+        color: var(--fleet-yellow);
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
         }
     }
 
@@ -418,6 +436,44 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             width: 100%;
             justify-content: center;
             box-sizing: border-box;
+        }
+
+        // Phones: compact media-object tile. The decorative cover shrinks to a
+        // thumbnail beside the name; tag, chief, member count and Browse stay.
+        @media (max-width: 48rem) {
+            --tribes-tile-thumb: 72px;
+
+            min-height: 0;
+            aspect-ratio: auto;
+            padding: var(--space-s);
+
+            &::after {
+                display: none;
+            }
+
+            > img {
+                top: var(--space-s);
+                left: var(--space-s);
+                width: var(--tribes-tile-thumb);
+                height: var(--tribes-tile-thumb);
+            }
+
+            .tile__body {
+                min-height: var(--tribes-tile-thumb) !important;
+                padding-inline-start: calc(var(--tribes-tile-thumb) + var(--space-s));
+                gap: var(--space-xs) !important;
+            }
+
+            .tile__body > .block-list {
+                --block-list--gap: var(--space-xs);
+            }
+
+            h2 {
+                max-width: none;
+                min-height: 0;
+                font-size: var(--step-1);
+                text-shadow: none;
+            }
         }
     }
 </style>

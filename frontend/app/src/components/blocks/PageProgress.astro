@@ -13,7 +13,7 @@
  * <div data-page-progress-root>
  *   <PageProgress {...progress} />
  *   <!-- markdown: <div set:html={html} /> -->
- *   <!-- custom: <PageProgressSection id="intro">…</PageProgressSection> -->
+ *   <!-- custom: <section id="intro" data-section-id="intro">…</section> -->
  * </div>
  * ```
  */
@@ -36,9 +36,8 @@ const { t } = i18n(Astro.url)
 
 import PageProgressTracker from '@components/blocks/PageProgressTracker.astro'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : ''
+import { get_request_user } from '@helpers/request_user'
+const auth_token = get_request_user(Astro).auth_token || ''
 
 const show = section_ids.length > 0
 ---

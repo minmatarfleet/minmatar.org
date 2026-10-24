@@ -15,11 +15,9 @@ function group(overrides: Partial<TribeGroup> = {}): TribeGroup {
         requirements: [],
         discord_channel_id: null,
         chief: { character_id: 91439324, character_name: 'Keldor Eternia' },
-        ship_type_ids: [],
-        blueprint_type_ids: [],
         is_active: true,
         ...overrides,
-    }
+    } as TribeGroup
 }
 
 function membership(overrides: Partial<TribeMembership> = {}): TribeMembership {
@@ -69,7 +67,6 @@ describe('tribe_group_can_manage', () => {
         expect(tribe_group_can_manage({
             group: group({ can_manage: true, chief: { character_id: 1, character_name: 'Other' } }),
             is_leader: false,
-            is_superuser: false,
         })).toBe(true)
     })
 
@@ -77,7 +74,13 @@ describe('tribe_group_can_manage', () => {
         expect(tribe_group_can_manage({
             group: group({ can_manage: false }),
             is_leader: false,
-            is_superuser: false,
         })).toBe(false)
+    })
+
+    it('is true for the group chief even if the API flag is missing', () => {
+        expect(tribe_group_can_manage({
+            group: group({ can_manage: false }),
+            is_leader: true,
+        })).toBe(true)
     })
 })

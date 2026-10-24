@@ -1,15 +1,16 @@
+import json
 import logging
 
-import jwt
 from typing import List, Optional
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.shortcuts import redirect
-from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
-from app.errors import create_error_id
+from app.dev_switches import fake_login_user_id
+from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
 from discord.exceptions import DiscordRoleAssignmentError
@@ -22,9 +23,18 @@ from audit.models import AuditEntry
 
 # from eveonline.models import EvePlayer
 from groups.tasks import sync_user_corporation_groups, update_affiliation
+from users.endpoints import router as endpoints_router
 from users.eve_sso import EVE_LOGIN_SCOPES
-from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
-from users.redirects import oauth_redirect
+from users.jwt_auth import (
+    decode_user_jwt,
+    issue_discord_user_jwt,
+    issue_fake_login_jwt,
+)
+from users.redirects import (
+    default_login_redirect_url,
+    oauth_redirect,
+    safe_login_redirect_url,
+)
 
 from .helpers import (
     get_user_profile,
@@ -32,18 +42,22 @@ from .helpers import (
     make_user_objects,
     offboard_user,
 )
-from .schemas import UserProfileSchema
+from .models import UserDesktopSettings
+from .schemas import (
+    DesktopSettingsPatchSchema,
+    DesktopSettingsSchema,
+    UserProfileSchema,
+)
 
 logger = logging.getLogger(__name__)
 auth_url_discord = discord_authorize_url(
     settings.DISCORD_CLIENT_ID, settings.DISCORD_REDIRECT_URL
 )
 router = Router(tags=["Authentication"])
+router.add_router("", endpoints_router)
 discord = DiscordClient()
 
-
-class ErrorResponse(BaseModel):
-    detail: str
+MOBILE_LOGIN_REDIRECT = "mobile://auth/callback"
 
 
 @router.get(
@@ -52,16 +66,13 @@ class ErrorResponse(BaseModel):
     description="This is URL that will redirect to Discord and generate a token, redirecting back to the URL specified in the redirect_url query parameter.",  # pylint: disable=line-too-long
 )
 def login(request, redirect_url: str):
-    if (
-        hasattr(settings, "FAKE_LOGIN_USER_ID")
-        and settings.FAKE_LOGIN_USER_ID
-        and settings.FAKE_LOGIN_USER_ID > ""
-    ):
+    if fake_login_user_id():
         return fake_login(request, redirect_url)
 
+    redirect_url = safe_login_redirect_url(
+        redirect_url, default_login_redirect_url()
+    )
     logger.debug(f"Adding redirect URL to session: {redirect_url}")
-    if not redirect_url:
-        redirect_url = "https://my.minmatar.org/auth/login"
     request.session["authentication_redirect_url"] = redirect_url
     logger.debug(f"Current session: {request.session}")
     return redirect(auth_url_discord)
@@ -141,15 +152,10 @@ class SessionSchema(BaseModel):
     ),
 )
 def login_eve(request, redirect_url: str):
-    if (
-        hasattr(settings, "FAKE_LOGIN_USER_ID")
-        and settings.FAKE_LOGIN_USER_ID
-        and settings.FAKE_LOGIN_USER_ID > ""
-    ):
+    if fake_login_user_id():
         return fake_login(request, redirect_url)
 
-    if not redirect_url:
-        redirect_url = "mobile://auth/callback"
+    redirect_url = safe_login_redirect_url(redirect_url, MOBILE_LOGIN_REDIRECT)
     if not settings.ESI_SSO_CLIENT_ID or not settings.ESI_SSO_CALLBACK_URL:
         error_id = create_error_id()
         logger.error("EVE login not configured (%s)", error_id)
@@ -210,13 +216,69 @@ def get_current_user(request):
     return get_user_profile(request.user.id)
 
 
+DESKTOP_SETTINGS_MAX_KEYS = 100
+DESKTOP_SETTINGS_MAX_KEY_LENGTH = 64
+DESKTOP_SETTINGS_MAX_BYTES = 32_000
+
+
+def desktop_settings_response(row):
+    if row is None:
+        return DesktopSettingsSchema(values={}, updated_at=None)
+    return DesktopSettingsSchema(values=row.values, updated_at=row.updated_at)
+
+
+@router.get(
+    "/me/desktop-settings",
+    summary="Get the desktop app settings saved on your account",
+    auth=AuthBearer(),
+    response={200: DesktopSettingsSchema},
+)
+def get_desktop_settings(request):
+    row = UserDesktopSettings.objects.filter(user=request.user).first()
+    return desktop_settings_response(row)
+
+
+@router.patch(
+    "/me/desktop-settings",
+    summary="Merge changes into the desktop app settings on your account",
+    description=(
+        "Sets each key in values; a null value removes the key. Keys not "
+        "sent are left alone, so two PCs changing different settings don't "
+        "overwrite each other."
+    ),
+    auth=AuthBearer(),
+    response={200: DesktopSettingsSchema, 400: ErrorResponse},
+)
+def patch_desktop_settings(request, payload: DesktopSettingsPatchSchema):
+    for key in payload.values:
+        if not key or len(key) > DESKTOP_SETTINGS_MAX_KEY_LENGTH:
+            return 400, ErrorResponse(detail=f"Invalid setting key: {key!r}")
+
+    with transaction.atomic():
+        row, _ = UserDesktopSettings.objects.select_for_update().get_or_create(
+            user=request.user
+        )
+        values = dict(row.values or {})
+        for key, value in payload.values.items():
+            if value is None:
+                values.pop(key, None)
+            else:
+                values[key] = value
+        if len(values) > DESKTOP_SETTINGS_MAX_KEYS:
+            return 400, ErrorResponse(detail="Too many settings.")
+        if len(json.dumps(values)) > DESKTOP_SETTINGS_MAX_BYTES:
+            return 400, ErrorResponse(detail="Settings are too large.")
+        row.values = values
+        row.save()
+    return desktop_settings_response(row)
+
+
 def redirect_url_from_session(request):
-    redirect_url = "https://my.minmatar.org/auth/login"
-    try:
-        redirect_url = request.session["authentication_redirect_url"]
-    except KeyError:
+    default = default_login_redirect_url()
+    redirect_url = request.session.get("authentication_redirect_url")
+    if not redirect_url:
         logger.warning("No redirect URL found in session")
-    return redirect_url
+    return safe_login_redirect_url(redirect_url, default)
 
 
 @router.get(
@@ -339,23 +401,16 @@ def sync_user(request, user_id: int):
 def fake_login(request, redirect_url):
     """Fake user login for local dev server only."""
 
-    user_id = int(settings.FAKE_LOGIN_USER_ID)
+    user_id = int(fake_login_user_id())
     logger.warning("*** FAKE USER LOGIN (id=%d) ***", user_id)
 
     django_user = User.objects.get(id=user_id)
-    payload = {
-        "user_id": django_user.id,
-        "username": django_user.username,
-        "is_superuser": django_user.is_superuser,
-        "sub": django_user.username,
-        "iss": request.get_host(),
-        "iat": timezone.now(),
-    }
-    encoded_jwt_token = jwt.encode(
-        payload, settings.SECRET_KEY, algorithm="HS256"
-    )
-    logger.debug("Signed JWT Token: %s", encoded_jwt_token)
+    encoded_jwt_token = issue_fake_login_jwt(request, django_user)
+    logger.debug("Signed JWT Token: ...%s", encoded_jwt_token[-5:])
 
+    redirect_url = safe_login_redirect_url(
+        redirect_url, default_login_redirect_url()
+    )
     logger.info("Redirecting to authentication URL... %s", redirect_url)
     redirect_url = redirect_url + "?token=" + encoded_jwt_token
     return redirect(redirect_url)

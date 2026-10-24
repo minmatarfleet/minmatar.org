@@ -1,0 +1,181 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetScheduleDoctrine } from '@helpers/fetching/fleet_schedule'
+import { eve_clock } from '@helpers/fetching/fleet_schedule'
+import { marked } from 'marked'
+
+/**
+ * The live fleet, or the next one, at the top of the fleets page: FC
+ * portrait, a ticking countdown (counting up in red once it has started),
+ * EVE and local time, and one action.
+ */
+interface Props {
+    fleet:          FleetItem;
+    live?:          boolean;
+    doctrine?:      FleetScheduleDoctrine | null;
+    /** The viewer's characters signed up for this fleet. */
+    signups?:       number;
+    [propName: string]: any;
+}
+
+const {
+    fleet,
+    live = false,
+    doctrine = null,
+    signups = 0,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const counted_from = live && fleet.tracking?.start_time ? fleet.tracking.start_time : fleet.start_time
+const [ system ] = fleet.location?.split(' - ') ?? []
+const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
+const meta = [ fleet.fleet_commander_name, doctrine?.name, system ].filter(Boolean).join(' · ')
+const href = translatePath(`/fleets/upcoming/${fleet.id}`)
+
+import FleetPortrait from '@components/blocks/FleetPortrait.astro'
+import Countdown from '@components/blocks/Countdown.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import Button from '@components/blocks/Button.astro'
+import FleetHostTags from '@components/blocks/FleetHostTags.astro'
+---
+
+<section
+    class:list={['[ fleet-spotlight ][ component ]', { 'fleet-spotlight--live': live }, Astro.props.class]}
+    aria-label={live ? t('fleets.spotlight.live') : t('fleets.spotlight.next')}
+    {...attributes}
+>
+    <FleetPortrait
+        character_id={fleet.fleet_commander_id}
+        character_name={fleet.fleet_commander_name}
+        type={fleet.type}
+        size={112}
+    />
+
+    <div class="[ fleet-spotlight__time ]">
+        <small class="[ fleet-spotlight__label ]">
+            {live && <span class="[ fleet-spotlight__dot ]" aria-hidden="true" />}
+            {live ? t('fleets.spotlight.running_for') : t('fleets.spotlight.form_up_in')}
+        </small>
+        <Countdown
+            date={counted_from}
+            id={fleet.id}
+            tag={live ? 'countdown-live' : 'countdown-next'}
+        />
+        <small>
+            {live ?
+                t('fleets.spotlight.started_at').replace('{time}', eve_clock(counted_from)) :
+                t('fleets.eve_clock').replace('{time}', eve_clock(counted_from))
+            } · <LocalTime eve_time={counted_from} format="time" show_label={true} />
+        </small>
+    </div>
+
+    <div class="[ fleet-spotlight__body ]">
+        <h2 set:html={objective} />
+        <FleetHostTags fleet={fleet} linked={true} size="md" />
+        <p>{meta}</p>
+        {live && <small>{t('fleets.spotlight.x_up').replace('{system}', system ?? '')}</small>}
+    </div>
+
+    <div class="[ fleet-spotlight__action ]">
+        {live ?
+            <Button href={href}>{t('fleets.spotlight.open_fleet')}</Button> :
+            signups > 0 ?
+                <Button href={`${href}#ships`} color="transparent">{t('fleets.spotlight.change_ships')}</Button> :
+                <Button href={`${href}#ships`} color="green">{t('fleets.spotlight.pick_ships')}</Button>
+        }
+    </div>
+</section>
+
+<style lang="scss">
+    .fleet-spotlight {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        grid-template-areas: "portrait time body action";
+        align-items: center;
+        gap: var(--space-m) var(--space-xl);
+        padding: var(--space-m) var(--space-l);
+        border: 1px solid var(--border-color);
+
+        > :global(.fleet-portrait) {
+            grid-area: portrait;
+        }
+
+        &.fleet-spotlight--live {
+            border-color: var(--fleet-red);
+        }
+
+        :global(.countdown) {
+            font-size: var(--step-2);
+            letter-spacing: 2px;
+            text-indent: 0;
+        }
+    }
+
+    .fleet-spotlight__time {
+        grid-area: time;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fleet-spotlight__label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .fleet-spotlight__dot {
+        width: 0.6em;
+        height: 0.6em;
+        border-radius: 50%;
+        background-color: var(--fleet-red);
+    }
+
+    .fleet-spotlight__body {
+        grid-area: body;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h2 {
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-spotlight__action {
+        grid-area: action;
+    }
+
+    @media (max-width: 64rem) {
+        .fleet-spotlight {
+            grid-template-columns: auto minmax(0, 1fr);
+            grid-template-areas:
+                "portrait time"
+                "body body"
+                "action action";
+            gap: var(--space-s) var(--space-m);
+            padding: var(--space-s);
+        }
+
+        .fleet-spotlight__action :global(a) {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-spotlight > :global(.fleet-portrait) {
+            width: 72px;
+            height: 72px;
+        }
+    }
+</style>

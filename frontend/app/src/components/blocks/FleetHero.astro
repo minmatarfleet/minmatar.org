@@ -1,5 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
+import { doctrine_path, fitting_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Contract } from '@dtypes/api.minmatar.org'
@@ -8,7 +9,6 @@ import type { FleetItem, DoctrineType, HeroFittings } from '@dtypes/layout_compo
 interface Props {
     fleet:                  FleetItem;
     doctrine?:              DoctrineType | null;
-    init_tooltips:          boolean;
     supply_contracts?:      Contract[];
     /** Render the scrolling fittings/contracts strip under the hero. */
     show_fittings?:         boolean;
@@ -17,7 +17,6 @@ interface Props {
 const {
     fleet,
     doctrine,
-    init_tooltips,
     supply_contracts = [],
     show_fittings = true,
 } = Astro.props
@@ -27,6 +26,7 @@ const [ system, station ] = fleet?.location?.split(' - ') ?? []
 let hero_fittings:HeroFittings[] = [
     ...doctrine?.primary_fittings ?? [],
     ...doctrine?.support_fittings ?? [],
+    ...doctrine?.utility_fittings ?? [],
     ...doctrine?.secondary_fittings ?? []
 ]
 
@@ -88,14 +88,13 @@ import TextBox from '@components/layout/TextBox.astro';
                                     name: fleet.corporation_name as string,
                                     size: 'sm',
                                 }}
-                                show_modal={true}
+                                show_modal={Boolean(fleet.corporation_id)}
                             />
-                            {fleet.fleet_commander_fleet_count &&
+                            {Boolean(fleet.fleet_commander_fleet_count) &&
                                 <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
                                     <div
                                         class="[ text-highlight h-[16px] ]"
                                         data-tippy-content={t('fleet_commander_fleets')}
-                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                     >
                                         <FleetIcon size={16} />
                                     </div>
@@ -115,7 +114,7 @@ import TextBox from '@components/layout/TextBox.astro';
                                 {doctrine &&
                                     <div class="[ fleet-fact ]">
                                         <small class="[ fleet-fact__label ]">{t('doctrine')}</small>
-                                        <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
+                                        <StylessButton href={translatePath(doctrine_path(doctrine.id, doctrine.name))}>
                                             <ItemBadge
                                                 type_id={doctrine.primary_fittings[0].ship_id}
                                                 item_name={doctrine.name}
@@ -174,7 +173,7 @@ import TextBox from '@components/layout/TextBox.astro';
             >
                 <Marquee separator_width='200px'>
                     {hero_fittings.map((fitting) => (
-                        <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
+                        <StylessButton href={translatePath(fitting_path(fitting.id, fitting.fitting_name))}>
                             <ItemBadge
                                 type_id={fitting.ship_id}
                                 item_name={fitting.fitting_name}

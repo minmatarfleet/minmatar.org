@@ -116,6 +116,7 @@ class LpAdminViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Alliance pot")
         self.assertContains(response, "default_isk_per_lp")
+        self.assertContains(response, 'name="express_isk_per_lp"')
 
     def test_account_change_page_has_post_ledger_fields(self):
         url = reverse(
@@ -312,6 +313,87 @@ class LpAdminViewsTestCase(TestCase):
         self.assertEqual(row.old_isk_per_lp, 800)
         self.assertEqual(row.new_isk_per_lp, 900)
         self.assertEqual(row.changed_by, self.user)
+
+    def _post_currency_change(self, **fields):
+        url = reverse(
+            "admin:industry_industryloyaltypoint_change",
+            args=[self.currency.pk],
+        )
+        return self.client.post(
+            url,
+            {
+                "name": self.currency.name,
+                "corporation_id": self.currency.corporation_id,
+                "default_isk_per_lp": "800",
+                "express_isk_per_lp": "",
+                "is_active": "on",
+                "allow_buy": "on",
+                "allow_sell": "on",
+                "notes": "",
+                "accounts-TOTAL_FORMS": "0",
+                "accounts-INITIAL_FORMS": "0",
+                "accounts-MIN_NUM_FORMS": "0",
+                "accounts-MAX_NUM_FORMS": "1000",
+                "price_history-TOTAL_FORMS": "0",
+                "price_history-INITIAL_FORMS": "0",
+                "price_history-MIN_NUM_FORMS": "0",
+                "price_history-MAX_NUM_FORMS": "1000",
+                "_continue": "Save and continue editing",
+                **fields,
+            },
+        )
+
+    def test_currency_change_sets_and_clears_express_rate(self):
+        response = self._post_currency_change(express_isk_per_lp="760")
+        self.assertEqual(response.status_code, 302)
+        self.currency.refresh_from_db()
+        self.assertEqual(self.currency.express_isk_per_lp, 760)
+        self.assertEqual(self.currency.default_isk_per_lp, 800)
+        row = IndustryLoyaltyPointPriceHistory.objects.get(
+            loyalty_point=self.currency, tier="express"
+        )
+        self.assertIsNone(row.old_isk_per_lp)
+        self.assertEqual(row.new_isk_per_lp, 760)
+        self.assertEqual(row.changed_by, self.user)
+
+        # Clearing the field switches express off.
+        response = self._post_currency_change(express_isk_per_lp="")
+        self.assertEqual(response.status_code, 302)
+        self.currency.refresh_from_db()
+        self.assertIsNone(self.currency.express_isk_per_lp)
+
+    def test_currency_changelist_edits_express_rate_inline(self):
+        url = reverse("admin:industry_industryloyaltypoint_changelist")
+        response = self.client.get(url)
+        self.assertContains(response, 'name="form-0-express_isk_per_lp"')
+
+        currencies = list(IndustryLoyaltyPoint.objects.order_by("name"))
+        data = {
+            "form-TOTAL_FORMS": str(len(currencies)),
+            "form-INITIAL_FORMS": str(len(currencies)),
+            "form-MIN_NUM_FORMS": "0",
+            "form-MAX_NUM_FORMS": "1000",
+            "_save": "Save",
+        }
+        for i, currency in enumerate(currencies):
+            data.update(
+                {
+                    f"form-{i}-id": str(currency.pk),
+                    f"form-{i}-default_isk_per_lp": str(
+                        currency.default_isk_per_lp
+                    ),
+                    f"form-{i}-express_isk_per_lp": (
+                        "745" if currency.pk == self.currency.pk else ""
+                    ),
+                    f"form-{i}-is_active": "on",
+                    f"form-{i}-allow_buy": "on",
+                    f"form-{i}-allow_sell": "on",
+                }
+            )
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.currency.refresh_from_db()
+        self.assertEqual(self.currency.express_isk_per_lp, 745)
 
     def test_account_change_records_offer_price_history(self):
         url = reverse(

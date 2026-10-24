@@ -61,21 +61,3 @@ def is_price_viable(
 # Backward-compatible aliases for call sites that historically used sell-order names.
 REASONABLE_MARKUP_MAX_PCT = DEFAULT_MAX_MARKUP_PCT
 REASONABLE_JITA_PRICE_FLOOR = DEFAULT_BASELINE_PRICE_FLOOR
-
-
-def order_quantity_counts_as_reasonable(
-    order_price,
-    jita_sell_price: int | None,
-    *,
-    policy: PriceViabilityPolicy | None = None,
-    max_markup_pct: int | None = None,
-    baseline_price_floor: int | None = None,
-) -> bool:
-    """Alias of :func:`is_price_viable` for sell-order aggregation callers."""
-    return is_price_viable(
-        order_price,
-        jita_sell_price,
-        policy=policy,
-        max_markup_pct=max_markup_pct,
-        baseline_price_floor=baseline_price_floor,
-    )

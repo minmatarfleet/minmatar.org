@@ -6,14 +6,14 @@ interface Props {
     can_view_timers?:           boolean;
     can_view_moons?:            boolean;
     can_add_moons?:             boolean;
-    is_superuser?:              boolean;
+    can_view_affiliations?:     boolean;
 }
 
 const {
     can_view_timers = false,
     can_view_moons = false,
     can_add_moons = false,
-    is_superuser = false,
+    can_view_affiliations = false,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -26,6 +26,7 @@ import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
 import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
 import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
+import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 ---
 
 <Wrapper
@@ -77,6 +78,20 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
                         iconed={false}
                     />
                 }
+            </Tile>
+        }
+
+        {can_view_affiliations &&
+            <Tile
+                title={t('intel.affiliations.page_title')}
+                description={t('intel.affiliations.tile_description')}
+                cover='/images/sigs-tile-background.webp'
+            >
+                <AllianceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
+
+                <Button size='sm' href={translatePath('/intel/affiliations/')}>
+                    {t('browse')}
+                </Button>
             </Tile>
         }
 

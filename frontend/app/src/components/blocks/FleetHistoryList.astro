@@ -1,0 +1,159 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetHistory } from '@helpers/fetching/fleet_schedule'
+import { format_isk } from '@helpers/numbers'
+
+/**
+ * Fleet history: totals for the period, then one row per tracked fleet.
+ * Scheduled fleets that never started tracking are folded away.
+ */
+interface Props {
+    history:        FleetHistory;
+}
+
+const {
+    history,
+} = Astro.props
+
+const { tracked, untracked, doctrines, results } = history
+
+const destroyed = Object.values(results).reduce((sum, result) => sum + result.isk_destroyed, 0)
+const lost = Object.values(results).reduce((sum, result) => sum + result.isk_lost, 0)
+const efficiency = destroyed + lost > 0 ? Math.round(100 * destroyed / (destroyed + lost)) : null
+
+const stats = [
+    { value: tracked.length.toString(), label: t('fleets.history.tracked_fleets') },
+    { value: format_isk(destroyed), label: t('fleets.kills.isk_destroyed') },
+    { value: format_isk(lost), label: t('fleets.kills.isk_lost') },
+    ...(efficiency === null ? [] : [{ value: `${efficiency}%`, label: t('fleets.history.isk_efficiency') }]),
+]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FleetHistoryRow from '@components/blocks/FleetHistoryRow.astro'
+---
+
+<Flexblock gap='var(--space-l)'>
+    {tracked.length > 0 &&
+        <dl class="[ fleet-history-stats ]">
+            {stats.map(stat =>
+                <div>
+                    <dt>{stat.label}</dt>
+                    <dd>{stat.value}</dd>
+                </div>
+            )}
+        </dl>
+    }
+
+    {tracked.length > 0 ?
+        <div class="[ fleet-history-table ]">
+            <div class="[ fleet-history-head ]" aria-hidden="true">
+                <span>{t('fleets.history.column_when')}</span>
+                <span>{t('fleet')}</span>
+                <span>{t('fleets.history.column_length')}</span>
+                <span>{t('fleets.history.column_pilots')}</span>
+                <span>{t('fleets.history.column_result')}</span>
+            </div>
+            <div role="list">
+                {tracked.map(fleet =>
+                    <FleetHistoryRow
+                        role="listitem"
+                        fleet={fleet}
+                        doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
+                        result={results[fleet.id] ?? null}
+                    />
+                )}
+            </div>
+        </div>
+        :
+        <p>{t('fleets.history.empty')}</p>
+    }
+
+    {untracked.length > 0 &&
+        <div x-data="{ show_untracked: false }">
+            <button
+                type="button"
+                class="[ fleet-history-untracked ]"
+                x-bind:aria-expanded="show_untracked"
+                x-on:click="show_untracked = !show_untracked"
+            >
+                <span>{t('fleets.history.untracked').replace('{count}', untracked.length.toString())}</span>
+                <span x-text={`show_untracked ? '${t('fleets.history.hide')}' : '${t('fleets.history.show')}'`}>{t('fleets.history.show')}</span>
+            </button>
+            <div role="list" x-show="show_untracked" x-cloak>
+                {untracked.map(fleet =>
+                    <FleetHistoryRow
+                        role="listitem"
+                        fleet={fleet}
+                        doctrine={fleet.doctrine_id ? doctrines[fleet.doctrine_id] : null}
+                    />
+                )}
+            </div>
+        </div>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .fleet-history-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: 1px;
+        margin: 0;
+        background-color: var(--border-color);
+        border: 1px solid var(--border-color);
+
+        div {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: var(--space-3xs);
+            padding: var(--space-s) var(--space-m);
+            background-color: var(--component-background);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            opacity: 0.8;
+        }
+
+        dd {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-3);
+            line-height: 1.1;
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-history-head {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr) 5rem 4rem 13rem;
+        gap: var(--space-s);
+        padding: 0 var(--space-s) var(--space-2xs);
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .fleet-history-untracked {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        min-height: 3rem;
+        padding: 0 var(--space-s);
+        background: transparent;
+        border: 1px dashed var(--border-color);
+        color: var(--foreground);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-history-head {
+            display: none;
+        }
+    }
+</style>

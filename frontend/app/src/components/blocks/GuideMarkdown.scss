@@ -6,7 +6,6 @@
 
 .guide-md {
     --guide-md-display-font: 'Orbitron', var(--heading-font);
-    --guide-md-body-font: 'Source Sans 3', var(--body-font);
     --guide-md-panel-padding-block: var(--component-padding-block);
     --guide-md-panel-padding-inline: var(--space-l-xl);
     display: flex;
@@ -14,7 +13,7 @@
     gap: var(--space-l);
     width: 100%;
     min-width: 0;
-    font-family: var(--guide-md-body-font);
+    font-family: inherit;
 }
 
 .guide-md-preamble {
@@ -124,6 +123,13 @@
     border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
     text-align: left;
     vertical-align: top;
+}
+
+/* Phones: tighter cells keep three-column tables inside the panel. */
+@media (max-width: 48rem) {
+    .guide-md-section :is(th, td) {
+        padding: var(--space-3xs) var(--space-2xs);
+    }
 }
 
 .guide-md-section :is(th) {

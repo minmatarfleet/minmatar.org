@@ -1,0 +1,337 @@
+---
+/**
+ * Conversion desk queue: active orders in three lanes by the step owed.
+ * Renders inside LoyaltyOrderBook so the card menus reach its dialogs.
+ */
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import { format_number, number_thousand_separator } from '@helpers/numbers'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { express_hours_left, format_close_time } from '@helpers/loyalty_order_stats'
+import {
+    desk_lanes,
+    last_claim_at,
+    order_converter,
+    order_destination,
+    order_payout,
+    send_lp_deadline,
+    type LoyaltyLaneKey,
+} from '@helpers/loyalty_desk'
+import LoyaltyOrderActions from '@components/blocks/LoyaltyOrderActions.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    orders: LoyaltyMarketOrder[]
+    is_logged_in: boolean
+    current_user_id?: number
+    can_manage_buyback?: boolean
+}
+
+const {
+    orders,
+    is_logged_in,
+    current_user_id = 0,
+    can_manage_buyback = false,
+} = Astro.props
+
+const lanes = desk_lanes(orders)
+// Busy lanes show the oldest few; the rest open per lane.
+const VISIBLE_CARDS = 6
+const now = new Date()
+const seconds_since = (date: Date | string) => (now.getTime() - new Date(date).getTime()) / 1000
+
+const LANES: { key: LoyaltyLaneKey, title: string, note?: string }[] = [
+    { key: 'claim', title: t('industry.loyalty.desk.lane.claim'), note: t('industry.loyalty.desk.lane.claim_note') },
+    { key: 'send_lp', title: t('industry.loyalty.desk.lane.send_lp') },
+    { key: 'pay_isk', title: t('industry.loyalty.desk.lane.pay_isk'), note: t('industry.loyalty.desk.lane.pay_note') },
+]
+
+type Chip = { text: string, tone: 'neutral' | 'late' | 'express' | 'good' }
+
+const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
+    if (order.express_due_at && order.status !== 'completed') {
+        const hours = express_hours_left(order.express_due_at, now)
+        return hours >= 0
+            ? { text: `${t('industry.loyalty.tier.express')} · ${t('industry.loyalty.sla.due_in').replace('{time}', format_close_time(hours * 3600))}`, tone: 'express' }
+            : { text: `${t('industry.loyalty.tier.express')} · ${t('industry.loyalty.sla.overdue').replace('{time}', format_close_time(-hours * 3600))}`, tone: 'late' }
+    }
+    if (lane === 'send_lp') {
+        const claimed = last_claim_at(order)
+        const deadline = send_lp_deadline(order)
+        if (claimed && deadline && deadline < now)
+            return { text: t('industry.loyalty.desk.card.stalled').replace('{time}', format_close_time(seconds_since(claimed))), tone: 'late' }
+        if (claimed)
+            return { text: t('industry.loyalty.desk.card.claimed_ago').replace('{time}', format_close_time(seconds_since(claimed))), tone: 'neutral' }
+    }
+    if (lane === 'pay_isk')
+        return { text: t('industry.loyalty.status.awaiting_isk'), tone: 'good' }
+    return { text: t('industry.loyalty.desk.card.posted_ago').replace('{time}', format_close_time(seconds_since(order.created_at))), tone: 'neutral' }
+}
+---
+
+<div class="[ loyalty-lanes ]">
+    {LANES.map((lane) => (
+        <section class="[ loyalty-lanes__lane ]" aria-labelledby={`loyalty-lane-${lane.key}`} x-data="{ more: false }">
+            <div class="[ loyalty-lanes__head ]">
+                <h3 id={`loyalty-lane-${lane.key}`}>{lane.title}</h3>
+                <span class="[ tabular-nums ]">{lanes[lane.key].length}</span>
+            </div>
+            {lanes[lane.key].length === 0 && (
+                <p class="[ loyalty-lanes__empty ]">{t('industry.loyalty.desk.lane.empty')}</p>
+            )}
+            {lanes[lane.key].map((order, index) => {
+                const chip = chip_for(order, lane.key)
+                const destination = order_destination(order)
+                const converter = order_converter(order)
+                const seller_id = order.side === 'buy' ? null : order.created_by_character_id
+                return (
+                    <article
+                        class:list={['loyalty-lanes__card', { 'is-late': chip.tone === 'late' }]}
+                        x-show={index >= VISIBLE_CARDS ? 'more' : undefined}
+                        style={index >= VISIBLE_CARDS ? 'display: none' : undefined}
+                    >
+                        <div class="[ loyalty-lanes__row ]">
+                            <span class:list={['loyalty-lanes__chip', `is-${chip.tone}`]}>{chip.text}</span>
+                            <a href={translatePath(`/industry/loyalty/orders/${order.id}/`)}>#{order.id}</a>
+                        </div>
+                        <div class="[ loyalty-lanes__row tabular-nums ]">
+                            <strong>{number_thousand_separator(order.quantity)} LP</strong>
+                            <span class="[ loyalty-lanes__isk ]">{format_number(order_payout(order))} ISK</span>
+                        </div>
+                        <div class="[ loyalty-lanes__people ]">
+                            {seller_id ? (
+                                <img src={get_player_icon(seller_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                            ) : (
+                                <img src={get_corporation_logo(order.corporation_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                            )}
+                            {destination?.corporation_id && (
+                                <>
+                                    <span aria-hidden="true">→</span>
+                                    <img src={get_corporation_logo(destination.corporation_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                </>
+                            )}
+                            <span class="[ loyalty-lanes__names ]">
+                                <strong>{order.created_by_name ?? ''}</strong>
+                                {destination && <small>{destination.name}</small>}
+                            </span>
+                        </div>
+                        {converter && lane.key !== 'claim' && (
+                            <span class="[ loyalty-lanes__claimer ]">
+                                {converter.character_id && (
+                                    <img src={get_player_icon(converter.character_id, 64)} alt="" width="22" height="22" loading="lazy" />
+                                )}
+                                {t('industry.loyalty.desk.card.claimed_by').replace('{name}', converter.name)}
+                            </span>
+                        )}
+                        <div class="[ loyalty-lanes__actions ]">
+                            <LoyaltyOrderActions
+                                order={order}
+                                is_logged_in={is_logged_in}
+                                current_user_id={current_user_id}
+                                can_manage_buyback={can_manage_buyback}
+                            />
+                        </div>
+                    </article>
+                )
+            })}
+            {lanes[lane.key].length > VISIBLE_CARDS && (
+                <button type="button" class="[ loyalty-lanes__more ]" x-on:click="more = !more">
+                    <span x-show="!more">
+                        {t('industry.loyalty.desk.lane.show_more').replace('{count}', String(lanes[lane.key].length - VISIBLE_CARDS))}
+                    </span>
+                    <span x-show="more" style="display: none">{t('industry.loyalty.desk.lane.show_fewer')}</span>
+                </button>
+            )}
+            {lane.note && <p class="[ loyalty-lanes__note ]">{lane.note}</p>}
+        </section>
+    ))}
+</div>
+
+<style lang="scss">
+    .loyalty-lanes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+        gap: var(--space-s);
+        align-items: start;
+    }
+
+    .loyalty-lanes__lane {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .loyalty-lanes__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-inline: var(--space-3xs);
+
+        h3 {
+            margin: 0;
+            font-family: var(--default-font);
+            font-size: var(--step-0);
+            text-transform: none;
+        }
+
+        span {
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-lanes__empty,
+    .loyalty-lanes__note {
+        margin: 0;
+        padding: var(--space-xs);
+        border: 1px dashed var(--border-color-hover);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--faded);
+    }
+
+    .loyalty-lanes__note {
+        border: 0;
+        padding-block: 0;
+    }
+
+    .loyalty-lanes__more {
+        min-height: var(--space-l);
+        border: 1px dashed var(--border-color-hover);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .loyalty-lanes__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        border: 1px solid var(--border-color-hover);
+        background-color: var(--component-background);
+
+        &.is-late {
+            border-color: color-mix(in srgb, var(--fleet-red) 60%, transparent);
+        }
+    }
+
+    .loyalty-lanes__row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-xs);
+
+        a {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+
+        strong {
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+    }
+
+    .loyalty-lanes__isk {
+        font-weight: 600;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-lanes__chip {
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid var(--border-color-hover);
+        color: var(--foreground);
+
+        &.is-late {
+            border-color: var(--fleet-red);
+            color: var(--fleet-red);
+        }
+
+        &.is-express {
+            border-color: var(--fleet-yellow);
+            background-color: var(--fleet-yellow);
+            color: var(--background);
+        }
+
+        &.is-good {
+            border-color: var(--green);
+            color: var(--green);
+        }
+    }
+
+    .loyalty-lanes__people {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+
+        img {
+            flex: none;
+            width: var(--space-xl);
+            height: var(--space-xl);
+            background-color: var(--background);
+        }
+
+        > span[aria-hidden] {
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-lanes__names {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        font-size: var(--step--1);
+
+        strong,
+        small {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        strong {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--faded);
+        }
+    }
+
+    .loyalty-lanes__claimer {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--faded);
+
+        img {
+            width: var(--space-s);
+            height: var(--space-s);
+            border-radius: 50%;
+        }
+    }
+
+    .loyalty-lanes__actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-block-start: var(--space-2xs);
+        border-block-start: 1px solid var(--border-color);
+    }
+</style>

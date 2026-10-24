@@ -17,6 +17,13 @@ from tribes.endpoints.groups.schemas import (
 )
 from tribes.endpoints.serialization import user_to_character_ref
 from tribes.helpers import user_can_manage_group, user_can_view_group_roster
+from tribes.helpers.publishing import (
+    KIND_EVENT,
+    KIND_FLEET,
+    KIND_POST,
+    can_publish,
+    group_role_name,
+)
 from tribes.models import TribeGroup, TribeGroupMembership
 
 
@@ -35,12 +42,43 @@ def effective_allowed_affiliations(
     return [AffiliationRefSchema(id=a.pk, name=a.name) for a in rows]
 
 
+def _viewer_flags(
+    tg: TribeGroup, user, member_group_ids, manages: bool
+) -> dict:
+    """is_member and the can_* publishing flags for this viewer."""
+    if user is None or not getattr(user, "is_authenticated", False):
+        return {}
+    if member_group_ids is None:
+        is_member = TribeGroupMembership.objects.filter(
+            user_id=user.pk,
+            tribe_group=tg,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        ).exists()
+    else:
+        is_member = tg.pk in member_group_ids
+
+    def allowed(kind):
+        return can_publish(
+            user, tg, kind, is_member=is_member, manages=manages
+        )
+
+    return {
+        "is_member": is_member,
+        "can_post": allowed(KIND_POST),
+        "can_schedule_fleets": allowed(KIND_FLEET),
+        "can_create_events": allowed(KIND_EVENT),
+    }
+
+
 def serialize_tribe_group(
     tg: TribeGroup,
     *,
     request_user=None,
     member_count: int | None = None,
+    member_group_ids=None,
 ) -> TribeGroupSchema:
+    """``member_group_ids``: the viewer's active group ids, when a list
+    endpoint already loaded them."""
     if member_count is None:
         member_count = TribeGroupMembership.objects.filter(
             tribe_group=tg, status=TribeGroupMembership.STATUS_ACTIVE
@@ -109,4 +147,13 @@ def serialize_tribe_group(
         can_apply=can_apply,
         can_manage=can_manage,
         roster_hidden=bool(tg.roster_hidden),
+        allow_alliance_posts=bool(tg.allow_alliance_posts),
+        allow_open_fleets=bool(tg.allow_open_fleets),
+        effective_discord_channel_id=(
+            str(tg.effective_discord_channel_id)
+            if tg.effective_discord_channel_id
+            else None
+        ),
+        discord_role_name=group_role_name(tg),
+        **_viewer_flags(tg, request_user, member_group_ids, can_manage),
     )

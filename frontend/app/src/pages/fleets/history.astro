@@ -2,45 +2,50 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, login_redirect, login_url } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!user) return login_redirect(Astro)
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const can_add_fleets = can(gates, 'fleets.create')
+const can_view_fleets = can(gates, 'fleets.view')
 
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem } from '@dtypes/layout_components'
-import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
-import { fetch_fleets_auth } from '@helpers/fetching/fleets'
-import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
+import { fetch_fleet_history, type FleetHistory } from '@helpers/fetching/fleet_schedule'
+
+// /fleets/history/?group=<id>: one tribe group's fleets (the group page links here).
+const group_param = parseInt(Astro.url.searchParams.get('group') ?? '')
+const host_group_id = Number.isFinite(group_param) && group_param > 0 ? group_param : null
 
 let fetch_fleets_error: Error | false = false
-let fleets:FleetItem[] = []
-let fc_metrics:FleetCommanderMetrics[] = []
+let history: FleetHistory | null = null
 
 try {
-    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
-    fleets = await fetch_fleets_auth(auth_token as string, false, false, fc_metrics)
+    history = await fetch_fleet_history(auth_token as string, host_group_id)
 } catch (error) {
     fetch_fleets_error = error
 }
 
-const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}`)
+const fleets = history?.tracked ?? []
 
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
+// The chip names the group from its fleets; with none in the list it falls back to a generic label.
+const filter_group = host_group_id === null ? null :
+    [ ...(history?.tracked ?? []), ...(history?.untracked ?? []) ]
+        .map(fleet => fleet.host_group)
+        .find(group => group?.id === host_group_id) ?? null
+const filter_group_name = filter_group?.name ?? t('fleets.host.group_fallback')
+
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(false)}${host_group_id ? `&group=${host_group_id}` : ''}`)
+
+const AUTH_REDIRECT_URL = login_url(Astro)
 
 import { marked } from 'marked';
 const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) as string)
@@ -55,15 +60,16 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
+import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro';
 import PageActions from '@components/page/PageActions.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import FleetList from '@components/blocks/FleetList.astro';
+import FleetHistoryList from '@components/blocks/FleetHistoryList.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetHistoryGroupFilter from '@components/blocks/FleetHistoryGroupFilter.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
@@ -108,16 +114,17 @@ const page_description = t('page_finder.fleets.history.description');
             </PageActions>
         </FlexInline>
 
-        <PageSubheader slot="subheader">
-            <Button
-                href={translatePath('/fleets/upcoming/')}
-                size='sm'
-            >
-                {t('upcoming_fleets')}
-            </Button>
-        </PageSubheader>        
+        <FleetsHubTabs active="history" />        
         
         <Flexblock gap='var(--space-xl)'>
+            {host_group_id !== null &&
+                <FleetHistoryGroupFilter
+                    group_name={filter_group_name}
+                    group={filter_group}
+                    remove_href={translatePath('/fleets/history/')}
+                />
+            }
+
             {fetch_fleets_error ?
                 <ErrorRefetch
                     args={{
@@ -127,11 +134,8 @@ const page_description = t('page_finder.fleets.history.description');
                     }}
                 />
                 :
-                <FleetList
-                    fleets={fleets}
-                    history={true}
-                    fc_metrics={fc_metrics}
-                    init_tooltips={false}
+                <FleetHistoryList
+                    history={history as FleetHistory}
                 />
             }
         </Flexblock>

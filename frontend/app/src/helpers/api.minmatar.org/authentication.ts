@@ -1,163 +1,38 @@
 import type { UserProfile } from '@dtypes/api.minmatar.org'
-import { get_error_message } from '@helpers/string'
+import { api_request, api_status_is } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/users`
 
 export async function get_user_by_id(user_id:number) {
-    const headers = {
-        'Content-Type': 'application/json'
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${user_id}/profile`
-    
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-        
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as UserProfile;
-    } catch (error) {
-        throw new Error(`Error fetching user profile: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<UserProfile>(`${API_ENDPOINT}/${user_id}/profile`, {
+        error: 'Error fetching user profile',
+    })
 }
 
 export async function get_users_by_id(user_ids:number[]) {
-    const headers = {
-        'Content-Type': 'application/json'
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/profiles?ids=${user_ids.join(',')}`
-    
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-        
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as UserProfile[];
-    } catch (error) {
-        throw new Error(`Error fetching user profile: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<UserProfile[]>(`${API_ENDPOINT}/profiles?ids=${user_ids.join(',')}`, {
+        error: 'Error fetching user profile',
+    })
 }
 
 export async function get_user_by_name(user_name:string) {
-    const headers = {
-        'Content-Type': 'application/json'
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}?username=${user_name}`
-    
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-        
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as UserProfile;
-    } catch (error) {
-        throw new Error(`Error fetching user profile: ${error.message}`, { cause: error.cause });
-    }
+    return await api_request<UserProfile>(`${API_ENDPOINT}?username=${user_name}`, {
+        error: 'Error fetching user profile',
+    })
 }
 
 export async function delete_account(access_token:string) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/delete`
-    
-    console.log(`Requesting DELETE: ${API_ENDPOINT}/delete`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'DELETE',
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `DELETE ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return (response.status === 200);
-    } catch (error) {
-        throw new Error(`Error deleting account: ${error.message}`, { cause: error.cause });
-    }
+    return await api_status_is(`${API_ENDPOINT}/delete`, {
+        method: 'DELETE',
+        token: access_token,
+        error: 'Error deleting account',
+    })
 }
 
 export async function sync_user_with_discord(access_token:string, user_id:number) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${user_id}/sync`
-    
-    console.log(ENDPOINT)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `POST ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return (response.status === 200);
-    } catch (error) {
-        throw new Error(`Error syncing user roles with Discord: ${error.message}`, { cause: error.cause });
-    }
+    return await api_status_is(`${API_ENDPOINT}/${user_id}/sync`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error syncing user roles with Discord',
+    })
 }

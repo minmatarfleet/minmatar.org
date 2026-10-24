@@ -1,12 +1,17 @@
 import logging
+import uuid
 from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
-from django.db import IntegrityError, connection
+from django.db import IntegrityError, connection, transaction
 
 from discord.client import DiscordClient
-from discord.models import DiscordRole, DiscordUser
+from discord.models import (
+    DiscordChannelActivityRecord,
+    DiscordRole,
+    DiscordUser,
+)
 from discord.sync_context import disable_discord_group_sync
 from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
@@ -78,8 +83,15 @@ def offboard_group(group_id: int):
 
 
 def get_user_permissions(user_id: int) -> list[str]:
+    # Local import avoids users ↔ groups circular import at module load.
+    # pylint: disable-next=import-outside-toplevel
+    from groups.helpers.feature_access import (  # noqa: PLC0415
+        legacy_permissions_for_profile,
+    )
+
     user = User.objects.get(id=user_id)
-    permissions = user.get_all_permissions()
+    permissions = set(user.get_all_permissions())
+    permissions.update(legacy_permissions_for_profile(user))
     return list(permissions)
 
 
@@ -255,37 +267,114 @@ def make_user_objects(user):
     """
     discord_tag = user["username"] + "#" + user["discriminator"]
 
-    django_user, created = User.objects.get_or_create(
-        username=user["username"]
+    # The Discord ID is the identity. Usernames can be changed and are then
+    # released for someone else to claim, so they must never pick the account.
+    discord_user = (
+        DiscordUser.objects.filter(id=user["id"])
+        .select_related("user")
+        .first()
     )
-    if created:
-        logger.info("Django user created: %s", django_user.username)
-
-        AuditEntry.objects.create(
-            user=django_user,
-            category="user_registered",
-            summary=f"User created: {django_user.username}",
-        )
-
-    discord_user, created = DiscordUser.objects.get_or_create(
-        id=user["id"],
-        defaults={"user": django_user, "discord_tag": discord_tag},
-    )
-    if created:
-        logger.info(
-            "Discord user created: %s %s", discord_user.id, discord_tag
-        )
+    if discord_user:
+        django_user = discord_user.user
+        _follow_discord_username(django_user, user["username"])
+    else:
+        try:
+            with transaction.atomic():
+                django_user = _create_user_for_discord(user["username"])
+                discord_user = DiscordUser.objects.create(
+                    id=user["id"], user=django_user, discord_tag=discord_tag
+                )
+            logger.info(
+                "Discord user created: %s %s", discord_user.id, discord_tag
+            )
+        except IntegrityError:
+            # A second first-login for the same Discord ID (double click)
+            # got there first; its account is the one to use.
+            discord_user = (
+                DiscordUser.objects.filter(id=user["id"])
+                .select_related("user")
+                .first()
+            )
+            if discord_user is None:
+                raise
+            django_user = discord_user.user
 
     discord_user.discord_tag = discord_tag
     discord_user.avatar = user["avatar"]
     discord_user.save()
 
-    discord_user.user = django_user
-    discord_user.save()
-
     ensure_eve_player_for_user(django_user)
 
     return django_user
+
+
+def _username_taken(username: str, exclude_user_id=None) -> bool:
+    # MySQL compares usernames case-insensitively, so check the same way.
+    taken = User.objects.filter(username__iexact=username)
+    if exclude_user_id is not None:
+        taken = taken.exclude(id=exclude_user_id)
+    return taken.exists()
+
+
+def _create_user_for_discord(discord_username: str) -> User:
+    """
+    New account for a Discord ID we haven't seen.
+
+    An existing account with the same username belongs to whoever held that
+    Discord username before; it is never handed over.
+    """
+    username = discord_username
+    if _username_taken(username):
+        username = f"{discord_username}__d{uuid.uuid4().hex[:8]}"
+        logger.warning(
+            "Discord username %s already belongs to another account; "
+            "creating %s instead",
+            discord_username,
+            username,
+        )
+
+    django_user = User.objects.create(username=username)
+    logger.info("Django user created: %s", django_user.username)
+    AuditEntry.objects.create(
+        user=django_user,
+        category="user_registered",
+        summary=f"User created: {django_user.username}",
+    )
+    return django_user
+
+
+def _follow_discord_username(django_user: User, discord_username: str):
+    """
+    Keep the account username equal to the Discord username after a rename.
+
+    Voice activity is recorded by Discord username and matched on it. If the
+    new name is still held by a stale account, keep the current one.
+    """
+    if django_user.username == discord_username:
+        return
+    if _username_taken(discord_username, exclude_user_id=django_user.id):
+        logger.warning(
+            "User %s renamed on Discord to %s, which another account holds",
+            django_user.id,
+            discord_username,
+        )
+        return
+    logger.info(
+        "User %s renamed on Discord: %s -> %s",
+        django_user.id,
+        django_user.username,
+        discord_username,
+    )
+    old_username = django_user.username
+    with transaction.atomic():
+        django_user.username = discord_username
+        django_user.save(update_fields=["username"])
+        # Voice minutes logged under the old name were this pilot's. Move
+        # them so they stay theirs, and are not credited to whoever claims
+        # the released name next.
+        DiscordChannelActivityRecord.objects.filter(
+            username=old_username
+        ).update(username=discord_username)
 
 
 def ensure_eve_player_for_user(django_user: User) -> EvePlayer:

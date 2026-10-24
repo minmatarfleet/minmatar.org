@@ -39,6 +39,36 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-17 — Previous corp Discord role stays after the main moves
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** Main moved corp and the old corp Discord role kept returning. Primary `corporation_id` already matched ESI and the latest history row. Another linked character is still in the previous corporation, and member groups include every linked character.
+**Durable rule:** Dump every linked character's corporation, not only the primary. Refresh re-adds `Corp <TICKER>` while any character remains in that corp. Nickname follows the primary.
+**Skill update:** added the alt-still-in-previous-corp row next to the ESI-lag row.
+
+## 2026-10-15 — Campaign page 403 for alliance members
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Logged-in alliance members got the site 403 on a campaign link. The page checks `campaigns.view_campaign`, which is not on the Alliance group. `campaigns.view` is affiliation-scoped and the PilotFeature row was missing because startup never ran `sync_pilot_features`.
+**Durable rule:** Campaign view is Alliance, Militia, and Associate via the feature. Profile permissions must list `campaigns.view_campaign` when that wiring passes. Sync features after migrate.
+**Skill update:** added the campaign-page 403 row.
+
+## 2026-10-14 — Discord login notice Continue does nothing
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Continue on the Discord account notice did nothing after the checkbox was clicked, on several browsers. The button stayed disabled until Alpine loaded from jsDelivr, and the click handler returned silently when the checkbox model was false.
+**Durable rule:** Login notice is a native GET form with a required checkbox. Keep `redirect_url` in a hidden field. `HelpTicket.opener` stays null until that login completes.
+**Skill update:** added the Discord login notice row.
+
 ## 2026-10-13 — Grade ore stock ignored on the build planner
 
 **Category:** pulse.technology
@@ -68,6 +98,26 @@ do not duplicate it — one clarifying clause at most.
 **Symptom vs cause:** A large Veldspar hangar was barely used when mineral orders had more Pyerite than Tritanium. Fill covered the largest mineral first, so Scordite satisfied Tritanium as a byproduct. Water stays off the allowlist via `PAUSED_ACCEPTED_TYPE_NAMES` so the weekly seed cannot turn it back on.
 **Durable rule:** Cover Tritanium from Veldspar while any Veldspar-family ore is on hand, then the other minerals. Paused accepted names stay `active=False` across seed. Hangar sales of stock already on hand are separate from the allowlist.
 **Skill update:** added the Veldspar-first row and the paused-allowlist row.
+
+## 2026-10-13 — Fishermen cleanup DMs every reconcile
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Group chief got a cleanup-failed DM every reconcile. An unentitled seat kick returned 403 (member still in the guild; bot cannot kick). The alert channel post also 403s, so the fallback is a chief DM. `failure_count >= 3` alerted again on every later run.
+**Durable rule:** Alert once when status first becomes `cleanup_failed`. Kick 403 is still-in-guild plus missing permission, not a leave. 404 marks `removed`. Channel 403 falls back to the chief DM.
+**Skill update:** added the repeating-cleanup-DM row.
+
+## 2026-10-10 — No Discord roles, site account never created
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** Waited hours in Discord and still had no roles. No `DiscordUser` for that account, so `HelpTicket.opener` is null and role sync has nothing to push.
+**Durable rule:** Missing `DiscordUser` means they have not logged in on the site. Waiting does not grant roles. If the row exists, use the authed-but-no-roles checks.
+**Skill update:** added the unlinked-account row above the authed-but-no-roles row.
 
 ## 2026-09-30 — Hidden tribe-group roster
 

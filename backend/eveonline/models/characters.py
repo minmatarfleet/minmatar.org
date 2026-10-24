@@ -1,12 +1,10 @@
 import logging
-from typing import List
 
 from django.db import models
-from django.db.models import Q
 from django.contrib.auth.models import User
 from esi.models import Token
 
-from eveonline.models.alliances import EveAlliance
+from eveonline.models.contracts import EsiContractFields
 
 logger = logging.getLogger(__name__)
 
@@ -221,43 +219,10 @@ class EveCharacterAsset(models.Model):
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
 
 
-class EveCharacterContract(models.Model):
+class EveCharacterContract(EsiContractFields):
     """Character contract from ESI (esi-contracts.read_character_contracts.v1)."""
 
-    contract_id = models.BigIntegerField(unique=True, primary_key=True)
     character = models.ForeignKey("EveCharacter", on_delete=models.CASCADE)
-    type = models.CharField(max_length=32, db_index=True)
-    status = models.CharField(max_length=32, db_index=True)
-    availability = models.CharField(max_length=32, blank=True)
-    issuer_id = models.BigIntegerField()
-    issuer_corporation_id = models.BigIntegerField(null=True, blank=True)
-    assignee_id = models.BigIntegerField(null=True, blank=True)
-    acceptor_id = models.BigIntegerField(null=True, blank=True)
-    for_corporation = models.BooleanField(default=False)
-    date_issued = models.DateTimeField(null=True, blank=True)
-    date_expired = models.DateTimeField(null=True, blank=True)
-    date_accepted = models.DateTimeField(null=True, blank=True)
-    date_completed = models.DateTimeField(null=True, blank=True)
-    days_to_complete = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    reward = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    collateral = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    buyout = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    volume = models.DecimalField(
-        max_digits=32, decimal_places=2, null=True, blank=True
-    )
-    start_location_id = models.BigIntegerField(null=True, blank=True)
-    end_location_id = models.BigIntegerField(null=True, blank=True)
-    title = models.CharField(blank=True, max_length=255)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [models.Index(fields=["character", "status"])]
@@ -516,63 +481,6 @@ class EveSkillset(models.Model):
 
     def __str__(self):
         return str(self.name)
-
-    @staticmethod
-    def get_skill_name(skill: str):
-        return skill[:-1]
-
-    @staticmethod
-    def get_skill_level(skill: str):
-        return skill[-1]
-
-    def get_number_of_characters_with_skillset(
-        self, alliance_name: str = None
-    ) -> List[str]:
-        character_names = []
-        skills = self.skills.split("\n")
-        q = Q()
-        skill_dict = {}
-        for skill in skills:
-            skill_name = skill[:-1].strip()
-            skill_level = int(skill[-1])
-            if (
-                skill_name not in skill_dict
-                or skill_dict[skill_name] < skill_level
-            ):
-                skill_dict[skill_name] = skill_level
-        for skill_name, skill_level in skill_dict.items():
-            q |= Q(skill_name=skill_name, skill_level__gte=skill_level)
-        characters = EveCharacter.objects.all()
-        if alliance_name:
-            alliance_ids = EveAlliance.objects.filter(
-                name=alliance_name
-            ).values_list("alliance_id", flat=True)
-            characters = characters.filter(alliance_id__in=alliance_ids)
-        for character in characters:
-            if EveCharacterSkill.objects.filter(q).filter(
-                character=character
-            ).count() == len(skill_dict.keys()):
-                character_names.append(character.character_name)
-        return character_names
-
-    def get_missing_skills_for_character_id(
-        self, character_id: int
-    ) -> List[str]:
-        character = EveCharacter.objects.get(character_id=character_id)
-        skills = self.skills.split("\n")
-        missing_skills = []
-        for skill in skills:
-            skill_name = skill[:-1].strip()
-            skill_level = skill[-1].strip()
-            if (
-                not EveCharacterSkill.objects.filter(
-                    skill_name=skill_name, skill_level__gte=skill_level
-                )
-                .filter(character=character)
-                .exists()
-            ):
-                missing_skills.append(skill)
-        return missing_skills
 
     @staticmethod
     def roman_number_to_int(s):

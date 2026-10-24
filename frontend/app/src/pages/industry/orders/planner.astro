@@ -4,11 +4,9 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 const is_logged_in = !!(user && auth_token)
 
 import { get_order_by_id, get_planner_facilities } from '@helpers/api.minmatar.org/industry'
@@ -1725,7 +1723,7 @@ const planner_copy = JSON.stringify({
 
     .planner-bucket {
         padding-block: var(--space-2xs);
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: 1px solid var(--hairline-medium);
     }
 
     .planner-bucket-action {
@@ -1815,6 +1813,71 @@ const planner_copy = JSON.stringify({
 
     .planner-fitting-structure {
         flex: 0 0 auto;
+    }
+
+    /* Phones: 44px tap targets for build/buy toggles, 16px+ textareas (no iOS zoom),
+       rigs listed one per row with their full names. */
+    @media (max-width: 48rem) {
+        .planner-tsv {
+            font-size: var(--step-0);
+            padding: var(--space-xs);
+        }
+
+        .planner-bucket-action {
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
+        }
+
+        .planner-subitem {
+            min-height: 44px;
+            gap: var(--space-xs);
+
+            input[type='checkbox'] {
+                flex-shrink: 0;
+                inline-size: var(--space-m);
+                block-size: var(--space-m);
+                margin: 0;
+            }
+
+            > span {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            > small {
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+        }
+
+        .planner-fitting-row {
+            flex-direction: column;
+        }
+
+        .planner-fitting-rigs {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .planner-fitting-rigs .planner-fitting-piece {
+            flex-direction: row;
+            gap: var(--space-xs);
+            max-width: none;
+            text-align: start;
+
+            img {
+                flex-shrink: 0;
+            }
+
+            .planner-tip__label {
+                font-size: var(--step--1);
+                text-align: start;
+                white-space: normal;
+                overflow: visible;
+            }
+        }
     }
 
 </style>

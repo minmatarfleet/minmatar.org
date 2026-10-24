@@ -3,7 +3,7 @@ next to the community's. All values come from cached platform data."""
 
 import logging
 
-from alliance.models import AllianceHealthSnapshot
+from alliance.helpers.health import latest_snapshot
 from eveonline.models import EveCharacterSkillset
 from learning.helpers import completed_learning_ids
 from srp.models import EveFleetShipReimbursement
@@ -61,16 +61,18 @@ def _primary_tribe(user) -> str:
 
 
 def _community_snapshot() -> dict:
-    """Best-effort community figures from stored health/activity data."""
+    """Best-effort community figures from stored health/activity data.
+
+    ``active_pilots`` is the alliance health "monthly active pilots" figure:
+    people with fleet, kill or supply activity in the last 30 days.
+    """
     active_pilots = None
     try:
-        latest = AllianceHealthSnapshot.objects.order_by("-created_at").first()
+        latest = latest_snapshot()
         if latest is not None:
-            active_pilots = getattr(latest, "active_pilots", None) or getattr(
-                latest, "total_active", None
-            )
-    except Exception:  # pragma: no cover - defensive
-        active_pilots = None
+            active_pilots = latest.payload.get("map_30d")
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning("Giveback community snapshot failed", exc_info=True)
     return {"active_pilots": active_pilots}
 
 

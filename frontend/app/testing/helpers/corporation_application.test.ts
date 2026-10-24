@@ -10,7 +10,6 @@ import {
     corporationAnswersFromPayload,
     descriptionFromCorporationFormData,
     descriptionFromCorporationPayload,
-    estimateCorporationApplicationDescriptionLength,
     formatCorporationApplicationDescription,
     formatCorporationApplicationRequirements,
     formatCorporationApplicationWebDescription,
@@ -100,14 +99,10 @@ test('fixed overhead estimate covers Discord description length', () => {
         roles: ['fleet_damage'],
     };
     const actual = formatCorporationApplicationDescription(answers).length;
-    const estimate = estimateCorporationApplicationDescriptionLength({
-        ...emptyLimited,
-    });
 
     expect(CORPORATION_APPLICATION_DESCRIPTION_FIXED_OVERHEAD).toBeGreaterThanOrEqual(
         actual,
     );
-    expect(estimate).toBeGreaterThanOrEqual(actual);
 });
 
 test('isCorporationApplicationDescriptionWithinLimit respects Discord max', () => {

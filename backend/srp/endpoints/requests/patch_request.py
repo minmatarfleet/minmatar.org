@@ -1,5 +1,7 @@
 """PATCH /{int:request_id} — update SRP request status."""
 
+import logging
+
 from groups.helpers.feature_access import can_use_feature
 from django.utils import timezone
 
@@ -11,13 +13,15 @@ from srp.endpoints.requests.schemas import SrpPatchResult, UpdateSrpRequest
 from srp.helpers import send_decision_notification
 from srp.models import EveFleetShipReimbursement
 
+logger = logging.getLogger(__name__)
+
 PATH = "/{int:request_id}"
 METHOD = "patch"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: SrpPatchResult, 403: ErrorResponse, 404: ErrorResponse},
     "description": (
-        "Update an SRP request. Owners may withdraw; "
+        "Update an SRP request. Owners may withdraw a pending request; "
         "srp.change_evefleetshipreimbursement may set any status."
     ),
 }
@@ -43,6 +47,10 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
     if not can_use_feature(request.user, "srp.process"):
         if payload.status != "withdrawn":
             return 403, {"detail": "Permission denied"}
+        # A decided request stays decided: withdrawing it would let the same
+        # killmail be filed (and paid) again.
+        if reimbursement.status != "pending":
+            return 403, {"detail": "Only a pending request can be withdrawn"}
 
     old_status = reimbursement.status
     reimbursement.status = payload.status
@@ -54,7 +62,11 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
         try:
             send_decision_notification(reimbursement)
             mail_result = "Success"
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "SRP decision mail failed for reimbursement %s",
+                reimbursement.pk,
+            )
             mail_result = f"Error sending mail: {err}"
     else:
         mail_result = "N/A"

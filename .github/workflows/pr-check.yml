@@ -3,22 +3,26 @@ on:
   pull_request:
     branches:
       - main
+  # Runs on main too so PRs can restore main's dependency and test DB caches.
+  push:
+    branches:
+      - main
 jobs:
-  backend-check:
+  backend-lint:
     runs-on: ubuntu-22.04
     defaults:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python 3.10
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pylint flake8
+          pip install pylint flake8 black==26.5.1
       - name: Lint with pylint
         run: |
           pylint .
@@ -27,14 +31,75 @@ jobs:
           flake8 .
       - name: Lint with black
         run: |
-          pip install black==26.5.1
           black --check .
+  bot-check:
+    # The Discord bot (bot/) is a separate deployable; lint it and run its
+    # stdlib unittest suite (button custom_id contract, /timer off the loop).
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: bot
+    env:
+      DISCORD_BOT_TOKEN: ci-placeholder
+      MINMATAR_API_TOKEN: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pipenv
+          cache-dependency-path: bot/Pipfile.lock
+      - name: Install dependencies
+        run: |
+          pip install pipenv flake8
+          pipenv sync
+      - name: Lint with flake8
+        run: |
+          flake8 .
       - name: Run tests
         run: |
+          pipenv run python -m unittest discover -s tests -t .
+  backend-check:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      TEST_DB_NAME: .test-db/test_db.sqlite3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pipenv
+          cache-dependency-path: backend/Pipfile.lock
+      - name: Install dependencies
+        run: |
           pip install pipenv
-          pipenv install --dev
-          pipenv install coverage
-          pipenv run coverage run manage.py test --settings=app.settings_test --testrunner="testrunner.Runner" 
+          pipenv sync --dev
+      # The migrated schema only changes when a migration or a dependency
+      # does, so skip re-running ~550 migrations on every push.
+      - name: Restore migrated test database
+        id: test-db
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/.test-db/test_db.sqlite3
+          key: test-db-${{ runner.os }}-py3.10-${{ hashFiles('backend/**/migrations/*.py', 'backend/Pipfile.lock') }}
+      - name: Run tests
+        run: |
+          mkdir -p .test-db
+          pipenv run coverage run manage.py test --settings=app.settings_test --testrunner="testrunner.Runner" --parallel auto --keepdb --noinput
+      - name: Save migrated test database
+        if: always() && steps.test-db.outputs.cache-hit != 'true' && hashFiles('backend/.test-db/test_db.sqlite3') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: backend/.test-db/test_db.sqlite3
+          key: ${{ steps.test-db.outputs.cache-primary-key }}
+      - name: Combine coverage
+        run: |
+          pipenv run coverage combine
           pipenv run coverage json
       - name: Display test results
         run: cat testresults.txt

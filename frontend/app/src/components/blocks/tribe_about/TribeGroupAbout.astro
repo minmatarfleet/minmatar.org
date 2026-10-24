@@ -1,0 +1,293 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TribeGroupAbout } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { TRIBE_ACTIVITY_BY_CODE, fill_template } from '@helpers/tribe_activity'
+import {
+    TRIBE_ABOUT_STAGES,
+    group_about_vitals,
+    group_has_year,
+    month_long,
+} from '@helpers/tribe_about'
+
+interface Props {
+    /** The group's write-up (its content, or its description). */
+    markdown: string
+    group_name: string
+    group_code: string
+    member_count: number
+    tribe_id: number
+    tribe_name: string
+    about: TribeGroupAbout | null
+}
+
+const {
+    markdown,
+    group_name,
+    group_code,
+    member_count,
+    tribe_id,
+    tribe_name,
+    about,
+} = Astro.props
+
+const count = (value: number) => number_thousand_separator(Math.round(value))
+
+const ready = Boolean(about?.ready)
+const vitals = group_about_vitals(t, about, member_count, tribe_name)
+const year = ready ? about?.year ?? null : null
+const stage = TRIBE_ABOUT_STAGES[group_code]
+const highlights = year?.highlights ?? {}
+const has_year = year ? group_has_year(year) : false
+// Capital groups read as the hulls they field, like on the tribe page.
+const hangar = about?.capitals?.hangar[0] ?? null
+
+const headline = hangar
+    ? count(hangar.total)
+    : stage && year && has_year ? stage.value(year.totals) : ''
+const detail = stage?.detail && year && has_year ? stage.detail(t, year.totals) : ''
+const coming_soon = !headline && Boolean(year?.manual)
+
+const best = highlights.best_month && highlights.best_month.value > 0 ? highlights.best_month : null
+const all_time = year ? TRIBE_ACTIVITY_BY_CODE[group_code]?.all_time?.(t, highlights) ?? null : null
+
+const showcase_hulls = hangar?.hulls ?? highlights.hulls ?? []
+const catches = highlights.catches ?? []
+const work = highlights.latest_work ?? []
+const top_pilots = year?.top_pilots ?? []
+// Alone in its row (guests see no pilot names), the record card lies flat.
+const record_alone = !(
+    (top_pilots.length > 0 && stage)
+    || showcase_hulls.length > 0
+    || catches.length > 0
+    || work.length > 0
+)
+
+const updated = about?.generated_at
+    ? new Date(about.generated_at).toLocaleString(lang, {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC',
+    })
+    : ''
+
+import TribeAboutBody from '@components/blocks/tribe_about/TribeAboutBody.astro'
+import TribeAboutIntro from '@components/blocks/tribe_about/TribeAboutIntro.astro'
+import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
+import TribeAboutPilots from '@components/blocks/tribe_about/TribeAboutPilots.astro'
+import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.astro'
+import TribeCapitalRecord from '@components/blocks/tribe_about/TribeCapitalRecord.astro'
+import TribeSupplyGoods from '@components/blocks/tribe_about/TribeSupplyGoods.astro'
+import TribeHullList from '@components/blocks/tribe_about/TribeHullList.astro'
+import TribeCatchList from '@components/blocks/tribe_about/TribeCatchList.astro'
+import TribeWorkList from '@components/blocks/tribe_about/TribeWorkList.astro'
+---
+
+<TribeAboutBody gap="var(--space-xl)" class="[ group-about ]">
+    <TribeAboutIntro markdown={markdown} vitals={vitals} />
+
+    {ready && about ?
+        <>
+            <TribeAboutSection
+                title={t('tribes.about.group.year_title')}
+                caption={fill_template(t('tribes.about.group.year_caption'), { group: group_name })}
+            >
+                <div class="[ tribe-about-row ]">
+                    <article class:list={['[ tribe-about-card ][ year ]', { 'year--soon': coming_soon, 'year--wide': record_alone }]}>
+                        <div class="[ year__part ]">
+                            {stage && <h3 class="[ tribe-about-eyebrow ]">{t(stage.verb)}</h3>}
+                            {coming_soon ?
+                                <p class="[ year__quiet ]">{t('tribes.activity.coming_soon')}</p>
+                                : headline ?
+                                    <p class="[ year__value ]">
+                                        {headline}
+                                        {stage && <span class="[ year__unit ]">{t(stage.unit)}</span>}
+                                    </p>
+                                    :
+                                    <p class="[ year__quiet ]">{t('tribes.about.quiet_year')}</p>
+                            }
+                            {detail && <p class="[ tribe-about-detail ]">{detail}</p>}
+                        </div>
+
+                        {best && stage &&
+                            <div class="[ year__part ]">
+                                <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.group.best_month')}</h3>
+                                <p class="[ tribe-about-record ]">
+                                    {stage.pilot_value(best.value)}
+                                    <span class="[ year__unit ]">{t(stage.unit)}</span>
+                                </p>
+                                <p class="[ tribe-about-detail ]">{month_long(best.month, lang)}</p>
+                            </div>
+                        }
+
+                        {all_time &&
+                            <div class="[ year__part ]">
+                                <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.group.all_time')}</h3>
+                                <p class="[ tribe-about-record ]">{all_time.headline}</p>
+                                {all_time.detail && <p class="[ tribe-about-detail ]">{all_time.detail}</p>}
+                            </div>
+                        }
+                    </article>
+
+                    {top_pilots.length > 0 && stage &&
+                        <article class="[ tribe-about-card ]">
+                            <TribeAboutPilots
+                                title={fill_template(t('tribes.about.top_by'), { metric: t(stage.pilot_metric) })}
+                                pilots={top_pilots}
+                                format={stage.pilot_value}
+                            />
+                        </article>
+                    }
+                    {showcase_hulls.length > 0 &&
+                        <article class="[ tribe-about-card ]">
+                            <h3 class="[ tribe-about-eyebrow ]">
+                                {hangar ? t('tribes.about.group.hangar') : t('tribes.about.supply.hulls')}
+                            </h3>
+                            <TribeHullList hulls={showcase_hulls} />
+                        </article>
+                    }
+                    {catches.length > 0 &&
+                        <article class="[ tribe-about-card ]">
+                            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.pulse.catches')}</h3>
+                            <TribeCatchList catches={catches} />
+                        </article>
+                    }
+                    {work.length > 0 &&
+                        <article class="[ tribe-about-card ]">
+                            <h3 class="[ tribe-about-eyebrow ]">{t('tribes.about.pulse.latest_work')}</h3>
+                            <TribeWorkList work={work} />
+                        </article>
+                    }
+                </div>
+            </TribeAboutSection>
+
+            {about.capitals &&
+                <TribeCapitalRecord
+                    capitals={about.capitals}
+                    kills_title={fill_template(t('tribes.about.group.kills_title'), { group: group_name })}
+                    kills_caption={fill_template(t('tribes.about.group.kills_caption'), { group: group_name })}
+                    ping_caption={fill_template(t('tribes.about.group.ping_caption'), { group: group_name })}
+                />
+            }
+
+            {about.supply &&
+                <TribeSupplyGoods
+                    supply={about.supply}
+                    hulls={[]}
+                    title={t('tribes.about.group.ore_title')}
+                    caption={fill_template(t('tribes.about.group.ore_caption'), { group: group_name })}
+                />
+            }
+
+            <TribeAboutGrowth
+                about={about}
+                title={t('tribes.about.group.growth_title')}
+                caption={t('tribes.about.group.growth_caption')}
+            />
+
+            <p class="[ group-about__footnote ]">
+                {updated && fill_template(t('tribes.about.footnote'), { time: updated })}
+                {' '}
+                <a href={translatePath(`/alliance/tribes/${tribe_id}/`)}>
+                    {fill_template(t('tribes.about.group.tribe_link'), { tribe: tribe_name })} →
+                </a>
+            </p>
+        </>
+        :
+        <p class="[ group-about__pending ]">{t('tribes.about.group.pending')}</p>
+    }
+</TribeAboutBody>
+
+<style lang="scss">
+    .year {
+        gap: 0;
+    }
+
+    // Headline, best month and all-time read as one record card.
+    .year__part {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        .tribe-about-record {
+            font-size: var(--step-2);
+        }
+
+        & + & {
+            margin-block-start: var(--space-s);
+            padding-block-start: var(--space-s);
+            border-block-start: 1px solid var(--border-color-hover);
+        }
+    }
+
+    .year--wide {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: var(--space-s) var(--space-l);
+
+        .year__part + .year__part {
+            margin-block-start: 0;
+            padding-block-start: 0;
+            border-block-start: 0;
+        }
+    }
+
+    @media (min-width: 48rem) {
+        .year--wide .year__part + .year__part {
+            padding-inline-start: var(--space-l);
+            border-inline-start: 1px solid var(--border-color-hover);
+        }
+    }
+
+    .year--soon {
+        background: none;
+        box-shadow: inset 0 0 0 1px var(--border-color-hover);
+    }
+
+    .year__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .year__unit {
+        margin-inline-start: var(--space-3xs);
+        font-size: var(--step-0);
+        color: var(--foreground);
+    }
+
+    .year__quiet {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--faded);
+    }
+
+    .group-about__footnote,
+    .group-about__pending {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .group-about__footnote a {
+        color: var(--highlight);
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .group-about__pending {
+        padding: var(--space-m);
+        box-shadow: inset 0 0 0 1px var(--border-color-hover);
+    }
+</style>

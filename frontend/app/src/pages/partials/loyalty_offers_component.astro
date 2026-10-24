@@ -20,6 +20,13 @@ import {
     sort_loyalty_offers,
     type LoyaltyOffersSide,
 } from '@helpers/loyalty_offers_metrics'
+import {
+    api_offer_ordering,
+    offer_row_figures,
+    sort_offers_by_local_key,
+    summarize_deep_offers,
+} from '@helpers/loyalty_offers_rows'
+import { tlf_currency } from '@helpers/loyalty_order_stats'
 import { query_string } from '@helpers/string'
 
 const params = Astro.url.searchParams
@@ -31,10 +38,8 @@ function binary_param(name: string): string | undefined {
     return undefined
 }
 
-const currency_raw = params.get('currency')
-const currency = currency_raw && /^\d+$/.test(currency_raw)
-    ? parseInt(currency_raw, 10)
-    : TLIB_CORP_ID
+// Only Tribal Liberation Force LP is traded; other militia stores are hidden.
+const currency = TLIB_CORP_ID
 const exclude_tags = binary_param('exclude_tags')
 const exclude_blueprints = binary_param('exclude_blueprints')
 const exclude_useless_offers = binary_param('exclude_useless_offers')
@@ -106,9 +111,11 @@ try {
             exclude_below_set_lp_price,
             side,
             q,
-            ordering,
+            ordering: api_offer_ordering(ordering, side),
         }),
-        get_loyalty_currencies(),
+        get_loyalty_currencies().then((rows) => rows.filter(
+            (row) => row.corporation_id === TLIB_CORP_ID,
+        )),
     ])
 } catch (error) {
     fetching_error = error as Error
@@ -121,12 +128,15 @@ const last_updated_text = offers_list.rebuilt_at
         from_now_diff(lang, new Date(offers_list.rebuilt_at)),
     )
     : ''
-const offers = sort_loyalty_offers(
-    offers_list.items,
+const offers = sort_offers_by_local_key(
+    sort_loyalty_offers(
+        offers_list.items,
+        ordering,
+        side,
+        include_freight_enabled,
+        include_sales_tax_enabled,
+    ),
     ordering,
-    side,
-    include_freight_enabled,
-    include_sales_tax_enabled,
 )
 const metrics = compute_loyalty_offers_metrics(
     offers,
@@ -134,6 +144,13 @@ const metrics = compute_loyalty_offers_metrics(
     include_freight_enabled,
     include_sales_tax_enabled,
 )
+const deep_offers = summarize_deep_offers(offers.map((offer) => offer_row_figures(
+    offer,
+    side,
+    include_freight_enabled,
+    include_sales_tax_enabled,
+)))
+const buyback_isk_per_lp = tlf_currency(currencies)?.default_isk_per_lp ?? null
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
@@ -142,6 +159,7 @@ import LoyaltyOffersMetrics from '@components/blocks/LoyaltyOffersMetrics.astro'
 import LoyaltyOffersTable from '@components/blocks/LoyaltyOffersTable.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
 ---
 
 {fetching_error !== false ? (
@@ -160,13 +178,22 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                 last_updated_text: last_updated_text,
             }}
         />
-        <LoyaltyOffersMetrics metrics={metrics} />
+        <LoyaltyOffersMetrics
+            metrics={metrics}
+            deep={deep_offers}
+            buyback_isk_per_lp={buyback_isk_per_lp}
+        />
         <ComponentBlock
             class="[ loyalty-offers-panel__body ]"
-            padding_block="var(--space-m)"
+            padding_block="var(--space-s)"
             padding_inline="var(--space-s)"
         >
-            <Flexblock gap="var(--space-l)">
+            <FixedFluid
+                class="[ loyalty-offers-panel__layout ]"
+                width="16rem"
+                breakpoint="65%"
+                gap="var(--space-m)"
+            >
                 <LoyaltyOffersFilters
                     currencies={currencies}
                     currency={currency}
@@ -180,24 +207,31 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                     q={q || ''}
                     ordering={ordering}
                 />
-                {offers.length > 0 ? (
-                    <LoyaltyOffersTable
-                        offers={offers}
-                        filter_state={filter_state}
-                        ordering={ordering}
-                        side={side}
-                        include_freight={include_freight_enabled}
-                        include_sales_tax={include_sales_tax_enabled}
-                    />
-                ) : (
-                    <p class="[ loyalty-offers-empty ]">{t('industry.loyalty.offers.empty')}</p>
-                )}
-            </Flexblock>
+                <div class="[ loyalty-offers-panel__main ]">
+                    {offers.length > 0 ? (
+                        <LoyaltyOffersTable
+                            offers={offers}
+                            filter_state={filter_state}
+                            ordering={ordering}
+                            side={side}
+                            include_freight={include_freight_enabled}
+                            include_sales_tax={include_sales_tax_enabled}
+                            buyback_isk_per_lp={buyback_isk_per_lp}
+                        />
+                    ) : (
+                        <p class="[ loyalty-offers-empty ]">{t('industry.loyalty.offers.empty')}</p>
+                    )}
+                </div>
+            </FixedFluid>
         </ComponentBlock>
     </Flexblock>
 )}
 
 <style lang="scss">
+    :global(.loyalty-offers-panel__layout) {
+        align-items: flex-start;
+    }
+
     .loyalty-offers-empty {
         color: var(--foreground);
         font-size: var(--step-0);

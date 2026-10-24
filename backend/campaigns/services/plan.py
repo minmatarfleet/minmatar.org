@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import date, timedelta
 
-from django.db.models import Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 
 from campaigns.constants import (
@@ -41,6 +41,9 @@ from campaigns.models import (
     SystemGoal,
 )
 from campaigns.services import advantage
+from campaigns.services import fleets as fleet_service
+from campaigns.services import stats
+from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +189,25 @@ def week_position(campaign: Campaign, week_start: date | None = None) -> dict:
     }
 
 
+def flip_outcome(occupier_start, occupier_now) -> str | None:
+    """Captured or lost, when the system changed hands since the start.
+
+    A flip resets the contest, so the change across it means nothing; the
+    flip itself is the news.
+    """
+    if (
+        not occupier_start
+        or not occupier_now
+        or occupier_start == occupier_now
+    ):
+        return None
+    if occupier_now == FACTION_MINMATAR:
+        return "captured"
+    if occupier_now == FACTION_AMARR:
+        return "lost"
+    return None
+
+
 def week_system_progress(
     campaign: Campaign, week_start: date | None = None
 ) -> list[dict]:
@@ -194,7 +216,7 @@ def week_system_progress(
     Start is the last contested/VP snapshot before the week opened (Thursday
     11:00 UTC). With no reading from before the week, start is the first
     snapshot inside it — the same fallback victory-point progress uses. Now
-    is the latest snapshot.
+    is the latest snapshot. ``flipped`` says whether it changed hands since.
     """
     week_start = week_start or campaign_week_start()
     window_start = week_bounds(week_start)[0]
@@ -269,6 +291,14 @@ def week_system_progress(
                 "advantage_our_now": (
                     round(latest_advantage.our_pct, 2)
                     if latest_advantage
+                    else None
+                ),
+                "flipped": (
+                    flip_outcome(
+                        opening.occupier_faction_id,
+                        latest.occupier_faction_id,
+                    )
+                    if opening and latest
                     else None
                 ),
             }
@@ -728,8 +758,40 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
     orders = list(
         CampaignDailyOrder.objects.filter(campaign=campaign, day=day)
     )
+    # The weekly order is issued on the day the week opens but is judged on
+    # every day of that week; otherwise it could only ever reach one day.
+    week_start = week_start_for(day)
+    if week_start != day:
+        orders += list(
+            CampaignDailyOrder.objects.filter(
+                campaign=campaign,
+                day=week_start,
+                kind=CampaignDailyOrder.Kind.WEEKLY_ACTIVE,
+            )
+        )
     if not orders:
         return 0
+
+    # One grouped query for the weekly order instead of one per pilot.
+    active_days_by_user = {}
+    if any(o.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE for o in orders):
+        active_days_by_user = dict(
+            CampaignParticipantDay.objects.filter(
+                campaign=campaign, day__gte=week_start, active=True
+            )
+            .values("user_id")
+            .annotate(days=Count("id"))
+            .values_list("user_id", "days")
+        )
+
+    gangs_by_user = {}
+    if any(o.kind == CampaignDailyOrder.Kind.GANG for o in orders):
+        gangs_by_user = {
+            user_id: values["gangs"]
+            for user_id, values in fleet_service.attendance_for_day(
+                campaign, day
+            ).items()
+        }
 
     day_rows = list(
         CampaignParticipantDay.objects.filter(campaign=campaign, day=day)
@@ -737,7 +799,7 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
     existing = {
         (row.order_id, row.user_id): row
         for row in CampaignOrderProgress.objects.filter(
-            order__campaign=campaign, order__day=day
+            order__in=[order.id for order in orders]
         )
     }
 
@@ -753,7 +815,9 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
             if order.scope == "user" and order.user_id != row.user_id:
                 continue
 
-            achieved = _order_progress(order, row)
+            achieved = _order_progress(
+                order, row, gangs_by_user, active_days_by_user
+            )
             required = float(order.params.get("count", 1) or 1)
             progress_row = existing.get((order.id, row.user_id))
 
@@ -782,7 +846,17 @@ def evaluate_orders(campaign: Campaign, day: date | None = None) -> int:
     return completed
 
 
-def _order_progress(order: CampaignDailyOrder, row) -> float:
+def _order_progress(
+    order: CampaignDailyOrder,
+    row,
+    gangs_by_user: dict | None = None,
+    active_days_by_user: dict | None = None,
+) -> float:
+    if (
+        order.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE
+        and active_days_by_user is not None
+    ):
+        return float(active_days_by_user.get(row.user_id, 0))
     if order.kind == CampaignDailyOrder.Kind.WEEKLY_ACTIVE:
         # Measured across the week, not the day it was issued on.
         return float(
@@ -804,6 +878,10 @@ def _order_progress(order: CampaignDailyOrder, row) -> float:
         CampaignDailyOrder.Kind.SUPPLY_CACHE: row.supply_caches,
         CampaignDailyOrder.Kind.ADVANTAGE_REPORT: row.advantage_readings,
         CampaignDailyOrder.Kind.FLEET: row.fleets_attended,
+        # Gang fleets this pilot formed or joined that day.
+        CampaignDailyOrder.Kind.GANG: (gangs_by_user or {}).get(
+            row.user_id, 0
+        ),
         CampaignDailyOrder.Kind.STANDING_FLEET: (
             1 if row.standing_fleet_day else 0
         ),
@@ -829,8 +907,8 @@ def draft_commander_order(campaign: Campaign) -> str:
 
     totals = CampaignParticipantDay.objects.filter(
         campaign=campaign, day__gte=week_start
-    ).aggregate(kills=Sum("kills"), complexes=Sum("complexes"))
+    ).aggregate(complexes=Sum("complexes"))
     return (
-        f"On pace: {totals['kills'] or 0} kills and "
+        f"On pace: {stats.week_kills(campaign)} kills and "
         f"{totals['complexes'] or 0} complexes this week. Keep it rolling."
     )

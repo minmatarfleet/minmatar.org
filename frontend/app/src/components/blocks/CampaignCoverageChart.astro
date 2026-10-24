@@ -23,6 +23,9 @@ const has_data = bars.some(bar => bar.our_active_days > 0 || bar.hostile_activit
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ChartTable from '@components/blocks/ChartTable.astro'
+
+const hour_label = (hour: number) => t('campaigns.coverage.hour_label').replace('{hour}', String(hour).padStart(2, '0'))
 ---
 
 <Flexblock gap='var(--space-2xs)' class:list={['[ campaign-coverage ]', Astro.props.class]} {...attributes}>
@@ -33,11 +36,11 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         :
         <Flexblock gap='var(--space-2xs)'>
             <XFadeScroll>
-                <div class="[ campaign-coverage-chart ]" role="img" aria-label={t('campaigns.coverage.subtitle')}>
+                <div class="[ campaign-coverage-chart ]" aria-hidden="true">
                     {bars.map(bar =>
                         <div
                             class="[ campaign-coverage-hour ]"
-                            title={`${t('campaigns.coverage.hour_label').replace('{hour}', String(bar.hour).padStart(2, '0'))} · ${t('campaigns.coverage.ours')} ${bar.our_active_days} · ${t('campaigns.coverage.hostiles')} ${bar.hostile_activity}`}
+                            title={`${hour_label(bar.hour)} · ${t('campaigns.coverage.ours')} ${bar.our_active_days} · ${t('campaigns.coverage.hostiles')} ${bar.hostile_activity}`}
                         >
                             <div class="[ campaign-coverage-bars ]">
                                 <span class="[ campaign-coverage-ours ]" style={`height: ${bar.our_percent.toFixed(1)}%;`} />
@@ -48,6 +51,15 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                     )}
                 </div>
             </XFadeScroll>
+
+            <ChartTable
+                caption={t('campaigns.coverage.subtitle')}
+                columns={[t('campaigns.coverage.hour'), t('campaigns.coverage.ours'), t('campaigns.coverage.hostiles')]}
+                rows={bars.map(bar => ({
+                    label: hour_label(bar.hour),
+                    values: [bar.our_active_days, bar.hostile_activity],
+                }))}
+            />
 
             <FlexInline gap='var(--space-s)'>
                 <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
@@ -123,5 +135,22 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
     .campaign-coverage-key-hostiles {
         background-color: var(--fleet-red);
+    }
+
+    /* Phones: fit all 24 hours on screen instead of scrolling; label every third hour. */
+    @media (max-width: 48rem) {
+        .campaign-coverage-chart {
+            min-width: 0;
+            gap: 1px;
+        }
+
+        .campaign-coverage-hour:not(:nth-child(3n + 1)) .campaign-coverage-label {
+            visibility: hidden;
+        }
+
+        .campaign-coverage-label {
+            align-self: flex-start;
+            white-space: nowrap;
+        }
     }
 </style>

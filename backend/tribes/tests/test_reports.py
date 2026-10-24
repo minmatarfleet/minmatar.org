@@ -2,6 +2,7 @@
 
 import json
 from datetime import date, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import factory
@@ -24,12 +25,14 @@ from eveonline.models import (
 )
 from eveonline.models.characters import EveCharacterMiningEntry, EvePlayer
 from eveuniverse.models import EveCategory, EveGroup, EveMarketPrice, EveType
-from fleets.models import EveFleet
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from market.models.history import EveMarketItemHistory
 from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
+from industry.test_utils import set_stored_profit_breakdown
 from tribes.helpers.group_code import make_tribe_group_code
 from tribes.models import (
     Tribe,
@@ -45,7 +48,11 @@ from tribes.reports.queries.fleet_commanders import run_fleet_commanders_report
 from tribes.reports.queries.industry_orders import run_industry_orders_report
 from tribes.reports.queries.freight import run_freight_report
 from tribes.reports.queries.mining import run_mining_report
-from tribes.reports.registry import REPORT_BINDINGS, get_binding
+from tribes.reports.registry import (
+    QUERY_RUNNERS,
+    REPORT_BINDINGS,
+    get_binding,
+)
 from tribes.reports.runner import ReportError, run_group_report
 from tribes.reports.types import ReportScope, ReportView
 
@@ -132,13 +139,9 @@ class ReportRegistryTestCase(TestCase):
             )
 
     def test_manual_pulse_groups(self):
-        for code in (
-            "pulse.technology",
-            "pulse.readiness",
-            "supply.market",
-        ):
-            binding = get_binding(code)
-            self.assertTrue(binding.manual)
+        self.assertTrue(get_binding("pulse.tournaments").manual)
+        for code in ("pulse.technology", "pulse.readiness", "supply.market"):
+            self.assertFalse(get_binding(code).manual)
 
     def test_automated_bindings_have_runners(self):
         for code, binding in REPORT_BINDINGS.items():
@@ -147,14 +150,7 @@ class ReportRegistryTestCase(TestCase):
             for view, spec in binding.views.items():
                 self.assertIn(
                     spec.query_key,
-                    (
-                        "mining_by_user",
-                        "pi_by_user",
-                        "industry_orders_by_user",
-                        "freight_program",
-                        "fleet_commanders",
-                        "capitals_activity",
-                    ),
+                    QUERY_RUNNERS,
                     f"{code} view {view} unknown query {spec.query_key}",
                 )
 
@@ -215,6 +211,24 @@ class MiningReportTestCase(TestCase):
             totals["avg_isk_per_m3"], round(100000.0 / 150.0, 4), places=4
         )
         self.assertAlmostEqual(totals["avg_isk_per_character"], 100000.0)
+
+    def test_mining_isk_uses_jita_guide_over_ccp_average(self):
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item_id=1228,
+            date=timezone.now().date(),
+            average=Decimal("120.00"),
+            highest=Decimal("120"),
+            lowest=Decimal("120"),
+            volume=1,
+        )
+        rows, totals, _ = run_mining_report(
+            self.group, parse_period("30d"), ReportScope.ROSTER, {}
+        )
+        self.assertAlmostEqual(rows[0]["isk_ore_market_estimate"], 120000.0)
+        self.assertAlmostEqual(
+            totals["total_isk_ore_market_estimate"], 120000.0
+        )
 
     def test_mining_scope_override_via_runner(self):
         outsider = User.objects.create_user(username="outsider")
@@ -317,8 +331,15 @@ class FleetCommandersReportTestCase(TestCase):
             created_by=self.fc,
             status="cancelled",
         )
+        # A campaign standing fleet is held, not led.
+        EveFleet.objects.create(
+            type="standing",
+            start_time=now - timedelta(days=1),
+            created_by=self.fc,
+            status="active",
+        )
 
-    def test_roster_fc_count_excludes_cancelled(self):
+    def test_roster_fc_count_excludes_cancelled_and_campaign_fleets(self):
         period = parse_period("30d")
         rows, totals, columns = run_fleet_commanders_report(
             self.group, period, ReportScope.ROSTER, {}
@@ -363,16 +384,15 @@ class IndustryOrdersReportTestCase(TestCase):
             order=order,
             eve_type=product,
             quantity=10,
-            target_estimated_margin=100,
         )
         delivered_at = timezone.now() - timedelta(days=2)
         IndustryOrderItemAssignment.objects.create(
             order_item=item,
             character=self.character,
             quantity=5,
-            target_estimated_margin=100,
             delivered_at=delivered_at,
         )
+        set_stored_profit_breakdown(order, {product.id: 100})
 
     def test_delivered_units_in_period(self):
         period = parse_period("30d")
@@ -383,6 +403,8 @@ class IndustryOrdersReportTestCase(TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["delivered_units"], 5)
         self.assertEqual(totals["delivered_units"], 5)
+        self.assertEqual(rows[0]["delivered_profit"], 500.0)
+        self.assertEqual(totals["delivered_profit"], 500.0)
 
 
 class CapitalsReportTestCase(TestCase):
@@ -501,6 +523,61 @@ class CapitalsReportTestCase(TestCase):
         self.assertLessEqual(len(result.rows), 5)
         self.assertEqual(result.totals["total_kills"], 1)
 
+    @factory.django.mute_signals(
+        django_signals.pre_save, django_signals.post_save
+    )
+    def test_alts_and_corp_mates_on_one_mail_and_fleet_count_once(self):
+        """The killer's two dreads and a mate's dread on one kill, in one
+        fleet: one kill and one fleet each, and one of each in total."""
+        alt = EveCharacter.objects.create(
+            character_id=11003,
+            character_name="Killer Alt",
+            user=self.killer_user,
+        )
+        TribeGroupMembershipCharacter.objects.create(
+            membership=TribeGroupMembership.objects.get(
+                tribe_group=self.group, user=self.killer_user
+            ),
+            character=alt,
+        )
+        killmail = EveCharacterKillmail.objects.get(id=100001)
+        for character_id in (alt.character_id, self.loser_char.character_id):
+            EveCharacterKillmailAttacker.objects.create(
+                killmail=killmail,
+                character_id=character_id,
+                ship_type_id=self.dread_type_id,
+            )
+        fleet = EveFleet.objects.create(
+            type="strategic", start_time=timezone.now() - timedelta(days=1)
+        )
+        instance = EveFleetInstance.objects.create(id=55001, eve_fleet=fleet)
+        for char in (self.killer_char, alt, self.loser_char):
+            EveFleetInstanceMember.objects.create(
+                eve_fleet_instance=instance,
+                character_id=char.character_id,
+                character_name=char.character_name,
+                role="squad_member",
+                role_name="Squad Member",
+                ship_type_id=self.dread_type_id,
+                ship_name="Naglfar",
+                solar_system_id=30001,
+                solar_system_name="System",
+                squad_id=1,
+                wing_id=1,
+            )
+
+        rows, totals, _ = run_capitals_report(
+            self.group, parse_period("30d"), ReportScope.ROSTER, {}
+        )
+
+        by_name = {r["primary_character_name"]: r for r in rows}
+        self.assertEqual(by_name["Killer"]["kill_count"], 1)
+        self.assertEqual(by_name["Killer"]["fleet_count"], 1)
+        self.assertEqual(by_name["Loser"]["kill_count"], 1)
+        self.assertEqual(by_name["Loser"]["fleet_count"], 1)
+        self.assertEqual(totals["total_kills"], 1)
+        self.assertEqual(totals["total_fleets"], 1)
+
 
 class ReportRunnerTestCase(TestCase):
     @factory.django.mute_signals(
@@ -511,8 +588,8 @@ class ReportRunnerTestCase(TestCase):
         self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
         self.group = TribeGroup.objects.create(
             tribe=self.tribe,
-            name="Readiness",
-            code="pulse.readiness",
+            name="Tournaments",
+            code="pulse.tournaments",
         )
 
     def test_manual_binding(self):

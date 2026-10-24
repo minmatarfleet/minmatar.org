@@ -78,10 +78,10 @@ def _intervals_from_membership_row(
 
 
 def _membership_active_intervals(
-    tribe_group: TribeGroup,
+    memberships_qs,
 ) -> dict[int, list[tuple[datetime, datetime | None]]]:
     memberships = list(
-        TribeGroupMembership.objects.filter(tribe_group=tribe_group).values(
+        memberships_qs.values(
             "id",
             "user_id",
             "status",
@@ -147,6 +147,29 @@ def group_membership_growth(
     if not month_ends:
         return {"months": month_points, "counts": [0] * len(month_points)}
 
-    intervals = _membership_active_intervals(tribe_group)
+    intervals = _membership_active_intervals(
+        TribeGroupMembership.objects.filter(tribe_group=tribe_group)
+    )
+    counts = _active_counts_at_month_ends(intervals, month_ends)
+    return {"months": month_points, "counts": counts}
+
+
+def tribe_membership_growth(
+    tribe,
+    *,
+    now: datetime | None = None,
+    months: int = HIST_MONTHS,
+) -> dict[str, Any]:
+    """Unique people active in any of the tribe's groups at each month end."""
+    now = now or timezone.now()
+    month_points, month_ends = _month_points_and_ends(now, months)
+    if not month_ends:
+        return {"months": month_points, "counts": [0] * len(month_points)}
+
+    intervals = _membership_active_intervals(
+        TribeGroupMembership.objects.filter(
+            tribe_group__tribe=tribe, tribe_group__is_active=True
+        )
+    )
     counts = _active_counts_at_month_ends(intervals, month_ends)
     return {"months": month_points, "counts": counts}

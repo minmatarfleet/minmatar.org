@@ -7,7 +7,6 @@ interface Props {
     quantity?:          number;
     contract_value?:    number;
     earnings?:          number;
-    init_tooltip?:      boolean;
     placement?:         string;
     htmltag?:           string;
     width?:             string;
@@ -20,7 +19,6 @@ const {
     quantity,
     contract_value,
     earnings,
-    init_tooltip = false,
     htmltag = 'div',
     placement = 'top',
     width = '340px',
@@ -45,7 +43,6 @@ import Tippy from '@components/blocks/Tippy.astro';
     height={width}
     width={height}
     element={htmltag}
-    init_tooltip={init_tooltip}
 >
     <slot />
 </Tippy>

@@ -237,8 +237,13 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
             transition: var(--fast-transition);
 
             &:hover {
-                transform: scale(0.8);
                 filter: saturate(0.5);
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    transform: scale(0.8);
+                }
             }
 
             &.selected {

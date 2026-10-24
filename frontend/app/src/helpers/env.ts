@@ -3,10 +3,6 @@ const API_PUBLIC_URL = import.meta.env.API_PUBLIC_URL ?? API_URL
 const APP_URL = import.meta.env.APP_URL
 const PROD_ERROR_MESSAGES = import.meta.env.PROD_ERROR_MESSAGES ?? false
 
-export const is_dev_mode = () => {
-    return import.meta.env.DEV;
-}
-
 export const is_prod_mode = () => {
     return import.meta.env.PROD;
 }
@@ -16,17 +12,33 @@ export const get_auth_url = (redirect_url: string = `${APP_URL}/account/`) => {
     return `${APP_URL}/redirects/auth_init?redirect_url=${encodeURIComponent(redirect_url)}`
 }
 
+/** Backend Discord OAuth endpoint. Keep redirect_url out of this string. */
+export const get_discord_oauth_login_action = () => {
+    return `${API_PUBLIC_URL}/api/users/login`
+}
+
+/** Where Discord OAuth returns the site after login. */
+export const get_discord_oauth_redirect_url = () => {
+    return `${APP_URL}/auth/login`
+}
+
 /** Backend Discord OAuth start (after the notice gate). */
 export const get_discord_oauth_start_url = () => {
-    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${encodeURIComponent(`${APP_URL}/auth/login`)}`
+    return `${get_discord_oauth_login_action()}?redirect_url=${encodeURIComponent(get_discord_oauth_redirect_url())}`
 }
 
 export const get_friend_auth_url = () => {
-    return `${API_URL}/api/users/login?redirect_url=${APP_URL}/friend/login`
+    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${APP_URL}/friend/login`
 }
 
-export const get_api_url = () => {
+/** Backend base URL for server-side requests only. Never hand it to the browser. */
+export const get_internal_api_url = () => {
     return API_URL
+}
+
+/** Backend base URL the browser can reach: links, redirects, form actions, client scripts. */
+export const get_public_api_url = () => {
+    return API_PUBLIC_URL
 }
 
 export const get_app_url = (path:string = '') => {

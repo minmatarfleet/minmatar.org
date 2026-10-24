@@ -1,0 +1,70 @@
+---
+/**
+ * One settings line: a title and a short description on the left, the
+ * control (a button, switch or select) in the slot on the right. Rows stack
+ * inside a ComponentBlock with a rule between them.
+ */
+interface Props {
+    title:          string;
+    description?:   string;
+    /** Id of the control, so clicking the title focuses or toggles it. */
+    for?:           string;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    description,
+    for: control_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const Title = control_id ? 'label' : 'div'
+---
+
+<div class:list={['[ setting-row ]', Astro.props.class]} {...attributes}>
+    <Title class="[ setting-row__text ]" for={control_id}>
+        <strong>{title}</strong>
+        {description && <small>{description}</small>}
+    </Title>
+    <div class="[ setting-row__control ]">
+        <slot />
+    </div>
+</div>
+
+<style lang="scss">
+    .setting-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-m);
+        align-items: center;
+        justify-content: space-between;
+        padding-block: var(--space-s);
+        border-block-start: 1px solid var(--border-color);
+    }
+
+    .setting-row__text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        flex: 1 1 20rem;
+        min-width: 0;
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    label.setting-row__text {
+        cursor: pointer;
+    }
+
+    .setting-row__control {
+        display: flex;
+        gap: var(--space-2xs);
+        align-items: center;
+        flex: 0 0 auto;
+    }
+</style>

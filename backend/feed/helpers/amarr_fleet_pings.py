@@ -9,11 +9,15 @@ from django.utils import timezone
 from discord.client import DiscordClient
 from discord.models import DiscordChannel
 from feed.constants import (
-    AMARR_FLEET_PING_EDIT_MIN_SECONDS,
     AMARR_FLEET_PING_MAX_AGE_SECONDS,
     AMARR_FLEET_PING_SESSION_SECONDS,
 )
-from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
+from feed.models import (
+    FeedAmarrFleetAlert,
+    FeedAmarrFleetPing,
+    FeedCluster,
+    FeedEvent,
+)
 from ratelimit import RateLimitException
 from requests.exceptions import HTTPError
 
@@ -158,6 +162,18 @@ def build_amarr_fleet_alert_payload(
     return {"embeds": [embed]}
 
 
+def _cluster_ship_counts(payload: dict[str, Any]) -> dict[str, int]:
+    related = payload.get("related_cluster_key")
+    if not related:
+        return {}
+    counts = (
+        FeedCluster.objects.filter(cluster_key=related)
+        .values_list("ship_counts", flat=True)
+        .first()
+    )
+    return dict(counts or {})
+
+
 def _event_snapshot(event: FeedEvent) -> dict[str, Any]:
     payload = event.payload or {}
     system_id = payload.get("system_id")
@@ -176,6 +192,7 @@ def _event_snapshot(event: FeedEvent) -> dict[str, Any]:
         "pilots": int(payload.get("pilots") or 0),
         "roster": list(payload.get("roster") or []),
         "roster_total": int(payload.get("roster_total") or 0),
+        "ship_counts": _cluster_ship_counts(payload),
         "cluster_key": event.cluster_key or "",
         "is_active": bool(event.is_active),
         "occurred_at": event.occurred_at,
@@ -245,24 +262,6 @@ def _post_alert_messages(
     return messages
 
 
-def _edit_alert_messages(
-    alert: FeedAmarrFleetAlert,
-    payload: dict[str, Any],
-    *,
-    discord_client: DiscordClient,
-) -> None:
-    for entry in alert.discord_messages or []:
-        channel_id = entry.get("channel_id")
-        message_id = entry.get("message_id")
-        if not channel_id or not message_id:
-            continue
-        discord_client.update_message(
-            channel_id=int(channel_id),
-            message_id=int(message_id),
-            payload=payload,
-        )
-
-
 def _create_amarr_fleet_alert(
     *,
     snapshot: dict[str, Any],
@@ -301,49 +300,20 @@ def _create_amarr_fleet_alert(
         pilots=snapshot["pilots"],
         roster=snapshot["roster"],
         roster_total=snapshot["roster_total"],
+        ship_counts=snapshot.get("ship_counts") or {},
         cluster_key=snapshot["cluster_key"],
         discord_messages=discord_messages,
         last_activity_at=timezone.now(),
+        fight_at=snapshot["occurred_at"],
     )
-
-
-def _alert_content_changed(
-    alert: FeedAmarrFleetAlert, snapshot: dict[str, Any]
-) -> bool:
-    return (
-        alert.solar_system_id != snapshot["solar_system_id"]
-        or alert.system_name != snapshot["system_name"]
-        or alert.title != snapshot["title"]
-        or alert.subheader != snapshot["subheader"]
-        or alert.preview != snapshot["preview"]
-        or alert.kills != snapshot["kills"]
-        or alert.pilots != snapshot["pilots"]
-        or alert.roster != snapshot["roster"]
-        or alert.roster_total != snapshot["roster_total"]
-    )
-
-
-def _should_edit_discord(
-    alert: FeedAmarrFleetAlert,
-    snapshot: dict[str, Any],
-    *,
-    now,
-) -> bool:
-    """Edit Discord when content changed, or after the min edit interval."""
-    if _alert_content_changed(alert, snapshot):
-        return True
-    age = (now - alert.last_activity_at).total_seconds()
-    return age >= AMARR_FLEET_PING_EDIT_MIN_SECONDS
 
 
 def _update_amarr_fleet_alert(
     alert: FeedAmarrFleetAlert,
     *,
     snapshot: dict[str, Any],
-    discord_client: DiscordClient,
 ) -> FeedAmarrFleetAlert:
-    now = timezone.now()
-    should_edit = _should_edit_discord(alert, snapshot, now=now)
+    """Refresh the alert from the rollup; the Discord message is not edited."""
     alert.systems = _append_system(
         _systems_for_alert(alert),
         solar_system_id=snapshot["solar_system_id"],
@@ -358,23 +328,10 @@ def _update_amarr_fleet_alert(
     alert.pilots = snapshot["pilots"]
     alert.roster = snapshot["roster"]
     alert.roster_total = snapshot["roster_total"]
+    alert.ship_counts = snapshot.get("ship_counts") or alert.ship_counts
     alert.cluster_key = snapshot["cluster_key"] or alert.cluster_key
-    if should_edit:
-        alert.last_activity_at = now
-        discord_payload = build_amarr_fleet_alert_payload(
-            system_name=alert.system_name,
-            title=alert.title,
-            subheader=alert.subheader,
-            preview=alert.preview,
-            kills=alert.kills,
-            pilots=alert.pilots,
-            roster=alert.roster,
-            roster_total=alert.roster_total,
-            systems=alert.systems,
-        )
-        _edit_alert_messages(
-            alert, discord_payload, discord_client=discord_client
-        )
+    alert.fight_at = snapshot["occurred_at"] or alert.fight_at
+    alert.last_activity_at = timezone.now()
     alert.save(
         update_fields=[
             "solar_system_id",
@@ -387,7 +344,9 @@ def _update_amarr_fleet_alert(
             "pilots",
             "roster",
             "roster_total",
+            "ship_counts",
             "cluster_key",
+            "fight_at",
             "last_activity_at",
         ]
     )
@@ -437,15 +396,13 @@ def _upsert_amarr_fleet_alert(
     existing: FeedAmarrFleetAlert | None,
     discord_client: DiscordClient,
 ) -> tuple[FeedAmarrFleetAlert | None, bool]:
-    """Create or update an alert. Returns (alert, created)."""
+    """Post a new alert or refresh the live one. Returns (alert, created)."""
     if existing is None:
         alert = _create_amarr_fleet_alert(
             snapshot=snapshot, discord_client=discord_client
         )
         return alert, True
-    alert = _update_amarr_fleet_alert(
-        existing, snapshot=snapshot, discord_client=discord_client
-    )
+    alert = _update_amarr_fleet_alert(existing, snapshot=snapshot)
     return alert, False
 
 
@@ -454,14 +411,16 @@ def maybe_notify_amarr_fleet(
     *,
     discord_client: DiscordClient | None = None,
 ) -> bool:
-    """Create or update a Discord Amarr fleet alert from a feed event.
+    """Post a Discord Amarr fleet alert from a feed event, once.
 
-    Returns True if a Discord message was created or edited, False if skipped.
+    Returns True if the event was posted or folded into a live alert, False if
+    skipped. Discord messages are never edited: follow-up rollups only refresh
+    the alert row (read by the intel recent list), sparing the rate limit.
 
     Guards against rollup catch-up spam:
     - Only active fleets with a fresh ``occurred_at`` may create new messages.
     - Cluster keys that were already pinged never create a second message;
-      they only edit an in-session alert when one still exists.
+      they only refresh an in-session alert when one still exists.
     """
     if not _amarr_fleet_ping_channel_ids() or not _is_amarr_fleet_event(event):
         return False
@@ -503,7 +462,7 @@ def maybe_notify_amarr_fleet(
         )
         return False
     except HTTPError as exc:
-        # Transient Discord 5xx or stale message 4xx on PATCH (CELERY-JM / KD).
+        # Transient Discord 4xx/5xx on post (CELERY-JM / KD).
         if _is_discord_edit_soft_fail(exc):
             logger.warning(
                 "Amarr fleet ping Discord HTTP %s for cluster %s: %s",

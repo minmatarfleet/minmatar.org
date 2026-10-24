@@ -1,0 +1,171 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelBlocSummary, IntelEntityRef } from '@dtypes/api.minmatar.org'
+import { INTEL_ENTITY_KINDS, INTEL_RELATIONS } from '@helpers/intel_affiliations'
+import { query_string } from '@helpers/string'
+
+/**
+ * Add an affiliation by hand (it is confirmed at once). The subject is
+ * either fixed (`entity`, on its profile) or named by kind + exact EVE name;
+ * the bloc is either fixed (`bloc_id`, on the bloc page) or picked from
+ * `blocs`, or a new one is named. intel_affiliation_add_component saves it
+ * and reloads the page, or answers with this form and the error.
+ */
+interface Props {
+    bloc_id?:           number | null;
+    blocs?:             IntelBlocSummary[];
+    entity?:            IntelEntityRef | null;
+    /** Where to go after saving: the bloc's page, or the subject's profile. */
+    return_to?:         'bloc' | 'entity';
+    values?:            Record<string, string>;
+    error?:             string | null;
+    [propName: string]: any;
+}
+
+const {
+    bloc_id = null,
+    blocs = [],
+    entity = null,
+    return_to = 'bloc',
+    values = {},
+    error = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const PARTIAL_URL = translatePath('/partials/intel_affiliation_add_component')
+const url = `${PARTIAL_URL}?${query_string({
+    return_to,
+    ...(bloc_id ? { bloc_id } : {}),
+    ...(entity ? { kind: entity.kind, eve_id: entity.id, name: entity.name } : {}),
+})}`
+
+const kind = values.kind ?? entity?.kind ?? 'alliance'
+const relation = values.relation ?? (kind === 'character' ? 'associate' : 'pet')
+const selected_bloc = values.bloc_id ?? ''
+const id_prefix = `intel-add-${bloc_id ?? 'any'}-${entity?.id ?? 'any'}`
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+---
+
+<form
+    class:list={['[ intel-add ]', Astro.props.class]}
+    hx-post={url}
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-disabled-elt="find button"
+    {...attributes}
+>
+    <div class="[ intel-add__fields ]">
+        {!entity &&
+            <Fragment>
+                <label class="[ intel-add__field ]">
+                    <span>{t('intel.affiliations.add.kind')}</span>
+                    <Select name="kind" size="sm">
+                        {INTEL_ENTITY_KINDS.map(option =>
+                            <option value={option} selected={option === kind}>{t(t_key('intel.affiliations.kind.', option))}</option>
+                        )}
+                    </Select>
+                </label>
+                <label class="[ intel-add__field intel-add__field--wide ]">
+                    <span>{t('intel.affiliations.add.name')}</span>
+                    <Input type="text" name="name" size="sm" required maxlength="100" autocomplete="off" value={values.name ?? ''} />
+                </label>
+            </Fragment>
+        }
+        {!bloc_id &&
+            <Fragment>
+                <label class="[ intel-add__field ]" for={`${id_prefix}-bloc`}>
+                    <span>{t('intel.affiliations.add.bloc')}</span>
+                    <Select name="bloc_id" size="sm" id={`${id_prefix}-bloc`}>
+                        <option value="" selected={!selected_bloc}>{t('intel.affiliations.add.new_bloc')}</option>
+                        {blocs.map(bloc =>
+                            <option value={String(bloc.id)} selected={String(bloc.id) === selected_bloc}>{bloc.name}</option>
+                        )}
+                    </Select>
+                </label>
+                <label class="[ intel-add__field ]">
+                    <span>{t('intel.affiliations.add.new_bloc_name')}</span>
+                    <Input type="text" name="new_bloc_name" size="sm" maxlength="128" autocomplete="off" value={values.new_bloc_name ?? ''} />
+                </label>
+            </Fragment>
+        }
+        <label class="[ intel-add__field ]">
+            <span>{t('intel.affiliations.relation_label')}</span>
+            <Select name="relation" size="sm">
+                {INTEL_RELATIONS.map(option =>
+                    <option value={option} selected={option === relation}>{t(t_key('intel.affiliations.relation.', option))}</option>
+                )}
+            </Select>
+        </label>
+        <label class="[ intel-add__field intel-add__field--wide ]">
+            <span>{t('intel.affiliations.add.note')}</span>
+            <Input type="text" name="note" size="sm" maxlength="200" autocomplete="off" value={values.note ?? ''} />
+        </label>
+    </div>
+    <div class="[ intel-add__submit ]">
+        <Button size="sm" type="submit">{t('intel.affiliations.add.submit')}</Button>
+        <small>{t('intel.affiliations.add.hint')}</small>
+    </div>
+    {error && <p class="[ intel-add__error ]" role="alert">{error}</p>}
+</form>
+
+<style lang="scss">
+    .intel-add {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .intel-add__fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+        gap: var(--space-xs);
+    }
+
+    .intel-add__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        > span {
+            font-size: var(--step--2);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+    }
+
+    .intel-add__field--wide {
+        grid-column: span 2;
+
+        @media (max-width: 48rem) {
+            grid-column: auto;
+        }
+    }
+
+    .intel-add__submit {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+
+        small {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+
+    .intel-add__error {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--fleet-red);
+        filter: brightness(1.3);
+    }
+</style>

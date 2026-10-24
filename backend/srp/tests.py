@@ -1,4 +1,5 @@
 from datetime import timedelta, timezone as dt_timezone
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import jwt
@@ -29,7 +30,10 @@ from onboarding.models import (
 )
 from onboarding.seed import ensure_onboarding_programs
 from fittings.models import EveFittingPod
-from groups.helpers.feature_access import clear_feature_cache
+from groups.helpers.feature_access import (
+    can_use_feature,
+    clear_feature_cache,
+)
 from groups.management.commands.sync_pilot_features import (
     Command as SyncCommand,
 )
@@ -41,6 +45,7 @@ from srp.models import (
     ShipReimbursementProgram,
     ShipReimbursementProgramAmount,
 )
+from srp.endpoints.requests.helpers import duplicate_kill
 from srp.helpers import get_latest_program_amount
 from users.helpers import add_user_permission
 
@@ -918,6 +923,74 @@ class SrpRouterTestCase(TestCase):
         data = response.json()
         self.assertEqual("dps", data["category"])
         self.assertEqual("Testing FTW", data["comments"])
+        self.assertEqual(combat_log.id, data["combat_log_id"])
+        self.assertEqual(
+            combat_log.id,
+            EveFleetShipReimbursement.objects.get(id=data["id"]).combat_log_id,
+        )
+
+
+class SrpWithdrawTestCase(TestCase):
+    """Owners may withdraw a pending request, never a decided one."""
+
+    def setUp(self):
+        self.client = Client()
+        super().setUp()
+        ensure_onboarding_programs()
+        acknowledge_srp_onboarding_for_user(self.user)
+        self.assertFalse(can_use_feature(self.user, "srp.process"))
+
+    def _reimbursement(self, status):
+        return EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status=status,
+            killmail_id=KM_ID,
+            external_killmail_link=KM_LINK,
+            character_id=KM_CHAR,
+            character_name="Pilot",
+            primary_character_id=KM_CHAR,
+            primary_character_name="Pilot",
+            amount=10_000_000,
+            ship_name="Jaguar",
+            ship_type_id=11400,
+        )
+
+    def _withdraw(self, reimbursement):
+        return self.client.patch(
+            f"{BASE_URL}/{reimbursement.id}",
+            {"status": "withdrawn"},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def test_owner_can_withdraw_pending_request(self):
+        reimbursement = self._reimbursement("pending")
+
+        response = self._withdraw(reimbursement)
+
+        self.assertEqual(200, response.status_code, response.content)
+        reimbursement.refresh_from_db()
+        self.assertEqual("withdrawn", reimbursement.status)
+
+    def test_owner_cannot_withdraw_approved_request_to_refile_it(self):
+        reimbursement = self._reimbursement("approved")
+
+        response = self._withdraw(reimbursement)
+
+        self.assertEqual(403, response.status_code)
+        reimbursement.refresh_from_db()
+        self.assertEqual("approved", reimbursement.status)
+        # So the same killmail still can't be filed again.
+        self.assertTrue(duplicate_kill(SimpleNamespace(killmail_id=KM_ID)))
+
+    def test_owner_cannot_withdraw_rejected_request(self):
+        reimbursement = self._reimbursement("rejected")
+
+        response = self._withdraw(reimbursement)
+
+        self.assertEqual(403, response.status_code)
+        reimbursement.refresh_from_db()
+        self.assertEqual("rejected", reimbursement.status)
 
 
 class PodReimbursementProgramTest(TestCase):

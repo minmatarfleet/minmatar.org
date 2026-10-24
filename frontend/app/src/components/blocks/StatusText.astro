@@ -1,0 +1,45 @@
+---
+interface Props {
+    /** `danger` is the cancelled / expired red. */
+    tone?:      'highlight' | 'danger';
+    blink?:     boolean;
+    [propName: string]: any;
+}
+
+const {
+    tone = 'highlight',
+    blink = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<p
+    class:list={[
+        '[ status-text ]',
+        { 'status-text--danger': tone === 'danger', 'blink-animation': blink },
+        Astro.props.class,
+    ]}
+    {...attributes}
+><slot /></p>
+
+<style lang="scss">
+    // Spaced-out heading label for a fleet or timer state (ACTIVE, COMPLETED, CANCELLED, EXPIRED).
+    .status-text {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        margin-left: -10px;
+        margin-right: -10px;
+        color: var(--highlight);
+        letter-spacing: 12px;
+        text-indent: 12px;
+        line-height: 1;
+        white-space: nowrap;
+        text-transform: uppercase;
+    }
+
+    .status-text--danger {
+        color: var(--fleet-red);
+    }
+</style>

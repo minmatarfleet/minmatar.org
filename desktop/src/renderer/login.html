@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'">
+<link rel="stylesheet" href="eve-window.css">
+<link rel="stylesheet" href="login.css">
+<title>Minmatar Fleet — Sign in</title>
+</head>
+<body class="is-hidden">
+<section class="eve-window">
+    <header class="eve-window__header">
+        <img class="eve-window__icon" src="../assets/icon.png" alt="">
+        <h1 class="eve-window__title">Minmatar Fleet</h1>
+        <nav class="eve-window__controls">
+            <button class="eve-icon-button" data-command="window:minimize" aria-label="Minimize"><svg viewBox="0 0 12 12"><path d="M2 6.5h8"/></svg></button>
+            <button class="eve-icon-button" data-command="window:close" aria-label="Close"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+        </nav>
+    </header>
+    <main class="eve-window__body login">
+        <img class="login__logo" src="../assets/icon.png" alt="">
+        <p class="login__lead">Sign in with the Discord account you use on my.minmatar.org.</p>
+        <button class="eve-button eve-button--primary" id="sign-in">Sign in with Discord</button>
+        <div class="login__pending" id="pending" hidden>
+            <p class="eve-dim">Finish signing in in your browser…</p>
+            <button class="eve-link" id="cancel">Cancel</button>
+        </div>
+        <p class="eve-error" id="error" hidden></p>
+    </main>
+    <footer class="eve-window__footer"><span id="api"></span><span class="eve-version" id="version"></span></footer>
+</section>
+<script src="eve_window.js"></script>
+<script src="login.js"></script>
+</body>
+</html>

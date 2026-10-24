@@ -1,0 +1,299 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { CorporationInfo } from '@dtypes/api.minmatar.org'
+import { busiest_hours, heatmap_cells, prime_spans } from '@helpers/corporations/about'
+import EmptyState from '@components/blocks/EmptyState.astro'
+
+interface Props {
+    corporation: CorporationInfo
+    [propName: string]: any
+}
+
+const { corporation } = Astro.props
+
+const raw = corporation.about?.heatmap ?? []
+const cells = heatmap_cells(raw)
+const spans = prime_spans(corporation.about?.prime_windows)
+const weekdays = corporation.weekday_distribution ?? []
+const has_fleets = raw.some((row) => row.some((people) => people > 0))
+
+// Monday first, in the page language.
+const day_names = Array.from({ length: 7 }, (_, day) =>
+    new Date(Date.UTC(2024, 0, 1 + day)).toLocaleDateString(lang, { weekday: 'short', timeZone: 'UTC' }))
+const long_day_names = Array.from({ length: 7 }, (_, day) =>
+    new Date(Date.UTC(2024, 0, 1 + day)).toLocaleDateString(lang, { weekday: 'long', timeZone: 'UTC' }))
+const pad = (hour: number) => String(hour).padStart(2, '0')
+const hours = Array.from({ length: 24 }, (_, hour) => hour)
+
+// Phones get 3-hour blocks; levels are recomputed against the block peak.
+const block_rows = raw.length === 7
+    ? raw.map((row) => Array.from({ length: 8 }, (_, block) =>
+        (row[block * 3] ?? 0) + (row[block * 3 + 1] ?? 0) + (row[block * 3 + 2] ?? 0)))
+    : []
+const block_cells = heatmap_cells(block_rows.length ? block_rows.map((row) => [...row, ...Array(16).fill(0)]) : undefined)
+    .map((row) => row.slice(0, 8))
+
+const busiest = busiest_hours(raw)
+const busiest_label = busiest
+    ? t('corporations.about.busiest').replace('~WHEN', `${long_day_names[busiest.day]} ${pad(busiest.hour)}:00`)
+    : ''
+const caption = spans.length > 0
+    ? t('corporations.about.when_caption')
+    : t('corporations.about.when_caption_plain')
+---
+
+<section class="fly">
+    <header class="section-head">
+        <h2>{t('corporations.about.when_we_fly')}</h2>
+        <p>{caption}</p>
+    </header>
+
+    <div class="card">
+        {!has_fleets
+            ? <EmptyState title={t('corporations.about.no_fleets')} />
+            : (
+                <>
+                    <div class="wide" role="img" aria-label={`${t('corporations.about.when_we_fly')}. ${busiest_label}`}>
+                        {spans.length > 0 &&
+                            <div class="row bands" aria-hidden="true">
+                                {spans.map((span) => (
+                                    <span class="band" style={`grid-column: ${span.column_start + 1} / ${span.column_end + 1}`}>
+                                        {span.labelled &&
+                                            <>
+                                                <strong>{span.zone}</strong> {t('corporations.about.window_pilots').replace('~COUNT', String(span.pilots))}
+                                            </>
+                                        }
+                                    </span>
+                                ))}
+                            </div>
+                        }
+                        <div class="row axis" aria-hidden="true">
+                            <span></span>
+                            {hours.map((hour) => <span class="tick">{hour % 3 === 0 ? pad(hour) : ''}</span>)}
+                            <span class="column-head">{t('corporations.about.pilots_column')}</span>
+                            <span class="column-head">{t('corporations.about.kills_column')}</span>
+                        </div>
+                        {cells.map((row, day) => (
+                            <div class="row">
+                                <span class="day">{day_names[day]}</span>
+                                {row.map((cell, hour) => (
+                                    <span
+                                        class="cell"
+                                        data-level={cell.level}
+                                        title={t('corporations.about.cell_people')
+                                            .replace('~DAY', day_names[day])
+                                            .replace('~HOUR', pad(hour))
+                                            .replace('~COUNT', String(cell.people))}
+                                    ></span>
+                                ))}
+                                <span class="count">{weekdays[day]?.members ?? 0}</span>
+                                <span class="count kills">{weekdays[day]?.kills ?? 0}</span>
+                            </div>
+                        ))}
+                        <div
+                            class="row local"
+                            aria-hidden="true"
+                            x-data="{ offset: Math.round(-new Date().getTimezoneOffset() / 60) }"
+                        >
+                            <span>{t('corporations.about.your_time')}</span>
+                            {hours.map((hour) => (
+                                hour % 3 === 0
+                                    ? <span
+                                        class="tick local-tick"
+                                        x-data={`{ get local() { return ((${hour} + offset) % 24 + 24) % 24 } }`}
+                                        x-text="String(local).padStart(2, '0')"
+                                        x-bind:data-part="local < 7 ? 'night' : local < 17 ? 'day' : 'evening'"
+                                    ></span>
+                                    : <span></span>
+                            ))}
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="narrow" role="img" aria-label={`${t('corporations.about.when_we_fly')}. ${busiest_label}`}>
+                        <div class="row-narrow axis" aria-hidden="true">
+                            <span></span>
+                            {Array.from({ length: 8 }, (_, block) => <span class="tick">{pad(block * 3)}</span>)}
+                            <span class="column-head">{t('corporations.about.kills_column')}</span>
+                        </div>
+                        {block_cells.map((row, day) => (
+                            <div class="row-narrow">
+                                <span class="day">{day_names[day]}</span>
+                                {row.map((cell) => <span class="cell" data-level={cell.level}></span>)}
+                                <span class="count kills">{weekdays[day]?.kills ?? 0}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <footer class="legend">
+                        <span class="scale" aria-hidden="true">
+                            {t('corporations.about.quiet')}
+                            {[0, 1, 2, 3, 4].map((level) => <span class="cell key" data-level={level}></span>)}
+                            {t('corporations.about.busy')}
+                        </span>
+                        {busiest_label && <span class="busiest">{busiest_label}</span>}
+                    </footer>
+                </>
+            )
+        }
+    </div>
+</section>
+
+<style lang="scss">
+    .fly {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .section-head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h2 {
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        background: var(--component-background);
+    }
+
+    .row,
+    .row-narrow {
+        display: grid;
+        column-gap: 3px;
+        align-items: center;
+    }
+
+    .row {
+        grid-template-columns: var(--space-xl) repeat(24, minmax(0, 1fr)) var(--space-xl) var(--space-l);
+    }
+
+    .row-narrow {
+        grid-template-columns: var(--space-l) repeat(8, minmax(0, 1fr)) var(--space-l);
+    }
+
+    .narrow {
+        display: none;
+    }
+
+    @media (max-width: 48rem) {
+        .wide {
+            display: none;
+        }
+
+        .narrow {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .bands {
+        margin-block-end: var(--space-3xs);
+    }
+
+    .band {
+        grid-row: 1;
+        border-top: 2px solid var(--fleet-yellow);
+        padding-block-start: var(--space-3xs);
+        font-size: var(--step--2);
+        color: var(--faded);
+        white-space: nowrap;
+        overflow: hidden;
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+
+    .tick,
+    .column-head,
+    .local span {
+        font-size: var(--step--2);
+        color: var(--faded);
+        white-space: nowrap;
+    }
+
+    .column-head {
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        text-align: end;
+    }
+
+    .day {
+        font-size: var(--step--1);
+    }
+
+    .cell {
+        display: block;
+        height: var(--space-m);
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--highlight) 6%, transparent);
+    }
+
+    .cell[data-level='1'] { background: color-mix(in srgb, var(--fleet-red) 35%, var(--background)); }
+    .cell[data-level='2'] { background: color-mix(in srgb, var(--fleet-red) 65%, var(--background)); }
+    .cell[data-level='3'] { background: var(--fleet-red); }
+    .cell[data-level='4'] { background: color-mix(in srgb, var(--fleet-red) 55%, var(--fleet-yellow)); }
+
+    .count {
+        text-align: end;
+        font-family: var(--heading-font);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .count.kills {
+        font-family: inherit;
+        color: var(--foreground);
+    }
+
+    .local-tick[data-part='night'] { color: color-mix(in srgb, var(--alliance-blue) 50%, var(--highlight)); }
+    .local-tick[data-part='day'] { color: var(--foreground); }
+    .local-tick[data-part='evening'] { color: color-mix(in srgb, var(--fleet-red) 40%, var(--fleet-yellow)); }
+
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-xs) var(--space-m);
+        margin-block-start: var(--space-s);
+        padding-block-start: var(--space-s);
+        border-top: 1px solid var(--border-color-hover);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .scale {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+    }
+
+    .key {
+        width: var(--space-xs);
+        height: var(--space-xs);
+    }
+
+    .busiest {
+        color: var(--highlight);
+    }
+</style>

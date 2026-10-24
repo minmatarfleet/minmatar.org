@@ -9,7 +9,12 @@ from industry.endpoints.loyalty.schemas import (
     LoyaltyMarketOrderResponse,
 )
 from industry.endpoints.loyalty.serialization import market_order_response
-from industry.helpers.lp_market_orders import LpMarketOrderError, create_order
+from industry.helpers.lp_market_orders import (
+    EXPRESS,
+    LpMarketOrderError,
+    create_order,
+    tier_isk_per_lp,
+)
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointMarketOrder,
@@ -55,13 +60,14 @@ def post_orders(request, payload: CreateLoyaltyMarketOrderRequest):
     if not currency:
         return 404, ErrorResponse(detail="Loyalty point currency not found.")
 
-    isk_per_lp = payload.isk_per_lp
-    if isk_per_lp is None or int(isk_per_lp) <= 0:
-        isk_per_lp = currency.default_isk_per_lp
-    else:
-        isk_per_lp = int(isk_per_lp)
-
+    tier = (payload.tier or "").strip().lower() or "standard"
     try:
+        # Express is always posted at the published express rate.
+        isk_per_lp = payload.isk_per_lp
+        if tier == EXPRESS or isk_per_lp is None or int(isk_per_lp) <= 0:
+            isk_per_lp = tier_isk_per_lp(currency, tier)
+        else:
+            isk_per_lp = int(isk_per_lp)
         order = create_order(
             currency=currency,
             side=side,
@@ -72,6 +78,7 @@ def post_orders(request, payload: CreateLoyaltyMarketOrderRequest):
             destination_character_name=(
                 payload.destination_character_name or ""
             ).strip(),
+            tier=tier,
         )
     except LpMarketOrderError as exc:
         return 400, ErrorResponse(detail=str(exc))

@@ -276,6 +276,12 @@ class EveDoctrineForm(forms.ModelForm):
         widget=FilteredSelectMultiple("Support Fittings", is_stacked=False),
         required=False,
     )
+    utility_fittings = forms.ModelMultipleChoiceField(
+        queryset=EveFitting.objects.all(),
+        widget=FilteredSelectMultiple("Utility Fittings", is_stacked=False),
+        required=False,
+        help_text="Cynos, boosters, scouts and other one-off utility ships.",
+    )
     locations = forms.ModelMultipleChoiceField(
         queryset=EveLocation.objects.all(),
         widget=FilteredSelectMultiple("Locations", is_stacked=False),
@@ -309,6 +315,12 @@ class EveDoctrineForm(forms.ModelForm):
                 secondary_doctrine_fittings
             )
             self.fields["support_fittings"].initial = support_doctrine_fittings
+            self.fields["utility_fittings"].initial = [
+                doctrine_fitting.fitting
+                for doctrine_fitting in EveDoctrineFitting.objects.filter(
+                    doctrine_id=doctrine_id, role="utility"
+                )
+            ]
             self.fields["locations"].initial = self.instance.locations.all()
 
     class Meta:

@@ -1,0 +1,79 @@
+{
+  "name": "minmatar-fleet-desktop",
+  "productName": "Minmatar Fleet",
+  "version": "0.12.0",
+  "description": "Minmatar Fleet desktop app: Discord sign-in and an upcoming-fleets window that overlays the EVE Online client.",
+  "author": "Minmatar Fleet",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/minmatarfleet/minmatar.org.git",
+    "directory": "desktop"
+  },
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:local": "electron . --api=http://localhost:8000 --web=http://localhost:4321",
+    "test": "node --test \"test/**/*.test.js\"",
+    "dist": "electron-builder --win",
+    "dist:dir": "electron-builder --win --dir",
+    "release": "electron-builder --win --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "6.6.2"
+  },
+  "devDependencies": {
+    "electron": "35.7.5",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "org.minmatar.desktop",
+    "productName": "Minmatar Fleet",
+    "artifactName": "MinmatarFleet-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "MinmatarFleet-${version}-portable.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "Minmatar Fleet",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "minmatarfleet",
+        "repo": "minmatar.org",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

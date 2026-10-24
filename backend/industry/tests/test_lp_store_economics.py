@@ -24,8 +24,6 @@ from industry.helpers.lp_store_economics import (
     bpc_type_id_to_product_type_id,
     offer_economics_for_queryset,
     offer_is_below_set_lp_price,
-    offer_pks_below_set_lp_price,
-    offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
 )
 from industry.helpers.plan_costing import ItemPlanCost
@@ -384,40 +382,6 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.volume_7d, 30)
         self.assertEqual(econ.volume_30d, 70)
 
-    def test_offer_type_ids_viable_volume_uses_hull_for_bpc(self):
-        """Navy BPC offers are viable when the hull has 30d Forge volume."""
-        # History in setUp is on hull / input / req — not on BPC itself.
-        viable = offer_type_ids_with_viable_forge_volume(
-            [BPC_TYPE_ID, INPUT_TYPE_ID, 999001]
-        )
-        self.assertIn(BPC_TYPE_ID, viable)
-        self.assertIn(INPUT_TYPE_ID, viable)
-        self.assertNotIn(999001, viable)
-        self.assertGreaterEqual(NEGLIGIBLE_LP_FORGE_VOLUME_30D, 1)
-
-    def test_offer_type_ids_viable_volume_excludes_below_threshold(self):
-        dead = EveType.objects.create(
-            id=42426,
-            name="Dead LP Item",
-            published=True,
-            eve_group=self.hull.eve_group,
-        )
-        EveMarketItemHistory.objects.create(
-            region_id=JITA_REGION_ID,
-            item=dead,
-            date=timezone.now().date() - timedelta(days=2),
-            average=Decimal("100"),
-            highest=Decimal("100"),
-            lowest=Decimal("100"),
-            order_count=0,
-            volume=0,
-        )
-        viable = offer_type_ids_with_viable_forge_volume(
-            [dead.id],
-            min_volume_30d=1,
-        )
-        self.assertNotIn(dead.id, viable)
-
     def test_input_row_uses_acquisition_and_own_type(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
         rows = offer_economics_for_queryset([offer])
@@ -538,13 +502,6 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         null_econ = offer_economics_for_queryset([null_offer])[null_offer.pk]
         self.assertIsNone(null_econ.conversion_isk_per_lp_sell)
         self.assertTrue(offer_is_below_set_lp_price(null_econ))
-        below_pks = offer_pks_below_set_lp_price(
-            [offer, below, equal, null_offer]
-        )
-        self.assertNotIn(offer.pk, below_pks)
-        self.assertIn(below.pk, below_pks)
-        self.assertNotIn(equal.pk, below_pks)
-        self.assertIn(null_offer.pk, below_pks)
 
 
 def _econ(**overrides) -> LpStoreOfferEconomics:

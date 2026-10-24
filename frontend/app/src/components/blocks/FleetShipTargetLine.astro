@@ -1,0 +1,335 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ShipTargetProgress } from '@helpers/api.minmatar.org/fleets'
+import type { ShipHull } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string'
+
+/**
+ * Edit one ship target line in place of the Ships tab's target list: its
+ * name, how many, and the hulls or EVE groups that count. A hull or group
+ * already on another line says so; picking it moves it here when saved.
+ * The search filters the rendered list; saving goes through
+ * partials/fleet_ship_targets_component (mode=save_line).
+ */
+interface Props {
+    fleet_id:       number;
+    can_manage:     boolean;
+    can_invite:     boolean;
+    target:         ShipTargetProgress | null;
+    others:         ShipTargetProgress[];
+    hulls:          ShipHull[];
+    groups:         ShipHull[];
+    hull_groups:    Map<number, number>;
+    add_type_id?:   number;
+    error?:         string | false;
+}
+
+const {
+    fleet_id,
+    can_manage,
+    can_invite,
+    target,
+    others,
+    hulls,
+    groups,
+    hull_groups,
+    add_type_id,
+    error = false,
+} = Astro.props
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({ fleet_id, can_manage, can_invite })}`
+const SAVE_URL = `${PARTIAL_URL}&${query_string({ mode: 'save_line', target_id: target?.id ?? 'new' })}`
+const DELETE_URL = `${PARTIAL_URL}&${query_string({ mode: 'delete_line', target_id: target?.id ?? 'new' })}`
+
+const hull_names = new Map(hulls.map(hull => [hull.type_id, hull.name]))
+const group_names = new Map(groups.map(group => [group.type_id, group.name]))
+
+type Picked = { kind: 'type' | 'group', id: number, name: string }
+const picked:Picked[] = [
+    ...(target?.ship_type_ids ?? []).map(id => ({ kind: 'type' as const, id, name: hull_names.get(id) ?? `#${id}` })),
+    ...(target?.group_ids ?? []).map(id => ({ kind: 'group' as const, id, name: group_names.get(id) ?? `#${id}` })),
+]
+if (add_type_id && !picked.some(item => item.kind === 'type' && item.id === add_type_id))
+    picked.push({ kind: 'type', id: add_type_id, name: hull_names.get(add_type_id) ?? `#${add_type_id}` })
+
+// Which other line already counts a hull (directly or through its group) or a group.
+const line_for_type = (type_id:number) => others.find(line =>
+    line.ship_type_ids.includes(type_id) || line.group_ids.includes(hull_groups.get(type_id) ?? -1))
+const line_for_group = (group_id:number) => others.find(line => line.group_ids.includes(group_id))
+
+const options = [
+    ...groups.map(group => ({ kind: 'group' as const, id: group.type_id, name: group.name, line: line_for_group(group.type_id)?.name })),
+    ...hulls.map(hull => ({ kind: 'type' as const, id: hull.type_id, name: hull.name, line: line_for_type(hull.type_id)?.name })),
+]
+
+const ICON_URL = 'https://images.evetech.net/types/'
+const js = (value:unknown) => JSON.stringify(value)
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<section id="fleet-ship-targets" class="[ target-line ]" aria-labelledby="target-line-title">
+    <form
+        hx-post={SAVE_URL}
+        hx-target="#fleet-ship-targets"
+        hx-swap="outerHTML"
+        x-data={`{
+            q: '',
+            picked: ${js(picked)},
+            has(kind, id) { return this.picked.some(item => item.kind === kind && item.id === id) },
+            add(kind, id, name) { if (!this.has(kind, id)) this.picked.push({ kind, id, name }); this.q = '' },
+            remove(index) { this.picked.splice(index, 1) },
+            show(name, kind, id) {
+                const q = this.q.trim().toLowerCase()
+                return q.length >= 2 && name.includes(q) && !this.has(kind, id)
+            },
+        }`}
+    >
+        <header class="[ target-line__header ]">
+            <h2 id="target-line-title">{t(target ? 'fleets.targets.edit_title' : 'fleets.targets.new_title')}</h2>
+        </header>
+
+        <div class="[ target-line__body ]">
+            {error && <p class="[ target-line__error ]" role="alert">{error}</p>}
+
+            <div class="[ target-line__fields ]">
+                <label>
+                    <span>{t('fleets.targets.line_name')}</span>
+                    <input type="text" name="name" value={target?.name ?? ''} maxlength="64" required />
+                </label>
+                <label>
+                    <span>{t('fleets.targets.how_many')}</span>
+                    <input type="number" name="target" value={target?.target ?? ''} min="1" max="999" required />
+                </label>
+            </div>
+
+            <fieldset class="[ target-line__ships ]">
+                <legend>{t('fleets.targets.ships_that_count')}</legend>
+                <ul class="[ target-line__chips ]">
+                    <template x-for="(item, index) in picked" x-bind:key="item.kind + item.id">
+                        <li>
+                            <img x-show="item.kind === 'type'" x-bind:src={`'${ICON_URL}' + item.id + '/icon?size=32'`} alt="" width="28" height="28" />
+                            <span x-text="item.name"></span>
+                            <button type="button" x-on:click="remove(index)" x-bind:aria-label={`${js(t('fleets.targets.remove'))}.replace('{name}', item.name)`}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                            </button>
+                            <input type="hidden" x-bind:name="item.kind === 'type' ? 'type_ids' : 'group_ids'" x-bind:value="item.id" />
+                        </li>
+                    </template>
+                </ul>
+                <label class="[ target-line__search ]">
+                    <span class="[ visually-hidden ]">{t('fleets.targets.search')}</span>
+                    <input type="search" x-model="q" placeholder={t('fleets.targets.search_placeholder')} autocomplete="off" x-on:keydown.enter.prevent="" />
+                </label>
+                <ul class="[ target-line__results ]" x-show="q.trim().length >= 2" x-cloak>
+                    {options.map(option =>
+                        <li x-show={`show(${js(option.name.toLowerCase())}, '${option.kind}', ${option.id})`}>
+                            <span>
+                                <b>{option.name}</b>
+                                {option.kind === 'group' && <span class="[ target-line__muted ]"> · {t('fleets.targets.group_meta')}</span>}
+                                {option.line && <span class="[ target-line__muted ]"> · {t('fleets.targets.on_line').replace('{name}', option.line)}</span>}
+                            </span>
+                            <button type="button" x-on:click={`add('${option.kind}', ${option.id}, ${js(option.name)})`}>
+                                {t(option.line ? 'fleets.targets.move_here' : 'fleets.targets.add')}
+                            </button>
+                        </li>
+                    )}
+                </ul>
+            </fieldset>
+        </div>
+
+        <footer class="[ target-line__footer ]">
+            {target &&
+                <button
+                    type="button"
+                    class="[ target-line__delete ]"
+                    hx-post={DELETE_URL}
+                    hx-target="#fleet-ship-targets"
+                    hx-swap="outerHTML"
+                    hx-confirm={t('fleets.targets.delete_confirm').replace('{name}', target.name)}
+                >
+                    {t('fleets.targets.delete_line')}
+                </button>
+            }
+            <span class="[ target-line__spacer ]"></span>
+            <Button size="sm" type="button" color="transparent" hx-get={PARTIAL_URL} hx-target="#fleet-ship-targets" hx-swap="outerHTML">
+                {t('fleets.targets.cancel')}
+            </Button>
+            <Button size="sm" type="submit" color="green" x-bind:disabled="picked.length === 0">{t('fleets.targets.save')}</Button>
+        </footer>
+    </form>
+</section>
+
+<style lang="scss">
+    .target-line {
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        input {
+            width: 100%;
+            min-height: 2.75rem;
+            padding: var(--space-3xs) var(--space-2xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--border-color);
+            color: var(--highlight);
+            font: inherit;
+        }
+
+        input[type="number"] {
+            text-align: right;
+        }
+    }
+
+    .target-line__header {
+        padding: var(--space-s) var(--space-m);
+        border-bottom: 1px solid var(--hairline);
+
+        h2 {
+            font-size: var(--step-1);
+        }
+    }
+
+    .target-line__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-m);
+    }
+
+    .target-line__error {
+        color: var(--fleet-red);
+    }
+
+    .target-line__fields {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 9rem;
+        gap: var(--space-s);
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            font-weight: 600;
+        }
+    }
+
+    .target-line__ships {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: 0;
+        margin: 0;
+        border: 0;
+
+        legend {
+            margin-bottom: var(--space-xs);
+            font-weight: 600;
+        }
+    }
+
+    .target-line__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        padding: 0;
+        margin: 0;
+        list-style: none;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            padding-left: var(--space-3xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--hairline-medium);
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        img {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            padding: 0;
+            background: none;
+            border: 0;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+    }
+
+    .target-line__results {
+        max-height: 16rem;
+        overflow-y: auto;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        border: 1px solid var(--border-color);
+        border-top: 0;
+
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-s);
+            padding: 0 var(--space-xs);
+            border-top: 1px solid var(--hairline);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+
+        button {
+            min-height: 2.75rem;
+            padding: 0;
+            background: none;
+            border: 0;
+            color: var(--fleet-yellow);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    }
+
+    .target-line__muted {
+        color: var(--text-muted);
+    }
+
+    .target-line__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-s) var(--space-m);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .target-line__spacer {
+        flex: 1;
+    }
+
+    .target-line__delete {
+        min-height: 2.75rem;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--fleet-red);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

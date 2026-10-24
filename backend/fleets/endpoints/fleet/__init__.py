@@ -12,6 +12,42 @@ from fleets.endpoints.fleet.delete_fleet_role_volunteer import (
     delete_fleet_role_volunteer,
     METHOD as delete_fleet_role_volunteer_method,
 )
+from fleets.endpoints.fleet.get_fleet_missing_signups import (
+    PATH as get_fleet_missing_signups_path,
+    ROUTE_SPEC as get_fleet_missing_signups_spec,
+    get_fleet_missing_signups,
+    METHOD as get_fleet_missing_signups_method,
+)
+from fleets.endpoints.fleet.post_fleet_missing_signups_nudge import (
+    PATH as post_fleet_missing_signups_nudge_path,
+    ROUTE_SPEC as post_fleet_missing_signups_nudge_spec,
+    nudge_fleet_missing_signups,
+    METHOD as post_fleet_missing_signups_nudge_method,
+)
+from fleets.endpoints.fleet.get_fleet_my_srp import (
+    PATH as get_fleet_my_srp_path,
+    ROUTE_SPEC as get_fleet_my_srp_spec,
+    get_fleet_my_srp,
+    METHOD as get_fleet_my_srp_method,
+)
+from fleets.endpoints.fleet.get_fleet_participants import (
+    PATH as get_fleet_participants_path,
+    ROUTE_SPEC as get_fleet_participants_spec,
+    get_fleet_participants,
+    METHOD as get_fleet_participants_method,
+)
+from fleets.endpoints.fleet.get_fleet_public_kills import (
+    PATH as get_fleet_public_kills_path,
+    ROUTE_SPEC as get_fleet_public_kills_spec,
+    get_fleet_public_kills,
+    METHOD as get_fleet_public_kills_method,
+)
+from fleets.endpoints.fleet.get_fleet_my_pilot_locations import (
+    PATH as get_fleet_my_pilot_locations_path,
+    ROUTE_SPEC as get_fleet_my_pilot_locations_spec,
+    get_fleet_my_pilot_locations,
+    METHOD as get_fleet_my_pilot_locations_method,
+)
 from fleets.endpoints.fleet.get_fleet import (
     PATH as get_fleet_path,
     ROUTE_SPEC as get_fleet_spec,
@@ -23,6 +59,18 @@ from fleets.endpoints.fleet.get_fleet_members import (
     ROUTE_SPEC as get_fleet_members_spec,
     get_fleet_members,
     METHOD as get_fleet_members_method,
+)
+from fleets.endpoints.fleet.get_fleet_window import (
+    PATH as get_fleet_window_path,
+    ROUTE_SPEC as get_fleet_window_spec,
+    get_fleet_window,
+    METHOD as get_fleet_window_method,
+)
+from fleets.endpoints.fleet.get_fleet_roles import (
+    PATH as get_fleet_roles_path,
+    ROUTE_SPEC as get_fleet_roles_spec,
+    get_fleet_roles,
+    METHOD as get_fleet_roles_method,
 )
 from fleets.endpoints.fleet.get_fleet_role_volunteers import (
     PATH as get_fleet_role_volunteers_path,
@@ -60,6 +108,12 @@ from fleets.endpoints.fleet.post_fleet_tracking import (
     start_fleet,
     METHOD as post_fleet_tracking_method,
 )
+from fleets.endpoints.fleet.post_fleet_copy import (
+    PATH as post_fleet_copy_path,
+    ROUTE_SPEC as post_fleet_copy_spec,
+    copy_fleet_to_date,
+    METHOD as post_fleet_copy_method,
+)
 from fleets.endpoints.fleet.post_refresh_fleet_motd import (
     PATH as post_refresh_fleet_motd_path,
     ROUTE_SPEC as post_refresh_fleet_motd_spec,
@@ -67,11 +121,11 @@ from fleets.endpoints.fleet.post_refresh_fleet_motd import (
     METHOD as post_refresh_fleet_motd_method,
 )
 
-from fleets.endpoints.fleet.patch_fleet_role_volunteer import (
-    PATH as patch_fleet_role_volunteer_path,
-    ROUTE_SPEC as patch_fleet_role_volunteer_spec,
-    assign_fleet_role_volunteer_system,
-    METHOD as patch_fleet_role_volunteer_method,
+from fleets.endpoints.fleet.patch_fleet_ship_volunteer import (
+    PATH as patch_fleet_ship_volunteer_path,
+    ROUTE_SPEC as patch_fleet_ship_volunteer_spec,
+    assign_fleet_ship_volunteer_system,
+    METHOD as patch_fleet_ship_volunteer_method,
 )
 from fleets.endpoints.fleet.get_fleet_ship_volunteers import (
     PATH as get_fleet_ship_volunteers_path,
@@ -109,6 +163,60 @@ from fleets.endpoints.fleet.get_fleet_composition import (
     ROUTE_SPEC as get_fleet_composition_spec,
     get_fleet_composition,
     METHOD as get_fleet_composition_method,
+)
+from fleets.endpoints.fleet.get_fleet_kills import (
+    PATH as get_fleet_kills_path,
+    ROUTE_SPEC as get_fleet_kills_spec,
+    get_fleet_kills,
+    METHOD as get_fleet_kills_method,
+)
+from fleets.endpoints.fleet.get_fleet_fights import (
+    PATH as get_fleet_fights_path,
+    ROUTE_SPEC as get_fleet_fights_spec,
+    get_fleet_fights,
+    METHOD as get_fleet_fights_method,
+)
+from fleets.endpoints.fleet.get_fleet_fight_report import (
+    PATH as get_fleet_fight_report_path,
+    ROUTE_SPEC as get_fleet_fight_report_spec,
+    get_fleet_fight_report,
+    METHOD as get_fleet_fight_report_method,
+)
+from fleets.endpoints.fleet.post_fleet_battle_segment import (
+    PATH as post_fleet_battle_segment_path,
+    ROUTE_SPEC as post_fleet_battle_segment_spec,
+    create_fleet_battle_segment,
+    METHOD as post_fleet_battle_segment_method,
+)
+from fleets.endpoints.fleet.delete_fleet_battle_segment import (
+    PATH as delete_fleet_battle_segment_path,
+    ROUTE_SPEC as delete_fleet_battle_segment_spec,
+    delete_fleet_battle_segment,
+    METHOD as delete_fleet_battle_segment_method,
+)
+from fleets.endpoints.fleet.post_fleet_fights_merge import (
+    PATH as post_fleet_fights_merge_path,
+    ROUTE_SPEC as post_fleet_fights_merge_spec,
+    merge_fleet_fights,
+    METHOD as post_fleet_fights_merge_method,
+)
+from fleets.endpoints.fleet.post_fleet_fights_split import (
+    PATH as post_fleet_fights_split_path,
+    ROUTE_SPEC as post_fleet_fights_split_spec,
+    split_fleet_fights,
+    METHOD as post_fleet_fights_split_method,
+)
+from fleets.endpoints.fleet.delete_fleet_fights_edit import (
+    PATH as delete_fleet_fights_edit_path,
+    ROUTE_SPEC as delete_fleet_fights_edit_spec,
+    undo_fleet_fights_edit,
+    METHOD as delete_fleet_fights_edit_method,
+)
+from fleets.endpoints.fleet.delete_fleet_fights_edits import (
+    PATH as delete_fleet_fights_edits_path,
+    ROUTE_SPEC as delete_fleet_fights_edits_spec,
+    reset_fleet_fights,
+    METHOD as delete_fleet_fights_edits_method,
 )
 from fleets.endpoints.fleet.get_fleet_my_pilots import (
     PATH as get_fleet_my_pilots_path,
@@ -161,6 +269,18 @@ _ROUTES = (
         get_fleet_members,
     ),
     (
+        get_fleet_window_method,
+        get_fleet_window_path,
+        get_fleet_window_spec,
+        get_fleet_window,
+    ),
+    (
+        get_fleet_roles_method,
+        get_fleet_roles_path,
+        get_fleet_roles_spec,
+        get_fleet_roles,
+    ),
+    (
         get_fleet_role_volunteers_method,
         get_fleet_role_volunteers_path,
         get_fleet_role_volunteers_spec,
@@ -179,10 +299,10 @@ _ROUTES = (
         delete_fleet_role_volunteer,
     ),
     (
-        patch_fleet_role_volunteer_method,
-        patch_fleet_role_volunteer_path,
-        patch_fleet_role_volunteer_spec,
-        assign_fleet_role_volunteer_system,
+        patch_fleet_ship_volunteer_method,
+        patch_fleet_ship_volunteer_path,
+        patch_fleet_ship_volunteer_spec,
+        assign_fleet_ship_volunteer_system,
     ),
     (
         get_fleet_ship_volunteers_method,
@@ -221,6 +341,60 @@ _ROUTES = (
         get_fleet_composition,
     ),
     (
+        get_fleet_kills_method,
+        get_fleet_kills_path,
+        get_fleet_kills_spec,
+        get_fleet_kills,
+    ),
+    (
+        get_fleet_fights_method,
+        get_fleet_fights_path,
+        get_fleet_fights_spec,
+        get_fleet_fights,
+    ),
+    (
+        get_fleet_fight_report_method,
+        get_fleet_fight_report_path,
+        get_fleet_fight_report_spec,
+        get_fleet_fight_report,
+    ),
+    (
+        post_fleet_battle_segment_method,
+        post_fleet_battle_segment_path,
+        post_fleet_battle_segment_spec,
+        create_fleet_battle_segment,
+    ),
+    (
+        delete_fleet_battle_segment_method,
+        delete_fleet_battle_segment_path,
+        delete_fleet_battle_segment_spec,
+        delete_fleet_battle_segment,
+    ),
+    (
+        post_fleet_fights_merge_method,
+        post_fleet_fights_merge_path,
+        post_fleet_fights_merge_spec,
+        merge_fleet_fights,
+    ),
+    (
+        post_fleet_fights_split_method,
+        post_fleet_fights_split_path,
+        post_fleet_fights_split_spec,
+        split_fleet_fights,
+    ),
+    (
+        delete_fleet_fights_edit_method,
+        delete_fleet_fights_edit_path,
+        delete_fleet_fights_edit_spec,
+        undo_fleet_fights_edit,
+    ),
+    (
+        delete_fleet_fights_edits_method,
+        delete_fleet_fights_edits_path,
+        delete_fleet_fights_edits_spec,
+        reset_fleet_fights,
+    ),
+    (
         get_fleet_supply_method,
         get_fleet_supply_path,
         get_fleet_supply_spec,
@@ -256,8 +430,50 @@ _ROUTES = (
         delete_fleet_fitting_spec,
         delete_fleet_fitting,
     ),
+    (
+        get_fleet_missing_signups_method,
+        get_fleet_missing_signups_path,
+        get_fleet_missing_signups_spec,
+        get_fleet_missing_signups,
+    ),
+    (
+        post_fleet_missing_signups_nudge_method,
+        post_fleet_missing_signups_nudge_path,
+        post_fleet_missing_signups_nudge_spec,
+        nudge_fleet_missing_signups,
+    ),
+    (
+        get_fleet_my_srp_method,
+        get_fleet_my_srp_path,
+        get_fleet_my_srp_spec,
+        get_fleet_my_srp,
+    ),
+    (
+        get_fleet_participants_method,
+        get_fleet_participants_path,
+        get_fleet_participants_spec,
+        get_fleet_participants,
+    ),
+    (
+        get_fleet_public_kills_method,
+        get_fleet_public_kills_path,
+        get_fleet_public_kills_spec,
+        get_fleet_public_kills,
+    ),
+    (
+        get_fleet_my_pilot_locations_method,
+        get_fleet_my_pilot_locations_path,
+        get_fleet_my_pilot_locations_spec,
+        get_fleet_my_pilot_locations,
+    ),
     (get_fleet_method, get_fleet_path, get_fleet_spec, get_fleet),
     (patch_fleet_method, patch_fleet_path, patch_fleet_spec, update_fleet),
+    (
+        post_fleet_copy_method,
+        post_fleet_copy_path,
+        post_fleet_copy_spec,
+        copy_fleet_to_date,
+    ),
     (
         post_fleet_tracking_method,
         post_fleet_tracking_path,

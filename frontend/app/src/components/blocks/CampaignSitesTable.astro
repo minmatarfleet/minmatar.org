@@ -7,7 +7,7 @@ import { format_date_time } from '@helpers/date'
 import { number_thousand_separator } from '@helpers/numbers'
 import { get_player_icon } from '@helpers/eve_image_server'
 
-/** When, where, who and what kind of site; the LP figure is a hover, not a column. */
+/** When, where, who, and either the complex size or Complex followed by the LP payout. */
 interface Props {
     sites:              CampaignSite[];
     [propName: string]: any;
@@ -37,29 +37,34 @@ const KIND_KEYS:Record<string, SiteKindKey> = {
     battlefield: 'campaigns.sites.kind.battlefield',
 }
 
+const payout = (site:CampaignSite):string =>
+    t('campaigns.sites.lp_tooltip').replace('{lp}', number_thousand_separator(site.amount_lp))
+
 const what = (site:CampaignSite):string => {
-    if (site.site_kind === 'complex')
-        return site.plex_size
+    if (site.site_kind === 'complex') {
+        const name = site.plex_size
             ? t('campaigns.sites.kind.complex').replace('{size}', site.plex_size)
             : t('campaigns.sites.kind.complex_unknown')
+        return site.plex_size ? name : `${name} - ${payout(site)}`
+    }
     const key = KIND_KEYS[site.site_kind]
     return key ? t(key) : site.site_kind.replaceAll('_', ' ')
 }
 
 const detail = (site:CampaignSite):string =>
     [
-        t('campaigns.sites.lp_tooltip').replace('{lp}', number_thousand_separator(site.amount_lp)),
+        site.plex_size ? payout(site) : '',
         site.plex_class,
         site.confidence && site.site_kind === 'complex' ? `${site.confidence} confidence` : '',
     ].filter(Boolean).join(' · ')
 
-import CampaignTable from '@components/blocks/CampaignTable.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 {sites.length === 0 ?
     <small class:list={[Astro.props.class]} {...attributes}>{t('campaigns.sites.none')}</small>
     :
-    <CampaignTable
+    <DataGrid
         min_width='40rem'
         template='11rem 8rem minmax(12rem, 1fr) minmax(10rem, 1fr)'
         columns={[
@@ -72,10 +77,10 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
         {...attributes}
     >
         {sites.map(site =>
-            <div class="[ campaign-table-row ]" role="row">
-                <small role="cell" class="[ campaign-table-muted ]">{format_date_time(lang, site.occurred_at)}</small>
+            <div class="[ data-grid-row ]" role="row">
+                <small role="cell" class="[ data-grid-muted ]">{format_date_time(lang, site.occurred_at)}</small>
                 <span role="cell">{site.system}</span>
-                <div class="[ campaign-cell-media ]" role="cell">
+                <div class="[ data-grid-media ]" role="cell">
                     {site.character_id &&
                         <img
                             loading='lazy'
@@ -85,10 +90,10 @@ import CampaignTable from '@components/blocks/CampaignTable.astro'
                             alt=''
                         />
                     }
-                    <span>{site.character_name || site.username || '—'}</span>
+                    <span>{site.character_name || t('unknown_pilot')}</span>
                 </div>
                 <span role="cell" title={detail(site)}>{what(site)}</span>
             </div>
         )}
-    </CampaignTable>
+    </DataGrid>
 }

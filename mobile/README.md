@@ -1,5 +1,7 @@
 # Minmatar Mobile (PoC)
 
+> **Status: dormant.** Built 17–20 June 2026 as a proof of concept and not developed since, apart from type syncs riding along with API changes. It has no CI job, no store/EAS config, and Warzone and Activity still use mock data. `make dev` no longer starts it; use `./dev.sh --mobile` (or `make dev MOBILE=1`). Whether to archive it is an open owner decision.
+
 React Native proof-of-concept for [my.minmatar.org](https://my.minmatar.org/), built with Expo and React Native Paper.
 
 ## Features
@@ -18,7 +20,7 @@ cp .env.example .env
 npm run start:tunnel
 ```
 
-Or from the repo root, `./dev.sh` (or `make dev`) starts mobile along with the API, Celery, Beat, and frontend.
+Or from the repo root, `./dev.sh --mobile` (or `make dev MOBILE=1`) starts mobile along with the API, Celery, Beat, and frontend.
 
 Then open in **Expo Go** on your phone (scan the QR code). The project targets **Expo SDK 54**.
 

@@ -36,31 +36,36 @@ LOW_FUEL_EXCLUDED_TYPES = [
 SCOPE_STRUCTURES = ["esi-corporations.read_structures.v1"]
 
 
-@app.task
+@app.task(expires=30 * 60, cooldown=30 * 60)
 def update_structures():
+    # Tracked scope (every EveAlliance row), not just FL33T + BUILD: we keep
+    # structures for every alliance an admin has added to the site.
     allied_alliances = EveAlliance.objects.all()
     EveStructure.objects.exclude(
         corporation__alliance__in=allied_alliances,
     ).delete()
 
+    queued = 0
     for corporation in EveCorporation.objects.filter(
         alliance__in=allied_alliances,
     ):
-        update_corporation_structures.delay(corporation.corporation_id)
+        # Most corps have no director who granted the scope; queueing them
+        # only to skip filled the queue.
+        if get_director_with_scope(corporation, SCOPE_STRUCTURES):
+            update_corporation_structures.delay(corporation.corporation_id)
+            queued += 1
+    logger.info("Queued structure updates for %d corporation(s)", queued)
+    return queued
 
 
-@app.task
+# ESI caches corporation structures for an hour and beat polls hourly.
+@app.task(expires=50 * 60, cooldown=30 * 60)
 def update_corporation_structures(corporation_id: int):
-    countdown = get_esi_downtime_countdown()
-    if countdown > 0:
-        update_corporation_structures.apply_async(
-            args=[corporation_id],
-            countdown=countdown,
-        )
+    if get_esi_downtime_countdown() > 0:
+        # The next hourly run picks this corporation up.
         logger.info(
-            "Deferring structure update for corp %s by %s s (ESI downtime 11:00–11:15 UTC)",
+            "Skipping structure update for corp %s (ESI downtime 11:00–11:15 UTC)",
             corporation_id,
-            countdown,
         )
         return
 
@@ -142,18 +147,13 @@ def _notification_characters_for_minute(current_minute: int):
     return [c for c in chars if c.character_id % 10 == mod]
 
 
-@app.task
+@app.task(expires=60, cooldown=50)
 def process_structure_notifications(
     current_minute: datetime | None = None,
 ):
     """Schedule notification fetch for each director (with read_notifications) in corps that have structures."""
-    countdown = get_esi_downtime_countdown()
-    if countdown > 0:
-        process_structure_notifications.apply_async(countdown=countdown)
-        logger.info(
-            "Deferring structure notification run by %s s (ESI downtime 11:00–11:15 UTC)",
-            countdown,
-        )
+    if get_esi_downtime_countdown() > 0:
+        # Each minute polls its own bucket; nothing to catch up on later.
         return 0, 0
 
     if current_minute is None:
@@ -174,15 +174,13 @@ def process_structure_notifications(
     return len(characters), 0
 
 
-@app.task(rate_limit="1/m")
+# Each character is polled every 10 minutes (one bucket per minute). A
+# skipped or failed poll waits for the next one instead of queueing a retry:
+# retries stacked up behind each other and ran the same poll many times.
+@app.task(expires=10 * 60, cooldown=5 * 60)
 def fetch_structure_notifications_for_character(character_id: int):
     """Fetch notifications for one character with read_notifications in a corp that has structures."""
-    countdown = get_esi_downtime_countdown()
-    if countdown > 0:
-        fetch_structure_notifications_for_character.apply_async(
-            args=[character_id],
-            countdown=countdown,
-        )
+    if get_esi_downtime_countdown() > 0:
         return 0, 0
 
     try:
@@ -210,33 +208,37 @@ def fetch_structure_notifications_for_character(character_id: int):
     return fetch_structure_notifications(character)
 
 
-NOTIFICATIONS_RATE_LIMIT_RETRY_SECONDS = 120
+def _campaign_esi_gate():
+    """The shared ESI ledger. Imported lazily so structures does not load
+    campaigns at import time.
+    """
+    # pylint: disable=import-outside-toplevel
+    from eveonline import esi_budget as esi_gate
 
-
-def _notifications_retry_after_seconds(response) -> int:
-    resp = getattr(response, "response", None)
-    if resp is not None and hasattr(resp, "headers"):
-        retry_after = resp.headers.get("Retry-After")
-        if retry_after:
-            try:
-                return max(int(retry_after), 30)
-            except ValueError:
-                pass
-    return NOTIFICATIONS_RATE_LIMIT_RETRY_SECONDS
+    return esi_gate
 
 
 def fetch_structure_notifications(character):
-    response = EsiClient(character).get_character_notifications()
-    if response.response_code == 429:
-        retry_after = _notifications_retry_after_seconds(response)
-        logger.warning(
-            "Rate limited fetching notifications for %s, retrying in %ss",
-            character.character_name,
-            retry_after,
+    gate = _campaign_esi_gate()
+    character_id = character.character_id
+    if not gate.can_spend("char-notification", character_id):
+        logger.debug(
+            "Notification poll for %s paused for %ss",
+            character_id,
+            gate.pause_remaining("char-notification", character_id),
         )
-        fetch_structure_notifications_for_character.apply_async(
-            args=[character.character_id],
-            countdown=retry_after,
+        return 0, 0
+
+    response = EsiClient(character).get_character_notifications()
+    gate.note_response("char-notification", character_id, response)
+    if response.response_code == 304:
+        return 0, 0
+    if response.response_code == 429:
+        # note_response paused this character; the gate skips its polls
+        # until the pause ends.
+        logger.warning(
+            "Rate limited fetching notifications for %s",
+            character.character_name,
         )
         return 0, 0
     if not response.success():

@@ -12,7 +12,12 @@ from feed.helpers.amarr_fleet_pings import (
     build_amarr_fleet_alert_payload,
     maybe_notify_amarr_fleet,
 )
-from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
+from feed.models import (
+    FeedAmarrFleetAlert,
+    FeedAmarrFleetPing,
+    FeedCluster,
+    FeedEvent,
+)
 from feed.rollups.types import RollupResult
 from feed.rollups.writer import write_rollup_results
 from ratelimit import RateLimitException
@@ -105,7 +110,7 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertIn("(+14 more)", embed["description"])
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
-    def test_maybe_notify_creates_once_then_edits(self, mock_client_cls):
+    def test_maybe_notify_posts_once_and_never_edits(self, mock_client_cls):
         mock_client = MagicMock()
         create_response = MagicMock()
         create_response.json.return_value = {"id": "999888701"}
@@ -128,16 +133,44 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
         self.assertEqual(FeedAmarrFleetPing.objects.count(), 1)
         mock_client.create_message.assert_called_once()
-        mock_client.update_message.assert_called_once()
+        mock_client.update_message.assert_not_called()
 
+        # The row still tracks the fight for the intel recent list.
         alert = FeedAmarrFleetAlert.objects.get()
         self.assertEqual(alert.kills, 20)
         self.assertEqual(alert.title, "Large Amarr fleet active")
-        edit_payload = mock_client.update_message.call_args.kwargs["payload"]
-        self.assertIn(
-            "Large Amarr fleet active",
-            edit_payload["embeds"][0]["description"],
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_alert_keeps_the_fights_ship_counts(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client.create_message.return_value.json.return_value = {
+            "id": "999888702"
+        }
+        mock_client_cls.return_value = mock_client
+        now = timezone.now()
+        cluster = FeedCluster.objects.create(
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            cluster_key="fleet_engagement:30002537:1",
+            solar_system_id=30002537,
+            started_at=now,
+            last_kill_at=now,
+            ship_counts={"24696": 2, "2006": 6},
         )
+        event = _amarr_event()
+        event.payload = {
+            **event.payload,
+            "related_cluster_key": cluster.cluster_key,
+        }
+        event.save()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        alert = FeedAmarrFleetAlert.objects.get()
+        self.assertEqual(alert.ship_counts, {"24696": 2, "2006": 6})
+
+        cluster.ship_counts = {"24696": 3, "2006": 6}
+        cluster.save()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        alert.refresh_from_db()
+        self.assertEqual(alert.ship_counts["24696"], 3)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_same_system_coalesces_different_cluster_keys(
@@ -167,7 +200,7 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
         self.assertEqual(FeedAmarrFleetPing.objects.count(), 2)
         mock_client.create_message.assert_called_once()
-        mock_client.update_message.assert_called_once()
+        mock_client.update_message.assert_not_called()
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_skips_minmatar_and_non_fleet_events(self, mock_client_cls):
@@ -243,28 +276,7 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
-    def test_skips_noop_discord_edit_within_min_interval(
-        self, mock_client_cls
-    ):
-        mock_client = MagicMock()
-        create_response = MagicMock()
-        create_response.json.return_value = {"id": "999888705"}
-        mock_client.create_message.return_value = create_response
-        mock_client_cls.return_value = mock_client
-
-        event = _amarr_event()
-        self.assertTrue(maybe_notify_amarr_fleet(event))
-        mock_client.create_message.assert_called_once()
-        mock_client.update_message.reset_mock()
-
-        # Same content shortly after create — no Discord PATCH.
-        self.assertTrue(maybe_notify_amarr_fleet(event))
-        mock_client.update_message.assert_not_called()
-        alert = FeedAmarrFleetAlert.objects.get()
-        self.assertEqual(alert.kills, 12)
-
-    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
-    def test_edits_discord_after_min_interval_even_if_unchanged(
+    def test_refresh_keeps_session_alive_without_editing(
         self, mock_client_cls
     ):
         mock_client = MagicMock()
@@ -279,9 +291,13 @@ class AmarrFleetPingTestCase(TestCase):
         alert.last_activity_at = timezone.now() - timedelta(minutes=3)
         alert.save(update_fields=["last_activity_at"])
 
-        mock_client.update_message.reset_mock()
         self.assertTrue(maybe_notify_amarr_fleet(event))
-        mock_client.update_message.assert_called_once()
+        mock_client.create_message.assert_called_once()
+        mock_client.update_message.assert_not_called()
+        # The refresh keeps the session alive; the fight time stays the event's.
+        alert.refresh_from_db()
+        self.assertGreater(alert.last_activity_at, event.occurred_at)
+        self.assertEqual(alert.fight_at, event.occurred_at)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_writer_notifies_amarr_fleet_active(self, mock_client_cls):

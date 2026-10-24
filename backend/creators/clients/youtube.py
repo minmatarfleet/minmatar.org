@@ -12,6 +12,12 @@ logger = logging.getLogger(__name__)
 YOUTUBE_API = "https://www.googleapis.com/youtube/v3"
 
 
+def is_public_playlist_item(item: dict[str, Any]) -> bool:
+    """Owner-token playlist reads include unlisted and private uploads."""
+    status = item.get("status") or {}
+    return status.get("privacyStatus") == "public"
+
+
 class YouTubeClient:
     def __init__(self, access_token: str):
         self.access_token = access_token
@@ -45,7 +51,7 @@ class YouTubeClient:
             f"{YOUTUBE_API}/playlistItems",
             headers=self._headers(),
             params={
-                "part": "snippet,contentDetails",
+                "part": "snippet,contentDetails,status",
                 "playlistId": playlist_id,
                 "maxResults": min(max_results, 50),
             },

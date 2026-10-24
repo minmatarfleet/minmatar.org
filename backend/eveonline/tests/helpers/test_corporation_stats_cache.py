@@ -26,7 +26,7 @@ class CorporationStatsCacheTestCase(TestCase):
         ) as compute:
             self.assertIsNone(stats_cache.corporation_stats(98726134))
             self.assertIsNone(stats_cache.corporation_stats(98726134))
-        queued.assert_called_once_with(args=[98726134], queue="eveonline")
+        queued.assert_called_once_with(args=[98726134])
         compute.assert_not_called()
 
     def test_hit_serves_cached_stats(self):
@@ -44,6 +44,8 @@ class CorporationStatsCacheTestCase(TestCase):
                 "declared_by_user",
                 "observed_by_user",
                 "human_count",
+                "about",
+                "member_facts",
             },
             set(stats),
         )
@@ -51,15 +53,15 @@ class CorporationStatsCacheTestCase(TestCase):
     def test_task_refreshes_one_corporation(self):
         self.assertEqual(1, refresh_corporation_profile_stats(98726134))
         self.assertIsNotNone(
-            cache.get("corporation_profile_stats:v1:98726134")
+            cache.get("corporation_profile_stats:v2:98726134")
         )
 
     def test_cache_outage_degrades_to_no_stats(self):
         with patch(
-            "eveonline.helpers.corporations.safe_cache.cache.get",
+            "app.cache.cache.get",
             side_effect=ConnectionError("redis down"),
         ), patch(
-            "eveonline.helpers.corporations.safe_cache.cache.add",
+            "app.cache.cache.add",
             side_effect=ConnectionError("redis down"),
         ):
             self.assertIsNone(stats_cache.corporation_stats(98726134))

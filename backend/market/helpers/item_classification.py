@@ -10,6 +10,12 @@ from eveuniverse.models import (
     EveTypeDogmaAttribute,
     EveTypeDogmaEffect,
 )
+from fittings.eft import (  # slot effect ids, shared with fleets
+    EFFECT_HI_POWER,
+    EFFECT_LO_POWER,
+    EFFECT_MED_POWER,
+    EFFECT_RIG_SLOT,
+)
 
 # Dogma attribute / effect IDs from SDE (stable).
 DOGMA_META_GROUP_ID = 1692
@@ -20,10 +26,6 @@ META_GROUP_FACTION = 4.0
 META_GROUP_OFFICER = 5.0
 META_GROUP_DEADSPACE = 6.0  # A/B/C/X-Type
 
-EFFECT_HI_POWER = 12
-EFFECT_LO_POWER = 11
-EFFECT_MED_POWER = 13
-EFFECT_RIG_SLOT = 2663
 
 CATEGORY_SHIP = "Ship"
 CATEGORY_MODULE = "Module"
@@ -188,11 +190,3 @@ def classify_items(type_ids: Iterable[int]) -> dict[int, ItemClassification]:
         )
 
     return classified
-
-
-def classify_item_types(type_ids: Iterable[int]) -> dict[int, str]:
-    """Back-compat: type-only map (prefer classify_items)."""
-    return {
-        type_id: row.item_type
-        for type_id, row in classify_items(type_ids).items()
-    }

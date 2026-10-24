@@ -175,6 +175,7 @@ class FeedEvent(models.Model):
         FLEET_ACTIVE = "fleet_active", "Fleet active"
         KILLMAIL_BATCH = "killmail_batch", "Killmail batch"
         CONTESTED_CHANGE = "contested_change", "Contested change"
+        FLEET_KILLS = "fleet_kills", "Fleet kills"
 
     class Accent(models.TextChoices):
         COMBAT = "combat", "Combat"
@@ -334,10 +335,17 @@ class FeedAmarrFleetAlert(models.Model):
     # [{character_id, name}, ...]
     roster = models.JSONField(default=list)
     roster_total = models.PositiveIntegerField(default=0)
+    # {"type_id": count} of the fight's Amarr hulls, from its FeedCluster
+    # (the intel window shows the biggest ones).
+    ship_counts = models.JSONField(default=dict)
     cluster_key = models.CharField(max_length=256, db_index=True)
     # [{channel_id, message_id}, ...]
     discord_messages = models.JSONField(default=list)
+    # Bumped on every Discord edit (at least every few minutes while the
+    # rollup is live), so it keeps the session open but isn't when the fight
+    # happened. fight_at is the rollup's newest kill.
     last_activity_at = models.DateTimeField(db_index=True)
+    fight_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

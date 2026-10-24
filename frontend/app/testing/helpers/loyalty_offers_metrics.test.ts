@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { with_api_costs } from './fixtures/loyalty_api_costs'
 
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
@@ -6,14 +7,13 @@ import {
     compute_loyalty_offers_metrics,
     conversion_for_side,
     expand_useless_offer_excludes,
-    offer_is_low_weekly_lp_volume,
     offer_lp_for_volume,
     sort_loyalty_offers,
     useless_offer_exclude_toggle,
 } from '@helpers/loyalty_offers_metrics'
 
 function offer(overrides: Partial<LoyaltyOffer>): LoyaltyOffer {
-    return {
+    return with_api_costs({
         offer_id: 1,
         corporation_id: 1000182,
         type_id: 1,
@@ -39,7 +39,7 @@ function offer(overrides: Partial<LoyaltyOffer>): LoyaltyOffer {
         kind: 'input',
         updated_at: '2026-08-05T00:00:00Z',
         ...overrides,
-    }
+    })
 }
 
 describe('offer_lp_for_volume', () => {
@@ -50,29 +50,6 @@ describe('offer_lp_for_volume', () => {
 
     it('returns 0 for missing volume', () => {
         expect(offer_lp_for_volume(offer({}), null)).toBe(0)
-    })
-})
-
-describe('offer_is_low_weekly_lp_volume', () => {
-    it('flags offers under 1M weekly LP', () => {
-        expect(offer_is_low_weekly_lp_volume(offer({
-            lp_cost: 100_000,
-            quantity: 1,
-            volume_7d: 9,
-        }))).toBe(true)
-    })
-
-    it('does not flag offers at or above 1M weekly LP', () => {
-        expect(offer_is_low_weekly_lp_volume(offer({
-            lp_cost: 100_000,
-            quantity: 1,
-            volume_7d: 10,
-        }))).toBe(false)
-    })
-
-    it('flags missing volume as low', () => {
-        expect(offer_is_low_weekly_lp_volume(offer({ volume_7d: null })))
-            .toBe(true)
     })
 })
 

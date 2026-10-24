@@ -4,12 +4,15 @@ expects when saving a fitting, and into the DNA string EVE's chat client
 opens as a fitting window (``<a href="fitting:DNA">``).
 """
 
-import re
-from dataclasses import dataclass
-
 from eveuniverse.models import EveType, EveTypeDogmaEffect
 
-from fleets.helpers.refits import _split_qty, parse_cargo_modules
+from fittings.eft import (
+    SLOT_EFFECTS,
+    is_stacked_line,
+    parse_eft_header,
+    parse_eft_items,
+)
+from fleets.helpers.refits import parse_cargo_modules
 
 # EveCategory ids whose items live in a bay rather than the cargohold.
 _DRONE_CATEGORY = 18
@@ -22,31 +25,6 @@ _SLOT_FLAG_PREFIX = {
     "rig": "RigSlot",
     "subsystem": "SubSystemSlot",
 }
-_QTY_SUFFIX_RE = re.compile(r"\s+x\d+$")
-# Fit names may themselves contain brackets: ``[Hurricane, Cane [FL33T]]``.
-_HEADER_RE = re.compile(r"^\[(?P<ship>[^,\]]+)(?:,\s*(?P<name>.*))?\]$")
-
-# Dogma effect ids that place a module in a slot (stable SDE ids).
-_SLOT_EFFECTS = {
-    11: "low",
-    12: "high",
-    13: "mid",
-    2663: "rig",
-    3772: "subsystem",
-}
-
-
-def eft_item_names(eft_format: str) -> set[str]:
-    """Every module/item name in an EFT block (charges and quantities stripped)."""
-    names: set[str] = set()
-    for raw in (eft_format or "").splitlines()[1:]:
-        line = raw.strip()
-        if not line or line.startswith("[Empty "):
-            continue
-        line = _QTY_SUFFIX_RE.sub("", line)
-        names.add(line.split(",", 1)[0].strip())
-    names.discard("")
-    return names
 
 
 def module_slots_for(names: set[str]) -> dict[str, str]:
@@ -61,50 +39,13 @@ def module_slots_for(names: set[str]) -> dict[str, str]:
     slots: dict[str, str] = {}
     for row in EveTypeDogmaEffect.objects.filter(
         eve_type_id__in=id_to_name.keys(),
-        eve_dogma_effect_id__in=_SLOT_EFFECTS.keys(),
+        eve_dogma_effect_id__in=SLOT_EFFECTS.keys(),
     ).values("eve_type_id", "eve_dogma_effect_id"):
         name = id_to_name[row["eve_type_id"]]
-        slot = _SLOT_EFFECTS[row["eve_dogma_effect_id"]]
+        slot = SLOT_EFFECTS[row["eve_dogma_effect_id"]]
         if slot == "rig" or name not in slots:
             slots[name] = slot
     return slots
-
-
-@dataclass
-class EftItem:
-    """One line of an EFT block below the header."""
-
-    name: str
-    quantity: int = 1
-    charge: str | None = None
-    stacked: bool = False  # ``Name xN`` line: drones or cargo, never a slot
-
-
-def parse_eft_header(eft_format: str) -> tuple[str, str]:
-    """``[Hurricane, Hurricane [FL33T]]`` -> ("Hurricane", "Hurricane [FL33T]")."""
-    lines = (eft_format or "").strip().splitlines()
-    if not lines:
-        return "", ""
-    m = _HEADER_RE.match(lines[0].strip())
-    if not m:
-        return "", ""
-    return m.group("ship").strip(), (m.group("name") or "").strip()
-
-
-def parse_eft_items(eft_format: str) -> list[EftItem]:
-    """Every fitted module, drone and cargo line (empty slots skipped)."""
-    items: list[EftItem] = []
-    for raw in (eft_format or "").strip().splitlines()[1:]:
-        line = raw.strip()
-        if not line or line.startswith("[Empty "):
-            continue
-        if _QTY_SUFFIX_RE.search(line):
-            name, qty = _split_qty(line)
-            items.append(EftItem(name=name, quantity=qty, stacked=True))
-            continue
-        name, _, charge = line.partition(",")
-        items.append(EftItem(name=name.strip(), charge=charge.strip() or None))
-    return items
 
 
 def _resolve_types(names: set[str]) -> dict[str, tuple[int, int | None]]:
@@ -274,7 +215,7 @@ def refit_eft_from_swaps(
             if (
                 not line
                 or line.startswith("[Empty ")
-                or _QTY_SUFFIX_RE.search(line)
+                or is_stacked_line(line)
                 or index in replaced
             ):
                 continue
@@ -289,9 +230,7 @@ def refit_eft_from_swaps(
         cargo_delta[module_out] = cargo_delta.get(module_out, 0) + 1
 
     # Rewrite stacked lines with the cargo changes applied.
-    stacked_indexes = [
-        i for i, raw in enumerate(body) if _QTY_SUFFIX_RE.search(raw.strip())
-    ]
+    stacked_indexes = [i for i, raw in enumerate(body) if is_stacked_line(raw)]
     stacked = parse_cargo_modules(
         "\n".join(body[i].strip() for i in stacked_indexes)
     )

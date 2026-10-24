@@ -42,3 +42,31 @@ test("AllianceBadge defaults", async () => {
 
   // expect(result).toMatchSnapshot();
 });
+
+test.each([
+  ["xs", 24],
+  ["sm", 32],
+  ["lg", 64],
+] as const)("AllianceBadge %s sizes the logo column in px", async (size, px) => {
+  vi.mocked(get_alliance_logo).mockReturnValue("logo.png");
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(AllianceBadge, {
+    props: { alliance: { id: 99000001, name: "Lolcat Alliance", size } },
+  });
+
+  expect(result).toContain(`--fixed_fluid_width: ${px}px`);
+  expect(result).not.toMatch(/(xs|sm|lg)px/);
+  expect(result).toContain(`width="${px}"`);
+});
+
+test("AllianceBadge renders its slot under the name", async () => {
+  vi.mocked(get_alliance_logo).mockReturnValue("logo.png");
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(AllianceBadge, {
+    props: { alliance: { id: 99000001, name: "Lolcat Alliance", size: "sm" } },
+    slots: { default: "<small>Author</small>" },
+  });
+
+  expect(result).toContain("Lolcat Alliance");
+  expect(result).toContain("<small>Author</small>");
+});

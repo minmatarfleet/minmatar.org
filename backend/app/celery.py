@@ -1,19 +1,24 @@
-"""Celery app"""
+"""Celery app
+
+Queues and routing come from ``app.queues``; every task's base class is
+``app.task_base.AppTask``. See docs/architecture/celery-queues.md.
+"""
 
 import os
 
-import sentry_sdk
-from sentry_sdk.integrations.celery import CeleryIntegration
 from celery import Celery, signals
 from celery.app import trace
 from django.conf import settings  # noqa
 from kombu import Queue
 
+from app.monitoring import init_sentry
+from app.queues import FAST_LANE, QUEUES, route_task
+
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 
 
-app = Celery("app")
+app = Celery("app", task_cls="app.task_base:AppTask")
 
 # Using a string here means the worker don't have to serialize
 # the configuration object to child processes.
@@ -25,12 +30,11 @@ if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
         settings, "CELERY_TASK_EAGER_PROPAGATES", True
     )
 
-# Queue and routing: set here so workers and producers (beat, admin) use the same queues.
-app.conf.task_queues = (
-    Queue("celery", routing_key="celery"),
-    Queue("eveonline", routing_key="eveonline"),
-    Queue("market", routing_key="market"),
-)
+# Set here so workers and producers (web, beat, admin) agree. The router
+# also covers send_task and beat; nothing else passes queue=.
+app.conf.task_queues = tuple(Queue(name, routing_key=name) for name in QUEUES)
+app.conf.task_default_queue = FAST_LANE
+app.conf.task_routes = (route_task,)
 
 # Celery 6+: use this for startup retries; silences deprecation warning in 5.x
 app.conf.broker_connection_retry_on_startup = True
@@ -43,46 +47,20 @@ app.conf.broker_transport_options = {
 app.conf.task_default_priority = 5
 app.conf.worker_prefetch_multiplier = 1
 
-# celery_once: required for eveuniverse_load_data (and other tasks using Once)
+# celery_once: django-eveuniverse's tasks use QueueOnce. Our own tasks get
+# their dedupe from AppTask.
 app.conf.ONCE = {
     "backend": "app.celery_once_backend.DjangoBackend",
     "settings": {},
 }
 
 # Load task modules from all registered Django app configs.
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+app.autodiscover_tasks()
 
 # Remove result from default log message on task success
 trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
 
 
-SENTRY_CELERY_DSN = os.environ.get("SENTRY_CELERY_DSN", None)
-
-
-def _sentry_before_send(event, hint):
-    """
-    Drop expected django-esi refresh noise (CELERY-4).
-
-    Token.refresh logs ERROR \"Refresh impossible...\" then raises
-    TokenInvalidError; refresh_or_delete catches and deletes the token.
-    """
-    if event.get("logger") != "esi.models":
-        return event
-    logentry = event.get("logentry") or {}
-    message = logentry.get("message") or event.get("message") or ""
-    if isinstance(message, str) and message.startswith("Refresh impossible"):
-        return None
-    return event
-
-
 @signals.celeryd_init.connect
-def init_sentry(**_kwargs):
-    sentry_sdk.init(
-        dsn=SENTRY_CELERY_DSN,
-        integrations=[CeleryIntegration()],
-        enable_tracing=True,
-        traces_sample_rate=1.0,
-        environment=settings.ENV,
-        before_send=_sentry_before_send,
-        _experiments={"enable_logs": True},
-    )
+def init_sentry_for_worker(**_kwargs):
+    init_sentry(component="worker", environment=settings.ENV)

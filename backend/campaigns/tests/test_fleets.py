@@ -1,5 +1,6 @@
 """Fleet attendance, which ESI only half tells us about."""
 
+import importlib
 import json
 from datetime import timedelta
 from unittest import mock
@@ -11,8 +12,13 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 from campaigns.helpers import campaign_day, day_bounds
-from campaigns.models import CampaignKillmail
-from campaigns.services import fleets
+from campaigns.models import (
+    CampaignDailyOrder,
+    CampaignKillmail,
+    CampaignOrderProgress,
+    CampaignParticipantDay,
+)
+from campaigns.services import fleets, plan, stats
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.tests.helpers import (
     auth_headers,
@@ -21,6 +27,7 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
+from eveonline.models import EvePlayer
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,
@@ -31,6 +38,11 @@ from fleets.models import (
     EveFleetInstance,
     EveFleetInstanceMember,
 )
+
+# Migration modules are named with a number, which is not a valid import.
+recount_rejoined_days = importlib.import_module(
+    "campaigns.migrations.0029_recount_fleet_rejoins"
+).recount_rejoined_days
 
 
 class FleetAttendanceTests(TestCase):
@@ -98,6 +110,49 @@ class FleetAttendanceTests(TestCase):
         rows = fleets.attendance_for_day(self.campaign, self.today)
         self.assertEqual(rows[self.user.id]["attended"], 1)
         self.assertTrue(rows[self.user.id]["standing_day"])
+
+    def _gang_order(self):
+        return CampaignDailyOrder.objects.create(
+            campaign=self.campaign,
+            day=self.today,
+            kind=CampaignDailyOrder.Kind.GANG,
+            points=30,
+            params={},
+            scope="all",
+        )
+
+    def _gang_order_done(self, order):
+        stats.materialise_day(self.campaign, self.today)
+        plan.evaluate_orders(self.campaign, self.today)
+        return CampaignOrderProgress.objects.filter(
+            order=order, user=self.user, completed_at__isnull=False
+        ).exists()
+
+    def test_joining_a_gang_completes_the_gang_order(self):
+        order = self._gang_order()
+        fc_user, _ = enlist(self.campaign, "gang-fc", 6002)
+        gang = self._fleet(fleet_type="gang", created_by=fc_user)
+        self._member(
+            self._instance(gang), 6001, self.start + timedelta(minutes=10)
+        )
+
+        self.assertTrue(self._gang_order_done(order))
+
+    def test_forming_a_gang_completes_the_gang_order(self):
+        order = self._gang_order()
+        self._instance(self._fleet(fleet_type="gang", created_by=self.user))
+
+        self.assertTrue(self._gang_order_done(order))
+
+    def test_a_standing_fleet_does_not_complete_the_gang_order(self):
+        order = self._gang_order()
+        self._member(
+            self._instance(self._fleet()),
+            6001,
+            self.start + timedelta(minutes=10),
+        )
+
+        self.assertFalse(self._gang_order_done(order))
 
     def test_a_fleet_with_no_campaign_does_not_count(self):
         with factory.django.mute_signals(signals.pre_save, signals.post_save):
@@ -171,6 +226,108 @@ class FleetAttendanceTests(TestCase):
         rows = fleets.attendance_for_day(self.campaign, self.today)
         self.assertEqual(rows, {})
 
+    def test_a_rejoin_keeps_the_days_before_it(self):
+        """ESI moves join_time forward when a pilot drops and rejoins, on the
+        same row. The day they were first seen still counts after the day
+        is rebuilt."""
+        yesterday = self.today - timedelta(days=1)
+        fleet = self._fleet()
+        instance = self._instance(
+            fleet,
+            start=self.start - timedelta(days=1),
+            last_updated=self.start + timedelta(hours=3),
+        )
+        member = self._member(
+            instance,
+            6001,
+            self.start + timedelta(hours=1),
+            last_seen=self.start + timedelta(hours=3),
+        )
+        EveFleetInstanceMember.objects.filter(pk=member.pk).update(
+            created_at=self.start - timedelta(hours=20)
+        )
+
+        rows = fleets.attendance_for_day(self.campaign, yesterday)
+        self.assertEqual(rows[self.user.id]["attended"], 1)
+        self.assertEqual(
+            fleets.attendance_for_day(self.campaign, self.today)[self.user.id][
+                "attended"
+            ],
+            1,
+        )
+
+    def test_the_migration_rebuilds_days_lost_to_a_rejoin(self):
+        two_days_ago = self.today - timedelta(days=2)
+        fleet = self._fleet()
+        instance = self._instance(
+            fleet,
+            start=self.start - timedelta(days=2),
+            last_updated=self.start + timedelta(hours=3),
+        )
+        member = self._member(
+            instance,
+            6001,
+            self.start + timedelta(hours=1),
+            last_seen=self.start + timedelta(hours=3),
+        )
+        EveFleetInstanceMember.objects.filter(pk=member.pk).update(
+            created_at=self.start - timedelta(days=2, hours=-1)
+        )
+        # What the old rebuild left: the day before the rejoin, empty.
+        CampaignParticipantDay.objects.create(
+            campaign=self.campaign, user=self.user, day=two_days_ago
+        )
+
+        recount_rejoined_days(None, None)
+
+        row = CampaignParticipantDay.objects.get(
+            campaign=self.campaign, user=self.user, day=two_days_ago
+        )
+        self.assertEqual(row.fleets_attended, 1)
+        self.assertTrue(row.standing_fleet_day)
+
+    def test_fleet_ids_by_user_names_each_fleet_once_per_pilot(self):
+        mate, _ = enlist(self.campaign, "mate", 6002)
+        fleet = self._fleet(fleet_type="strategic")
+        instance = self._instance(fleet)
+        for character_id in (6001, 6002):
+            self._member(
+                instance, character_id, self.start + timedelta(minutes=5)
+            )
+
+        self.assertEqual(
+            fleets.fleet_ids_by_user(self.campaign),
+            {self.user.id: {fleet.id}, mate.id: {fleet.id}},
+        )
+
+    def test_the_corporation_fleets_board_counts_a_shared_fleet_once(self):
+        mate, mate_character = enlist(self.campaign, "mate", 6002)
+        for user, character in (
+            (self.user, self.character),
+            (mate, mate_character),
+        ):
+            character.corporation_id = 1
+            character.save()
+            EvePlayer.objects.create(
+                user=user, nickname=user.username, primary_character=character
+            )
+        instance = self._instance(self._fleet(fleet_type="strategic"))
+        for character_id in (6001, 6002):
+            self._member(
+                instance, character_id, self.start + timedelta(minutes=5)
+            )
+
+        board = stats.corporation_leaderboard(
+            self.campaign, metric="fleets", period="all"
+        )
+        self.assertEqual(
+            [
+                (row["corporation_id"], row["pilots"], row["value"])
+                for row in board
+            ],
+            [(1, 2, 1.0)],
+        )
+
     def test_a_fleet_in_a_primary_system_is_recognised(self):
         fleet = self._fleet()
         instance = self._instance(fleet)
@@ -214,19 +371,7 @@ class FleetKillmailLinkTests(TestCase):
         EveFleetInstance.objects.filter(pk=instance.pk).update(
             start_time=self.start
         )
-        EveFleetInstanceMember.objects.create(
-            eve_fleet_instance=instance,
-            character_id=6101,
-            character_name="Pilot",
-            role="squad_member",
-            role_name="Squad Member",
-            ship_type_id=621,
-            ship_name="Rifter",
-            solar_system_id=KAMELA,
-            solar_system_name="Kamela",
-            squad_id=1,
-            wing_id=1,
-        )
+        self._member(instance, self.start, self.start + timedelta(hours=2))
 
         feed_killmail = make_feed_killmail(
             701,
@@ -241,6 +386,54 @@ class FleetKillmailLinkTests(TestCase):
 
         mail = CampaignKillmail.objects.get(killmail_id=701)
         self.assertEqual(mail.fleet_id, fleet.id)
+
+    def _member(self, instance, first_seen, last_seen):
+        member = EveFleetInstanceMember.objects.create(
+            eve_fleet_instance=instance,
+            character_id=6101,
+            character_name="Pilot",
+            role="squad_member",
+            role_name="Squad Member",
+            ship_type_id=621,
+            ship_name="Rifter",
+            solar_system_id=KAMELA,
+            solar_system_name="Kamela",
+            squad_id=1,
+            wing_id=1,
+        )
+        EveFleetInstanceMember.objects.filter(pk=member.pk).update(
+            join_time=first_seen, created_at=first_seen, updated_at=last_seen
+        )
+
+    def test_a_kill_after_the_pilot_left_an_open_fleet_is_solo(self):
+        """A standing fleet stays open for days. A pilot who left it in the
+        morning and got a kill in the evening was not flying in it."""
+        with factory.django.mute_signals(signals.pre_save, signals.post_save):
+            fleet = EveFleet.objects.create(
+                type="standing",
+                start_time=self.start,
+                campaign=self.campaign,
+            )
+        instance = EveFleetInstance.objects.create(id=99002, eve_fleet=fleet)
+        EveFleetInstance.objects.filter(pk=instance.pk).update(
+            start_time=self.start
+        )
+        self._member(instance, self.start, self.start + timedelta(hours=1))
+
+        feed_killmail = make_feed_killmail(
+            703,
+            victim_character_id=9999,
+            attacker_ids=[6101],
+            killmail_time=self.start + timedelta(hours=6),
+        )
+        attribute_feed_killmail(feed_killmail)
+
+        self.assertEqual(
+            fleets.link_killmails_to_fleets(self.campaign, self.today), 0
+        )
+        self.assertIsNone(
+            CampaignKillmail.objects.get(killmail_id=703).fleet_id
+        )
 
     def test_a_kill_with_no_fleet_up_is_left_alone(self):
         feed_killmail = make_feed_killmail(

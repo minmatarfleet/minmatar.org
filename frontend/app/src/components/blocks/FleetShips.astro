@@ -16,6 +16,8 @@ interface Props {
     readonly?:          boolean;
     can_manage?:        boolean;
     doctrine_name?:     string | null;
+    /** Off on a finished fleet: who signed up no longer matters. */
+    show_volunteers?:   boolean;
 }
 
 const {
@@ -28,6 +30,7 @@ const {
     readonly = false,
     can_manage = false,
     doctrine_name = null,
+    show_volunteers = true,
 } = Astro.props
 
 // Capitals are listed last regardless of doctrine role: most pilots can skip them.
@@ -38,6 +41,7 @@ const groups = [
     { key: 'primary', title: t('primary_ships'), entries: subcapitals.filter(e => e.role === 'primary') },
     { key: 'secondary', title: t('secondary_ships'), entries: subcapitals.filter(e => e.role === 'secondary') },
     { key: 'support', title: t('support_ships'), entries: subcapitals.filter(e => e.role === 'support') },
+    { key: 'utility', title: t('utility_ships'), entries: subcapitals.filter(e => e.role === 'utility') },
     { key: 'capital', title: t('capital_ships'), entries: capitals },
 ].filter(group => group.entries.length > 0)
 
@@ -104,6 +108,7 @@ import CogIcon from '@components/icons/buttons/CogIcon.astro'
                         size='sm'
                         type="button"
                         color='green'
+                        class="[ fleet-ships-pick ]"
                         x-on:click={`show_modal({ partial: '${PICK_SHIPS_MODAL_URL}' })`}
                     >
                         <AddIcon slot="icon" />
@@ -128,6 +133,7 @@ import CogIcon from '@components/icons/buttons/CogIcon.astro'
                             pilots={pilots}
                             readonly={readonly}
                             can_manage={can_manage}
+                            show_volunteers={show_volunteers}
                         />
                     )}
                 </BlockList>

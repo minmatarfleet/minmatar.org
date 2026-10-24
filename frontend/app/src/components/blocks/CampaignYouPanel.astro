@@ -12,12 +12,14 @@ import type { CampaignDetail, CampaignReadiness } from '@dtypes/api.minmatar.org
 interface Props {
     campaign:           CampaignDetail;
     readiness:          CampaignReadiness | null;
+    flash?:             string | false;
     [propName: string]: any;
 }
 
 const {
     campaign,
     readiness,
+    flash = false,
     ...attributes
 } = Astro.props
 
@@ -47,11 +49,6 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
         <Flexblock gap='var(--space-m)'>
             <div class="[ campaign-you-overview ][ light-transparency ]">
                 <div class="[ campaign-you-stat ]">
-                    <small class="[ campaign-you-label ]">{t('campaigns.you.streak_title')}</small>
-                    <span class="[ campaign-you-figure ]">{campaign.my_streak}</span>
-                    <small class="[ campaign-you-sub ]">{t('campaigns.you.streak_sub').replace('{next}', String(campaign.my_streak + 1))}</small>
-                </div>
-                <div class="[ campaign-you-stat ]">
                     <small class="[ campaign-you-label ]">{t('campaigns.you.characters_title')}</small>
                     <span class="[ campaign-you-figure ]">{campaign.characters_included}</span>
                     <small class="[ campaign-you-sub ]">
@@ -66,7 +63,7 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
                 <Flexblock gap='var(--space-s)'>
                     <h3>{t('campaigns.you.manage_title')}</h3>
                     {readiness ?
-                        <CampaignReadinessTable readiness={readiness} campaign_slug={campaign.slug} return_url={RETURN_URL} mode='campaign' />
+                        <CampaignReadinessTable readiness={readiness} campaign_slug={campaign.slug} return_url={RETURN_URL} mode='campaign' flash={flash} />
                         :
                         <small>{t('campaigns.action_failed')}</small>
                     }
@@ -94,12 +91,15 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
         </Flexblock>
         :
         <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
-            <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
-                <span>{t('campaigns.you.enlist_hint')}</span>
-                <Button color='green' {...hx_attributes('enlist')}>
-                    {t('campaigns.enlist')}
-                </Button>
-            </FlexInline>
+            <Flexblock gap='var(--space-s)'>
+                {flash && <small class="[ text-[var(--highlight)] ]">{flash}</small>}
+                <FlexInline gap='var(--space-s)' justification='space-between' class="[ items-center ]">
+                    <span>{t('campaigns.you.enlist_hint')}</span>
+                    <Button color='green' {...hx_attributes('enlist')}>
+                        {t('campaigns.enlist')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
         </ComponentBlock>
     }
 </div>
@@ -113,7 +113,7 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
 
     .campaign-you-overview {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
         border: solid 1px var(--border-color-hover);
     }
 
@@ -165,10 +165,6 @@ import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.as
     }
 
     @media screen and (max-width: 767px) {
-        .campaign-you-overview {
-            grid-template-columns: 1fr;
-        }
-
         .campaign-you-stat {
             border-inline-start: none;
             border-top: solid 1px var(--border-color-hover);

@@ -185,7 +185,7 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
     Parse this and create an EveStructureTimer
     """
     if not can_use_feature(request.user, "structures.timers.manage"):
-        return 403, ErrorResponse(message="Permission denied")
+        return 403, ErrorResponse(detail="Permission denied")
 
     # Parse the request
     try:
@@ -269,7 +269,7 @@ def verify_structure_timer(
     request, timer_id: int, payload: EveStructureTimerVerificationRequest
 ):
     if not can_use_feature(request.user, "structures.timers.manage"):
-        return 403, ErrorResponse(message="Permission denied")
+        return 403, ErrorResponse(detail="Permission denied")
 
     try:
         timer = EveStructureTimer.objects.get(id=timer_id)

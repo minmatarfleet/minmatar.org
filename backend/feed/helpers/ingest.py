@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils.dateparse import parse_datetime
 
 from feed.helpers.affiliations import apply_killmail_affiliations
+from feed.helpers.fleet_pilots import has_fleet_pilot
 from feed.helpers.killmail_classify import is_npc_kill
 from feed.helpers.monitored_systems import is_monitored_system
 from feed.models import FeedKillmail
@@ -28,16 +29,26 @@ def upsert_feed_killmail_from_r2z2(
     payload: dict[str, Any],
     *,
     allowlist: frozenset[int] | None = None,
+    source: str = "stream",
+    fleet_pilots: frozenset[int] | None = None,
 ) -> FeedKillmail | None:
-    """Ingest R2Z2 payload; returns None if discarded."""
+    """Ingest R2Z2 payload; returns None if discarded.
+
+    ``fleet_pilots`` replaces the recent fleet pilots for a mail from an
+    older fleet, such as the fleet history backfill.
+    """
     raw, zkb, sequence_id = parse_r2z2_payload(payload)
     if is_npc_kill(zkb):
         return None
 
     solar_system_id = raw.get("solar_system_id")
-    if solar_system_id is None or not is_monitored_system(
+    if solar_system_id is None:
+        return None
+    # Outside the monitored systems, keep only mails a tracked fleet's pilot
+    # is on, so a fleet that roams out of the warzone keeps its fights.
+    if not is_monitored_system(
         solar_system_id, allowlist
-    ):
+    ) and not has_fleet_pilot(raw, fleet_pilots):
         return None
 
     killmail_id = raw.get("killmail_id") or payload.get("killmail_id")
@@ -84,11 +95,13 @@ def upsert_feed_killmail_from_r2z2(
         )
         apply_killmail_affiliations(raw, confirmed_at=killmail_time)
 
-    _attribute_to_campaigns(killmail)
+    _attribute_to_campaigns(killmail, source=source)
     return killmail
 
 
-def _attribute_to_campaigns(killmail: FeedKillmail) -> None:
+def _attribute_to_campaigns(
+    killmail: FeedKillmail, source: str = "stream"
+) -> None:
     """Hand the mail to any campaign covering that system.
 
     Campaigns have no backfill, so this runs on every ingest path including
@@ -103,7 +116,7 @@ def _attribute_to_campaigns(killmail: FeedKillmail) -> None:
         # pylint: disable=import-outside-toplevel
         from campaigns.services.attribution import attribute_feed_killmail
 
-        attribute_feed_killmail(killmail, source="stream")
+        attribute_feed_killmail(killmail, source=source)
     except Exception:  # pragma: no cover - defensive
         logger.exception(
             "Campaign attribution failed for killmail %s", killmail.killmail_id
@@ -115,6 +128,13 @@ def upsert_feed_killmail_from_raw(
     *,
     zkb_meta: dict[str, Any] | None = None,
     allowlist: frozenset[int] | None = None,
+    source: str = "stream",
+    fleet_pilots: frozenset[int] | None = None,
 ) -> FeedKillmail | None:
     payload = {"killmail": raw, "zkb": zkb_meta or raw.get("zkb") or {}}
-    return upsert_feed_killmail_from_r2z2(payload, allowlist=allowlist)
+    return upsert_feed_killmail_from_r2z2(
+        payload,
+        allowlist=allowlist,
+        source=source,
+        fleet_pilots=fleet_pilots,
+    )

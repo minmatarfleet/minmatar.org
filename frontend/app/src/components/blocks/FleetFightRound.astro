@@ -1,0 +1,282 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetFightRound } from '@helpers/api.minmatar.org/fleets'
+import { format_isk } from '@helpers/numbers'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { eve_clock, round_opponents } from '@helpers/fleet_fights'
+
+/**
+ * One engagement on the After Action Report tab: who it was against (their
+ * logos), when and where, the score, the hulls on each side and a link to
+ * its battle report. A skirmish (under four ships) is a single line instead.
+ */
+interface Props {
+    round:              FleetFightRound;
+    /** The round report page. */
+    href:               string;
+    [propName: string]: any;
+}
+
+const {
+    round,
+    href,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const HULLS_SHOWN = 2
+const POD_TYPE_IDS = [670, 33328]
+const opponents = round_opponents(round)
+const name = round.kind === 'round' ?
+    t('fleets.fights.round').replace('{number}', (round.number ?? 0).toString()) :
+    t('fleets.fights.skirmish')
+const systems = round.systems.map(system => system.name).join(', ')
+const span = t('fleets.fights.span')
+    .replace('{start}', eve_clock(round.start))
+    .replace('{end}', eve_clock(round.end))
+    .replace('{minutes}', round.minutes.toString())
+
+const skirmish_text = (() => {
+    // Pods are not ships; they only add to the ISK.
+    const hulls = [...round.hulls_killed, ...round.hulls_lost]
+        .filter(hull => hull.name && !POD_TYPE_IDS.includes(hull.type_id ?? 0))
+        .map(hull => hull.name)
+    const text = round.ships_destroyed === 0 ?
+        (round.ships_lost === 1 ? t('fleets.fights.skirmish_loss') : t('fleets.fights.skirmish_losses').replace('{count}', round.ships_lost.toString())) :
+        round.ships_lost === 0 ?
+            t('fleets.fights.skirmish_kills').replace('{count}', round.ships_destroyed.toString()) :
+            t('fleets.fights.skirmish_mixed').replace('{kills}', round.ships_destroyed.toString()).replace('{losses}', round.ships_lost.toString())
+    return hulls.length ? `${text}: ${hulls.slice(0, 4).join(', ')}` : text
+})()
+
+const isk_line = [
+    round.isk_destroyed ? t('fleets.fights.destroyed').replace('{isk}', format_isk(round.isk_destroyed)) : '',
+    round.isk_lost ? t('fleets.fights.lost').replace('{isk}', format_isk(round.isk_lost)) : '',
+    round.efficiency !== null ? `${round.efficiency}%` : '',
+].filter(Boolean).join(' · ')
+
+const hull_rows = [
+    { key: 'kill', label: t('fleets.fights.killed'), hulls: round.hulls_killed.filter(hull => hull.type_id) },
+    { key: 'loss', label: t('fleets.fights.lost_label'), hulls: round.hulls_lost.filter(hull => hull.type_id) },
+].filter(row => row.hulls.length > 0)
+import GroupLogos from '@components/blocks/GroupLogos.astro'
+---
+
+{round.kind === 'round' ?
+    <article class:list={['[ fight-round ]', Astro.props.class]} {...attributes}>
+        <header class="[ fight-round__who ]">
+            <h3>{name}</h3>
+            <small>{span} · {systems}</small>
+            {opponents.length > 0 &&
+                <span class="[ fight-round__vs ]">
+                    <small>{t('fleets.fights.vs_short')}</small>
+                    <GroupLogos groups={opponents} max={5} size={24} />
+                </span>
+            }
+        </header>
+
+        <div class="[ fight-round__score ]">
+            <span set:html={t('fleets.fights.kills_losses').replace('{kills}', round.ships_destroyed.toString()).replace('{losses}', round.ships_lost.toString())} />
+            {round.efficiency !== null &&
+                <span
+                    class="[ fight-round__bar ]"
+                    role="img"
+                    aria-label={t('fleets.fights.efficiency_label').replace('{pct}', round.efficiency.toString())}
+                >
+                    <span style={`width: ${round.efficiency}%`} />
+                </span>
+            }
+            <small>{isk_line}</small>
+        </div>
+
+        <dl class="[ fight-round__hulls ]">
+            {hull_rows.map(row =>
+                <div class={`fight-round__hulls--${row.key}`}>
+                    <dt>{row.label}</dt>
+                    <dd>
+                        {row.hulls.slice(0, HULLS_SHOWN).map(hull =>
+                            <span data-tippy-content={hull.name}>
+                                <img src={get_item_icon(hull.type_id as number, 32)} alt={hull.name} width="28" height="28" loading="lazy" />
+                                <b>×{hull.count}</b>
+                            </span>
+                        )}
+                        {row.hulls.length > HULLS_SHOWN &&
+                            <small>{t('fleets.fights.more').replace('{count}', (row.hulls.length - HULLS_SHOWN).toString())}</small>
+                        }
+                    </dd>
+                </div>
+            )}
+        </dl>
+
+        <a class="[ fight-round__report ]" href={href}>{t('fleets.fights.battle_report')} →</a>
+    </article>
+    :
+    <a class:list={['[ fight-skirmish ]', Astro.props.class]} href={href} {...attributes}>
+        <span>{round.start === round.end ? eve_clock(round.start) : `${eve_clock(round.start)}–${eve_clock(round.end)}`}</span>
+        <span class="[ fight-skirmish__what ]">{skirmish_text}</span>
+        {opponents.length > 0 && <GroupLogos groups={opponents} max={4} size={22} />}
+        <span class="[ fight-skirmish__isk ]">{round.isk_lost ? t('fleets.fights.lost').replace('{isk}', format_isk(round.isk_lost)) : format_isk(round.isk_destroyed)}</span>
+    </a>
+}
+
+<style lang="scss">
+    .fight-round {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-s) var(--space-l);
+        padding: var(--space-s) var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        @media (max-width: 60rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .fight-round__who {
+        display: flex;
+        flex-direction: column;
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-2);
+            line-height: 1.1;
+            color: var(--highlight);
+        }
+    }
+
+    .fight-round__vs {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin-top: var(--space-2xs);
+    }
+
+    .fight-round__score {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        :global(b) {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            font-weight: 400;
+            color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+        }
+
+        :global(b:last-of-type) {
+            color: color-mix(in srgb, var(--fleet-red) 70%, white);
+        }
+    }
+
+    .fight-round__bar {
+        display: flex;
+        height: var(--space-2xs);
+        background-color: var(--fleet-red);
+
+        span {
+            background-color: var(--alliance-blue);
+        }
+    }
+
+    .fight-round__hulls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+
+        > div {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        dt {
+            width: 3.5rem;
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        dd {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: var(--space-2xs);
+            margin: 0;
+
+            span {
+                display: inline-flex;
+                align-items: center;
+                gap: var(--space-3xs);
+            }
+
+            b {
+                font-size: var(--step--1);
+                font-variant-numeric: tabular-nums;
+            }
+        }
+    }
+
+    .fight-round__hulls--kill b {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+    }
+
+    .fight-round__hulls--loss b {
+        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+    }
+
+    .fight-round__report {
+        justify-self: end;
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+        padding: 0 var(--space-s);
+        border: 1px solid var(--hairline-strong);
+        color: var(--foreground);
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: border-color var(--fast-transition);
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--foreground);
+        }
+
+        @media (max-width: 60rem) {
+            justify-self: start;
+        }
+    }
+
+    .fight-skirmish {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-m);
+        padding: var(--space-2xs) var(--space-m);
+        background-color: color-mix(in srgb, var(--component-background) 50%, transparent);
+        color: var(--foreground);
+        font-size: var(--step--1);
+        text-decoration: none;
+
+        &:hover,
+        &:focus-visible {
+            background-color: var(--component-background);
+        }
+    }
+
+    .fight-skirmish__what {
+        flex: 1 1 18rem;
+    }
+
+    .fight-skirmish__isk {
+        font-variant-numeric: tabular-nums;
+    }
+</style>

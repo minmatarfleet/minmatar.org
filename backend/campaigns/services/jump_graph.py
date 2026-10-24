@@ -9,6 +9,9 @@ The graph is a fixture exported once from the SDE by
 ``manage.py export_warzone_jump_graph``. Without the fixture every system
 reports ``unknown``, which lowers the confidence of complex-class inference
 rather than inventing a multiplier.
+
+It is a subset of the intel map (``export_intel_fixtures``): refresh both
+from the same SDE. ``JumpGraphMatchesIntelMapTests`` fails if they drift.
 """
 
 from __future__ import annotations
@@ -21,12 +24,11 @@ from pathlib import Path
 from django.conf import settings
 
 from campaigns.models import OperationalState
+from eveonline.constants import AMARR_FACTION_ID, MINMATAR_FACTION_ID
 
 logger = logging.getLogger(__name__)
 
 FIXTURE_NAME = "warzone_jump_graph.json"
-MINMATAR_FACTION_ID = 500002
-AMARR_FACTION_ID = 500003
 
 
 def fixture_path() -> Path:

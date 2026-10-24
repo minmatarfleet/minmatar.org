@@ -46,16 +46,20 @@ positive average_price (proxy for Jita/universe market availability).
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Dict, List, Optional, Sequence, Tuple
 
+from eveonline.helpers.universe import resolve_types_by_name
 from eveuniverse.models import EveMarketPrice, EveType, EveTypeMaterial
 
 from industry.helpers.ore_variants import split_ore_variant
 from industry.helpers.producers import DEFAULT_REFINE_RATE, ORE_BATCH_SIZE
 from moons.models import ore_yield_map
+
+logger = logging.getLogger(__name__)
 
 MINERAL_NAMES = frozenset(
     {
@@ -374,8 +378,13 @@ def _portion_from_type_rows(ore_name: str) -> Dict[str, float]:
             continue
         try:
             _ensure_type_materials_loaded(ore.id)
-        except Exception:
-            pass
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Fall through to whatever rows are stored (or the fallbacks).
+            logger.warning(
+                "Could not load type materials for %s",
+                candidate,
+                exc_info=True,
+            )
         yields: Dict[str, float] = {}
         for material in EveTypeMaterial.objects.filter(
             eve_type_id=ore.id
@@ -525,12 +534,7 @@ def categorize_materials(
         if qty > 0:
             named[name] = named.get(name, 0) + qty
 
-    type_by_name = {
-        t.name: t
-        for t in EveType.objects.filter(name__in=named.keys()).select_related(
-            "eve_group"
-        )
-    }
+    type_by_name = resolve_types_by_name(named.keys())
 
     for name, qty in named.items():
         if name in MINERAL_NAMES:
@@ -656,14 +660,6 @@ def best_belt_ore_for_mineral(
         )
     )
     return candidates[0]
-
-
-def belt_ore_compressed_volume_m3(belt_ore_units: Dict[str, float]) -> float:
-    """Total freighter m³ for a belt ore unit map (pre-compression ceil)."""
-    return sum(
-        max(0.0, float(units)) * compressed_volume_m3(ore)
-        for ore, units in belt_ore_units.items()
-    )
 
 
 def _credit_ore_byproducts(
@@ -910,8 +906,13 @@ def ice_materials_per_unit(ice_name: str) -> Dict[str, float]:
             continue
         try:
             _ensure_type_materials_loaded(ice.id)
-        except Exception:
-            pass
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Fall through to whatever rows are stored (or the fallbacks).
+            logger.warning(
+                "Could not load type materials for %s",
+                candidate,
+                exc_info=True,
+            )
         yields: Dict[str, float] = {}
         for material in EveTypeMaterial.objects.filter(
             eve_type_id=ice.id

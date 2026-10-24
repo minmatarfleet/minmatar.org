@@ -5,15 +5,10 @@ const { t, translatePath } = i18n(Astro.url)
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
-
-if (is_prod_mode() && !user_is_superadmin)
+if (is_prod_mode() && !can(gates, 'site.debug_pages'))
     return HTTP_404_Not_Found()
 
 // TODO: Replace the static JSON below with the endpoint request using the id
@@ -72,7 +67,7 @@ const page_title = structure.name;
                     <MagnifierIcon slot="icon" />
                     {t('view_structures')}
                 </Button>
-                <Button color={'green'} href={translatePath('/intel/add_structure/')}s>
+                <Button color={'green'} href={translatePath('/intel/add_structure/')}>
                     <AddIcon slot="icon" />
                     {t('add_structure')}
                 </Button>
@@ -141,7 +136,7 @@ const page_title = structure.name;
             <StructureFit fitting={structure.fitting} />
         </Flexblock>
 
-        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)]">
+        <ComponentBlock slot="aside" class="sticky top-[var(--sticky-top)] structure-help-aside">
             <Flexblock>
                 <FixedFluid width="48" class="[ items-center ]">
                     <TutorialIcon />
@@ -162,6 +157,13 @@ const page_title = structure.name;
 </Viewport>
 
 <style lang="scss">
+    /* The aside stacks under the form on phones; drop the desktop sticky offset so it isn't pushed under the action bar. */
+    @media (max-width: 48rem) {
+        :global(.structure-help-aside) {
+            top: 0;
+        }
+    }
+
     h3 {
         margin-block-start: var(--space-l);
     }

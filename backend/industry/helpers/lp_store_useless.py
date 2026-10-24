@@ -20,14 +20,12 @@ from __future__ import annotations
 
 import statistics
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Dict, List, Optional
 
 from industry.helpers.lp_store_economics import (
     NEGLIGIBLE_LP_FORGE_VOLUME_30D,
     LpStoreOfferEconomics,
-    offer_economics_for_queryset,
 )
-from industry.models import IndustryLpStoreOffer
 
 # ---------------------------------------------------------------------------
 # Tunable thresholds
@@ -225,34 +223,3 @@ def offer_is_useless(
         or offer_fails_below_peer_average(econ, peers_stats)
         or offer_fails_volume_or_volatility(econ)
     )
-
-
-def useless_offer_pks(
-    offers: Iterable[IndustryLpStoreOffer],
-    *,
-    economics: Optional[Dict[int, LpStoreOfferEconomics]] = None,
-) -> Set[int]:
-    """Compute primary keys of useless offers for an admin filter queryset.
-
-    Pass a precomputed ``economics`` map (e.g. request-scoped full catalog)
-    to avoid recomputing offer_economics_for_queryset. Peer medians always
-    come from that map so they stay stable across stacked admin filters.
-    """
-    rows = list(offers)
-    if not rows:
-        return set()
-    if economics is None:
-        economics = offer_economics_for_queryset(rows)
-    peers = peer_stats_by_corporation(economics)
-    useless: Set[int] = set()
-    for offer in rows:
-        pk = offer.pk
-        if pk is None:
-            continue
-        econ = economics.get(pk)
-        if econ is None:
-            useless.add(pk)
-            continue
-        if offer_is_useless(econ, peers.get(int(econ.corporation_id))):
-            useless.add(pk)
-    return useless

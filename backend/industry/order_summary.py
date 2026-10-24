@@ -6,12 +6,20 @@ from decimal import Decimal
 
 from django.db.models import Case, IntegerField, Value, When
 
-from industry.endpoints.orders.serialization import order_line_list_targets
+from app.links import site_url
+from industry.endpoints.orders.serialization import (
+    order_line_profit_per_unit,
+    order_line_target_unit_price,
+)
 from industry.helpers.discord_summary_display import (
     format_isk_billions_trimmed,
-    format_margin_profit_parenthetical,
+    format_profit_parenthetical,
     order_location_short_label,
     pluralize_eve_group_name,
+)
+from industry.helpers.order_profit_breakdown import (
+    stored_order_total_profit,
+    stored_profit_per_unit_by_type,
 )
 from industry.models import IndustryOrder
 from industry.order_summary_types import (
@@ -51,17 +59,15 @@ def get_active_order_display_items() -> list[ActiveOrderSummaryLine]:
                 group_ids[g.id] = pluralize_eve_group_name(g.name)
         names = sorted(group_ids.values(), key=str.lower)
         group_csv = ", ".join(names) if names else "—"
-        profit = Decimal(0)
-        for item in order.items.all():
-            margin = order_line_list_targets(item)[1]
-            if margin is not None:
-                profit += Decimal(item.quantity) * margin
+        total_profit = stored_order_total_profit(order)
         out.append(
             ActiveOrderSummaryLine(
                 public_short_code=order.public_short_code,
                 location_label=order_location_short_label(order),
                 group_names_csv=group_csv,
-                profit_isk=profit,
+                profit_isk=(
+                    None if total_profit is None else Decimal(total_profit)
+                ),
             )
         )
     return out
@@ -84,15 +90,16 @@ def get_unassigned_order_items() -> list[UnassignedOrderItemLine]:
     orders.sort(key=sort_key)
     rows: list[UnassignedOrderItemLine] = []
     for order in orders:
+        profit_by_type = stored_profit_per_unit_by_type(order)
         for item in order.items.all():
             assignments = list(item.assignments.all())
             assigned_qty = sum(a.quantity for a in assignments)
             unassigned = max(0, item.quantity - assigned_qty)
             if unassigned <= 0:
                 continue
-            margin = order_line_list_targets(item)[1]
+            per_unit = order_line_profit_per_unit(item, profit_by_type)
             profit = (
-                Decimal(0) if margin is None else Decimal(unassigned) * margin
+                None if per_unit is None else Decimal(unassigned * per_unit)
             )
             rows.append(
                 UnassignedOrderItemLine(
@@ -107,26 +114,30 @@ def get_unassigned_order_items() -> list[UnassignedOrderItemLine]:
 
 
 def get_summary_totals_for_active_orders() -> SummaryTotals:
-    """Roll up all assignment quantities × targets on active orders; ignore ``delivered_at``."""
+    """
+    Roll up assignment quantities × target price and stored per-unit profit on
+    active orders; ignore ``delivered_at``.
+    """
     total_order_isk = Decimal(0)
-    total_margin_isk = Decimal(0)
+    total_profit_isk = Decimal(0)
     active_orders = IndustryOrder.objects.filter(
         fulfilled_at__isnull=True
     ).prefetch_related("items__assignments")
     for order in active_orders:
+        profit_by_type = stored_profit_per_unit_by_type(order)
         for item in order.items.all():
-            line_unit, line_margin = order_line_list_targets(item)
+            line_unit = order_line_target_unit_price(item)
+            per_unit = order_line_profit_per_unit(item, profit_by_type)
             for a in item.assignments.all():
                 unit = a.target_unit_price or line_unit
-                margin = a.target_estimated_margin or line_margin
                 q = Decimal(a.quantity)
                 if unit is not None:
                     total_order_isk += q * unit
-                if margin is not None:
-                    total_margin_isk += q * margin
+                if per_unit is not None:
+                    total_profit_isk += q * per_unit
     return SummaryTotals(
         total_order_amount_isk=total_order_isk,
-        total_available_margin_isk=total_margin_isk,
+        total_estimated_profit_isk=total_profit_isk,
     )
 
 
@@ -148,8 +159,8 @@ def get_order_summary_message(
     active_lines = [
         (
             f"- `{row.public_short_code}` [{row.location_label}] "
-            f"{row.group_names_csv} {format_margin_profit_parenthetical(row.profit_isk)}"
-        )
+            f"{row.group_names_csv} {format_profit_parenthetical(row.profit_isk)}"
+        ).rstrip()
         for row in active
     ]
     if not active_lines:
@@ -161,8 +172,8 @@ def get_order_summary_message(
         (
             f"- `{row.public_short_code}` [{row.location_label}] "
             f"{row.eve_type_name} x{row.unassigned_quantity} "
-            f"{format_margin_profit_parenthetical(row.profit_isk)}"
-        )
+            f"{format_profit_parenthetical(row.profit_isk)}"
+        ).rstrip()
         for row in unassigned
     ]
     if not un_lines:
@@ -185,8 +196,8 @@ def get_order_summary_message(
             *un_lines,
             "",
             f"**Total order amount:** {format_isk_billions_trimmed(totals.total_order_amount_isk)}",
-            f"**Total available margin:** {format_isk_billions_trimmed(totals.total_available_margin_isk)}",
+            f"**Total estimated profit:** {format_isk_billions_trimmed(totals.total_estimated_profit_isk)}",
             "",
-            "[View Order page](https://my.minmatar.org/industry/orders/)",
+            f"[View Order page]({site_url('/industry/orders/')})",
         ]
     )

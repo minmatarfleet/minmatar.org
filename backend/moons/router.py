@@ -14,13 +14,6 @@ moons_router = Router(tags=["Moons"])
 moons_paste_router = Router(tags=["Moons"])
 
 
-class MoonDistributionResponse(BaseModel):
-    """Moon Distribution API Response"""
-
-    ore: str
-    percentage: float
-
-
 class MoonDetailResponse(BaseModel):
     monthly_revenue: Optional[int]
     reported_by: str
@@ -32,25 +25,6 @@ class MoonViewResponse(BaseModel):
     planet: str
     moon: int
     detail: Optional[MoonDetailResponse]
-
-
-class MoonResponse(BaseModel):
-    """Moons API Response"""
-
-    id: int
-    system: str
-    planet: str
-    moon: int
-    reported_by: str
-    monthly_revenue: int
-    distribution: List[MoonDistributionResponse]
-
-
-class CreateMoonRequest(BaseModel):
-    system: str
-    planet: str
-    moon: int
-    distribution: List[MoonDistributionResponse]
 
 
 class CreateMoonFromPasteRequest(BaseModel):

@@ -1,7 +1,7 @@
 from ninja import Router
 from pydantic import BaseModel
 
-from authentication import AuthBearer
+from authentication import AuthBearer, require_service_account
 from discord.channels import VOICE_TRACKING_CHANNEL_TYPES
 from discord.guilds import sync_discord_guilds
 from discord.models import DiscordChannel, DiscordChannelActivityRecord
@@ -56,6 +56,7 @@ class TrackedVoiceChannelsResponse(BaseModel):
     auth=AuthBearer(),
 )
 def sync_guilds_from_bot(request, payload: SyncGuildsRequest):
+    require_service_account(request)
     synced = sync_discord_guilds(
         source_guilds=[
             {"id": guild.id, "name": guild.name} for guild in payload.guilds
@@ -96,6 +97,8 @@ def _is_voice_minute_allowed(channel_id: int) -> bool:
     auth=AuthBearer(),
 )
 def create_activity_records(request, payload: CreateActivityRecordRequest):
+    # Also reached through /voicetracking/records.
+    require_service_account(request)
     valid_types = {
         choice[0]
         for choice in DiscordChannelActivityRecord.ACTIVITY_TYPE_CHOICES

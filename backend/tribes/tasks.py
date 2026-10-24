@@ -5,6 +5,14 @@ Tasks:
 - create_tribe_membership_reminders: Discord reminders for pending memberships.
 - remove_tribe_members_without_permission: Removes members lacking base permission.
 - ensure_tribe_chiefs_have_group_memberships: Active membership for each tribe chief.
+- warm_tribe_group_showcases: Rebuild cached group Activity tabs.
+- refresh_tribe_group_showcase: Rebuild one group's Activity tab (cache miss).
+- warm_tribe_about_pages / refresh_tribe_about_page: Rebuild tribe About pages
+  and their groups' About tabs; refresh_tribe_group_about rebuilds one group.
+- create/update/cancel_tribe_discord_event: Push a group event to Discord.
+- sync_tribe_event_interest: Read interested counts, complete past events.
+- expire_tribe_invitations: Mark invites past their 14 days as expired.
+- update_tribe_invitation_dm: Edit an answered invite's DM (no buttons).
 """
 
 import logging
@@ -13,6 +21,8 @@ from collections import defaultdict
 from app.celery import app
 from django.contrib.auth.models import User
 from discord.client import DiscordClient
+from notifications.models import NotificationChannel, NotificationDelivery
+from notifications.types.tribes import TRIBE_INVITED_KEY
 
 from tribes.helpers.chief_membership import (
     ensure_tribe_chiefs_have_group_memberships as _ensure_chief_memberships,
@@ -23,8 +33,27 @@ from tribes.helpers.offboarding import (
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
 )
-from tribes.helpers.external_guild import reconcile_external_guilds
-from tribes.models import TribeGroupMembership
+from tribes.helpers.external_guild import (
+    on_membership_became_active,
+    on_membership_became_inactive,
+    reconcile_external_guilds,
+)
+from tribes.helpers.about import refresh_group_about, refresh_tribe_about
+from tribes.helpers import event_sync
+from tribes.helpers.invitation_discord import answered_embed
+from tribes.helpers.invitations import (
+    answered_dm,
+    expire_due_invitations,
+    invited_delivery_key,
+)
+from tribes.helpers.showcase import refresh_group_showcase
+from tribes.models import (
+    Tribe,
+    TribeGroup,
+    TribeGroupInvitation,
+    TribeGroupMembership,
+)
+from tribes.reports.registry import REPORT_BINDINGS
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
@@ -40,6 +69,7 @@ def _discord_mention(user) -> str | None:
     try:
         return f"<@{user.discord_user.id}>"
     except Exception:  # pylint: disable=broad-except
+        # expected: no Discord link
         return None
 
 
@@ -169,3 +199,158 @@ def remove_tribe_members_without_permission():
 def reconcile_tribe_external_guilds():
     """Desired-state poll for tribe secondary Discord guild seats."""
     return reconcile_external_guilds()
+
+
+@app.task(ignore_result=True)
+def sync_external_guild_for_membership(membership_id: int):
+    """Bring the membership's external Discord seat in line with its status.
+
+    Queued by the membership post_save signal so approving or removing a
+    member never waits on Discord. Reads the status when it runs, so a quick
+    approve-then-remove ends in the right state.
+    """
+    membership = (
+        TribeGroupMembership.objects.filter(pk=membership_id)
+        .select_related("user", "tribe_group")
+        .first()
+    )
+    if membership is None:
+        return
+    try:
+        if membership.status == TribeGroupMembership.STATUS_ACTIVE:
+            on_membership_became_active(membership)
+        elif membership.status == TribeGroupMembership.STATUS_INACTIVE:
+            on_membership_became_inactive(membership)
+    except Exception:  # pylint: disable=broad-except
+        logger.exception(
+            "External guild sync failed for membership %s", membership_id
+        )
+
+
+@app.task()
+def warm_tribe_group_showcases():
+    """
+    Rebuild every group's Activity tab cache so no page view pays for the
+    all-time and best-month scans. Runs twice an hour; the cache lasts one.
+    """
+    groups = TribeGroup.objects.filter(
+        is_active=True,
+        code__in=[c for c, b in REPORT_BINDINGS.items() if not b.manual],
+    )
+    for group in groups:
+        try:
+            refresh_group_showcase(group)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "Error warming showcase for tribe group %s: %s",
+                group.code,
+                exc,
+            )
+
+
+@app.task()
+def refresh_tribe_group_showcase(group_id: int):
+    """Rebuild one group's Activity tab cache (queued on a cache miss)."""
+    group = TribeGroup.objects.filter(pk=group_id).first()
+    if group:
+        refresh_group_showcase(group)
+
+
+@app.task()
+def refresh_tribe_about_page(tribe_id: int):
+    """Rebuild one tribe's About page cache (queued on a cache miss)."""
+    tribe = Tribe.objects.filter(pk=tribe_id, is_active=True).first()
+    if tribe:
+        refresh_tribe_about(tribe)
+
+
+@app.task()
+def refresh_tribe_group_about(group_id: int):
+    """Rebuild one group's About tab cache (queued on a cache miss)."""
+    group = TribeGroup.objects.filter(pk=group_id, is_active=True).first()
+    if group:
+        refresh_group_about(group)
+
+
+@app.task()
+def warm_tribe_about_pages():
+    """
+    Rebuild every tribe's About page and its groups' About tabs. They scan
+    a year of killmails, fleets and group reports, so no page view ever
+    computes them. The cache lasts six hours; this runs every three.
+    """
+    for tribe in Tribe.objects.filter(is_active=True):
+        try:
+            refresh_tribe_about(tribe)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "Error warming about page for tribe %s: %s", tribe.slug, exc
+            )
+
+
+@app.task(ignore_result=True)
+def create_tribe_discord_event(event_id: int):
+    """Create a group event's Discord scheduled event and announce it."""
+    return event_sync.create_discord_event(event_id)
+
+
+@app.task(ignore_result=True)
+def update_tribe_discord_event(event_id: int):
+    """Push an edited group event to its Discord scheduled event."""
+    return event_sync.update_discord_event(event_id)
+
+
+@app.task(ignore_result=True)
+def cancel_tribe_discord_event(event_id: int):
+    """Cancel a group event's Discord scheduled event."""
+    return event_sync.cancel_discord_event(event_id)
+
+
+@app.task()
+def sync_tribe_event_interest():
+    """Every 15 minutes: Discord interested counts and finished events."""
+    return event_sync.sync_event_interest()
+
+
+@app.task()
+def expire_tribe_invitations():
+    """Daily: pending invites past their expiry become expired."""
+    return expire_due_invitations()
+
+
+@app.task(ignore_result=True)
+def update_tribe_invitation_dm(invitation_id: int):
+    """Edit an answered invite's DM: say what happened, remove the buttons.
+
+    Safe to run twice: it rewrites the same message to the same text.
+    """
+    invitation = (
+        TribeGroupInvitation.objects.select_related(
+            "tribe_group__tribe", "invited_by__eveplayer__primary_character"
+        )
+        .filter(pk=invitation_id)
+        .first()
+    )
+    if invitation is None:
+        return
+    deliveries = NotificationDelivery.objects.filter(
+        notification_type=TRIBE_INVITED_KEY,
+        channel=NotificationChannel.DISCORD,
+        idempotency_key=(
+            f"{invited_delivery_key(invitation)}:u{invitation.user_id}"
+        ),
+    ).exclude(discord_message_id="")
+    embed = answered_embed(**answered_dm(invitation))
+    for delivery in deliveries:
+        try:
+            discord.update_message(
+                delivery.discord_channel_id,
+                delivery.discord_message_id,
+                payload={"embeds": [embed], "components": []},
+            )
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Could not edit tribe invite DM %s",
+                invitation_id,
+                exc_info=True,
+            )

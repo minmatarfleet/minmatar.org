@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeAboutCapitals, TribeAboutGroup } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { CAPITALS_ORDER, TRIBE_ABOUT_STAGES } from '@helpers/tribe_about'
+
+interface Props {
+    capitals: TribeAboutCapitals
+    groups: TribeAboutGroup[]
+    tribe_id: number
+}
+
+const { capitals, groups, tribe_id } = Astro.props
+
+const count = (value: number) => number_thousand_separator(Math.round(value))
+const groups_by_id = new Map(groups.map((group) => [group.id, group]))
+const ordered_hangar = [...capitals.hangar].sort((a, b) => rank(a.code) - rank(b.code))
+
+function rank(code: string): number {
+    const index = CAPITALS_ORDER.indexOf(code)
+    return index === -1 ? CAPITALS_ORDER.length : index
+}
+
+import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
+import TribeHullList from '@components/blocks/tribe_about/TribeHullList.astro'
+import TribeGroupYearCard from '@components/blocks/tribe_about/TribeGroupYearCard.astro'
+import TribeCapitalRecord from '@components/blocks/tribe_about/TribeCapitalRecord.astro'
+---
+
+<TribeAboutSection
+    title={t('tribes.about.capitals.line_title')}
+    caption={t('tribes.about.capitals.line_caption')}
+>
+    <div class="[ tribe-about-row ]">
+        {ordered_hangar.map((hangar) => {
+            const group = groups_by_id.get(hangar.group_id)
+            return group &&
+                <TribeGroupYearCard
+                    group={group}
+                    tribe_id={tribe_id}
+                    stage={TRIBE_ABOUT_STAGES[group.code]}
+                    value={count(hangar.total)}
+                >
+                    <TribeHullList hulls={hangar.hulls} />
+                </TribeGroupYearCard>
+        })}
+    </div>
+</TribeAboutSection>
+
+<TribeCapitalRecord capitals={capitals} />

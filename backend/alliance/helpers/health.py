@@ -19,16 +19,22 @@ from django.utils import timezone
 
 from alliance.helpers.health_hygiene import compute_hygiene_payload
 from alliance.models import AllianceHealthSnapshot
+from app.eve_time import month_key
 from applications.models import EveCorporationApplication
 from buyback.models import BuybackContract
+from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
+from eveonline.helpers.alliances import alliance_corporations
 from eveonline.models import (
     EveCharacter,
     EveCharacterIndustryJob,
     EveCharacterKillmailAttacker,
     EveCharacterMiningEntry,
     EveCharacterPlanet,
-    EveCorporation,
     EvePlayer,
+)
+from eveonline.killmail_classes import (
+    SMALL_GANG_MAX_ATTACKERS,
+    SOLO_MAX_ATTACKERS,
 )
 from fleets.models import EveFleetInstanceMember
 from freight.models import FreightContract
@@ -44,9 +50,7 @@ from tribes.models import (
     TribeGroupMembershipHistory,
 )
 
-ALLIANCE_ID = 99011978
 ACADEMY_CORP_ID = 98741376
-MH0LD_TICKER = "MH0LD"
 GOAL_MAP = 500
 HIST_MONTHS = 12
 HYGIENE_DAYS = 90
@@ -59,10 +63,6 @@ EXEMPT_AUTH_GROUPS = frozenset(
 
 def _aware(d: date) -> datetime:
     return timezone.make_aware(datetime.combine(d, datetime.min.time()))
-
-
-def _month_key(dt: datetime | date) -> str:
-    return f"{dt.year:04d}-{dt.month:02d}"
 
 
 GONE_FOR_MONTHS_DAYS = 90
@@ -282,9 +282,9 @@ def compute_alliance_health(  # noqa: C901
     hist_date = hist_start.date()
 
     corps = list(
-        EveCorporation.objects.filter(alliance__alliance_id=ALLIANCE_ID)
-        .exclude(ticker=MH0LD_TICKER)
-        .values("corporation_id", "name", "ticker", "member_count")
+        alliance_corporations(include_holding_corporation=False).values(
+            "corporation_id", "name", "ticker", "member_count"
+        )
     )
     corp_by_id = {c["corporation_id"]: c for c in corps}
     corp_ids = list(corp_by_id)
@@ -365,6 +365,9 @@ def compute_alliance_health(  # noqa: C901
     hygiene_since = now - timedelta(days=HYGIENE_DAYS)
     hygiene_recent = now - timedelta(days=HYGIENE_RECENT_DAYS)
     hygiene_180 = now - timedelta(days=180)
+    # Fleets attended are distinct ESI fleet instances per person (alts
+    # folded). An EveFleet has had at most one instance in production, so
+    # this equals scheduled fleets; see fleets.helpers.metrics.
     fleets_90d_sets: dict[int, set[int]] = defaultdict(set)
     fleets_30d_sets: dict[int, set[int]] = defaultdict(set)
     fleets_180_times: dict[int, list[datetime]] = defaultdict(list)
@@ -415,21 +418,27 @@ def compute_alliance_health(  # noqa: C901
             .values_list("killmail_id", "n")
         ):
             attacker_counts[km_id] = n
+    # A person counts a mail once, however many of their alts were on it.
+    mails_by_user: dict[int, dict[int, datetime]] = defaultdict(dict)
     for cid, kt, km_id in kill_rows:
         uid = eve_to_user.get(cid)
         if uid is None or kt is None:
             continue
-        n = attacker_counts.get(km_id, 1)
-        if n == 1:
-            sig = "solo"
-        elif n <= 10:
-            sig = "small_gang"
-        else:
-            sig = "kill"
-        events.append((uid, kt, sig))
-        if kt >= hygiene_since:
+        mails_by_user[uid][km_id] = kt
+    for uid, mails in mails_by_user.items():
+        for km_id, kt in mails.items():
+            n = attacker_counts.get(km_id, 1)
+            if n <= SOLO_MAX_ATTACKERS:
+                sig = "solo"
+            elif n <= SMALL_GANG_MAX_ATTACKERS:
+                sig = "small_gang"
+            else:
+                sig = "kill"
+            events.append((uid, kt, sig))
+            if kt < hygiene_since:
+                continue
             kills_90d[uid] += 1
-            if n <= 10:
+            if n <= SMALL_GANG_MAX_ATTACKERS:
                 kills_small_90d[uid] += 1
             prev = last_kill_at.get(uid)
             if prev is None or kt > prev:
@@ -598,7 +607,7 @@ def compute_alliance_health(  # noqa: C901
         if prev is None or dt > prev:
             last_activity[uid] = dt
         if dt >= year_ago:
-            months_active[uid].add(_month_key(dt))
+            months_active[uid].add(month_key(dt))
 
     eligible = {uid for uid in roster_user_ids if status_of(uid) != "on_leave"}
     fading, dark, seasonal = classify_quiet_attention(
@@ -662,7 +671,7 @@ def compute_alliance_health(  # noqa: C901
         until_dt = _aware(nxt)
         monthly.append(
             {
-                "month": _month_key(cur),
+                "month": month_key(cur),
                 "label": (
                     cur.strftime("%b %y")
                     if cur.month == 1
@@ -864,7 +873,7 @@ def compute_alliance_health(  # noqa: C901
             hygiene_since=hygiene_since,
             hygiene_recent=hygiene_recent,
             hygiene_180=hygiene_180,
-            alliance_id=ALLIANCE_ID,
+            alliance_id=MINMATAR_FLEET_ALLIANCE_ID,
             exempt_auth_groups=EXEMPT_AUTH_GROUPS,
             restore_grace_days=RESTORE_GRACE_DAYS,
             corp_display_name=_corp_display_name,

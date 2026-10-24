@@ -1,9 +1,6 @@
 from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal
 
-import jwt
-from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import Client
 
@@ -27,12 +24,6 @@ AMAMAKE = 1022167642188
 
 def _utc(*args):
     return datetime(*args, tzinfo=dt_timezone.utc)
-
-
-def _token_for(user: User) -> str:
-    return jwt.encode(
-        {"user_id": user.id}, settings.SECRET_KEY, algorithm="HS256"
-    )
 
 
 class InferredSalesMonthlyTestCase(TestCase):
@@ -326,6 +317,18 @@ class InferredSalesMonthlyVolumeTestCase(TestCase):
         self.assertEqual(401, response.status_code)
         self.assertEqual(response.json()["detail"], "login_required")
         self.assertIn("Retry-After", response.headers)
+
+    def test_endpoint_anon_budget_ignores_spoofed_forwarded_for(self):
+        # A new made-up address each request still lands in the bucket of
+        # the address the proxy appended.
+        for n in range(10):
+            response = self.client.get(
+                f"{BASE_URL}/inferred-sales/monthly/types",
+                {"location_id": AMAMAKE, "year": 2026, "month": 8},
+                HTTP_X_FORWARDED_FOR=f"198.51.100.{n}, 203.0.113.7",
+            )
+        self.assertEqual(401, response.status_code)
+        self.assertEqual(response.json()["detail"], "login_required")
 
     def test_endpoint_authed_rate_limit(self):
         # Exhaust the user bucket (capacity 20).

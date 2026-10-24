@@ -2,18 +2,15 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const { auth_token } = get_request_user(Astro)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = user ? user?.is_superuser : false
 
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 
-const user_permissions = user ? await get_user_permissions(user.username) : []
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+const gates = await get_gates(Astro)
+const can_view_fleets = can(gates, 'fleets.view')
 
 const doctrine_id = Astro.params.doctrine_id ?? '0';
 
@@ -36,6 +33,15 @@ try {
     }
 } catch (error) {
     fetch_doctrine_error = error
+}
+
+import { doctrine_path } from '@helpers/ship_paths'
+
+// One URL per doctrine: ID-only, stale-name and slashless links land on the named one.
+if (doctrine) {
+    const canonical_path = translatePath(doctrine_path(doctrine.id, doctrine.name))
+    if (Astro.url.pathname !== canonical_path)
+        return Astro.redirect(`${canonical_path}${Astro.url.search}`, 301)
 }
 
 const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
@@ -99,7 +105,7 @@ const page_description = doctrine?.description
         {fetch_doctrine_error ?
             <ErrorRefetch
                 args={{
-                    partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}`,
+                    partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${parseInt(doctrine_id)}`,
                     error: fetch_doctrine_error,
                     delay: 0,
                 }}

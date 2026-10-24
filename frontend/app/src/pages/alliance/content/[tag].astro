@@ -45,7 +45,7 @@ try {
     post_fetching_error = error as Error
 }
 
-const CONTENT_SECTIONS_PARTIAL_URL = `${translatePath('/partials/content_sections_component')}?state=published${current_tag ? `&tag=${current_tag.tag}` : ''}`
+const CONTENT_SECTIONS_PARTIAL_URL = `${translatePath('/partials/content_sections_component2')}?state=published${current_tag ? `&tag=${current_tag.tag}` : ''}`
 
 let connect_alert: Alert | false = false
 const connect_error = Astro.url.searchParams.get('error')

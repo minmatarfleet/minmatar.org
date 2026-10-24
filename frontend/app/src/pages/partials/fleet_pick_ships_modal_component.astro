@@ -1,12 +1,10 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
-const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user) return new Response(null, { status: 403 })
 
@@ -19,24 +17,45 @@ if (isNaN(fleet_id))
 import {
     get_fleet_composition,
     get_fleet_my_pilots,
+    get_fleet_targets,
+    get_my_target_hangar,
+    type MyTargetHangar,
+    type ShipTargetProgress,
     type FleetCompositionEntry,
     type MyFleetPilot,
 } from '@helpers/api.minmatar.org/fleets'
 import { is_capital_entry } from '@helpers/fleet_ships'
+import { BURST_KINDS, counts_from_bursts, default_burst_counts } from '@helpers/fleet_roles'
+import type { BurstKind } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
+import { get_ship_hulls } from '@helpers/sde/ships'
+import { get_item_icon } from '@helpers/eve_image_server'
+import type { ShipHull } from '@dtypes/layout_components'
 
 let composition: FleetCompositionEntry[] = []
 let pilots: MyFleetPilot[] = []
+let hulls: ShipHull[] = []
+let targets: ShipTargetProgress[] = []
+let hangar: MyTargetHangar = { lines_by_ship: [], hangars: [] }
 let fetch_error: Error | false = false
 
 try {
-    ;[composition, pilots] = await Promise.all([
+    ;[composition, pilots, hulls, targets, hangar] = await Promise.all([
         get_fleet_composition(auth_token as string, fleet_id),
         get_fleet_my_pilots(auth_token as string, fleet_id),
+        get_ship_hulls(),
+        // Ship targets the fleet is still short of; never blocks the picker.
+        get_fleet_targets(auth_token as string, fleet_id).catch(() => []),
+        // Which line each doctrine hull fills and what each character owns.
+        get_my_target_hangar(auth_token as string, fleet_id).catch(() => ({ lines_by_ship: [], hangars: [] })),
     ])
 } catch (error) {
     fetch_error = error
 }
+
+// A pilot bringing a hull the FC didn't list: shown under "Off doctrine".
+const hull_names = new Map(hulls.map(hull => [hull.type_id, hull.name]))
+const HULLS_LIST_ID = `pick-ships-hulls-${fleet_id}`
 
 const recent = pilots.filter(pilot => pilot.recent_fleets)
 const others = pilots.filter(pilot => !pilot.recent_fleets)
@@ -47,13 +66,87 @@ const groups = [
     { title: t('primary_ships'), entries: composition.filter(e => e.role === 'primary' && !is_capital_entry(e)) },
     { title: t('secondary_ships'), entries: composition.filter(e => e.role === 'secondary' && !is_capital_entry(e)) },
     { title: t('support_ships'), entries: composition.filter(e => e.role === 'support' && !is_capital_entry(e)) },
+    { title: t('utility_ships'), entries: composition.filter(e => e.role === 'utility' && !is_capital_entry(e)) },
     { title: t('capital_ships'), entries: composition.filter(is_capital_entry) },
 ].filter(group => group.entries.length > 0)
 
+// Before the first save the backend suggests the hull each character flew
+// most in past fleets; it is only pre-selected, Save still has to be pressed.
 const selected_key = (pilot:MyFleetPilot) => {
-    if (!pilot.selection) return ''
-    return pilot.selection.fitting_id ? `f:${pilot.selection.fitting_id}` : `m:${pilot.selection.fleet_fitting_id}`
+    if (pilot.selection?.ship_type_id) return `s:${pilot.selection.ship_type_id}`
+    const pick = pilot.selection ?? pilot.suggestion
+    if (!pick) return ''
+    return pick.fitting_id ? `f:${pick.fitting_id}` : `m:${pick.fleet_fitting_id}`
 }
+
+const off_doctrine_hull = (pilot:MyFleetPilot) => {
+    const type_id = pilot.selection?.ship_type_id
+    return type_id ? { key: `s:${type_id}`, name: hull_names.get(type_id) ?? t('pick_ships_other_ship') } : null
+}
+
+const has_suggestions = pilots.some(pilot => pilot.suggestion)
+
+// Ship targets: each option says which line it fills and whether that line
+// is still short; hulls a character owns are listed first, and a character
+// not bringing anything is offered an owned hull for a short line.
+const target_by_id = new Map(targets.map(target => [target.id, target]))
+const line_by_ship = new Map(hangar.lines_by_ship.map(row => [row.ship_type_id, target_by_id.get(row.target_id)]))
+const owned_by_character = new Map(hangar.hangars.map(row => [row.character_id, new Set(row.ship_type_ids)]))
+
+const option_label = (entry:FleetCompositionEntry) => {
+    const line = line_by_ship.get(entry.ship_id)
+    if (!line) return entry.name
+    return t(line.short > 0 ? 'fleets.targets.option_needed' : 'fleets.targets.option_met')
+        .replace('{ship}', entry.name)
+        .replace('{line}', line.name)
+}
+const owned_entries = (pilot:MyFleetPilot) => {
+    const owned = owned_by_character.get(pilot.character_id)
+    return owned ? composition.filter(entry => owned.has(entry.ship_id)) : []
+}
+const pilot_groups = (pilot:MyFleetPilot) => {
+    const owned = owned_entries(pilot)
+    const keys = new Set(owned.map(entry => entry.key))
+    return [
+        ...(owned.length ? [{ title: t('fleets.targets.in_hangar'), entries: owned }] : []),
+        ...groups
+            .map(group => ({ ...group, entries: group.entries.filter(entry => !keys.has(entry.key)) }))
+            .filter(group => group.entries.length > 0),
+    ]
+}
+const hangar_hint = (pilot:MyFleetPilot) => {
+    const entry = owned_entries(pilot).find(entry => (line_by_ship.get(entry.ship_id)?.short ?? 0) > 0)
+    if (!entry) return null
+    return { entry, line: line_by_ship.get(entry.ship_id)! }
+}
+
+const suggested_label = (pilot:MyFleetPilot) => {
+    const { ship_name, fleets } = pilot.suggestion!
+    return (fleets === 1 ? t('pick_ships_suggested_one') : t('pick_ships_suggested'))
+        .replace('{ship}', ship_name)
+        .replace('{count}', fleets.toString())
+}
+
+// Links fits: the pilot picks which fitted bursts run online. The form
+// starts from their saved pick, else the doctrine's online bursts.
+const links_entries = composition.filter(entry => entry.fit_roles?.links)
+
+const burst_label = (kind:BurstKind) => t(t_key('burst_kind_', kind))
+
+const fitted_kinds = (entry:FleetCompositionEntry):BurstKind[] =>
+    BURST_KINDS.filter(kind => (entry.fit_roles.bursts_fitted[kind] ?? 0) > 0)
+
+const initial_counts = (pilot:MyFleetPilot, entry:FleetCompositionEntry) => {
+    const saved = selected_key(pilot) === entry.key && (pilot.selection?.bursts?.length ?? 0) > 0
+    const counts = saved ?
+        counts_from_bursts(pilot.selection!.bursts!) :
+        default_burst_counts(entry.fit_roles)
+    return Object.fromEntries(fitted_kinds(entry).map(kind => [kind, counts[kind] ?? 0]))
+}
+
+const links_prompt = (entry:FleetCompositionEntry) => t('pick_ships_links_prompt')
+    .replace('{ship}', entry.ship_name || entry.name)
+    .replace('{slots}', entry.fit_roles.burst_slots.toString())
 
 const SAVE_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}?${query_string({
     fleet_id: fleet_id,
@@ -69,7 +162,9 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
+import Input from '@components/blocks/Input.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
+import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 ---
 
 {fetch_error ?
@@ -88,18 +183,33 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         <Flexblock gap='var(--space-m)'>
             <Flexblock gap='var(--space-3xs)' class="[ pick-ships__header ]">
                 <h3 class="[ pick-ships__title ]">{t('pick_ships_title')}</h3>
-                <small>{t('pick_ships_subtitle')}</small>
+                <small>{t(has_suggestions ? 'pick_ships_suggested_subtitle' : 'pick_ships_subtitle')}</small>
             </Flexblock>
+
+            {targets.length > 0 &&
+                <section class="[ pick-ships__needed ]" aria-labelledby={`pick-ships-needed-${fleet_id}`}>
+                    <b id={`pick-ships-needed-${fleet_id}`}>{t('fleets.targets.still_needed')}</b>
+                    <div class="[ pick-ships__meters ]">
+                        {targets.map(target =>
+                            <ShipTargetMeter name={target.name} have={target.have} target={target.target} compact={true} />
+                        )}
+                    </div>
+                </section>
+            }
 
             {composition.length === 0 ?
                 <p>{t('fleet_ships_empty')}</p>
                 :
+                <datalist id={HULLS_LIST_ID}>
+                    {hulls.map(hull => <option value={hull.name} />)}
+                </datalist>
                 <div class="[ pick-ships__rows ]">
                     {pilots.map(pilot =>
                         <div
                             class="[ pick-ships__row ]"
                             x-show={pilot.recent_fleets ? 'true' : 'show_all'}
                             x-cloak={!pilot.recent_fleets && !show_all_by_default ? true : undefined}
+                            x-data={`{ ship: ${JSON.stringify(selected_key(pilot))} }`}
                         >
                             <PilotBadge
                                 character_id={pilot.character_id}
@@ -108,21 +218,88 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                                 icon_quality={64}
                                 inert={true}
                             >
-                                {pilot.recent_fleets ?
+                                {pilot.suggestion ?
+                                    <small>{suggested_label(pilot)}</small> :
+                                pilot.recent_fleets ?
                                     <small>{t('pick_ships_recent')}</small> :
                                     <small class="[ pick-ships__quiet ]">{t('pick_ships_no_recent')}</small>
                                 }
                             </PilotBadge>
-                            <Select name={`ship_${pilot.character_id}`} size='sm'>
+                            <Select name={`ship_${pilot.character_id}`} size='sm' x-model="ship">
                                 <option value="" selected={selected_key(pilot) === ''}>{t('pick_ships_not_flying')}</option>
-                                {groups.map(group =>
+                                {pilot_groups(pilot).map(group =>
                                     <optgroup label={group.title}>
                                         {group.entries.map(entry =>
-                                            <option value={entry.key} selected={selected_key(pilot) === entry.key}>{entry.name}</option>
+                                            <option value={entry.key} selected={selected_key(pilot) === entry.key}>{option_label(entry)}</option>
                                         )}
                                     </optgroup>
                                 )}
+                                <optgroup label={t('pick_ships_off_doctrine')}>
+                                    {off_doctrine_hull(pilot) &&
+                                        <option value={off_doctrine_hull(pilot)!.key} selected>{off_doctrine_hull(pilot)!.name}</option>
+                                    }
+                                    <option value="other">{t('pick_ships_other_ship')}</option>
+                                </optgroup>
                             </Select>
+                            {hangar_hint(pilot) &&
+                                <p class="[ pick-ships__hint ]" x-show="ship === ''" x-cloak={selected_key(pilot) !== '' ? true : undefined}>
+                                    <img src={get_item_icon(hangar_hint(pilot)!.entry.ship_id, 32)} alt="" width="24" height="24" loading="lazy" />
+                                    <span>
+                                        {t('fleets.targets.has_hull').replace('{ship}', hangar_hint(pilot)!.entry.ship_name || hangar_hint(pilot)!.entry.name)}
+                                        {' '}<b>{t('fleets.targets.line_needs_it').replace('{name}', hangar_hint(pilot)!.line.name)}</b>
+                                    </span>
+                                    <button type="button" x-on:click={`ship = ${JSON.stringify(hangar_hint(pilot)!.entry.key)}`}>{t('fleets.targets.bring_it')}</button>
+                                </p>
+                            }
+                            <label class="[ pick-ships__other ]" x-show="ship === 'other'" x-cloak>
+                                <span class="[ visually-hidden ]">{t('pick_ships_other_ship_label')}</span>
+                                <Input
+                                    size="sm"
+                                    type="text"
+                                    name={`other_ship_${pilot.character_id}`}
+                                    list={HULLS_LIST_ID}
+                                    autocomplete="off"
+                                    placeholder={t('pick_ships_other_ship_placeholder')}
+                                    x-bind:disabled="ship !== 'other'"
+                                    x-bind:required="ship === 'other'"
+                                    disabled
+                                />
+                                <small>{t('pick_ships_other_ship_hint')}</small>
+                            </label>
+                            {links_entries.map(entry =>
+                                <fieldset
+                                    class="[ pick-ships__links ]"
+                                    x-show={`ship === ${JSON.stringify(entry.key)}`}
+                                    x-cloak={selected_key(pilot) !== entry.key ? true : undefined}
+                                    x-data={`{
+                                        counts: ${JSON.stringify(initial_counts(pilot, entry))},
+                                        slots: ${entry.fit_roles.burst_slots},
+                                        get total() { return Object.values(this.counts).reduce((sum, n) => sum + (Number(n) || 0), 0) },
+                                    }`}
+                                >
+                                    <legend><small>{links_prompt(entry)}</small></legend>
+                                    <div class="[ pick-ships__bursts ]">
+                                        {fitted_kinds(entry).map(kind =>
+                                            <label class="[ pick-ships__burst ]">
+                                                <span>{burst_label(kind)}</span>
+                                                <input
+                                                    type="number"
+                                                    name={`bursts_${pilot.character_id}_${kind}`}
+                                                    min="0"
+                                                    max={entry.fit_roles.bursts_fitted[kind]}
+                                                    value={initial_counts(pilot, entry)[kind]}
+                                                    x-model.number={`counts.${kind}`}
+                                                    x-bind:disabled={`ship !== ${JSON.stringify(entry.key)}`}
+                                                />
+                                                <small>/ {entry.fit_roles.bursts_fitted[kind]}</small>
+                                            </label>
+                                        )}
+                                    </div>
+                                    <small class="[ pick-ships__over ]" x-show="total > slots" x-cloak>
+                                        {t('pick_ships_links_over').replace('{slots}', entry.fit_roles.burst_slots.toString())}
+                                    </small>
+                                </fieldset>
+                            )}
                         </div>
                     )}
                 </div>
@@ -147,6 +324,53 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 }
 
 <style lang="scss">
+    .pick-ships__needed {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        > b {
+            color: var(--highlight);
+        }
+    }
+
+    .pick-ships__meters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: var(--space-xs) var(--space-m);
+    }
+
+    .pick-ships__hint {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 var(--space-2xs);
+        grid-column: 1 / -1;
+        padding-inline-start: var(--space-xl);
+        color: var(--foreground);
+        font-size: var(--step--1);
+
+        img {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+
+        b {
+            color: var(--fleet-yellow);
+        }
+
+        button {
+            min-height: 2.75rem;
+            padding: 0;
+            background: none;
+            border: 0;
+            color: var(--fleet-yellow);
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    }
+
     [x-cloak] {
         display: none !important;
     }
@@ -178,6 +402,53 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         @media screen and (max-width: 640px) {
             grid-template-columns: minmax(0, 1fr);
         }
+    }
+
+    .pick-ships__other {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+    }
+
+    .pick-ships__links {
+        grid-column: 1 / -1;
+        border: solid 1px var(--border-color);
+        padding: var(--space-2xs) var(--space-xs);
+        margin: 0;
+
+        legend {
+            padding: 0 var(--space-3xs);
+        }
+    }
+
+    .pick-ships__bursts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-m);
+        margin-top: var(--space-3xs);
+    }
+
+    .pick-ships__burst {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+
+        input {
+            width: 4ch;
+            text-align: center;
+            background: var(--background);
+            color: var(--highlight);
+            border: solid 1px var(--border-color-hover);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .pick-ships__over {
+        display: block;
+        margin-top: var(--space-3xs);
+        color: var(--fleet-red);
     }
 
     .pick-ships__quiet {

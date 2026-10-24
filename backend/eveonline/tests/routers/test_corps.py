@@ -109,8 +109,35 @@ class CorporationRouterTestCase(TestCase):
         corp = response.json()
         self.assertEqual(12345, corp["corporation_id"])
         self.assertEqual("TestCorp", corp["corporation_name"])
-        self.assertEqual("Executor notes", corp["executor_notes"])
+        self.assertIsNone(corp["executor_notes"])
         self.assertFalse(corp["trial"])
+
+    def test_corporation_executor_notes_are_for_leadership(self):
+        corp = self.create_corp(12345, "TestCorp")
+        url = BASE_URL + "corporations/12345"
+        auth = f"Bearer {self.token}"
+
+        member = self.client.get(url, HTTP_AUTHORIZATION=auth).json()
+        self.assertIn("executor_notes", member)
+        self.assertIsNone(member["executor_notes"])
+
+        director = EveCharacter.objects.create(
+            character_id=20002,
+            character_name="Director Dan",
+            user=self.user,
+        )
+        corp.directors.add(director)
+        leader = self.client.get(url, HTTP_AUTHORIZATION=auth).json()
+        self.assertEqual("Executor notes", leader["executor_notes"])
+
+    def test_corporation_list_never_includes_executor_notes(self):
+        self.create_corp(12345, "TestCorp")
+
+        for headers in ({}, {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}):
+            corps = self.client.get(
+                BASE_URL + "corporations", **headers
+            ).json()
+            self.assertIsNone(corps[0]["executor_notes"])
 
     def test_get_corporation_info(self):
         self.create_corp(12345, "TestCorp")
@@ -207,6 +234,24 @@ class CorporationRouterTestCase(TestCase):
         self.assertEqual("abc123XYZ", payload["media"][0]["youtube_id"])
         self.assertEqual("director", payload["leadership"][0]["role"])
         self.assertEqual("EU", payload["leadership"][0]["prime_time"])
+        self.assertFalse(payload["leadership"][0]["on_leave"])
+
+    def test_public_leadership_flags_on_leave(self):
+        corp = self.create_corp(12345, "TestCorp")
+        director = EveCharacter.objects.create(
+            character_id=20002,
+            character_name="Director Dan",
+            user=self.user,
+        )
+        corp.directors.add(director)
+        with factory.django.mute_signals(signals.post_save):
+            UserCommunityStatus.objects.create(
+                user=self.user, status=UserCommunityStatus.STATUS_ON_LEAVE
+            )
+
+        response = self.client.get(BASE_URL + "corporations/12345/info")
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json()["leadership"][0]["on_leave"])
 
     def test_public_leadership_shows_mains_once(self):
         corp = self.create_corp(12345, "TestCorp")
@@ -463,7 +508,16 @@ class CorporationRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         ).json()
         self.assertEqual(
-            {"can_view_members": True, "can_view_characters": False}, access
+            {
+                "can_view_members": True,
+                "can_view_characters": False,
+                "can_edit_settings": False,
+                # People team sees the Projects tab; only CEO and
+                # directors put projects toward campaigns.
+                "can_view_projects": True,
+                "can_manage_projects": False,
+            },
+            access,
         )
 
     def test_superuser_sees_every_character(self):

@@ -74,6 +74,7 @@
         "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.story.description",
         "keywords": [
             "story"
@@ -155,7 +156,7 @@
         "description": "page_finder.campaigns.description",
         "permissions": {
             "auth": true,
-            "user": ["campaigns.view_campaign"]
+            "gate": "campaigns.view"
         },
         "keywords": [
             "campaigns",
@@ -169,6 +170,7 @@
         "slug": "campaigns.etherium_reach",
         "path": "/campaigns/etherium-reach/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.etherium_reach.description",
         "keywords": [
             "Etherium Reach",
@@ -182,6 +184,7 @@
         "slug": "campaigns.auga",
         "path": "/campaigns/auga-yc128/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.auga.description",
         "keywords": [
             "Auga",
@@ -224,6 +227,21 @@
         "keywords": ["warzone", "frontline report", "September YC128", "Amamake", "Kamela", "Kourmonen", "faction warfare"]
     },
     {
+        "slug": "newsletter",
+        "path": "/newsletter/",
+        "publish": true,
+        "sitemap": false,
+        "description": "page_finder.newsletter.description",
+        "keywords": ["newsletter", "Fleet Newsletter", "Minmatar Fleet", "what's new", "updates", "YC128"]
+    },
+    {
+        "slug": "newsletter.yc128_10",
+        "path": "/newsletter/yc128-10/",
+        "publish": true,
+        "description": "page_finder.newsletter.yc128_10.description",
+        "keywords": ["newsletter", "October YC128", "campaigns", "desktop app", "after-action report", "tribes", "Minmatar Fleet"]
+    },
+    {
         "slug": "amamake_market",
         "path": "/amamake-market/",
         "publish": true,
@@ -248,6 +266,7 @@
         "slug": "campaigns.providence",
         "path": "/campaigns/providence/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.providence.description",
         "keywords": [
             "Providence",
@@ -261,6 +280,7 @@
         "slug": "campaigns.scalding_pass",
         "path": "/campaigns/scalding-pass/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.scalding_pass.description",
         "keywords": [
             "Scalding Pass",
@@ -274,6 +294,7 @@
         "slug": "campaigns.hek",
         "path": "/campaigns/hek/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.campaigns.hek.description",
         "keywords": [
             "Hek",
@@ -304,9 +325,7 @@
         "description": "page_finder.corporations.applications.description",
         "publish": true,
         "permissions": {
-            "user": [
-                "applications.change_evecorporationapplication"
-            ]
+            "gate": "applications.manage"
         }
     },
     {
@@ -315,9 +334,7 @@
         "description": "page_finder.corporations.applications.records.description",
         "publish": true,
         "permissions": {
-            "user": [
-                "applications.change_evecorporationapplication"
-            ]
+            "gate": "applications.manage"
         }
     },
     {
@@ -329,9 +346,7 @@
             "corporations"
         ],
         "permissions": {
-            "user": [
-                "eveonline.view_evecorporation"
-            ]
+            "gate": "corporations.members.view_all"
         }
     },
     {
@@ -358,9 +373,7 @@
             "corporations"
         ],
         "permissions": {
-            "user": [
-                "eveonline.view_evecorporation"
-            ]
+            "gate": "corporations.members.view_all"
         }
     },
     {
@@ -373,9 +386,7 @@
             "alts"
         ],
         "permissions": {
-            "user": [
-                "eveonline.view_evecorporation"
-            ]
+            "gate": "corporations.members.view_all"
         }
     },
     {
@@ -393,6 +404,7 @@
         "path": "/alliance/tribes/?tribe=capitals",
         "description": "page_finder.tribes.capitals.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -404,6 +416,7 @@
         "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.industry.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -416,6 +429,7 @@
         "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.market.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -429,6 +443,7 @@
         "path": "/alliance/tribes/?tribe=pulse",
         "description": "page_finder.tribes.pulse.description",
         "publish": true,
+        "sitemap": false,
         "keywords": [
             "groups",
             "tribes",
@@ -523,9 +538,7 @@
         "description": "page_finder.posts.create.description",
         "icon": "/images/icons/48px-Notepad.png",
         "permissions": {
-            "user": [
-                "posts.add_evepost"
-            ]
+            "gate": "posts.create"
         }
     },
     {
@@ -537,9 +550,7 @@
         ],
         "description": "page_finder.propaganda.my_posts.description",
         "permissions": {
-            "user": [
-                "posts.add_evepost"
-            ]
+            "gate": "posts.create"
         }
     },
     {
@@ -548,9 +559,7 @@
         "publish": true,
         "description": "page_finder.propaganda.trash.description",
         "permissions": {
-            "user": [
-                "posts.add_evepost"
-            ]
+            "gate": "posts.create"
         }
     },
     {
@@ -591,9 +600,7 @@
             "program"
         ],
         "permissions": {
-            "user": [
-                "srp.view_evefleetshipreimbursement"
-            ]
+            "gate": "srp.view"
         }
     },
     {
@@ -608,9 +615,7 @@
             "program"
         ],
         "permissions": {
-            "user": [
-                "srp.view_evefleetshipreimbursement"
-            ]
+            "gate": "srp.view"
         }
     },
     {
@@ -625,9 +630,7 @@
             "schedule"
         ],
         "permissions": {
-            "user": [
-                "fleets.view_evefleet"
-            ]
+            "gate": "fleets.view"
         }
     },
     {
@@ -636,9 +639,7 @@
         "publish": true,
         "description": "page_finder.fleets.history.description",
         "permissions": {
-            "user": [
-                "fleets.view_evefleet"
-            ]
+            "gate": "fleets.view"
         }
     },
     {
@@ -652,9 +653,7 @@
             "new"
         ],
         "permissions": {
-            "user": [
-                "fleets.add_evefleet"
-            ]
+            "gate": "fleets.create"
         }
     },
     {
@@ -709,6 +708,7 @@
         "slug": "buyback_orders",
         "path": "/market/buyback/orders/",
         "publish": true,
+        "sitemap": false,
         "description": "page_finder.buyback_orders.description"
     },
     {
@@ -789,9 +789,7 @@
             "indy"
         ],
         "permissions": {
-            "user": [
-                "eveonline.add_evecharactertag"
-            ]
+            "gate": "industry.industrialists.view"
         }
     },
     {
@@ -899,9 +897,7 @@
         "icon": "/images/icons/48px-Calendaricon.png",
         "description": "page_finder.intel.timers.active.description",
         "permissions": {
-            "user": [
-                "structures.view_evestructuretimer"
-            ]
+            "gate": "structures.timers.view"
         }
     },
     {
@@ -910,9 +906,7 @@
         "publish": true,
         "description": "page_finder.intel.timers.history.description",
         "permissions": {
-            "user": [
-                "structures.view_evestructuretimer"
-            ]
+            "gate": "structures.timers.view"
         }
     },
     {
@@ -921,9 +915,7 @@
         "publish": true,
         "description": "page_finder.intel.timers.add.description",
         "permissions": {
-            "user": [
-                "structures.add_evestructuretimer"
-            ]
+            "gate": "structures.timers.manage"
         }
     },
     {
@@ -934,9 +926,24 @@
         "icon": "/images/icons/48px-Planets.png",
         "description": "page_finder.intel.moon_tracking.description",
         "permissions": {
-            "user": [
-                "moons.view_evemoon"
-            ]
+            "gate": "moons.view"
+        }
+    },
+    {
+        "slug": "intel.affiliations",
+        "alt": "icon.intel.alt",
+        "path": "/intel/affiliations/",
+        "publish": true,
+        "icon": "/images/icons/48px-Satellite.png",
+        "description": "page_finder.intel.affiliations.description",
+        "keywords": [
+            "intel",
+            "blocs",
+            "pets",
+            "alts"
+        ],
+        "permissions": {
+            "gate": "intel.affiliations"
         }
     },
     {

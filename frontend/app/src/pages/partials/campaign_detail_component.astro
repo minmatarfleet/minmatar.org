@@ -4,20 +4,17 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user)
     return HTTP_403_Forbidden()
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_view_campaigns = is_superuser || user_permissions.includes('campaigns.view_campaign')
+const can_view_campaigns = can(gates, 'campaigns.view')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
@@ -27,6 +24,7 @@ import type {
     CampaignWeek,
     CampaignFleet,
     CampaignLeaderboardRow,
+    CampaignCorporationLeaderboardRow,
     CampaignKillmail,
     CampaignSite,
     CampaignRoster,
@@ -37,6 +35,7 @@ import {
     get_campaign_week,
     get_campaign_fleets,
     get_campaign_leaderboard,
+    get_campaign_corporation_leaderboard,
     get_campaign_killmails,
     get_campaign_sites,
     get_campaign_roster,
@@ -62,6 +61,7 @@ try {
 let week:CampaignWeek | null = null
 let fleets:CampaignFleet[] = []
 let leaderboard:CampaignLeaderboardRow[] = []
+let corporation_board:CampaignCorporationLeaderboardRow[] = []
 let killmails:{ rows:CampaignKillmail[]; has_more:boolean } = { rows: [], has_more: false }
 let sites:{ rows:CampaignSite[]; has_more:boolean } = { rows: [], has_more: false }
 let roster:CampaignRoster | null = null
@@ -77,6 +77,7 @@ if (campaign) {
         get_campaign_sites(slug, auth_token as string, ACTIVITY_PAGE_SIZE + 1),
         get_campaign_roster(slug, auth_token as string),
         get_campaign_readiness(auth_token as string),
+        get_campaign_corporation_leaderboard(slug, auth_token as string, 'kills', 'week'),
     ])
 
     week = results[0].status === 'fulfilled' ? results[0].value : null
@@ -86,6 +87,7 @@ if (campaign) {
     sites = paginate(results[4].status === 'fulfilled' ? results[4].value : [])
     roster = results[5].status === 'fulfilled' ? results[5].value : null
     readiness = results[6].status === 'fulfilled' ? results[6].value : null
+    corporation_board = results[7].status === 'fulfilled' ? results[7].value : []
 }
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
@@ -108,6 +110,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         week={week}
         fleets={fleets}
         leaderboard={leaderboard}
+        corporation_board={corporation_board}
         killmails={killmails}
         sites={sites}
         roster={roster}

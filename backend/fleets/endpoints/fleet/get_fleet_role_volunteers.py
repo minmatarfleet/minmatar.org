@@ -23,8 +23,8 @@ ROUTE_SPEC = {
         404: None,
     },
     "description": (
-        "List role volunteers for a fleet. Same auth as get fleet. The "
-        "assigned cyno system is only returned to the FC and the pilot."
+        "List Logi FC sign-ups for a fleet. Same auth as get fleet. Links "
+        "and cynos are worked out from ships: see /{fleet_id}/roles."
     ),
 }
 
@@ -38,9 +38,10 @@ def get_fleet_role_volunteers(request, fleet_id: int):
     volunteers = limit_volunteers_to_viewer(
         request,
         fleet,
-        EveFleetRoleVolunteer.objects.filter(eve_fleet=fleet).order_by(
-            "role", "id"
-        ),
+        # Older cyno/links sign-ups stay in the table for history only.
+        EveFleetRoleVolunteer.objects.filter(
+            eve_fleet=fleet, role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR
+        ).order_by("id"),
     )
     reveal = _system_reveal_predicate(request, fleet)
     return [make_role_volunteer_response(v, reveal(v)) for v in volunteers]

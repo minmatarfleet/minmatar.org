@@ -1,0 +1,109 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetWavePreview } from '@helpers/api.minmatar.org/fleets'
+
+/** Who the Send wave dialog's picks would reach and where they help the targets. */
+interface Props {
+    preview:    FleetWavePreview | null;
+    error?:     string | false;
+}
+
+const {
+    preview,
+    error = false,
+} = Astro.props
+
+const helps = (preview?.helps ?? []).filter(help => help.short > 0)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+{error && <small class="[ wave-preview__error ]" role="alert">{error}</small>}
+
+{!preview || preview.picked === 0 ?
+    <small class="[ text-muted ]">{t('fleets.private.wave_pick_first')}</small> :
+    <Flexblock gap="var(--space-m)" class="[ wave-preview ]">
+        <Flexblock gap="var(--space-2xs)">
+            <h3 class="[ wave-preview__label ]">{t('fleets.private.preview_reach')}</h3>
+            <p class="[ wave-preview__headline ]">
+                <b>{preview.will_dm}</b>{` ${t('fleets.private.preview_dm')}`}
+            </p>
+            <dl class="[ wave-preview__rows ]">
+                <dt>{t('fleets.private.preview_picked')}</dt><dd>{preview.picked}</dd>
+                <dt>{t('fleets.private.preview_already')}</dt><dd>−{preview.already_invited}</dd>
+                {preview.no_discord > 0 &&
+                    <Fragment>
+                        <dt>{t('fleets.private.preview_no_discord_short')}</dt>
+                        <dd>−{preview.no_discord}</dd>
+                    </Fragment>
+                }
+            </dl>
+        </Flexblock>
+        {helps.length > 0 &&
+            <Flexblock gap="var(--space-2xs)">
+                <h3 class="[ wave-preview__label ]">{t('fleets.private.preview_helps_title')}</h3>
+                <small class="[ text-muted ]">{t('fleets.private.preview_helps_hint')}</small>
+                <dl class="[ wave-preview__rows ]">
+                    {helps.map(help =>
+                        <Fragment>
+                            <dt>{help.name}</dt><dd>{help.own}</dd>
+                        </Fragment>
+                    )}
+                </dl>
+            </Flexblock>
+        }
+        {preview.will_dm > 0 &&
+            <small class="[ text-muted ]">{t('fleets.private.preview_eta').replace('{seconds}', preview.will_dm.toString())}</small>
+        }
+    </Flexblock>
+}
+
+<style lang="scss">
+    .wave-preview__label {
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .wave-preview__headline {
+        margin-inline: 0;
+        margin-bottom: 0;
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-4);
+            line-height: 1;
+            color: var(--highlight);
+        }
+    }
+
+    .wave-preview__rows {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        margin-inline: 0;
+        margin-bottom: 0;
+        font-size: var(--step--1);
+
+        dt,
+        dd {
+            margin: 0;
+            padding: var(--space-3xs) 0;
+            border-top: 1px solid var(--hairline);
+        }
+
+        dd {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: var(--highlight);
+        }
+    }
+
+    .wave-preview__error {
+        color: var(--fleet-red);
+    }
+</style>

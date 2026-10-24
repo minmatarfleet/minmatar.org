@@ -1,0 +1,47 @@
+---
+import type { TribeGroupRefUI } from '@dtypes/layout_components'
+import { fleet_visibility } from '@helpers/fleet_hosts'
+
+/**
+ * The host group chip and who can see the fleet, after a fleet row's
+ * objective. Renders nothing for an alliance fleet, so those rows stay as
+ * they were. Rows that are links pass `linked={false}` (no nested links).
+ */
+interface Props {
+    fleet:          { host_group?: TribeGroupRefUI | null, open_to_alliance?: boolean };
+    linked?:        boolean;
+    size?:          'sm' | 'md';
+    [propName: string]: any;
+}
+
+const {
+    fleet,
+    linked = false,
+    size = 'sm',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const visibility = fleet_visibility(fleet)
+
+import TribeGroupChip from '@components/blocks/TribeGroupChip.astro'
+import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+---
+
+{fleet.host_group && visibility &&
+    <span class:list={['[ fleet-host-tags ]', Astro.props.class]} {...attributes}>
+        <TribeGroupChip group={fleet.host_group} size={size} linked={linked} max_width="12rem" />
+        <VisibilityTag visibility={visibility} size={size} />
+    </span>
+}
+
+<style lang="scss">
+    .fleet-host-tags {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+</style>

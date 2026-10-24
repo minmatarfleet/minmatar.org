@@ -1,0 +1,111 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { render_reddit_markdown } from '@helpers/reddit_markdown'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const form = await Astro.request.formData()
+const title = String(form.get('title') ?? '').trim()
+const content = String(form.get('content') ?? '')
+---
+
+<Flexblock gap="var(--space-s)" class="[ reddit-preview ]">
+    {title ?
+        <p class="[ reddit-preview__title ]">{title}</p>
+        :
+        <p class="[ reddit-preview__empty ]">{t('corporations.settings.preview_no_title')}</p>
+    }
+    {content.trim() ?
+        <div class="[ reddit-preview__body ]" set:html={render_reddit_markdown(content)} />
+        :
+        <p class="[ reddit-preview__empty ]">{t('corporations.settings.preview_empty')}</p>
+    }
+    <small class="[ reddit-preview__empty ]">{t('corporations.settings.preview_note')}</small>
+</Flexblock>
+
+<style lang="scss">
+    .reddit-preview__title {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        margin: 0;
+        padding-block-end: var(--space-xs);
+        border-bottom: solid 1px var(--border-color);
+    }
+
+    .reddit-preview__empty {
+        color: var(--faded);
+        margin: 0;
+    }
+
+    .reddit-preview__body {
+        overflow-wrap: anywhere;
+        color: var(--foreground);
+
+        & > :global(* + *) {
+            margin-block-start: var(--space-s);
+        }
+
+        :global(h1),
+        :global(h2),
+        :global(h3),
+        :global(h4),
+        :global(h5),
+        :global(h6) {
+            color: var(--highlight);
+            font-size: var(--step-0);
+        }
+
+        :global(h1) {
+            font-size: var(--step-1);
+        }
+
+        :global(p),
+        :global(ul),
+        :global(ol),
+        :global(blockquote),
+        :global(pre) {
+            margin-block-end: 0;
+        }
+
+        :global(ul),
+        :global(ol) {
+            padding-inline-start: var(--space-m);
+        }
+
+        :global(blockquote) {
+            margin-inline: 0;
+            padding-inline-start: var(--space-s);
+            border-left: solid var(--space-3xs) var(--border-color);
+            color: var(--faded);
+        }
+
+        :global(pre) {
+            overflow-x: auto;
+            padding: var(--space-xs);
+            background-color: var(--background);
+        }
+
+        :global(table) {
+            border-collapse: collapse;
+        }
+
+        :global(th),
+        :global(td) {
+            padding: var(--space-3xs) var(--space-xs);
+            border: solid 1px var(--border-color);
+        }
+
+        :global(hr) {
+            border: none;
+            border-top: solid 1px var(--border-color);
+        }
+    }
+</style>

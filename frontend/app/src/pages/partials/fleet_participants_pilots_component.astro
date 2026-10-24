@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const engagement = parseInt(Astro.url.searchParams.get('engagement') ?? '0') || undefined
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import { get_fleet_participants, type FleetParticipants } from '@helpers/api.minmatar.org/fleets'
+import { query_string } from '@helpers/string'
+
+let fetch_error:Error | false = false
+let participants:FleetParticipants | null = null
+
+try {
+    participants = await get_fleet_participants(auth_token as string, fleet_id, engagement)
+} catch (error) {
+    fetch_error = error
+}
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_participants_pilots_component')}?${query_string({
+    fleet_id,
+    ...(engagement && { engagement }),
+})}`
+
+import FleetParticipantsPilots from '@components/blocks/FleetParticipantsPilots.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <div id="fleet-pilots">
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: fetch_error,
+                delay: 0,
+                target: '#fleet-pilots',
+            }}
+        />
+    </div>
+    :
+    participants && <FleetParticipantsPilots participants={participants} fleet_id={fleet_id} />
+}

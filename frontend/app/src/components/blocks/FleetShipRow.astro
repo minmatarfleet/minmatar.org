@@ -1,5 +1,6 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
+import { fitting_path } from '@helpers/ship_paths'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
@@ -17,6 +18,8 @@ interface Props {
     readonly?:          boolean;
     /** Fleet commander: may remove any volunteer. */
     can_manage?:        boolean;
+    /** Off on a finished fleet: hides the pilot count and its list. */
+    show_volunteers?:   boolean;
 }
 
 const {
@@ -29,11 +32,18 @@ const {
     pilots,
     readonly = false,
     can_manage = false,
+    show_volunteers = true,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
 import { get_item_icon } from '@helpers/eve_image_server'
 import { parse_eft, swappable_cargo } from '@helpers/eft'
+import { BURST_KINDS, bursts_summary } from '@helpers/fleet_roles'
+import type { BurstKind } from '@helpers/api.minmatar.org/fleets'
+
+const burst_labels = Object.fromEntries(
+    BURST_KINDS.map(kind => [kind, t(t_key('burst_kind_', kind))])
+) as Record<BurstKind, string>
 
 const FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL = translatePath('/partials/fleet_ship_volunteer_item_component/')
 
@@ -49,7 +59,7 @@ const remove_url = (volunteer_id:number) => `${FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL
     ...partial_params,
 })}`
 
-const fitting_href = entry.fitting_id ? translatePath(`/ships/fittings/${entry.fitting_id}/`) : undefined
+const fitting_href = entry.fitting_id ? translatePath(fitting_path(entry.fitting_id)) : undefined
 const contracts = supply?.contracts ?? null
 const market_fits = supply?.market_fits ?? null
 const market_title = market_fits === 0 && supply?.market_missing?.length
@@ -96,7 +106,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 import CaretIcon from '@components/icons/CaretIcon.astro';
 ---
 
-<div id={id} class="[ fleet-ship-row ][ light-transparency ]" role="listitem" x-data="{ open: false }">
+<div id={id} class:list={[ '[ fleet-ship-row ][ light-transparency ]', { 'fleet-ship-row--no-volunteers': !show_volunteers } ]} role="listitem" x-data="{ open: false }">
     {fitting_href ?
         <StylessButton href={fitting_href} class="[ fleet-ship-row__ship ]">
             <Badge title={entry.name} image={get_item_icon(entry.ship_id, 64)} size={40}>
@@ -159,6 +169,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
         }
     </div>
 
+    {show_volunteers &&
     <div class="[ fleet-ship-row__count-cell ]">
         <button
             type="button"
@@ -176,6 +187,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             </span>
         </button>
     </div>
+    }
 
     <div class="[ fleet-ship-row__tools ]">
         {(can_refit || can_remove_ship || (entry.source === 'manual' && entry.eft_format)) &&
@@ -217,7 +229,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 
     </div>
 
-    {volunteers.length > 0 &&
+    {show_volunteers && volunteers.length > 0 &&
         <div
             id={`${id}-volunteers`}
             class="[ fleet-ship-row__volunteers ]"
@@ -226,7 +238,12 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             x-cloak
         >
             {volunteers.map(volunteer =>
-                <div class="[ fleet-ship-row__volunteer ]" title={volunteer.character_name}>
+                <div
+                    class="[ fleet-ship-row__volunteer ]"
+                    title={volunteer.bursts?.length ?
+                        `${volunteer.character_name} — ${bursts_summary(volunteer.bursts, burst_labels)}` :
+                        volunteer.character_name}
+                >
                     <CharacterPicture
                         character_id={volunteer.character_id}
                         character_name={volunteer.character_name}
@@ -276,6 +293,17 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
             .fleet-ship-row__availability { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
             .fleet-ship-row__meta { grid-column: 1 / -1; grid-row: 3; }
             .fleet-ship-row__meta:empty { display: none; }
+        }
+    }
+
+    // No pilot count column.
+    .fleet-ship-row--no-volunteers {
+        grid-template-columns: minmax(220px, 1fr) minmax(0, 1fr) 240px 72px;
+
+        @media screen and (max-width: 1100px) {
+            grid-template-columns: minmax(0, 1fr) 72px;
+
+            .fleet-ship-row__tools { grid-column: 2; }
         }
     }
 
@@ -432,7 +460,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 
         &:hover:not([disabled]),
         &:focus-visible {
-            background: rgba(255, 255, 255, 0.06);
+            background: var(--hairline);
             outline: none;
         }
 

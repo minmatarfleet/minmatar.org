@@ -2,8 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
+import { login_url } from '@helpers/http_responses'
 
 import type {
     LearningCertificate,
@@ -18,14 +18,14 @@ import {
 } from '@helpers/api.minmatar.org/learning'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { get_characters_summary_sorted, get_skillsets } from '@helpers/fetching/characters'
-import { get_user_permissions } from '@helpers/permissions'
+import { get_gates, can } from '@helpers/gates'
 import { PERSONA_COOKIE } from '@helpers/learning'
 import { getPublishedGuides } from '@/data/guides'
 import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 import { buildLandingCollectionJsonLd, getLearningHubSeo } from '@/data/guides/seo'
 import { LEARNING_HUB_PATH } from '@/data/guides/urls'
 import { get_site_origin } from '@helpers/seo'
-import { get_api_url } from '@helpers/env'
+import { get_public_api_url } from '@helpers/env'
 import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -35,9 +35,7 @@ import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import LearningCenterHub from '@components/blocks/LearningCenterHub.astro'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? Astro.cookies.get('auth_token')!.value
-    : ''
+const auth_token = get_request_user(Astro).auth_token || ''
 
 const cookie_persona = Astro.cookies.has(PERSONA_COOKIE)
     ? (Astro.cookies.get(PERSONA_COOKIE)!.value as LearningPersona)
@@ -55,35 +53,26 @@ let certificates_admin_href: string | null = null
 let skillsets_admin_href: string | null = null
 const skillsets_login_href = auth_token
     ? null
-    : `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
+    : login_url(Astro)
 
 if (auth_token) {
     try {
-        const user = jose.decodeJwt(auth_token) as User
         ;[me, recommendation] = await Promise.all([
             get_learning_me(auth_token),
             get_learning_persona_recommendation(auth_token),
         ])
 
-        const user_permissions = await get_user_permissions(user?.username)
-        if (user_permissions.includes('eveonline.add_evecharactertag')) {
+        const gates = await get_gates(Astro)
+        if (can(gates, 'characters.readiness#strict')) {
             const character_summary = await get_characters_summary_sorted(auth_token)
             readiness_character_id = character_summary.characters?.[0]?.character_id ?? 0
         }
 
-        const api_base = get_api_url()
-        if (
-            user.is_superuser
-            || user_permissions.includes('learning.change_certificate')
-            || user_permissions.includes('learning.view_certificate')
-        ) {
+        const api_base = get_public_api_url()
+        if (can(gates, 'learning.admin')) {
             certificates_admin_href = `${api_base}/admin/learning/certificate/`
         }
-        if (
-            user.is_superuser
-            || user_permissions.includes('eveonline.change_eveskillset')
-            || user_permissions.includes('eveonline.view_eveskillset')
-        ) {
+        if (can(gates, 'skillsets.admin')) {
             skillsets_admin_href = `${api_base}/admin/eveonline/eveskillset/`
         }
 

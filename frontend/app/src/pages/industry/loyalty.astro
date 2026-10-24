@@ -1,34 +1,38 @@
 ---
+import { login_url } from '@helpers/http_responses'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 const is_logged_in = Boolean(auth_token && user)
-const user_is_staff = Boolean(user && user.is_staff)
 
 import type {
     LoyaltyCurrency,
     LoyaltyMarketOrder,
     LoyaltyMarketOrdersList,
+    LoyaltyOrderStats as LoyaltyOrderStatsData,
 } from '@dtypes/api.minmatar.org'
 import {
     get_loyalty_capabilities,
     get_loyalty_currencies,
     get_loyalty_orders,
+    get_loyalty_stats,
 } from '@helpers/api.minmatar.org/loyalty'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
-import { TLIB_CORP_ID } from '@helpers/loyalty_offers_metrics'
+import { tlf_currency } from '@helpers/loyalty_order_stats'
+import { get_corporation_logo } from '@helpers/eve_image_server'
 import {
     loyalty_history_query,
     parse_loyalty_history_params,
 } from '@helpers/loyalty_order_history'
 
-let currencies: LoyaltyCurrency[] = []
+// The buyback book only trades Tribal Liberation Force LP.
+let currency: LoyaltyCurrency | null = null
 let orders: LoyaltyMarketOrder[] = []
+let stats: LoyaltyOrderStatsData | null = null
+let week_stats: LoyaltyOrderStatsData | null = null
 let order_history: LoyaltyMarketOrdersList = { items: [], total: 0, limit: null, offset: 0 }
 const history_filters = parse_loyalty_history_params(Astro.url.searchParams)
 let fetching_error: Error | false = false
@@ -43,25 +47,44 @@ let default_claim_character = ''
 let can_manage_buyback = false
 const current_user_id = user ? Number(user.user_id) : 0
 
+// Stats are decoration: a failure must not hide the order book.
+const quiet_stats = (loyalty_point_id: number, days?: number) =>
+    get_loyalty_stats(loyalty_point_id, days).catch((error) => {
+        console.log(error)
+        return null
+    })
+
 try {
-    let active_orders: LoyaltyMarketOrdersList
-    ;[currencies, active_orders, order_history] = await Promise.all([
-        get_loyalty_currencies(),
-        get_loyalty_orders(),
-        get_loyalty_orders(loyalty_history_query(history_filters)),
-    ])
-    orders = active_orders.items
+    currency = tlf_currency(await get_loyalty_currencies())
+    if (currency) {
+        const loyalty_point_id = currency.id
+        let active_orders: LoyaltyMarketOrdersList
+        ;[active_orders, order_history, stats, week_stats] = await Promise.all([
+            get_loyalty_orders({ loyalty_point_id }),
+            get_loyalty_orders(loyalty_history_query(history_filters, loyalty_point_id)),
+            quiet_stats(loyalty_point_id),
+            quiet_stats(loyalty_point_id, 7),
+        ])
+        orders = active_orders.items
+    }
 } catch (error) {
     fetching_error = error as Error
 }
 
 if (is_logged_in && auth_token) {
-    try {
-        const [summary, capabilities] = await Promise.all([
-            get_characters_summary(auth_token),
-            get_loyalty_capabilities(auth_token),
-        ])
-        can_manage_buyback = Boolean(capabilities.can_manage)
+    // Settled separately: a failed character summary must not hide the
+    // manager actions that capabilities grant (and vice versa).
+    const [summary_result, capabilities_result] = await Promise.allSettled([
+        get_characters_summary(auth_token),
+        get_loyalty_capabilities(auth_token),
+    ])
+    if (capabilities_result.status === 'fulfilled') {
+        can_manage_buyback = Boolean(capabilities_result.value.can_manage)
+    } else {
+        console.log(capabilities_result.reason)
+    }
+    if (summary_result.status === 'fulfilled') {
+        const summary = summary_result.value
         claim_characters = (summary.characters ?? [])
             .map((character) => ({
                 character_name: character.character_name,
@@ -82,19 +105,18 @@ if (is_logged_in && auth_token) {
         default_claim_corporation = primary?.corp_name
             || claim_corporations[0]
             || ''
-    } catch (error) {
-        console.log(error)
+    } else {
+        console.log(summary_result.reason)
     }
 }
 
 const highlight_order_id = Astro.url.searchParams.get('order')
-const default_currency = currencies.find((c) => c.corporation_id === TLIB_CORP_ID)
-    ?? currencies[0]
-    ?? null
-const default_currency_id = default_currency?.id ?? null
-const can_post_sell = currencies.some((c) => c.allow_sell)
-const can_post_buy = currencies.some((c) => c.allow_buy)
-const default_isk_per_lp = default_currency?.default_isk_per_lp ?? 800
+const my_orders = current_user_id
+    ? orders.filter((order) => order.created_by_user_id === current_user_id)
+    : []
+const week_median_seconds = week_stats?.median_close_seconds ?? null
+const loyalty_login_url = login_url(Astro)
+const default_tab = orders.length > 0 || highlight_order_id ? 'open' : 'history'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
@@ -103,19 +125,18 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import LoyaltyRateCards from '@components/blocks/LoyaltyRateCards.astro'
+import LoyaltyQuote from '@components/blocks/LoyaltyQuote.astro'
+import LoyaltySaleSteps from '@components/blocks/LoyaltySaleSteps.astro'
+import LoyaltyMyOrders from '@components/blocks/LoyaltyMyOrders.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
 import LoyaltyOrderHistory from '@components/blocks/LoyaltyOrderHistory.astro'
 import Button from '@components/blocks/Button.astro'
-import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const page_title = t('industry.loyalty.page_title')
 const breadcrumbs = [
     { page_title: t('market.page_title'), accumulated_path: '/market/' },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
-const api_base = import.meta.env.API_URL || ''
-const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
 ---
 
 <Viewport
@@ -135,10 +156,21 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
         }}
         sticky={true}
         breadcrumbs={breadcrumbs}
+        breadcrumb_page_title={page_title}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>{page_title}</PageTitle>
+            <Flexblock gap="var(--space-2xs)" class="[ loyalty-hero ]">
+                <FlexInline gap="var(--space-xs)" class="[ loyalty-hero__eyebrow ]">
+                    <img
+                        src={get_corporation_logo(currency?.corporation_id ?? 1000182, 64)}
+                        alt={currency?.name ?? ''}
+                        width="44"
+                        height="44"
+                    />
+                    <span>{t('industry.loyalty.hero.eyebrow')}</span>
+                </FlexInline>
+                <PageTitle>{t('industry.loyalty.hero.title')}</PageTitle>
+                <p class="[ loyalty-hero__lede ]">{t('industry.loyalty.hero.lede')}</p>
             </Flexblock>
             <PageActions>
                 <Button
@@ -147,22 +179,18 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 >
                     {t('industry.loyalty.view_offers')}
                 </Button>
-                {user_is_staff && (
+                {can_manage_buyback && (
                     <Button
-                        href={admin_loyalty_url}
+                        href={translatePath('/industry/loyalty/desk/')}
                         color="transparent"
-                        narrow={true}
-                        new_tab={true}
-                        aria-label={t('industry.loyalty.edit_in_admin')}
-                        title={t('industry.loyalty.edit_in_admin')}
                     >
-                        <CogIcon slot="icon" />
+                        {t('industry.loyalty.desk_link')}
                     </Button>
                 )}
             </PageActions>
         </FlexInline>
 
-        <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-2xl)">
             {fetching_error ? (
                 <ErrorRefetch
                     args={{
@@ -173,51 +201,82 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         delay: 0,
                     }}
                 />
+            ) : !currency ? (
+                <p>{t('industry.loyalty.rates.empty')}</p>
             ) : (
                 <>
-                    <LoyaltyRateCards currencies={currencies} />
-                    {is_logged_in && (can_post_sell || (can_manage_buyback && can_post_buy)) && (
-                        <div class="[ loyalty-cta-row ]">
-                            {can_post_sell && (
-                                <Button
-                                    class="[ loyalty-cta-row__button ]"
-                                    color="fleet-red"
-                                    x-on:click="$dispatch('loyalty-open-sell')"
-                                >
-                                    {t('industry.loyalty.post_sell')}
-                                </Button>
-                            )}
-                            {can_manage_buyback && can_post_buy && (
-                                <Button
-                                    class="[ loyalty-cta-row__button ]"
-                                    color="green"
-                                    x-on:click="$dispatch('loyalty-open-buy')"
-                                >
-                                    {t('industry.loyalty.post_buy')}
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                    <LoyaltyOrderBook
-                        orders={orders}
-                        currencies={currencies}
+                    <LoyaltyQuote
+                        currency={currency}
+                        stats={stats}
+                        week_stats={week_stats}
                         is_logged_in={is_logged_in}
-                        current_user_id={current_user_id}
-                        can_manage_buyback={can_manage_buyback}
-                        highlight_order_id={highlight_order_id}
-                        default_currency_id={default_currency_id}
-                        default_isk_per_lp={default_isk_per_lp}
-                        claim_characters={claim_characters}
-                        claim_corporations={claim_corporations}
-                        default_claim_character={default_claim_character}
-                        default_claim_corporation={default_claim_corporation}
+                        login_url={loyalty_login_url}
                     />
-                    <LoyaltyOrderHistory
-                        orders={order_history.items}
-                        currencies={currencies}
-                        total={order_history.total}
-                        filters={history_filters}
-                    />
+
+                    <LoyaltyMyOrders orders={my_orders} current_user_id={current_user_id} />
+
+                    <LoyaltySaleSteps />
+
+                    <section
+                        class="[ loyalty-book ]"
+                        aria-labelledby="loyalty-book-title"
+                        x-data={`{ tab: ${JSON.stringify(default_tab)} }`}
+                    >
+                        <Flexblock gap="var(--space-s)">
+                            <FlexInline justification="space-between" class="[ w-full ]">
+                                <h2 id="loyalty-book-title">{t('industry.loyalty.book.title')}</h2>
+                                <div class="[ loyalty-book__tabs ]" role="group" aria-label={t('industry.loyalty.book.view')}>
+                                    <button
+                                        type="button"
+                                        x-bind:aria-pressed="tab === 'open'"
+                                        x-on:click="tab = 'open'"
+                                    >
+                                        {t('industry.loyalty.book.open').replace('{count}', String(orders.length))}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        x-bind:aria-pressed="tab === 'history'"
+                                        x-on:click="tab = 'history'"
+                                    >
+                                        {t('industry.loyalty.book.history')}
+                                    </button>
+                                </div>
+                            </FlexInline>
+                            <div x-show="tab === 'open'" x-cloak={default_tab !== 'open' ? '' : undefined}>
+                                <LoyaltyOrderBook
+                                    orders={orders}
+                                    currency={currency}
+                                    is_logged_in={is_logged_in}
+                                    current_user_id={current_user_id}
+                                    can_manage_buyback={can_manage_buyback}
+                                    highlight_order_id={highlight_order_id}
+                                    claim_characters={claim_characters}
+                                    claim_corporations={claim_corporations}
+                                    default_claim_character={default_claim_character}
+                                    default_claim_corporation={default_claim_corporation}
+                                    show_title={false}
+                                    week_median_seconds={week_median_seconds}
+                                />
+                            </div>
+                            <div x-show="tab === 'history'" x-cloak={default_tab !== 'history' ? '' : undefined}>
+                                <LoyaltyOrderHistory
+                                    orders={order_history.items}
+                                    total={order_history.total}
+                                    filters={history_filters}
+                                />
+                            </div>
+                        </Flexblock>
+                    </section>
+
+                    <section class="[ loyalty-alt ]" aria-labelledby="loyalty-alt-title">
+                        <Flexblock gap="var(--space-3xs)" class="[ loyalty-alt__text ]">
+                            <h2 id="loyalty-alt-title">{t('industry.loyalty.alt.title')}</h2>
+                            <p>{t('industry.loyalty.alt.text')}</p>
+                        </Flexblock>
+                        <Button href={translatePath('/industry/loyalty/offers/')}>
+                            {t('industry.loyalty.alt.link')}
+                        </Button>
+                    </section>
                 </>
             )}
         </Flexblock>
@@ -225,17 +284,108 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
 </Viewport>
 
 <style lang="scss">
-    .loyalty-cta-row {
+    .loyalty-hero__eyebrow {
+        align-items: center;
+        flex-wrap: nowrap;
+
+        img {
+            flex: none;
+            width: var(--space-xl);
+            height: var(--space-xl);
+            border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+            background-color: var(--background);
+        }
+
+        span {
+            font-size: var(--step--1);
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .loyalty-hero__lede {
+        max-width: var(--max-text-width);
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.55;
+        color: var(--highlight);
+    }
+
+    /* The sticky bar keeps just the title and actions. */
+    @supports (container-type: scroll-state) {
+        @container sticky-heading scroll-state(stuck: top) {
+            .loyalty-hero__eyebrow,
+            .loyalty-hero__lede {
+                display: none;
+            }
+        }
+    }
+
+    .loyalty-book {
+        h2 {
+            margin: 0;
+            font-size: var(--step-2);
+        }
+    }
+
+    .loyalty-book__tabs {
+        display: inline-flex;
+        gap: var(--space-3xs);
+        padding: var(--space-3xs);
+        border: 1px solid var(--border-color);
+        background-color: var(--component-background);
+
+        button {
+            min-height: var(--space-l);
+            padding-inline: var(--space-s);
+            border: 0;
+            background: transparent;
+            color: var(--faded);
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            font-weight: 700;
+            cursor: pointer;
+
+            &[aria-pressed='true'] {
+                background-color: var(--border-color-hover);
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .loyalty-alt {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--space-3xs);
-        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s) var(--space-m);
+        padding: var(--space-m);
+        border: 1px dashed var(--border-color-hover);
 
-        :global(.loyalty-cta-row__button) {
-            flex: 1 1 0;
-            min-width: 12rem;
-            text-align: center;
+        h2 {
+            margin: 0;
+            font-family: var(--default-font);
+            font-size: var(--step-1);
+            text-transform: none;
         }
+
+        p {
+            margin: 0;
+            max-width: var(--max-text-width);
+            font-size: var(--step--1);
+            line-height: 1.55;
+            color: var(--foreground);
+        }
+    }
+
+    .loyalty-alt__text {
+        flex: 1 1 24rem;
+    }
+
+    [x-cloak] {
+        display: none !important;
     }
 </style>
 

@@ -1,0 +1,139 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { NewsletterIssue } from '@/data/newsletter/types'
+import { get_site_origin } from '@helpers/seo'
+import { pageProgressFromSections } from '@helpers/pageProgress'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import NewsletterIssueBlock from '@components/blocks/newsletter/NewsletterIssue.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
+
+interface Props {
+    issue: NewsletterIssue
+    canonical_path: string
+}
+
+const { issue, canonical_path } = Astro.props
+
+const i18n_prefix = `newsletter.${issue.slug.replaceAll('-', '_')}`
+const meta_title = t(t_key('', i18n_prefix, '.meta_title')).replace('{site}', t('index.page_title'))
+const meta_description = t(t_key('', i18n_prefix, '.meta_description'))
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath(canonical_path), site_origin).href
+const meta_image = new URL(issue.share_image, site_origin).href
+const page_title = t(t_key('', i18n_prefix, '.page_title'))
+
+const structured_data = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: page_title,
+    description: meta_description,
+    image: meta_image,
+    datePublished: issue.published_at.toISOString(),
+    url: canonical_url,
+    mainEntityOfPage: canonical_url,
+    author: { '@type': 'Organization', name: 'Minmatar Fleet Alliance', url: site_origin },
+    publisher: { '@type': 'Organization', name: 'Minmatar Fleet Alliance', url: site_origin },
+    inLanguage: 'en',
+}
+
+// Same read tracking as the guides: one tracked section per newsletter section.
+const progress_sections = issue.sections.map((section) => ({ id: section.id, title: section.title }))
+const progress = pageProgressFromSections({
+    page_key: `newsletter/${issue.slug}`,
+    page_title,
+    sections: progress_sections,
+    version_source: JSON.stringify(progress_sections),
+})
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            image: issue.cover_image,
+            image_990: issue.cover_image,
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-l)" class="[ nl-page ]" data-page-progress-root>
+            <TextBox class="[ nl-hero ]">
+                <Flexblock gap="var(--space-s)">
+                    <div class="[ nl-hero__eyebrow ]">
+                        <span>{issue.eyebrow}</span>
+                        <span>{issue.period_label}</span>
+                    </div>
+                    <PageTitle is_landing={true}>
+                        <span class="[ nl-hero__title ]">{t('newsletter.title_lead')} <span>{t('newsletter.title_accent')}</span></span>
+                    </PageTitle>
+                    <p class="[ nl-hero__dek ]">{issue.dek}</p>
+                    <PageProgress {...progress} />
+                </Flexblock>
+            </TextBox>
+
+            <NewsletterIssueBlock issue={issue} />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .nl-page {
+        max-width: var(--max-col-width);
+    }
+
+    .nl-hero {
+        max-width: var(--max-text-width);
+    }
+
+    .nl-hero__eyebrow {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-3xs) var(--space-m);
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--fleet-yellow);
+    }
+
+    .nl-hero :global(h1) {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .nl-hero__title {
+        font-size: var(--step-5);
+        line-height: 0.9;
+        color: var(--highlight);
+
+        span {
+            color: var(--fleet-red);
+        }
+    }
+
+    .nl-hero__dek {
+        font-size: var(--step-1);
+        color: var(--foreground);
+        max-width: var(--max-landing-width);
+    }
+</style>

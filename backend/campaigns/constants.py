@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from eveonline.killmail_classes import SMALL_GANG_MAX_ATTACKERS
+
+# Paths under /api/campaigns that a campaign slug would otherwise shadow.
+RESERVED_SLUGS = frozenset({"entities", "overlay"})
+
 # --- Complex LP base tiers -------------------------------------------------
 # Base LP by complex class before the system multiplier, contested factor and
 # insurgency suppression are applied. Several classes collide on the same
@@ -63,42 +68,59 @@ STRUCTURE_TYPE_BY_ID: dict[int, str] = {
 
 
 # --- Event codes -----------------------------------------------------------
-# Seeded from a live pull on BearThatCares, 18 Sep YC128. Everything except
-# the kill payout is unconfirmed: the wording is rendered client-side from the
-# code, so we cannot tell a Rendezvous Point from a beacon or an outpost yet.
-# Unconfirmed codes are stored and shown but never scored.
+# Seeded from a live pull on BearThatCares, 18 Sep YC128, then revised against
+# the October YC128 campaign. The wording is rendered client-side from the
+# code, so a code is only confirmed once live payouts leave no doubt what it
+# is. Unconfirmed codes are stored and shown but never scored.
 EVENT_CODE_SEED: list[dict] = [
     {
         "event_code": 371,
         "site_kind": "complex",
-        "label": "Complex capture",
+        "label": "Complex capture (legacy)",
         "amount_rule": "base by class x system x contested x suppression / pilots inside",
         "confirmed": True,
-        "notes": "Three captures observed in Dal, all resolving to Small plexes.",
+        "notes": (
+            "September captures in Dal, small LP amounts (about 30 to 300). "
+            "October payouts with a site id moved to 359 and 373."
+        ),
     },
     {
         "event_code": 516,
         "site_kind": "advantage_site",
         "label": "Advantage site",
-        "amount_rule": "10,000 flat (RP/beacon/outpost); 15,000 supply cache",
-        "confirmed": False,
+        "amount_rule": "10,000 flat (RP/beacon/outpost); 15,000 supply cache; other amounts shown, not scored",
+        "confirmed": True,
         "notes": (
-            "50 payouts observed, 49 at 10,000 LP and one at 15,000. "
-            "Rendezvous Point, Propaganda Beacon and Listening Outpost all "
-            "pay 10,000, so they may or may not share this code. Probe: "
-            "deploy a beacon or an outpost on a tracked character."
+            "No itemRefID on any of these. September was almost all 10,000 LP "
+            "with one 15,000. October also has shares (7,500, 5,000, 8,333), "
+            "which stay in this family for display but are not scored. "
+            "Rendezvous Point, beacon and outpost may share the code, so it "
+            "is confirmed as the family, not as one of them."
         ),
     },
     {
         "event_code": 359,
-        "site_kind": "unknown",
-        "label": "Large payout, unconfirmed",
-        "amount_rule": "variable",
-        "confirmed": False,
+        "site_kind": "complex",
+        "label": "Complex capture",
+        "amount_rule": "base by class x system x contested x suppression / pilots inside",
+        "confirmed": True,
         "notes": (
-            "One payout of 52,500 LP in Sosala, 27 Aug 01:02. Battlefields "
-            "pay variable amounts, sometimes over 100k, so this is a "
-            "candidate but is not confirmed. Probe: name a battlefield run."
+            "September saw a single 52,500 LP payout and left the code "
+            "unconfirmed. October has hundreds, every one carrying an "
+            "itemRefID, with LP on the complex tiers (11,250, 22,500, "
+            "26,250, 37,500, 45,000, 52,500). Confirmed against the Aldodan "
+            "campaign, 16 Oct YC128."
+        ),
+    },
+    {
+        "event_code": 373,
+        "site_kind": "complex",
+        "label": "Complex capture",
+        "amount_rule": "base by class x system x contested x suppression / pilots inside",
+        "confirmed": True,
+        "notes": (
+            "Same shape as 359: an itemRefID on every payout and the same "
+            "complex-tier amounts. Confirmed with 359."
         ),
     },
     {
@@ -133,7 +155,9 @@ DEFAULT_SCORING: dict = {
     "solo_bonus": 10,
     "fleet_kill_bonus": 5,
     "gang_kill_bonus": 5,
-    "gang_size_max": 10,
+    # Enlisted pilots on the mail (2..max), not every attacker; tunable per
+    # campaign, defaulting to the alliance-wide small-gang size.
+    "gang_size_max": SMALL_GANG_MAX_ATTACKERS,
     "loss_penalty": -3,
     "loss_penalty_in_fleet": -1,
     "isk_per_point": 10_000_000,
@@ -151,8 +175,6 @@ DEFAULT_SCORING: dict = {
     "fleet_led": 40,
     "gang_led": 20,
     "active_day": 5,
-    "streak_per_day": 5,
-    "streak_cap": 25,
     "off_peak_multiplier": 1.25,
     "off_peak_hours": list(range(3, 14)),
     "contribution_mix_bonus": 0.20,

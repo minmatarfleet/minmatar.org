@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+/**
+ * The viewer's local time for an EVE (UTC) time, coloured by the hour:
+ * sleeptime reds, daytime yellows, evening greens and blues. The hour word
+ * is the tooltip, and is also printed when `show_label` is set.
+ */
+interface Props {
+    eve_time:       Date;
+    /** `datetime` is the full date; `time` is hours and minutes, with the weekday when the local day differs. */
+    format?:        'datetime' | 'time';
+    show_label?:    boolean;
+    [propName: string]: any;
+}
+
+const {
+    eve_time,
+    format = 'datetime',
+    show_label = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { local_hour_bands } from '@helpers/local_hour'
+const HOUR_BANDS = local_hour_bands(t)
+---
+
+<span
+    class:list={['[ local-time sentence-cap ]', Astro.props.class]}
+    x-data={`{
+        time_class: '',
+        time_tooltip: false,
+        local_time: '',
+        set_time_class() {
+            const date = new Date('${eve_time} UTC')
+            const hour = date.getHours()
+
+            // An unparseable time keeps the old daytime yellow.
+            const [time_class, time_tooltip] = ${JSON.stringify(HOUR_BANDS)}[hour] ?? ['text-yellow', '${t('daytime')}']
+            this.time_class = time_class
+            this.time_tooltip = time_tooltip
+        },
+        set_local_time() {
+            const eve = new Date('${eve_time}')
+            if ('${format}' === 'datetime') {
+                this.local_time = eve.toLocaleDateString('${lang}', ${import.meta.env.DATETIME_FORMAT})
+                return
+            }
+            const time = eve.toLocaleTimeString('${lang}', { hour: '2-digit', minute: '2-digit', hour12: false })
+            const other_day = eve.getDate() !== eve.getUTCDate()
+            this.local_time = other_day ?
+                eve.toLocaleDateString('${lang}', { weekday: 'short' }) + ' ' + time :
+                time
+        },
+        tippy_options: {
+            delay: [ 100, 200 ],
+            arrow: true,
+        },
+        init() {
+            this.set_time_class()
+            this.set_local_time()
+        }
+    }`}
+    x-bind:class="time_class"
+    x-bind:data-tippy-content="time_tooltip"
+    x-init="tippy($el, tippy_options)"
+    {...attributes}
+>
+    <span x-text="local_time"><span class="[ loading ]">{t('calculating')}</span></span>{show_label &&
+        <span x-show="time_tooltip"> · <span x-text="time_tooltip"></span></span>
+    }
+</span>
+

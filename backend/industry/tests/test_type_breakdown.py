@@ -9,8 +9,6 @@ from industry.helpers.type_breakdown import (
     ACTIVITY_REACTION,
     ComponentNode,
     break_down_type,
-    flatten_components,
-    get_flat_breakdown,
 )
 
 
@@ -57,58 +55,6 @@ class TypeBreakdownTestCase(TestCase):
         )
         node = break_down_type(eve_type, quantity=10)
         self.assertEqual(node.quantity, 10)
-
-    def test_flatten_components_on_leaf_tree_returns_single_type(self):
-        """Flattening a tree with no children returns the root type with its quantity."""
-        eve_type = EveType.objects.create(
-            id=999003,
-            name="Leaf Type",
-            published=True,
-            eve_group=self.eve_group,
-        )
-        node = break_down_type(eve_type, quantity=2)
-        flat = flatten_components(node)
-        self.assertEqual(flat, {999003: 2})
-
-    def test_flatten_components_aggregates_quantities(self):
-        """Flatten aggregates same type from multiple branches (structure only)."""
-        eve_type = EveType.objects.create(
-            id=999004,
-            name="Root",
-            published=True,
-            eve_group=self.eve_group,
-        )
-        child_type = EveType.objects.create(
-            id=999005,
-            name="Child",
-            published=True,
-            eve_group=self.eve_group,
-        )
-        node = ComponentNode(
-            eve_type=eve_type,
-            quantity=1,
-            source="raw",
-            depth=0,
-            children=[
-                ComponentNode(child_type, 3, "blueprint", 1, []),
-                ComponentNode(child_type, 5, "blueprint", 1, []),
-            ],
-        )
-        flat = flatten_components(node)
-        self.assertEqual(flat[999005], 8)
-
-    def test_get_flat_breakdown_returns_list_of_tuples(self):
-        """get_flat_breakdown returns [(EveType, quantity), ...] for a type with no breakdown."""
-        eve_type = EveType.objects.create(
-            id=999006,
-            name="Simple Type",
-            published=True,
-            eve_group=self.eve_group,
-        )
-        result = get_flat_breakdown(eve_type, quantity=1)
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0][0].id, 999006)
-        self.assertEqual(result[0][1], 1)
 
     def test_activity_constants(self):
         """Industry activity IDs match Eve SDE."""

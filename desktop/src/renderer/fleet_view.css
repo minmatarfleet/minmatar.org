@@ -1,0 +1,240 @@
+/* The Fleets window views (fleet_view.js). Colour only where it means something: fleet red = the one primary
+   action and the selected tab, green = live, amber = short or owed, red = loss or pod, gold = your pick and
+   keyboard focus. Every colour also has a word. 4 px grid, 14 px gutters, one card tint, never nested. */
+:root {
+    --fw-warn: #e8a33a;
+    --fw-danger: #ff6b5e;
+    --fw-good: #4fbf4a;
+    --fw-kill: #7aa2f0;          /* kills read blue, losses red (alliance blue, lifted for text) */
+    --fw-kill-bar: #2051b5;
+    --fw-card: rgba(255, 255, 255, 0.035);
+    --fw-gutter: 14px;
+}
+[hidden] { display: none !important; }
+
+.fw-main { padding: 0 var(--fw-gutter) 12px; }
+
+/* type */
+.fw-title { min-width: 0; font-size: 17px; font-weight: 500; color: var(--eve-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-meta { display: block; min-width: 0; margin-top: 2px; font-size: 12px; color: var(--eve-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-kicker { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--eve-text-dim); }
+.fw-card__title { font-size: 15px; font-weight: 500; color: var(--eve-text-strong); }
+.fw-warn { color: var(--fw-warn); }
+.fw-danger { color: var(--fw-danger); }
+.fw-good { color: var(--fw-good); }
+.fw-gold { color: var(--eve-gold); }
+.fw-quiet { padding: 12px 0; font-size: 12px; color: var(--eve-text-dim); }
+.fw-gap { height: 14px; }
+
+/* clocks and times: EVE + local (coloured by the pilot's hour, like the site), ticking HH:MM:SS */
+.fw-live, .fw-clock { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fw-live { color: var(--eve-live); }
+.fw-live::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+.fw-live--bare::before { display: none; }
+.fw-clock { color: var(--eve-text-strong); }
+.fw-clock--big { font-size: 22px; line-height: 1; }
+.fw-clock.is-started { color: #e0563c; }
+.fw-when { font-variant-numeric: tabular-nums; }
+.fw-local.h-sleep { color: #e0403f; }      /* 00-07, lifted from #bb1013 for contrast */
+.fw-local.h-dawn { color: #ce450d; }
+.fw-local.h-morning { color: #df6a0d; }
+.fw-local.h-day { color: #eeff85; }
+.fw-local.h-dusk { color: #71e452; }
+.fw-local.h-evening { color: #65d8a6; }
+.fw-local.h-night { color: #4bcef4; }
+.fw-local.h-late { color: #3a9ced; }
+.fw-local.h-midnight { color: #c062a0; }   /* 23-24, lifted from #8f2f69 */
+
+/* sections and rows */
+.fw-section { display: flex; justify-content: space-between; gap: 8px; margin: 18px 0 6px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--eve-text-dim); }
+.fw-section__aside { letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.fw-section--warn { color: var(--fw-warn); }
+.fw-section--live { color: var(--fw-good); }
+.fw-row, .fw-pilot, .fw-hull, .fw-check { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 32px; }
+.fw-pilot { grid-template-columns: 22px minmax(0, 1fr) auto 22px; min-height: 28px; }
+.fw-hull { grid-template-columns: 24px minmax(0, 1fr) 72px 28px; }
+.fw-row__name { min-width: 0; color: var(--eve-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-count { font-size: 13px; color: var(--eve-text); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.fw-icon, .fw-portrait { display: block; flex: none; background: rgba(255, 255, 255, 0.04); }
+.fw-s20 { width: 20px; height: 20px; } .fw-s22 { width: 22px; height: 22px; } .fw-s24 { width: 24px; height: 24px; }
+.fw-s26 { width: 26px; height: 26px; } .fw-s28 { width: 28px; height: 28px; } .fw-s32 { width: 32px; height: 32px; }
+.fw-s36 { width: 36px; height: 36px; } .fw-s44 { width: 44px; height: 44px; }
+.fw-tag { font-size: 11px; color: var(--eve-text-dim); white-space: nowrap; text-align: right; }
+.fw-group-chip { display: inline-block; max-width: 10em; padding: 0 4px; border: 1px solid var(--eve-gold); color: var(--eve-gold); font-size: 11px; line-height: 14px; vertical-align: 1px; overflow: hidden; text-overflow: ellipsis; }
+.fw-card { margin-top: 14px; background: var(--fw-card); }
+
+/* buttons */
+.fw-button { min-height: 28px; padding: 0 12px; font-size: 12px; white-space: nowrap; }
+.fw-button--quiet { min-height: 26px; padding: 0 10px; border-color: transparent; background: rgba(255, 255, 255, 0.07); color: var(--eve-text); }
+.fw-button--quiet:hover { background: rgba(255, 255, 255, 0.12); }
+.fw-close { width: 28px; height: 28px; }
+.fw-close svg { width: 11px; height: 11px; }
+.fw-more { display: inline-block; margin-top: 12px; font-size: 12px; }
+.fw-done { font-size: 12px; color: var(--eve-text-dim); align-self: center; }
+
+/* fleet header (member, form-up, detail): the FC's portrait leads */
+.fw-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 0 12px; align-items: center; padding-top: 12px; }
+.fw-head .fw-portrait { grid-row: span 2; }
+.fw-head .fw-meta { grid-column: 2 / 4; margin: 0; }
+.fw-detail-when { margin-top: 6px; }
+
+/* the loss card: inside the Fleet tab, never a screen of its own */
+.fw-loss { position: relative; margin-top: 14px; overflow: hidden; background: rgba(255, 107, 94, 0.07); outline: 1px solid rgba(255, 107, 94, 0.28); outline-offset: -1px; }
+.fw-loss .fw-render { position: absolute; right: -36px; top: -50px; width: 190px; height: 190px; opacity: 0.32; filter: grayscale(0.6) sepia(0.4) hue-rotate(-30deg) saturate(2.2);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 55%); mask-image: linear-gradient(90deg, transparent, #000 55%); }
+.fw-loss__head { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 10px 6px 0 12px; }
+.fw-loss__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fw-loss__ship { font-size: 15px; font-weight: 500; color: var(--eve-text-strong); }
+.fw-loss__actions { position: relative; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px 12px; }
+
+/* you */
+.fw-you { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 10px 12px; font-size: 12px; }
+.fw-you .fw-icon { grid-row: span 2; }
+.fw-you__ship { font-size: 15px; font-weight: 500; color: var(--eve-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-you__who { grid-row: span 2; grid-column: 3; color: var(--eve-text-dim); font-size: 11px; text-align: right; }
+.fw-where { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 12px; border-top: 1px solid var(--eve-line); }
+.fw-where:first-child { border-top: 0; }
+.fw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fw-chip { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; background: rgba(232, 163, 58, 0.10); font-size: 12px; color: var(--eve-text-strong); }
+.fw-chip--text { min-height: 22px; padding-left: 10px; }
+
+/* FC live */
+.fw-fc-head { padding-top: 12px; }
+.fw-id { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.fw-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 2px; }
+.fw-stats--two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
+.fw-stats > div { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--eve-text-dim); }
+.fw-stat { font-size: 26px; line-height: 1; font-weight: 500; color: var(--eve-text-strong); font-variant-numeric: tabular-nums; }
+.fw-stats--two .fw-stat { font-size: 20px; }
+.fw-stat__sep { color: #5c5c5c; }
+/* Sub-views are small chips under the fleet header so they never compete with the window tabs. */
+.fw-chipbar { display: inline-flex; gap: 4px; margin-top: 14px; padding: 3px; background: rgba(255, 255, 255, 0.04); }
+.fw-chipbar button { min-height: 26px; padding: 0 10px; border: 0; background: none; color: #a3a3a3; font-size: 12px; cursor: default; }
+.fw-chipbar button:hover { color: var(--eve-text-strong); }
+.fw-chipbar button[aria-selected="true"] { background: rgba(255, 255, 255, 0.10); color: var(--eve-text-strong); }
+.fw-chipbar button:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
+.fw-roles { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 12px; color: var(--eve-text-dim); }
+.fw-attention { display: grid; grid-template-columns: 6px minmax(0, 1fr); gap: 10px; align-items: center; padding: 4px 0; }
+.fw-dot { width: 6px; height: 6px; background: #a3a3a3; }
+.fw-attention__label { color: var(--eve-text-strong); }
+.fw-attention--capsule .fw-dot { background: var(--fw-danger); }
+.fw-attention--capsule .fw-attention__label { color: var(--fw-danger); }
+.fw-attention--off_doctrine .fw-dot { background: var(--fw-warn); }
+.fw-attention--off_doctrine .fw-attention__label { color: var(--fw-warn); }
+.fw-kill { display: grid; grid-template-columns: 36px 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 44px; margin: 0 -8px 2px; padding: 0 8px; }
+.fw-kill--loss { background: rgba(255, 107, 94, 0.06); }
+.fw-kill__time { font-size: 12px; color: var(--eve-text-dim); font-variant-numeric: tabular-nums; }
+.fw-kill__text { min-width: 0; display: flex; flex-direction: column; }
+.fw-kill__text > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-efficiency { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; }
+.fw-efficiency__bar { flex: 1; display: flex; height: 3px; background: #e0362a; }
+.fw-efficiency__bar > span { background: var(--fw-kill-bar); }
+
+/* wrap-up */
+.fw-wrap { overflow: hidden; }
+.fw-banner { position: relative; height: 86px; overflow: hidden; }
+.fw-banner .fw-render { position: absolute; right: -30px; top: -66px; width: 220px; height: 220px; opacity: 0.42;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 50%); mask-image: linear-gradient(90deg, transparent, #000 50%); }
+.fw-banner__text { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; }
+.fw-wrap__body { padding: 4px 12px 12px; }
+.fw-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px; }
+.fw-wrap__done { margin-top: 10px; }
+
+/* form-up steps */
+.fw-card__head { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 8px; }
+.fw-step { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 0 12px; align-items: center; min-height: 52px; padding: 6px 12px; border-top: 1px solid var(--eve-line); }
+.fw-step__n { grid-row: span 2; width: 22px; height: 22px; display: grid; place-items: center; background: rgba(255, 255, 255, 0.08); color: var(--eve-text-strong); font-size: 12px; }
+.fw-step__n.is-done { background: rgba(79, 191, 74, 0.16); color: var(--fw-good); }
+.fw-step__title { color: var(--eve-text-strong); }
+.fw-step__action { grid-row: span 2; grid-column: 3; }
+.fw-step .fw-meta { grid-column: 2; margin: 0; }
+
+/* FC pre-flight */
+.fw-check { grid-template-columns: 14px minmax(0, 1fr) auto; min-height: 34px; }
+.fw-check__mark { width: 9px; height: 9px; justify-self: center; outline: 1px solid var(--fw-warn); }
+.fw-check__mark.is-ok { width: auto; height: auto; outline: 0; color: var(--fw-good); }
+.fw-bar { position: relative; height: 4px; background: rgba(255, 255, 255, 0.08); }
+.fw-bar > span { position: absolute; left: 0; top: 0; bottom: 0; background: #a3a3a3; }
+.fw-bar > .fw-bar--short { background: var(--fw-warn); }
+
+/* next fleet, idle */
+.fw-idle { display: flex; flex-direction: column; gap: 4px; padding: 24px 2px 0; }
+.fw-idle .fw-meta { white-space: normal; }
+.fw-next, .fw-list-row, .fw-owed { display: grid; width: 100%; border: 0; text-align: left; color: inherit; font: inherit; cursor: default; }
+.fw-next { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 1px 12px; align-items: center; padding: 12px; background: var(--fw-card); }
+.fw-next .fw-portrait { grid-row: span 2; }
+.fw-next .fw-meta { grid-column: 2 / 4; margin: 0; }
+.fw-next__title { min-width: 0; font-size: 15px; font-weight: 500; color: var(--eve-text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-next .fw-clock { font-size: 15px; }
+.fw-next__signed { grid-column: 2 / 4; margin-top: 4px; font-size: 12px; color: var(--eve-gold); }
+.fw-next:hover, .fw-list-row:hover { background: var(--eve-hover); }
+.fw-next:focus-visible, .fw-list-row:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: -1px; }
+
+/* the schedule */
+.fw-list-row { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 1px 12px; align-items: center; margin-bottom: 4px; padding: 8px 10px; background: var(--fw-card); }
+.fw-list-row .fw-portrait { grid-row: span 2; }
+.fw-list-row .fw-meta { margin: 0; }
+.fw-list-row.is-cancelled { opacity: 0.45; }
+.fw-live-tag { font-size: 12px; color: var(--fw-good); white-space: nowrap; }
+.fw-crumb { display: flex; align-items: center; gap: 6px; padding-top: 10px; font-size: 12px; min-width: 0; }
+.fw-crumb__back { display: flex; align-items: center; gap: 4px; padding: 2px 0; border: 0; background: none; color: #a3a3a3; cursor: default; }
+.fw-crumb__back:hover { color: var(--eve-text-strong); }
+.fw-crumb__back:focus-visible { outline: 1px solid var(--eve-gold); }
+.fw-crumb__back svg { width: 10px; height: 10px; stroke: currentColor; stroke-width: 1.4; fill: none; }
+.fw-crumb__sep { color: #5c5c5c; }
+.fw-crumb__here { min-width: 0; color: var(--eve-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-pick { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; min-height: 40px; margin-bottom: 4px; padding: 0 10px; border: 0; outline: 1px solid transparent; outline-offset: -1px; background: var(--fw-card); color: inherit; font: inherit; text-align: left; cursor: default; }
+.fw-pick:hover { background: var(--eve-hover); }
+.fw-pick.is-on { background: rgba(241, 217, 160, 0.06); outline-color: rgba(241, 217, 160, 0.55); }
+.fw-pick:focus-visible { outline: 1px solid var(--eve-gold); }
+.fw-pick:disabled { opacity: 0.6; }
+.fw-picked { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; }
+.fw-picked .fw-button { margin-left: auto; }
+.fw-toggle { display: flex; align-items: center; gap: 10px; min-height: 36px; margin-top: 10px; padding: 0; border: 0; background: none; color: var(--eve-text); font-size: 12px; cursor: default; }
+.fw-toggle__box { width: 14px; height: 14px; outline: 1px solid rgba(255, 255, 255, 0.35); outline-offset: -1px; }
+.fw-toggle[aria-checked="true"] .fw-toggle__box { background: var(--eve-accent); outline-color: var(--eve-accent); }
+.fw-toggle:focus-visible { outline: 1px solid var(--eve-gold); }
+
+/* Recent */
+.fw-owed { grid-template-columns: 32px minmax(0, 1fr) auto; gap: 1px 12px; align-items: center; margin-bottom: 4px; padding: 10px; background: rgba(232, 163, 58, 0.07); outline: 1px solid rgba(232, 163, 58, 0.25); outline-offset: -1px; }
+.fw-owed .fw-icon { grid-row: span 2; }
+.fw-owed .fw-button { grid-row: span 2; grid-column: 3; }
+.fw-owed .fw-meta { margin: 0; }
+/* a finished fleet is a schedule row (.fw-list-row): the meta line runs full width, the ISK bar and SRP under it */
+.fw-recent .fw-meta { grid-column: 2 / 4; }
+.fw-recent__foot { grid-column: 2 / 4; display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--eve-text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fw-recent__foot .fw-efficiency__bar { flex: 0 0 40%; height: 2px; }   /* one length on every row, whatever the SRP tag */
+.fw-recent__foot .fw-tag { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; }
+
+/* FC at minimum size */
+.fw-compact-count { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 10px; font-size: 12px; }
+.fw-stat--big { font-size: 30px; line-height: 0.95; }
+.fw-compact-kl { color: var(--eve-text); font-variant-numeric: tabular-nums; }
+.fw-bars { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--eve-line); }
+.fw-bar-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) 40px; gap: 10px; align-items: center; }
+.fw-bar-row .fw-count { font-size: 12px; }
+.fw-compact-alert { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 8px; background: rgba(232, 163, 58, 0.10); outline: 1px solid rgba(232, 163, 58, 0.35); font-size: 12px; white-space: nowrap; overflow: hidden; }
+.fw-compact-alert .eve-dim { overflow: hidden; text-overflow: ellipsis; }
+
+/* Fights: the round being fought, its per-minute bars, earlier rounds */
+.fw-kill-text, .fw-stat.fw-kill-text { color: var(--fw-kill); }
+.fw-stat.fw-danger { color: var(--fw-danger); }
+.fw-round { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--fw-card); border: 1px solid var(--eve-line); }
+.fw-round.is-fighting { background: rgba(224, 54, 42, 0.08); border-color: rgba(224, 54, 42, 0.35); }
+.fw-round__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fw-round__name { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; color: var(--eve-text-strong); }
+.fw-round__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eve-danger); animation: fw-round-pulse 1.6s ease-in-out infinite; }
+@keyframes fw-round-pulse { 50% { opacity: 0.35; } }
+.fw-round .fw-stats { margin: 0; }
+.fw-round .fw-efficiency { margin-top: 0; }
+.fw-round__bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; }
+.fw-round__bars > span { display: flex; flex-direction: column; }
+.fw-round__up, .fw-round__down { display: flex; height: 22px; }
+.fw-round__up { align-items: flex-end; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+.fw-round__down { align-items: flex-start; }
+.fw-round__up > span, .fw-round__down > span { width: 100%; }
+.fw-round__up > span { background: var(--fw-kill-bar); }
+.fw-round__down > span { background: var(--eve-accent); }
+.fw-round__vs { font-size: 12px; }
+.fw-round-row { grid-template-columns: minmax(0, 1fr) auto 36px; }
+.fw-round-row.is-skirmish .fw-row__name { color: var(--eve-text-dim); }

@@ -1,13 +1,30 @@
 ---
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+
 interface SectionTab {
     id: string
     label: string
+    /** Small text after the label, e.g. a count. */
+    meta?: string
+    /** A dot before `meta`: `attention` (orange, something to do) or `live` (red). */
+    flag?: 'attention' | 'live'
+    /** An icon-only tab at the end of the row; `label` becomes its accessible name and tooltip. */
+    icon?: 'cog'
 }
 
 interface Props {
     tabs: SectionTab[]
     aria_label: string
     id_prefix: string
+    /**
+     * Hash prefixes that open a tab, e.g. `{ 'campaign-system-': 'systems' }`
+     * so `#campaign-system-42` opens Systems and scrolls to that element.
+     */
+    hash_aliases?: Record<string, string>
+    /** The tab shown when the URL names none; the first tab otherwise. */
+    default_tab?: string
+    /** `pills` for sub-tabs inside a tab panel. */
+    variant?: 'tabs' | 'pills'
     [propName: string]: any
 }
 
@@ -15,26 +32,57 @@ const {
     tabs,
     aria_label,
     id_prefix,
+    hash_aliases = {},
+    default_tab: requested_default,
+    variant = 'tabs',
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
 const tab_ids = tabs.map((tab) => tab.id)
-const default_tab = tab_ids[0] ?? ''
+const default_tab = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')
 ---
 
 {tabs.length > 0 &&
     <div
         {...attributes}
-        class:list={['[ section-tabs ]', Astro.props.class]}
+        class:list={['[ section-tabs ]', { 'section-tabs--pills': variant === 'pills' }, Astro.props.class]}
         x-data={`{
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},
+            aliases: ${JSON.stringify(hash_aliases)},
             init() {
-                const hash = window.location.hash.replace('#', '')
-                if (this.tabs.includes(hash)) this.tab = hash
+                const next = this.tab_for(window.location.hash.replace('#', ''))
+                if (next) this.tab = next
                 this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
+            },
+            // A tab id, or the tab an aliased hash (a prefix) belongs to.
+            tab_for(hash) {
+                if (this.tabs.includes(hash)) return hash
+                const prefix = Object.keys(this.aliases).find((key) => hash.startsWith(key))
+                return prefix && this.tabs.includes(this.aliases[prefix]) ? this.aliases[prefix] : null
+            },
+            // In-page links such as href="#apply" open their tab.
+            follow_hash() {
+                this.open_hash(window.location.hash.replace('#', ''))
+            },
+            // ClientRouter turns same-page hash links into pushState, which
+            // fires no hashchange, so those links are followed on click too.
+            follow_link(event) {
+                const link = event.target.closest?.('a[href^="#"]')
+                if (link) this.open_hash(link.getAttribute('href').slice(1))
+            },
+            open_hash(hash) {
+                const next = this.tab_for(hash)
+                if (!next) return
+                const aliased = next !== hash
+                if (next === this.tab && !aliased) return
+                this.tab = next
+                this.$nextTick(() => {
+                    const target = aliased ? document.getElementById(hash) : null
+                    ;(target ?? this.$el).scrollIntoView({ block: 'start' })
+                })
             },
             refresh_panel() {
                 const panel = this.$refs['panel-' + this.tab]
@@ -54,17 +102,20 @@ const default_tab = tab_ids[0] ?? ''
                 this.select(this.tabs[(index + offset + this.tabs.length) % this.tabs.length])
             },
         }`}
+        x-on:hashchange.window="follow_hash()"
+        x-on:click.window="follow_link($event)"
     >
         <div class="[ section-tabs-list ]" role="tablist" aria-label={aria_label}>
-            {tabs.map((tab, index) =>
+            {tabs.map((tab) =>
                 <button
                     type="button"
                     role="tab"
                     id={`${id_prefix}-tab-${tab.id}`}
-                    class:list={['[ section-tab ]', { 'is-active': index === 0 }]}
+                    class:list={['[ section-tab ]', { 'is-active': tab.id === default_tab, 'section-tab--icon': tab.icon }]}
+                    title={tab.icon ? tab.label : undefined}
                     aria-controls={`${id_prefix}-panel-${tab.id}`}
-                    aria-selected={index === 0 ? 'true' : 'false'}
-                    tabindex={index === 0 ? 0 : -1}
+                    aria-selected={tab.id === default_tab ? 'true' : 'false'}
+                    tabindex={tab.id === default_tab ? 0 : -1}
                     x-ref={`tab-${tab.id}`}
                     x-bind:class={`{ 'is-active': tab === ${JSON.stringify(tab.id)} }`}
                     x-bind:aria-selected={`tab === ${JSON.stringify(tab.id)} ? 'true' : 'false'`}
@@ -75,7 +126,16 @@ const default_tab = tab_ids[0] ?? ''
                     x-on:keydown.home.prevent="select(tabs[0])"
                     x-on:keydown.end.prevent="select(tabs[tabs.length - 1])"
                 >
-                    {tab.label}
+                    {tab.icon === 'cog' ?
+                        <>
+                            <span class="[ section-tab__icon ]" aria-hidden="true"><CogIcon /></span>
+                            <span class="[ visually-hidden ]">{tab.label}</span>
+                        </> :
+                        tab.label
+                    }
+                    {tab.meta &&
+                        <span class:list={['[ section-tab__meta ]', tab.flag && `section-tab__meta--${tab.flag}`]}>{tab.meta}</span>
+                    }
                 </button>
             )}
         </div>
@@ -92,10 +152,15 @@ const default_tab = tab_ids[0] ?? ''
         min-width: 0;
     }
 
+    // Tabs that don't fit wrap onto another row, so every tab stays visible
+    // and clickable (a sideways-scrolling strip hid them from mouse users).
+    // The rule is an inset shadow on the strip and on each tab, so every row
+    // has one and the active tab's underline covers it.
     .section-tabs-list {
         display: flex;
-        gap: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color-hover);
+        flex-wrap: wrap;
+        gap: 0;
+        box-shadow: inset 0 -1px 0 var(--border-color-hover);
     }
 
     .section-tab {
@@ -103,7 +168,7 @@ const default_tab = tab_ids[0] ?? ''
         background: transparent;
         border: 0;
         border-bottom: 3px solid transparent;
-        margin-block-end: -1px;
+        box-shadow: inset 0 -1px 0 var(--border-color-hover);
         padding: var(--space-2xs) var(--space-s);
         font-family: var(--heading-font);
         font-size: var(--step-1);
@@ -111,6 +176,8 @@ const default_tab = tab_ids[0] ?? ''
         letter-spacing: 0.02em;
         color: var(--foreground);
         cursor: pointer;
+        flex: 0 0 auto;
+        white-space: nowrap;
 
         &.is-active {
             color: var(--highlight);
@@ -123,6 +190,81 @@ const default_tab = tab_ids[0] ?? ''
         }
     }
 
+    // Rare tabs such as Settings: a gear pushed to the end of the row.
+    .section-tab--icon {
+        display: inline-flex;
+        align-items: center;
+        margin-inline-start: auto;
+
+        .section-tab__icon {
+            display: inline-flex;
+        }
+
+        :global(svg) {
+            inline-size: 1em;
+            block-size: 1em;
+        }
+    }
+
+    .section-tab__meta {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        margin-inline-start: var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+        opacity: 0.75;
+    }
+
+    .section-tab__meta--attention,
+    .section-tab__meta--live {
+        opacity: 1;
+
+        &::before {
+            content: '';
+            inline-size: 0.5em;
+            block-size: 0.5em;
+            border-radius: 50%;
+            background: currentColor;
+        }
+    }
+
+    .section-tab__meta--attention {
+        color: var(--security-status-point-4);
+    }
+
+    .section-tab__meta--live {
+        color: var(--fleet-red);
+    }
+
+    .section-tabs--pills > .section-tabs-list {
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        box-shadow: none;
+
+        > .section-tab {
+            min-height: 2.75rem;
+            box-shadow: none;
+            margin: 0;
+            padding: var(--space-3xs) var(--space-s);
+            border: 1px solid var(--border-color-hover);
+            font-family: var(--default-font);
+            font-size: var(--step--1);
+            font-weight: 700;
+            letter-spacing: 0;
+            text-transform: none;
+
+            &.is-active {
+                background-color: var(--fleet-yellow);
+                border-color: var(--fleet-yellow);
+                color: var(--background);
+            }
+        }
+    }
+
     @media (hover: hover) {
         .section-tab:hover {
             color: var(--highlight);
@@ -130,15 +272,23 @@ const default_tab = tab_ids[0] ?? ''
     }
 
     @media screen and (max-width: 767px) {
-        .section-tabs-list {
-            gap: 0;
+        // Tabs share the width of each row.
+        .section-tabs--pills > .section-tabs-list {
+            gap: var(--space-2xs);
         }
 
         .section-tab {
-            flex: 1 1 0;
+            flex: 1 0 auto;
             text-align: center;
+            white-space: nowrap;
             padding-inline: var(--space-2xs);
             font-size: var(--step-0);
+            margin-block-end: 0;
+        }
+
+        .section-tab--icon {
+            flex: 0 0 auto;
+            justify-content: center;
         }
     }
 </style>

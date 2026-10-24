@@ -224,6 +224,51 @@ class CharacterRouterTestCase(TestCase):
             f"new hash {char_id}", new_char.token.character_owner_hash
         )
 
+    def test_add_esi_character_new_records_faction_warfare(self):
+        char_id = 1235
+        req = self.make_request()
+        token = self.make_token(char_id)
+        add_scopes(TokenType.BASIC, token)
+        add_scopes(TokenType.FACTION_WARFARE, token)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.get(character_id=char_id)
+        self.assertEqual("Basic", new_char.esi_token_level)
+        self.assertEqual(
+            ["Basic", "FactionWarfare"], new_char.esi_scope_groups
+        )
+
+    def test_add_esi_character_new_records_picked_groups(self):
+        char_id = 1237
+        req = self.make_request()
+        req.session["add_scope_groups"] = ["Industry", "Market"]
+        token = self.make_token(char_id)
+        add_scopes(TokenType.BASIC, token)
+        add_scopes(TokenType.FACTION_WARFARE, token)
+        add_scopes(TokenType.INDUSTRY, token)
+        add_scopes(TokenType.MARKET, token)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.get(character_id=char_id)
+        self.assertEqual(
+            ["Basic", "Industry", "Market", "FactionWarfare"],
+            new_char.esi_scope_groups,
+        )
+        self.assertNotIn("add_scope_groups", req.session)
+
+    def test_add_esi_character_new_without_faction_warfare_scopes(self):
+        char_id = 1236
+        req = self.make_request()
+        token = self.make_token(char_id)
+        add_scopes(TokenType.BASIC, token)
+
+        handle_add_character_esi_callback(req, token, TokenType.BASIC)
+
+        new_char = EveCharacter.objects.get(character_id=char_id)
+        self.assertEqual(["Basic"], new_char.esi_scope_groups)
+
     def test_add_esi_character_update(self):
         char_id = 2345
         self.make_character(self.user, char_id, "TestChar 2345")
@@ -257,6 +302,22 @@ class CharacterRouterTestCase(TestCase):
         )
 
         self.assertIn("/testing?error=wrong_character", response.url)
+
+    def test_wrong_character_keeps_the_campaign_return_query(self):
+        req = self.make_request(
+            "https://my.minmatar.org/campaigns/aldodan-yc128/?include=3001#you",
+            1000,
+        )
+        token = self.make_token(7891)
+
+        response = handle_add_character_esi_callback(
+            req, token, TokenType.BASIC
+        )
+
+        self.assertIn("include=3001", response.url)
+        self.assertIn("error=wrong_character", response.url)
+        self.assertIn("#you", response.url)
+        self.assertLess(response.url.index("?"), response.url.index("#"))
 
     def test_add_esi_character_update_no_token(self):
         char_id = 3456
@@ -362,6 +423,24 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("error=wrong_discord_account", response.url)
 
+    def test_add_character_endpoint_remembers_picked_groups(self):
+        self.client.force_login(self.user)
+        session = self.client.session
+        session[ESI_ADD_READY_SESSION_KEY] = True
+        session.save()
+        response = self.client.get(
+            f"{BASE_URL}add",
+            {
+                "redirect_url": "/account",
+                "token_type": "Basic",
+                "scope_groups": "Industry,Market,Executor",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            ["Industry", "Market"], self.client.session["add_scope_groups"]
+        )
+
     def test_add_character_logs_out_leftover_session_then_requires_discord(
         self,
     ):
@@ -459,6 +538,7 @@ class CharacterRouterTestCase(TestCase):
 
         new_char = EveCharacter.objects.filter(character_id=char_id).first()
         self.assertEqual(director_token_id, new_char.token_id)
+        self.assertNotIn("Industry", new_char.esi_scope_groups)
         self.assertFalse(
             Token.objects.filter(pk=industry_only_token.pk).exists()
         )
@@ -735,6 +815,7 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual("ACTIVE", tokens[0]["token_state"])
         self.assertEqual("Basic", tokens[0]["requested_level"])
         self.assertEqual("Public", tokens[0]["actual_level"])
+        self.assertEqual(["Public"], tokens[0]["actual_groups"])
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_delete_character_orphans_instead_of_hard_delete(self):

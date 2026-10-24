@@ -1,0 +1,65 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import type { CommandStep } from '@helpers/fleet_command'
+import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
+
+/**
+ * The Checklist tab, for the fleet's FC and strategic FCs: start or stop the
+ * fleet and the setup steps in order. The fleet's own settings (who sees
+ * names, edit, refresh the MOTD, cancel) are on the Settings tab.
+ */
+interface Props {
+    fleet:                  FleetUI;
+    steps:                  CommandStep[];
+    is_fleet_commander:     boolean;
+}
+
+const {
+    fleet,
+    steps,
+    is_fleet_commander,
+} = Astro.props
+
+const history = Boolean(fleet.tracking?.end_time)
+const cancelled = fleet.status === 'cancelled'
+const tracking_active = Boolean(fleet.tracking?.start_time) && !history
+
+const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
+
+import FleetStatus from '@components/blocks/FleetStatus.astro'
+import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro'
+---
+
+<div class="[ fleet-command ]">
+    {!history &&
+        <FleetStatus
+            fleet_id={fleet.id}
+            start_time={fleet.start_time}
+            fleet_tracking={fleet.tracking}
+            fleet_status={fleet.status}
+            is_fleet_commander={is_fleet_commander}
+            fleet_tracking_texts={fleet_tracking_texts}
+            disable_motd={fleet.disable_motd}
+        />
+    }
+
+    {!cancelled &&
+        <FleetSetupSteps
+            fleet_id={fleet.id}
+            steps={steps}
+            refresh={tracking_active}
+        />
+    }
+</div>
+
+<style lang="scss">
+    .fleet-command {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        max-width: var(--max-col-width);
+    }
+</style>

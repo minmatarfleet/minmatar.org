@@ -5,16 +5,13 @@ from typing import Any
 
 import requests
 
-from feed.constants import R2Z2_USER_AGENT
-
-ZKILL_KILL_URL = "https://zkillboard.com/api/killID/{killmail_id}/"
-ESI_KILLMAIL_URL = (
-    "https://esi.evetech.net/latest/killmails/{killmail_id}/{killmail_hash}/"
+from feed.helpers.zkill_client import (
+    ZKILL_API_BASE,
+    fetch_esi_killmail,
+    zkill_get,
 )
 
-
-def _headers() -> dict[str, str]:
-    return {"User-Agent": R2Z2_USER_AGENT, "Accept": "application/json"}
+ZKILL_KILL_URL = ZKILL_API_BASE + "/killID/{killmail_id}/"
 
 
 def fetch_killmail_r2z2_payload(
@@ -23,11 +20,7 @@ def fetch_killmail_r2z2_payload(
     sleep_seconds: float = 1.1,
 ) -> dict[str, Any] | None:
     """Fetch full killmail via zKill metadata + ESI (R2Z2-shaped payload)."""
-    response = requests.get(
-        ZKILL_KILL_URL.format(killmail_id=killmail_id),
-        headers=_headers(),
-        timeout=60,
-    )
+    response = zkill_get(ZKILL_KILL_URL.format(killmail_id=killmail_id))
     if response.status_code != 200:
         return None
     entries = response.json()
@@ -40,16 +33,12 @@ def fetch_killmail_r2z2_payload(
         return None
 
     time.sleep(sleep_seconds)
-    esi_response = requests.get(
-        ESI_KILLMAIL_URL.format(
-            killmail_id=killmail_id, killmail_hash=km_hash
-        ),
-        headers=_headers(),
-        timeout=60,
-    )
-    if esi_response.status_code != 200:
+    try:
+        raw = fetch_esi_killmail(killmail_id, km_hash)
+    except (requests.RequestException, ValueError):
         return None
-    raw = esi_response.json()
+    if raw is None:
+        return None
     return {
         "killmail": raw,
         "hash": km_hash,

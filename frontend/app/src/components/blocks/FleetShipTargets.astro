@@ -1,0 +1,367 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ShipTargetProgress, TargetSuggestions, UnmatchedHull } from '@helpers/api.minmatar.org/fleets'
+import { query_string } from '@helpers/string'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+/**
+ * Ship targets on the Ships tab: each line says how many more are needed.
+ * Managers edit one line at a time (FleetShipTargetLine) and, on a private
+ * fleet, Find pilots who own a hull for a short line (FleetShipTargetOwners).
+ * With no lines yet, managers start from the doctrine or a past fleet.
+ * Rendered and saved by partials/fleet_ship_targets_component.
+ */
+interface Props {
+    fleet_id:       number;
+    targets:        ShipTargetProgress[];
+    can_manage:     boolean;
+    can_invite:     boolean;
+    unmatched?:     UnmatchedHull[];
+    suggestions?:   TargetSuggestions | null;
+    hull_names?:    Map<number, string>;
+    status?:        string | false;
+    error?:         string | false;
+}
+
+const {
+    fleet_id,
+    targets,
+    can_manage,
+    can_invite,
+    unmatched = [],
+    suggestions = null,
+    hull_names = new Map(),
+    status = false,
+    error = false,
+} = Astro.props
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({ fleet_id, can_manage, can_invite })}`
+const mode_url = (mode:string, params:Record<string, string | number> = {}) =>
+    `${PARTIAL_URL}&${query_string({ mode, ...params })}`
+
+const have = targets.reduce((sum, target) => sum + target.have, 0)
+const wanted = targets.reduce((sum, target) => sum + target.target, 0)
+const doctrine = suggestions?.doctrine ?? []
+const past_fleets = suggestions?.past_fleets ?? []
+const unmatched_text = unmatched
+    .map(hull => hull.characters > 1 ? `${hull.ship_name} ×${hull.characters}` : hull.ship_name)
+    .join(', ')
+
+const SWAP = { 'hx-target': '#fleet-ship-targets', 'hx-swap': 'outerHTML' }
+
+import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+{(can_manage || targets.length > 0) &&
+    <section id="fleet-ship-targets" class="[ ship-targets ]" aria-labelledby="ship-targets-title">
+        <header class="[ ship-targets__header ]">
+            <h2 id="ship-targets-title">{t('fleets.targets.title')}</h2>
+            {targets.length > 0 &&
+                <span class="[ ship-targets__muted ]">
+                    {t('fleets.targets.signed_up_total').replace('{have}', have.toString()).replace('{target}', wanted.toString())}
+                </span>
+            }
+            {status && <small role="status">{status}</small>}
+            {can_manage && targets.length > 0 &&
+                <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
+                    {t('fleets.targets.add_line')}
+                </button>
+            }
+        </header>
+
+        {error && <p class="[ ship-targets__error ]" role="alert">{error}</p>}
+
+        {targets.length > 0 ?
+            <ul class="[ ship-targets__lines ]">
+                {targets.map(target =>
+                    <li class:list={['[ ship-targets__line ]', { 'has-actions': can_manage }]}>
+                        <ShipTargetMeter name={target.name} have={target.have} target={target.target} />
+                        {can_manage &&
+                            <span class="[ ship-targets__actions ]">
+                                {can_invite && target.short > 0 &&
+                                    <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('find', { target_id: target.id })} {...SWAP}>
+                                        {t('fleets.targets.find_pilots')}
+                                    </button>
+                                }
+                                <button
+                                    type="button"
+                                    class="[ ship-targets__icon ]"
+                                    aria-label={t('fleets.targets.edit_line_label').replace('{name}', target.name)}
+                                    hx-get={mode_url('edit', { target_id: target.id })}
+                                    {...SWAP}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
+                                </button>
+                            </span>
+                        }
+                    </li>
+                )}
+                {can_manage && unmatched.length > 0 &&
+                    <li class="[ ship-targets__unmatched ]">
+                        <span>{t('fleets.targets.unmatched').replace('{ships}', unmatched_text)}</span>
+                        <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new', add_type_id: unmatched[0].ship_type_id })} {...SWAP}>
+                            {t('fleets.targets.add_to_line')}
+                        </button>
+                    </li>
+                }
+            </ul>
+            :
+            <div class="[ ship-targets__start ]">
+                {doctrine.length > 0 ?
+                    <form hx-post={mode_url('start')} {...SWAP}>
+                        <p class="[ ship-targets__muted ]">{t('fleets.targets.from_doctrine')}</p>
+                        <input type="hidden" name="rows" value={doctrine.length} />
+                        <ul class="[ ship-targets__lines ]">
+                            {doctrine.map((line, index) =>
+                                <li class="[ ship-targets__start-row ]">
+                                    <label>
+                                        <span class="[ visually-hidden ]">{t('fleets.targets.line_name')}</span>
+                                        <input type="text" name={`name_${index}`} value={line.name} maxlength="64" required />
+                                    </label>
+                                    <span class="[ ship-targets__hulls ]">
+                                        {line.ship_type_ids.map(type_id =>
+                                            <span><img src={get_item_icon(type_id, 32)} alt="" width="24" height="24" loading="lazy" />{hull_names.get(type_id) ?? type_id}</span>
+                                        )}
+                                    </span>
+                                    <input type="hidden" name={`ships_${index}`} value={line.ship_type_ids.join(',')} />
+                                    <label>
+                                        <span class="[ visually-hidden ]">{t('fleets.targets.how_many_for').replace('{name}', line.name)}</span>
+                                        <input type="number" name={`target_${index}`} min="1" max="999" placeholder={t('fleets.targets.how_many')} />
+                                    </label>
+                                </li>
+                            )}
+                        </ul>
+                        <div class="[ ship-targets__footer ]">
+                            <Button size="sm" type="submit" color="green">{t('fleets.targets.save_lines')}</Button>
+                            <small class="[ ship-targets__muted ]">{t('fleets.targets.blank_left_out')}</small>
+                        </div>
+                    </form>
+                    :
+                    <p class="[ ship-targets__muted ]">{t('fleets.targets.empty_no_doctrine')}</p>
+                }
+                <div class="[ ship-targets__footer ]">
+                    {past_fleets.length > 0 &&
+                        <form class="[ ship-targets__copy ]" hx-post={mode_url('copy')} {...SWAP}>
+                            <label>
+                                <span>{t('fleets.targets.copy_from')}</span>
+                                <select name="from_fleet_id">
+                                    {past_fleets.map(fleet =>
+                                        <option value={fleet.fleet_id}>
+                                            {t('fleets.targets.copy_option')
+                                                .replace('{date}', fleet.start_time.slice(0, 10))
+                                                .replace('{title}', fleet.title)
+                                                .replace('{count}', fleet.lines.length.toString())}
+                                        </option>
+                                    )}
+                                </select>
+                            </label>
+                            <button type="submit" class="[ ship-targets__link ]">{t('fleets.targets.copy')}</button>
+                        </form>
+                    }
+                    <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
+                        {t('fleets.targets.start_blank')}
+                    </button>
+                </div>
+            </div>
+        }
+    </section>
+}
+
+<style lang="scss">
+    .ship-targets {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+
+        input,
+        select {
+            min-height: 2.75rem;
+            padding: var(--space-3xs) var(--space-2xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--border-color);
+            color: var(--highlight);
+            font: inherit;
+        }
+
+        input[type="number"] {
+            text-align: right;
+        }
+    }
+
+    .ship-targets__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+        padding: var(--space-s) var(--space-m);
+
+        h2 {
+            font-size: var(--step-1);
+        }
+
+        .ship-targets__link {
+            margin-left: auto;
+        }
+    }
+
+    .ship-targets__muted {
+        color: var(--text-muted);
+    }
+
+    .ship-targets__error {
+        padding: 0 var(--space-m) var(--space-s);
+        color: var(--fleet-red);
+    }
+
+    .ship-targets__lines {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+
+        > li {
+            padding: var(--space-xs) var(--space-m);
+            border-top: 1px solid var(--hairline);
+        }
+    }
+
+    .ship-targets__line.has-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-s);
+        align-items: center;
+    }
+
+    .ship-targets__actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .ship-targets__link {
+        min-height: 2.75rem;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .ship-targets__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .ship-targets__unmatched {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 var(--space-xs);
+        color: var(--text-muted);
+    }
+
+    .ship-targets__start {
+        display: flex;
+        flex-direction: column;
+
+        > p,
+        form > p {
+            padding: 0 var(--space-m) var(--space-s);
+        }
+    }
+
+    .ship-targets__start-row {
+        display: grid;
+        grid-template-columns: minmax(8rem, 16rem) minmax(0, 1fr) 8rem;
+        gap: var(--space-s);
+        align-items: center;
+
+        input {
+            width: 100%;
+        }
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr) 6rem;
+
+            .ship-targets__hulls {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+        }
+    }
+
+    .ship-targets__hulls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            color: var(--foreground);
+        }
+
+        img {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+    }
+
+    .ship-targets__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .ship-targets__copy {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        flex: 1 1 20rem;
+        min-width: 0;
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        span {
+            flex: none;
+        }
+
+        select {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 28rem;
+        }
+    }
+</style>

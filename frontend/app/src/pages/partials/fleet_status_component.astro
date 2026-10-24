@@ -4,11 +4,9 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user)
     return HTTP_403_Forbidden()
@@ -70,7 +68,7 @@ try {
     user_character = await get_user_character(user.user_id)
     fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 } catch (error) {
-    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
+    if (error?.cause === 403)
     return HTTP_403_Forbidden()
     
     fetch_fleets_error = error
@@ -106,7 +104,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             alert={alert}
             start_tracking={start_tracking === true}
             fleet_tracking_texts={fleet_tracking_texts}
-            init_tooltips={true}
+            disable_motd={fleet.disable_motd}
         />
         :
         <DebugTag>{t('no_fleet_unexpected_error')}</DebugTag>

@@ -121,6 +121,8 @@ code {
     background-color: var(--component-background);
     color: var(--highlight);
     padding-inline: var(--space-3xs);
+    /* Long inline tokens (URLs, error paths) wrap instead of widening the page; <pre> keeps white-space: pre. */
+    overflow-wrap: anywhere;
 }
 
 .rifter-dialog,
@@ -285,9 +287,11 @@ ul {
         }
     }
 
-    &:hover {
-        picture.animated img {
-            transform: scale(1.1);
+    @media (hover: hover) {
+        &:hover {
+            picture.animated img {
+                transform: scale(1.1);
+            }
         }
     }
 }

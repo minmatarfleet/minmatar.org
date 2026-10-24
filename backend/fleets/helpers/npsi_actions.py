@@ -6,6 +6,7 @@ import logging
 
 from django.contrib.auth.models import User
 
+from authentication import is_service_account
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from eveonline.models import EveLocation
@@ -44,9 +45,7 @@ def actor_from_discord_id(discord_user_id: int) -> User:
 def authorize_npsi_actor(
     *, requester: User, actor: User, fc_user: User
 ) -> None:
-    if requester.pk != actor.pk and not (
-        requester.is_staff or requester.is_superuser
-    ):
+    if requester.pk != actor.pk and not is_service_account(requester):
         raise NpsiActionError("Not authorized.", status_code=403)
     if actor.pk != fc_user.pk and not (actor.is_staff or actor.is_superuser):
         raise NpsiActionError(

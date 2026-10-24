@@ -76,10 +76,3 @@ class ProductionDrillDownResponse(BaseModel):
 
     characters: List[CharacterRef]
     entries: List[ProductionDrillDownItem]
-
-
-class PlanetSummaryItem(BaseModel):
-    """One row in planet summary: primary + actual character on this planet."""
-
-    primary_character: CharacterRef
-    actual_character: CharacterRef

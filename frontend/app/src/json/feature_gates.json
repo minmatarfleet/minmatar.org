@@ -1,0 +1,171 @@
+{
+    "$comment": "Every site gate: the pilot feature that owns it and the exact Django-permission expression it replaced. legacy.perms is any-of; legacy.superuser ORs the JWT superuser claim; legacy.custom means the call site supplies the old check. parity names why features mode may differ from legacy (see docs/auth/frontend-feature-gating.md). Read by src/helpers/gates.ts, backend/groups/tests/test_feature_gate_manifest.py, and the audit_frontend_gate_parity command.",
+    "gates": {
+        "fleets.view": {
+            "feature": "fleets.view",
+            "legacy": { "perms": ["fleets.view_evefleet"], "superuser": true }
+        },
+        "fleets.create": {
+            "feature": "fleets.create",
+            "legacy": { "perms": ["fleets.add_evefleet"], "superuser": true }
+        },
+        "fleets.delete": {
+            "feature": "fleets.delete",
+            "legacy": { "perms": ["fleets.delete_evefleet"], "superuser": true }
+        },
+        "fleets.manage_any": {
+            "feature": "fleets.manage_any",
+            "legacy": { "perms": ["fleets.manage_any_fleet"], "superuser": true }
+        },
+        "campaigns.view": {
+            "feature": "campaigns.view",
+            "legacy": { "perms": ["campaigns.view_campaign"], "superuser": true }
+        },
+        "campaigns.manage": {
+            "feature": "campaigns.manage",
+            "legacy": { "perms": ["campaigns.change_campaign"], "superuser": true }
+        },
+        "posts.create": {
+            "feature": "posts.create",
+            "legacy": { "perms": ["posts.add_evepost"], "superuser": true }
+        },
+        "srp.view": {
+            "feature": "srp.view",
+            "legacy": { "perms": ["srp.view_evefleetshipreimbursement"], "superuser": true }
+        },
+        "srp.resolve": {
+            "feature": "srp.resolve",
+            "legacy": { "perms": ["srp.add_evefleetshipreimbursement"], "superuser": true }
+        },
+        "srp.process": {
+            "feature": "srp.process",
+            "legacy": { "perms": ["srp.change_evefleetshipreimbursement"], "superuser": true }
+        },
+        "srp.process#strict": {
+            "feature": "srp.process",
+            "legacy": { "perms": ["srp.change_evefleetshipreimbursement"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "Skips the SRP onboarding redirect. Superusers will skip it too."
+        },
+        "structures.timers.view": {
+            "feature": "structures.timers.view",
+            "legacy": { "perms": ["structures.view_evestructuretimer"], "superuser": true }
+        },
+        "structures.timers.view#strict": {
+            "feature": "structures.timers.view",
+            "legacy": { "perms": ["structures.view_evestructuretimer"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "Intel page timers tile."
+        },
+        "structures.timers.manage": {
+            "feature": "structures.timers.manage",
+            "legacy": { "perms": ["structures.add_evestructuretimer"], "superuser": true }
+        },
+        "structures.timers.verify": {
+            "feature": "structures.timers.manage",
+            "legacy": { "perms": ["structures.change_evestructuretimer"], "superuser": true },
+            "parity": "dead_ui",
+            "note": "The verify endpoint already checks structures.timers.manage, so the old permission showed a control the API could refuse."
+        },
+        "structures.timers.add_button": {
+            "feature": "structures.timers.manage",
+            "legacy": { "perms": ["fleets.add_evefleet"], "superuser": true },
+            "parity": "dead_ui",
+            "note": "The timer history page's add button checked a fleets permission; the page it opens needs structures.timers.manage."
+        },
+        "moons.view": {
+            "feature": "moons.view",
+            "legacy": { "perms": ["moons.view_evemoon"], "superuser": true }
+        },
+        "moons.view#strict": {
+            "feature": "moons.view",
+            "legacy": { "perms": ["moons.view_evemoon"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "Intel page moons tile."
+        },
+        "moons.manage#strict": {
+            "feature": "moons.manage",
+            "legacy": { "perms": ["moons.add_evemoon"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "Intel page add-moon tile."
+        },
+        "intel.affiliations": {
+            "feature": "intel.affiliations",
+            "legacy": { "perms": ["intel.change_intelaffiliation"], "superuser": true },
+            "note": "Intel affiliation database: review, blocs, members, profiles."
+        },
+        "applications.manage": {
+            "feature": "applications.manage",
+            "legacy": { "perms": ["applications.change_evecorporationapplication"], "superuser": true }
+        },
+        "characters.view_staff": {
+            "feature": "characters.view_staff",
+            "legacy": { "perms": ["eveonline.view_evecharacter"], "superuser": true }
+        },
+        "corporations.members.view_all": {
+            "feature": "corporations.members.view_all",
+            "legacy": { "perms": ["eveonline.view_evecorporation"], "superuser": true }
+        },
+        "surveys.manage": {
+            "feature": "surveys.manage",
+            "legacy": { "perms": ["surveys.change_surveycampaign"], "superuser": true }
+        },
+        "surveys.results.view": {
+            "feature": "surveys.results.view",
+            "legacy": { "perms": [], "superuser": true }
+        },
+        "learning.admin": {
+            "feature": "learning.admin",
+            "legacy": { "perms": ["learning.change_certificate", "learning.view_certificate"], "superuser": true }
+        },
+        "skillsets.admin": {
+            "feature": "skillsets.admin",
+            "legacy": { "perms": ["eveonline.change_eveskillset", "eveonline.view_eveskillset"], "superuser": true }
+        },
+        "tribes.roster.view": {
+            "feature": "tribes.roster.view",
+            "legacy": { "perms": ["eveonline.add_evecharactertag"], "superuser": true }
+        },
+        "characters.readiness#strict": {
+            "feature": "characters.readiness",
+            "legacy": { "perms": ["eveonline.add_evecharactertag"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "Readiness character and missing-tag warnings."
+        },
+        "industry.industrialists.view": {
+            "feature": "industry.industrialists.view",
+            "legacy": { "perms": ["eveonline.add_evecharactertag"], "superuser": true }
+        },
+        "industry.industrialists.view#strict": {
+            "feature": "industry.industrialists.view",
+            "legacy": { "perms": ["eveonline.add_evecharactertag"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "The industrialists page itself 404s without the permission, even for superusers."
+        },
+        "notifications.push#strict": {
+            "feature": "notifications.push",
+            "legacy": { "perms": ["subscriptions.add_usersubscription"], "superuser": false },
+            "parity": "superuser_gain",
+            "note": "Push notifications block on the account page."
+        },
+        "content.manage": {
+            "feature": "content.manage",
+            "legacy": { "custom": true },
+            "parity": "custom",
+            "note": "Legacy check is superuser or active pulse.thinkspeak membership (is_thinkspeak_member)."
+        },
+        "site.debug_pages": {
+            "feature": "site.debug_pages",
+            "legacy": { "perms": [], "superuser": true }
+        },
+        "characters.lookup": {
+            "feature": "characters.lookup",
+            "legacy": { "perms": [], "superuser": true }
+        },
+        "site.all_pages": {
+            "feature": "site.all_pages",
+            "legacy": { "perms": [], "superuser": true },
+            "note": "Page finder and breadcrumbs list every page as available, whatever its own gate."
+        }
+    }
+}

@@ -59,17 +59,28 @@ const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
                 >
                     <Flexblock gap='var(--space-3xs)'>
                         <h3>{pilot.character_name}</h3>
-                        <CorporationBadge
-                            corporation={{
-                                id: pilot.corp_id,
-                                name: pilot.corp_name,
-                                size: 'xs',
-                            }}
-                            highlight={false}
-                        />
+                        {pilot.corp_id !== null &&
+                            <CorporationBadge
+                                corporation={{
+                                    id: pilot.corp_id,
+                                    name: pilot.corp_name ?? undefined,
+                                    size: 'xs',
+                                }}
+                                highlight={false}
+                            />
+                        }
                     </Flexblock>
                 </CharacterCard>
             </StylessButton>
         ))}
     </Grid>
 </form>
+
+<style lang="scss">
+    @use './_phone_media_card.scss' as *;
+
+    // Phones: compact character picker rows instead of one portrait per screen.
+    form :global(button > .card) {
+        @include phone_character_card;
+    }
+</style>

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Iterable, Sequence, Tuple
+from typing import Sequence, Tuple
 
 
 def material_efficiency_total(
@@ -183,7 +183,3 @@ def job_installation_cost(
         facility_tax_isk=facility_tax_isk,
         scc_tax_isk=scc_tax_isk,
     )
-
-
-def sum_job_costs(costs: Iterable[JobCostBreakdown]) -> int:
-    return sum(c.total for c in costs)

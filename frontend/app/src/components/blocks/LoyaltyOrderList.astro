@@ -18,7 +18,7 @@ const columns: Column[] = [
     { label: t('industry.loyalty.orders.col.rate'), align: 'end' },
     { label: t('industry.loyalty.orders.col.total'), align: 'end' },
     { label: t('industry.loyalty.orders.col.status') },
-    { label: t('industry.loyalty.orders.col.purchasers'), align: 'center' },
+    { label: t('industry.loyalty.orders.col.converter') },
     ...(variant === 'book'
         ? [{ label: t('industry.loyalty.orders.col.actions'), align: 'end' as const }]
         : []),
@@ -53,11 +53,11 @@ const columns: Column[] = [
     }
 
     .loyalty-order-list--book {
-        --loyalty-order-columns: minmax(16rem, 3fr) 8rem 5rem 9rem 7.5rem minmax(5rem, 1fr) auto;
+        --loyalty-order-columns: minmax(11rem, 2fr) 7rem 4.5rem 9rem 7.5rem minmax(13rem, 2.5fr) auto;
     }
 
     .loyalty-order-list--history {
-        --loyalty-order-columns: minmax(16rem, 3fr) 8rem 5rem 9rem 7.5rem minmax(5rem, 1fr);
+        --loyalty-order-columns: minmax(11rem, 2fr) 7rem 4.5rem 9rem 7.5rem minmax(13rem, 2.5fr);
     }
 
     .loyalty-order-list__inner {
@@ -82,7 +82,7 @@ const columns: Column[] = [
         font-weight: 400;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.55);
+        color: var(--text-muted);
         white-space: nowrap;
 
         &.is-end {
@@ -91,6 +91,20 @@ const columns: Column[] = [
 
         &.is-center {
             text-align: center;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .loyalty-order-list {
+            overflow-x: visible;
+        }
+
+        .loyalty-order-list__inner {
+            min-width: 0;
+        }
+
+        .loyalty-order-list__head {
+            display: none;
         }
     }
 </style>

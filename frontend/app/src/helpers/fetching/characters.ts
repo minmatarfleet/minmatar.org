@@ -1,6 +1,6 @@
 import { useTranslations } from '@i18n/utils';
 
-import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile, SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { CharacterSkillset, Character, CharacterAsset, UserProfile, EveCharacterProfile, SummaryCharacter, CharacterErrors } from '@dtypes/api.minmatar.org'
 import type { CharacterTagSummary, CharacterErrorUI } from '@dtypes/layout_components'
 import type {
     SkillsetsUI,
@@ -177,16 +177,6 @@ export async function get_user_assets(access_token:string) {
     return characters_assets
 }
 
-export async function esi_token_error(auth_token: string) {
-    try {
-        const character_summary = await get_characters_summary(auth_token)
-        
-        return character_summary.characters.find(character => character.token_status !== 'ACTIVE') !== undefined
-    } catch (error) {
-        return false
-    }
-}
-
 export async function  get_tags_summary(auth_token: string) {
     const character_summary = await get_characters_summary_sorted(auth_token)
     
@@ -216,6 +206,24 @@ export async function get_characters_summary_sorted(auth_token: string) {
     return character_summary
 }
 
+/**
+ * The account page's characters: the sorted summary plus each character's
+ * role titles. A failed roles call leaves that character's roles unset, so
+ * the list still renders.
+ */
+export async function get_account_characters(auth_token: string) {
+    const character_summary = await get_characters_summary_sorted(auth_token)
+    character_summary.characters = await Promise.all(character_summary.characters.map(async (character) => {
+        try {
+            character.role_titles = (await get_character_tags(auth_token, character.character_id)).map(tag => tag.title)
+        } catch (error) {
+            character.role_titles = undefined
+        }
+        return character
+    }))
+    return character_summary
+}
+
 export function get_character_error_ui(characters:SummaryCharacter[]) {
     let character_errors:CharacterErrorUI[] = []
     let no_main = true
@@ -227,7 +235,8 @@ export function get_character_error_ui(characters:SummaryCharacter[]) {
             character.flags.forEach(flag => {
                 character_errors.push({
                     character: character,
-                    error: flag,
+                    // The backend's flag codes (eveonline character summary).
+                    error: flag as CharacterErrors,
                 })
             })
         }
