@@ -303,6 +303,26 @@ class WaveTests(PrivateFleetTestBase):
         self.assertFalse(body["can_see_leak_trace"])
         self.assertIsNone(body["invites"][0]["first_viewed_at"])
 
+    def test_invites_tab_names_only_alts_next_to_their_hull(self):
+        fleet = self.private_fleet()
+        self.invite(fleet, self.pilot)
+        self.volunteer(fleet, self.pilot)
+        alt = EveCharacter.objects.create(
+            character_id=990001, character_name="Teysha Alt", user=self.pilot
+        )
+        EveFleetShipVolunteer.objects.create(
+            eve_fleet=fleet,
+            character_id=alt.character_id,
+            character_name=alt.character_name,
+            ship_type_id=19722,
+            ship_name="Naglfar",
+        )
+        body = self.call("get", f"/{fleet.id}/invites", self.strat).json()
+        self.assertEqual(
+            sorted(body["invites"][0]["ships"]),
+            ["Naglfar (Teysha Alt)", "Revelation"],
+        )
+
     def test_resolve_paste_of_characters_and_discord_names(self):
         fleet = self.private_fleet()
         body = {

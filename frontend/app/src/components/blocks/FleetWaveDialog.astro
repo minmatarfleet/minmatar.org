@@ -1,0 +1,328 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { query_string } from '@helpers/string'
+
+/**
+ * The Send wave button on a private fleet's Invites tab and its dialog:
+ * pick tribe groups, corporations or pilots (search or a pasted list), see
+ * who the wave reaches and the DM they get, then send. The picks and the
+ * note are local form state; the reach panel is the preview partial.
+ * See docs/fleets/private-fleets.md.
+ */
+interface Props {
+    fleet_id:       number;
+    next_wave:      number;
+}
+
+const {
+    fleet_id,
+    next_wave,
+} = Astro.props
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_invites_component')}?${query_string({ fleet_id })}`
+const CANDIDATES_URL = `${translatePath('/partials/fleet_invite_candidates_component')}?${query_string({ fleet_id })}`
+const RESOLVE_URL = `${translatePath('/partials/fleet_invite_resolve_component')}?${query_string({ fleet_id })}`
+const title = t('fleets.private.send_wave').replace('{number}', next_wave.toString())
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+
+import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<DialogButton
+    size="sm"
+    color="fleet-red"
+    max_width="60rem"
+>
+    {title}
+
+    <form
+        slot="dialog"
+        class="[ wave-dialog ]"
+        hx-post={`${PARTIAL_URL}&action=wave`}
+        hx-target="#fleet-invites"
+        hx-swap="outerHTML"
+        x-data="{ picks: [], add_mode: 'search', query: '', paste_text: '', note: '' }"
+        x-on:pick-candidate="query = ''; if (!picks.some(p => p.kind === $event.detail.kind && p.id === $event.detail.id)) { picks.push($event.detail); $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }"
+    >
+        <Flexblock gap="var(--space-l)">
+            <h2>{title}</h2>
+
+            <FluidFixed width="18rem" gap="var(--space-l)" data-mod="no-stretch">
+                <Flexblock gap="var(--space-l)">
+                    <Flexblock gap="var(--space-xs)">
+                        <FlexInline gap="var(--space-s)">
+                            <h3 class="[ wave-dialog__label ]">{t('fleets.private.wave_who')}</h3>
+                            <div class="[ wave-dialog__modes ]" role="group" aria-label={t('fleets.private.wave_search')}>
+                                <button
+                                    type="button"
+                                    x-on:click="add_mode = 'search'"
+                                    x-bind:aria-pressed="add_mode === 'search'"
+                                >{t('fleets.private.wave_search_mode')}</button>
+                                <button
+                                    type="button"
+                                    x-on:click="add_mode = 'paste'"
+                                    x-bind:aria-pressed="add_mode === 'paste'"
+                                >{t('fleets.private.wave_paste_mode')}</button>
+                            </div>
+                        </FlexInline>
+
+                        <Flexblock gap="var(--space-3xs)" x-show="add_mode === 'search'">
+                            <label for={`fleet-wave-search-${fleet_id}`} class="[ visually-hidden ]">{t('fleets.private.wave_search')}</label>
+                            <Input
+                                id={`fleet-wave-search-${fleet_id}`}
+                                type="search"
+                                name="q"
+                                autocomplete="off"
+                                placeholder={t('fleets.private.wave_search_placeholder')}
+                                hx-get={CANDIDATES_URL}
+                                hx-trigger="input changed delay:300ms, search"
+                                hx-target="next .wave-dialog__results"
+                                hx-swap="innerHTML"
+                                hx-include="this"
+                                x-model="query"
+                            />
+                            <div class="[ wave-dialog__results ]" aria-live="polite" x-show="query.trim().length >= 2"></div>
+                        </Flexblock>
+
+                        <Flexblock gap="var(--space-2xs)" x-show="add_mode === 'paste'" x-cloak>
+                            <label for={`fleet-wave-paste-${fleet_id}`} class="[ visually-hidden ]">{t('fleets.private.wave_paste')}</label>
+                            <Textarea
+                                id={`fleet-wave-paste-${fleet_id}`}
+                                name="names"
+                                rows="5"
+                                placeholder={t('fleets.private.wave_paste_placeholder')}
+                                x-model="paste_text"
+                            />
+                            <FlexInline justification="space-between" gap="var(--space-2xs)" class="[ items-start ]">
+                                <div class="[ wave-dialog__resolve ]" aria-live="polite"></div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="transparent"
+                                    disabled
+                                    off_disable={true}
+                                    x-bind:disabled="!paste_text.trim()"
+                                    hx-post={RESOLVE_URL}
+                                    hx-target="previous .wave-dialog__resolve"
+                                    hx-swap="innerHTML"
+                                    hx-include={`#fleet-wave-paste-${fleet_id}`}
+                                    hx-disabled-elt="this"
+                                >
+                                    {t('fleets.private.wave_paste_add')}
+                                </Button>
+                            </FlexInline>
+                        </Flexblock>
+
+                        <ul class="[ wave-dialog__picks ]" x-show="picks.length > 0" x-cloak aria-label={t('fleets.private.wave_picks')}>
+                            <template x-for="(pick, index) in picks" x-bind:key="pick.kind + pick.id">
+                                <li>
+                                    <span x-text="pick.name"></span>
+                                    <input type="hidden" x-bind:name="pick.kind + '_ids'" x-bind:value="pick.id" />
+                                    <button
+                                        type="button"
+                                        x-on:click="picks.splice(index, 1); $nextTick(() => htmx.trigger($refs.preview, 'refresh'))"
+                                        x-bind:aria-label="'Remove ' + pick.name"
+                                    >×</button>
+                                </li>
+                            </template>
+                        </ul>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-2xs)">
+                        <FlexInline gap="var(--space-xs)" class="[ items-baseline ]">
+                            <label for={`fleet-wave-note-${fleet_id}`} class="[ wave-dialog__label ]">{t('fleets.private.wave_note_label')}</label>
+                            <small class="[ text-muted ]">{t('fleets.private.optional')}</small>
+                            <small class="[ wave-dialog__count text-muted ]" x-text="note.length + ' / 300'">0 / 300</small>
+                        </FlexInline>
+                        <Textarea
+                            id={`fleet-wave-note-${fleet_id}`}
+                            name="note"
+                            rows="2"
+                            maxlength="300"
+                            x-model="note"
+                        />
+                    </Flexblock>
+
+                    <figure class="[ wave-dialog__dm ]">
+                        <figcaption class="[ text-muted ]">{t('fleets.private.dm_preview')}</figcaption>
+                        <div class="[ wave-dialog__message ]">
+                            <b>{t('fleets.private.dm_preview_title')}</b>
+                            <p x-show="note.trim()" x-text="note" x-cloak></p>
+                            <p><b>{t('fleets.private.opsec')}</b></p>
+                            <FlexInline gap="var(--space-2xs)" aria-hidden="true">
+                                <span class="[ wave-dialog__fake-button ]">{t('fleets.private.dm_im_in')}</span>
+                                <span class="[ wave-dialog__fake-button ]">{t('fleets.private.answer_out')}</span>
+                            </FlexInline>
+                        </div>
+                    </figure>
+                </Flexblock>
+
+                <aside
+                    x-ref="preview"
+                    class="[ wave-dialog__preview ]"
+                    aria-live="polite"
+                    hx-post={`${PARTIAL_URL}&action=preview`}
+                    hx-trigger="refresh"
+                    hx-include="closest form"
+                    hx-target="this"
+                    hx-swap="innerHTML"
+                >
+                    <small class="[ text-muted ]">{t('fleets.private.wave_pick_first')}</small>
+                </aside>
+            </FluidFixed>
+
+            <FlexInline justification="flex-end" gap="var(--space-2xs)">
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    x-on:click="close_dialog()"
+                >
+                    {t('cancel')}
+                </Button>
+                <Button
+                    type="submit"
+                    size="sm"
+                    color="fleet-red"
+                    disabled
+                    off_disable={true}
+                    x-bind:disabled="picks.length === 0"
+                    hx-disabled-elt="this"
+                >
+                    {title}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    .wave-dialog__label {
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .wave-dialog__count {
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .wave-dialog__modes {
+        display: inline-flex;
+        border: 1px solid var(--hairline-strong);
+
+        button {
+            padding: var(--space-3xs) var(--space-xs);
+            background: transparent;
+            border: 0;
+            color: var(--foreground);
+            font: inherit;
+            font-size: var(--step--1);
+            cursor: pointer;
+
+            &[aria-pressed="true"] {
+                background-color: var(--foreground);
+                color: var(--background);
+                font-weight: 600;
+            }
+        }
+    }
+
+    .wave-dialog__results {
+        max-height: 16rem;
+        overflow-y: auto;
+    }
+
+    .wave-dialog__results:empty,
+    .wave-dialog__resolve:empty {
+        display: none;
+    }
+
+    .wave-dialog__picks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin-inline: 0;
+        margin-bottom: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+            padding-left: var(--space-xs);
+            border: 1px solid var(--hairline-strong);
+            color: var(--highlight);
+            font-size: var(--step--1);
+        }
+
+        button {
+            min-width: var(--space-l);
+            min-height: var(--space-l);
+            background: transparent;
+            border: 0;
+            color: var(--text-muted);
+            font: inherit;
+            cursor: pointer;
+        }
+    }
+
+    .wave-dialog__dm {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin-inline: 0;
+        margin-bottom: 0;
+
+        figcaption {
+            font-size: var(--step--1);
+        }
+    }
+
+    .wave-dialog__message {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border-color);
+        font-size: var(--step--1);
+
+        > b {
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+            white-space: pre-line;
+        }
+    }
+
+    .wave-dialog__fake-button {
+        padding: var(--space-3xs) var(--space-xs);
+        background-color: var(--hairline-strong);
+        color: var(--highlight);
+    }
+
+    .wave-dialog__preview {
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        padding: var(--space-s);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border-color);
+    }
+</style>

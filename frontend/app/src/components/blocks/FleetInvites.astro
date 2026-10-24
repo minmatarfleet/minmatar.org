@@ -7,9 +7,11 @@ import { query_string } from '@helpers/string'
 import { eve_clock, eve_day_short } from '@helpers/date'
 
 /**
- * A private fleet's Invites tab, for its FC and Strategic FCs: totals,
- * progress against the ship targets, the New wave form and every wave's
- * answers. The leak trace column shows only to Strategic FCs.
+ * A private fleet's Invites tab, for its FC and Strategic FCs: progress
+ * against the ship targets, then every invited pilot. The status tiles
+ * split the pilots once (in, sitting out, no answer, not delivered), filter
+ * the list and carry the follow-up actions. The Opened column (leak trace)
+ * shows only to Strategic FCs.
  * Rendered and refreshed by partials/fleet_invites_component.
  * See docs/fleets/private-fleets.md.
  */
@@ -28,30 +30,52 @@ const {
 } = Astro.props
 
 const PARTIAL_URL = `${translatePath('/partials/fleet_invites_component')}?${query_string({ fleet_id })}`
-const CANDIDATES_URL = `${translatePath('/partials/fleet_invite_candidates_component')}?${query_string({ fleet_id })}`
-const RESOLVE_URL = `${translatePath('/partials/fleet_invite_resolve_component')}?${query_string({ fleet_id })}`
 
 const when = (value:string | null | undefined) =>
     value ? `${eve_day_short(lang, value, { weekday: true })} ${eve_clock(value)}` : ''
 
-const totals = data.totals
+// "Sat 01:28": table cells stay one short line.
+const when_short = (value:string | null | undefined) =>
+    value ? `${new Date(value).toLocaleDateString(lang, { weekday: 'short', timeZone: 'UTC' })} ${eve_clock(value)}` : ''
+
+type InviteStatus = 'in' | 'out' | 'pending' | 'failed'
+
+const status_of = (invite:FleetInvitePilot):InviteStatus =>
+    invite.answer === 'in' ? 'in' :
+    invite.answer === 'out' ? 'out' :
+    invite.dm_delivered === false ? 'failed' : 'pending'
+
+const STATUSES:{ status:InviteStatus, label:string }[] = [
+    { status: 'in', label: t('fleets.private.answer_in') },
+    { status: 'out', label: t('fleets.private.answer_out') },
+    { status: 'pending', label: t('fleets.private.answer_pending') },
+    { status: 'failed', label: t('fleets.private.status_failed') },
+]
+const label_of = Object.fromEntries(STATUSES.map(row => [row.status, row.label])) as Record<InviteStatus, string>
+
+const counts = Object.fromEntries(STATUSES.map(row => [row.status, 0])) as Record<InviteStatus, number>
+data.invites.forEach(invite => counts[status_of(invite)]++)
+
+// Answered first, newest first; then who still owes an answer, by name.
+const UNANSWERED_ORDER:Record<InviteStatus, number> = { in: 0, out: 0, pending: 1, failed: 2 }
+const invites = [...data.invites].sort((a, b) => {
+    if (a.answered_at && b.answered_at)
+        return b.answered_at.localeCompare(a.answered_at)
+    if (a.answered_at || b.answered_at)
+        return a.answered_at ? -1 : 1
+    return UNANSWERED_ORDER[status_of(a)] - UNANSWERED_ORDER[status_of(b)] ||
+        a.character_name.localeCompare(b.character_name)
+})
+
 const pending_delivered = data.invites.filter(invite => invite.answer === 'pending' && invite.dm_delivered).length
 const reping_at = data.reping_available_at ? new Date(data.reping_available_at) : null
 const reping_waiting = Boolean(reping_at && reping_at > new Date())
 const sending_wave = data.waves.find(wave => !wave.finished_at)
 const next_wave = (data.waves.at(-1)?.number ?? 0) + 1
 const waves = [...data.waves].reverse()
-const invites_by_wave = (number:number) => data.invites.filter(invite => invite.wave === number)
-
-const answer_label = (invite:FleetInvitePilot) =>
-    invite.answer === 'in' ? t('fleets.private.answer_in') :
-    invite.answer === 'out' ? t('fleets.private.answer_out') :
-    t('fleets.private.answer_pending')
-
-const dm_label = (invite:FleetInvitePilot) =>
-    invite.dm_delivered === true ? t('fleets.private.dm_delivered') :
-    invite.dm_delivered === false ? t('fleets.private.dm_failed') :
-    t('fleets.private.dm_queued')
+const pilots_count = (data.waves.length === 1 ? t('fleets.private.pilots_count_one_wave') : t('fleets.private.pilots_count'))
+    .replace('{count}', data.totals.invited.toString())
+    .replace('{waves}', data.waves.length.toString())
 
 const fleet_link = new URL(translatePath(`/fleets/upcoming/${fleet_id}`), Astro.url).toString()
 
@@ -62,9 +86,9 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import FleetWaveDialog from '@components/blocks/FleetWaveDialog.astro'
 import Input from '@components/blocks/Input.astro'
 import Tag from '@components/blocks/Tag.astro'
-import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <div
@@ -73,394 +97,291 @@ import Textarea from '@components/blocks/Textarea.astro'
     hx-get={sending_wave ? PARTIAL_URL : undefined}
     hx-trigger={sending_wave ? 'every 5s' : undefined}
     hx-swap="outerHTML"
-    x-data="{ wave_open: false }"
+    x-data={`{
+        status: '',
+        wave: '',
+        q: '',
+        copied: false,
+        toggle(status) { this.status = this.status === status ? '' : status },
+        shown(el) {
+            return (!this.status || el.dataset.status === this.status)
+                && (!this.wave || el.dataset.wave === this.wave)
+                && (!this.q.trim() || el.dataset.name.includes(this.q.trim().toLowerCase()))
+        },
+        get none() {
+            return [...this.$root.querySelectorAll('[data-invite]')].every(el => !this.shown(el))
+        },
+        copy_link() {
+            navigator.clipboard.writeText(${JSON.stringify(fleet_link)})
+            this.copied = true
+            setTimeout(() => this.copied = false, 2000)
+        },
+    }`}
 >
-    <Flexblock gap="var(--space-m)">
-        <section class="[ fleet-invites__totals ]" aria-label={t('fleets.tabs.invites')}>
-            <FlexInline justification="space-between" gap="var(--space-s)" class="[ items-start ]">
-                <dl class="[ fleet-invites__stats ]">
-                    <div>
-                        <dt>{t('fleets.private.invited')}</dt>
-                        <dd>{totals.invited}</dd>
-                    </div>
-                    <div class="[ is-in ]">
-                        <dt>{t('fleets.private.in').replace('{count}', totals.characters_in.toString())}</dt>
-                        <dd>{totals.answered_in}</dd>
-                    </div>
-                    <div class="[ is-out ]">
-                        <dt>{t('fleets.private.out')}</dt>
-                        <dd>{totals.answered_out}</dd>
-                    </div>
-                    <div class="[ is-pending ]">
-                        <dt>{t('fleets.private.pending')}</dt>
-                        <dd>{totals.pending}</dd>
-                    </div>
-                </dl>
-                <FlexInline gap="var(--space-2xs)" class="[ fleet-invites__actions ]">
-                    {reping_waiting ?
-                        <small class="[ text-muted ]">{t('fleets.private.reping_wait').replace('{time}', `${eve_clock(reping_at!)} EVE`)}</small> :
-                        pending_delivered > 0 &&
-                            <Button
-                                type="button"
-                                size="sm"
-                                color="transparent"
-                                hx-post={`${PARTIAL_URL}&action=reping`}
-                                hx-target="#fleet-invites"
-                                hx-swap="outerHTML"
-                                hx-disabled-elt="this"
-                            >
-                                {t('fleets.private.reping').replace('{count}', pending_delivered.toString())}
-                            </Button>
-                    }
-                    <Button
-                        type="button"
-                        size="sm"
-                        disabled={Boolean(sending_wave)}
-                        x-on:click="wave_open = !wave_open"
-                        x-bind:aria-expanded="wave_open"
-                        aria-controls="fleet-wave-form"
-                    >
-                        {t('fleets.private.new_wave')}
-                    </Button>
-                </FlexInline>
-            </FlexInline>
-            {notice && <small role="status">{notice}</small>}
-            {error && <small class="[ fleet-invites__error ]" role="alert">{error}</small>}
-        </section>
-
-        {sending_wave &&
-            <p class="[ fleet-invites__sending ]" role="status">
-                {t('fleets.private.sending')
-                    .replace('{number}', sending_wave.number.toString())
-                    .replace('{sent}', sending_wave.sent.toString())
-                    .replace('{total}', sending_wave.invited.toString())}
-            </p>
-        }
-
+    <ComponentBlock>
         {data.targets.length > 0 &&
-            <section class="[ fleet-invites__targets-block ]" aria-labelledby="fleet-invites-targets">
-                <header>
-                    <h2 id="fleet-invites-targets">{t('fleets.private.against_targets')}</h2>
-                    <small>{t('fleets.private.against_targets_hint')}</small>
-                    <a href="#ships">{t('fleets.private.edit_targets')}</a>
-                </header>
-                <ul class="[ fleet-invites__targets ]">
-                    {data.targets.map(target =>
-                        <li>
-                            <span class="[ fleet-invites__target-head ]">
-                                <b>{target.name}</b>
-                                <span><b>{target.have}</b> / {target.target}</span>
-                            </span>
-                            <span class="[ fleet-invites__bar ]" role="img" aria-label={`${target.have} / ${target.target}`}>
-                                <span style={`width: ${Math.min(100, Math.round(100 * target.have / Math.max(target.target, 1)))}%`}></span>
-                            </span>
-                            {target.short > 0 && <small class="[ is-pending ]">{t('fleets.private.short').replace('{count}', target.short.toString())}</small>}
-                        </li>
-                    )}
-                </ul>
+            <section class="[ fleet-invites__section ]" aria-labelledby="fleet-invites-targets">
+                <Flexblock gap="var(--space-m)">
+                    <FlexInline gap="var(--space-xs)" class="[ fleet-invites__head ]">
+                        <h2 id="fleet-invites-targets">{t('fleets.private.targets_title')}</h2>
+                        <small class="[ text-muted ]">{t('fleets.private.targets_signed_up').replace('{count}', data.totals.characters_in.toString())}</small>
+                        <a href="#ships" class="[ fleet-invites__push ]">{t('fleets.private.edit_targets')}</a>
+                    </FlexInline>
+                    <ul class="[ fleet-invites__targets ]">
+                        {data.targets.map(target =>
+                            <li class:list={[{ 'is-met': target.short === 0 }]}>
+                                <span class="[ fleet-invites__target-name ]">{target.name}</span>
+                                <span class="[ fleet-invites__bar ]" role="img" aria-label={`${target.have} / ${target.target}`}>
+                                    <span style={`width: ${Math.min(100, Math.round(100 * target.have / Math.max(target.target, 1)))}%`}></span>
+                                </span>
+                                <span class="[ fleet-invites__target-count ]"><b>{target.have}</b> / {target.target}</span>
+                            </li>
+                        )}
+                    </ul>
+                </Flexblock>
             </section>
         }
 
-        <ComponentBlock
-            id="fleet-wave-form"
-            width="narrow"
-            x-show="wave_open"
-            x-cloak
-            x-data={`{
-                picks: [],
-                add_mode: 'search',
-                paste_text: '',
-            }`}
-        >
-            <form
-                class="[ fleet-invites__wave-form ]"
-                hx-post={`${PARTIAL_URL}&action=wave`}
-                hx-target="#fleet-invites"
-                hx-swap="outerHTML"
-                x-on:pick-candidate="if (!picks.some(p => p.kind === $event.detail.kind && p.id === $event.detail.id)) { picks.push($event.detail); $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }"
-            >
-                <Flexblock gap="var(--space-m)">
-                    <h2>{t('fleets.private.wave_form_title').replace('{number}', next_wave.toString())}</h2>
+        <section class="[ fleet-invites__section ]" aria-labelledby="fleet-invites-pilots">
+            <Flexblock gap="var(--space-m)">
+                <FlexInline gap="var(--space-xs)" class="[ fleet-invites__head ]">
+                    <h2 id="fleet-invites-pilots">{t('fleets.private.pilots_title')}</h2>
+                    {data.waves.length > 0 && <small class="[ text-muted ]">{pilots_count}</small>}
+                    <div class="[ fleet-invites__push ]">
+                        {sending_wave ?
+                            <div class="[ fleet-invites__sending ]" role="status">
+                                <span>
+                                    <b>{t('fleets.private.sending_wave').replace('{number}', sending_wave.number.toString())}</b>
+                                    <span>{t('fleets.private.sent_of').replace('{sent}', sending_wave.sent.toString()).replace('{total}', sending_wave.invited.toString())}</span>
+                                </span>
+                                <span
+                                    class="[ fleet-invites__bar ]"
+                                    role="progressbar"
+                                    aria-valuenow={sending_wave.sent}
+                                    aria-valuemin="0"
+                                    aria-valuemax={sending_wave.invited}
+                                >
+                                    <span style={`width: ${Math.round(100 * sending_wave.sent / Math.max(sending_wave.invited, 1))}%`}></span>
+                                </span>
+                            </div> :
+                            <FleetWaveDialog fleet_id={fleet_id} next_wave={next_wave} />
+                        }
+                    </div>
+                </FlexInline>
 
-                    <FlexInline gap="var(--space-2xs)" role="group" aria-label={t('fleets.private.wave_search')}>
-                        <Button
-                            type="button"
-                            size="sm"
-                            color="transparent"
-                            x-on:click="add_mode = 'search'"
-                            x-bind:aria-pressed="add_mode === 'search'"
-                            x-bind:class="{ 'is-active': add_mode === 'search' }"
+                {notice && <small role="status">{notice}</small>}
+                {error && <small class="[ fleet-invites__error ]" role="alert">{error}</small>}
+
+                {data.invites.length === 0 ?
+                    <EmptyState title={t('fleets.private.no_waves')} hint={t('fleets.private.no_waves_hint')} /> :
+                    <Fragment>
+                        <span
+                            class="[ fleet-invites__split ]"
+                            role="img"
+                            aria-label={STATUSES.map(row => `${counts[row.status]} ${row.label}`).join(', ')}
                         >
-                            {t('fleets.private.wave_search_mode')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            color="transparent"
-                            x-on:click="add_mode = 'paste'"
-                            x-bind:aria-pressed="add_mode === 'paste'"
-                            x-bind:class="{ 'is-active': add_mode === 'paste' }"
-                        >
-                            {t('fleets.private.wave_paste_mode')}
-                        </Button>
-                    </FlexInline>
+                            {STATUSES.map(row => <span class={`is-${row.status}`} style={`flex-grow: ${counts[row.status]}`}></span>)}
+                        </span>
 
-                    <Flexblock gap="var(--space-2xs)" x-show="add_mode === 'search'">
-                        <label for={`fleet-wave-search-${fleet_id}`}>
-                            <b>{t('fleets.private.wave_search')}</b>
-                        </label>
-                        <Input
-                            id={`fleet-wave-search-${fleet_id}`}
-                            type="search"
-                            name="q"
-                            autocomplete="off"
-                            placeholder={t('fleets.private.wave_search_placeholder')}
-                            hx-get={CANDIDATES_URL}
-                            hx-trigger="input changed delay:300ms, search"
-                            hx-target="next .fleet-invites__results"
-                            hx-swap="innerHTML"
-                            hx-include="this"
-                        />
-                        <div class="[ fleet-invites__results ]" aria-live="polite"></div>
-                    </Flexblock>
-
-                    <Flexblock gap="var(--space-2xs)" x-show="add_mode === 'paste'" x-cloak>
-                        <label for={`fleet-wave-paste-${fleet_id}`}>
-                            <b>{t('fleets.private.wave_paste')}</b>
-                        </label>
-                        <Textarea
-                            id={`fleet-wave-paste-${fleet_id}`}
-                            name="names"
-                            rows="6"
-                            placeholder={t('fleets.private.wave_paste_placeholder')}
-                            x-model="paste_text"
-                        />
-                        <FlexInline justification="flex-end" gap="var(--space-2xs)">
-                            <Button
-                                type="button"
-                                size="sm"
-                                disabled
-                                off_disable={true}
-                                x-bind:disabled="!paste_text.trim()"
-                                hx-post={RESOLVE_URL}
-                                hx-target="next .fleet-invites__resolve"
-                                hx-swap="innerHTML"
-                                hx-include={`#fleet-wave-paste-${fleet_id}`}
-                                hx-disabled-elt="this"
-                            >
-                                {t('fleets.private.wave_paste_add')}
-                            </Button>
-                        </FlexInline>
-                        <div class="[ fleet-invites__resolve ]" aria-live="polite"></div>
-                    </Flexblock>
-
-                    <div class="[ fleet-invites__picks ]" x-show="picks.length > 0">
-                        <b>{t('fleets.private.wave_picks')}</b>
-                        <ul>
-                            <template x-for="(pick, index) in picks" x-bind:key="pick.kind + pick.id">
-                                <li class="[ fleet-invites__chip ]">
-                                    <span x-text="pick.name"></span>
-                                    <input type="hidden" x-bind:name="pick.kind + '_ids'" x-bind:value="pick.id" />
-                                    <button
+                        <div class="[ fleet-invites__tiles ]" role="group" aria-label={t('fleets.private.filter_label')}>
+                            {STATUSES.map(row =>
+                                <button
+                                    type="button"
+                                    class={`[ fleet-invites__tile ] [ is-${row.status} ]`}
+                                    style={`grid-area: ${row.status}`}
+                                    x-on:click={`toggle('${row.status}')`}
+                                    x-bind:aria-pressed={`status === '${row.status}'`}
+                                >
+                                    <span><i class={`[ fleet-invites__dot is-${row.status} ]`}></i>{row.label}</span>
+                                    <b>{counts[row.status]}</b>
+                                </button>
+                            )}
+                            <div style="grid-area: reping">
+                                {reping_waiting ?
+                                    <Button type="button" size="sm" color="transparent" disabled class="[ w-full fleet-invites__secondary ]">
+                                        {t('fleets.private.reping_wait').replace('{time}', `${eve_clock(reping_at!)} EVE`)}
+                                    </Button> :
+                                    pending_delivered > 0 &&
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            class="[ w-full fleet-invites__secondary ]"
+                                            title={t('fleets.private.reping_hint')}
+                                            hx-post={`${PARTIAL_URL}&action=reping`}
+                                            hx-target="#fleet-invites"
+                                            hx-swap="outerHTML"
+                                            hx-disabled-elt="this"
+                                        >
+                                            {t('fleets.private.reping_short').replace('{count}', pending_delivered.toString())}
+                                        </Button>
+                                }
+                            </div>
+                            <div style="grid-area: copy">
+                                {counts.failed > 0 &&
+                                    <Button
                                         type="button"
-                                        x-on:click="picks.splice(index, 1); $nextTick(() => htmx.trigger($refs.preview, 'refresh'))"
-                                        x-bind:aria-label="'Remove ' + pick.name"
-                                    >×</button>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
+                                        size="sm"
+                                        color="transparent"
+                                        class="[ w-full fleet-invites__secondary ]"
+                                        title={t('fleets.private.copy_fleet_link_hint')}
+                                        x-on:click="copy_link()"
+                                    >
+                                        <span x-show="!copied">{t('fleets.private.copy_fleet_link')}</span>
+                                        <span x-show="copied" x-cloak>{t('fleets.private.copied')}</span>
+                                    </Button>
+                                }
+                            </div>
+                        </div>
 
-                    <div
-                        x-ref="preview"
-                        class="[ fleet-invites__preview ]"
-                        hx-post={`${PARTIAL_URL}&action=preview`}
-                        hx-trigger="refresh"
-                        hx-include="closest form"
-                        hx-target="this"
-                        hx-swap="innerHTML"
-                    >
-                        <small>{t('fleets.private.wave_pick_first')}</small>
-                    </div>
-
-                    <Flexblock gap="var(--space-2xs)">
-                        <label for={`fleet-wave-note-${fleet_id}`}>
-                            <b>{t('fleets.private.wave_note')}</b>
-                        </label>
-                        <Textarea
-                            id={`fleet-wave-note-${fleet_id}`}
-                            name="note"
-                            rows="2"
-                            maxlength="300"
-                        />
-                    </Flexblock>
-
-                    <p class="[ fleet-invites__opsec ]">
-                        {t('fleets.private.wave_opsec')} <b>{t('fleets.private.opsec')}</b>
-                    </p>
-                </Flexblock>
-            </form>
-        </ComponentBlock>
-
-        {waves.length === 0 ?
-            <EmptyState title={t('fleets.private.no_waves')} hint={t('fleets.private.no_waves_hint')} /> :
-            waves.map((wave, index) =>
-                <details class="[ fleet-invites__wave ]" open={index === 0}>
-                    <summary>
-                        <FlexInline gap="var(--space-2xs)" class="[ fleet-invites__wave-summary ]">
-                            <h2>{t('fleets.private.wave_title').replace('{number}', wave.number.toString())}</h2>
-                            {wave.labels.map(label => <Tag text={label} variant="outline" />)}
-                            <small class="[ text-muted ]">
-                                {t('fleets.private.wave_sent')
-                                    .replace('{time}', `${when(wave.created_at)} EVE`)
-                                    .replace('{by}', wave.sent_by ?? '')
-                                    .replace('{count}', wave.invited.toString())}
-                            </small>
-                            <small class="[ fleet-invites__wave-counts text-muted ]">
-                                {t('fleets.private.wave_counts')
-                                    .replace('{in}', wave.answered_in.toString())
-                                    .replace('{out}', wave.answered_out.toString())
-                                    .replace('{pending}', wave.pending.toString())}
-                            </small>
+                        <FlexInline gap="var(--space-xs)" class="[ fleet-invites__toolbar ]">
+                            <label class="[ fleet-invites__wave-select ]">
+                                <span>{t('fleets.private.filter_wave')}</span>
+                                <select x-model="wave">
+                                    <option value="">{t('fleets.private.filter_all')}</option>
+                                    {waves.map(wave =>
+                                        <option value={wave.number.toString()}>{t('fleets.private.wave_title').replace('{number}', wave.number.toString())}</option>
+                                    )}
+                                </select>
+                            </label>
+                            <label for={`fleet-invites-find-${fleet_id}`} class="[ visually-hidden ]">{t('fleets.private.find_pilot')}</label>
+                            <Input
+                                id={`fleet-invites-find-${fleet_id}`}
+                                type="search"
+                                autocomplete="off"
+                                placeholder={t('fleets.private.find_pilot')}
+                                x-model="q"
+                                width="18rem"
+                            />
                         </FlexInline>
-                    </summary>
-                    <Flexblock gap="var(--space-s)">
-                        {wave.note && <blockquote class="[ fleet-invites__note ]">{wave.note}</blockquote>}
+
+                        {waves.map(wave =>
+                            <div class="[ fleet-invites__wave ]" x-show={`wave === '${wave.number}'`} x-cloak>
+                                <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                    {wave.labels.map(label => <Tag text={label} variant="outline" />)}
+                                    <small class="[ text-muted ]">
+                                        {t('fleets.private.wave_sent')
+                                            .replace('{time}', `${when(wave.created_at)} EVE`)
+                                            .replace('{by}', wave.sent_by ?? '')
+                                            .replace('{count}', wave.invited.toString())}
+                                    </small>
+                                </FlexInline>
+                                {wave.note && <p class="[ fleet-invites__note ]">{wave.note}</p>}
+                            </div>
+                        )}
+
                         <XFadeScroll>
                             <table class="[ fleet-invites__table ]">
                                 <thead>
                                     <tr>
                                         <th scope="col">{t('fleets.private.col_pilot')}</th>
-                                        <th scope="col">{t('fleets.private.col_answer')}</th>
+                                        <th scope="col">{t('fleets.private.col_status')}</th>
                                         <th scope="col">{t('fleets.private.col_bringing')}</th>
                                         <th scope="col" class="[ is-number ]">{t('fleets.private.col_answered')}</th>
-                                        {data.can_see_leak_trace && <th scope="col" class="[ is-number ]">{t('fleets.private.col_opened')}</th>}
-                                        <th scope="col">{t('fleets.private.col_dm')}</th>
+                                        {data.can_see_leak_trace &&
+                                            <th scope="col" class="[ is-number ]" title={t('fleets.private.leak_trace_hint')}>
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="4" y="11" width="16" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                                                {t('fleets.private.col_opened')}
+                                            </th>
+                                        }
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invites_by_wave(wave.number).map(invite =>
-                                        <tr>
-                                            <td>
-                                                <b>{invite.character_name}</b>
-                                                {invite.corporation_name && <small>{invite.corporation_name}</small>}
+                                    {invites.map(invite =>
+                                        <tr
+                                            data-invite
+                                            data-status={status_of(invite)}
+                                            data-wave={invite.wave.toString()}
+                                            data-name={[invite.character_name, invite.corporation_name ?? ''].join(' ').toLowerCase()}
+                                            x-show="shown($el)"
+                                        >
+                                            <th scope="row" title={invite.corporation_name ?? undefined}>{invite.character_name}</th>
+                                            <td class={`[ fleet-invites__status is-${status_of(invite)} ]`}>
+                                                <i class={`[ fleet-invites__dot is-${status_of(invite)} ]`}></i>{label_of[status_of(invite)]}
                                             </td>
-                                            <td class:list={[`is-${invite.answer}`]}>{answer_label(invite)}</td>
-                                            <td>{invite.ships.join(' · ')}</td>
-                                            <td class="[ is-number ]">{when(invite.answered_at)}</td>
+                                            <td class="[ fleet-invites__ships ]">{invite.ships.join(', ')}</td>
+                                            <td class:list={['[ is-number fleet-invites__answered ]', { 'is-empty': !invite.answered_at }]}>{when_short(invite.answered_at) || '—'}</td>
                                             {data.can_see_leak_trace &&
-                                                <td class="[ is-number ]">{invite.first_viewed_at ? when(invite.first_viewed_at) : t('fleets.private.not_opened')}</td>
+                                                <td class:list={['[ is-number fleet-invites__opened ]', { 'is-empty': !invite.first_viewed_at }]}>{when_short(invite.first_viewed_at) || '—'}</td>
                                             }
-                                            <td>
-                                                <span class:list={[{ 'is-pending': invite.dm_delivered === false }]}>{dm_label(invite)}</span>
-                                                {invite.dm_delivered === false &&
-                                                    <button
-                                                        type="button"
-                                                        class="[ fleet-invites__copy ]"
-                                                        x-on:click={`navigator.clipboard.writeText(${JSON.stringify(fleet_link)})`}
-                                                    >
-                                                        {t('fleets.private.copy_link')}
-                                                    </button>
-                                                }
-                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </XFadeScroll>
-                        {data.can_see_leak_trace && <small class="[ text-muted ]">{t('fleets.private.leak_trace_hint')}</small>}
-                    </Flexblock>
-                </details>
-            )
-        }
-    </Flexblock>
+                        <EmptyState title={t('fleets.private.no_matches')} x-show="none" x-cloak />
+                    </Fragment>
+                }
+            </Flexblock>
+        </section>
+    </ComponentBlock>
 </div>
 
 <style lang="scss">
     .fleet-invites {
         max-width: var(--max-col-width);
-    }
-
-    .fleet-invites__stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-s) var(--space-l);
-
-        > div {
-            display: flex;
-            flex-direction: column-reverse;
-        }
-
-        dd {
-            font-family: var(--heading-font);
-            font-size: var(--step-3);
-            line-height: 1;
-            color: var(--highlight);
-        }
-
-        dt {
-            color: var(--text-muted);
-            font-size: var(--step--1);
-        }
-
-        .is-in dd { color: var(--green); }
-        .is-out dd { color: var(--text-muted); }
-        .is-pending dd { color: var(--fleet-yellow); }
-    }
-
-    .fleet-invites__actions {
-        flex-shrink: 0;
-    }
-
-    .fleet-invites__error {
-        color: var(--fleet-red);
-    }
-
-    .fleet-invites__sending {
-        color: var(--alliance-blue);
-    }
-
-    .fleet-invites__targets-block {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-
-        header {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: baseline;
-            gap: var(--space-3xs) var(--space-s);
-
-            a {
-                margin-left: auto;
-            }
-        }
 
         h2 {
             font-size: var(--step-1);
         }
     }
 
+    .fleet-invites__head {
+        align-items: center;
+    }
+
+    .fleet-invites__section + .fleet-invites__section {
+        margin-top: var(--space-l);
+        padding-top: var(--space-l);
+        border-top: 1px solid var(--hairline-medium);
+    }
+
+    .fleet-invites__tiles > div {
+        display: flex;
+    }
+
+    .fleet-invites__tiles :global(.fleet-invites__secondary) {
+        flex: 1;
+        border: 1px solid var(--hairline-strong);
+    }
+
+    .fleet-invites__push {
+        margin-left: auto;
+    }
+
+    .fleet-invites__error {
+        color: var(--fleet-red);
+    }
+
     .fleet-invites__targets {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-        gap: var(--space-s) var(--space-m);
-        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin-inline: 0;
+        margin-bottom: 0;
         padding: 0;
-        margin: 0;
+        list-style: none;
 
         li {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
+            display: grid;
+            grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr) 6rem;
+            align-items: center;
+            gap: var(--space-s);
         }
     }
 
-    .fleet-invites__target-head {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-2xs);
+    .fleet-invites__target-name {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .fleet-invites__target-count {
+        text-align: right;
         font-variant-numeric: tabular-nums;
+
+        b {
+            color: var(--highlight);
+        }
     }
 
     .fleet-invites__bar {
@@ -468,145 +389,270 @@ import Textarea from '@components/blocks/Textarea.astro'
         height: var(--space-3xs);
         background-color: var(--hairline-medium);
 
-        span {
+        > span {
             display: block;
             height: 100%;
-            background-color: var(--highlight);
+            background-color: var(--foreground);
         }
     }
 
-    .is-pending {
-        color: var(--fleet-yellow);
+    .is-met .fleet-invites__bar > span {
+        background-color: var(--green);
     }
 
-    .is-in {
-        color: var(--green);
-    }
+    .fleet-invites__sending {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 14rem;
+        font-size: var(--step--1);
 
-    .is-out {
-        color: var(--text-muted);
-    }
+        > span:first-child {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-xs);
+        }
 
-    .fleet-invites__wave-form {
-        :global(button.is-active) {
-            border-color: var(--highlight);
+        b {
             color: var(--highlight);
         }
-    }
 
-    .fleet-invites__results:empty,
-    .fleet-invites__resolve:empty {
-        display: none;
-    }
-
-    .fleet-invites__picks ul {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs);
-        margin-top: var(--space-3xs);
-        padding: 0;
-        list-style: none;
-    }
-
-    .fleet-invites__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-xs);
-        border: 1px solid var(--border-color);
-        background-color: var(--surface-sunken);
-        color: var(--highlight);
-
-        button {
-            min-width: var(--space-l);
-            min-height: var(--space-l);
-            background: transparent;
-            border: 0;
-            color: var(--text-muted);
-            font: inherit;
-            cursor: pointer;
+        .fleet-invites__bar > span {
+            background-color: var(--alliance-blue);
         }
     }
 
-    .fleet-invites__opsec {
-        padding: var(--space-2xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--alliance-blue) 45%, transparent);
+    .fleet-invites__split {
+        display: flex;
+        gap: var(--space-3xs);
+        height: var(--space-2xs);
+
+        > span {
+            flex-basis: 0;
+        }
+    }
+
+    .fleet-invites__split > .is-in,
+    .fleet-invites__dot.is-in {
+        background-color: var(--green);
+    }
+
+    .fleet-invites__split > .is-out,
+    .fleet-invites__dot.is-out {
+        background-color: var(--text-muted);
+    }
+
+    .fleet-invites__split > .is-pending {
+        background-color: var(--hairline-strong);
+    }
+
+    .fleet-invites__dot.is-pending {
+        box-shadow: inset 0 0 0 2px var(--text-muted);
+    }
+
+    .fleet-invites__split > .is-failed,
+    .fleet-invites__dot.is-failed {
+        background-color: var(--fleet-red);
+    }
+
+    .fleet-invites__dot {
+        display: inline-block;
+        flex: none;
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        margin-right: var(--space-2xs);
+        border-radius: 50%;
+    }
+
+    .fleet-invites__tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-areas:
+            "in out pending failed"
+            ". . reping copy";
+        gap: var(--space-xs);
+
+        @media (max-width: 48rem) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                "in out"
+                "pending failed"
+                "reping copy";
+        }
+    }
+
+    .fleet-invites__tile {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--foreground);
+        font: inherit;
+        font-size: var(--step--1);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color var(--fast-transition);
+
+        > span {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        b {
+            font-family: var(--heading-font);
+            font-size: var(--step-3);
+            font-weight: 400;
+            line-height: 1;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+
+        &[aria-pressed="true"] {
+            border-color: var(--foreground);
+            background-color: var(--surface-sunken);
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--hairline-strong);
+            }
+        }
+    }
+
+    .fleet-invites__toolbar {
+        align-items: center;
+    }
+
+    .fleet-invites__wave-select {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: 0 var(--space-xs);
+        border: 1px solid var(--border-color);
+        font-size: var(--step--1);
+
+        select {
+            min-height: var(--space-xl);
+            background: transparent;
+            border: 0;
+            color: var(--highlight);
+            font: inherit;
+            font-weight: 600;
+        }
     }
 
     .fleet-invites__wave {
         display: flex;
         flex-direction: column;
-        gap: var(--space-s);
-
-        summary {
-            cursor: pointer;
-            list-style: none;
-
-            &::-webkit-details-marker {
-                display: none;
-            }
-        }
-
-        h2 {
-            font-size: var(--step-1);
-        }
-    }
-
-    .fleet-invites__wave-summary {
-        flex-wrap: wrap;
-        align-items: baseline;
-        width: 100%;
-    }
-
-    .fleet-invites__wave-counts {
-        margin-left: auto;
+        gap: var(--space-2xs);
     }
 
     .fleet-invites__note {
-        margin: 0;
-        padding: var(--space-2xs) var(--space-xs);
-        border-left: 2px solid var(--hairline-strong);
-        color: var(--text-muted);
+        margin-inline: 0;
+        margin-bottom: 0;
+        font-style: italic;
     }
 
     .fleet-invites__table {
         width: 100%;
         border-collapse: collapse;
-        font-size: var(--step--1);
 
-        th {
-            padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-muted);
-            text-align: left;
-            white-space: nowrap;
-        }
-
+        th,
         td {
             padding: var(--space-2xs) var(--space-xs);
             border-bottom: 1px solid var(--hairline);
+            text-align: left;
+            white-space: nowrap;
             vertical-align: middle;
+        }
 
-            small {
-                display: block;
-                color: var(--text-muted);
+        thead th {
+            border-bottom-color: var(--hairline-strong);
+            color: var(--text-muted);
+            font-size: var(--step--1);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+
+            svg {
+                margin-right: var(--space-3xs);
             }
+        }
+
+        tbody th {
+            color: var(--highlight);
+            font-weight: 600;
         }
 
         .is-number {
             text-align: right;
             font-variant-numeric: tabular-nums;
-            white-space: nowrap;
+        }
+
+        .is-empty {
+            color: var(--faded);
         }
     }
 
-    .fleet-invites__copy {
-        margin-left: var(--space-2xs);
-        background: transparent;
-        border: 0;
-        color: var(--fleet-yellow);
-        font: inherit;
-        text-decoration: underline;
-        cursor: pointer;
+    .fleet-invites__status {
+        &.is-in,
+        &.is-failed {
+            color: var(--highlight);
+        }
+
+        &.is-out {
+            color: var(--text-muted);
+        }
+    }
+
+    .fleet-invites__table .fleet-invites__ships {
+        width: 100%;
+        color: var(--highlight);
+        white-space: normal;
+    }
+
+    @media (max-width: 48rem) {
+        .fleet-invites__targets li {
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            .fleet-invites__bar {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+        }
+
+        .fleet-invites__table {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                padding: var(--space-2xs) 0;
+                border-bottom: 1px solid var(--hairline);
+            }
+
+            th,
+            td {
+                padding: 0;
+                border: 0;
+            }
+
+            .fleet-invites__ships {
+                grid-column: 1 / -1;
+                color: var(--text-muted);
+                font-size: var(--step--1);
+            }
+
+            .fleet-invites__answered,
+            .fleet-invites__opened {
+                display: none;
+            }
+        }
     }
 </style>
