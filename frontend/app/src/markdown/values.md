@@ -1,5 +1,5 @@
 ---
-title: Alliance Values
+title: Our values
 excerpt: >
   FL33T is built on community. We fly together, fight together, and die together. These are the expectations we hold for every member, so we can keep prospering as one alliance. Remember: on the other side of every screen is another person.
 ---
