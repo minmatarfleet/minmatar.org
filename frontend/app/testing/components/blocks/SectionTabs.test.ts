@@ -45,3 +45,18 @@ test("hash aliases reach the tab state", async () => {
   expect(result).toContain("campaign-system-");
   expect(result).toContain("tab_for(hash)");
 });
+
+test("an icon tab keeps its label for screen readers", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(SectionTabs, {
+    props: {
+      tabs: [...tabs, { id: "settings", label: "Settings", icon: "cog" }],
+      aria_label: "Fleet",
+      id_prefix: "fleet",
+    },
+  });
+
+  expect(result).toContain("section-tab--icon");
+  expect(result).toContain('title="Settings"');
+  expect(result).toMatch(/visually-hidden[^>]*>Settings</);
+});
