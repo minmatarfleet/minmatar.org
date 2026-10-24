@@ -149,11 +149,11 @@ const fleet_tabs = [
     ...(show_command ? [{
         id: 'command',
         label: t('fleets.tabs.command'),
-        ...(cancelled ? {} : next_step ? { meta: next_step.label, flag: 'attention' as const } : { meta: t('fleets.tabs.all_set') }),
+        ...(cancelled ? {} : next_step ? { meta: next_step.short_label, flag: 'attention' as const } : { meta: t('fleets.tabs.all_set') }),
     }] : []),
     ...invites_tab,
-    // Edit, who sees names, MOTD and cancel: easy to find on their own tab.
-    ...(show_command ? [{ id: 'settings', label: t('fleets.tabs.settings') }] : []),
+    // Edit, who sees names, MOTD and cancel: a gear at the end of the row.
+    ...(show_command ? [{ id: 'settings', label: t('fleets.tabs.settings'), icon: 'cog' as const }] : []),
 ]
 
 const participant_tabs = [
@@ -183,7 +183,7 @@ const history_tabs = [
     { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : {}) },
     ...invites_tab,
     // Run it again, or declassify a private fleet.
-    ...(show_history_settings ? [{ id: 'settings', label: t('fleets.tabs.settings') }] : []),
+    ...(show_history_settings ? [{ id: 'settings', label: t('fleets.tabs.settings'), icon: 'cog' as const }] : []),
 ]
 
 // Old links (Discord, the hub) still open the right tab.

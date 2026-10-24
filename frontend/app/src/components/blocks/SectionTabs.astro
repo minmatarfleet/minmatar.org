@@ -1,4 +1,6 @@
 ---
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+
 interface SectionTab {
     id: string
     label: string
@@ -6,6 +8,8 @@ interface SectionTab {
     meta?: string
     /** A dot before `meta`: `attention` (orange, something to do) or `live` (red). */
     flag?: 'attention' | 'live'
+    /** An icon-only tab at the end of the row; `label` becomes its accessible name and tooltip. */
+    icon?: 'cog'
 }
 
 interface Props {
@@ -107,7 +111,8 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
                     type="button"
                     role="tab"
                     id={`${id_prefix}-tab-${tab.id}`}
-                    class:list={['[ section-tab ]', { 'is-active': tab.id === default_tab }]}
+                    class:list={['[ section-tab ]', { 'is-active': tab.id === default_tab, 'section-tab--icon': tab.icon }]}
+                    title={tab.icon ? tab.label : undefined}
                     aria-controls={`${id_prefix}-panel-${tab.id}`}
                     aria-selected={tab.id === default_tab ? 'true' : 'false'}
                     tabindex={tab.id === default_tab ? 0 : -1}
@@ -121,7 +126,13 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
                     x-on:keydown.home.prevent="select(tabs[0])"
                     x-on:keydown.end.prevent="select(tabs[tabs.length - 1])"
                 >
-                    {tab.label}
+                    {tab.icon === 'cog' ?
+                        <>
+                            <span class="[ section-tab__icon ]" aria-hidden="true"><CogIcon /></span>
+                            <span class="[ visually-hidden ]">{tab.label}</span>
+                        </> :
+                        tab.label
+                    }
                     {tab.meta &&
                         <span class:list={['[ section-tab__meta ]', tab.flag && `section-tab__meta--${tab.flag}`]}>{tab.meta}</span>
                     }
@@ -176,6 +187,22 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
         &:focus-visible {
             outline: solid 2px var(--fleet-yellow);
             outline-offset: -2px;
+        }
+    }
+
+    // Rare tabs such as Settings: a gear pushed to the end of the row.
+    .section-tab--icon {
+        display: inline-flex;
+        align-items: center;
+        margin-inline-start: auto;
+
+        .section-tab__icon {
+            display: inline-flex;
+        }
+
+        :global(svg) {
+            inline-size: 1em;
+            block-size: 1em;
         }
     }
 
@@ -257,6 +284,11 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
             padding-inline: var(--space-2xs);
             font-size: var(--step-0);
             margin-block-end: 0;
+        }
+
+        .section-tab--icon {
+            flex: 0 0 auto;
+            justify-content: center;
         }
     }
 </style>
