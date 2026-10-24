@@ -847,3 +847,38 @@ export async function put_fleet_targets(access_token:string, fleet_id:number, li
         body: { lines },
     })
 }
+
+export type TargetSuggestions = ApiResponse<'TargetSuggestionsResponse'>
+export type PastTargetFleet = ApiResponse<'PastTargetFleet'>
+export type UnmatchedHull = ApiResponse<'UnmatchedHull'>
+export type TargetLineOwner = ApiResponse<'TargetLineOwner'>
+export type MyTargetHangar = ApiResponse<'MyTargetHangarResponse'>
+
+/** Lines to start the targets from: the doctrine's EVE groups and your past fleets. */
+export async function get_target_suggestions(access_token:string, fleet_id:number) {
+    return await api_request<TargetSuggestions>(`${API_ENDPOINT}/${fleet_id}/targets/suggestions`, {
+        token: access_token,
+    }) ?? { doctrine: [], past_fleets: [] }
+}
+
+/** Hulls signed up that no target line counts. */
+export async function get_unmatched_hulls(access_token:string, fleet_id:number) {
+    return await api_request<UnmatchedHull[]>(`${API_ENDPOINT}/${fleet_id}/targets/unmatched`, {
+        token: access_token,
+    }) ?? []
+}
+
+/** Find pilots: players not yet invited who own a hull for this line. */
+export async function get_target_line_owners(access_token:string, fleet_id:number, target_id:number) {
+    return await api_request<TargetLineOwner[]>(`${API_ENDPOINT}/${fleet_id}/targets/${target_id}/owners`, {
+        token: access_token,
+        error: 'Error fetching pilots for this line',
+    }) ?? []
+}
+
+/** For the ship picker: which line each doctrine hull counts toward, and what your characters own. */
+export async function get_my_target_hangar(access_token:string, fleet_id:number) {
+    return await api_request<MyTargetHangar>(`${API_ENDPOINT}/${fleet_id}/targets/mine`, {
+        token: access_token,
+    }) ?? { lines_by_ship: [], hangars: [] }
+}

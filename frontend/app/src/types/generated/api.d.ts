@@ -3244,6 +3244,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/{fleet_id}/targets/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Target Hangar
+         * @description For the ship picker: the target line each doctrine hull counts toward, and the doctrine hulls each of your characters owns.
+         */
+        get: operations["fleets_endpoints_private_targets_get_my_target_hangar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/targets/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Target Suggestions
+         * @description Lines to start the fleet's targets from: one per EVE group in its doctrine, and your recent fleets' targets.
+         */
+        get: operations["fleets_endpoints_private_targets_get_target_suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/targets/unmatched": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Unmatched Hulls
+         * @description Hulls signed up that no target line counts.
+         */
+        get: operations["fleets_endpoints_private_targets_get_unmatched_hulls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/targets/{target_id}/owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Line Owners
+         * @description Private fleets: alliance players not yet invited who own a hull this line counts, from ESI assets. The fleet's creator and Strategic FCs only.
+         */
+        get: operations["fleets_endpoints_private_targets_get_line_owners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/{fleet_id}/tracking": {
         parameters: {
             query?: never;
@@ -9166,6 +9246,13 @@ export interface components {
              * @default 0
              */
             token_count?: number;
+        };
+        /** CharacterHangar */
+        CharacterHangar: {
+            /** Character Id */
+            character_id: number;
+            /** Ship Type Ids */
+            ship_type_ids: number[];
         };
         /**
          * CharacterProducerRef
@@ -16902,6 +16989,13 @@ export interface components {
             /** Submitted At */
             submitted_at?: string | null;
         };
+        /** MyTargetHangarResponse */
+        MyTargetHangarResponse: {
+            /** Hangars */
+            hangars: components["schemas"]["CharacterHangar"][];
+            /** Lines By Ship */
+            lines_by_ship: components["schemas"]["ShipLine"][];
+        };
         /**
          * NestedBreakdownNode
          * @description One node in a nested material breakdown tree.
@@ -17457,6 +17551,31 @@ export interface components {
              * @default
              */
             ticker?: string;
+        };
+        /** PastTargetFleet */
+        PastTargetFleet: {
+            /** Fleet Id */
+            fleet_id: number;
+            /** Lines */
+            lines: components["schemas"]["PastTargetLine"][];
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Title */
+            title: string;
+        };
+        /** PastTargetLine */
+        PastTargetLine: {
+            /** Group Ids */
+            group_ids: number[];
+            /** Name */
+            name: string;
+            /** Ship Type Ids */
+            ship_type_ids: number[];
+            /** Target */
+            target: number;
         };
         /** PasteRequest */
         PasteRequest: {
@@ -19481,6 +19600,13 @@ export interface components {
             /** Type Name */
             type_name: string;
         };
+        /** ShipLine */
+        ShipLine: {
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** Target Id */
+            target_id: number;
+        };
         /** ShipReimbursementProgramAmountResponse */
         ShipReimbursementProgramAmountResponse: {
             /** Created At */
@@ -19948,6 +20074,13 @@ export interface components {
             /** User Id */
             user_id?: number;
         };
+        /** SuggestedTargetLine */
+        SuggestedTargetLine: {
+            /** Name */
+            name: string;
+            /** Ship Type Ids */
+            ship_type_ids: number[];
+        };
         /** SurveyQuestionsSchema */
         SurveyQuestionsSchema: {
             /** Campaign Id */
@@ -20000,6 +20133,34 @@ export interface components {
             own: number;
             /** Short */
             short: number;
+        };
+        /** TargetLineOwner */
+        TargetLineOwner: {
+            /** At Formup */
+            at_formup: boolean;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Location Name */
+            location_name: string;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** User Id */
+            user_id: number;
+        };
+        /**
+         * TargetSuggestionsResponse
+         * @description Lines to start from: one per EVE group in the doctrine, and the
+         *     caller's recent fleets that had targets.
+         */
+        TargetSuggestionsResponse: {
+            /** Doctrine */
+            doctrine: components["schemas"]["SuggestedTargetLine"][];
+            /** Past Fleets */
+            past_fleets: components["schemas"]["PastTargetFleet"][];
         };
         /**
          * TestFleetCreationRequest
@@ -21066,6 +21227,15 @@ export interface components {
             corp: string;
             /** Corporation Id */
             corporation_id: number;
+        };
+        /** UnmatchedHull */
+        UnmatchedHull: {
+            /** Characters */
+            characters: number;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
         };
         /** UpcomingSlot */
         UpcomingSlot: {
@@ -28910,6 +29080,137 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_targets_get_my_target_hangar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTargetHangarResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_targets_get_target_suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetSuggestionsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_targets_get_unmatched_hulls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnmatchedHull"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_targets_get_line_owners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+                target_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TargetLineOwner"][];
+                };
             };
             /** @description Not Found */
             404: {

@@ -89,6 +89,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetWaveDialog from '@components/blocks/FleetWaveDialog.astro'
 import Input from '@components/blocks/Input.astro'
 import Tag from '@components/blocks/Tag.astro'
+import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 ---
 
 <div
@@ -129,13 +130,7 @@ import Tag from '@components/blocks/Tag.astro'
                     </FlexInline>
                     <ul class="[ fleet-invites__targets ]">
                         {data.targets.map(target =>
-                            <li class:list={[{ 'is-met': target.short === 0 }]}>
-                                <span class="[ fleet-invites__target-name ]">{target.name}</span>
-                                <span class="[ fleet-invites__bar ]" role="img" aria-label={`${target.have} / ${target.target}`}>
-                                    <span style={`width: ${Math.min(100, Math.round(100 * target.have / Math.max(target.target, 1)))}%`}></span>
-                                </span>
-                                <span class="[ fleet-invites__target-count ]"><b>{target.have}</b> / {target.target}</span>
-                            </li>
+                            <li><ShipTargetMeter name={target.name} have={target.have} target={target.target} /></li>
                         )}
                     </ul>
                 </Flexblock>
@@ -361,27 +356,6 @@ import Tag from '@components/blocks/Tag.astro'
         margin-bottom: 0;
         padding: 0;
         list-style: none;
-
-        li {
-            display: grid;
-            grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr) 6rem;
-            align-items: center;
-            gap: var(--space-s);
-        }
-    }
-
-    .fleet-invites__target-name {
-        color: var(--highlight);
-        font-weight: 600;
-    }
-
-    .fleet-invites__target-count {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-
-        b {
-            color: var(--highlight);
-        }
     }
 
     .fleet-invites__bar {
@@ -394,10 +368,6 @@ import Tag from '@components/blocks/Tag.astro'
             height: 100%;
             background-color: var(--foreground);
         }
-    }
-
-    .is-met .fleet-invites__bar > span {
-        background-color: var(--green);
     }
 
     .fleet-invites__sending {
@@ -616,15 +586,6 @@ import Tag from '@components/blocks/Tag.astro'
     }
 
     @media (max-width: 48rem) {
-        .fleet-invites__targets li {
-            grid-template-columns: minmax(0, 1fr) auto;
-
-            .fleet-invites__bar {
-                grid-column: 1 / -1;
-                grid-row: 2;
-            }
-        }
-
         .fleet-invites__table {
             thead {
                 display: none;

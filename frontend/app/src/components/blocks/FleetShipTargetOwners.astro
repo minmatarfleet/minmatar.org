@@ -1,0 +1,208 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ShipTargetProgress, TargetLineOwner } from '@helpers/api.minmatar.org/fleets'
+import { query_string } from '@helpers/string'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+/**
+ * Find pilots for a short ship target line on a private fleet: alliance
+ * players not yet invited who own a hull for it, everyone ticked. Invite
+ * sends them as the next wave (partials/fleet_ship_targets_component,
+ * mode=invite). The creator and Strategic FCs only.
+ */
+interface Props {
+    fleet_id:       number;
+    can_manage:     boolean;
+    can_invite:     boolean;
+    target:         ShipTargetProgress;
+    owners:         TargetLineOwner[];
+    error?:         string | false;
+}
+
+const {
+    fleet_id,
+    can_manage,
+    can_invite,
+    target,
+    owners,
+    error = false,
+} = Astro.props
+
+const PARTIAL_URL = `${translatePath('/partials/fleet_ship_targets_component')}?${query_string({ fleet_id, can_manage, can_invite })}`
+const INVITE_URL = `${PARTIAL_URL}&${query_string({ mode: 'invite', target_id: target.id })}`
+// The first rows show; the rest open with Show more.
+const FIRST = 8
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<section id="fleet-ship-targets" class="[ target-owners ]" aria-labelledby="target-owners-title">
+    <form
+        hx-post={INVITE_URL}
+        hx-target="#fleet-ship-targets"
+        hx-swap="outerHTML"
+        x-data={`{ count: ${owners.length}, show_all: false }`}
+        x-on:change="count = $el.querySelectorAll('input[name=user_ids]:checked').length"
+    >
+        <header class="[ target-owners__header ]">
+            <h2 id="target-owners-title">{t('fleets.targets.find_title').replace('{name}', target.name)}</h2>
+            <span class="[ target-owners__muted ]">{t('fleets.targets.needed').replace('{count}', target.short.toString())}</span>
+        </header>
+
+        <div class="[ target-owners__body ]">
+            {error && <p class="[ target-owners__error ]" role="alert">{error}</p>}
+            {owners.length > 0 ?
+                <Fragment>
+                    <p>
+                        <b>{t('fleets.targets.find_count').replace('{count}', owners.length.toString()).replace('{name}', target.name)}</b>
+                    </p>
+                    <ul class="[ target-owners__list ]">
+                        {owners.map((owner, index) =>
+                            <li x-show={index < FIRST ? undefined : 'show_all'} x-cloak={index < FIRST ? undefined : true}>
+                                <label>
+                                    <input type="checkbox" name="user_ids" value={owner.user_id} checked />
+                                    <b>{owner.character_name}</b>
+                                    <span class="[ target-owners__ship ]">
+                                        <img src={get_item_icon(owner.ship_type_id, 32)} alt="" width="24" height="24" loading="lazy" />
+                                        {owner.ship_name}
+                                    </span>
+                                    <span class="[ target-owners__muted ]">{owner.location_name}</span>
+                                </label>
+                            </li>
+                        )}
+                    </ul>
+                    {owners.length > FIRST &&
+                        <button type="button" class="[ target-owners__link ]" x-show="!show_all" x-on:click="show_all = true">
+                            {t('fleets.targets.show_more').replace('{count}', (owners.length - FIRST).toString())}
+                        </button>
+                    }
+                </Fragment>
+                :
+                <EmptyState title={t('fleets.targets.find_none')} />
+            }
+        </div>
+
+        <footer class="[ target-owners__footer ]">
+            <Button size="sm" type="button" color="transparent" hx-get={PARTIAL_URL} hx-target="#fleet-ship-targets" hx-swap="outerHTML">
+                {t('fleets.targets.cancel')}
+            </Button>
+            {owners.length > 0 &&
+                <Button size="sm" type="submit" color="green" x-bind:disabled="count === 0">
+                    {t('fleets.targets.invite')} <span x-text="count">{owners.length}</span>
+                </Button>
+            }
+        </footer>
+    </form>
+</section>
+
+<style lang="scss">
+    .target-owners {
+        background-color: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .target-owners__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+        padding: var(--space-s) var(--space-m);
+        border-bottom: 1px solid var(--hairline);
+
+        h2 {
+            font-size: var(--step-1);
+        }
+    }
+
+    .target-owners__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+    }
+
+    .target-owners__error {
+        color: var(--fleet-red);
+    }
+
+    .target-owners__list {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        border: 1px solid var(--border-color);
+
+        li + li {
+            border-top: 1px solid var(--hairline);
+        }
+
+        label {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) minmax(0, 12rem) minmax(0, 10rem);
+            gap: var(--space-s);
+            align-items: center;
+            min-height: 2.75rem;
+            padding: 0 var(--space-xs);
+            cursor: pointer;
+
+            @media (max-width: 48rem) {
+                grid-template-columns: auto minmax(0, 1fr);
+
+                > span {
+                    grid-column: 2;
+                }
+            }
+        }
+
+        input {
+            width: var(--space-s);
+            height: var(--space-s);
+            accent-color: var(--fleet-red);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .target-owners__ship {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        img {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+    }
+
+    .target-owners__muted {
+        color: var(--text-muted);
+    }
+
+    .target-owners__link {
+        align-self: flex-start;
+        min-height: 2.75rem;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .target-owners__footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-xs);
+        padding: var(--space-s) var(--space-m);
+        border-top: 1px solid var(--hairline);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
