@@ -5,15 +5,17 @@ const { t, lang, translatePath } = i18n(Astro.url)
 import type { PostListUI } from '@dtypes/layout_components';
 
 interface Props {
-    post:      PostListUI;
-    editor_id?: number;
-    is_editing: boolean;
+    post:           PostListUI;
+    editor_id?:     number;
+    is_editing:     boolean;
+    zoomable?:      boolean;
 }
 
 const {
     post,
     editor_id,
     is_editing,
+    zoomable = false,
 } = Astro.props
 
 // Remove extra amp; characters from the URI for reddit images
@@ -36,7 +38,7 @@ import Tag from '@components/blocks/Tag.astro';
         alt={post.title}
         narrow={true}
         thumbnail={true}
-        zoomable={false}
+        zoomable={zoomable}
         astro_image={image_sanitized ? {
             src: image_sanitized,
             width: 300,
@@ -71,7 +73,7 @@ import Tag from '@components/blocks/Tag.astro';
 
     {!is_editing &&
         <a
-            class="[ propaganda-post-card__hitbox ]"
+            class="[  ]"
             href={post_href}
             aria-label={post.title}
         ></a>

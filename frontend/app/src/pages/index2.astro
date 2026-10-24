@@ -1,0 +1,602 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+if (!user_is_superadmin)
+    return HTTP_404_Not_Found()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
+
+import type { Alert, StagingType } from '@dtypes/layout_components'
+import type { PostListUI } from '@dtypes/layout_components'
+import { fetch_posts } from '@helpers/fetching/posts'
+import { is_seasonal_date } from '@helpers/date'
+
+let posts:PostListUI[] = []
+const PAGE_LENGTH = 3
+let post_fetching_error: Error | false = false
+
+try {
+    const paginated_posts = await fetch_posts({
+        page_num: 1,
+        page_size: PAGE_LENGTH,
+        status: 'published',
+    })
+
+    posts = paginated_posts.chunk
+} catch (error) {
+    post_fetching_error = error
+}
+
+const NEY_YEAR_EVE_DECORATION = is_seasonal_date('12-31', '12-31')
+const WINTER_NEXUS_DECORATION = !NEY_YEAR_EVE_DECORATION ? is_seasonal_date('12-05', '01-06') : false
+const CRIMSON_HARVEST_DECORATION = is_seasonal_date('10-03', '11-05')
+
+import { is_referral_url } from '@helpers/fetching/referrals'
+const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
+
+import { query_string } from '@helpers/string';
+
+type StagingTranslation = {
+	[key in StagingType]: string;
+}
+
+const STAGINGS_STATIONS:StagingTranslation = {
+	watermellon: 'Sosala - WATERMELLON',
+	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
+	amamake: 'Amamake - 5 times nearly AT winners',
+}
+
+const STAGINGS_SYSTEMS:StagingTranslation = {
+	watermellon: 'Sosala',
+	amarr: 'Amarr',
+	amamake: 'Amamake',
+}
+
+/*const RATTINI_TRIBE_ID = 98726134
+const BLACK_OMEGA_SECUTIRY_ID = 263585335
+const EMPEROR_FAMILY_ID = 1000086
+const OBLIVION_WATCH_ID = 98217709
+
+const STAGING_CORPORATIONS = {
+	amarr: {
+		id: EMPEROR_FAMILY_ID,
+		name: 'Emperor Family',
+	},
+	amamake: {
+		id: OBLIVION_WATCH_ID,
+		name: 'Oblivion Watch'
+	},
+	r6: {
+		id: RATTINI_TRIBE_ID,
+		name: 'R-6KYM - DO NOT USE'
+	},
+	watermellon:  {
+		id: BLACK_OMEGA_SECUTIRY_ID,
+		name: 'Black Omega Security'
+	}
+}*/
+
+const STAGING_DOCTRINES = {
+	amamake: 1022167642188,
+}
+
+const FREIGHT_ORDERS = {
+	amamake: 'Amamake - 5 times nearly AT winners',
+}
+
+const INDUSTRY_ORDERS = {
+	amamake: 'Amamake - 5 times nearly AT winners',
+}
+
+const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
+
+import { stagings } from '@dtypes/layout_components'
+
+const user_staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : ''
+if (user_staging && !stagings.includes(user_staging))
+	Astro.cookies.delete('staging', { path: '/' })
+
+const is_random_staging = !Astro.cookies.has('staging')
+
+const staging = IS_APRIL_FOOLS ?
+	'amarr' :
+	is_random_staging ?
+	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and watermelon from random
+	user_staging
+	
+const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
+if (auth_error) Astro.cookies.delete('auth_error', { path: '/' })
+
+const alert = auth_error ? {
+	title: t('auth_error_dialog_title'),
+	content: auth_error,
+} as Alert : false
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+
+// import StationAssets from '@components/blocks/StationAssets.astro';
+import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
+import AmarrInfo from '@components/blocks/AmarrInfo.astro';
+import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
+import R6_2Info from '@components/blocks/R6_2Info.astro';
+import HomeCorporationsBig from '@components/blocks/HomeCorporationsBig.astro';
+import FleetFeed from '@components/blocks/FleetFeed.astro';
+import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro';
+import MediaFeed from '@components/blocks/MediaFeed.astro';
+import ComicsWidget from '@components/blocks/ComicsWidget.astro';
+import RatBibleWidget from '@components/blocks/RatBibleWidget.astro';
+import DiscordSmall from '@components/blocks/DiscordSmall.astro';
+import RedditSmall from '@components/blocks/RedditSmall.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
+import NewsFeed from '@components/blocks/NewsFeed.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ReferralLink from '@components/blocks/ReferralLink.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+import ExternalLink from '@components/blocks/ExternalLink.astro';
+import ContentTiles from '@components/blocks/ContentTiles.astro';
+
+import FleetLogo from '@components/icons/FleetLogo.astro';
+import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
+import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
+import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
+import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
+import FleetFeedUpdater from '@components/blocks/FleetFeedUpdater.astro'
+
+const page_title = t('index.page_title');
+const page_description = t('index.leading_text');
+---
+
+<Viewport
+	title={page_title}
+	meta_description={page_description}
+	components={{
+		alert_dialog: true,
+	}}
+>
+    <PageLanding
+        cover={{
+			video: get_location_video_cover(staging) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(staging) ?? undefined,
+            image: get_location_cover(staging) ?? undefined,
+            image_990: get_location_cover_990(staging) ?? undefined,
+            animated: false,
+			full_screen: true,
+        }}
+        fullscreen={true}
+        wide={true}
+		x-data={`{
+			show_fleet_feeds: true,
+			show_stagging_info: true,
+        }`}
+    >
+		{alert && <ShowAlert alert={alert} /> }
+
+		<div x-show="show_stagging_info">
+			<Flexblock 
+				class="[ station-info ][ !hidden xl:!block ]"
+				gap='0'
+			>
+				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
+					staging === 'amarr' ? <AmarrInfo /> :
+					<WatermellonInfo is_random={is_random_staging} />
+				}
+				<FlexInline gap='var(--space-3xs)'>
+					{/*(user && staging !== 'watermellon' && STAGINGS_STATIONS[staging]) &&
+						<StationAssets
+							corporation={
+								STAGING_CORPORATIONS[staging]
+							}
+							station={STAGINGS_STATIONS[staging]}
+						/>
+					*/}
+					{STAGING_DOCTRINES[staging] &&
+						<a
+							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
+							data-tippy-content={t('view_station_doctrines')}
+							href={translatePath(`/ships/doctrines?${query_string({location_id: STAGING_DOCTRINES[staging]})}`)}
+						>
+							<DoctrinesEvEIcon />
+						</a>
+					}
+					{FREIGHT_ORDERS[staging] &&
+						<a
+							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
+							data-tippy-content={t('view_station_freight_orders')}
+							href={translatePath(`/market/freight/contracts?${query_string({location_name: FREIGHT_ORDERS[staging]})}`)}
+						>
+							<FreightServiceEvEIcon />
+						</a>
+					}
+					{INDUSTRY_ORDERS[staging] &&
+						<a
+							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
+							data-tippy-content={t('view_station_industry_orders')}
+							href={translatePath(`/industry/orders?${query_string({location_name: INDUSTRY_ORDERS[staging]})}`)}
+						>
+							<IndustryEVEIcon />
+						</a>
+					}
+					<ExternalLink
+						class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
+						data-tippy-content={t('view_on_dotlan')}
+						href={`https://evemaps.dotlan.net/system/${STAGINGS_SYSTEMS[staging] ?? 'Sosala'}`}
+					>
+						<MapEvEIcon />
+					</ExternalLink>
+				</FlexInline>
+			</Flexblock>
+		</div>
+
+		<VerticalCenter
+			class="[ content-section ][ min-h-[100vh] max-w-[48rem] ]"
+			x-intersect:enter.margin.-230px="show_stagging_info = true;"
+			x-intersect:leave.margin.-230px="show_stagging_info = false"
+		>
+			<Wrapper
+				max_width='48rem'
+				padding_inline='0'
+				padding_block="var(--space-l)"
+			>
+				<Flexblock
+					gap='var(--space-xl)'
+					class="[ text-center ]"
+				>	
+					<Flexblock
+						gap='var(--space-m)'
+						class="[ text-center ]"
+					>	
+						<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
+
+						<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
+
+						<p>{t('index.leading_text')}</p>
+					</Flexblock>
+
+					<FlexInline justification='center'>
+						<StylessButton href='#widgets' class="[ caret-down ]" />
+					</FlexInline>
+				</Flexblock>
+			</Wrapper>
+		</VerticalCenter>
+
+		<Wrapper
+			max_width='var(--max-content-width)'
+			padding_inline='0'
+			padding_block="0"
+			class="[ content-section mt-2 ]"
+		>
+			<Flexblock
+				id="widgets"
+				gap='var(--space-3xl)'
+				class="[ w-full ]"
+				x-intersect:enter="show_fleet_feeds = false"
+				x-intersect:leave="show_fleet_feeds = true"
+			>
+				<Flexblock
+					id="widgets"
+				>
+					<HomeCorporationsBig />
+
+					<ContentTiles transparent={true} coverless={true} />
+				</Flexblock>
+
+				<Wrapper
+					class="[ relative relative z-10 w-full ]"
+					max_width='1000px'
+					centered={true}
+					padding_block='0'
+					padding_inline='0'
+				>
+					<MediaFeed />
+				</Wrapper>
+
+				<Wrapper
+					max_width='800px'
+					centered={true}
+					padding_block='0'
+					padding_inline='0'
+				>
+					<RatBibleWidget />
+				</Wrapper>
+			</Flexblock>
+
+			<Wrapper
+				padding_inline="0"
+				padding_block="var(--space-3xl)"
+				max_width='100%'
+				centered={true}
+			>
+				<Flexblock>
+					<FlexInline
+						gap='var(--space-l)'
+						justification='center'
+					>
+						<RedditSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+						/>
+						<DiscordSmall						
+							padding_block='0'
+							padding_inline='var(--space-s)'
+						/>
+					</FlexInline>
+
+					<Wrapper
+						padding_inline="0"
+						padding_block="0"
+						max_width='40rem'
+						centered={true}
+					>
+						<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
+						<FlexInline
+							class="[ legal-links ]"
+							gap="var(--space-m)"
+							justification="center"
+						>
+							<a href={translatePath('/legal/privacy/')}>{t('legal.privacy')}</a>
+							<a href={translatePath('/legal/terms/')}>{t('legal.terms')}</a>
+						</FlexInline>
+					</Wrapper>
+				</Flexblock>
+			</Wrapper>
+		</Wrapper>
+
+		{(WINTER_NEXUS_DECORATION || NEY_YEAR_EVE_DECORATION || CRIMSON_HARVEST_DECORATION) &&
+			<canvas id="decoration_overlay" />
+		}
+
+		<ColorBlindPrompt />
+
+		{can_view_fleets &&
+			<div x-show="show_fleet_feeds">
+				<FleetFeedUpdater refresh_rate_seconds={260}>
+					<FleetFeed />
+				</FleetFeedUpdater>
+			</div>
+		}
+    </PageLanding>
+</Viewport>
+
+
+{WINTER_NEXUS_DECORATION && (
+	<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-snow@3.2.0/tsparticles.preset.snow.bundle.min.js"></script>
+
+	<script is:inline>
+		async function initSnow() {
+			if (!document.getElementById('decoration_overlay')) return
+
+			await loadSnowPreset(tsParticles)
+
+			await tsParticles.load({
+				id: "decoration_overlay",
+				options: {
+					preset: "snow",
+					fullScreen: { enable: false },
+					background: { opacity: 0 },
+				},
+			})
+		}
+
+		document.addEventListener("astro:page-load", initSnow)
+	</script>
+)}
+
+{NEY_YEAR_EVE_DECORATION && (
+	<script is:inline>
+		(async () => {
+			const canvas = document.getElementById("decoration_overlay")
+
+			canvas.confetti =
+				canvas.confetti || (await confetti.create(canvas, { resize: true }))
+
+			let tick = 0
+
+			function randomInRange(min, max) {
+				return Math.random() * (max - min) + min
+			}
+
+			(function frame() {
+				skew = 0.8
+				tick += 1
+
+				const DEFAULTS = {
+					startVelocity: 30,
+					spread: 360,
+					ticks: 60,
+					particleCount: 50,
+					zIndex: 0,
+				}
+
+				tick % 150 === 0 && canvas.confetti({
+					...DEFAULTS,
+					scalar: randomInRange(0.5, 2),
+					origin: { x: randomInRange(0.1, 0.9), y: randomInRange(0.1, 0.6) },
+					ticks: 200,
+				})
+
+				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
+			})()
+		})()
+	</script>
+)}
+
+{CRIMSON_HARVEST_DECORATION && (
+	<script is:inline>
+		tsParticles.load(
+			"decoration_overlay", {
+				fpsLimit: 60,
+				emitters: {
+					autoPlay: true,
+					rate: {
+						delay: 1,
+						quantity: 1
+					},
+					size: {
+						mode: "percent",
+						height: 100,
+						width: 100
+					},
+				},
+  				particles: {
+					number: {
+						value: 0
+					},
+					shape: {
+						type: [
+							"image"
+						],
+						options: {
+							image: [
+								{
+									src: "/images/jack_o_lantern.svg",
+									width: 32,
+									height: 32,
+									particles: {
+										size: {
+											value: 30
+										}
+									}
+								}
+							]
+						},
+					},
+					opacity: {
+						value: 1,
+						animation: {
+							enable: true,
+							startValue: "max",
+							speed: 1,
+							decay: 0.5,
+							destroy: "min"
+						},
+					},
+					size: {
+						value: 60,
+						animation: {
+							enable: true,
+							startValue: "min",
+							speed: 1
+						},
+					},
+					move: {
+						enable: false
+					},
+					life: {
+						duration: {
+							sync: false,
+							value: 20
+						},
+						count: 1
+					},
+				},
+		})
+	</script>
+)}
+
+<style lang="scss">
+	#waifu-intro {
+		position: fixed;
+		right: 11vw;
+		top: 220px;
+		height: min(50%, 500px);
+		mix-blend-mode: screen;
+		display: none;
+
+		@media screen and (min-width:980px) {
+			display: block;
+		}
+	}
+
+	#decoration_overlay {
+		position: absolute;
+		inset: 0;
+		height: 100%;
+		width: 100%;
+	}
+
+	.station-info {
+		position: fixed;
+		top: var(--space-l);
+		right: var(--space-xl);
+		z-index: 2;
+	}
+
+	.ccp-disclaimer {
+		font-size: var(--step--2);
+	}
+
+	.legal-links {
+		margin-block-start: var(--space-s);
+		font-size: var(--step--1);
+	}
+
+	.welcome-heading {
+		font-size: var(--step-5);
+	}
+
+    .left-panel {
+        position: absolute;
+    }
+
+	.content-section {
+		position: relative;
+		z-index: 1;
+		align-items: center;
+	}
+
+	.caret-down {
+		transform: rotate(90deg);
+
+		&:before {
+			content: 'next';
+			color: var(--highlight);
+			font-family: swiper-icons;
+			font-size: var(--swiper-navigation-size);
+			text-transform: none !important;
+			letter-spacing: 0;
+			font-variant: initial;
+			line-height: 1;
+		}
+	}
+</style>
+
+<style is:global>
+	#tsparticles {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: none; /* Ensures no conflicting background */
+	}
+</style>

@@ -140,3 +140,14 @@ export async function fetch_posts_grouped_by_tags(post_request:PostRequest, filt
         post_count: total_post_count,
     }
 }
+
+export async function fetch_posts_by_tags(tag_id:number, filter_trash:boolean = false) {
+    let { total, chunk } = await fetch_posts({
+        tag_id: tag_id
+    })
+
+    if (filter_trash)
+        chunk = chunk.filter(post => post.state !== 'trash')
+
+    return chunk
+}

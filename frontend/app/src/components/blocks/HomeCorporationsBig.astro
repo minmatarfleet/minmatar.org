@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FluidFixed from '@components/compositions/FluidFixed.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+---
+
+<FluidFixed
+    width='771px'
+    breakpoint='32%'
+    class="[ items-center ]"
+    x-data="{ shown: false }"
+    x-intersect.once.threshold.60="shown = true"
+>
+    <Wrapper
+        padding_inline='0'
+        padding_block='var(--space-s)'
+    >
+        <Flexblock gap='var(--space-xl)'>
+            <h2 x-bind:class="shown ? 'animate-slide-up-fade' : 'opacity-0'">{t('corporations')}</h2>
+
+            <p x-bind:class="shown ? 'animate-fade-in animate-duration-250 animate-delay-300' : 'opacity-0'">{t('corporations_descriptions')}</p>
+            
+            <FlexInline x-bind:class="shown ? 'animate-fade-in animate-duration-250 animate-delay-450' : 'opacity-0'">
+                <Button
+                    color='green'
+                    href={translatePath('/alliance/corporations/list/')}
+                >
+                    {t('join_us')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </Wrapper>
+
+    <picture
+        class="[ flex justify-center ]"
+        x-bind:class="shown ? 'animate-slide-up-fade animate-delay-600' : 'opacity-0'"
+    >
+        <img class="[ h-auto ]" src="/images/ceos.webp" width="771" height="766" />
+    </picture>
+</FluidFixed>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-5);
+    }
+</style>

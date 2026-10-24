@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+if (!is_superuser)
+    return HTTP_404_Not_Found()
+
+import { is_thinkspeak_member } from '@helpers/thinkspeak'
+
+const can_manage_content = Boolean(
+    user && (is_superuser || (auth_token && await is_thinkspeak_member(auth_token)))
+)
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+
+import ManageContentDialog from '@components/blocks/ManageContentDialog.astro';
+import ContentTiles from '@components/blocks/ContentTiles.astro';
+
+const page_title = t('content.page_title')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('content.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/propaganda-cover.jpg",
+            image_990: "/images/propaganda-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </Flexblock>
+            </FlexInline>
+            <PageActions>
+                {can_manage_content && <ManageContentDialog />}
+            </PageActions>
+        </FlexInline>
+
+        <BlockList gap='var(--space-2xl)'>
+            <TextBox>
+                <p class="[ excerpt ]">{t('content.leading_text')}</p>
+            </TextBox>
+
+            <ContentTiles />
+        </BlockList>
+    </PageWide>
+</Viewport>

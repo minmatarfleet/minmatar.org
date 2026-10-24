@@ -447,3 +447,118 @@ hr {
 .green-glow {
     filter: drop-shadow(0px 0px 5px var(--green));
 }
+
+.eve-active-border {
+    font-weight: 600;
+    position: relative;
+
+    &:after {
+        content: ' ';
+        position: absolute;
+        background-color: var(--highlight);
+        width: 28px;
+        height: 2px;
+        bottom: 0;
+        transition: var(--fast-transition);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    &:before {
+        content: ' ';
+        z-index: 1;
+        position: absolute;
+        width: 24px;
+        border-radius: 50%;
+        filter: blur(4px);
+        bottom: 2px;
+        height: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--highlight);
+    }
+}
+
+.crt-hover:hover {
+    .crt::after {
+        animation: crt-roll 5s linear infinite;
+    }
+}
+
+.crt {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+
+    &.crt-animate::after {
+        animation: crt-roll 5s linear infinite;
+    }
+}
+
+.crt img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Horizontal scan lines */
+.crt::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.22) 3px,
+        rgba(0, 0, 0, 0.22) 4px
+    );
+}
+
+/* Rolling interference band */
+.crt::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.7;
+
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(120, 190, 255, 0.04) 42%,
+        rgba(180, 210, 255, 0.16) 49%,
+        rgba(255, 255, 255, 0.22) 50%,
+        rgba(180, 210, 255, 0.08) 51%,
+        transparent 58%,
+        transparent 100%
+    );
+
+    background-position: 0% 120%;
+    background-size: 100% 200%;
+}
+
+@keyframes crt-roll {
+    from {
+        background-position: 0% 120%;
+    }
+    to {
+        background-position: 0 -20%;
+    }
+}
+
+.hover-zoom {
+    transform: scale(1);
+    transition: var(--fast-transition);
+
+    &:hover,
+    &:focus,
+    &:focus-visible {
+        outline: none;
+        transform: scale(1.1);
+    }
+}

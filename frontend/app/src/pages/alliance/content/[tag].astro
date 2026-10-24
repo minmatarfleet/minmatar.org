@@ -1,0 +1,287 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { is_thinkspeak_member } from '@helpers/thinkspeak'
+
+const can_manage_content = Boolean(
+    user && (is_superuser || (auth_token && await is_thinkspeak_member(auth_token)))
+)
+
+const post_editor = can_manage_content ? (user as User).user_id : false
+
+import type { Alert, PostListUI } from '@dtypes/layout_components'
+import { fetch_posts_by_tags, fetch_posts } from '@helpers/fetching/posts'
+import { get_posts_tags } from '@helpers/api.minmatar.org/posts'
+import type { PostTag } from '@dtypes/api.minmatar.org'
+
+let posts:PostListUI[] = []
+let news_reel_posts: PostListUI[] = []
+let post_fetching_error: Error | false = false
+const PAGE_LENGTH = 10
+
+const tag = Astro.params.tag
+let current_tag:PostTag | undefined = undefined
+let posts_tags:PostTag[] = []
+
+try {
+    posts_tags = await get_posts_tags()
+    console.log(posts_tags)
+    
+    current_tag = posts_tags.find(post_tag => post_tag.tag === tag)
+    current_tag = current_tag ? current_tag : posts_tags[0]
+
+    console.log(current_tag)
+
+    posts = await fetch_posts_by_tags(current_tag.tag_id)
+} catch (error) {
+    post_fetching_error = error as Error
+}
+
+const CONTENT_SECTIONS_PARTIAL_URL = `${translatePath('/partials/content_sections_component')}?state=published${current_tag ? `&tag=${current_tag.tag}` : ''}`
+
+let connect_alert: Alert | false = false
+const connect_error = Astro.url.searchParams.get('error')
+const connected_provider = Astro.url.searchParams.get('connected')
+if (connect_error === 'FEATURE_DENIED') {
+    connect_alert = {
+        title: t('content.page_title'),
+        content: t('content.connect.feature_denied'),
+    }
+} else if (connected_provider) {
+    connect_alert = {
+        title: t('content.page_title'),
+        content: t('content.connect.success'),
+    }
+}
+
+const propaganda_meta = {
+    'Metropolis': {
+        title: 'Propaganda Poster',
+        description: t('odd_bunch_description'),
+        hash: 'Propaganda_Poster',
+    },
+    'Frontlines': {
+        title: 'Metropolis Daily News',
+        description: t('metropolis_description'),
+        hash: 'Metropolis',
+    },
+    'Propaganda': {
+        title: 'Frontlines',
+        description: t('frontlines_description'),
+        hash: 'Frontlines',
+    },
+    'Metro': {
+        title: 'Dispatches',
+        description: t('dispatches_description'),
+        hash: 'Dispatches',
+    },
+    'The Cope': {
+        title: 'Metro Daily News',
+        description: t('metro_dn_description'),
+        hash: 'Metro_Daily_News',
+    },
+    'Videos': {
+        title: 'The COPE',
+        description: t('the_cope_description'),
+        hash: 'The_Cope',
+    },
+    'Rust and Blood': {
+        title: 'Videos',
+        description: t('videos_description'),
+        hash: 'Videos',
+    },
+    'Waifu Wars': {
+        title: 'Rust and Blood',
+        description: t('rust_description'),
+        hash: 'Rust_and_Blood',
+    },
+    'Dispatches': {
+        title: 'The Waifu Wars',
+        description: t('waifus_description'),
+        hash: 'Waifu_Wars',
+    },
+}
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro';
+
+import ManageContentDialog from '@components/blocks/ManageContentDialog.astro';
+import ContentTiles from '@components/blocks/ContentTiles.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import PropagandaGrid from '@components/blocks/PropagandaGrid.astro';
+import GuidesStrip from '@components/blocks/GuidesStrip.astro';
+import StoreBanner from '@components/blocks/StoreBanner.astro';
+
+const page_title = current_tag?.tag ?? t('content.page_title')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('content.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/propaganda-cover.jpg",
+            image_990: "/images/propaganda-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        breadcrumb_page_title={page_title}
+        wide={true}
+    >
+
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </Flexblock>
+            </FlexInline>
+            <PageActions>
+                {can_manage_content && <ManageContentDialog />}
+            </PageActions>
+        </FlexInline>
+
+        <BlockList gap='var(--space-2xl)'>
+            {post_fetching_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: CONTENT_SECTIONS_PARTIAL_URL,
+                        error: post_fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <div id="content-sections">
+                    <Flexblock gap='var(--space-2xl)'>
+                        <XFadeScroll>
+                            <FlexInline class="[ flex-nowrap! ]">
+                                {/* posts_tags.map(tag =>
+                                    <StylessButton
+                                        href={translatePath(`/alliance/content?tag=${tag.tag}`)}
+                                        size='sm'
+                                        class:list={[
+                                            tag.tag_id === current_tag?.tag_id ? 'eve-active-border' : undefined,
+                                            'pb-(--space-2xs)! text-nowrap!'
+                                        ]}
+                                    >
+                                        {t(tag.tag as any) ?? tag.tag}
+                                    </StylessButton>
+                                )*/}
+                                <StylessButton
+                                    href={translatePath(`/alliance/content/Metropolis`)}
+                                    class:list={[
+                                        'Metropolis' === current_tag?.tag ? 'eve-active-border' : undefined,
+                                        'hover-zoom pb-(--space-2xs)! text-nowrap! basis-[115px] text-center! self-center'
+                                    ]}
+                                >
+                                    <b class="[ text-highlight ]">Metropolis</b>
+                                </StylessButton>
+                                <StylessButton
+                                    href={translatePath(`/alliance/content/Frontlines`)}
+                                    class:list={[
+                                        'Frontlines' === current_tag?.tag ? 'eve-active-border' : undefined,
+                                        'hover-zoom pb-(--space-2xs)! text-nowrap! basis-[115px] text-center! self-center'
+                                    ]}
+                                >
+                                    <b class="[ text-highlight ]">Frontlines</b>
+                                </StylessButton>
+                                <StylessButton
+                                    href={translatePath(`/alliance/content/Campaigns`)}
+                                    class:list={[
+                                        'Campaigns' === current_tag?.tag ? 'eve-active-border' : undefined,
+                                        'hover-zoom pb-(--space-2xs)! text-nowrap! basis-[115px] text-center! self-center'
+                                    ]}
+                                >
+                                    <b class="[ text-highlight ]">{t('campaigns')}</b>
+                                </StylessButton>
+                                <StylessButton
+                                    href={translatePath(`/alliance/content/Dispatches`)}
+                                    class:list={[
+                                        'Dispatches' === current_tag?.tag ? 'eve-active-border' : undefined,
+                                        'hover-zoom pb-(--space-2xs)! text-nowrap! basis-[115px] text-center! self-center'
+                                    ]}
+                                >
+                                    <b class="[ text-highlight ]">{t('dispatches')}</b>
+                                </StylessButton>
+                                <StylessButton
+                                    href={translatePath(`/alliance/content/Warzone Reports`)}
+                                    class:list={[
+                                        'Warzone Reports' === current_tag?.tag ? 'eve-active-border' : undefined,
+                                        'hover-zoom pb-(--space-2xs)! text-nowrap! basis-[115px] text-center! self-center'
+                                    ]}
+                                >
+                                    <b class="[ text-highlight ]">{t('warzone_reports')}</b>
+                                </StylessButton>
+                                <StylessButton
+                                    href={translatePath(`/alliance/content/Our guides`)}
+                                    class:list={[
+                                        'Our guides' === current_tag?.tag ? 'eve-active-border' : undefined,
+                                        'hover-zoom pb-(--space-2xs)! text-nowrap! basis-[115px] text-center! self-center'
+                                    ]}
+                                >
+                                    <b class="[ text-highlight ]">{t('our_guides')}</b>
+                                </StylessButton>
+                            </FlexInline>
+                        </XFadeScroll>
+
+                        {//<AllianceCampaignStrip />
+                        }
+
+                        <PropagandaGrid
+                            title={propaganda_meta[current_tag?.tag ?? 'Metropolis'].title}
+                            description={propaganda_meta[current_tag?.tag ?? 'Metropolis'].description}
+                            hash={propaganda_meta[current_tag?.tag ?? 'Metropolis'].hash}
+                            as_subsection={false}
+                            posts={posts}
+                            editor_id={post_editor ? post_editor : undefined}
+                            is_editing={false}
+                        />
+                        {//<WarzoneReportStrip /> 
+                        }
+                        <GuidesStrip />
+                        <Wrapper
+                            class="[ w-full ]"
+                            max_width="700px"
+                            padding_inline="0"
+                            padding_block="0"
+                            centered={true}
+                        >
+                            <StoreBanner thin={true} />
+                        </Wrapper>
+                        {//<NewsReel
+                         //   posts={news_reel_posts}
+                         //   show_manage_content={can_manage_content}
+                        ///>
+                        }
+                    </Flexblock>
+                </div>
+            }
+    </PageWide>
+</Viewport>

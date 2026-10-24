@@ -43,23 +43,28 @@ import Markdown from '@components/blocks/Markdown.astro';
 ---
 
 <Wrapper
-    class:list={[`card component relative tile ${transparent_class}`, { soft: soft }, Astro.props.class ]}
+    class:list={[`card component relative tile crt-hover ${transparent_class}`, { soft: soft }, Astro.props.class ]}
     padding_inline='var(--component-padding-block)'
     padding_block='var(--component-padding-block)'
     max_width='100%'
 >
     <slot name="cover">
-        {optimize ?
-            <Image
-                src={cover}
-                alt={alt ?? title}
-                width={width}
-                height={height}
-                quality={90}
-                format='webp'
-            /> :
-            <img class="[ z-0 ]" src={cover} alt={alt ?? title} />
-        }
+        <picture
+            class="[ crt ]"
+            x-bind:class="shown ? 'animate-fade-in animate-duration-700' : 'opacity-0'"
+        >
+            {optimize ?
+                <Image
+                    src={cover}
+                    alt={alt ?? title}
+                    width={width}
+                    height={height}
+                    quality={90}
+                    format='webp'
+                /> :
+                <img class="[ z-0 ]" src={cover} alt={alt ?? title} />
+            }
+        </picture>
     </slot>
     
     <div 
@@ -84,13 +89,16 @@ import Markdown from '@components/blocks/Markdown.astro';
 </Wrapper>
 
 <style lang="scss">
-    img {
-        object-fit: cover;
+    picture {
         position: absolute;
         top: 0;
         left: 0;
         height: 100%;
         width: 100%;
+    }
+
+    img {
+        object-fit: cover;
         mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.1) 65%, transparent 90%);
     }
 

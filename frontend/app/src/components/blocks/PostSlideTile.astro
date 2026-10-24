@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    title:          string;
+    description:    string;
+    tag:            string;
+    post_count?:    number;
+    skeleton_h?:    string;
+    coverless?:     boolean;
+}
+
+const {
+    title,
+    description,
+    tag,
+    post_count = 3,
+    skeleton_h = '470px',
+    coverless = false,
+} = Astro.props
+
+const POST_GRID_PARTIAL_URL = translatePath('/partials/post_grid_component')
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import TileHero from '@components/blocks/TileHero.astro';
+import Button from '@components/blocks/Button.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+
+import ArrowRight from '@components/icons/buttons/ArrowRight.astro';
+---
+
+<div class="[ swiper-slide ][ w-full ]">
+    <TileHero
+        title={title}
+        description={description}
+        cover={coverless ? undefined : '/images/posts-covers.jpg'}
+        soft={true}
+        transparent={true}
+        meta_width='33rem'
+        crt_effect={!coverless}
+    >
+        <FlexInline>
+            <Button
+                class="[ self-center ]"
+                x-on:click="go_slide(0)"
+            >
+                {t('back_to_posts')}
+            </Button>
+            <Button
+                class="[ fit-content self-center min-[1821px]:hidden! ]"
+                href={translatePath(`/alliance/content/${tag}`)}
+            >
+                {t('browse')}
+                <ArrowRight />
+            </Button>
+        </FlexInline>
+
+        <VerticalCenter class="[ w-full hidden! min-[1820px]:flex! ]" slot='right'>
+            <BlockList class="[ w-full ]" gap='var(--space-l)'>
+                <Grid
+                    class="[ w-full grid-fill ]"
+                    row_gap="var(--space-3xs)"
+                    column_gap="var(--space-3xs)"
+                    min_item_width="250px"
+                    hx-get={`${POST_GRID_PARTIAL_URL}?tag=${tag}&post_count=${post_count}`}
+                    hx-trigger="intersect"
+                    hx-indicator=".loader"
+                    hx-target="this"
+                    hx-swap="outerHTML transition:true"
+                >
+                    {Array.from({ length: post_count }).map((_, index) =>
+                        <div
+                            class="[ crt crt-animate border ][ bg-(--skeleton-background) opacity-80 ]"
+                            style={`min-height: ${skeleton_h};`}
+                        />
+                    )}
+                </Grid>
+                
+                <FlexInline justification='center'>
+                    <Button
+                        href={translatePath(`/alliance/content/${tag}`)}
+                        class="[ fit-content self-center ]"
+                    >
+                        {t('view_all')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </VerticalCenter>
+    </TileHero>
+</div>
+
+<style lang="scss">
+    .swiper-slide-active [hx-trigger] {
+        display: grid !important;
+    }
+
+    [hx-trigger] {
+        display: none !important;
+    }
+</style>

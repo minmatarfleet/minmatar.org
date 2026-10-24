@@ -149,9 +149,6 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
                     <FlexInline gap='0' class="[ flex-nowrap! ]">
                         {breadcrumbs.map(({ accumulated_path, page_title }) => {
                             const depth = accumulated_path.split('/').filter(segment => segment).length
-                            console.log(accumulated_path.split('/'))
-                            console.log(accumulated_path.split('/').filter(segment => segment))
-                            console.log(depth)
 
                             const hub_links = pages
                                 .filter(page =>
