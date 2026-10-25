@@ -5,9 +5,6 @@ the Discord role and aborts the change when Discord fails
 (docs/auth/discord-groups.md). This module is the desired-state reconciler
 for that source: eligible pilots hold their brackets' groups, nobody else
 holds any. A failed add or remove is retried on the next run.
-
-Off unless settings.TIMEZONES_DISCORD_ROLES is set, so assessments can be
-reviewed in admin before any role moves.
 """
 
 from __future__ import annotations
@@ -16,7 +13,6 @@ import logging
 from collections import Counter
 from typing import Iterable
 
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 from django.dispatch import receiver
@@ -27,10 +23,6 @@ from timezones.models import PilotTimezone, TimezoneRole
 from timezones.services import pilot_timezone_changed
 
 logger = logging.getLogger(__name__)
-
-
-def enabled() -> bool:
-    return bool(settings.TIMEZONES_DISCORD_ROLES)
 
 
 def ensure_groups() -> dict[str, Group]:
@@ -69,8 +61,6 @@ def apply_roles(user_ids: Iterable[int] | None = None) -> Counter:
     holding a bracket group.
     """
     outcome: Counter = Counter()
-    if not enabled():
-        return outcome
     groups = ensure_groups()
     group_codes = {group.id: code for code, group in groups.items()}
     if user_ids is not None:

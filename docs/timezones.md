@@ -92,10 +92,7 @@ To react to changes, connect to `timezones.services.pilot_timezone_changed`. It 
 
 Each bracket is an auth group (`TimezoneRole`) named after its code. The usual group-to-role sync in `discord.signals` carries membership to Discord, fail-closed (see [auth/discord-groups.md](auth/discord-groups.md)). `timezones.discord_roles.apply_roles` is a desired-state reconciler: a refused add or remove is logged and retried on the next run.
 
-Role changes are off until `TIMEZONES_DISCORD_ROLES=true`. Assessments are stored either way. To turn roles on:
-
-1. Deploy, let the first assessment run, and check `PilotTimezone` in admin, or run `manage.py assess_timezones --dry-run`.
-2. Set `TIMEZONES_DISCORD_ROLES=true`. The next run creates the six groups, which creates their Discord roles, and assigns them.
+The first run after deploy creates the six groups, which creates their Discord roles, and assigns them to every eligible pilot: about 1,100 role adds, which take a few minutes behind the Discord client's rate limiting. To preview it first, run `manage.py assess_timezones --dry-run`; it saves nothing and touches no roles.
 
 A group adopts an existing Discord role with the same name instead of creating one. The reconciler then owns that role and removes it from anyone who doesn't qualify.
 
