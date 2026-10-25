@@ -1,0 +1,20 @@
+---
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+import { get_public_api_url } from '@helpers/env'
+import { corporation_discord_bot_connect_url } from '@helpers/api.minmatar.org/corporations'
+
+const { auth_token } = get_request_user(Astro)
+
+if (!auth_token)
+    return login_redirect(Astro)
+
+// The backend checks the CEO or director, sends them to Discord's bot
+// install page, and Discord sends them back to the corporation's Settings tab.
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id)
+    return Astro.redirect('/alliance/corporations/')
+
+return Astro.redirect(corporation_discord_bot_connect_url(get_public_api_url(), corporation_id, auth_token))
+---

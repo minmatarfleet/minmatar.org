@@ -6,9 +6,11 @@ from eveonline.endpoints.corporations.schemas import (
     CorporationDiscordInviteRequest,
     CorporationDiscordSettings,
 )
+from eveonline.helpers.corporations.discord_bot import (
+    corporation_discord_settings,
+)
 from eveonline.helpers.corporations.discord_invite import (
     DiscordInviteError,
-    discord_settings,
     save_discord_invite,
 )
 from eveonline.helpers.corporations.permissions import (
@@ -42,4 +44,4 @@ def put_corporation_discord(
         save_discord_invite(corporation, payload.invite_url)
     except DiscordInviteError as e:
         return 400, ErrorResponse(detail=e.code)
-    return discord_settings(corporation)
+    return corporation_discord_settings(corporation)

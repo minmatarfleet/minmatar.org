@@ -9,11 +9,17 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import {
     DiscordInviteError,
     check_corporation_discord,
+    disconnect_corporation_discord_bot,
     get_corporation_discord,
     remove_corporation_discord,
+    retry_corporation_discord_bot,
     update_corporation_discord,
 } from '@helpers/api.minmatar.org/corporations'
 import {
+    discord_bot_connect_flash,
+    discord_bot_needs_attention,
+    discord_bot_next_poll,
+    discord_bot_status_key,
     discord_error_key,
     discord_invite_label,
     discord_section_summary,
@@ -40,11 +46,19 @@ if (!auth_token) return HTTP_403_Forbidden()
 const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
 if (!corporation_id) return HTTP_403_Forbidden()
 
-const PARTIAL_URL = translatePath(`/partials/corporation_discord_component/?${query_string({
+const partial_url = (extra: Record<string, string> = {}) => translatePath(`/partials/corporation_discord_component/?${query_string({
+    corporation_id: String(corporation_id),
+    ...extra,
+})}`)
+const PARTIAL_URL = partial_url()
+// A full page navigation: Discord's install page, then back to Settings.
+const BOT_CONNECT_URL = translatePath(`/redirects/discord_bot_connect_init?${query_string({
     corporation_id: String(corporation_id),
 })}`)
+const poll = parseInt(Astro.url.searchParams.get('poll') ?? '0') || 0
 
-let flash: DiscordSettingsFlash | null = null
+// Set when Discord sends the CEO back from the bot install page.
+let flash: DiscordSettingsFlash | null = poll ? null : discord_bot_connect_flash(Astro.url.searchParams)
 // The typed link survives a failed check or save.
 let draft_url: string | null = null
 let preview: CorporationDiscordInvitePreview | null = null
@@ -68,6 +82,12 @@ if (Astro.request.method === 'POST') {
             flash = { kind: 'success', key: 'corporations.discord.removed' }
         } else if (action === 'replace') {
             editing = true
+        } else if (action === 'disconnect_bot') {
+            await disconnect_corporation_discord_bot(auth_token, corporation_id)
+            flash = { kind: 'success', key: 'corporations.discord.bot_disconnected' }
+        } else if (action === 'retry_bot') {
+            await retry_corporation_discord_bot(auth_token, corporation_id)
+            flash = { kind: 'success', key: 'corporations.discord.bot_retrying' }
         }
     } catch (error) {
         editing = true
@@ -85,23 +105,44 @@ if (Astro.request.method === 'POST') {
 const settings = await get_corporation_discord(auth_token, corporation_id) as CorporationDiscordSettings | null
 if (!settings) return HTTP_403_Forbidden()
 
-const is_dead = settings.exists && settings.status === 'dead'
-// No server or a dead link: the invite box is the only way forward.
-const show_input = editing || !settings.exists || is_dead
-const can_cancel = editing && settings.exists && !is_dead
+const bot = settings.bot
+// While the bot is linked it is the page's Discord; the pasted link stays
+// stored as the fallback but isn't edited here.
+const bot_connected = bot.connected
+const bot_attention = bot_connected && discord_bot_needs_attention(bot.status)
+const next_poll = bot_connected ? discord_bot_next_poll(bot.status, poll) : null
+const bot_slow = bot_connected && bot.status === 'pending' && next_poll === null
+
+const is_dead = !bot_connected && settings.exists && settings.status === 'dead'
+// The bot is the main path; the paste box opens on request, or when it's the
+// only way forward (no bot here, or the pasted link died).
+const show_input = !bot_connected && (editing || (!settings.exists && !bot.available) || is_dead)
+const can_cancel = editing && (settings.exists || bot.available) && !is_dead
+const show_link_card = !bot_connected && settings.exists
+const offer_bot = !bot_connected && bot.available && !editing
 const summary = discord_section_summary(settings, {
     not_set: t('corporations.discord.summary_not_set'),
     set: t('corporations.discord.summary_set'),
     dead: t('corporations.discord.summary_dead'),
+    setting_up: t('corporations.discord.summary_setting_up'),
+    attention: t('corporations.discord.summary_attention'),
 })
 const server_name = settings.guild_name ?? t('corporations.discord.unknown_server')
+const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server')
 ---
 
 <span id={SUMMARY_ID} hx-swap-oob="innerHTML">
-    <span class:list={['[ corp-discord__summary ]', { 'is-attention': is_dead }]}>{summary}</span>
+    <span class:list={['[ corp-discord__summary ]', { 'is-attention': is_dead || bot_attention }]}>{summary}</span>
 </span>
 
-<div id={ROOT_ID} class="[ corp-discord ]">
+<div
+    id={ROOT_ID}
+    class="[ corp-discord ]"
+    hx-get={next_poll ? partial_url({ poll: String(next_poll) }) : undefined}
+    hx-trigger={next_poll ? 'load delay:3s' : undefined}
+    hx-target={next_poll ? 'this' : undefined}
+    hx-swap={next_poll ? 'outerHTML' : undefined}
+>
     <form
         method="post"
         action={PARTIAL_URL}
@@ -110,8 +151,10 @@ const server_name = settings.guild_name ?? t('corporations.discord.unknown_serve
         hx-swap="outerHTML"
     >
         <Flexblock gap="var(--space-m)">
-            {!settings.exists &&
-                <p class="[ corp-discord__muted ]">{t('corporations.discord.leading')}</p>
+            {!settings.exists && !bot_connected &&
+                <p class="[ corp-discord__muted ]">
+                    {bot.available ? t('corporations.discord.bot_leading') : t('corporations.discord.leading')}
+                </p>
             }
 
             {flash &&
@@ -123,7 +166,78 @@ const server_name = settings.guild_name ?? t('corporations.discord.unknown_serve
                 </p>
             }
 
-            {settings.exists &&
+            {bot_connected &&
+                <div class="[ corp-discord__server ]">
+                    {bot.icon_url ?
+                        <img class="[ corp-discord__avatar ]" src={bot.icon_url} alt="" width="48" height="48" loading="lazy" />
+                        :
+                        <span class="[ corp-discord__avatar ]" aria-hidden="true">{discord_server_initials(bot.guild_name)}</span>
+                    }
+                    <div class="[ corp-discord__name ]">
+                        <span class="[ corp-discord__title ]">{bot_server_name}</span>
+                        {bot.invite_url ?
+                            <a href={bot.invite_url} target="_blank" rel="noreferrer noopener">
+                                <small>{discord_invite_label(bot.invite_url)}</small>
+                            </a>
+                            : bot.channel_name &&
+                            <small class="[ corp-discord__muted ]">{t('corporations.discord.bot_channel').replace('{channel}', bot.channel_name)}</small>
+                        }
+                    </div>
+                    <small class:list={['[ corp-discord__status ]', `is-${bot.status}`]}>
+                        {t(discord_bot_status_key(bot.status))}
+                    </small>
+                    <FlexInline gap="var(--space-3xs)">
+                        {bot.status === 'no_permission' &&
+                            <Button type="submit" name="action" value="retry_bot" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                                {t('corporations.discord.bot_retry')}
+                            </Button>
+                        }
+                        {bot.status === 'removed' &&
+                            <Button href={BOT_CONNECT_URL} color="transparent" size="sm" narrow={true}>
+                                {t('corporations.discord.bot_add_again')}
+                            </Button>
+                        }
+                        <Button type="submit" name="action" value="disconnect_bot" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                            {t('corporations.discord.bot_disconnect')}
+                        </Button>
+                    </FlexInline>
+                </div>
+            }
+
+            {bot_connected && !flash && bot.status === 'pending' &&
+                <p class="[ corp-discord__muted ]" role="status">
+                    {bot_slow ? t('corporations.discord.bot_pending_slow') : t('corporations.discord.bot_pending_help')}
+                </p>
+            }
+
+            {bot_attention && !flash &&
+                <p class="[ corp-discord__attention ]">
+                    {bot.status === 'removed' ? t('corporations.discord.bot_removed_help') : t('corporations.discord.bot_no_permission_help')}
+                    {settings.page_source === 'link' && <> {t('corporations.discord.bot_fallback')}</>}
+                </p>
+            }
+
+            {bot_connected && bot.status === 'ok' && !flash &&
+                <small class="[ corp-discord__muted ]">
+                    {bot.channel_name && <>{t('corporations.discord.bot_channel').replace('{channel}', bot.channel_name)} · </>}
+                    {t('corporations.discord.bot_renewed')}
+                </small>
+            }
+
+            {offer_bot &&
+                <FlexInline gap="var(--space-xs)">
+                    <Button href={BOT_CONNECT_URL} color={settings.exists ? 'transparent' : 'fleet-red'} size="sm">
+                        {settings.exists ? t('corporations.discord.bot_instead') : t('corporations.discord.bot_add')}
+                    </Button>
+                    {!settings.exists &&
+                        <Button type="submit" name="action" value="replace" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                            {t('corporations.discord.paste_instead')}
+                        </Button>
+                    }
+                </FlexInline>
+            }
+
+            {show_link_card &&
                 <div class="[ corp-discord__server ]">
                     {settings.icon_url ?
                         <img class="[ corp-discord__avatar ]" src={settings.icon_url} alt="" width="48" height="48" loading="lazy" />
@@ -298,7 +412,9 @@ const server_name = settings.guild_name ?? t('corporations.discord.unknown_serve
             color: var(--green);
         }
 
-        &.is-dead {
+        &.is-dead,
+        &.is-no_permission,
+        &.is-removed {
             color: var(--fleet-yellow);
         }
     }

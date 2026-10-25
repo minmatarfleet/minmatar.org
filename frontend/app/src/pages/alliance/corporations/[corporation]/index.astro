@@ -122,7 +122,13 @@ for (const key of ['reddit', 'reddit_error']) {
 }
 const settings_partial = translatePath(`/partials/corporation_settings_component/?${settings_params}`)
 const forum_post_partial = translatePath(`/partials/corporation_forum_post_component/?corporation_id=${corporation_id}`)
-const discord_partial = translatePath(`/partials/corporation_discord_component/?corporation_id=${corporation_id}`)
+// Discord's bot install page sends the CEO back here with ?discord_bot=… for the partial to report.
+const discord_params = new URLSearchParams({ corporation_id: String(corporation_id) })
+for (const key of ['discord_bot', 'discord_bot_error']) {
+    const value = Astro.url.searchParams.get(key)
+    if (value) discord_params.set(key, value)
+}
+const discord_partial = translatePath(`/partials/corporation_discord_component/?${discord_params}`)
 // Leadership tracks the corp's in-game projects; directors put them toward campaigns.
 const can_view_projects = member_access?.can_view_projects ?? false
 const projects_partial = translatePath(`/partials/corporation_projects_component/?${new URLSearchParams({

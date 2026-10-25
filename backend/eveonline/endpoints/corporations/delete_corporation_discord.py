@@ -3,8 +3,10 @@
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.endpoints.corporations.schemas import CorporationDiscordSettings
+from eveonline.helpers.corporations.discord_bot import (
+    corporation_discord_settings,
+)
 from eveonline.helpers.corporations.discord_invite import (
-    discord_settings,
     remove_discord_invite,
 )
 from eveonline.helpers.corporations.permissions import (
@@ -32,4 +34,4 @@ def delete_corporation_discord(request, corporation_id: int):
     if not can_edit_corporation_settings(request.user, corporation):
         return 403, ErrorResponse(detail="Not authorised")
     remove_discord_invite(corporation)
-    return discord_settings(corporation)
+    return corporation_discord_settings(corporation)

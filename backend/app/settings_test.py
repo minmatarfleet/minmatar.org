@@ -56,6 +56,10 @@ DISCORD_ADMIN_REDIRECT_URL = ""
 DISCORD_EXTERNAL_GUILD_REDIRECT_URL = (
     "http://localhost:4321/redirects/external_guild_callback"
 )
+DISCORD_CORP_BOT_REDIRECT_URL = (
+    "http://localhost:8000/api/eveonline/corporations/corporations/"
+    "discord/bot/callback"
+)
 DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET = ""
 DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = ""
 # Non-production placeholder; live verify must use app.settings + test guild.

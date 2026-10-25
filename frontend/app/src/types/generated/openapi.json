@@ -5577,6 +5577,101 @@
         "title": "CorporationCommunitySummary",
         "type": "object"
       },
+      "CorporationDiscordBot": {
+        "properties": {
+          "available": {
+            "default": false,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Name"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "connected": {
+            "default": false,
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "guild_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Name"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Url"
+          },
+          "invite_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Expires At"
+          },
+          "invite_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Url"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "CorporationDiscordBot",
+        "type": "object"
+      },
       "CorporationDiscordInvitePreview": {
         "properties": {
           "checked": {
@@ -5632,6 +5727,24 @@
       },
       "CorporationDiscordSettings": {
         "properties": {
+          "bot": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CorporationDiscordBot"
+              }
+            ],
+            "default": {
+              "available": false,
+              "channel_name": null,
+              "checked_at": null,
+              "connected": false,
+              "guild_name": null,
+              "icon_url": null,
+              "invite_expires_at": null,
+              "invite_url": null,
+              "status": null
+            }
+          },
           "checked_at": {
             "anyOf": [
               {
@@ -5684,6 +5797,17 @@
               }
             ],
             "title": "Invite Url"
+          },
+          "page_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Source"
           },
           "status": {
             "anyOf": [
@@ -42025,6 +42149,132 @@
           }
         ],
         "summary": "Set the corporation's Discord invite (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/bot": {
+      "delete": {
+        "operationId": "eveonline_endpoints_corporations_delete_corporation_discord_bot_delete_corporation_discord_bot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Disconnect the bot from the corporation's Discord (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/bot/refresh": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_bot_refresh_post_corporation_discord_bot_refresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Ask the bot to set up its invite again, after the server fixed its permissions (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"

@@ -27,6 +27,9 @@ REQUEST_PATH_ALLOWLIST = {
     "tribes/endpoints/external_guild/get_external_guild_callback.py": (
         "OAuth guild join"
     ),
+    "eveonline/endpoints/corporations/get_corporation_discord_bot_callback.py": (
+        "OAuth bot install: only the code exchange says which server"
+    ),
     # Service-account (bot) call; the ticket only closes if the thread did.
     "help_tickets/router.py": "help ticket thread close",
     # Staff-only admin and diagnostics, not member-facing traffic.

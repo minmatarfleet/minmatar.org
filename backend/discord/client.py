@@ -568,8 +568,22 @@ class DiscordClient(DiscordBaseClient):
         )
 
     def get_bot_guilds(self):
-        """Get all guilds the bot user is a member of."""
-        guilds = self.get(f"{BASE_URL}/users/@me/guilds")
+        """Get all guilds the bot user is a member of.
+
+        Discord returns at most 200 per page. Reading only the first page
+        would mark every other guild inactive on the next sync.
+        """
+        guilds = []
+        after = None
+        while True:
+            query = f"?limit={BOT_GUILDS_PAGE}"
+            if after:
+                query += f"&after={after}"
+            page = self.get(f"{BASE_URL}/users/@me/guilds{query}")
+            guilds.extend(page)
+            if len(page) < BOT_GUILDS_PAGE:
+                break
+            after = page[-1]["id"]
         return [
             {
                 "id": int(guild["id"]),
@@ -577,3 +591,74 @@ class DiscordClient(DiscordBaseClient):
             }
             for guild in guilds
         ]
+
+    def exchange_bot_code(self, code: str, redirect_uri: str) -> dict:
+        """The server a bot install went to, from its OAuth code.
+
+        Discord adds the bot when the person approves, and the code exchange
+        returns the server it went to. Only this answer says which server
+        it was: the guild_id on the callback URL can be edited.
+        """
+        _assert_discord_http_allowed()
+        response = requests.post(
+            "https://discord.com/api/oauth2/token",
+            data={
+                "client_id": settings.DISCORD_CLIENT_ID,
+                "client_secret": settings.DISCORD_CLIENT_SECRET,
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=10,
+        )
+        if response.status_code >= 400:
+            raise DiscordError.for_response(
+                "Error exchanging bot install code", "BOT_EXCHANGE", response
+            )
+        guild = response.json().get("guild")
+        if not isinstance(guild, dict) or not guild.get("id"):
+            raise DiscordError.for_response(
+                "Bot install code has no guild", "BOT_NO_GUILD", response
+            )
+        return guild
+
+    def create_channel_invite(self, channel_id, max_age: int) -> dict:
+        """A new invite to the channel's server, never reused.
+
+        Needs Create Instant Invite (and View Channel) in that channel.
+        """
+        return self.post(
+            f"{BASE_URL}/channels/{channel_id}/invites",
+            json={"max_age": max_age, "max_uses": 0, "unique": True},
+        ).json()
+
+    def get_guild_channels_raw(self, guild_id) -> list:
+        """A guild's channels as Discord sends them (with positions,
+        parents and permission overwrites)."""
+        return self.get(f"{BASE_URL}/guilds/{guild_id}/channels")
+
+    def delete_invite(self, code: str):
+        """Revoke an invite; a missing one is already gone."""
+        return self.delete(f"{BASE_URL}/invites/{quote(code, safe='')}")
+
+    def leave_guild(self, guild_id):
+        """The bot leaves a server."""
+        return self.delete(f"{BASE_URL}/users/@me/guilds/{guild_id}")
+
+
+# Discord's page size for GET /users/@me/guilds.
+BOT_GUILDS_PAGE = 200
+
+
+def discord_error_code(error: requests.HTTPError) -> int | None:
+    """Discord's JSON error code (10003 Unknown Channel, 50013 Missing
+    Permissions, ...) from a failed call, or None."""
+    response = error.response
+    if response is None:
+        return None
+    try:
+        code = response.json().get("code")
+    except ValueError:
+        return None
+    return code if isinstance(code, int) else None

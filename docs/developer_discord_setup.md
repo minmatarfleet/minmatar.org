@@ -34,6 +34,7 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
    - Add Redirect URLs:
      - `http://localhost:8000/api/users/callback` (for development)
      - `http://localhost:8000/oauth2/login/redirect` (for admin login)
+     - `http://localhost:8000/api/eveonline/corporations/corporations/discord/bot/callback` (corporations adding the bot, `DISCORD_CORP_BOT_REDIRECT_URL`)
 
 3. **Get Application Credentials**:
    - From "OAuth2":
@@ -112,6 +113,27 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
    - Find the role matching your bot's name (auto-created when bot joined)
    - Drag this role to the **top** of the role list
    - ⚠️ **Important**: The bot can only manage roles positioned **below** its own role in the hierarchy
+
+## Corporation Discord servers
+
+A corporation's CEO or a director can add the bot to their own server from the
+Settings tab of the corporation page. The bot only asks for Create Instant
+Invite and View Channel, keeps one 7-day invite fresh for the corporation page,
+and reads no messages (`eveonline/helpers/corporations/discord_bot.py`).
+
+- Set `DISCORD_CORP_BOT_REDIRECT_URL` to the callback above (and list it under
+  OAuth2 > Redirects). Without it the Settings tab offers only a pasted link.
+- The bot must stay a **Public Bot**, or nobody but the application owner can
+  add it.
+- In production, turn on **Requires OAuth2 Code Grant**. The bot then joins a
+  server only after the backend exchanges the code, so a bare install link
+  can't add it anywhere, and the callback can turn away the alliance and tribe
+  servers before the bot is re-added there. Re-adding the bot to a server it is
+  already in can reset its managed role to the two permissions above, so give
+  the bot its real permissions in the alliance and tribe servers through a
+  separate role, not the managed one.
+- A server used only by corporations stays out of the admin channel pickers
+  (`discord.channels.admin_picker_guilds`).
 
 ## Step 6: Configure Environment Variables
 

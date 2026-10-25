@@ -124,3 +124,23 @@ export async function remove_corporation_discord(access_token: string, corporati
         access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord`, 'DELETE',
     )
 }
+
+/** Browser URL that starts adding the bot (Discord's install page, then back to Settings). */
+export function corporation_discord_bot_connect_url(api_url: string, corporation_id: number, access_token: string) {
+    return `${api_url}/api/eveonline/corporations/corporations/${corporation_id}/discord/bot/connect` +
+        `?token=${encodeURIComponent(access_token)}`
+}
+
+/** Stop using the bot; the pasted link, if any, becomes the page's Discord again. */
+export async function disconnect_corporation_discord_bot(access_token: string, corporation_id: number) {
+    return await discord_invite_request<CorporationDiscordSettings>(
+        access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord/bot`, 'DELETE',
+    )
+}
+
+/** Ask the bot to set up its invite again (after the server fixed its permissions). */
+export async function retry_corporation_discord_bot(access_token: string, corporation_id: number) {
+    return await discord_invite_request<CorporationDiscordSettings>(
+        access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord/bot/refresh`, 'POST',
+    )
+}

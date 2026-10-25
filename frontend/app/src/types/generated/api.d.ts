@@ -1801,6 +1801,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/bot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect the bot from the corporation's Discord (CEO and directors) */
+        delete: operations["eveonline_endpoints_corporations_delete_corporation_discord_bot_delete_corporation_discord_bot"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/bot/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the bot to set up its invite again, after the server fixed its permissions (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_bot_refresh_post_corporation_discord_bot_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/discord/check": {
         parameters: {
             query?: never;
@@ -9678,6 +9712,33 @@ export interface components {
              */
             slices?: components["schemas"]["CorporationSummarySlice"][];
         };
+        /** CorporationDiscordBot */
+        CorporationDiscordBot: {
+            /**
+             * Available
+             * @default false
+             */
+            available?: boolean;
+            /** Channel Name */
+            channel_name?: string | null;
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Connected
+             * @default false
+             */
+            connected?: boolean;
+            /** Guild Name */
+            guild_name?: string | null;
+            /** Icon Url */
+            icon_url?: string | null;
+            /** Invite Expires At */
+            invite_expires_at?: string | null;
+            /** Invite Url */
+            invite_url?: string | null;
+            /** Status */
+            status?: string | null;
+        };
         /** CorporationDiscordInvitePreview */
         CorporationDiscordInvitePreview: {
             /** Checked */
@@ -9696,6 +9757,20 @@ export interface components {
         };
         /** CorporationDiscordSettings */
         CorporationDiscordSettings: {
+            /**
+             * @default {
+             *       "available": false,
+             *       "channel_name": null,
+             *       "checked_at": null,
+             *       "connected": false,
+             *       "guild_name": null,
+             *       "icon_url": null,
+             *       "invite_expires_at": null,
+             *       "invite_url": null,
+             *       "status": null
+             *     }
+             */
+            bot?: components["schemas"]["CorporationDiscordBot"];
             /** Checked At */
             checked_at?: string | null;
             /** Corporation Id */
@@ -9708,6 +9783,8 @@ export interface components {
             icon_url?: string | null;
             /** Invite Url */
             invite_url?: string | null;
+            /** Page Source */
+            page_source?: string | null;
             /** Status */
             status?: string | null;
         };
@@ -26112,6 +26189,95 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_delete_corporation_discord_bot_delete_corporation_discord_bot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_bot_refresh_post_corporation_discord_bot_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */

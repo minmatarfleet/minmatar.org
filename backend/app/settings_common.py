@@ -220,6 +220,13 @@ MINMATAR_ADMIN_BASE_URL = os.environ.get("MINMATAR_ADMIN_BASE_URL", "")
 # Bot invite link shown to corporations; defaults to one built from
 # DISCORD_CLIENT_ID.
 DISCORD_BOT_INVITE_URL = os.environ.get("DISCORD_BOT_INVITE_URL", "")
+# Where Discord sends a CEO or director back after adding the bot to their
+# corporation's server: <api>/api/eveonline/corporations/corporations/
+# discord/bot/callback, also listed under OAuth2 > Redirects in the Discord
+# application. Empty hides "Add our bot" on the corporation Settings tab.
+DISCORD_CORP_BOT_REDIRECT_URL = os.environ.get(
+    "DISCORD_CORP_BOT_REDIRECT_URL", ""
+)
 # SDE sqlite for campaign area names; defaults to the newest
 # frontend/app/src/data/sde-*.sqlite.
 EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")

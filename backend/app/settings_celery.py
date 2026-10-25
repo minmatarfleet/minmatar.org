@@ -139,6 +139,13 @@ CELERYBEAT_CORPORATIONS = [
         },
     ),
     (
+        "[Corporations] Refresh Discord bot invites",
+        {
+            "task": "eveonline.tasks.corporations.refresh_corporation_discord_bots",
+            "schedule": crontab(minute=50, hour="*/6"),
+        },
+    ),
+    (
         "[Corporations] Structure Notifications",
         {
             "task": "structures.tasks.process_structure_notifications",
