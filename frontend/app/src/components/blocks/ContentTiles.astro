@@ -170,11 +170,15 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
             transform: scale(1);
             transition: var(--fast-transition);
 
-            &:hover,
-            &:focus,
             &:focus-visible {
                 outline: none;
                 transform: scale(1.1);
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    transform: scale(1.1);
+                }
             }
         }
 

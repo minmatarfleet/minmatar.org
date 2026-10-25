@@ -1,13 +1,13 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { CreatorAccount } from '@dtypes/api.minmatar.org'
 import { get_my_creator_accounts } from '@helpers/api.minmatar.org/creators'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token } = get_request_user(Astro)
 
 let accounts: CreatorAccount[] = []
 if (auth_token) {
@@ -30,8 +30,8 @@ interface Action {
     connected_text?:    string
 }
 
-const connected_text = (account: CreatorAccount, key: string) =>
-    t(key as any).replace('USERNAME', account.platform_username || account.platform_user_id)
+const connected_text = (account: CreatorAccount) =>
+    t(t_key('content.connect.', account.provider, '_connected')).replace('USERNAME', account.platform_username || account.platform_user_id)
 
 const actions: Action[] = [
     {
@@ -54,7 +54,7 @@ const actions: Action[] = [
         description: t('content.manage.connect_twitch.description'),
         href: translatePath('/alliance/content/connect/twitch'),
         connected_text: by_provider.twitch
-            ? connected_text(by_provider.twitch, 'content.connect.twitch_connected')
+            ? connected_text(by_provider.twitch)
             : undefined,
     },
     {
@@ -62,7 +62,7 @@ const actions: Action[] = [
         description: t('content.manage.connect_youtube.description'),
         href: translatePath('/alliance/content/connect/youtube'),
         connected_text: by_provider.youtube
-            ? connected_text(by_provider.youtube, 'content.connect.youtube_connected')
+            ? connected_text(by_provider.youtube)
             : undefined,
     },
     {
@@ -70,7 +70,7 @@ const actions: Action[] = [
         description: t('content.manage.connect_reddit.description'),
         modal: true,
         connected_text: by_provider.reddit
-            ? connected_text(by_provider.reddit, 'content.connect.reddit_connected')
+            ? connected_text(by_provider.reddit)
             : undefined,
     },
 ]

@@ -82,9 +82,10 @@ import VisibilityTag from '@components/blocks/VisibilityTag.astro';
         </Flexblock>
     </PictureCard>
 
-    {!is_editing &&
+    {/* The hitbox covers the picture, so a zoomable card leaves it out to keep the picture clickable. */}
+    {!is_editing && !zoomable &&
         <a
-            class="[  ]"
+            class="[ propaganda-post-card__hitbox ]"
             href={post_href}
             aria-label={post.title}
         ></a>

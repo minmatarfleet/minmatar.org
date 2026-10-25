@@ -1,21 +1,19 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
 
-import { is_thinkspeak_member } from '@helpers/thinkspeak'
+import { can_manage_content } from '@helpers/thinkspeak'
+import { get_gates } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
-const can_manage_content = Boolean(
-    user && (is_superuser || (auth_token && await is_thinkspeak_member(auth_token)))
-)
+const user_can_manage_content = await can_manage_content(gates, auth_token)
 
-const post_editor = can_manage_content ? (user as User).user_id : false
+const post_editor = user_can_manage_content ? (user as User).user_id : false
 
 import type { Alert, PostListUI } from '@dtypes/layout_components'
 import { fetch_posts_by_tags, fetch_posts } from '@helpers/fetching/posts'
@@ -164,7 +162,7 @@ const page_title = current_tag?.tag ?? t('content.page_title')
                 </Flexblock>
             </FlexInline>
             <PageActions>
-                {can_manage_content && <ManageContentDialog />}
+                {user_can_manage_content && <ManageContentDialog />}
             </PageActions>
         </FlexInline>
 
@@ -191,7 +189,7 @@ const page_title = current_tag?.tag ?? t('content.page_title')
                                             'pb-(--space-2xs)! text-nowrap!'
                                         ]}
                                     >
-                                        {t(tag.tag as any) ?? tag.tag}
+                                        {t(dynamic_key(tag.tag)) ?? tag.tag}
                                     </StylessButton>
                                 )*/}
                                 <StylessButton
@@ -277,7 +275,7 @@ const page_title = current_tag?.tag ?? t('content.page_title')
                         </Wrapper>
                         {//<NewsReel
                          //   posts={news_reel_posts}
-                         //   show_manage_content={can_manage_content}
+                         //   show_manage_content={user_can_manage_content}
                         ///>
                         }
                     </Flexblock>

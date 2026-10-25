@@ -517,8 +517,8 @@ hr {
         to bottom,
         transparent 0px,
         transparent 2px,
-        rgba(0, 0, 0, 0.22) 3px,
-        rgba(0, 0, 0, 0.22) 4px
+        color-mix(in srgb, var(--black) 22%, transparent) 3px,
+        color-mix(in srgb, var(--black) 22%, transparent) 4px
     );
 }
 
@@ -536,7 +536,7 @@ hr {
         transparent 0%,
         rgba(120, 190, 255, 0.04) 42%,
         rgba(180, 210, 255, 0.16) 49%,
-        rgba(255, 255, 255, 0.22) 50%,
+        color-mix(in srgb, var(--highlight) 22%, transparent) 50%,
         rgba(180, 210, 255, 0.08) 51%,
         transparent 58%,
         transparent 100%
@@ -559,10 +559,14 @@ hr {
     transform: scale(1);
     transition: var(--fast-transition);
 
-    &:hover,
-    &:focus,
     &:focus-visible {
         outline: none;
         transform: scale(1.1);
+    }
+
+    @media (hover: hover) {
+        &:hover {
+            transform: scale(1.1);
+        }
     }
 }

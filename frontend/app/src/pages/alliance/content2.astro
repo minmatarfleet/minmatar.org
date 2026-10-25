@@ -3,22 +3,21 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_request_user } from '@helpers/request_user'
 
-const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+const { auth_token, user } = get_request_user(Astro)
+
+import { can_manage_content } from '@helpers/thinkspeak'
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
 
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
-if (!is_superuser)
+// Preview page while the new content hub is built.
+if (!can(gates, 'site.debug_pages'))
     return HTTP_404_Not_Found()
 
-import { is_thinkspeak_member } from '@helpers/thinkspeak'
-
-const can_manage_content = Boolean(
-    user && (is_superuser || (auth_token && await is_thinkspeak_member(auth_token)))
-)
+const user_can_manage_content = await can_manage_content(gates, auth_token)
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -66,7 +65,7 @@ const page_title = t('content.page_title')
                 </Flexblock>
             </FlexInline>
             <PageActions>
-                {can_manage_content && <ManageContentDialog />}
+                {user_can_manage_content && <ManageContentDialog />}
             </PageActions>
         </FlexInline>
 
