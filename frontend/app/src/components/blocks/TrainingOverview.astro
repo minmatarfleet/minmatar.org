@@ -1,9 +1,10 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { TrainingOverview } from '@dtypes/api.minmatar.org'
 import { get_item_icon } from '@helpers/eve_image_server'
+import { TRAINING_MOVE_PARTIAL, training_url } from '@helpers/training'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
@@ -25,6 +26,9 @@ const {
 } = Astro.props
 
 delete attributes.class
+
+const move_picker = (account:number) =>
+    `show_modal({ partial: '${translatePath(training_url(TRAINING_MOVE_PARTIAL, { account }))}' })`
 
 const character_count = overview.accounts.reduce((total, account) => total + account.characters.length, 0) + overview.unplaced.length
 ---
@@ -70,7 +74,12 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
                     </div>
                     {overview.accounts.map(account =>
                         <div class="[ training-list__account ]">
-                            <h3>{t('training.account').replace('{number}', account.number.toString())}</h3>
+                            <div class="[ training-list__account-head ]">
+                                <h3>{t('training.account').replace('{number}', account.number.toString())}</h3>
+                                <button type="button" class="[ training-link ]" x-on:click={move_picker(account.number)}>
+                                    {t('training.move_a_character')}
+                                </button>
+                            </div>
                             {account.characters.map(character =>
                                 <TrainingCharacterRow character={character} />
                             )}
@@ -196,6 +205,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         }
     }
 
+    .training-list__account-head,
     .training-list__unplaced {
         display: flex;
         align-items: center;

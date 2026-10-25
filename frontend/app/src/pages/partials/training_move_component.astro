@@ -10,22 +10,30 @@ const { auth_token, user } = get_request_user(Astro)
 if (!user)
     return HTTP_403_Forbidden()
 
-import type { TrainingAccountOptions } from '@dtypes/api.minmatar.org'
-import { get_training_accounts } from '@helpers/api.minmatar.org/training'
+import type { TrainingAccountOptions, TrainingCharacterSummary } from '@dtypes/api.minmatar.org'
+import { get_training_accounts, get_training_overview } from '@helpers/api.minmatar.org/training'
 import { get_player_icon } from '@helpers/eve_image_server'
 import { TRAINING_MOVE_PARTIAL, TRAINING_PARTIAL, training_url } from '@helpers/training'
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0') || 0
+// From an account heading: pick which of its characters to move first.
+const account = parseInt(Astro.url.searchParams.get('account') ?? '0') || 0
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-if (!character_id)
+if (!character_id && !account)
     return HTTP_404_Not_Found()
 
 let options:TrainingAccountOptions | null = null
+let account_characters:TrainingCharacterSummary[] = []
 let fetch_error:Error | false = false
 
 try {
-    options = await get_training_accounts(auth_token as string, character_id)
+    if (character_id)
+        options = await get_training_accounts(auth_token as string, character_id)
+    else {
+        const overview = await get_training_overview(auth_token as string)
+        account_characters = overview.accounts.find(row => row.number === account)?.characters ?? []
+    }
 } catch (error) {
     fetch_error = error as Error
 }
@@ -66,18 +74,50 @@ const current = options?.current === null || options?.current === undefined ? 'n
 const conflicts = choices.filter(choice => choice.seen).map(choice => choice.value)
 
 import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
 {fetch_error ?
     <ErrorRefetch
         args={{
-            partial: translatePath(training_url(TRAINING_MOVE_PARTIAL, { character_id })),
+            partial: translatePath(training_url(TRAINING_MOVE_PARTIAL, character_id ? { character_id } : { account })),
             error: fetch_error,
             delay: delay,
             target: '#modal-description',
         }}
     />
+    : !character_id ?
+    <div class="[ training-move ]">
+        <div class="[ training-move__head ]">
+            <div>
+                <h2>{t('training.account').replace('{number}', account.toString())}</h2>
+                <p class="[ training-muted ]">{t('training.move_which')}</p>
+            </div>
+        </div>
+        {account_characters.length === 0 ?
+            <EmptyState title={t('training.empty')} />
+            :
+            <div class="[ training-move__choices ]">
+                {account_characters.map(character =>
+                    <button
+                        type="button"
+                        class="[ training-move__choice ]"
+                        hx-get={translatePath(training_url(TRAINING_MOVE_PARTIAL, { character_id: character.character_id }))}
+                        hx-target="#modal-description"
+                        hx-swap="innerHTML"
+                    >
+                        <img src={get_player_icon(character.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                        <span class="[ training-move__label ]"><strong>{character.name}</strong></span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
+                    </button>
+                )}
+            </div>
+        }
+        <div class="[ training-move__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('training.close')}</Button>
+        </div>
+    </div>
     : options &&
     <form
         class="[ training-move ]"
@@ -136,6 +176,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
+        max-height: 88dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
         padding: var(--space-s);
         color: var(--highlight);
     }
@@ -162,6 +205,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         font-size: var(--step--1);
     }
 
+    .training-move__choices,
     fieldset {
         display: flex;
         flex-direction: column;
@@ -201,6 +245,21 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         input {
             accent-color: var(--fleet-yellow);
+        }
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    button.training-move__choice {
+        background: none;
+        color: var(--highlight);
+        text-align: start;
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--fleet-yellow);
         }
     }
 
