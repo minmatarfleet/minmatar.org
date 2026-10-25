@@ -34,11 +34,14 @@ DECISION_NOTIFIERS = {
 }
 
 
-def _ensure_application_thread(application_id: int):
+def _ensure_application_thread(application_id: int, status: str):
     """The application with its forum thread, creating the thread if needed.
 
     The row lock stops two queued tasks for the same application from
     opening two threads. Returns None when the application no longer exists.
+    No thread is opened for a pending save of an application that has since
+    been decided without one (accepted on joining): it would ping the
+    applicant and recruiters about a closed application, and stay open.
     """
     with transaction.atomic():
         application = (
@@ -47,6 +50,8 @@ def _ensure_application_thread(application_id: int):
             .first()
         )
         if application is None or application.discord_thread_id is not None:
+            return application
+        if status == "pending" and application.status != "pending":
             return application
         thread_id = create_application_thread(application)
         # update(), not save(): saving would fire post_save and queue again.
@@ -62,7 +67,7 @@ def sync_application_thread_task(self, application_id: int, status: str):
     """Open the application's forum thread if it has none, then post the
     accepted/rejected notice for `status` (the status the save had)."""
     try:
-        application = _ensure_application_thread(application_id)
+        application = _ensure_application_thread(application_id, status)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.exception(
             "Could not create the Discord thread for application %s",
@@ -143,4 +148,12 @@ def accept_applications_of_members_task():
         pk__in=accepted, discord_thread_id__isnull=False
     ).values_list("pk", flat=True)
     for application_id in with_thread:
-        sync_application_thread_task.delay(application_id, "joined")
+        # The application is already accepted, so a lost notice is never
+        # retried; keep queueing the rest.
+        try:
+            sync_application_thread_task.delay(application_id, "joined")
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "Could not queue the joined notice for application %s",
+                application_id,
+            )

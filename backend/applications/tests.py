@@ -1,11 +1,14 @@
 import importlib
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.apps import apps
 from django.contrib.auth.models import Permission, User
 from django.db.models import signals
 from django.test import Client, override_settings
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from esi.models import Token
 
 from app.test import TestCase
 from applications.discord import notify_application_transferred
@@ -28,7 +31,12 @@ from applications.tasks import (
     sync_application_thread_task,
 )
 from discord.models import DiscordUser
-from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterCorporationHistory,
+    EveCorporation,
+    EvePlayer,
+)
 from eveonline.helpers.characters import set_primary_character, user_player
 
 restore_deleted_applications = importlib.import_module(
@@ -239,6 +247,26 @@ class EveCorporationApplicationTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         application = EveCorporationApplication.objects.get(id=application.id)
+        self.assertEqual(application.status, "accepted")
+
+    def test_deciding_an_already_decided_application_is_refused(self):
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=123,
+            description="Test application",
+            status="accepted",
+        )
+        permission = Permission.objects.get(
+            codename="change_evecorporationapplication"
+        )
+        self.user.user_permissions.add(permission)
+        for verb in ("accept", "reject"):
+            response = self.client.post(
+                f"{BASE_URL}corporations/123/applications/{application.id}/{verb}",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(response.status_code, 400)
+        application.refresh_from_db()
         self.assertEqual(application.status, "accepted")
 
     def test_accept_corporation_application_failure_unauthorized(self):
@@ -968,6 +996,20 @@ class AcceptApplicationsOfMembersTest(TestCase):
             **fields,
         )
 
+    def _join(self, character, corporation_id=123, days=0):
+        """Move the character into the corporation, joined `days` from now
+        (negative: in the past)."""
+        joined_at = timezone.now() + timedelta(days=days)
+        EveCharacterCorporationHistory.objects.create(
+            character=character,
+            record_id=character.corporation_history.count() + 1,
+            corporation_id=corporation_id,
+            start_date=joined_at,
+        )
+        character.corporation_id = corporation_id
+        character.save()
+        return joined_at
+
     @patch("applications.tasks.sync_application_thread_task")
     def test_joining_accepts_and_posts_the_joined_notice(self, sync_mock):
         application = self._apply(discord_thread_id=555)
@@ -975,20 +1017,19 @@ class AcceptApplicationsOfMembersTest(TestCase):
         application.refresh_from_db()
         self.assertEqual(application.status, "pending")
 
-        self.character.corporation_id = 123
-        self.character.save()
+        joined_at = self._join(self.character, days=1)
         accept_applications_of_members_task()
 
         application.refresh_from_db()
         self.assertEqual(application.status, "accepted")
         self.assertIsNone(application.processed_by_id)
+        self.assertEqual(application.updated_at, joined_at)
         sync_mock.delay.assert_called_once_with(application.id, "joined")
 
     @patch("applications.tasks.sync_application_thread_task")
     def test_no_thread_means_no_discord_post(self, sync_mock):
-        self.character.corporation_id = 123
-        self.character.save()
         application = self._apply()
+        self._join(self.character, days=1)
 
         accept_applications_of_members_task()
 
@@ -996,35 +1037,91 @@ class AcceptApplicationsOfMembersTest(TestCase):
         self.assertEqual(application.status, "accepted")
         sync_mock.delay.assert_not_called()
 
-    def test_an_alt_in_the_corporation_counts(self):
-        EveCharacter.objects.create(
-            character_id=5678,
-            character_name="Mr Alt",
-            user=self.user,
+    @patch("applications.tasks.sync_application_thread_task")
+    def test_queue_failure_does_not_stop_the_other_notices(self, sync_mock):
+        first = self._apply(discord_thread_id=555)
+        other_user = User.objects.create(username="other")
+        second = EveCorporationApplication.objects.create(
+            user=other_user,
             corporation_id=123,
+            description="x",
+            discord_thread_id=556,
+        )
+        self._join(self.character, days=1)
+        self._join(
+            EveCharacter.objects.create(
+                character_id=999, character_name="Other", user=other_user
+            ),
+            days=1,
+        )
+        sync_mock.delay.side_effect = [Exception("broker down"), None]
+
+        accept_applications_of_members_task()
+
+        self.assertEqual(sync_mock.delay.call_count, 2)
+        for application in (first, second):
+            application.refresh_from_db()
+            self.assertEqual(application.status, "accepted")
+
+    def test_an_alt_that_joins_counts(self):
+        alt = EveCharacter.objects.create(
+            character_id=5678, character_name="Mr Alt", user=self.user
         )
         application = self._apply()
+        self._join(alt, days=1)
 
         self.assertEqual(accept_applications_of_members(), [application.id])
 
-    def test_decided_and_other_corporation_applications_stay(self):
-        self.character.corporation_id = 123
+    def test_a_token_linked_character_counts(self):
+        legacy = EveCharacter.objects.create(
+            character_id=5678,
+            character_name="Mr Legacy",
+            token=Token.objects.create(character_id=5678, user=self.user),
+        )
+        application = self._apply()
+        self._join(legacy, days=1)
+
+        self.assertEqual(accept_applications_of_members(), [application.id])
+
+    def test_a_character_already_in_the_corporation_does_not_count(self):
+        alt = EveCharacter.objects.create(
+            character_id=5678, character_name="Mr Alt", user=self.user
+        )
+        self._join(alt, days=-365)
+        application = self._apply()
+
+        self.assertEqual(accept_applications_of_members(), [])
+        application.refresh_from_db()
+        self.assertEqual(application.status, "pending")
+
+    def test_a_biomassed_character_does_not_count(self):
+        application = self._apply()
+        self._join(self.character, days=1)
+        self.character.esi_deleted = True
         self.character.save()
+
+        self.assertEqual(accept_applications_of_members(), [])
+        application.refresh_from_db()
+        self.assertEqual(application.status, "pending")
+
+    def test_a_character_that_joined_and_left_does_not_count(self):
+        application = self._apply()
+        self._join(self.character, days=1)
+        self._join(self.character, corporation_id=1, days=2)
+
+        self.assertEqual(accept_applications_of_members(), [])
+        application.refresh_from_db()
+        self.assertEqual(application.status, "pending")
+
+    def test_decided_and_other_corporation_applications_stay(self):
         rejected = self._apply(status="rejected")
         elsewhere = self._apply(corporation_id=456)
-        other_user = User.objects.create(username="other")
-        theirs = EveCorporationApplication.objects.create(
-            user=other_user, corporation_id=789, description="x"
-        )
-        EveCharacter.objects.create(
-            character_id=999, character_name="Other", corporation_id=789
-        )
+        self._join(self.character, days=1)
 
         self.assertEqual(accept_applications_of_members(), [])
         for application, status in (
             (rejected, "rejected"),
             (elsewhere, "pending"),
-            (theirs, "pending"),
         ):
             application.refresh_from_db()
             self.assertEqual(application.status, status)
@@ -1037,3 +1134,11 @@ class AcceptApplicationsOfMembersTest(TestCase):
         self.assertIn("joined the corporation", message)
         self.assertNotIn("Apply in-game", message)
         discord_mock.close_thread.assert_called_once_with(channel_id=555)
+
+    def test_late_thread_is_not_opened_for_a_decided_application(self):
+        application = self._apply(status="accepted")
+        with patch("applications.discord.discord") as discord_mock:
+            sync_application_thread_task(application.id, "pending")
+        discord_mock.create_forum_thread.assert_not_called()
+        application.refresh_from_db()
+        self.assertIsNone(application.discord_thread_id)
