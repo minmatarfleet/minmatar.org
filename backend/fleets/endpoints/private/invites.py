@@ -1,4 +1,5 @@
-"""The Invites tab: waves, answers, re-ping and the wave picker."""
+"""The Invites tab on any fleet: invited pilots, answers, re-ping, the
+pickers and sending invites. See docs/fleets/private-fleets.md."""
 
 from __future__ import annotations
 
@@ -32,7 +33,11 @@ from fleets.helpers.private_fleet_discord import thread_url
 from fleets.helpers.private_fleets import (
     REPING_COOLDOWN,
     PrivateFleetError,
+    capped_user_ids,
     invite_totals,
+    is_capped_fleet,
+    onboarding_counts,
+    opted_out_user_ids,
     reping_no_answers,
     resolve_invite_names,
     send_wave,
@@ -52,17 +57,20 @@ _ERRORS = {400: ErrorResponse, 403: None, 404: None, 409: ErrorResponse}
 
 
 def can_manage_invites(user, fleet: EveFleet) -> bool:
-    """The fleet's creator, Strategic FCs and superusers."""
+    """The fleet's FC (its creator) and superusers; on a private fleet,
+    every Strategic FC too."""
     if not getattr(user, "is_authenticated", False):
         return False
-    return fleet.created_by_id == user.pk or sees_every_private_fleet(user)
+    if fleet.created_by_id == user.pk or user.is_superuser:
+        return True
+    return fleet.invite_only and sees_every_private_fleet(user)
 
 
 def _private_fleet(request, fleet_id: int):
     """The fleet if the caller may manage its invites, else an error."""
     fleet = (
         EveFleet.objects.select_related("audience", "location", "created_by")
-        .filter(id=fleet_id, invite_only=True)
+        .filter(id=fleet_id)
         .first()
     )
     if fleet is None:
@@ -130,7 +138,7 @@ def get_fleet_invites(request, fleet_id: int):
     fleet = _private_fleet(request, fleet_id)
     if isinstance(fleet, tuple):
         return fleet
-    leak_trace = sees_every_private_fleet(request.user)
+    leak_trace = fleet.invite_only and sees_every_private_fleet(request.user)
     waves = list(
         EveFleetInviteWave.objects.filter(eve_fleet=fleet).select_related(
             "sent_by"
@@ -169,6 +177,8 @@ def get_fleet_invites(request, fleet_id: int):
                     corps.get(main.corporation_id) if main else None
                 ),
                 wave=invite.wave.number,
+                source_kind=invite.source_kind,
+                source_name=invite.source_name,
                 answer=invite.answer,
                 ships=ships.get(invite.user_id, []),
                 answered_at=invite.answered_at,
@@ -199,6 +209,11 @@ def get_fleet_invites(request, fleet_id: int):
         )
     totals = invite_totals(fleet)
     reminded = [i.reminded_at for i in invites if i.reminded_at]
+    new_pilots = (
+        onboarding_counts(fleet)
+        if not fleet.invite_only and fleet.status == "pending"
+        else {}
+    )
     return FleetInvitesResponse(
         fleet_id=fleet.id,
         totals=InviteTotals(
@@ -217,6 +232,9 @@ def get_fleet_invites(request, fleet_id: int):
         ),
         can_see_leak_trace=leak_trace,
         thread_url=thread_url(fleet),
+        invite_only=fleet.invite_only,
+        onboarding_first_week=new_pilots.get("first_week", 0),
+        onboarding_more_fleets=new_pilots.get("more_fleets", 0),
     )
 
 
@@ -228,7 +246,14 @@ def _preview_response(preview: dict) -> WavePreviewResponse:
         will_dm=preview["will_dm"],
         no_discord=len(preview["no_discord_user_ids"]),
         helps=preview["helps"],
+        opted_out=preview["opted_out"],
+        capped=preview["capped"],
     )
+
+
+def _onboarding(fleet, payload: WaveRequest) -> list[str]:
+    """New pilot buckets are for standard fleets only."""
+    return [] if fleet.invite_only else list(payload.onboarding)
 
 
 def post_wave_preview(request, fleet_id: int, payload: WaveRequest):
@@ -241,6 +266,7 @@ def post_wave_preview(request, fleet_id: int, payload: WaveRequest):
             tribe_group_ids=payload.tribe_group_ids,
             corporation_ids=payload.corporation_ids,
             user_ids=payload.user_ids,
+            onboarding=_onboarding(fleet, payload),
         )
     )
 
@@ -256,6 +282,7 @@ def post_wave(request, fleet_id: int, payload: WaveRequest):
             tribe_group_ids=payload.tribe_group_ids,
             corporation_ids=payload.corporation_ids,
             user_ids=payload.user_ids,
+            onboarding=_onboarding(fleet, payload),
             note=payload.note,
         )
     except PrivateFleetError as exc:
@@ -279,18 +306,57 @@ def post_reping(request, fleet_id: int):
     return 202, RepingResponse(pilots=pilots)
 
 
-def get_invite_candidates(request, fleet_id: int, q: str = ""):
-    """Tribe groups, corporations and pilots matching ``q``, for the wave
-    picker."""
-    # pylint: disable=import-outside-toplevel
-    from tribes.models import TribeGroup
+def _pilot_blocks(fleet, user_ids) -> dict[int, str]:
+    """Pilots who can't be invited now, and why."""
+    user_ids = set(user_ids)
+    invited = set(
+        EveFleetInvite.objects.filter(
+            eve_fleet=fleet, user_id__in=list(user_ids)
+        ).values_list("user_id", flat=True)
+    )
+    if fleet.created_by_id in user_ids:
+        invited.add(fleet.created_by_id)
+    out = {user_id: "invited" for user_id in invited}
+    if is_capped_fleet(fleet):
+        rest = user_ids - invited
+        opted_out = opted_out_user_ids(rest)
+        out.update({user_id: "opted_out" for user_id in opted_out})
+        out.update(
+            {
+                user_id: "capped"
+                for user_id in capped_user_ids(rest - opted_out)
+            }
+        )
+    return out
 
+
+def get_invite_candidates(
+    request, fleet_id: int, q: str = "", pilots_only: bool = False
+):
+    """Tribe groups, corporations and pilots matching ``q``, for the
+    pickers. ``pilots_only`` is the Invites tab's one-pilot search."""
     fleet = _private_fleet(request, fleet_id)
     if isinstance(fleet, tuple):
         return fleet
     q = (q or "").strip()
     if len(q) < 2:
         return []
+    out: List[InviteCandidate] = []
+    if not pilots_only:
+        out += _group_candidates(fleet, q)
+    out += _pilot_candidates(fleet, q)
+    return out
+
+
+def _group_candidates(fleet, q: str) -> List[InviteCandidate]:
+    # pylint: disable=import-outside-toplevel
+    from tribes.models import TribeGroup
+
+    waves = EveFleetInviteWave.objects.filter(eve_fleet=fleet).values_list(
+        "tribe_group_ids", "corporation_ids"
+    )
+    sent_groups = {i for groups, _ in waves for i in groups or []}
+    sent_corps = {i for _, corps in waves for i in corps or []}
     out: List[InviteCandidate] = []
     for group in (
         TribeGroup.objects.filter(is_active=True)
@@ -303,6 +369,7 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
                 id=group.id,
                 name=f"{group.tribe.name} · {group.name}",
                 detail="Tribe group",
+                blocked="invited" if group.id in sent_groups else None,
             )
         )
     for corp in EveCorporation.objects.filter(
@@ -314,8 +381,16 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
                 id=corp.corporation_id,
                 name=corp.name,
                 detail=f"[{corp.ticker}]" if corp.ticker else "Corporation",
+                blocked=(
+                    "invited" if corp.corporation_id in sent_corps else None
+                ),
             )
         )
+    return out
+
+
+def _pilot_candidates(fleet, q: str) -> List[InviteCandidate]:
+    out: List[InviteCandidate] = []
     seen = set()
     characters = list(
         EveCharacter.objects.filter(
@@ -329,6 +404,7 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
             corporation_id__in={c.corporation_id for c in characters}
         ).values_list("corporation_id", "name")
     )
+    blocks = _pilot_blocks(fleet, {c.user_id for c in characters})
     for character in characters:
         if character.user_id in seen:
             continue
@@ -339,6 +415,7 @@ def get_invite_candidates(request, fleet_id: int, q: str = ""):
                 id=character.user_id,
                 name=character.character_name,
                 detail=corp_names.get(character.corporation_id, ""),
+                blocked=blocks.get(character.user_id),
             )
         )
     return out
@@ -368,9 +445,10 @@ ROUTES = (
             "auth": AuthBearer(),
             "response": {200: FleetInvitesResponse, 404: None},
             "description": (
-                "A private fleet's invite waves and answers, for its FC and "
-                "Strategic FCs. first_viewed_at (the leak trace) is null "
-                "unless the caller is a Strategic FC."
+                "A fleet's invited pilots and answers, for its FC (and "
+                "Strategic FCs on a private fleet). first_viewed_at (the "
+                "leak trace) is null unless the fleet is private and the "
+                "caller is a Strategic FC."
             ),
         },
         get_fleet_invites,
@@ -381,7 +459,7 @@ ROUTES = (
         {
             "auth": AuthBearer(),
             "response": {200: WavePreviewResponse, **_ERRORS},
-            "description": "Who a wave with these picks would reach.",
+            "description": "Who a send with these picks would reach.",
         },
         post_wave_preview,
     ),
@@ -393,7 +471,9 @@ ROUTES = (
             "response": {201: WaveSentResponse, **_ERRORS},
             "description": (
                 "Invite the new players in these picks. The DMs go out from "
-                "a task at about one a second; one wave sends at a time."
+                "a task at about one a second; one bulk send at a time. "
+                "On a standard fleet, pilots who turned invites off or had "
+                "2 Non-Strategic or Training invites this week are skipped."
             ),
         },
         post_wave,
@@ -421,7 +501,10 @@ ROUTES = (
         {
             "auth": AuthBearer(),
             "response": {200: List[InviteCandidate], 404: None},
-            "description": "Tribe groups, corporations and pilots to invite.",
+            "description": (
+                "Tribe groups, corporations and pilots to invite, with why "
+                "each can't be invited now (blocked)."
+            ),
         },
         get_invite_candidates,
     ),
@@ -437,7 +520,7 @@ ROUTES = (
             },
             "description": (
                 "Match a paste of primary character names or Discord "
-                "usernames to pilots for the New wave form."
+                "usernames to pilots for the Invite pilots dialog."
             ),
         },
         post_resolve_names,

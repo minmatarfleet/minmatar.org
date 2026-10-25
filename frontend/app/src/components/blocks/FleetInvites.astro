@@ -3,15 +3,17 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath, lang } = i18n(Astro.url)
 
 import type { FleetInvites, FleetInvitePilot } from '@helpers/api.minmatar.org/fleets'
+import { t_key } from '@helpers/i18n'
 import { query_string } from '@helpers/string'
-import { eve_clock, eve_day_short } from '@helpers/date'
+import { eve_clock } from '@helpers/date'
 
 /**
- * A private fleet's Invites tab, for its FC and Strategic FCs: progress
- * against the ship targets, then every invited pilot. The status tiles
- * split the pilots once (in, sitting out, no answer, not delivered), filter
- * the list and carry the follow-up actions. The Opened column (leak trace)
- * shows only to Strategic FCs.
+ * A fleet's Invites tab, for its FC (and Strategic FCs on a private
+ * fleet): progress against the ship targets, then every invited pilot. The
+ * header invites one pilot from a search or opens Invite pilots for a bulk
+ * send. The status tiles split the pilots once (in, sitting out, no answer,
+ * not delivered), filter the list and carry the follow-up actions. The
+ * Opened column (leak trace) shows only on a private fleet, to Strategic FCs.
  * Rendered and refreshed by partials/fleet_invites_component.
  * See docs/fleets/private-fleets.md.
  */
@@ -30,9 +32,7 @@ const {
 } = Astro.props
 
 const PARTIAL_URL = `${translatePath('/partials/fleet_invites_component')}?${query_string({ fleet_id })}`
-
-const when = (value:string | null | undefined) =>
-    value ? `${eve_day_short(lang, value, { weekday: true })} ${eve_clock(value)}` : ''
+const SEARCH_URL = `${translatePath('/partials/fleet_invite_candidates_component')}?${query_string({ fleet_id, mode: 'single' })}`
 
 // "Sat 01:28": table cells stay one short line.
 const when_short = (value:string | null | undefined) =>
@@ -70,12 +70,18 @@ const invites = [...data.invites].sort((a, b) => {
 const pending_delivered = data.invites.filter(invite => invite.answer === 'pending' && invite.dm_delivered).length
 const reping_at = data.reping_available_at ? new Date(data.reping_available_at) : null
 const reping_waiting = Boolean(reping_at && reping_at > new Date())
-const sending_wave = data.waves.find(wave => !wave.finished_at)
-const next_wave = (data.waves.at(-1)?.number ?? 0) + 1
-const waves = [...data.waves].reverse()
-const pilots_count = (data.waves.length === 1 ? t('fleets.private.pilots_count_one_wave') : t('fleets.private.pilots_count'))
-    .replace('{count}', data.totals.invited.toString())
-    .replace('{waves}', data.waves.length.toString())
+// Bulk sends still go out a DM a second; show the one in progress.
+const sending = data.waves.filter(wave => !wave.finished_at && wave.invited > 1)
+const sending_sent = sending.reduce((sum, wave) => sum + wave.sent, 0)
+const sending_total = sending.reduce((sum, wave) => sum + wave.invited, 0)
+
+// "Invited as": a new pilot list, by name, or the group or corp picked.
+const invited_as = (invite:FleetInvitePilot) =>
+    ['first_week', 'more_fleets', 'pilot'].includes(invite.source_kind) ?
+        t(t_key('fleets.invites.source_', invite.source_kind)) :
+        invite.source_name
+const show_invited_as = data.invites.some(invite => invited_as(invite))
+const new_pilots = data.onboarding_first_week
 
 const fleet_link = new URL(translatePath(`/fleets/upcoming/${fleet_id}`), Astro.url).toString()
 
@@ -86,28 +92,24 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import FleetWaveDialog from '@components/blocks/FleetWaveDialog.astro'
+import FleetInviteDialog from '@components/blocks/FleetInviteDialog.astro'
 import Input from '@components/blocks/Input.astro'
-import Tag from '@components/blocks/Tag.astro'
 import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 ---
 
 <div
     id="fleet-invites"
     class="[ fleet-invites ]"
-    hx-get={sending_wave ? PARTIAL_URL : undefined}
-    hx-trigger={sending_wave ? 'every 5s' : undefined}
+    hx-get={sending.length > 0 ? PARTIAL_URL : undefined}
+    hx-trigger={sending.length > 0 ? 'every 5s' : undefined}
     hx-swap="outerHTML"
     x-data={`{
         status: '',
-        wave: '',
         q: '',
         copied: false,
         toggle(status) { this.status = this.status === status ? '' : status },
         shown(el) {
-            return (!this.status || el.dataset.status === this.status)
-                && (!this.wave || el.dataset.wave === this.wave)
-                && (!this.q.trim() || el.dataset.name.includes(this.q.trim().toLowerCase()))
+            return !this.status || el.dataset.status === this.status
         },
         get none() {
             return [...this.$root.querySelectorAll('[data-invite]')].every(el => !this.shown(el))
@@ -141,34 +143,65 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
             <Flexblock gap="var(--space-m)">
                 <FlexInline gap="var(--space-xs)" class="[ fleet-invites__head ]">
                     <h2 id="fleet-invites-pilots">{t('fleets.private.pilots_title')}</h2>
-                    {data.waves.length > 0 && <small class="[ text-muted ]">{pilots_count}</small>}
-                    <div class="[ fleet-invites__push ]">
-                        {sending_wave ?
+                    {data.totals.invited > 0 && <small class="[ text-muted ]">{t('fleets.invites.invited_count').replace('{count}', data.totals.invited.toString())}</small>}
+                    <FlexInline gap="var(--space-xs)" class="[ fleet-invites__push fleet-invites__actions ]">
+                        <div class="[ fleet-invites__find ]" x-data="{ open: false }" x-on:click.outside="open = false">
+                            <label for={`fleet-invites-one-${fleet_id}`} class="[ visually-hidden ]">{t('fleets.invites.invite_a_pilot')}</label>
+                            <Input
+                                id={`fleet-invites-one-${fleet_id}`}
+                                type="search"
+                                name="q"
+                                autocomplete="off"
+                                placeholder={t('fleets.invites.invite_a_pilot')}
+                                hx-get={SEARCH_URL}
+                                hx-trigger="input changed delay:300ms, search"
+                                hx-target="next .fleet-invites__results"
+                                hx-swap="innerHTML"
+                                x-model="q"
+                                x-on:focus="open = true"
+                                x-on:input="open = true"
+                                x-on:keydown.escape="open = false"
+                                x-on:keydown.enter.prevent=""
+                                width="18rem"
+                            />
+                            <div class="[ fleet-invites__results ]" aria-live="polite" x-show="open && q.trim().length >= 2" x-cloak></div>
+                        </div>
+                        {sending.length > 0 ?
                             <div class="[ fleet-invites__sending ]" role="status">
                                 <span>
-                                    <b>{t('fleets.private.sending_wave').replace('{number}', sending_wave.number.toString())}</b>
-                                    <span>{t('fleets.private.sent_of').replace('{sent}', sending_wave.sent.toString()).replace('{total}', sending_wave.invited.toString())}</span>
+                                    <b>{t('fleets.invites.sending')}</b>
+                                    <span>{t('fleets.private.sent_of').replace('{sent}', sending_sent.toString()).replace('{total}', sending_total.toString())}</span>
                                 </span>
                                 <span
                                     class="[ fleet-invites__bar ]"
                                     role="progressbar"
-                                    aria-valuenow={sending_wave.sent}
+                                    aria-valuenow={sending_sent}
                                     aria-valuemin="0"
-                                    aria-valuemax={sending_wave.invited}
+                                    aria-valuemax={sending_total}
                                 >
-                                    <span style={`width: ${Math.round(100 * sending_wave.sent / Math.max(sending_wave.invited, 1))}%`}></span>
+                                    <span style={`width: ${Math.round(100 * sending_sent / Math.max(sending_total, 1))}%`}></span>
                                 </span>
                             </div> :
-                            <FleetWaveDialog fleet_id={fleet_id} next_wave={next_wave} />
+                            <FleetInviteDialog
+                                fleet_id={fleet_id}
+                                invite_only={data.invite_only}
+                                first_week={data.onboarding_first_week}
+                                more_fleets={data.onboarding_more_fleets}
+                            />
                         }
-                    </div>
+                    </FlexInline>
                 </FlexInline>
 
                 {notice && <small role="status">{notice}</small>}
                 {error && <small class="[ fleet-invites__error ]" role="alert">{error}</small>}
 
                 {data.invites.length === 0 ?
-                    <EmptyState title={t('fleets.private.no_waves')} hint={t('fleets.private.no_waves_hint')} /> :
+                    data.invite_only ?
+                        <EmptyState title={t('fleets.private.no_waves')} hint={t('fleets.private.no_waves_hint')} /> :
+                        <EmptyState
+                            title={t('fleets.invites.empty_title')}
+                            hint={new_pilots > 0 ? t('fleets.invites.empty_new_pilots').replace('{count}', new_pilots.toString()) : undefined}
+                        /> :
                     <Fragment>
                         <span
                             class="[ fleet-invites__split ]"
@@ -229,47 +262,12 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                             </div>
                         </div>
 
-                        <FlexInline gap="var(--space-xs)" class="[ fleet-invites__toolbar ]">
-                            <label class="[ fleet-invites__wave-select ]">
-                                <span>{t('fleets.private.filter_wave')}</span>
-                                <select x-model="wave">
-                                    <option value="">{t('fleets.private.filter_all')}</option>
-                                    {waves.map(wave =>
-                                        <option value={wave.number.toString()}>{t('fleets.private.wave_title').replace('{number}', wave.number.toString())}</option>
-                                    )}
-                                </select>
-                            </label>
-                            <label for={`fleet-invites-find-${fleet_id}`} class="[ visually-hidden ]">{t('fleets.private.find_pilot')}</label>
-                            <Input
-                                id={`fleet-invites-find-${fleet_id}`}
-                                type="search"
-                                autocomplete="off"
-                                placeholder={t('fleets.private.find_pilot')}
-                                x-model="q"
-                                width="18rem"
-                            />
-                        </FlexInline>
-
-                        {waves.map(wave =>
-                            <div class="[ fleet-invites__wave ]" x-show={`wave === '${wave.number}'`} x-cloak>
-                                <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
-                                    {wave.labels.map(label => <Tag text={label} variant="outline" />)}
-                                    <small class="[ text-muted ]">
-                                        {t('fleets.private.wave_sent')
-                                            .replace('{time}', `${when(wave.created_at)} EVE`)
-                                            .replace('{by}', wave.sent_by ?? '')
-                                            .replace('{count}', wave.invited.toString())}
-                                    </small>
-                                </FlexInline>
-                                {wave.note && <p class="[ fleet-invites__note ]">{wave.note}</p>}
-                            </div>
-                        )}
-
                         <XFadeScroll>
                             <table class="[ fleet-invites__table ]">
                                 <thead>
                                     <tr>
                                         <th scope="col">{t('fleets.private.col_pilot')}</th>
+                                        {show_invited_as && <th scope="col">{t('fleets.invites.col_invited_as')}</th>}
                                         <th scope="col">{t('fleets.private.col_status')}</th>
                                         <th scope="col">{t('fleets.private.col_bringing')}</th>
                                         <th scope="col" class="[ is-number ]">{t('fleets.private.col_answered')}</th>
@@ -286,15 +284,17 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                                         <tr
                                             data-invite
                                             data-status={status_of(invite)}
-                                            data-wave={invite.wave.toString()}
-                                            data-name={[invite.character_name, invite.corporation_name ?? ''].join(' ').toLowerCase()}
                                             x-show="shown($el)"
                                         >
                                             <th scope="row" title={invite.corporation_name ?? undefined}>{invite.character_name}</th>
+                                            {show_invited_as && <td class="[ fleet-invites__source ]">{invited_as(invite)}</td>}
                                             <td class={`[ fleet-invites__status is-${status_of(invite)} ]`}>
                                                 <i class={`[ fleet-invites__dot is-${status_of(invite)} ]`}></i>{label_of[status_of(invite)]}
                                             </td>
-                                            <td class="[ fleet-invites__ships ]">{invite.ships.join(', ')}</td>
+                                            {invite.answer === 'in' && invite.ships.length === 0 ?
+                                                <td class="[ fleet-invites__ships is-no-ship ]">{t('fleets.invites.no_ship_yet')}</td> :
+                                                <td class="[ fleet-invites__ships ]">{invite.ships.join(', ')}</td>
+                                            }
                                             <td class:list={['[ is-number fleet-invites__answered ]', { 'is-empty': !invite.answered_at }]}>{when_short(invite.answered_at) || '—'}</td>
                                             {data.can_see_leak_trace &&
                                                 <td class:list={['[ is-number fleet-invites__opened ]', { 'is-empty': !invite.first_viewed_at }]}>{when_short(invite.first_viewed_at) || '—'}</td>
@@ -342,6 +342,29 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 
     .fleet-invites__push {
         margin-left: auto;
+    }
+
+    .fleet-invites__actions {
+        align-items: center;
+    }
+
+    .fleet-invites__find {
+        position: relative;
+    }
+
+    .fleet-invites__results {
+        position: absolute;
+        z-index: 1;
+        top: 100%;
+        right: 0;
+        width: max(100%, 24rem);
+        max-height: 20rem;
+        overflow-y: auto;
+        background-color: var(--background);
+    }
+
+    .fleet-invites__source {
+        color: var(--foreground);
     }
 
     .fleet-invites__error {
@@ -493,40 +516,6 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         }
     }
 
-    .fleet-invites__toolbar {
-        align-items: center;
-    }
-
-    .fleet-invites__wave-select {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        padding: 0 var(--space-xs);
-        border: 1px solid var(--border-color);
-        font-size: var(--step--1);
-
-        select {
-            min-height: var(--space-xl);
-            background: transparent;
-            border: 0;
-            color: var(--highlight);
-            font: inherit;
-            font-weight: 600;
-        }
-    }
-
-    .fleet-invites__wave {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-    }
-
-    .fleet-invites__note {
-        margin-inline: 0;
-        margin-bottom: 0;
-        font-style: italic;
-    }
-
     .fleet-invites__table {
         width: 100%;
         border-collapse: collapse;
@@ -583,6 +572,12 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         width: 100%;
         color: var(--highlight);
         white-space: normal;
+
+        &.is-no-ship {
+            /* The attention orange, as on SectionTabs. */
+            color: var(--security-status-point-4);
+            font-weight: 600;
+        }
     }
 
     @media (max-width: 48rem) {
@@ -610,6 +605,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                 font-size: var(--step--1);
             }
 
+            .fleet-invites__source,
             .fleet-invites__answered,
             .fleet-invites__opened {
                 display: none;

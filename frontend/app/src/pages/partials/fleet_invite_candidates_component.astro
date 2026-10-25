@@ -1,7 +1,7 @@
 ---
 // no-error-refetch: search-as-you-type; a failed search shows no matches and the next keystroke retries.
 import { i18n, t_key } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -13,16 +13,22 @@ if (!user)
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
 const q = (Astro.url.searchParams.get('q') ?? '').trim()
+// "single": the Invites tab's one-pilot search, whose rows invite right away.
+// Otherwise the dialog's Select names, whose rows add a pick.
+const single = Astro.url.searchParams.get('mode') === 'single'
 
 if (!fleet_id)
     return HTTP_404_Not_Found()
 
 import { get_fleet_invite_candidates, type FleetInviteCandidate } from '@helpers/api.minmatar.org/fleets'
+import { query_string } from '@helpers/string'
+
+const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?${query_string({ fleet_id })}&action=invite_one`
 
 let candidates:FleetInviteCandidate[] = []
 if (q.length >= 2) {
     try {
-        candidates = await get_fleet_invite_candidates(auth_token as string, fleet_id, q)
+        candidates = await get_fleet_invite_candidates(auth_token as string, fleet_id, q, single)
     } catch (e) {
         console.log(`Invite candidates: ${e.message}`)
     }
@@ -32,19 +38,45 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 {q.length >= 2 && (candidates.length === 0 ?
-    <EmptyState title={t('fleets.private.no_results')} /> :
+    <EmptyState title={single ? t('fleets.invites.no_pilots') : t('fleets.private.no_results')} /> :
     <ul class="[ invite-candidates ]">
-        {candidates.map(candidate =>
-            <li>
-                <button
-                    type="button"
-                    x-on:click={`$dispatch('pick-candidate', ${JSON.stringify({ kind: candidate.kind, id: candidate.id, name: candidate.name })})`}
-                >
-                    <b>{candidate.name}</b>
-                    <small>{[t(t_key('fleets.private.kind_', candidate.kind)), candidate.detail].filter(Boolean).join(' · ')}</small>
-                </button>
+        {candidates.map(candidate => {
+            const kind = t(t_key('fleets.private.kind_', candidate.kind))
+            const detail = single || candidate.detail === kind ?
+                candidate.detail :
+                [kind, candidate.detail].filter(Boolean).join(' · ')
+            const blocked = candidate.blocked ? t(t_key('fleets.invites.blocked_', candidate.blocked)) : ''
+            return <li class:list={[{ 'is-blocked': blocked }]}>
+                {single ?
+                    <div class="[ invite-candidates__row ]">
+                        <span>
+                            <b>{candidate.name}</b>
+                            <small>{detail}</small>
+                        </span>
+                        {blocked ?
+                            <small>{blocked}</small> :
+                            <button
+                                type="button"
+                                class="[ invite-candidates__invite ]"
+                                hx-post={INVITES_URL}
+                                hx-vals={JSON.stringify({ user_id: candidate.id, name: candidate.name })}
+                                hx-target="#fleet-invites"
+                                hx-swap="outerHTML"
+                                hx-disabled-elt="this"
+                            >{t('fleets.invites.invite')}</button>
+                        }
+                    </div> :
+                    <button
+                        type="button"
+                        disabled={Boolean(blocked)}
+                        x-on:click={blocked ? undefined : `$dispatch('pick-candidate', ${JSON.stringify({ kind: candidate.kind, id: candidate.id, name: candidate.name })})`}
+                    >
+                        <b>{candidate.name}</b>
+                        <small>{blocked || detail}</small>
+                    </button>
+                }
             </li>
-        )}
+        })}
     </ul>
 )}
 
@@ -78,6 +110,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
             }
         }
 
+        button:disabled {
+            cursor: default;
+
+            &:hover {
+                background-color: transparent;
+            }
+        }
+
         b {
             color: var(--highlight);
         }
@@ -85,5 +125,35 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         small {
             color: var(--text-muted);
         }
+
+        .is-blocked b {
+            color: var(--text-muted);
+        }
+    }
+
+    .invite-candidates__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-xs);
+
+        > span {
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    .invite-candidates .invite-candidates__invite {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        min-height: var(--space-l);
+        padding: 0 var(--space-xs);
+        border: 1px solid var(--border-color);
+        color: var(--highlight);
+        font-weight: 600;
     }
 </style>

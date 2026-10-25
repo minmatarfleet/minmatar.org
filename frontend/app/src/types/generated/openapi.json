@@ -10401,6 +10401,17 @@
             ],
             "title": "My Invite Answer"
           },
+          "my_invite_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "My Invite Source"
+          },
           "my_invite_wave": {
             "anyOf": [
               {
@@ -15677,12 +15688,27 @@
             "title": "Fleet Id",
             "type": "integer"
           },
+          "invite_only": {
+            "default": false,
+            "title": "Invite Only",
+            "type": "boolean"
+          },
           "invites": {
             "items": {
               "$ref": "#/components/schemas/InvitePilot"
             },
             "title": "Invites",
             "type": "array"
+          },
+          "onboarding_first_week": {
+            "default": 0,
+            "title": "Onboarding First Week",
+            "type": "integer"
+          },
+          "onboarding_more_fleets": {
+            "default": 0,
+            "title": "Onboarding More Fleets",
+            "type": "integer"
           },
           "reping_available_at": {
             "anyOf": [
@@ -20248,6 +20274,17 @@
       },
       "InviteCandidate": {
         "properties": {
+          "blocked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -20363,6 +20400,16 @@
             },
             "title": "Ships",
             "type": "array"
+          },
+          "source_kind": {
+            "default": "",
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_name": {
+            "default": "",
+            "title": "Source Name",
+            "type": "string"
           },
           "user_id": {
             "title": "User Id",
@@ -31002,6 +31049,19 @@
         "title": "StatusWindows",
         "type": "object"
       },
+      "StopInvitesResponse": {
+        "properties": {
+          "stopped": {
+            "title": "Stopped",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "stopped"
+        ],
+        "title": "StopInvitesResponse",
+        "type": "object"
+      },
       "StructureAttachRequest": {
         "properties": {
           "alliance_id": {
@@ -34665,6 +34725,11 @@
             "title": "Already Invited",
             "type": "integer"
           },
+          "capped": {
+            "default": 0,
+            "title": "Capped",
+            "type": "integer"
+          },
           "helps": {
             "items": {
               "$ref": "#/components/schemas/TargetHelp"
@@ -34678,6 +34743,11 @@
           },
           "no_discord": {
             "title": "No Discord",
+            "type": "integer"
+          },
+          "opted_out": {
+            "default": 0,
+            "title": "Opted Out",
             "type": "integer"
           },
           "picked": {
@@ -34715,6 +34785,14 @@
             "maxLength": 300,
             "title": "Note",
             "type": "string"
+          },
+          "onboarding": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Onboarding",
+            "type": "array"
           },
           "tribe_group_ids": {
             "default": [],
@@ -43040,6 +43118,74 @@
         ]
       }
     },
+    "/api/fleets/invites/{invite_id}/discord-stop": {
+      "post": {
+        "description": "Stop fleet invites from the invite DM's button (bot): turns off standard fleet invite DMs for this pilot.",
+        "operationId": "fleets_endpoints_private_answers_post_invite_discord_stop",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invite_id",
+            "required": true,
+            "schema": {
+              "title": "Invite Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordSitOutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopInvitesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Discord Stop",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/metrics": {
       "get": {
         "description": "All fleets of the last year, or just ``fleet_id`` (same filters).",
@@ -44795,7 +44941,7 @@
     },
     "/api/fleets/{fleet_id}/invites": {
       "get": {
-        "description": "A private fleet's invite waves and answers, for its FC and Strategic FCs. first_viewed_at (the leak trace) is null unless the caller is a Strategic FC.",
+        "description": "A fleet's invited pilots and answers, for its FC (and Strategic FCs on a private fleet). first_viewed_at (the leak trace) is null unless the fleet is private and the caller is a Strategic FC.",
         "operationId": "fleets_endpoints_private_invites_get_fleet_invites",
         "parameters": [
           {
@@ -44836,7 +44982,7 @@
     },
     "/api/fleets/{fleet_id}/invites/candidates": {
       "get": {
-        "description": "Tribe groups, corporations and pilots to invite.",
+        "description": "Tribe groups, corporations and pilots to invite, with why each can't be invited now (blocked).",
         "operationId": "fleets_endpoints_private_invites_get_invite_candidates",
         "parameters": [
           {
@@ -44856,6 +45002,16 @@
               "default": "",
               "title": "Q",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pilots_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Pilots Only",
+              "type": "boolean"
             }
           }
         ],
@@ -44889,9 +45045,70 @@
         ]
       }
     },
+    "/api/fleets/{fleet_id}/invites/me/in": {
+      "post": {
+        "description": "Say I'm in to a fleet you were invited to without picking a ship yet. Picking ships says I'm in too.",
+        "operationId": "fleets_endpoints_private_answers_post_my_invite_in",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyInviteResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post My Invite In",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/{fleet_id}/invites/me/out": {
       "post": {
-        "description": "Sit out a private fleet you were invited to: clears your ships on it. You can still say I'm in until it starts.",
+        "description": "Sit out a fleet you were invited to: clears your ships on it. You can still say I'm in until it starts.",
         "operationId": "fleets_endpoints_private_answers_post_my_invite_out",
         "parameters": [
           {
@@ -44952,7 +45169,7 @@
     },
     "/api/fleets/{fleet_id}/invites/preview": {
       "post": {
-        "description": "Who a wave with these picks would reach.",
+        "description": "Who a send with these picks would reach.",
         "operationId": "fleets_endpoints_private_invites_post_wave_preview",
         "parameters": [
           {
@@ -45100,7 +45317,7 @@
     },
     "/api/fleets/{fleet_id}/invites/resolve": {
       "post": {
-        "description": "Match a paste of primary character names or Discord usernames to pilots for the New wave form.",
+        "description": "Match a paste of primary character names or Discord usernames to pilots for the Invite pilots dialog.",
         "operationId": "fleets_endpoints_private_invites_post_resolve_names",
         "parameters": [
           {
@@ -45161,7 +45378,7 @@
     },
     "/api/fleets/{fleet_id}/invites/waves": {
       "post": {
-        "description": "Invite the new players in these picks. The DMs go out from a task at about one a second; one wave sends at a time.",
+        "description": "Invite the new players in these picks. The DMs go out from a task at about one a second; one bulk send at a time. On a standard fleet, pilots who turned invites off or had 2 Non-Strategic or Training invites this week are skipped.",
         "operationId": "fleets_endpoints_private_invites_post_wave",
         "parameters": [
           {

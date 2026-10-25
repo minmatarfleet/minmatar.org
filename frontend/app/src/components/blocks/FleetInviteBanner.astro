@@ -1,0 +1,113 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetUI } from '@dtypes/layout_components'
+import { query_string } from '@helpers/string'
+
+/**
+ * The invite at the top of a standard fleet's page, for a pilot the FC
+ * invited: pick a ship below to say you're in, or I'm in with no ship yet,
+ * or Sitting out. New pilots get the first fleet guide.
+ * A private fleet uses FleetPrivateBanner. See docs/fleets/private-fleets.md.
+ */
+interface Props {
+    fleet:          FleetUI;
+    /** The viewer has picked a ship on this fleet. */
+    has_ships?:     boolean;
+    error?:         string | false;
+}
+
+const {
+    fleet,
+    has_ships = false,
+    error = false,
+} = Astro.props
+
+const answer = fleet.my_invite_answer ?? 'pending'
+const pending = fleet.status === 'pending' && !fleet.tracking?.start_time
+const new_pilot = ['first_week', 'more_fleets'].includes(fleet.my_invite_source ?? '')
+const status =
+    answer === 'in' ? (has_ships ? t('fleets.invites.banner_in') : t('fleets.invites.banner_in_no_ship')) :
+    answer === 'out' ? t('fleets.invites.banner_out') :
+    t('fleets.invites.banner_pick')
+
+const ANSWER_URL = `${translatePath('/partials/fleet_invite_answer_component')}?${query_string({ fleet_id: fleet.id })}`
+const GUIDE_URL = translatePath('/learning/guides/onboarding-first-fleet/')
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<section id="fleet-invite-banner" class="[ fleet-invite ]" role="note" aria-label={t('fleets.invites.banner_invited').replace('{fc}', fleet.fleet_commander_name)}>
+    <div class="[ fleet-invite__text ]">
+        <b>{t('fleets.invites.banner_invited').replace('{fc}', fleet.fleet_commander_name)}</b>
+        <span>
+            {status}
+            {new_pilot && <Fragment>{' '}<a href={GUIDE_URL}>{t('fleets.invites.first_fleet_guide')}</a></Fragment>}
+        </span>
+        {error && <small class="[ fleet-invite__error ]" role="alert">{error}</small>}
+    </div>
+    {pending &&
+        <div class="[ fleet-invite__actions ]">
+            {answer !== 'in' &&
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    hx-post={`${ANSWER_URL}&answer=in`}
+                    hx-target="#fleet-invite-banner"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                >
+                    {t('fleets.invites.im_in_no_ship')}
+                </Button>
+            }
+            {answer !== 'out' &&
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    hx-post={ANSWER_URL}
+                    hx-target="#fleet-invite-banner"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                >
+                    {t('fleets.invites.sit_out')}
+                </Button>
+            }
+        </div>
+    }
+</section>
+
+<style lang="scss">
+    .fleet-invite {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+    }
+
+    .fleet-invite__text {
+        display: flex;
+        flex: 1 1 20rem;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .fleet-invite__error {
+        color: var(--fleet-red);
+    }
+
+    .fleet-invite__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+</style>

@@ -169,6 +169,7 @@ async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI>
         declassified_at: fleet.declassified_at ?? null,
         my_invite_answer: fleet.my_invite_answer ?? null,
         my_invite_wave: fleet.my_invite_wave ?? null,
+        my_invite_source: fleet.my_invite_source ?? null,
         can_manage_invites: fleet.can_manage_invites ?? false,
         discord_thread_url: fleet.discord_thread_url ?? null,
     } as FleetUI

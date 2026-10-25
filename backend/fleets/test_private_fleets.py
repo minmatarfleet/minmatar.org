@@ -255,11 +255,27 @@ class WaveTests(PrivateFleetTestBase):
         no_dm = EveFleetInvite.objects.get(user=self.no_discord)
         self.assertFalse(no_dm.dm_delivered)
 
-        # The first wave is still sending.
+        # Nobody new in the same picks.
         response = self.call(
             "post", f"/{fleet.id}/invites/waves", self.strat, body
         )
+        self.assertEqual(response.status_code, 400)
+
+        # A second bulk send waits for the first to finish sending...
+        extra = make_user("extra", perms=VIEW)
+        bulk = {"user_ids": [self.outsider.id, extra.id]}
+        response = self.call(
+            "post", f"/{fleet.id}/invites/waves", self.strat, bulk
+        )
         self.assertEqual(response.status_code, 409)
+        # ...but one pilot can be invited alongside it.
+        response = self.call(
+            "post",
+            f"/{fleet.id}/invites/waves",
+            self.strat,
+            {"user_ids": [self.outsider.id]},
+        )
+        self.assertEqual(response.status_code, 201, response.content)
 
     def test_sender_dms_and_finishes(self):
         fleet = self.private_fleet()

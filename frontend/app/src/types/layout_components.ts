@@ -604,7 +604,9 @@ export interface FleetUI {
     /** The viewer's invite: "pending", "in" or "out"; null if not invited. */
     my_invite_answer?:      string | null;
     my_invite_wave?:        number | null;
-    /** The FC and Strategic FCs see the Invites tab. */
+    /** Why the viewer was invited: first_week, more_fleets, pilot, tribe_group, corporation. */
+    my_invite_source?:      string | null;
+    /** The FC (and on a private fleet, Strategic FCs) see the Invites tab. */
     can_manage_invites?:    boolean;
     /** The private coordination thread, for pilots who are in and managers. */
     discord_thread_url?:    string | null;

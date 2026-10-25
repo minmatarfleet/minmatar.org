@@ -93,14 +93,20 @@ def get_fleet(request, fleet_id: int):
 
 
 def private_fleet_fields(user, fleet) -> dict:
-    """The viewer's invite, the Invites tab and the thread link. Opening the
-    page as an invitee is recorded for the leak trace."""
-    if not fleet.invite_only:
-        return {}
+    """The viewer's invite, the Invites tab and, on a private fleet, the
+    thread link. Opening a private fleet's page as an invitee is recorded
+    for the leak trace."""
     # pylint: disable=import-outside-toplevel
     from fleets.endpoints.private.invites import can_manage_invites
 
     invite = user_invite(fleet, user)
+    if not fleet.invite_only:
+        return {
+            "my_invite_answer": invite.answer if invite else None,
+            "my_invite_wave": invite.wave.number if invite else None,
+            "my_invite_source": invite.source_kind if invite else None,
+            "can_manage_invites": can_manage_invites(user, fleet),
+        }
     if invite is not None:
         record_page_view(fleet, user)
     manages = can_manage_invites(user, fleet)
@@ -110,6 +116,7 @@ def private_fleet_fields(user, fleet) -> dict:
         "declassified_at": fleet.declassified_at,
         "my_invite_answer": invite.answer if invite else None,
         "my_invite_wave": invite.wave.number if invite else None,
+        "my_invite_source": invite.source_kind if invite else None,
         "can_manage_invites": manages,
         "discord_thread_url": thread_url(fleet) if in_thread else None,
     }

@@ -94,6 +94,7 @@ describe('fetch_fleet_by_id', () => {
             invite_only: false,
             declassified_at: null,
             my_invite_answer: null,
+            my_invite_source: null,
             my_invite_wave: null,
             can_manage_invites: false,
             discord_thread_url: null,
