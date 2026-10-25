@@ -1,5 +1,8 @@
-"""Discord pieces of a private fleet: the invite DM, its edits, and the
-private coordination thread.
+"""Discord pieces of fleet invites: the invite DM and its edits, on any
+fleet, and a private fleet's coordination thread.
+
+A standard fleet's DM is a friendly nudge with a Stop fleet invites button;
+a private fleet's carries the opsec line.
 
 The thread is a private Discord thread (not invitable) under the fleet
 audience's channel, #pings for the alliance audience, or
@@ -7,8 +10,9 @@ DISCORD_PRIVATE_FLEET_CHANNEL_ID when set. The bot adds the FC, every
 Strategic FC and each pilot who says I'm in; the start ping posts there with
 @everyone, which in a thread reaches only its members.
 
-The Sitting out button is handled by the bot; its prefix must match
-bot/app/custom_ids.py (backend/discord/test_bot_custom_ids.py checks it).
+The Sitting out and Stop fleet invites buttons are handled by the bot;
+their prefixes must match bot/app/custom_ids.py
+(backend/discord/test_bot_custom_ids.py checks them).
 """
 
 from __future__ import annotations
@@ -19,13 +23,14 @@ from django.conf import settings
 from django.contrib.auth.models import Permission, User
 from django.db.models import Q
 
-from app.links import fleet_url
+from app.links import first_fleet_guide_url, fleet_url
 from discord.client import PRIVATE_THREAD
 from fleets.helpers.private_fleets import OPSEC_LINE, target_progress
 
 logger = logging.getLogger(__name__)
 
 SIT_OUT_CUSTOM_ID_PREFIX = "fleet_invite:out:"
+STOP_INVITES_CUSTOM_ID_PREFIX = "fleet_invite:stop:"
 
 _ACTION_ROW = 1
 _BUTTON = 2
@@ -41,6 +46,18 @@ def sit_out_custom_id(invite_id: int) -> str:
     return f"{SIT_OUT_CUSTOM_ID_PREFIX}{int(invite_id)}"
 
 
+def stop_invites_custom_id(invite_id: int) -> str:
+    return f"{STOP_INVITES_CUSTOM_ID_PREFIX}{int(invite_id)}"
+
+
+def _author(fleet) -> dict:
+    return {"name": "Fleets · Private" if fleet.invite_only else "Fleets"}
+
+
+def _opsec(fleet) -> str:
+    return f"\n\n🔒 **{OPSEC_LINE}**" if fleet.invite_only else ""
+
+
 def _link(label: str, url: str) -> dict:
     return {"type": _BUTTON, "style": _STYLE_LINK, "label": label, "url": url}
 
@@ -51,6 +68,22 @@ def _sit_out_button(invite_id: int) -> dict:
         "style": _STYLE_SECONDARY,
         "label": "Sitting out",
         "custom_id": sit_out_custom_id(invite_id),
+    }
+
+
+def _stop_invites_button(invite) -> dict | None:
+    """Standard Non-Strategic and Training fleets only: those are the
+    invites a pilot can turn off."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleets import is_capped_fleet
+
+    if not is_capped_fleet(invite.eve_fleet):
+        return None
+    return {
+        "type": _BUTTON,
+        "style": _STYLE_SECONDARY,
+        "label": "Stop fleet invites",
+        "custom_id": stop_invites_custom_id(invite.id),
     }
 
 
@@ -110,7 +143,7 @@ def reminder_embed(invite) -> dict:
     has the details."""
     fleet = invite.eve_fleet
     return {
-        "author": {"name": "Fleets · Private"},
+        "author": _author(fleet),
         "title": f"Still coming? {fleet_title(fleet)}",
         "url": fleet_url(fleet.id),
         "description": "You haven't answered yet. **Not this time?** Hit "
@@ -152,16 +185,28 @@ def invite_embed(invite, *, reminder: bool = False) -> dict:
     wanted = _wanted(fleet)
     if wanted:
         fields.append({"name": "Wanted", "value": wanted, "inline": False})
+    if invite.source_kind in ("first_week", "more_fleets"):
+        fields.append(
+            {
+                "name": "New to fleets?",
+                "value": f"[Your first fleet: what to expect]"
+                f"({first_fleet_guide_url()})",
+                "inline": False,
+            }
+        )
     note = invite.wave.note
-    description = (
-        f"**{_fc_name(fleet)}** is inviting you to a private "
-        f"{fleet.get_type_display()}."
-    )
+    if fleet.invite_only:
+        description = (
+            f"**{_fc_name(fleet)}** is inviting you to a private "
+            f"{fleet.get_type_display()}."
+        )
+    else:
+        description = f"**{_fc_name(fleet)}** would like you on this fleet."
     if note:
         description += f"\n> {note}"
-    description += f"\n\n🔒 **{OPSEC_LINE}**"
+    description += _opsec(fleet)
     return {
-        "author": {"name": "Fleets · Private"},
+        "author": _author(fleet),
         "title": f"You're invited: {fleet_title(fleet)}",
         "url": fleet_url(fleet.id),
         "description": description,
@@ -176,6 +221,7 @@ def invite_payload(invite, *, reminder: bool = False) -> dict:
         "components": _row(
             _link("I'm in: pick ships", fleet_url(invite.eve_fleet_id)),
             _sit_out_button(invite.id),
+            _stop_invites_button(invite),
         ),
     }
     if reminder and invite.dm_message_id:
@@ -196,10 +242,14 @@ def answered_payload(invite) -> dict:
         return {
             "embeds": [
                 {
-                    "author": {"name": "Fleets · Private"},
+                    "author": _author(fleet),
                     "title": "This fleet was cancelled",
-                    "description": f"{_fc_name(fleet)} cancelled {title}. "
-                    "Keep it quiet all the same.",
+                    "description": f"{_fc_name(fleet)} cancelled {title}."
+                    + (
+                        " Keep it quiet all the same."
+                        if fleet.invite_only
+                        else ""
+                    ),
                     "color": _COLOR_DONE,
                 }
             ],
@@ -209,7 +259,7 @@ def answered_payload(invite) -> dict:
         return {
             "embeds": [
                 {
-                    "author": {"name": "Fleets · Private"},
+                    "author": _author(fleet),
                     "title": f"This fleet has started: {title}",
                     "url": page,
                     "color": _COLOR_DONE,
@@ -221,18 +271,24 @@ def answered_payload(invite) -> dict:
         }
     if invite.answer == invite.ANSWER_IN:
         ships = _signed_up(invite)
-        description = (
-            f"{_eve_time(fleet.start_time)}. You're in the private thread, "
-            "where the FC coordinates and the start ping goes."
-        )
+        if fleet.invite_only:
+            description = (
+                f"{_eve_time(fleet.start_time)}. You're in the private "
+                "thread, where the FC coordinates and the start ping goes."
+            )
+        else:
+            description = f"{_eve_time(fleet.start_time)}."
         if ships:
             description += "\nYou're bringing:\n" + ships
-        description += f"\n\n🔒 **{OPSEC_LINE}**"
+        elif not fleet.invite_only:
+            description += " No ship yet: pick one on the fleet page, or ask "
+            description += "on comms."
+        description += _opsec(fleet)
         url = thread_url(fleet)
         return {
             "embeds": [
                 {
-                    "author": {"name": "Fleets · Private"},
+                    "author": _author(fleet),
                     "title": f"You're in: {title}",
                     "url": page,
                     "description": description,
@@ -249,11 +305,11 @@ def answered_payload(invite) -> dict:
         return {
             "embeds": [
                 {
-                    "author": {"name": "Fleets · Private"},
+                    "author": _author(fleet),
                     "title": "You're sitting this one out",
                     "description": f"{title}, {_eve_time(fleet.start_time)}. "
                     "Changed your mind? I'm in still works until the fleet "
-                    f"starts.\n\n🔒 **{OPSEC_LINE}**",
+                    f"starts.{_opsec(fleet)}",
                     "color": _COLOR_DONE,
                 }
             ],
@@ -377,7 +433,7 @@ def summary_payload(fleet) -> dict:
     return {
         "embeds": [
             {
-                "author": {"name": "Fleets · Private"},
+                "author": _author(fleet),
                 "title": fleet_title(fleet),
                 "url": fleet_url(fleet.id),
                 "description": (

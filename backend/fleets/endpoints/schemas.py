@@ -85,7 +85,9 @@ class EveFleetDetailResponse(EveFleetResponse):
     # The viewer's own invite: "pending", "in" or "out"; null if not invited.
     my_invite_answer: Optional[str] = None
     my_invite_wave: Optional[int] = None
-    # The FC and Strategic FCs manage invites (the Invites tab).
+    # Why the viewer was invited (first_week, more_fleets, pilot, ...).
+    my_invite_source: Optional[str] = None
+    # The FC (and, on a private fleet, Strategic FCs) manage invites.
     can_manage_invites: bool = False
     # The private coordination thread, for pilots who are in and managers.
     discord_thread_url: Optional[str] = None

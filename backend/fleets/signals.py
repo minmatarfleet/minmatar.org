@@ -83,8 +83,19 @@ def update_fleet_schedule_on_delete(sender, instance, **kwargs):
 )
 def private_fleet_thread_on_save(sender, instance, created, **kwargs):
     """Open the coordination thread for a new private fleet, and close it
-    and edit the invite DMs when one is cancelled."""
+    and edit the invite DMs when one is cancelled. A standard fleet's
+    invite DMs are edited when it's cancelled too."""
     if not instance.invite_only:
+        if instance.status == "cancelled" and instance.invites.exists():
+            # pylint: disable=import-outside-toplevel
+            from discord.outbox import on_commit_enqueue
+            from fleets.tasks import update_private_fleet_dms
+
+            on_commit_enqueue(
+                update_private_fleet_dms,
+                (instance.id,),
+                context=f"fleet {instance.id} cancelled DMs",
+            )
         return
     # pylint: disable=import-outside-toplevel
     from discord.outbox import on_commit_enqueue
@@ -140,7 +151,7 @@ def private_fleet_thread_on_delete(sender, instance, **kwargs):
 
 def _volunteer_owner_changed(instance) -> None:
     fleet = getattr(instance, "eve_fleet", None)
-    if fleet is None or not fleet.invite_only:
+    if fleet is None or not fleet.invites.exists():
         return
     character = (
         EveCharacter.objects.filter(character_id=instance.character_id)
@@ -161,7 +172,7 @@ def _volunteer_owner_changed(instance) -> None:
     dispatch_uid="private_fleet_answer_on_volunteer_save",
 )
 def private_fleet_answer_on_volunteer_save(sender, instance, **kwargs):
-    """Picking a ship on a private fleet is saying I'm in."""
+    """Picking a ship on a fleet you were invited to is saying I'm in."""
     _volunteer_owner_changed(instance)
 
 

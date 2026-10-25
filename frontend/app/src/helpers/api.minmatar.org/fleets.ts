@@ -766,7 +766,7 @@ export type FleetInviteCandidate = ApiResponse<'InviteCandidate'>
 export type ShipTargetProgress = ApiResponse<'ShipTargetProgress'>
 export type ShipTargetLine = ApiRequest<'ShipTargetLine'>
 
-/** The FC's and Strategic FCs' view of a private fleet's invites. */
+/** The FC's view of a fleet's invites (and Strategic FCs', on a private fleet). */
 export async function get_fleet_invites(access_token:string, fleet_id:number) {
     return await api_request<FleetInvites>(`${API_ENDPOINT}/${fleet_id}/invites`, {
         token: access_token,
@@ -774,7 +774,7 @@ export async function get_fleet_invites(access_token:string, fleet_id:number) {
     })
 }
 
-/** Who a wave with these picks would reach. */
+/** Who a send with these picks would reach. */
 export async function preview_fleet_wave(access_token:string, fleet_id:number, wave:FleetWaveRequest) {
     return await api_request<FleetWavePreview>(`${API_ENDPOINT}/${fleet_id}/invites/preview`, {
         method: 'POST',
@@ -800,8 +800,10 @@ export async function reping_fleet_invites(access_token:string, fleet_id:number)
     })
 }
 
-export async function get_fleet_invite_candidates(access_token:string, fleet_id:number, q:string) {
-    return await api_request<FleetInviteCandidate[]>(`${API_ENDPOINT}/${fleet_id}/invites/candidates?q=${encodeURIComponent(q)}`, {
+/** Groups, corporations and pilots to invite; pilots_only for the one-pilot search. */
+export async function get_fleet_invite_candidates(access_token:string, fleet_id:number, q:string, pilots_only = false) {
+    const pilots = pilots_only ? '&pilots_only=true' : ''
+    return await api_request<FleetInviteCandidate[]>(`${API_ENDPOINT}/${fleet_id}/invites/candidates?q=${encodeURIComponent(q)}${pilots}`, {
         token: access_token,
     }) ?? []
 }
@@ -818,9 +820,17 @@ export async function resolve_fleet_invite_names(access_token:string, fleet_id:n
     }) ?? { matched: [], not_found: [] }
 }
 
-/** Sit out a private fleet you were invited to. */
+/** Sit out a fleet you were invited to. */
 export async function sit_out_fleet(access_token:string, fleet_id:number) {
     return await api_request<{ invite_id: number, answer: string }>(`${API_ENDPOINT}/${fleet_id}/invites/me/out`, {
+        method: 'POST',
+        token: access_token,
+    })
+}
+
+/** I'm in, with no ship picked yet. */
+export async function say_in_fleet(access_token:string, fleet_id:number) {
+    return await api_request<{ invite_id: number, answer: string }>(`${API_ENDPOINT}/${fleet_id}/invites/me/in`, {
         method: 'POST',
         token: access_token,
     })

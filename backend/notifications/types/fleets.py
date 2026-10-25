@@ -236,3 +236,19 @@ FLEET_CLOSED = register(
         supports_topic_subscription=False,
     )
 )
+
+
+# Not delivered through notify_user: the invite DM carries its own buttons
+# (fleets.helpers.private_fleet_discord). The preference is the pilot's
+# "Stop fleet invites"; private fleet invites ignore it.
+FLEET_INVITES = register(
+    NotificationType(
+        key="fleets.invite",
+        feature="fleets",
+        label="Fleet invites",
+        description="A Discord DM when an FC invites you to their fleet.",
+        channels=(NotificationChannel.DISCORD,),
+        defaults={NotificationChannel.DISCORD: True},
+        supports_topic_subscription=False,
+    )
+)

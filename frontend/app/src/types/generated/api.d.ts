@@ -2098,6 +2098,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/invites/{invite_id}/discord-stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invite Discord Stop
+         * @description Stop fleet invites from the invite DM's button (bot): turns off standard fleet invite DMs for this pilot.
+         */
+        post: operations["fleets_endpoints_private_answers_post_invite_discord_stop"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/metrics": {
         parameters: {
             query?: never;
@@ -2677,7 +2697,7 @@ export interface paths {
         };
         /**
          * Get Fleet Invites
-         * @description A private fleet's invite waves and answers, for its FC and Strategic FCs. first_viewed_at (the leak trace) is null unless the caller is a Strategic FC.
+         * @description A fleet's invited pilots and answers, for its FC (and Strategic FCs on a private fleet). first_viewed_at (the leak trace) is null unless the fleet is private and the caller is a Strategic FC.
          */
         get: operations["fleets_endpoints_private_invites_get_fleet_invites"];
         put?: never;
@@ -2697,11 +2717,31 @@ export interface paths {
         };
         /**
          * Get Invite Candidates
-         * @description Tribe groups, corporations and pilots to invite.
+         * @description Tribe groups, corporations and pilots to invite, with why each can't be invited now (blocked).
          */
         get: operations["fleets_endpoints_private_invites_get_invite_candidates"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/invites/me/in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post My Invite In
+         * @description Say I'm in to a fleet you were invited to without picking a ship yet. Picking ships says I'm in too.
+         */
+        post: operations["fleets_endpoints_private_answers_post_my_invite_in"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2719,7 +2759,7 @@ export interface paths {
         put?: never;
         /**
          * Post My Invite Out
-         * @description Sit out a private fleet you were invited to: clears your ships on it. You can still say I'm in until it starts.
+         * @description Sit out a fleet you were invited to: clears your ships on it. You can still say I'm in until it starts.
          */
         post: operations["fleets_endpoints_private_answers_post_my_invite_out"];
         delete?: never;
@@ -2739,7 +2779,7 @@ export interface paths {
         put?: never;
         /**
          * Post Wave Preview
-         * @description Who a wave with these picks would reach.
+         * @description Who a send with these picks would reach.
          */
         post: operations["fleets_endpoints_private_invites_post_wave_preview"];
         delete?: never;
@@ -2779,7 +2819,7 @@ export interface paths {
         put?: never;
         /**
          * Post Resolve Names
-         * @description Match a paste of primary character names or Discord usernames to pilots for the New wave form.
+         * @description Match a paste of primary character names or Discord usernames to pilots for the Invite pilots dialog.
          */
         post: operations["fleets_endpoints_private_invites_post_resolve_names"];
         delete?: never;
@@ -2799,7 +2839,7 @@ export interface paths {
         put?: never;
         /**
          * Post Wave
-         * @description Invite the new players in these picks. The DMs go out from a task at about one a second; one wave sends at a time.
+         * @description Invite the new players in these picks. The DMs go out from a task at about one a second; one bulk send at a time. On a standard fleet, pilots who turned invites off or had 2 Non-Strategic or Training invites this week are skipped.
          */
         post: operations["fleets_endpoints_private_invites_post_wave"];
         delete?: never;
@@ -11468,6 +11508,8 @@ export interface components {
             location: string;
             /** My Invite Answer */
             my_invite_answer?: string | null;
+            /** My Invite Source */
+            my_invite_source?: string | null;
             /** My Invite Wave */
             my_invite_wave?: number | null;
             /** Objective */
@@ -13520,8 +13562,23 @@ export interface components {
             can_see_leak_trace: boolean;
             /** Fleet Id */
             fleet_id: number;
+            /**
+             * Invite Only
+             * @default false
+             */
+            invite_only?: boolean;
             /** Invites */
             invites: components["schemas"]["InvitePilot"][];
+            /**
+             * Onboarding First Week
+             * @default 0
+             */
+            onboarding_first_week?: number;
+            /**
+             * Onboarding More Fleets
+             * @default 0
+             */
+            onboarding_more_fleets?: number;
             /** Reping Available At */
             reping_available_at?: string | null;
             /** Sending */
@@ -15310,6 +15367,8 @@ export interface components {
         };
         /** InviteCandidate */
         InviteCandidate: {
+            /** Blocked */
+            blocked?: string | null;
             /** Detail */
             detail: string;
             /** Id */
@@ -15341,6 +15400,16 @@ export interface components {
             sent_at?: string | null;
             /** Ships */
             ships: string[];
+            /**
+             * Source Kind
+             * @default
+             */
+            source_kind?: string;
+            /**
+             * Source Name
+             * @default
+             */
+            source_name?: string;
             /** User Id */
             user_id: number;
             /** Wave */
@@ -19956,6 +20025,11 @@ export interface components {
              */
             trial?: components["schemas"]["StatusWindowCounts"];
         };
+        /** StopInvitesResponse */
+        StopInvitesResponse: {
+            /** Stopped */
+            stopped: boolean;
+        };
         /** StructureAttachRequest */
         StructureAttachRequest: {
             /** Alliance Id */
@@ -21480,12 +21554,22 @@ export interface components {
         WavePreviewResponse: {
             /** Already Invited */
             already_invited: number;
+            /**
+             * Capped
+             * @default 0
+             */
+            capped?: number;
             /** Helps */
             helps: components["schemas"]["TargetHelp"][];
             /** New */
             new: number;
             /** No Discord */
             no_discord: number;
+            /**
+             * Opted Out
+             * @default 0
+             */
+            opted_out?: number;
             /** Picked */
             picked: number;
             /** Will Dm */
@@ -21503,6 +21587,11 @@ export interface components {
              * @default
              */
             note?: string;
+            /**
+             * Onboarding
+             * @default []
+             */
+            onboarding?: string[];
             /**
              * Tribe Group Ids
              * @default []
@@ -26559,6 +26648,50 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_private_answers_post_invite_discord_stop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordSitOutRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopInvitesResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_metrics_get_fleet_metrics_get_fleet_metrics: {
         parameters: {
             query?: {
@@ -27784,6 +27917,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
+                pilots_only?: boolean;
             };
             header?: never;
             path: {
@@ -27800,6 +27934,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InviteCandidate"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_private_answers_post_my_invite_in: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyInviteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Not Found */

@@ -4,7 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { FleetWavePreview } from '@helpers/api.minmatar.org/fleets'
 
-/** Who the Send wave dialog's picks would reach and where they help the targets. */
+/** Who the Invite pilots dialog's picks would reach, who is skipped, and where they help the targets. */
 interface Props {
     preview:    FleetWavePreview | null;
     error?:     string | false;
@@ -32,7 +32,24 @@ import Flexblock from '@components/compositions/Flexblock.astro'
             </p>
             <dl class="[ wave-preview__rows ]">
                 <dt>{t('fleets.private.preview_picked')}</dt><dd>{preview.picked}</dd>
-                <dt>{t('fleets.private.preview_already')}</dt><dd>−{preview.already_invited}</dd>
+                {preview.already_invited > 0 &&
+                    <Fragment>
+                        <dt>{t('fleets.private.preview_already')}</dt>
+                        <dd>−{preview.already_invited}</dd>
+                    </Fragment>
+                }
+                {preview.opted_out > 0 &&
+                    <Fragment>
+                        <dt>{t('fleets.invites.preview_opted_out')}</dt>
+                        <dd>−{preview.opted_out}</dd>
+                    </Fragment>
+                }
+                {preview.capped > 0 &&
+                    <Fragment>
+                        <dt>{t('fleets.invites.preview_capped')}</dt>
+                        <dd>−{preview.capped}</dd>
+                    </Fragment>
+                }
                 {preview.no_discord > 0 &&
                     <Fragment>
                         <dt>{t('fleets.private.preview_no_discord_short')}</dt>

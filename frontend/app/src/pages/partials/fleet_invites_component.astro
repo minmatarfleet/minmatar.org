@@ -33,6 +33,7 @@ const wave_request = (form:FormData):FleetWaveRequest => ({
     tribe_group_ids: ids(form, 'tribe_group_ids'),
     corporation_ids: ids(form, 'corporation_ids'),
     user_ids: ids(form, 'pilot_ids'),
+    onboarding: form.getAll('onboarding').map(value => value as string),
     note: ((form.get('note') as string) ?? '').trim(),
 })
 
@@ -48,6 +49,13 @@ if (Astro.request.method === 'POST') {
             preview = await preview_fleet_wave(auth_token as string, fleet_id, wave_request(form))
         } else if (action === 'wave') {
             await send_fleet_wave(auth_token as string, fleet_id, wave_request(form))
+        } else if (action === 'invite_one') {
+            // The tab's one-pilot search: one DM, right away.
+            const user_id = parseInt((form.get('user_id') as string) ?? '0')
+            if (user_id) {
+                await send_fleet_wave(auth_token as string, fleet_id, { user_ids: [user_id] })
+                notice = t('fleets.invites.invited_one').replace('{name}', (form.get('name') as string) ?? '')
+            }
         } else if (action === 'reping') {
             const queued = await reping_fleet_invites(auth_token as string, fleet_id)
             notice = t('fleets.private.reping_queued').replace('{count}', (queued?.pilots ?? 0).toString())

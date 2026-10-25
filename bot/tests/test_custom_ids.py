@@ -64,7 +64,7 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
             TrackButton,
         )
         from app.tickets.views import CloseTicketButton, CloseWithReasonButton
-        from app.fleet_invites.views import SitOutButton
+        from app.fleet_invites.views import SitOutButton, StopInvitesButton
         from app.tribe_invites.views import DeclineInviteButton
 
         pairs = {
@@ -81,6 +81,7 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
             CloseWithReasonButton: custom_ids.HELP_TICKET_CLOSE_REASON_TEMPLATE,
             DeclineInviteButton: custom_ids.TRIBE_INVITE_DECLINE_TEMPLATE,
             SitOutButton: custom_ids.FLEET_INVITE_OUT_TEMPLATE,
+            StopInvitesButton: custom_ids.FLEET_INVITE_STOP_TEMPLATE,
         }
         for item, template in pairs.items():
             compiled = item.__discord_ui_compiled_template__

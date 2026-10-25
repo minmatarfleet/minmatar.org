@@ -1,4 +1,4 @@
-"""Schemas for private fleet invites and ship targets."""
+"""Schemas for fleet invites (standard and private) and ship targets."""
 
 from datetime import datetime
 from typing import List, Optional
@@ -10,6 +10,8 @@ class WaveRequest(BaseModel):
     tribe_group_ids: List[int] = []
     corporation_ids: List[int] = []
     user_ids: List[int] = []
+    # Alliance health onboarding buckets: "first_week", "more_fleets".
+    onboarding: List[str] = []
     note: str = Field(default="", max_length=300)
 
 
@@ -26,6 +28,9 @@ class WavePreviewResponse(BaseModel):
     will_dm: int
     no_discord: int
     helps: List[TargetHelp]
+    # Standard fleets only: skipped for Stop fleet invites / the weekly cap.
+    opted_out: int = 0
+    capped: int = 0
 
 
 class InvitePilot(BaseModel):
@@ -35,6 +40,11 @@ class InvitePilot(BaseModel):
     character_name: str
     corporation_name: Optional[str] = None
     wave: int
+    # Why they were invited: first_week, more_fleets, pilot, tribe_group or
+    # corporation (blank for invites made before sources were kept), and
+    # the group or corporation's name.
+    source_kind: str = ""
+    source_name: str = ""
     answer: str
     ships: List[str]
     answered_at: Optional[datetime] = None
@@ -86,6 +96,10 @@ class FleetInvitesResponse(BaseModel):
     reping_available_at: Optional[datetime] = None
     can_see_leak_trace: bool
     thread_url: Optional[str] = None
+    invite_only: bool = False
+    # Standard fleets: new pilots not yet invited, by onboarding bucket.
+    onboarding_first_week: int = 0
+    onboarding_more_fleets: int = 0
 
 
 class WaveSentResponse(BaseModel):
@@ -107,6 +121,10 @@ class DiscordSitOutRequest(BaseModel):
     discord_user_id: int
 
 
+class StopInvitesResponse(BaseModel):
+    stopped: bool
+
+
 class ShipTargetLine(BaseModel):
     name: str = Field(max_length=64)
     target: int = Field(ge=1, le=999)
@@ -123,6 +141,9 @@ class InviteCandidate(BaseModel):
     id: int
     name: str
     detail: str
+    # Why this pick can't be invited now: "invited", "opted_out" or
+    # "capped"; null when it can.
+    blocked: Optional[str] = None
 
 
 class ResolveNamesRequest(BaseModel):

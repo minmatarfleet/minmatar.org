@@ -277,6 +277,18 @@ class EveFleet(models.Model):
         self.generate_esi_fleet(character_id)
         self.notify_discord()
         self.activate()
+        if not self.invite_only and self.invites.exists():
+            # The invite DMs say the fleet started (a private fleet's are
+            # edited from notify_discord).
+            # pylint: disable=import-outside-toplevel
+            from discord.outbox import on_commit_enqueue
+            from fleets.tasks import update_private_fleet_dms
+
+            on_commit_enqueue(
+                update_private_fleet_dms,
+                (self.id,),
+                context=f"fleet {self.id} invite DMs",
+            )
 
     class Meta:
         indexes = [
@@ -1360,7 +1372,8 @@ class NpsiExternalEvent(models.Model):
 
 
 class EveFleetInviteWave(models.Model):
-    """One batch of private fleet invites the FC sent together."""
+    """One send of fleet invites: a bulk send or a single pilot. The FC
+    never sees waves; they keep what was picked, the note and the pacing."""
 
     eve_fleet = models.ForeignKey(
         EveFleet, on_delete=models.CASCADE, related_name="invite_waves"
@@ -1374,6 +1387,8 @@ class EveFleetInviteWave(models.Model):
     tribe_group_ids = models.JSONField(default=list, blank=True)
     corporation_ids = models.JSONField(default=list, blank=True)
     user_ids = models.JSONField(default=list, blank=True)
+    # Alliance health onboarding buckets: "first_week", "more_fleets".
+    onboarding = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     # Set when the paced sender has sent every DM in the wave.
     finished_at = models.DateTimeField(null=True, blank=True)
@@ -1392,7 +1407,7 @@ class EveFleetInviteWave(models.Model):
 
 
 class EveFleetInvite(models.Model):
-    """A player invited to a private fleet, and their answer."""
+    """A player invited to a fleet, and their answer."""
 
     ANSWER_PENDING = "pending"
     ANSWER_IN = "in"
@@ -1402,6 +1417,12 @@ class EveFleetInvite(models.Model):
         (ANSWER_IN, "In"),
         (ANSWER_OUT, "Sitting out"),
     )
+    # Why this pilot was invited, shown as "Invited as" on the Invites tab.
+    SOURCE_FIRST_WEEK = "first_week"
+    SOURCE_MORE_FLEETS = "more_fleets"
+    SOURCE_PILOT = "pilot"
+    SOURCE_TRIBE_GROUP = "tribe_group"
+    SOURCE_CORPORATION = "corporation"
 
     eve_fleet = models.ForeignKey(
         EveFleet, on_delete=models.CASCADE, related_name="invites"
@@ -1416,6 +1437,9 @@ class EveFleetInvite(models.Model):
         max_length=16, choices=ANSWER_CHOICES, default=ANSWER_PENDING
     )
     answered_at = models.DateTimeField(null=True, blank=True)
+    source_kind = models.CharField(max_length=16, blank=True, default="")
+    # The group or corporation's name for those kinds, else blank.
+    source_name = models.CharField(max_length=128, blank=True, default="")
     # The leak trace: when the pilot first opened the fleet page.
     first_viewed_at = models.DateTimeField(null=True, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True)

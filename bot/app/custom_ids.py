@@ -31,8 +31,9 @@ NPSI_TRACK_PREFIX = "npsi:track:"
 # Tribe group invite DMs (backend: tribes/helpers/invitation_discord.py)
 TRIBE_INVITE_DECLINE_PREFIX = "tribe_invite:decline:"
 
-# Private fleet invite DMs (backend: fleets/helpers/private_fleet_discord.py)
+# Fleet invite DMs (backend: fleets/helpers/private_fleet_discord.py)
 FLEET_INVITE_OUT_PREFIX = "fleet_invite:out:"
+FLEET_INVITE_STOP_PREFIX = "fleet_invite:stop:"
 
 # Help tickets (bot-only: the bot posts these itself)
 HELP_TICKET_CLOSE_PREFIX = "help_ticket_close:"
@@ -63,6 +64,7 @@ TRIBE_INVITE_DECLINE_TEMPLATE = template(
     TRIBE_INVITE_DECLINE_PREFIX, "invitation_id"
 )
 FLEET_INVITE_OUT_TEMPLATE = template(FLEET_INVITE_OUT_PREFIX, "invite_id")
+FLEET_INVITE_STOP_TEMPLATE = template(FLEET_INVITE_STOP_PREFIX, "invite_id")
 HELP_TICKET_CLOSE_TEMPLATE = template(HELP_TICKET_CLOSE_PREFIX, "ticket_id")
 HELP_TICKET_CLOSE_REASON_TEMPLATE = template(
     HELP_TICKET_CLOSE_REASON_PREFIX, "ticket_id"

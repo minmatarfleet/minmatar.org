@@ -1,5 +1,5 @@
 ---
-// no-error-refetch: Sitting out; a failure shows on the banner it swaps back.
+// no-error-refetch: an invite answer; a failure shows on the banner it swaps back.
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
@@ -12,18 +12,23 @@ if (!user)
     return HTTP_403_Forbidden()
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+// "in": I'm in with no ship yet. Otherwise Sitting out.
+const answer = Astro.url.searchParams.get('answer') === 'in' ? 'in' : 'out'
 
 if (!fleet_id || Astro.request.method !== 'POST')
     return HTTP_404_Not_Found()
 
-import { sit_out_fleet } from '@helpers/api.minmatar.org/fleets'
+import { say_in_fleet, sit_out_fleet } from '@helpers/api.minmatar.org/fleets'
 import { fetch_fleet_access } from '@helpers/fetching/fleets'
 import type { FleetUI } from '@dtypes/layout_components'
 
-// Sitting out clears the pilot's ships, so the whole page reloads.
+// Either answer reloads the page: Sitting out clears the pilot's ships.
 let error:string | false = false
 try {
-    await sit_out_fleet(auth_token as string, fleet_id)
+    if (answer === 'in')
+        await say_in_fleet(auth_token as string, fleet_id)
+    else
+        await sit_out_fleet(auth_token as string, fleet_id)
     return new Response(null, {
         status: 200,
         headers: { 'HX-Redirect': translatePath(`/fleets/upcoming/${fleet_id}`) },
@@ -42,7 +47,11 @@ try {
 if (!fleet)
     return HTTP_404_Not_Found()
 
+import FleetInviteBanner from '@components/blocks/FleetInviteBanner.astro'
 import FleetPrivateBanner from '@components/blocks/FleetPrivateBanner.astro'
 ---
 
-<FleetPrivateBanner fleet={fleet} error={error} />
+{fleet.invite_only ?
+    <FleetPrivateBanner fleet={fleet} error={error} /> :
+    <FleetInviteBanner fleet={fleet} error={error} />
+}

@@ -52,3 +52,7 @@ def doctrine_url(doctrine_id: int) -> str:
 
 def new_player_fleet_guide_url() -> str:
     return site_url("/learning/guides/new-player-fleet-guide/")
+
+
+def first_fleet_guide_url() -> str:
+    return site_url("/learning/guides/onboarding-first-fleet/")

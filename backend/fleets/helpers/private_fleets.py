@@ -1,12 +1,18 @@
-"""Private (invite-only) fleets: waves of invites, answers and ship targets.
+"""Fleet invites, answers and ship targets.
 
-A Strategic FC creates the fleet with ``invite_only``, then sends waves of
-invites to tribe groups, corporations or pilots. Each new player gets one
-Discord DM (sent by a paced task, fleets.tasks.send_fleet_invite_wave) with
-I'm in and Sitting out. I'm in is volunteering ships on the fleet page;
-Sitting out is one click. Pilots who are in join the fleet's private
-coordination thread (fleets.helpers.private_fleet_discord).
-See docs/fleets/private-fleets.md.
+Any fleet's FC can invite pilots: new pilots from the alliance health
+onboarding lists, tribe groups, corporations or pilots by name. Each new
+player gets one Discord DM (sent by a paced task,
+fleets.tasks.send_fleet_invite_wave) with I'm in and Sitting out. I'm in is
+volunteering ships on the fleet page (or I'm in with no ship yet); Sitting
+out is one click.
+
+On a standard fleet an invite is a nudge: a pilot gets at most
+``WEEKLY_INVITE_CAP`` Non-Strategic or Training invites a week and can turn
+them off ("Stop fleet invites"). A private fleet (``invite_only``) is made
+by a Strategic FC; its invites ignore both, carry the opsec line, and pilots
+who are in join its private coordination thread
+(fleets.helpers.private_fleet_discord). See docs/fleets/private-fleets.md.
 """
 
 from __future__ import annotations
@@ -35,6 +41,16 @@ MAX_WAVE_SIZE = 300
 REPING_COOLDOWN = timedelta(minutes=15)
 # Paste-a-list resolves at most this many names in one go.
 MAX_RESOLVE_NAMES = 50
+# Standard fleet invites a pilot can get in a rolling week. Strategic and
+# private fleet invites don't count and aren't limited.
+WEEKLY_INVITE_CAP = 2
+INVITE_CAP_WINDOW = timedelta(days=7)
+# The notification preference a pilot turns off with Stop fleet invites.
+INVITE_NOTIFICATION_TYPE = "fleets.invite"
+ONBOARDING_BUCKETS = (
+    EveFleetInvite.SOURCE_FIRST_WEEK,
+    EveFleetInvite.SOURCE_MORE_FLEETS,
+)
 OPSEC_LINE = (
     "Invite only. Don't mention this fleet in any channel, on comms or in "
     "chat."
@@ -47,7 +63,114 @@ class PrivateFleetError(Exception):
         self.status_code = status_code
 
 
-# --- Who a wave reaches ----------------------------------------------------
+# --- Who a send reaches ----------------------------------------------------
+
+
+def is_capped_fleet(fleet: EveFleet) -> bool:
+    """Standard fleets whose invites count against the weekly cap and
+    respect Stop fleet invites."""
+    return not fleet.invite_only and fleet.type != "strategic"
+
+
+def _capped_fleets_q(prefix: str = "") -> Q:
+    return Q(**{f"{prefix}invite_only": False}) & ~Q(
+        **{f"{prefix}type": "strategic"}
+    )
+
+
+def capped_user_ids(user_ids, now=None) -> set[int]:
+    """Pilots who already got ``WEEKLY_INVITE_CAP`` standard fleet invites
+    in the last week. An invite counts once it's made, unless its DM
+    couldn't be delivered."""
+    if not user_ids:
+        return set()
+    since = (now or timezone.now()) - INVITE_CAP_WINDOW
+    rows = (
+        EveFleetInvite.objects.filter(
+            _capped_fleets_q("eve_fleet__"),
+            user_id__in=list(user_ids),
+            created_at__gte=since,
+        )
+        .exclude(dm_delivered=False)
+        .values_list("user_id", flat=True)
+    )
+    counts: dict[int, int] = defaultdict(int)
+    for user_id in rows:
+        counts[user_id] += 1
+    return {u for u, n in counts.items() if n >= WEEKLY_INVITE_CAP}
+
+
+def opted_out_user_ids(user_ids) -> set[int]:
+    """Pilots who pressed Stop fleet invites (or turned them off in Account
+    › Notifications)."""
+    # pylint: disable=import-outside-toplevel
+    from notifications.models import (
+        NotificationChannel,
+        NotificationPreference,
+    )
+
+    if not user_ids:
+        return set()
+    return set(
+        NotificationPreference.objects.filter(
+            user_id__in=list(user_ids),
+            notification_type=INVITE_NOTIFICATION_TYPE,
+            channel=NotificationChannel.DISCORD,
+            enabled=False,
+        ).values_list("user_id", flat=True)
+    )
+
+
+def stop_fleet_invites(user) -> None:
+    # pylint: disable=import-outside-toplevel
+    from notifications.models import (
+        NotificationChannel,
+        NotificationPreference,
+    )
+
+    NotificationPreference.objects.update_or_create(
+        user=user,
+        notification_type=INVITE_NOTIFICATION_TYPE,
+        channel=NotificationChannel.DISCORD,
+        defaults={"enabled": False},
+    )
+
+
+def onboarding_user_ids(buckets=ONBOARDING_BUCKETS) -> dict[int, str]:
+    """New pilots by alliance health onboarding bucket (the health page's
+    "Needs first week fleet invite" and "Needs more fleet invites"), from
+    the latest snapshot. user_id -> bucket."""
+    # pylint: disable=import-outside-toplevel
+    from alliance.endpoints.health.schemas import onboarding_from_payload
+    from alliance.helpers.health import latest_snapshot
+
+    wanted = [b for b in buckets if b in ONBOARDING_BUCKETS]
+    if not wanted:
+        return {}
+    snap = latest_snapshot()
+    if snap is None or not snap.payload:
+        return {}
+    out: dict[int, str] = {}
+    for bucket in wanted:
+        for pilot in onboarding_from_payload(snap.payload, bucket).pilots:
+            out.setdefault(pilot.user_id, bucket)
+    return out
+
+
+def onboarding_counts(fleet: EveFleet) -> dict[str, int]:
+    """How many pilots in each onboarding bucket aren't invited to this
+    fleet yet."""
+    by_user = onboarding_user_ids()
+    invited = set(
+        EveFleetInvite.objects.filter(
+            eve_fleet=fleet, user_id__in=list(by_user)
+        ).values_list("user_id", flat=True)
+    )
+    counts = {bucket: 0 for bucket in ONBOARDING_BUCKETS}
+    for user_id, bucket in by_user.items():
+        if user_id not in invited and user_id != fleet.created_by_id:
+            counts[bucket] += 1
+    return counts
 
 
 def _tribe_group_user_ids(tribe_group_ids) -> set[int]:
@@ -80,12 +203,17 @@ def wave_preview(
     tribe_group_ids=(),
     corporation_ids=(),
     user_ids=(),
+    onboarding=(),
+    now=None,
 ) -> dict:
-    """Who a wave would reach: new players, who can't be DM'd, and how many
-    of them own a hull for each ship target."""
+    """Who a send would reach: new players, who is skipped (already invited,
+    invites off, weekly cap), who can't be DM'd, and how many of them own a
+    hull for each ship target."""
+    new_pilots = onboarding_user_ids(onboarding) if onboarding else {}
     picked = (
         _tribe_group_user_ids(tribe_group_ids)
         | _corporation_user_ids(corporation_ids)
+        | set(new_pilots)
         | set(
             User.objects.filter(
                 id__in=list(user_ids), is_active=True
@@ -105,6 +233,12 @@ def wave_preview(
     if fleet.created_by_id:
         already.add(fleet.created_by_id)
     new = picked - already
+    opted_out: set[int] = set()
+    capped: set[int] = set()
+    if is_capped_fleet(fleet):
+        opted_out = opted_out_user_ids(new)
+        capped = capped_user_ids(new - opted_out, now=now)
+        new = new - opted_out - capped
     with_discord = set(
         DiscordUser.objects.filter(user_id__in=new).values_list(
             "user_id", flat=True
@@ -114,11 +248,81 @@ def wave_preview(
     return {
         "picked": len(picked),
         "already_invited": len(picked & already),
+        "opted_out": len(opted_out),
+        "capped": len(capped),
         "new_user_ids": sorted(new),
         "no_discord_user_ids": no_discord,
         "will_dm": len(with_discord),
         "helps": target_owner_counts(fleet, new),
+        "onboarding_by_user": {
+            u: b for u, b in new_pilots.items() if u in new
+        },
     }
+
+
+def invite_sources(
+    user_ids,
+    *,
+    onboarding_by_user: dict[int, str],
+    picked_user_ids=(),
+    tribe_group_ids=(),
+    corporation_ids=(),
+) -> dict[int, tuple[str, str]]:
+    """Why each pilot is invited: (source_kind, source_name). A new pilot
+    bucket wins, then being picked by name, then a tribe group, then a
+    corporation."""
+    # pylint: disable=import-outside-toplevel
+    from eveonline.models import EveCorporation
+    from tribes.models import TribeGroup, TribeGroupMembership
+
+    user_ids = set(user_ids)
+    out: dict[int, tuple[str, str]] = {}
+    for user_id in user_ids:
+        if user_id in onboarding_by_user:
+            out[user_id] = (onboarding_by_user[user_id], "")
+        elif user_id in set(picked_user_ids):
+            out[user_id] = (EveFleetInvite.SOURCE_PILOT, "")
+    rest = user_ids - set(out)
+    if rest and tribe_group_ids:
+        names = {
+            g.id: f"{g.tribe.name} · {g.name}"
+            for g in TribeGroup.objects.filter(
+                id__in=list(tribe_group_ids)
+            ).select_related("tribe")
+        }
+        for user_id, group_id in (
+            TribeGroupMembership.objects.filter(
+                tribe_group_id__in=list(tribe_group_ids),
+                user_id__in=list(rest),
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
+            .order_by("tribe_group_id")
+            .values_list("user_id", "tribe_group_id")
+        ):
+            out.setdefault(
+                user_id,
+                (EveFleetInvite.SOURCE_TRIBE_GROUP, names.get(group_id, "")),
+            )
+    rest = user_ids - set(out)
+    if rest and corporation_ids:
+        names = dict(
+            EveCorporation.objects.filter(
+                corporation_id__in=list(corporation_ids)
+            ).values_list("corporation_id", "name")
+        )
+        for user_id, corp_id in (
+            EveCharacter.objects.filter(
+                user_id__in=list(rest),
+                corporation_id__in=list(corporation_ids),
+            )
+            .order_by("corporation_id")
+            .values_list("user_id", "corporation_id")
+        ):
+            out.setdefault(
+                user_id,
+                (EveFleetInvite.SOURCE_CORPORATION, names.get(corp_id, "")),
+            )
+    return out
 
 
 def parse_invite_names(text: str) -> list[str]:
@@ -295,31 +499,40 @@ def send_wave(
     tribe_group_ids=(),
     corporation_ids=(),
     user_ids=(),
+    onboarding=(),
     note: str = "",
 ) -> EveFleetInviteWave:
     """Invite the new players in these picks and queue their DMs."""
-    if not fleet.invite_only:
-        raise PrivateFleetError("This fleet isn't invite only")
     if fleet.status in ("complete", "cancelled"):
         raise PrivateFleetError("This fleet has ended")
-    if sending_wave(fleet):
-        raise PrivateFleetError(
-            "The last wave is still sending", status_code=409
-        )
     preview = wave_preview(
         fleet,
         tribe_group_ids=tribe_group_ids,
         corporation_ids=corporation_ids,
         user_ids=user_ids,
+        onboarding=onboarding,
     )
     new = preview["new_user_ids"]
     if not new:
-        raise PrivateFleetError("Nobody new to invite in these picks")
+        raise PrivateFleetError(_nobody_new_message(preview))
     if len(new) > MAX_WAVE_SIZE:
         raise PrivateFleetError(
-            f"A wave can reach at most {MAX_WAVE_SIZE} players"
+            f"One send can reach at most {MAX_WAVE_SIZE} players"
+        )
+    # One pilot's DM can go out beside a bulk send; two bulk sends at once
+    # would double the DM rate.
+    if len(new) > 1 and sending_wave(fleet):
+        raise PrivateFleetError(
+            "Your last invites are still sending", status_code=409
         )
     no_discord = set(preview["no_discord_user_ids"])
+    sources = invite_sources(
+        new,
+        onboarding_by_user=preview["onboarding_by_user"],
+        picked_user_ids=user_ids,
+        tribe_group_ids=tribe_group_ids,
+        corporation_ids=corporation_ids,
+    )
     with transaction.atomic():
         number = (
             EveFleetInviteWave.objects.filter(eve_fleet=fleet).aggregate(
@@ -335,6 +548,7 @@ def send_wave(
             tribe_group_ids=sorted(set(tribe_group_ids)),
             corporation_ids=sorted(set(corporation_ids)),
             user_ids=sorted(set(user_ids)),
+            onboarding=sorted(set(onboarding) & set(ONBOARDING_BUCKETS)),
         )
         EveFleetInvite.objects.bulk_create(
             [
@@ -343,6 +557,8 @@ def send_wave(
                     wave=wave,
                     user_id=user_id,
                     dm_delivered=False if user_id in no_discord else None,
+                    source_kind=sources.get(user_id, ("", ""))[0],
+                    source_name=sources.get(user_id, ("", ""))[1][:128],
                 )
                 for user_id in new
             ]
@@ -357,6 +573,20 @@ def send_wave(
             context=f"fleet {fleet.id} wave {number}",
         )
     return wave
+
+
+def _nobody_new_message(preview: dict) -> str:
+    if preview["capped"] and not preview["opted_out"]:
+        return (
+            f"Already had {WEEKLY_INVITE_CAP} fleet invites this week"
+            if preview["picked"] == 1
+            else "Everyone new in these picks had their invites this week"
+        )
+    if preview["opted_out"] and preview["picked"] == 1:
+        return "This pilot turned off fleet invites"
+    if preview["already_invited"] and preview["picked"] == 1:
+        return "Already invited"
+    return "Nobody new to invite in these picks"
 
 
 def sending_wave(fleet: EveFleet) -> EveFleetInviteWave | None:
@@ -438,8 +668,6 @@ def sync_answer_from_ships(fleet: EveFleet, user_id: int) -> str | None:
     """After a pilot changes their ships: a ship means I'm in; no ships
     after being in means no answer again. Returns the new answer if it
     changed."""
-    if not fleet.invite_only:
-        return None
     invite = EveFleetInvite.objects.filter(
         eve_fleet=fleet, user_id=user_id
     ).first()
@@ -459,11 +687,27 @@ def sync_answer_from_ships(fleet: EveFleet, user_id: int) -> str | None:
     return answer
 
 
+def _check_not_started(fleet: EveFleet) -> None:
+    if fleet.status in ("complete", "cancelled", "active"):
+        raise PrivateFleetError("This fleet has already started")
+
+
+def say_in(invite: EveFleetInvite) -> EveFleetInvite:
+    """I'm in with no ship yet: the FC sees "No ship yet" and can help."""
+    _check_not_started(invite.eve_fleet)
+    if invite.answer == EveFleetInvite.ANSWER_IN:
+        return invite
+    invite.answer = EveFleetInvite.ANSWER_IN
+    invite.answered_at = timezone.now()
+    invite.save(update_fields=["answer", "answered_at"])
+    _queue_answer_followups(invite)
+    return invite
+
+
 def sit_out(invite: EveFleetInvite) -> EveFleetInvite:
     """Sitting out: clear the pilot's ships and record the answer."""
     fleet = invite.eve_fleet
-    if fleet.status in ("complete", "cancelled") or (fleet.status == "active"):
-        raise PrivateFleetError("This fleet has already started")
+    _check_not_started(fleet)
     character_ids = EveCharacter.objects.filter(
         user_id=invite.user_id
     ).values_list("character_id", flat=True)
