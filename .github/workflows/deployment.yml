@@ -10,14 +10,35 @@ jobs:
     concurrency:
       group: prod-deploy
       cancel-in-progress: false
+    outputs:
+      reason: ${{ steps.reason.outputs.reason }}
     steps:
       - name: executing remote ssh commands using password
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.UBUNTU_HOST }}
           username: ${{ secrets.UBUNTU_USERNAME }}
           password: ${{ secrets.UBUNTU_PASSWORD }}
-          script: cd /home/minmatar/minmatar.org && df -h . && git pull && docker compose -f docker-compose-prod.yml up -d --build && docker image prune -a -f
+          script: cd /home/minmatar/minmatar.org && rm -f ~/.minmatar-deploy-status && df -h . && git pull && ./scripts/deploy.sh
+      # scripts/deploy.sh leaves a "DEPLOY_REASON: ..." line when it fails.
+      - name: Read the failure reason
+        id: status_file
+        if: ${{ failure() }}
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.UBUNTU_HOST }}
+          username: ${{ secrets.UBUNTU_USERNAME }}
+          password: ${{ secrets.UBUNTU_PASSWORD }}
+          capture_stdout: true
+          script: cat ~/.minmatar-deploy-status 2>/dev/null || true
+      - name: Extract the failure reason
+        id: reason
+        if: ${{ failure() }}
+        env:
+          STDOUT: ${{ steps.status_file.outputs.stdout }}
+        run: |
+          reason=$(printf '%s\n' "$STDOUT" | sed -n 's/^.*DEPLOY_REASON: //p' | tail -n 1)
+          echo "reason=${reason:-The deploy failed before the deploy script ran (SSH or git pull).}" >> "$GITHUB_OUTPUT"
   notify-discord-failure:
     name: Notify Discord Failure
     runs-on: ubuntu-latest
@@ -29,4 +50,4 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         uses: Ilshidur/action-discord@master
         with:
-          args: "New release has failed to deploy! 😢"
+          args: "New release has failed to deploy! 😢 ${{ needs.build.outputs.reason }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -8,6 +8,39 @@ x-celery-worker: &celery-worker
         - app
 
 services:
+    # Zero-downtime deploys (scripts/deploy.sh, docs/architecture/deploys.md):
+    # app and frontend are updated with `docker rollout`, which starts a second
+    # container and stops the old one once the new one is healthy. They have no
+    # host ports of their own; edge holds 8020 and 4321 and only routes to
+    # healthy containers. The frontend reaches the API through edge too: it is
+    # only on the `web` network, where `app` resolves to edge.
+    edge:
+        image: traefik:v3.7.14
+        restart: always
+        command:
+            - --providers.docker=true
+            - --providers.docker.exposedByDefault=false
+            - --entryPoints.api.address=:8000
+            - --entryPoints.api.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+            - --entryPoints.web.address=:4321
+            - --entryPoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+        # Only the host's nginx reaches these; it terminates TLS.
+        ports:
+            - "127.0.0.1:8020:8000"
+            - "127.0.0.1:4321:4321"
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        # On the first deploy, app and frontend must give up the host ports
+        # before edge can bind them.
+        depends_on:
+            - app
+            - frontend
+        networks:
+            default: {}
+            web:
+                aliases:
+                    - app
+
     app:
         build:
             context: ./backend/.
@@ -16,10 +49,26 @@ services:
         command: ./app-start.sh
         env_file:
             - .env
-        ports:
-            - "8020:8000"
+        environment:
+            # edge appends its own hop to X-Forwarded-For (app/client_ip.py).
+            - EDGE_PROXY_HOPS=1
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+        healthcheck:
+            test: ["CMD", "python3", "healthcheck.py"]
+            interval: 5s
+            timeout: 5s
+            retries: 3
+            # Migrations run before gunicorn starts (app-start.sh).
+            start_period: 10m
+            start_interval: 2s
+        # gunicorn finishes in-flight requests on SIGTERM.
+        stop_grace_period: 30s
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.app.entrypoints=api
+            - traefik.http.routers.app.rule=PathPrefix(`/`)
+            - traefik.http.services.app.loadbalancer.server.port=8000
 
     bot:
         build:
@@ -104,10 +153,23 @@ services:
             - ORIGIN=https://my.minmatar.org
         env_file:
             - frontend/.env
-        ports:
-            - "4321:4321"
         volumes:
             - "./frontend/app/src/data:/app/src/data"
+        networks:
+            - web
+        healthcheck:
+            test: ["CMD", "node", "healthcheck.mjs"]
+            interval: 5s
+            timeout: 5s
+            retries: 3
+            start_period: 5m
+            start_interval: 2s
+        stop_grace_period: 30s
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.frontend.entrypoints=web
+            - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+            - traefik.http.services.frontend.loadbalancer.server.port=4321
 
     redis:
         image: redis:6.0.9-alpine
@@ -125,6 +187,9 @@ services:
 secrets:
     frontend_env:
         file: ./frontend/.env
+
+networks:
+    web: {}
 
 volumes:
     redis: {}

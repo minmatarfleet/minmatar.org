@@ -1,0 +1,26 @@
+# Local deploy test (docs/architecture/deploys.md): app uses the dev MariaDB
+# from docker-compose.yml, and the workers, beat, bot and Metabase are off.
+x-off: &off
+    profiles: [off]
+services:
+    app:
+        networks: [default, devdb]
+        labels:
+            # app is on two networks here; edge is only on the default one.
+            - traefik.docker.network=${COMPOSE_PROJECT_NAME:-rollouttest}_default
+    beat: *off
+    bot: *off
+    metabase: *off
+    celery: *off
+    celery-feed: *off
+    celery-fleets: *off
+    celery-intel: *off
+    celery-campaigns: *off
+    celery-eveonline: *off
+    celery-market: *off
+    celery-industry: *off
+    celery-community: *off
+networks:
+    devdb:
+        external: true
+        name: minmatarorg_default

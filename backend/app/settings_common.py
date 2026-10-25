@@ -236,7 +236,11 @@ EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")
 # Reverse proxies in front of the app that each append the address they saw
 # to X-Forwarded-For. Production runs one nginx hop (proxy/); set this to 0
 # if the app is reached directly, or add one per extra hop (e.g. a CDN).
-TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+# EDGE_PROXY_HOPS is set by docker-compose-prod.yml for the edge proxy that
+# sits behind those (docs/architecture/deploys.md), so .env needn't change.
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1")) + int(
+    os.environ.get("EDGE_PROXY_HOPS", "0")
+)
 
 # The daily alliance health snapshot prune deletes rows (older than 35 days,
 # down to one per day), so it only runs when this is turned on. Off by
