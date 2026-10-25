@@ -31,6 +31,7 @@ from eveonline.models import EveCharacter
 from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from feed.helpers.fleet_kills import fleet_kill_report
 from fleets.helpers.composition import fleet_composition
+from fleets.helpers.fleet_boss import alt_for_boss
 from fleets.helpers.role_coverage import PRESENT_SLACK
 
 SHARED_CACHE_SECONDS = 60
@@ -444,6 +445,10 @@ def _build_shared(fleet, instance) -> dict:
     from srp.models import EveFleetShipReimbursement
 
     fc = fleet.fleet_commander
+    # The FC's other character when they run the fleet on it: the one in
+    # the fleet, so the FC's system is that character's.
+    fc_alt = alt_for_boss(fleet, instance.boss_id if instance else None, fc)
+    in_game_fc = fc_alt or fc
     members = _members(instance)
     composition = fleet_composition(fleet)
     hulls = {}
@@ -451,7 +456,7 @@ def _build_shared(fleet, instance) -> dict:
         hulls.setdefault(entry.ship_id, entry.key)
     live = bool(instance and instance.end_time is None)
     system_id, system_name = _fc_system(
-        instance, members, fc.character_id if fc else None
+        instance, members, in_game_fc.character_id if in_game_fc else None
     )
 
     pilots = [
@@ -540,6 +545,8 @@ def _build_shared(fleet, instance) -> dict:
             "ended_at": _iso(instance.end_time) if instance else None,
             "fc_character_id": fc.character_id if fc else None,
             "fc_name": fc.character_name if fc else None,
+            "fc_alt_character_id": fc_alt.character_id if fc_alt else None,
+            "fc_alt_name": fc_alt.character_name if fc_alt else None,
             "fc_system_id": system_id,
             "fc_system_name": system_name,
         },

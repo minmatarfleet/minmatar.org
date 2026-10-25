@@ -551,6 +551,9 @@ export interface FleetItem {
     start_time:                     Date;
     fleet_commander_id:             number;
     fleet_commander_name:           string;
+    /** The FC's other character running the fleet in game; null on the main. */
+    fleet_commander_alt_id?:        number | null;
+    fleet_commander_alt_name?:      string | null;
     fleet_commander_fleet_count?:   number;
     corporation_id?:                number;
     corporation_name?:                string;
@@ -576,6 +579,9 @@ export interface FleetUI {
     start_time:             Date;
     fleet_commander_id:     number;
     fleet_commander_name:   string;
+    /** The FC's other character running the fleet in game; null on the main. */
+    fleet_commander_alt_id?:    number | null;
+    fleet_commander_alt_name?:  string | null;
     location:               string;
     doctrine:               DoctrineType;
     /** The fleet's doctrine id, set even when its doctrine failed to load. */

@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * Start tracking on the FC's main, with a quiet Change menu to start on
+ * another character (docs/fleets/fleet-on-alt.md). The main isn't required
+ * to be boss: without a pick, the backend falls through to whichever of the
+ * FC's characters is.
+ */
+interface Props {
+    id:                     number;
+    main_character_id?:     number;
+    main_character_name?:   string;
+}
+
+const {
+    id,
+    main_character_id,
+    main_character_name,
+} = Astro.props
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+const CHARACTERS_PARTIAL_URL = `${translatePath('/partials/fleet_start_characters_component')}?id=${id}`
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import StartFleetButton from '@components/blocks/StartFleetButton.astro'
+import Dropdown from '@components/blocks/Dropdown.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+---
+
+<Flexblock gap='var(--space-3xs)'>
+    <StartFleetButton id={id} />
+
+    <div class="[ start-as ]">
+        {main_character_id && main_character_name &&
+            <>
+                <img
+                    src={get_player_icon(main_character_id, 64)}
+                    alt=""
+                    width="24"
+                    height="24"
+                    loading="lazy"
+                />
+                <span>{t('start_tracking_as')} <b>{main_character_name}</b></span>
+                <span aria-hidden="true">·</span>
+            </>
+        }
+        <Dropdown trigger_label={t('start_tracking_change_label')}>
+            <span slot="button">{t('start_tracking_change')}</span>
+            <LazyPartial url={CHARACTERS_PARTIAL_URL} trigger="reveal" indicator={false}>
+                <small>{t('loading')}</small>
+            </LazyPartial>
+        </Dropdown>
+    </div>
+</Flexblock>
+
+<style lang="scss">
+    .start-as {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        img {
+            display: block;
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+
+        b {
+            color: var(--highlight);
+            font-weight: normal;
+        }
+    }
+</style>

@@ -30,6 +30,8 @@ const {
 
 delete attributes.class
 
+import { fleet_commander_label } from '@helpers/fleet_commander'
+const fc_name = fleet_commander_label(fleet, t('fleet_in_game_as'))
 const [ system ] = fleet.location?.split(' - ') ?? []
 const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
 const cancelled = fleet.status === 'cancelled'
@@ -48,6 +50,8 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
         character_id={fleet.fleet_commander_id}
         character_name={fleet.fleet_commander_name}
         type={fleet.type}
+        alt_character_id={fleet.fleet_commander_alt_id}
+        alt_character_name={fleet.fleet_commander_alt_name}
         size={72}
     />
 
@@ -64,7 +68,7 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
         </span>
         <small>
             {cancelled && <span style="color: var(--fleet-red)">{t('cancelled')} · </span>}
-            {[ fleet.fleet_commander_name, system ].filter(Boolean).join(' · ')}
+            {[ fc_name, system ].filter(Boolean).join(' · ')}
         </small>
     </span>
 

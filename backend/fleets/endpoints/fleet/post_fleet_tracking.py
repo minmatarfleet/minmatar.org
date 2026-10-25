@@ -8,6 +8,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 
 from fleets.endpoints.schemas import StartFleetRequest
+from fleets.helpers.fleet_boss import NO_BOSS
 from fleets.models import EveFleet
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,11 @@ METHOD = "post"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: None, 403: ErrorResponse, 400: ErrorResponse},
-    "description": "Start a fleet and send a discord ping, must be the owner of the fleet",
+    "description": (
+        "Start a fleet and send a discord ping, must be the owner of the "
+        "fleet. Without fc_character_id, uses the owner's main, or else "
+        "whichever of their characters is fleet boss in game."
+    ),
 }
 
 
@@ -36,6 +41,8 @@ def start_fleet(
         else:
             fleet.start(None)
     except Exception as e:
+        if NO_BOSS in str(e):
+            return 400, ErrorResponse.log(str(e), e)
         if "not in a fleet" in str(e):
             return 400, ErrorResponse.log("Not currently in a fleet", e)
         if "not the fleet commander" in str(e):

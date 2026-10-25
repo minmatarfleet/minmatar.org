@@ -28,6 +28,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [industry/lp-buyback.md](industry/lp-buyback.md) | current | LP buyback orders: tiers, states, timers, Discord threads |
 | [capabilities/capability-engine-design.md](capabilities/capability-engine-design.md) | current | Character capability engine: computed skill requirements per doctrine fitting, the fit check, readiness, accounts, SDE updates |
 | [fleet-ships-and-refits.md](fleet-ships-and-refits.md) | current | Fleet ship lists, refits and in-game fittings |
+| [fleets/fleet-on-alt.md](fleets/fleet-on-alt.md) | current | Running a fleet on an alt: the start finds the boss character, the main stays the FC, public pages show only the alt |
 | [fleets/private-fleets.md](fleets/private-fleets.md) | current | Private (invite-only) fleets: waves of Discord invites, the coordination thread, ship targets, declassifying |
 | [tribes/tribe-publishing.md](tribes/tribe-publishing.md) | current | Tribe groups publishing posts, fleets and Discord events: rules, data, permissions, API |
 | [tribes/tribe-invitations.md](tribes/tribe-invitations.md) | current | Chiefs inviting pilots to a tribe group: Discord DM, join without review, API |

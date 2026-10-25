@@ -54,6 +54,10 @@ class EveFleetResponse(BaseModel):
     # character or the fleet has no doctrine.
     fleet_commander_character_id: Optional[int] = None
     fleet_commander_name: Optional[str] = None
+    # The FC's other character, when they run the fleet in game on it (the
+    # boss). None on the main. Public pages show only this character.
+    fleet_commander_alt_character_id: Optional[int] = None
+    fleet_commander_alt_name: Optional[str] = None
     doctrine_id: Optional[int] = None
     doctrine_name: Optional[str] = None
     location: str
@@ -516,6 +520,9 @@ class FleetWindowFleet(BaseModel):
     ended_at: Optional[datetime] = None
     fc_character_id: Optional[int] = None
     fc_name: Optional[str] = None
+    # The FC's other character, when they run the fleet on it in game.
+    fc_alt_character_id: Optional[int] = None
+    fc_alt_name: Optional[str] = None
     fc_system_id: Optional[int] = None
     fc_system_name: Optional[str] = None
 

@@ -15,6 +15,12 @@ from fleets.helpers.member_ships import apply_esi_fleet_member
 from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
 from fleets.helpers.start_ping import build_start_ping
+from fleets.helpers.fleet_boss import (
+    active_fleet_as_boss,
+    find_fleet_boss,
+    fleet_boss_alt,
+    in_game_fleet_commander,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,14 +138,20 @@ class EveFleet(models.Model):
 
     @property
     def token(self):
-        if self.fleet_commander and self.fleet_commander.token:
-            return self.fleet_commander.token.valid_access_token()
+        character = in_game_fleet_commander(self)
+        if character and character.token:
+            return character.token.valid_access_token()
         else:
             return None
 
     @property
     def fleet_commander(self):
         return user_primary_character(self.created_by)
+
+    @property
+    def fleet_commander_alt(self):
+        """The FC's other character running the fleet in game, or None."""
+        return fleet_boss_alt(self)
 
     @property
     def formup_location(self):
@@ -158,31 +170,12 @@ class EveFleet(models.Model):
         """
         logger.info("Generating ESI fleet for fleet %s", self.id)
 
-        user = self.created_by
         if character_id:
             eve_character = EveCharacter.objects.get(character_id=character_id)
+            response = active_fleet_as_boss(eve_character, self.id)
         else:
-            eve_character = user_primary_character(user)
-
-        esi_response = EsiClient(eve_character).get_active_fleet()
-        if not esi_response.success():
-            if not esi_response.data:
-                msg = f"ESI error {esi_response.response_code} starting fleet {self.id}"
-            elif "Character is not in a fleet" in esi_response.data["error"]:
-                msg = f"Character {eve_character.character_name} not in a fleet (starting fleet {self.id})"
-            else:
-                msg = f"ESI error {esi_response.response_code} starting fleet {self.id}, {esi_response.data}"
-            raise RuntimeError(msg)
-
-        response = esi_response.data
-
-        # Only the in-game fleet boss (fleet commander) may link/start tracking.
-        # Otherwise a member can "steal" an existing EveFleetInstance.
-        if response.get("fleet_boss_id") != eve_character.character_id:
-            raise RuntimeError(
-                f"Character {eve_character.character_name} is not the fleet "
-                f"commander (starting fleet {self.id})"
-            )
+            # Main first, then whichever other character is boss in game.
+            eve_character, response = find_fleet_boss(self.created_by, self.id)
 
         if EveFleetInstance.objects.filter(id=response["fleet_id"]).exists():
             fleet_instance = EveFleetInstance.objects.get(
@@ -214,6 +207,7 @@ class EveFleet(models.Model):
             audience=None if self.host_group_id else self.audience,
             host_group=self.host_group,
             fc_character=self.fleet_commander,
+            fc_alt=self.fleet_commander_alt,
             description=self.description,
             doctrine=None if self.type == "strategic" else self.doctrine,
         )
@@ -369,9 +363,11 @@ class EveFleetInstance(models.Model):
             "refits": _motd_refits(eve_fleet),
             "composition": _motd_composition(eve_fleet),
         }
+        # In game, the character pilots see (and x up to), never the main.
+        fc = in_game_fleet_commander(eve_fleet)
         args = (
-            eve_fleet.fleet_commander.character_id,
-            eve_fleet.fleet_commander.character_name,
+            fc.character_id,
+            fc.character_name,
             formup_location.location_id if formup_location else None,
             formup_location.short_name if formup_location else None,
             "https://discord.gg/minmatar",

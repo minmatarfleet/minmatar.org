@@ -7,7 +7,11 @@ from groups.helpers.feature_access import fleet_hidden_from
 from tribes.helpers.publishing import host_group_ref
 from tribes.schemas import RestrictedResponse, restricted
 
-from fleets.endpoints.helpers import _fleet_authorized, fleet_host_fields
+from fleets.endpoints.helpers import (
+    _fleet_authorized,
+    fleet_commander_alt_fields,
+    fleet_host_fields,
+)
 
 from fleets.endpoints.schemas import (
     EveFleetDetailResponse,
@@ -55,10 +59,9 @@ def get_fleet(request, fleet_id: int):
         return 403, None
 
     tracking = None
-    if EveFleetInstance.objects.filter(eve_fleet=fleet).exists():
-        tracking = EveFleetTrackingResponse.model_validate(
-            EveFleetInstance.objects.get(eve_fleet=fleet)
-        )
+    instance = EveFleetInstance.objects.filter(eve_fleet=fleet).first()
+    if instance:
+        tracking = EveFleetTrackingResponse.model_validate(instance)
 
     payload = {
         "id": fleet.id,
@@ -67,6 +70,9 @@ def get_fleet(request, fleet_id: int):
         "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
+        **fleet_commander_alt_fields(
+            fleet, instance.boss_id if instance else None
+        ),
         "location": (
             fleet.formup_location.location_name
             if fleet.formup_location

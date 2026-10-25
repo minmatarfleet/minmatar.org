@@ -15,9 +15,15 @@ def get_fleet_discord_notification(
     fleet_start_time=None,
     is_pre_ping=False,
     content="@everyone",
+    fleet_commander_in_game_name=None,
 ):
     description = ""
     description += f"**TYPE**: {fleet_type.upper()}\n"
+    if fleet_commander_in_game_name:
+        # The FC is on another character: the name to x up to in game.
+        description += (
+            f"**FC IN GAME**: {fleet_commander_in_game_name.upper()}\n"
+        )
     if is_pre_ping:
         # pylint: disable=inconsistent-quotes
         description += f"**START TIME**: {fleet_start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet_start_time.timestamp())}> LOCAL\n"

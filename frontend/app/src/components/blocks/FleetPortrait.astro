@@ -2,11 +2,17 @@
 import type { FleetTypes } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 
-/** The FC's portrait with the fleet-type flag in its top-left corner. */
+/**
+ * The FC's portrait with the fleet-type flag in its top-left corner, and,
+ * when they run the fleet on another character, that character as a small
+ * inset in the bottom-right (docs/fleets/fleet-on-alt.md).
+ */
 interface Props {
     character_id:   number;
     character_name: string;
     type?:          FleetTypes;
+    alt_character_id?:      number | null;
+    alt_character_name?:    string | null;
     /** Edge length in px. */
     size?:          number;
     [propName: string]: any;
@@ -16,6 +22,8 @@ const {
     character_id,
     character_name,
     type,
+    alt_character_id = null,
+    alt_character_name = null,
     size = 112,
     ...attributes
 } = Astro.props
@@ -23,6 +31,7 @@ const {
 delete attributes.class
 
 const flag_size = Math.round(Math.max(22, size * 0.36))
+const alt_size = Math.round(Math.max(16, size * 0.38))
 
 import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro';
 ---
@@ -44,6 +53,18 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro';
         type={type}
         size={flag_size}
     />
+    {alt_character_id &&
+        <img
+            class="[ fleet-portrait__alt ]"
+            src={get_player_icon(alt_character_id, 64)}
+            alt={alt_character_name ?? ''}
+            title={alt_character_name ?? undefined}
+            width={alt_size}
+            height={alt_size}
+            loading="lazy"
+            style={`--alt-size: ${alt_size}px`}
+        />
+    }
 </span>
 
 <style lang="scss">
@@ -60,6 +81,15 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro';
             height: 100%;
             object-fit: cover;
         }
+    }
+
+    .fleet-portrait .fleet-portrait__alt {
+        position: absolute;
+        right: calc(var(--space-3xs) * -1);
+        bottom: calc(var(--space-3xs) * -1);
+        width: var(--alt-size);
+        height: var(--alt-size);
+        border: calc(var(--space-3xs) / 2) solid var(--background);
     }
 
     .fleet-portrait :global(.fleet-portrait__flag) {

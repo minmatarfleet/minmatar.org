@@ -28,6 +28,8 @@ const {
 delete attributes.class
 
 // Tracking that runs this long was almost always left on by accident.
+import { fleet_commander_label } from '@helpers/fleet_commander'
+const fc_name = fleet_commander_label(fleet, t('fleet_in_game_as'))
 const LEFT_ON_HOURS = 8
 
 const started = fleet.tracking?.start_time ?? fleet.start_time
@@ -40,7 +42,7 @@ const left_on = length_minutes !== null && length_minutes > LEFT_ON_HOURS * 60
 
 const day = eve_day_short(lang, started, { weekday: true })
 const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
-const fc_line = [ fleet.fleet_commander_name, doctrine?.name ].filter(Boolean).join(' · ')
+const fc_line = [ fc_name, doctrine?.name ].filter(Boolean).join(' · ')
 
 const destroyed = result?.isk_destroyed ?? 0
 const lost = result?.isk_lost ?? 0
@@ -76,6 +78,8 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
                 character_id={fleet.fleet_commander_id}
                 character_name={fleet.fleet_commander_name}
                 type={fleet.type}
+                alt_character_id={fleet.fleet_commander_alt_id}
+                alt_character_name={fleet.fleet_commander_alt_name}
                 size={28}
             />
             <small>{fc_line}</small>

@@ -32,9 +32,11 @@ const {
 delete attributes.class
 
 const counted_from = live && fleet.tracking?.start_time ? fleet.tracking.start_time : fleet.start_time
+import { fleet_commander_label } from '@helpers/fleet_commander'
+const fc_name = fleet_commander_label(fleet, t('fleet_in_game_as'))
 const [ system ] = fleet.location?.split(' - ') ?? []
 const objective = fleet.objective ? marked.parseInline(fleet.objective) as string : t('fleet')
-const meta = [ fleet.fleet_commander_name, doctrine?.name, system ].filter(Boolean).join(' · ')
+const meta = [ fc_name, doctrine?.name, system ].filter(Boolean).join(' · ')
 const href = translatePath(`/fleets/upcoming/${fleet.id}`)
 
 import FleetPortrait from '@components/blocks/FleetPortrait.astro'
@@ -53,6 +55,8 @@ import FleetHostTags from '@components/blocks/FleetHostTags.astro'
         character_id={fleet.fleet_commander_id}
         character_name={fleet.fleet_commander_name}
         type={fleet.type}
+        alt_character_id={fleet.fleet_commander_alt_id}
+        alt_character_name={fleet.fleet_commander_alt_name}
         size={112}
     />
 

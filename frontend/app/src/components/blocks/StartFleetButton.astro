@@ -3,41 +3,68 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
-    id:     number;
+    id:                 number;
+    /** Start on this character. Without one, the backend uses the main, else whichever character is fleet boss. */
+    character_id?:      number;
+    /** `row` renders the slot as a plain picker row (fleet_start_characters_component). */
+    variant?:           'button' | 'row';
+    [propName: string]: any;
 }
 
 const {
     id,
+    character_id,
+    variant = 'button',
+    ...attributes
 } = Astro.props
+
+delete attributes.class
 
 const FLEET_STATUS_PARTIAL_URL = translatePath('/partials/fleet_status_component')
 
 import { query_string } from '@helpers/string';
 
+const confirm_data = `{
+    show_start_tracking_confirm() {
+        show_confirm_dialog({
+            title: '${t('start_tracking_dialog_title')}',
+            content: '${character_id ? t('start_tracking_as_dialog_text') : t('start_tracking_dialog_text')}',
+            hx: {
+                method: 'post',
+                url: '${FLEET_STATUS_PARTIAL_URL}?${query_string({
+                    id: id,
+                    ...(character_id ? { character_id: character_id } : {}),
+                })}',
+                target: '#fleet-status',
+                swap: 'outerHTML transition:true'
+            }
+        })
+    }
+}`
+
 import Button from '@components/blocks/Button.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
 ---
 
-<Button
-    color='green'
-    class="[ w-fit ]"
-    type="button"
-    x-data={`{
-        show_start_tracking_confirm() {
-            show_confirm_dialog({
-                title: '${t('start_tracking_dialog_title')}',
-                content: '${t('start_tracking_dialog_text')}',
-                hx: {
-                    method: 'post',
-                    url: '${FLEET_STATUS_PARTIAL_URL}?${query_string({
-                        id: id,
-                    })}',
-                    target: '#fleet-status',
-                    swap: 'outerHTML transition:true'
-                }
-            })
-        }
-    }`}
-    x-on:click="show_start_tracking_confirm"
->
-    {t('ping_fleet')}
-</Button>
+{variant === 'row' ?
+    <StylessButton
+        type="button"
+        class:list={['[ start-fleet-row ]', Astro.props.class]}
+        x-data={confirm_data}
+        x-on:click="show_start_tracking_confirm"
+        {...attributes}
+    >
+        <slot />
+    </StylessButton>
+    :
+    <Button
+        color='green'
+        class:list={['[ w-fit ]', Astro.props.class]}
+        type="button"
+        x-data={confirm_data}
+        x-on:click="show_start_tracking_confirm"
+        {...attributes}
+    >
+        <slot>{t('ping_fleet')}</slot>
+    </Button>
+}

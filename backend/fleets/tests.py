@@ -2,6 +2,7 @@ import ast
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+from functools import wraps
 from unittest.mock import patch, MagicMock
 
 import factory
@@ -345,6 +346,23 @@ class FleetSignalsTestCase(TestCase):
         fleet.description = "Quiet drop, amended"
         fleet.save()
         queue.assert_not_called()
+
+
+def patch_fleet_esi(test):
+    """Patch EsiClient for a fleet start: the boss check
+    (fleets.helpers.fleet_boss) and the fleet updates (fleets.models) share
+    one mock, passed as the test's last argument. Put it below any other
+    @patch, so their mocks come first as before."""
+
+    @wraps(test)
+    def wrapper(self, *args):
+        esi_mock = MagicMock()
+        with patch("fleets.models.EsiClient", esi_mock), patch(
+            "fleets.helpers.fleet_boss.EsiClient", esi_mock
+        ):
+            return test(self, *args, esi_mock)
+
+    return wrapper
 
 
 class FleetRouterTestCase(TestCase):
@@ -797,8 +815,8 @@ class FleetRouterTestCase(TestCase):
         fleet.refresh_from_db()
         self.assertEqual(fleet.location_id, staging.location_id)
 
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_start_fleet_endpoint(self, discord_mock, esi_mock):
         char_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -841,8 +859,8 @@ class FleetRouterTestCase(TestCase):
             call.kwargs["payload"]["embeds"][0]["title"],
         )
 
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_start_fleet_when_not_in_fleet(self, discord_mock, esi_mock):
         setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -870,8 +888,8 @@ class FleetRouterTestCase(TestCase):
         error = response.json()
         self.assertEqual("Not currently in a fleet", error["detail"])
 
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_start_fleet_rejects_non_commander(self, discord_mock, esi_mock):
         char_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -913,8 +931,8 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(9999, existing.boss_id)
         self.assertNotEqual(char_id, existing.boss_id)
 
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_start_fleet_now_as_commander(self, discord_mock, esi_mock):
         char_id = setup_fc(self.user)
 
@@ -943,8 +961,8 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(fleet_id, instance.eve_fleet_id)
         self.assertEqual(char_id, instance.boss_id)
 
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_start_fleet_now_rejects_non_commander(
         self, discord_mock, esi_mock
     ):
@@ -985,8 +1003,8 @@ class FleetRouterTestCase(TestCase):
         existing.refresh_from_db()
         self.assertEqual(owner_fleet.id, existing.eve_fleet_id)
 
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_start_fleet_with_char(self, discord_mock, esi_mock):
         fc_id = setup_fc(self.user)
         fleet = make_test_fleet("Test", self.user)
@@ -1171,7 +1189,7 @@ class FleetRouterTestCase(TestCase):
 
         self.assertIsNotNone(EveFleetInstance.objects.get(id=123456).end_time)
 
-    @patch("fleets.models.EsiClient")
+    @patch_fleet_esi
     def test_start_fleet_error(self, esi_client_class):
         esi_mock = esi_client_class.return_value
 
@@ -1318,8 +1336,8 @@ class FleetTaskTests(TestCase):
                 self.assertIn("<:training:999999>", content)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_fleet_member_update(self, discord, esi):
         esi_mock = esi.return_value
 
@@ -1404,8 +1422,8 @@ class FleetTaskTests(TestCase):
         self.assertIsNotNone(efi.end_time)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_update_fleet_instances(self, discord, esi):
         esi_mock = esi.return_value
 
@@ -1475,8 +1493,8 @@ class FleetTaskTests(TestCase):
         update_fleet_instances()
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("fleets.models.EsiClient")
     @patch("discord.outbox.DiscordClient")
+    @patch_fleet_esi
     def test_esi_failure_does_not_auto_close_within_one_hour(
         self, discord_mock, esi
     ):
