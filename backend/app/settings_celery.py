@@ -101,6 +101,13 @@ CELERYBEAT_CHARACTERS = [
         },
     ),
     (
+        "[Characters] Accept applications of pilots who joined",
+        {
+            "task": "applications.tasks.accept_applications_of_members_task",
+            "schedule": crontab(minute="15,45", hour="*"),
+        },
+    ),
+    (
         "[Characters] Update Players",
         {
             "task": "eveonline.tasks.players.update_players",

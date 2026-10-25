@@ -14,10 +14,12 @@ from app.celery import app
 from .discord import (
     create_application_thread,
     notify_application_accepted,
+    notify_application_joined,
     notify_application_rejected,
     notify_application_thread_deleted,
     notify_application_transferred,
 )
+from .joined import accept_applications_of_members
 from .models import EveCorporationApplication
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,8 @@ THREAD_CREATE_MAX_RETRIES = 3
 DECISION_NOTIFIERS = {
     "accepted": notify_application_accepted,
     "rejected": notify_application_rejected,
+    # Accepted because the applicant joined in game (applications.joined).
+    "joined": notify_application_joined,
 }
 
 
@@ -124,3 +128,11 @@ def notify_application_transferred_task(
             "Could not post the transfer notice for application %s",
             application_id,
         )
+
+
+@app.task()
+def accept_applications_of_members_task():
+    """Accept pending applications whose applicant joined the corporation,
+    and post the joined notice in each forum thread."""
+    for application_id in accept_applications_of_members():
+        sync_application_thread_task.delay(application_id, "joined")

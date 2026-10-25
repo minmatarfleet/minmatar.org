@@ -10,6 +10,7 @@ from django.utils.dateparse import parse_datetime
 from app.test import TestCase
 from applications.discord import notify_application_transferred
 from applications.tasks import notify_application_transferred_task
+from applications.joined import accept_applications_of_members
 from applications.l3arn import (
     L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH,
     L3ARN_CORPORATION_NAME,
@@ -22,7 +23,10 @@ from applications.prime_time import (
     parse_application_prime_time,
 )
 from applications.signals import eve_corporation_application_post_save
-from applications.tasks import sync_application_thread_task
+from applications.tasks import (
+    accept_applications_of_members_task,
+    sync_application_thread_task,
+)
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import set_primary_character, user_player
@@ -934,3 +938,90 @@ class ProcessedByDeleteTest(TestCase):
         self.assertEqual(
             EveCorporationApplication.objects.filter(pk=1958).count(), 1
         )
+
+
+class AcceptApplicationsOfMembersTest(TestCase):
+    """Pending applications close once the applicant joins in game."""
+
+    def setUp(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
+        super().setUp()
+        self.character = EveCharacter.objects.create(
+            character_id=1234,
+            character_name="Mr User",
+            user=self.user,
+            corporation_id=1,
+        )
+
+    def _apply(self, corporation_id=123, **fields):
+        return EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation_id,
+            description="Test application",
+            **fields,
+        )
+
+    @patch("applications.tasks.sync_application_thread_task")
+    def test_joining_accepts_and_posts_the_joined_notice(self, sync_mock):
+        application = self._apply(discord_thread_id=555)
+        accept_applications_of_members_task()
+        application.refresh_from_db()
+        self.assertEqual(application.status, "pending")
+
+        self.character.corporation_id = 123
+        self.character.save()
+        accept_applications_of_members_task()
+
+        application.refresh_from_db()
+        self.assertEqual(application.status, "accepted")
+        self.assertIsNone(application.processed_by_id)
+        sync_mock.delay.assert_called_once_with(application.id, "joined")
+
+    def test_an_alt_in_the_corporation_counts(self):
+        EveCharacter.objects.create(
+            character_id=5678,
+            character_name="Mr Alt",
+            user=self.user,
+            corporation_id=123,
+        )
+        application = self._apply()
+
+        self.assertEqual(accept_applications_of_members(), [application.id])
+
+    def test_decided_and_other_corporation_applications_stay(self):
+        self.character.corporation_id = 123
+        self.character.save()
+        rejected = self._apply(status="rejected")
+        elsewhere = self._apply(corporation_id=456)
+        other_user = User.objects.create(username="other")
+        theirs = EveCorporationApplication.objects.create(
+            user=other_user, corporation_id=789, description="x"
+        )
+        EveCharacter.objects.create(
+            character_id=999, character_name="Other", corporation_id=789
+        )
+
+        self.assertEqual(accept_applications_of_members(), [])
+        for application, status in (
+            (rejected, "rejected"),
+            (elsewhere, "pending"),
+            (theirs, "pending"),
+        ):
+            application.refresh_from_db()
+            self.assertEqual(application.status, status)
+
+    def test_joined_notice_closes_the_thread(self):
+        application = self._apply(discord_thread_id=555)
+        with patch("applications.discord.discord") as discord_mock:
+            sync_application_thread_task(application.id, "joined")
+        message = discord_mock.create_message.call_args.kwargs["message"]
+        self.assertIn("joined the corporation", message)
+        self.assertNotIn("Apply in-game", message)
+        discord_mock.close_thread.assert_called_once_with(channel_id=555)
