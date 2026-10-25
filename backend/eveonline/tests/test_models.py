@@ -122,17 +122,21 @@ class SkillsUpdateTestCase(TestCase):
 
         self.assertEqual(0, EveCharacterSkill.objects.count())
 
-        upsert_character_skill(char, esi_skill)
+        self.assertTrue(upsert_character_skill(char, esi_skill))
 
         self.assertEqual(1, EveCharacterSkill.objects.count())
 
-        # Second update will update the skill
+        # Second update will update the skill; SP alone is not a change
+        # the capability engine cares about.
 
         esi_skill["skillpoints_in_skill"] = 2000
 
-        upsert_character_skill(char, esi_skill)
+        self.assertFalse(upsert_character_skill(char, esi_skill))
 
         self.assertEqual(1, EveCharacterSkill.objects.count())
+
+        esi_skill["trained_skill_level"] = 3
+        self.assertTrue(upsert_character_skill(char, esi_skill))
 
         # Manually create a duplicate
 

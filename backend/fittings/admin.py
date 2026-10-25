@@ -6,6 +6,7 @@ from django.db.models import Count, Exists, OuterRef, Subquery
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
 
 from eveuniverse.models import EveType
@@ -66,6 +67,7 @@ from fittings.models import (
     EveFittingModuleSubstitution,
     EveFittingPod,
     EveFittingRefit,
+    EveFittingSkillOverride,
     FittingTag,
 )
 from srp.models import PodReimbursementProgram
@@ -464,6 +466,118 @@ class EveFittingModuleSubstitutionInline(admin.TabularInline):
         return formfield
 
 
+class EveFittingSkillOverrideInline(admin.TabularInline):
+    """Corrections to the computed skill requirements (rarely needed)."""
+
+    model = EveFittingSkillOverride
+    extra = 0
+    fields = ("skill", "action", "tier", "level", "note", "updated_by")
+    readonly_fields = ("updated_by",)
+    autocomplete_fields = ("skill",)
+    verbose_name = "skill correction"
+    verbose_name_plural = (
+        "Skill corrections — only when a computed requirement above is wrong"
+    )
+
+
+REQUIREMENT_TIER_LABELS = {
+    "required": "Required",
+    "core": "Core",
+    "optimal": "Optimal",
+}
+
+
+def render_skill_requirements(fitting) -> str:
+    """The computed requirement table for the fitting admin page."""
+    # pylint: disable=import-outside-toplevel
+    from capabilities.models import (
+        CharacterFittingReadiness,
+        FittingRequirementSet,
+    )
+
+    rs = (
+        FittingRequirementSet.objects.filter(fitting=fitting, is_current=True)
+        .order_by("-pk")
+        .first()
+    )
+    if rs is None:
+        return format_html(
+            "<p>Not computed yet. Requirements are computed for fittings in a "
+            "doctrine, a few seconds after they change.</p>"
+        )
+    readiness = CharacterFittingReadiness.objects.filter(fitting=fitting)
+    counts = {
+        "unlocked": readiness.filter(unlocked=True).count(),
+        "hard": readiness.filter(hard_ready=True).count(),
+        "core": readiness.filter(core_ready=True).count(),
+    }
+    order = {"required": 0, "core": 1, "optimal": 2}
+    rows = sorted(
+        rs.rows.all(), key=lambda r: (order[r.tier], r.bucket, r.skill_name)
+    )
+    body = []
+    for r in rows:
+        flag = ""
+        if (
+            r.proven_meeting_core is not None
+            and r.proven_meeting_core < 0.7
+            and r.core_level > r.required_level
+        ):
+            flag = format_html(
+                ' <strong title="Fewer than 70% of pilots who fly this hull '
+                'meet this level">⚑ {}%</strong>',
+                round(100 * r.proven_meeting_core),
+            )
+        required = max(r.required_level, r.fit_level)
+        body.append(
+            format_html(
+                "<tr><td>{}</td><td>{}{}</td><td>{}</td><td>{}</td><td>{}</td>"
+                "<td>{}</td><td>{}</td><td>{}</td></tr>",
+                REQUIREMENT_TIER_LABELS[r.tier],
+                r.skill_name,
+                flag,
+                required or "–",
+                r.core_level or "–",
+                r.optimal_level or "–",
+                r.bucket or "–",
+                ", ".join(
+                    f"{tier}: {'+'.join(src)}"
+                    for tier, src in sorted(r.sources.items())
+                ),
+                ("changed by doctrine team. " if r.overridden else "")
+                + (r.reason or ""),
+            )
+        )
+    summary = format_html(
+        "<p><strong>{}</strong> ({}){}. Tank: {}. Ready now: {} unlocked, "
+        "{} can fly it, {} core-ready characters. Proven pilots used for "
+        "calibration: {}. SDE build {}.</p>",
+        rs.capability,
+        (
+            "set on this fitting"
+            if rs.capability_source == "override"
+            else "automatic"
+        ),
+        ", strategic: Doctrine-ready needs core" if rs.strategic else "",
+        ", ".join(rs.tank_layers) or "–",
+        counts["unlocked"],
+        counts["hard"],
+        counts["core"],
+        rs.proven_pilots,
+        rs.sde_build,
+    )
+    header = format_html(
+        "<tr><th>Tier</th><th>Skill</th><th>Required</th><th>Core</th>"
+        "<th>Optimal</th><th>Bucket</th><th>Source</th><th>Why</th></tr>"
+    )
+    return format_html(
+        '{}<table class="capability-requirements">{}{}</table>',
+        summary,
+        header,
+        mark_safe("".join(str(b) for b in body)),  # each row is format_html
+    )
+
+
 @admin.register(EveFitting)
 class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     """Admin for EveFitting. Ship and display name are inferred from EFT."""
@@ -501,6 +615,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         "created_at",
         "updated_at",
         "protection_tier_display",
+        "skill_requirements_panel",
     )
     fieldsets = (
         (
@@ -557,8 +672,31 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                 "fields": ("pods", "minimum_pod", "recommended_pod"),
             },
         ),
+        (
+            "Fleet job & skill requirements",
+            {
+                "description": (
+                    "Computed automatically from the fit, the SDE and the "
+                    "pilots who fly it. Nothing to do here unless something "
+                    "is wrong: then set the job, or add a skill correction "
+                    "below. Both save immediately and are kept in the "
+                    "fitting history."
+                ),
+                "fields": ("capability", "skill_requirements_panel"),
+            },
+        ),
     )
-    inlines = (EveFittingModuleSubstitutionInline, EveFittingRefitInline)
+    inlines = (
+        EveFittingModuleSubstitutionInline,
+        EveFittingSkillOverrideInline,
+        EveFittingRefitInline,
+    )
+
+    @admin.display(description="Skill requirements")
+    def skill_requirements_panel(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        return render_skill_requirements(obj)
 
     def changelist_view(self, request, extra_context=None):
         return HttpResponseRedirect(reverse("admin:fittings_manage_fittings"))
@@ -675,7 +813,9 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             return
 
         original = EveFitting.objects.get(pk=obj.pk)
-        known_key_updated = self._sync_known_key(original, obj, form)
+        known_key_updated = self._sync_unversioned(
+            request, original, obj, form
+        )
         payload = build_fitting_payload_from_form(form, original)
 
         if not fitting_payload_changed(original, payload):
@@ -719,6 +859,43 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                 ),
             )
             _mark_change_request_queued(request, url)
+
+    def _sync_unversioned(self, request, original, obj, form) -> bool:
+        """Save fields that skip the approval queue. True if known_key changed."""
+        # save_related compares against this to version requirement edits.
+        request._requirement_snapshot = (  # pylint: disable=protected-access
+            original.capability,
+            original.skill_override_snapshot(),
+        )
+        if self._sync_capability(original, obj, form):
+            messages.info(request, "Fleet job updated.")
+        return self._sync_known_key(original, obj, form)
+
+    @staticmethod
+    def _sync_capability(original, obj, form) -> bool:
+        """Persist the fleet job immediately, like known_key."""
+        if "capability" not in form.cleaned_data:
+            return False
+        new = form.cleaned_data.get("capability") or ""
+        if (original.capability or "") == new:
+            return False
+        original.capability = new
+        original.save(update_fields=["capability"])
+        obj.capability = new
+        return True
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        snapshot = getattr(request, "_requirement_snapshot", None)
+        if not change or snapshot is None:
+            return
+        fitting = EveFitting.all_objects.get(pk=form.instance.pk)
+        old_capability, old_overrides = snapshot
+        if (
+            fitting.capability != old_capability
+            or fitting.skill_override_snapshot() != old_overrides
+        ):
+            fitting.record_requirement_change(old_capability, old_overrides)
 
     @staticmethod
     def _sync_known_key(original, obj, form) -> bool:
@@ -786,6 +963,11 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             )
 
     def save_formset(self, request, form, formset, change):
+        if formset.model is EveFittingSkillOverride:
+            for inline_form in formset.forms:
+                if inline_form.has_changed():
+                    inline_form.instance.updated_by = request.user
+            return super().save_formset(request, form, formset, change)
         if formset.model is not EveFittingRefit:
             return super().save_formset(request, form, formset, change)
 

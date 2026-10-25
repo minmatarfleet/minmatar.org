@@ -159,6 +159,7 @@ ROUTES: dict[str, str] = {
     "surveys.": "community",
     "alliance.": "community",
     "fittings.": "community",
+    "capabilities.": "community",
     "app.": "community",
     # Celery's built-ins (backend_cleanup, chord_unlock)
     "celery.": "community",
