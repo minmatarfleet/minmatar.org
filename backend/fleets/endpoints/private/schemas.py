@@ -21,6 +21,18 @@ class TargetHelp(BaseModel):
     own: int
 
 
+class CappedPilot(BaseModel):
+    """A pilot skipped because they had their fleet invite this week."""
+
+    user_id: int
+    name: str
+    # The fleet whose invite counts, when it was sent, and when the pilot
+    # can be invited again.
+    fleet: str
+    invited_at: datetime
+    free_at: datetime
+
+
 class WavePreviewResponse(BaseModel):
     picked: int
     already_invited: int
@@ -31,6 +43,8 @@ class WavePreviewResponse(BaseModel):
     # Standard fleets only: skipped for Stop fleet invites / the weekly cap.
     opted_out: int = 0
     capped: int = 0
+    # Who the weekly cap skips, soonest free first (at most 50).
+    capped_pilots: List[CappedPilot] = []
 
 
 class InvitePilot(BaseModel):
@@ -144,8 +158,11 @@ class InviteCandidate(BaseModel):
     name: str
     detail: str
     # Why this pick can't be invited now: "invited", "opted_out" or
-    # "capped"; null when it can.
+    # "capped"; null when it can. "opted_out" and "capped" picks can still
+    # be added; the send skips them.
     blocked: Optional[str] = None
+    # "capped" only: the invite that counts this week.
+    capped: Optional[CappedPilot] = None
 
 
 class ResolveNamesRequest(BaseModel):
@@ -160,6 +177,9 @@ class ResolvedPilot(BaseModel):
     name: str
     detail: str
     matched_as: str
+    # As on InviteCandidate.
+    blocked: Optional[str] = None
+    capped: Optional[CappedPilot] = None
 
 
 class ResolveNamesResponse(BaseModel):

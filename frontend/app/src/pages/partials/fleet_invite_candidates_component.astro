@@ -1,7 +1,7 @@
 ---
 // no-error-refetch: search-as-you-type; a failed search shows no matches and the next keystroke retries.
 import { i18n, t_key } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -22,6 +22,7 @@ if (!fleet_id)
 
 import { get_fleet_invite_candidates, type FleetInviteCandidate } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
+import { invite_day, is_skipped, skip_note } from '@helpers/fleet_invites'
 
 const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?${query_string({ fleet_id })}&action=invite_one`
 
@@ -46,7 +47,16 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                 candidate.detail :
                 [kind, candidate.detail].filter(Boolean).join(' · ')
             const blocked = candidate.blocked ? t(t_key('fleets.invites.blocked_', candidate.blocked)) : ''
-            return <li class:list={[{ 'is-blocked': blocked }]}>
+            // Skipped picks can still be added in the dialog; the chip says why.
+            const skipped = !single && is_skipped(candidate.blocked)
+            const free_day = candidate.capped ? invite_day(lang, candidate.capped.free_at) : ''
+            const pick = {
+                kind: candidate.kind,
+                id: candidate.id,
+                name: candidate.name,
+                skip: skip_note(t, lang, candidate),
+            }
+            return <li class:list={[{ 'is-blocked': blocked && !skipped, 'is-skipped': skipped }]}>
                 {single ?
                     <div class="[ invite-candidates__row ]">
                         <span>
@@ -54,7 +64,10 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                             <small>{detail}</small>
                         </span>
                         {blocked ?
-                            <small>{blocked}</small> :
+                            <small class:list={['[ invite-candidates__why ]', { 'is-skip': free_day }]}>
+                                {blocked}
+                                {free_day && <Fragment><br />{t('fleets.invites.again_on').replace('{day}', free_day)}</Fragment>}
+                            </small> :
                             <button
                                 type="button"
                                 class="[ invite-candidates__invite ]"
@@ -68,11 +81,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                     </div> :
                     <button
                         type="button"
-                        disabled={Boolean(blocked)}
-                        x-on:click={blocked ? undefined : `$dispatch('pick-candidate', ${JSON.stringify({ kind: candidate.kind, id: candidate.id, name: candidate.name })})`}
+                        disabled={Boolean(blocked) && !skipped}
+                        title={pick.skip || undefined}
+                        x-on:click={blocked && !skipped ? undefined : `$dispatch('pick-candidate', ${JSON.stringify(pick)})`}
                     >
                         <b>{candidate.name}</b>
-                        <small>{blocked || detail}</small>
+                        <small>{skipped ? t('fleets.invites.will_be_skipped').replace('{reason}', blocked) : blocked || detail}</small>
                     </button>
                 }
             </li>
@@ -129,6 +143,15 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         .is-blocked b {
             color: var(--text-muted);
         }
+
+        .is-skipped small,
+        .is-skip {
+            color: var(--fleet-red-blind);
+        }
+    }
+
+    .invite-candidates__why {
+        text-align: right;
     }
 
     .invite-candidates__row {

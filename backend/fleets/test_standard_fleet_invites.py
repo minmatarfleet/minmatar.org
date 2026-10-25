@@ -5,6 +5,8 @@ DM (docs/fleets/private-fleets.md)."""
 from datetime import timedelta
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
+from django.db.models.query import QuerySet
 from django.utils import timezone
 
 from alliance.models import AllianceHealthSnapshot
@@ -13,6 +15,7 @@ from fleets.helpers.private_fleet_discord import (
     answered_payload,
     invite_payload,
 )
+from fleets.helpers import private_fleets
 from fleets.helpers.private_fleets import (
     OPSEC_LINE,
     PrivateFleetError,
@@ -167,9 +170,8 @@ class StandardInvitesTabTests(StandardInviteTestBase):
 
 
 class WeeklyCapTests(StandardInviteTestBase):
-    def test_two_standard_invites_a_week(self):
-        for _ in range(2):
-            self.invite_on(self.standard_fleet(), self.pilot)
+    def test_one_standard_invite_a_week(self):
+        self.invite_on(self.standard_fleet(), self.pilot)
         fleet = self.standard_fleet()
         preview = self.call(
             "post",
@@ -182,6 +184,23 @@ class WeeklyCapTests(StandardInviteTestBase):
         with self.assertRaisesMessage(PrivateFleetError, "this week"):
             self.invite_on(fleet, self.pilot)
 
+    def test_preview_names_who_is_skipped_and_when_they_are_free(self):
+        first = self.invite_on(self.standard_fleet(), self.pilot)
+        sent = EveFleetInvite.objects.get(wave=first).created_at
+        preview = self.call(
+            "post",
+            f"/{self.standard_fleet().id}/invites/preview",
+            self.fc,
+            {"user_ids": [self.pilot.id]},
+        ).json()
+        (row,) = preview["capped_pilots"]
+        self.assertEqual(row["user_id"], self.pilot.id)
+        self.assertEqual(row["name"], "Teysha")
+        self.assertEqual(row["fleet"], "Sunday Thrasher roam")
+        self.assertEqual(
+            row["free_at"][:16], (sent + timedelta(days=7)).isoformat()[:16]
+        )
+
     def test_old_and_undelivered_invites_dont_count(self):
         old = self.invite_on(self.standard_fleet(), self.pilot)
         EveFleetInvite.objects.filter(wave=old).update(
@@ -190,30 +209,127 @@ class WeeklyCapTests(StandardInviteTestBase):
         failed = self.invite_on(self.standard_fleet(), self.pilot)
         EveFleetInvite.objects.filter(wave=failed).update(dm_delivered=False)
         self.invite_on(self.standard_fleet(), self.pilot)
-        self.invite_on(self.standard_fleet(), self.pilot)
 
-    def test_strategic_and_private_invites_are_not_capped(self):
-        for _ in range(2):
-            self.invite_on(self.standard_fleet(), self.pilot)
-        self.invite_on(self.standard_fleet(type="strategic"), self.pilot)
+    def test_strategic_and_training_invites_count(self):
+        for kind in ("strategic", "training"):
+            fleet = self.standard_fleet(type=kind)
+            self.invite_on(fleet, self.pilot)
+            with self.assertRaises(PrivateFleetError):
+                self.invite_on(self.standard_fleet(), self.pilot)
+            EveFleetInvite.objects.filter(eve_fleet=fleet).delete()
+
+    def test_private_fleets_are_not_limited_and_dont_count(self):
+        self.invite_on(self.standard_fleet(), self.pilot)
+        # Quiet mode still reaches a pilot who had their invite...
         send_wave(
             self.private_fleet(), sent_by=self.strat, user_ids=[self.pilot.id]
         )
-        # Neither counted: a third non-strategic invite is still capped at
-        # two, not four.
-        preview = self.call(
-            "post",
-            f"/{self.standard_fleet().id}/invites/preview",
-            self.fc,
-            {"user_ids": [self.pilot.id]},
-        ).json()
-        self.assertEqual(preview["capped"], 1)
+        # ...and its own invite doesn't use up anyone's week.
+        send_wave(
+            self.private_fleet(),
+            sent_by=self.strat,
+            user_ids=[self.outsider.id],
+        )
+        self.invite_on(self.standard_fleet(), self.outsider)
 
-    def test_training_fleets_are_capped(self):
-        for _ in range(2):
-            self.invite_on(self.standard_fleet(type="training"), self.pilot)
-        with self.assertRaises(PrivateFleetError):
-            self.invite_on(self.standard_fleet(), self.pilot)
+    def test_candidates_say_who_invited_them_this_week(self):
+        self.invite_on(self.standard_fleet(), self.pilot)
+        fleet = self.standard_fleet(objective="Tuesday frigates")
+        (row,) = self.call(
+            "get",
+            f"/{fleet.id}/invites/candidates?q=teysha&pilots_only=true",
+            self.fc,
+        ).json()
+        self.assertEqual(row["blocked"], "capped")
+        self.assertEqual(row["capped"]["fleet"], "Sunday Thrasher roam")
+        self.assertIsNotNone(row["capped"]["free_at"])
+
+    def test_pasted_names_say_who_will_be_skipped(self):
+        self.invite_on(self.standard_fleet(), self.pilot)
+        fleet = self.standard_fleet()
+        body = self.call(
+            "post",
+            f"/{fleet.id}/invites/resolve",
+            self.fc,
+            {"text": "Teysha"},
+        ).json()
+        (row,) = body["matched"]
+        self.assertEqual(row["blocked"], "capped")
+        self.assertEqual(row["capped"]["fleet"], "Sunday Thrasher roam")
+
+
+class SendLockTests(StandardInviteTestBase):
+    """Two FCs sending at once can't both invite one pilot."""
+
+    def _invite_elsewhere_after_preview(self, *users):
+        """Another fleet invites ``users`` between this send's preview and
+        its write, as a send running at the same moment would."""
+        real = private_fleets.wave_preview
+        other = self.standard_fleet(objective="Someone else's roam")
+
+        raced = []
+
+        def preview_then_race(*args, **kwargs):
+            preview = real(*args, **kwargs)
+            if not raced:
+                raced.append(True)
+                self.invite_on(other, *users)
+            return preview
+
+        return patch.object(
+            private_fleets, "wave_preview", side_effect=preview_then_race
+        )
+
+    def test_send_checks_again_after_locking(self):
+        fleet = self.standard_fleet()
+        with self._invite_elsewhere_after_preview(self.pilot):
+            wave = self.invite_on(fleet, self.pilot, self.outsider)
+        self.assertEqual(
+            list(
+                EveFleetInvite.objects.filter(wave=wave).values_list(
+                    "user_id", flat=True
+                )
+            ),
+            [self.outsider.id],
+        )
+
+    def test_send_of_only_raced_pilots_is_refused(self):
+        fleet = self.standard_fleet()
+        with self._invite_elsewhere_after_preview(self.pilot):
+            with self.assertRaisesMessage(
+                PrivateFleetError, "Someone else just invited them"
+            ):
+                self.invite_on(fleet, self.pilot)
+        self.assertFalse(EveFleetInvite.objects.filter(eve_fleet=fleet))
+
+    def test_send_locks_the_pilots_accounts(self):
+        fleet = self.standard_fleet()
+        locked = []
+        real = QuerySet.select_for_update
+
+        def spy(queryset, *args, **kwargs):
+            locked.append(queryset.model)
+            return real(queryset, *args, **kwargs)
+
+        with patch.object(QuerySet, "select_for_update", spy):
+            self.invite_on(fleet, self.pilot)
+        self.assertIn(User, locked)
+
+    def test_private_sends_take_no_lock(self):
+        locked = []
+        real = QuerySet.select_for_update
+
+        def spy(queryset, *args, **kwargs):
+            locked.append(queryset.model)
+            return real(queryset, *args, **kwargs)
+
+        with patch.object(QuerySet, "select_for_update", spy):
+            send_wave(
+                self.private_fleet(),
+                sent_by=self.strat,
+                user_ids=[self.pilot.id],
+            )
+        self.assertNotIn(User, locked)
 
 
 class StopInvitesTests(StandardInviteTestBase):
@@ -326,10 +442,10 @@ class DmTests(StandardInviteTestBase):
         self.assertNotIn(OPSEC_LINE, answered["description"])
         self.assertIn("No ship yet", answered["description"])
 
-    def test_strategic_and_private_dms_have_no_stop_button(self):
-        for fleet in (
-            self.standard_fleet(type="strategic"),
-            self.private_fleet(),
+    def test_only_private_dms_have_no_stop_button(self):
+        for fleet, has_stop in (
+            (self.standard_fleet(type="strategic"), True),
+            (self.private_fleet(), False),
         ):
             send_wave(
                 fleet, sent_by=fleet.created_by, user_ids=[self.pilot.id]
@@ -341,8 +457,9 @@ class DmTests(StandardInviteTestBase):
                     "components"
                 ]
             ]
-            self.assertFalse(
-                any(i.startswith(STOP_INVITES_CUSTOM_ID_PREFIX) for i in ids)
+            self.assertEqual(
+                any(i.startswith(STOP_INVITES_CUSTOM_ID_PREFIX) for i in ids),
+                has_stop,
             )
 
     def test_sender_dms_a_standard_invite(self):
@@ -360,6 +477,5 @@ class DmTests(StandardInviteTestBase):
 class CapAcrossUsersTests(StandardInviteTestBase):
     def test_cap_is_per_pilot(self):
         extra = make_user("extra", perms=VIEW)
-        for _ in range(2):
-            self.invite_on(self.standard_fleet(), self.pilot)
+        self.invite_on(self.standard_fleet(), self.pilot)
         self.invite_on(self.standard_fleet(), extra)

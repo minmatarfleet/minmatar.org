@@ -39,6 +39,9 @@ const BUCKETS = [
     { key: 'more_fleets', label: t('fleets.invites.more_fleets'), hint: t('fleets.invites.more_fleets_hint'), count: more_fleets },
 ]
 const selected_label = JSON.stringify(t('fleets.invites.selected'))
+// The Reach panel reports how many new invites the picks make (`reach`);
+// the button counts them and turns off when every pick would be skipped.
+const send_label = `reach === 1 ? ${JSON.stringify(t('fleets.invites.send_one'))} : reach > 1 ? ${JSON.stringify(t('fleets.invites.send_count'))}.replace('{count}', reach) : ${JSON.stringify(t('fleets.invites.send'))}`
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -63,7 +66,8 @@ import Textarea from '@components/blocks/Textarea.astro'
         hx-post={`${PARTIAL_URL}&action=wave`}
         hx-target="#fleet-invites"
         hx-swap="outerHTML"
-        x-data={`{ picks: [], onboarding: [], add_mode: '${start_mode}', query: '', paste_text: '', note: '' }`}
+        x-data={`{ picks: [], onboarding: [], add_mode: '${start_mode}', query: '', paste_text: '', note: '', reach: null }`}
+        x-on:invite-reach="reach = $event.detail.new"
         x-on:pick-candidate="query = ''; if (!picks.some(p => p.kind === $event.detail.kind && p.id === $event.detail.id)) { picks.push($event.detail); $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }"
     >
         <Flexblock gap="var(--space-l)">
@@ -168,8 +172,9 @@ import Textarea from '@components/blocks/Textarea.astro'
                             <small class="[ text-muted ]" x-text={`${selected_label}.replace('{count}', picks.length)`}></small>
                             <ul aria-label={t('fleets.private.wave_picks')}>
                                 <template x-for="(pick, index) in picks" x-bind:key="pick.kind + pick.id">
-                                    <li>
+                                    <li x-bind:class="pick.skip && 'is-skipped'" x-bind:title="pick.skip || null">
                                         <span x-text="pick.name"></span>
+                                        <span class="[ invite-dialog__skipped ]" x-show="pick.skip">{t('fleets.invites.skipped')}</span>
                                         <input type="hidden" x-bind:name="pick.kind + '_ids'" x-bind:value="pick.id" />
                                         <button
                                             type="button"
@@ -236,7 +241,8 @@ import Textarea from '@components/blocks/Textarea.astro'
                 </aside>
             </FluidFixed>
 
-            <FlexInline justification="flex-end" gap="var(--space-2xs)">
+            <FlexInline justification="flex-end" gap="var(--space-2xs)" class="[ items-center ]">
+                <small class="[ text-muted ]" x-show="reach === 0" x-cloak>{t('fleets.invites.nobody_to_invite')}</small>
                 <Button
                     type="button"
                     size="sm"
@@ -251,10 +257,10 @@ import Textarea from '@components/blocks/Textarea.astro'
                     color="fleet-red"
                     disabled
                     off_disable={true}
-                    x-bind:disabled="picks.length === 0 && onboarding.length === 0"
+                    x-bind:disabled="(picks.length === 0 && onboarding.length === 0) || reach === 0"
                     hx-disabled-elt="this"
                 >
-                    {t('fleets.invites.send')}
+                    <span x-text={send_label}>{t('fleets.invites.send')}</span>
                 </Button>
             </FlexInline>
         </Flexblock>
@@ -366,6 +372,12 @@ import Textarea from '@components/blocks/Textarea.astro'
             font-size: var(--step--1);
         }
 
+        li.is-skipped {
+            border-style: dashed;
+            border-color: color-mix(in srgb, var(--fleet-red-blind) 55%, transparent);
+            color: var(--text-muted);
+        }
+
         button {
             min-width: var(--space-l);
             min-height: var(--space-l);
@@ -375,6 +387,14 @@ import Textarea from '@components/blocks/Textarea.astro'
             font: inherit;
             cursor: pointer;
         }
+    }
+
+    .invite-dialog__skipped {
+        color: var(--fleet-red-blind);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
     }
 
     .invite-dialog__dm {

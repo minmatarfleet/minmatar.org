@@ -15,6 +15,7 @@ from eveonline.helpers.characters.identity import (
 )
 from eveonline.models import EveCharacter, EveCorporation
 from fleets.endpoints.private.schemas import (
+    CappedPilot,
     FleetInvitesResponse,
     InviteCandidate,
     InvitePilot,
@@ -33,7 +34,6 @@ from fleets.helpers.private_fleet_discord import thread_url
 from fleets.helpers.private_fleets import (
     REPING_COOLDOWN,
     PrivateFleetError,
-    capped_user_ids,
     invite_totals,
     is_capped_fleet,
     onboarding_counts,
@@ -44,6 +44,7 @@ from fleets.helpers.private_fleets import (
     sending_wave,
     target_progress,
     wave_preview,
+    weekly_invites,
 )
 from fleets.helpers.private_visibility import sees_every_private_fleet
 from fleets.models import (
@@ -254,6 +255,7 @@ def _preview_response(preview: dict) -> WavePreviewResponse:
         helps=preview["helps"],
         opted_out=preview["opted_out"],
         capped=preview["capped"],
+        capped_pilots=[CappedPilot(**row) for row in preview["capped_pilots"]],
     )
 
 
@@ -314,8 +316,9 @@ def post_reping(request, fleet_id: int):
     return 202, RepingResponse(pilots=pilots)
 
 
-def _pilot_blocks(fleet, user_ids) -> dict[int, str]:
-    """Pilots who can't be invited now, and why."""
+def _pilot_blocks(fleet, user_ids) -> dict[int, tuple[str, dict | None]]:
+    """Pilots who can't be invited now: why, and for the weekly cap, the
+    invite that counts."""
     user_ids = set(user_ids)
     invited = set(
         EveFleetInvite.objects.filter(
@@ -324,18 +327,24 @@ def _pilot_blocks(fleet, user_ids) -> dict[int, str]:
     )
     if fleet.created_by_id in user_ids:
         invited.add(fleet.created_by_id)
-    out = {user_id: "invited" for user_id in invited}
+    out = {user_id: ("invited", None) for user_id in invited}
     if is_capped_fleet(fleet):
         rest = user_ids - invited
         opted_out = opted_out_user_ids(rest)
-        out.update({user_id: "opted_out" for user_id in opted_out})
-        out.update(
-            {
-                user_id: "capped"
-                for user_id in capped_user_ids(rest - opted_out)
-            }
-        )
+        out.update({user_id: ("opted_out", None) for user_id in opted_out})
+        for user_id, row in weekly_invites(rest - opted_out).items():
+            out[user_id] = ("capped", row)
     return out
+
+
+def _block_fields(blocks, user_id: int, name: str) -> dict:
+    blocked, row = blocks.get(user_id, (None, None))
+    return {
+        "blocked": blocked,
+        "capped": (
+            CappedPilot(user_id=user_id, name=name, **row) if row else None
+        ),
+    }
 
 
 def get_invite_candidates(
@@ -423,7 +432,9 @@ def _pilot_candidates(fleet, q: str) -> List[InviteCandidate]:
                 id=character.user_id,
                 name=character.character_name,
                 detail=corp_names.get(character.corporation_id, ""),
-                blocked=blocks.get(character.user_id),
+                **_block_fields(
+                    blocks, character.user_id, character.character_name
+                ),
             )
         )
     return out
@@ -439,8 +450,14 @@ def post_resolve_names(request, fleet_id: int, payload: ResolveNamesRequest):
         resolved = resolve_invite_names(payload.text)
     except PrivateFleetError as exc:
         return exc.status_code, ErrorResponse(detail=str(exc))
+    blocks = _pilot_blocks(fleet, {row["id"] for row in resolved["matched"]})
     return ResolveNamesResponse(
-        matched=[ResolvedPilot(**row) for row in resolved["matched"]],
+        matched=[
+            ResolvedPilot(
+                **row, **_block_fields(blocks, row["id"], row["name"])
+            )
+            for row in resolved["matched"]
+        ],
         not_found=resolved["not_found"],
     )
 
@@ -480,8 +497,10 @@ ROUTES = (
             "description": (
                 "Invite the new players in these picks. The DMs go out from "
                 "a task at about one a second; one bulk send at a time. "
-                "On a standard fleet, pilots who turned invites off or had "
-                "2 Non-Strategic or Training invites this week are skipped."
+                "On a standard fleet, pilots who turned invites off or were "
+                "invited to a standard fleet this week are skipped; the "
+                "pilots' accounts are locked while the send checks them, so "
+                "two sends can't both invite one pilot."
             ),
         },
         post_wave,

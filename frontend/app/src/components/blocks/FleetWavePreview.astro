@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
 import type { FleetWavePreview } from '@helpers/api.minmatar.org/fleets'
 
@@ -16,9 +16,18 @@ const {
 } = Astro.props
 
 const helps = (preview?.helps ?? []).filter(help => help.short > 0)
+const capped_pilots = preview?.capped_pilots ?? []
+const capped_more = (preview?.capped ?? 0) - capped_pilots.length
+// Tells the dialog how many new invites the picks make, for its Send button
+// (null before anything is picked).
+const reach = preview && preview.picked > 0 ? preview.new : null
+
+import { invite_day } from '@helpers/fleet_invites'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
+
+<div class="[ visually-hidden ]" x-data x-init={`$dispatch('invite-reach', { new: ${JSON.stringify(reach)} })`}></div>
 
 {error && <small class="[ wave-preview__error ]" role="alert">{error}</small>}
 
@@ -46,7 +55,22 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                 }
                 {preview.capped > 0 &&
                     <Fragment>
-                        <dt>{t('fleets.invites.preview_capped')}</dt>
+                        <dt>
+                            <details class="[ wave-preview__capped ]">
+                                <summary>{t('fleets.invites.preview_capped')}</summary>
+                                <ul>
+                                    {capped_pilots.map(pilot =>
+                                        <li title={pilot.fleet}>
+                                            <span>{pilot.name}</span>
+                                            <span class="[ text-muted ]">{invite_day(lang, pilot.free_at)}</span>
+                                        </li>
+                                    )}
+                                    {capped_more > 0 &&
+                                        <li class="[ text-muted ]">{t('fleets.invites.preview_capped_more').replace('{count}', capped_more.toString())}</li>
+                                    }
+                                </ul>
+                            </details>
+                        </dt>
                         <dd>−{preview.capped}</dd>
                     </Fragment>
                 }
@@ -116,6 +140,32 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         dd {
             text-align: right;
             font-variant-numeric: tabular-nums;
+            color: var(--highlight);
+        }
+    }
+
+    .wave-preview__capped {
+        summary {
+            cursor: pointer;
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            margin: var(--space-3xs) 0 0;
+            padding: 0 0 0 var(--space-xs);
+            border-left: 2px solid color-mix(in srgb, var(--fleet-red-blind) 55%, transparent);
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-2xs);
+        }
+
+        li > span:first-child {
             color: var(--highlight);
         }
     }

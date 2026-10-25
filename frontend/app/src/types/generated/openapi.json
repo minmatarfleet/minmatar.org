@@ -4660,6 +4660,42 @@
         "title": "CandidateFleetResponse",
         "type": "object"
       },
+      "CappedPilot": {
+        "description": "A pilot skipped because they had their fleet invite this week.",
+        "properties": {
+          "fleet": {
+            "title": "Fleet",
+            "type": "string"
+          },
+          "free_at": {
+            "format": "date-time",
+            "title": "Free At",
+            "type": "string"
+          },
+          "invited_at": {
+            "format": "date-time",
+            "title": "Invited At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "fleet",
+          "invited_at",
+          "free_at"
+        ],
+        "title": "CappedPilot",
+        "type": "object"
+      },
       "CertificateAwardSchema": {
         "properties": {
           "awarded_at": {
@@ -20952,6 +20988,16 @@
             ],
             "title": "Blocked"
           },
+          "capped": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CappedPilot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -30112,6 +30158,27 @@
       },
       "ResolvedPilot": {
         "properties": {
+          "blocked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked"
+          },
+          "capped": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CappedPilot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -35928,6 +35995,14 @@
             "default": 0,
             "title": "Capped",
             "type": "integer"
+          },
+          "capped_pilots": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CappedPilot"
+            },
+            "title": "Capped Pilots",
+            "type": "array"
           },
           "helps": {
             "items": {
@@ -46703,7 +46778,7 @@
     },
     "/api/fleets/{fleet_id}/invites/waves": {
       "post": {
-        "description": "Invite the new players in these picks. The DMs go out from a task at about one a second; one bulk send at a time. On a standard fleet, pilots who turned invites off or had 2 Non-Strategic or Training invites this week are skipped.",
+        "description": "Invite the new players in these picks. The DMs go out from a task at about one a second; one bulk send at a time. On a standard fleet, pilots who turned invites off or were invited to a standard fleet this week are skipped; the pilots' accounts are locked while the send checks them, so two sends can't both invite one pilot.",
         "operationId": "fleets_endpoints_private_invites_post_wave",
         "parameters": [
           {

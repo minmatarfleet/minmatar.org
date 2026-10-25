@@ -2909,7 +2909,7 @@ export interface paths {
         put?: never;
         /**
          * Post Wave
-         * @description Invite the new players in these picks. The DMs go out from a task at about one a second; one bulk send at a time. On a standard fleet, pilots who turned invites off or had 2 Non-Strategic or Training invites this week are skipped.
+         * @description Invite the new players in these picks. The DMs go out from a task at about one a second; one bulk send at a time. On a standard fleet, pilots who turned invites off or were invited to a standard fleet this week are skipped; the pilots' accounts are locked while the send checks them, so two sends can't both invite one pilot.
          */
         post: operations["fleets_endpoints_private_invites_post_wave"];
         delete?: never;
@@ -9482,6 +9482,28 @@ export interface components {
             /** Type */
             type: string;
         };
+        /**
+         * CappedPilot
+         * @description A pilot skipped because they had their fleet invite this week.
+         */
+        CappedPilot: {
+            /** Fleet */
+            fleet: string;
+            /**
+             * Free At
+             * Format: date-time
+             */
+            free_at: string;
+            /**
+             * Invited At
+             * Format: date-time
+             */
+            invited_at: string;
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id: number;
+        };
         /** CertificateAwardSchema */
         CertificateAwardSchema: {
             /** Awarded At */
@@ -15867,6 +15889,7 @@ export interface components {
         InviteCandidate: {
             /** Blocked */
             blocked?: string | null;
+            capped?: components["schemas"]["CappedPilot"] | null;
             /** Detail */
             detail: string;
             /** Id */
@@ -19760,6 +19783,9 @@ export interface components {
         };
         /** ResolvedPilot */
         ResolvedPilot: {
+            /** Blocked */
+            blocked?: string | null;
+            capped?: components["schemas"]["CappedPilot"] | null;
             /** Detail */
             detail: string;
             /** Id */
@@ -22236,6 +22262,11 @@ export interface components {
              * @default 0
              */
             capped?: number;
+            /**
+             * Capped Pilots
+             * @default []
+             */
+            capped_pilots?: components["schemas"]["CappedPilot"][];
             /** Helps */
             helps: components["schemas"]["TargetHelp"][];
             /** New */
