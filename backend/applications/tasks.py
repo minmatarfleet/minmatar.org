@@ -133,6 +133,14 @@ def notify_application_transferred_task(
 @app.task()
 def accept_applications_of_members_task():
     """Accept pending applications whose applicant joined the corporation,
-    and post the joined notice in each forum thread."""
-    for application_id in accept_applications_of_members():
+    and post the joined notice in each forum thread.
+
+    An application without a thread gets none: opening one now would ping
+    the applicant and the recruiters about an application that is closed.
+    """
+    accepted = accept_applications_of_members()
+    with_thread = EveCorporationApplication.objects.filter(
+        pk__in=accepted, discord_thread_id__isnull=False
+    ).values_list("pk", flat=True)
+    for application_id in with_thread:
         sync_application_thread_task.delay(application_id, "joined")

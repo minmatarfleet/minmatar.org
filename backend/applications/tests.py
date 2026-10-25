@@ -984,6 +984,18 @@ class AcceptApplicationsOfMembersTest(TestCase):
         self.assertIsNone(application.processed_by_id)
         sync_mock.delay.assert_called_once_with(application.id, "joined")
 
+    @patch("applications.tasks.sync_application_thread_task")
+    def test_no_thread_means_no_discord_post(self, sync_mock):
+        self.character.corporation_id = 123
+        self.character.save()
+        application = self._apply()
+
+        accept_applications_of_members_task()
+
+        application.refresh_from_db()
+        self.assertEqual(application.status, "accepted")
+        sync_mock.delay.assert_not_called()
+
     def test_an_alt_in_the_corporation_counts(self):
         EveCharacter.objects.create(
             character_id=5678,
