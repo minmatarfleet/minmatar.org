@@ -316,6 +316,24 @@ CELERYBEAT_TRIBES = [
 ]
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
+# Capability engine (docs/capabilities/capability-engine-design.md)
+CELERYBEAT_CAPABILITIES = [
+    (
+        "[Capabilities] Load new SDE builds",
+        {
+            "task": "capabilities.tasks.check_sde_build",
+            "schedule": crontab(minute=40, hour=12),
+        },
+    ),
+    (
+        "[Capabilities] Nightly readiness and capabilities",
+        {
+            "task": "capabilities.tasks.nightly_capabilities",
+            "schedule": crontab(minute=15, hour=3),
+        },
+    ),
+]
+
 CELERYBEAT_OTHER = [
     (
         "[Misc] Backend Cleanup",
@@ -696,5 +714,6 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_INTEL
     + CELERYBEAT_SURVEYS
     + CELERYBEAT_CAMPAIGNS
+    + CELERYBEAT_CAPABILITIES
     + CELERYBEAT_OTHER
 )
