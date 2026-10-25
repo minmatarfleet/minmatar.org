@@ -3,9 +3,9 @@ import type { ui } from '@i18n/ui'
 
 type UiKey = keyof typeof ui['en']
 
-export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel'
+export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot'
 
-const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel']
+const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot']
 
 export interface DiscordSettingsFlash {
     kind: 'success' | 'error';
@@ -52,10 +52,63 @@ export function discord_server_initials(name: string | null): string {
 
 /** One line for the collapsed Discord section header. */
 export function discord_section_summary(
-    settings: Pick<CorporationDiscordSettings, 'exists' | 'status'>,
-    labels: { not_set: string, set: string, dead: string },
+    settings: Pick<CorporationDiscordSettings, 'exists' | 'status'> & {
+        bot?: Pick<CorporationDiscordSettings['bot'], 'connected' | 'status'>
+    },
+    labels: { not_set: string, set: string, dead: string, setting_up?: string, attention?: string },
 ): string {
+    if (settings.bot?.connected) {
+        if (settings.bot.status === 'pending')
+            return labels.setting_up ?? labels.set
+        if (discord_bot_needs_attention(settings.bot.status))
+            return labels.attention ?? labels.dead
+        return labels.set
+    }
     if (!settings.exists)
         return labels.not_set
     return settings.status === 'dead' ? labels.dead : labels.set
+}
+
+/** The bot is linked but makes no invites: Settings asks the CEO to fix it. */
+export function discord_bot_needs_attention(status: string | null | undefined): boolean {
+    return status === 'no_permission' || status === 'removed'
+}
+
+const BOT_STATUS_KEYS: Record<string, UiKey> = {
+    pending: 'corporations.discord.bot_status_pending',
+    ok: 'corporations.discord.status_ok',
+    no_permission: 'corporations.discord.bot_status_no_permission',
+    removed: 'corporations.discord.bot_status_removed',
+}
+
+export function discord_bot_status_key(status: string | null): UiKey {
+    return BOT_STATUS_KEYS[status ?? ''] ?? 'corporations.discord.bot_status_pending'
+}
+
+// Codes from the bot install callback (get_corporation_discord_bot_callback).
+const BOT_CONNECT_ERRORS: Record<string, UiKey> = {
+    denied: 'corporations.discord.bot_error_denied',
+    alliance_server: 'corporations.discord.bot_error_alliance_server',
+    not_allowed: 'corporations.discord.bot_error_not_allowed',
+    session_expired: 'corporations.discord.bot_error_session_expired',
+}
+
+/** The flash for a return from Discord's bot install page, if any. */
+export function discord_bot_connect_flash(params: URLSearchParams): DiscordSettingsFlash | null {
+    if (params.get('discord_bot') === 'connected')
+        return { kind: 'success', key: 'corporations.discord.bot_connected' }
+    const error = params.get('discord_bot_error')
+    if (!error)
+        return null
+    return { kind: 'error', key: BOT_CONNECT_ERRORS[error] ?? 'corporations.discord.bot_error' }
+}
+
+// Settings re-asks every few seconds while the bot sets up, then gives up.
+export const DISCORD_BOT_POLL_LIMIT = 20
+
+/** The next poll number while the bot is setting up, or null to stop. */
+export function discord_bot_next_poll(status: string | null, poll: number): number | null {
+    if (status !== 'pending' || poll >= DISCORD_BOT_POLL_LIMIT)
+        return null
+    return poll + 1
 }

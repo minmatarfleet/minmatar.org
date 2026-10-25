@@ -18,6 +18,10 @@ from eveonline.helpers.corporations import (
 )
 from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.corporations import projects
+from eveonline.helpers.corporations.discord_bot import (
+    refresh_bot_invite,
+    release_guild,
+)
 from eveonline.helpers.corporations.discord_invite import (
     recheck_discord_invite,
 )
@@ -55,6 +59,47 @@ def check_corporation_discord_invites():
             dead += 1
     logger.info("Checked corporation Discord invites, %s dead", dead)
     return dead
+
+
+@app.task(expires=10 * 60)
+def refresh_corporation_discord_bot(corporation_id: int):
+    """Set up or renew one corporation's bot invite. Queued when the CEO or
+    a director connects the bot, and waited on by their Settings tab."""
+    corporation = (
+        EveCorporation.objects.select_related("discord_guild")
+        .filter(corporation_id=corporation_id)
+        .first()
+    )
+    if corporation is None:
+        return None
+    return refresh_bot_invite(corporation)
+
+
+@app.task(exclusive=60 * 60, expires=3 * 60 * 60)
+def refresh_corporation_discord_bots():
+    """Renew bot invites with under three days left and replace any the
+    server deleted. Usually one invite check per corporation; a new invite
+    every four days or so."""
+    corporations = (
+        EveCorporation.objects.exclude(discord_bot_status="")
+        .filter(discord_guild__isnull=False)
+        .select_related("discord_guild")
+    )
+    statuses = {}
+    for corporation in corporations:
+        status = refresh_bot_invite(corporation)
+        statuses[status or "unchanged"] = (
+            statuses.get(status or "unchanged", 0) + 1
+        )
+    logger.info("Refreshed corporation Discord bot invites: %s", statuses)
+    return statuses
+
+
+@app.task
+def release_corporation_discord_guild(guild_id: int, invite_code: str = ""):
+    """After a corporation disconnects the bot: revoke its invite, and leave
+    the server unless the alliance, a tribe or another corporation uses it."""
+    return release_guild(guild_id, invite_code)
 
 
 @app.task(rate_limit="20/m")

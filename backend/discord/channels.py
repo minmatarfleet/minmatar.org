@@ -1,6 +1,7 @@
 import logging
 
 import requests
+from django.db.models import Q
 
 from discord.client import DiscordClient
 from discord.models import DiscordGuild
@@ -26,10 +27,31 @@ def fetch_guild_channels(guild_id=None):
         return []
 
 
+def admin_picker_guilds():
+    """Active guilds whose channels the admin may pick for pings, voice
+    tracking and buyback threads.
+
+    A corporation's own server (the bot only makes its invites) stays out:
+    listing it costs a Discord call on every form load, and an alliance
+    ping must never be pointed at it by mistake. It comes back when it is
+    also the alliance's or a tribe's server.
+    """
+    return (
+        DiscordGuild.objects.filter(is_active=True)
+        .filter(
+            Q(is_primary=True)
+            | Q(tribe_group_bindings__isnull=False)
+            | Q(corporations__isnull=True)
+        )
+        .distinct()
+        .order_by("name")
+    )
+
+
 def fetch_active_guild_channels():
-    """Return channels for all active tracked guilds."""
+    """Return channels for every guild the admin pickers list."""
     channels = []
-    for guild in DiscordGuild.objects.filter(is_active=True).order_by("name"):
+    for guild in admin_picker_guilds():
         channels.extend(fetch_guild_channels(guild_id=guild.guild_id))
     return channels
 

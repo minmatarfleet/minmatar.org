@@ -89,6 +89,46 @@ class EveCorporation(models.Model):
         max_length=64, blank=True, db_default=""
     )
     discord_invite_checked_at = models.DateTimeField(blank=True, null=True)
+    # The bot path (eveonline.helpers.corporations.discord_bot): the CEO or a
+    # director adds our bot to discord_guild, and it keeps a 7-day invite
+    # fresh. Visitors get that invite before the pasted discord_invite_url.
+    # A blank status means the guild (if any) was linked by hand in the
+    # admin, and the bot makes no invites for it.
+    DISCORD_BOT_PENDING = "pending"
+    DISCORD_BOT_OK = "ok"
+    DISCORD_BOT_NO_PERMISSION = "no_permission"
+    DISCORD_BOT_REMOVED = "removed"
+    discord_bot_status = models.CharField(
+        max_length=16,
+        blank=True,
+        db_default="",
+        choices=(
+            (DISCORD_BOT_PENDING, "Setting up"),
+            (DISCORD_BOT_OK, "Making invites"),
+            (DISCORD_BOT_NO_PERMISSION, "Can't create invites"),
+            (DISCORD_BOT_REMOVED, "Removed from the server"),
+        ),
+    )
+    discord_bot_guild_icon = models.CharField(
+        max_length=64, blank=True, db_default=""
+    )
+    discord_bot_channel_id = models.BigIntegerField(blank=True, null=True)
+    discord_bot_channel_name = models.CharField(
+        max_length=100, blank=True, db_default=""
+    )
+    discord_bot_invite_code = models.CharField(
+        max_length=32, blank=True, db_default=""
+    )
+    discord_bot_invite_expires_at = models.DateTimeField(blank=True, null=True)
+    discord_bot_checked_at = models.DateTimeField(blank=True, null=True)
+    discord_bot_linked_at = models.DateTimeField(blank=True, null=True)
+    discord_bot_linked_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     highlights = models.TextField(blank=True)
     activity_summary = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

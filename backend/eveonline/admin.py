@@ -45,7 +45,9 @@ from .helpers.corporations.discord_invite import (
     INVITE_FIELDS,
     recheck_discord_invite,
 )
+from .helpers.corporations.discord_bot import unlink_guild
 from .tasks import update_corporation
+from .tasks.corporations import release_corporation_discord_guild
 from groups.helpers import (
     ensure_corporation_groups_for_corp,
     offboard_corporation_groups,
@@ -448,6 +450,16 @@ class EveCorporationAdmin(admin.ModelAdmin):
         "discord_invite_guild_name",
         "discord_invite_icon",
         "discord_invite_checked_at",
+        # Set by the bot install on the Settings tab and its Celery refresh.
+        "discord_bot_status",
+        "discord_bot_guild_icon",
+        "discord_bot_channel_id",
+        "discord_bot_channel_name",
+        "discord_bot_invite_code",
+        "discord_bot_invite_expires_at",
+        "discord_bot_checked_at",
+        "discord_bot_linked_at",
+        "discord_bot_linked_by",
     )
     inlines = [EveCorporationMediaInline]
     actions = [refresh_corporations_action]
@@ -490,6 +502,7 @@ class EveCorporationAdmin(admin.ModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):
+        bot_release = None
         if change and obj.pk:
             old = EveCorporation.objects.get(pk=obj.pk)
             if (
@@ -497,7 +510,20 @@ class EveCorporationAdmin(admin.ModelAdmin):
                 and not obj.generate_corporation_groups
             ):
                 offboard_corporation_groups(old)
+            if "discord_guild" in form.changed_data:
+                # A hand-picked server ends the bot's link: its invite
+                # and channel belong to the old one.
+                bot_release = unlink_guild(old)
+                obj.discord_bot_status = ""
+                obj.discord_bot_invite_code = ""
+                obj.discord_bot_invite_expires_at = None
+                obj.discord_bot_channel_id = None
+                obj.discord_bot_channel_name = ""
         super().save_model(request, obj, form, change)
+        if bot_release is not None:
+            release_corporation_discord_guild.delay(
+                bot_release.guild_id, bot_release.invite_code
+            )
         if obj.generate_corporation_groups and obj.ticker:
             ensure_corporation_groups_for_corp(obj)
         if "discord_invite_url" in form.changed_data:

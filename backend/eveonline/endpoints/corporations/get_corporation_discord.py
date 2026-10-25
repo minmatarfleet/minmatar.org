@@ -3,7 +3,9 @@
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.endpoints.corporations.schemas import CorporationDiscordSettings
-from eveonline.helpers.corporations.discord_invite import discord_settings
+from eveonline.helpers.corporations.discord_bot import (
+    corporation_discord_settings,
+)
 from eveonline.helpers.corporations.permissions import (
     can_edit_corporation_settings,
 )
@@ -28,4 +30,4 @@ def get_corporation_discord(request, corporation_id: int):
         return 404, ErrorResponse(detail="Corporation not found")
     if not can_edit_corporation_settings(request.user, corporation):
         return 403, ErrorResponse(detail="Not authorised")
-    return discord_settings(corporation)
+    return corporation_discord_settings(corporation)

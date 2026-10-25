@@ -9,6 +9,7 @@ from discord.channels import (
     LP_BUYBACK_CHANNEL_TYPES,
     LP_CONVERSION_ALERT_CHANNEL_TYPES,
     VOICE_TRACKING_CHANNEL_TYPES,
+    admin_picker_guilds,
     fetch_active_guild_channels,
     get_guild_channel,
 )
@@ -39,8 +40,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
 
         channels = fetch_active_guild_channels()
         channel_guild_names = {
-            guild.guild_id: guild.name
-            for guild in DiscordGuild.objects.filter(is_active=True)
+            guild.guild_id: guild.name for guild in admin_picker_guilds()
         }
         choices = [("", "---------")]
         for channel in channels:

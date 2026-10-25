@@ -37,17 +37,34 @@ class MyClient(discord.Client):
         intents.guilds = True
         intents.voice_states = True
         intents.members = True
-        super().__init__(intents=intents)
+        # The bot also sits in tribe and corporation servers, where it only
+        # makes invites or manages one role. Only the alliance server needs
+        # its whole member list in memory (chunked in on_ready).
+        super().__init__(intents=intents, chunk_guilds_at_startup=False)
 
         self.tree = app_commands.CommandTree(self)
 
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
         print("------")
+        guild = self.get_guild(int(GUILD_ID))
+        if guild and not guild.chunked:
+            await guild.chunk()
         await sync_guilds_to_api()
         await deploy_or_update_panel(self)
         track_voice_channels.start()
         sync_help_ticket_panel.start()
+
+    async def on_guild_join(self, guild: discord.Guild):
+        # A corporation added the bot: the API learns the server right away.
+        print(f"Joined guild {guild.name} ({guild.id})")
+        await sync_guilds_to_api()
+
+    async def on_guild_remove(self, guild: discord.Guild):
+        # Kicked or the server was deleted: corporation pages stop linking
+        # to the bot's invite on the next refresh.
+        print(f"Left guild {guild.name} ({guild.id})")
+        await sync_guilds_to_api()
 
     async def setup_hook(self) -> None:
         register_close_ticket_buttons(self)

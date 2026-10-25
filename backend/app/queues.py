@@ -121,6 +121,9 @@ FAST_TASKS = frozenset(
         "industry.tasks.notify_lp_buyback_order_cancelled_task",
         "industry.tasks.close_lp_buyback_discord_thread_task",
         "industry.tasks.emit_order_created_notification",
+        # A CEO just added the bot and Settings waits for the first invite
+        # (a few Discord calls for one corporation, no fan-out)
+        "eveonline.tasks.corporations.refresh_corporation_discord_bot",
         # Fleet pings that are useless late
         "fleets.tasks.update_fleet_schedule",
         "fleets.tasks.nudge_missing_signups",

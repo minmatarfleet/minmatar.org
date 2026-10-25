@@ -316,8 +316,25 @@ class CorporationMemberAccess(Schema):
     can_manage_projects: bool = False
 
 
+class CorporationDiscordBot(Schema):
+    # False when the site isn't set up for bot installs; hide "Add our bot".
+    available: bool = False
+    connected: bool = False
+    # pending (setting up), ok (making invites), no_permission (can't create
+    # invites in any channel it can see) or removed (not in the server).
+    status: Optional[str] = None
+    guild_name: Optional[str] = None
+    icon_url: Optional[str] = None
+    channel_name: Optional[str] = None
+    # The invite visitors get, while it works.
+    invite_url: Optional[str] = None
+    invite_expires_at: Optional[datetime] = None
+    checked_at: Optional[datetime] = None
+
+
 class CorporationDiscordSettings(Schema):
     corporation_id: int
+    # These describe the pasted invite link.
     exists: bool
     invite_url: Optional[str] = None
     # ok, dead (expired or deleted: hidden from visitors), or unchecked
@@ -326,6 +343,9 @@ class CorporationDiscordSettings(Schema):
     guild_name: Optional[str] = None
     icon_url: Optional[str] = None
     checked_at: Optional[datetime] = None
+    bot: CorporationDiscordBot = CorporationDiscordBot()
+    # Which link the corporation page shows: "bot", "link" or None.
+    page_source: Optional[str] = None
 
 
 class CorporationDiscordInviteRequest(Schema):
