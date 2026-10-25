@@ -1,0 +1,195 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    transparent?:   boolean;
+    coverless?:     boolean;
+}
+
+const {
+    transparent = true,
+    coverless = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Grid from '@components/compositions/Grid.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import ContentSwiper from '@components/blocks/ContentSwiper.astro';
+import TileHero from '@components/blocks/TileHero.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import PostSlides from '@components/blocks/PostSlides.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+const WrapperElement = coverless ? Wrapper : ComponentBlock
+---
+
+<Flexblock class="[ content-tiles ]" gap='var(--space-3xs)'>
+    <WrapperElement
+        id="posts-swiper"
+        class="[ swiper ][ w-full ]"
+        padding_block='0'
+        padding_inline='0'
+        max_width='100%'
+    >
+        <ContentSwiper swiper_selector='#posts-swiper'>
+            <div class="[ swiper-slide ][ w-full ]">
+                <TileHero
+                    title="Posts"
+                    description={t('series_description')}
+                    cover={coverless ? undefined : '/images/posts-cover.jpg'}
+                    soft={true}
+                    transparent={transparent}
+                    crt_effect={!coverless}
+                >
+                    <Grid
+                        class="[ w-full grid-fill ]"
+                        row_gap="var(--space-l)"
+                        column_gap="var(--space-l)"
+                        min_item_width="115px"
+                    >
+                        <StylessButton x-on:click="go_slide(1)">
+                            <img class="[ text-highlight ]" src="/images/icons/Metropolis.webp" alt="Metropolis" />
+                        </StylessButton>
+                        <StylessButton x-on:click="go_slide(2)">
+                            <img class="[ text-highlight ]" src="/images/icons/Frontlines.webp" alt="Frontlines" />
+                        </StylessButton>
+                        <StylessButton class="[ text-center! self-center ]">
+                            <b class="[ text-highlight ]">{t('campaigns')}</b>
+                        </StylessButton>
+                        <StylessButton class="[ text-center! self-center ]">
+                            <b class="[ text-highlight ]">{t('dispatches')}</b>
+                        </StylessButton>
+                        <StylessButton class="[ text-center! self-center ]">
+                            <b class="[ text-highlight ]">{t('warzone_reports')}</b>
+                        </StylessButton>
+                        <StylessButton class="[ text-center! self-center ]">
+                            <b class="[ text-highlight ]">{t('our_guides')}</b>
+                        </StylessButton>
+                    </Grid>
+                </TileHero>
+            </div>
+
+            <PostSlides coverless={coverless} />
+        </ContentSwiper>
+    </WrapperElement>
+
+    <WrapperElement
+        id="videos-swiper"
+        class="[ swiper ][ w-full ]"
+        padding_block='0'
+        padding_inline='0'
+        max_width='100%'
+    >
+        <ContentSwiper swiper_selector='#videos-swiper'>
+            <div class="[ swiper-slide ][ w-full ]">
+                <TileHero
+                    title="Videos"
+                    description={t('series_description')}
+                    cover={coverless ? undefined : '/images/videos-cover.jpg'}
+                    soft={true}
+                    transparent={transparent}
+                    crt_effect={!coverless}
+                >
+                    <Grid
+                        class="[ w-full grid-fill ]"
+                        row_gap="var(--space-l)"
+                        column_gap="var(--space-l)"
+                        min_item_width="115px"
+                    >
+                        <StylessButton x-on:click="go_slide(1)">
+                            <img src="/images/icons/Metro-Daily-News.webp" alt="Metro Daily News" />
+                        </StylessButton>
+                        <StylessButton x-on:click="go_slide(2)">
+                            <img src="/images/icons/The-Cope.webp" alt="The Cope" />
+                        </StylessButton>
+                        <StylessButton class="[ text-center! self-center ]">
+                            <b class="[ text-highlight ]">{t('content_creators')}</b>
+                        </StylessButton>
+                    </Grid>
+                </TileHero>
+            </div>
+
+            {/* <VideosSlides coverless={coverless} /> Check PostSlides component for reference */}
+        </ContentSwiper>
+    </WrapperElement>
+
+    <WrapperElement
+        id="series-swiper"
+        class="[ swiper ][ w-full ]"
+        padding_block='0'
+        padding_inline='0'
+        max_width='100%'
+    >
+        <ContentSwiper swiper_selector='#series-swiper'>
+            <div class="[ swiper-slide ][ w-full ]">
+                <TileHero
+                    title="Series"
+                    description={t('series_description')}
+                    cover={coverless ? undefined : '/images/waifu-cover.jpg'}
+                    soft={true}
+                    transparent={transparent}
+                    crt_effect={!coverless}
+                >
+                    <Grid
+                        class="[ w-full grid-fill ]"
+                        row_gap="var(--space-l)"
+                        column_gap="var(--space-l)"
+                        min_item_width="115px"
+                    >
+                        <StylessButton x-on:click="go_slide(1)">
+                            <img src="/images/icons/Waifu-Wars.webp" alt="The Waifu Wars" />
+                        </StylessButton>
+                        <StylessButton x-on:click="go_slide(2)">
+                            <img src="/images/icons/Rust-and-Blood.webp" alt="Rust and Blood" />
+                        </StylessButton>
+                    </Grid>
+                </TileHero>
+            </div>
+        </ContentSwiper>
+
+        {/* <SerierSlides coverless={coverless} /> Check PostSlides component for reference */}
+    </WrapperElement>
+</Flexblock>
+
+<style lang="scss">
+    .swiper {
+        overflow: visible !important;
+    }
+</style>
+
+<style lang="scss" is:global>
+    :global(.content-tiles .swiper-slide) {
+        overflow: visible !important;
+    }
+
+    .content-tiles {
+        .hover-zoom,
+        button {
+            transform: scale(1);
+            transition: var(--fast-transition);
+
+            &:focus-visible {
+                outline: none;
+                transform: scale(1.1);
+            }
+
+            @media (hover: hover) {
+                &:hover {
+                    transform: scale(1.1);
+                }
+            }
+        }
+
+        .show {
+            display: none !important;
+        }
+
+        .swiper-slide-active {
+            .show {
+                display: flex !important;
+            }
+        }
+    }
+</style>

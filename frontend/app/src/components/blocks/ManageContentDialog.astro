@@ -1,0 +1,159 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CreatorAccount } from '@dtypes/api.minmatar.org'
+import { get_my_creator_accounts } from '@helpers/api.minmatar.org/creators'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token } = get_request_user(Astro)
+
+let accounts: CreatorAccount[] = []
+if (auth_token) {
+    try {
+        accounts = await get_my_creator_accounts(auth_token)
+    } catch {
+        accounts = []
+    }
+}
+
+const by_provider = Object.fromEntries(
+    accounts.map((account) => [account.provider, account]),
+) as Partial<Record<'twitch' | 'youtube' | 'reddit', CreatorAccount>>
+
+interface Action {
+    title:              string
+    description:        string
+    href?:              string
+    modal?:             boolean
+    connected_text?:    string
+}
+
+const connected_text = (account: CreatorAccount) =>
+    t(t_key('content.connect.', account.provider, '_connected')).replace('USERNAME', account.platform_username || account.platform_user_id)
+
+const actions: Action[] = [
+    {
+        title: t('content.manage.create_post.title'),
+        description: t('content.manage.create_post.description'),
+        href: translatePath('/alliance/propaganda/new/editor'),
+    },
+    {
+        title: t('content.manage.my_posts.title'),
+        description: t('content.manage.my_posts.description'),
+        href: translatePath('/alliance/propaganda/my_posts/'),
+    },
+    {
+        title: t('content.manage.trash.title'),
+        description: t('content.manage.trash.description'),
+        href: translatePath('/alliance/propaganda/trash/'),
+    },
+    {
+        title: t('content.manage.connect_twitch.title'),
+        description: t('content.manage.connect_twitch.description'),
+        href: translatePath('/alliance/content/connect/twitch'),
+        connected_text: by_provider.twitch
+            ? connected_text(by_provider.twitch)
+            : undefined,
+    },
+    {
+        title: t('content.manage.connect_youtube.title'),
+        description: t('content.manage.connect_youtube.description'),
+        href: translatePath('/alliance/content/connect/youtube'),
+        connected_text: by_provider.youtube
+            ? connected_text(by_provider.youtube)
+            : undefined,
+    },
+    {
+        title: t('content.manage.connect_reddit.title'),
+        description: t('content.manage.connect_reddit.description'),
+        modal: true,
+        connected_text: by_provider.reddit
+            ? connected_text(by_provider.reddit)
+            : undefined,
+    },
+]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
+---
+
+<DialogButton
+    color='fleet-red'
+    max_width='800px'
+    transparent={true}
+    full_screen={true}
+    non_centered={false}
+    close_button={false}
+>
+    {t('content.manage_my_content')}
+
+    <Flexblock gap="var(--space-3xs)" slot="header">
+        <h2>{t('content.manage.dialog_title')}</h2>
+        <p>{t('content.manage.dialog_description')}</p>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-l)" class="[ manage-content-dialog__list ]" slot="dialog">
+        {actions.map((action) => (
+            <FlexInlineSiblings
+                min-shink-width='300px'
+                shrinkable-sibbling='first'
+            >
+                <Flexblock gap="var(--space-2xs)">
+                    <h4 class="[ manage-content-dialog__title ]">{action.title}</h4>
+                    <p>{action.description}</p>
+                    {action.connected_text &&
+                        <small class="[ text-highlight ]">
+                            {action.connected_text}
+                        </small>
+                    }
+                </Flexblock>
+
+                {!action.connected_text &&
+                    action.modal ?
+                        <Button
+                            type="button"
+                            size="sm"
+                            x-on:click={`show_modal({
+                                partial: '${translatePath('/partials/link_reddit_modal_component')}',
+                            })`}
+                        >
+                            {t('continue')}
+                        </Button>
+                        :
+                        <Button
+                            href={action.href}
+                            size="sm"
+                        >
+                            {t('continue')}
+                        </Button>
+                }
+            </FlexInlineSiblings>
+        ))}
+    </Flexblock>
+
+    <FlexInline slot="footer" justification="flex-end">
+        <Button
+            type="button"
+            size="sm"
+            color="transparent"
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
+</DialogButton>
+
+<style lang="scss">
+    .manage-content-dialog__list {
+        width: 100%;
+    }
+
+    .manage-content-dialog__title {
+        font-size: var(--step-0);
+    }
+</style>

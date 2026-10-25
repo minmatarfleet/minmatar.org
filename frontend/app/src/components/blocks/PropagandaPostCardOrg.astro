@@ -1,0 +1,73 @@
+---
+import { i18n, dynamic_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components';
+
+interface Props {
+    post:      PostListUI;
+    editor_id?: number;
+    is_editing: boolean;
+}
+
+const {
+    post,
+    editor_id,
+    is_editing,
+} = Astro.props
+
+// Remove extra amp; characters from the URI for reddit images
+const image_sanitized = post.image ? post.image.replaceAll('amp;', '') : undefined
+
+import { get_player_icon } from '@helpers/eve_image_server'
+import { format_date } from '@helpers/date'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import PictureCard from '@components/blocks/PictureCard.astro';
+import PostActions from '@components/blocks/PostActions.astro';
+import Tag from '@components/blocks/Tag.astro';
+---
+
+<PictureCard
+    src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
+    alt={post.title}
+    narrow={true}
+    zoomable={post.image ? true : false}
+    astro_image={image_sanitized ? {
+        src: image_sanitized,
+        width: 300,
+        height: 300,
+        format: 'webp',
+        quality: 65,
+        alt: post.title,
+        loading: 'lazy',
+    } : undefined}
+    data-desature={post.state === 'trash' ? 'mild' : undefined}
+>
+    {(post.user_id === editor_id && is_editing) &&
+        <PostActions
+            post={post}
+            slot="actions"
+        />
+    }
+    <Flexblock gap='var(--space-3xs)'>
+        {is_editing &&
+            <Tag
+                id={`post-tag-${post.post_id}`}
+                text={t(dynamic_key(post.state)) ?? post.state}
+                color={post.state === 'published' ? 'green' : undefined}
+            />
+        }
+        <small>{format_date(lang, post.date_posted)}</small>
+        <a href={translatePath(`/alliance/propaganda/${post.post_id}`)}>
+            <h3>{post.title}</h3>
+        </a>
+    </Flexblock>
+</PictureCard>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-0);
+    }
+</style>

@@ -1,0 +1,158 @@
+---
+interface Props {
+    title:              string;
+    description?:       string;
+    cover?:             string;
+    alt?:               string;
+    transparent?:       boolean;
+    soft?:              boolean;
+    optimize?:          boolean;
+    width?:             number;
+    height?:            number;
+    gap?:               string;
+    min_height?:        string;
+    meta_width?:        string;
+    crt_effect?:        boolean;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    description,
+    cover,
+    alt,
+    transparent = false,
+    soft = true,
+    optimize,
+    width = '512',
+    height = '512',
+    gap = 'var(--space-s)',
+    min_height = '420px',
+    meta_width = '70rem',
+    crt_effect = false,
+    ...attributes
+} = Astro.props
+
+const slot_content = await Astro.slots.render('default');
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+const WrapperElement = transparent ? Wrapper : ComponentBlock
+
+import { Image } from 'astro:assets';
+---
+
+<WrapperElement
+    class:list={[ { soft: soft }, { 'crt-hover': crt_effect } ]}
+    x-data="{ shown: false }"
+    x-intersect.once.threshold.60="shown = true"
+    padding_block='var(--component-padding-block)'
+    padding_inline={cover ? 'var(--space-l-xl)' : '0'}
+    max_width='100%'
+>
+    <slot name="cover">
+        {cover &&
+            <picture
+                class:list={[ 'show', { 'crt': crt_effect } ]}
+                x-bind:class="shown ? 'animate-fade-in animate-duration-700' : 'opacity-0'"
+            >
+                {optimize ?
+                    <Image
+                        src={cover}
+                        alt={alt ?? title}
+                        width={width}
+                        height={height}
+                        quality={90}
+                        format='webp'
+                    /> :
+                    <img
+                        src={cover}
+                        alt={alt ?? title}
+                    />
+                }
+            </picture>
+        }
+    </slot>
+
+    <FixedFluid width={meta_width} gap='var(--space-3xl)'>
+        <Wrapper
+            class:list={["[ flex ]", cover ? ' items-end!' : 'items-center!' ]}
+            padding_block={cover ? 'var(--space-m)' : '0'},
+            padding_inline='0'
+            max_width={meta_width}
+        >
+            <div
+                class:list={["[ content ][ flex w-full ]", cover ? ' items-end!' : 'items-center!' ]}
+            >
+                <Flexblock
+                    class="[ w-full ]"
+                    gap='var(--space-xl)'
+                >
+                    <h2
+                        class="[ show ]"
+                        x-bind:class="shown ? 'animate-slide-up-fade' : 'opacity-0'"
+                    >
+                        {title}
+                    </h2>
+                    <TextBox
+                        class="[ show ]"
+                        x-bind:class="shown ? 'animate-fade-in animate-duration-250 animate-delay-300' : 'opacity-0'"
+                        max_width='33rem'
+                    >
+                        <p>{description}</p>
+                    </TextBox>
+                    {slot_content &&
+                        <div
+                            class="[ show ]"
+                            x-bind:class="shown ? 'animate-fade-in animate-duration-250 animate-delay-450' : 'opacity-0'"
+                        >
+                            <slot />
+                        </div>
+                    }
+                </Flexblock>
+            </div>
+        </Wrapper>
+        <slot name="right" />
+    </FixedFluid>
+</WrapperElement>
+
+<style lang="scss">
+    .content {
+        min-height: min(49vh, 780px);
+        min-height: 49vh;
+    }
+
+    picture {
+        position: absolute;
+        z-index: -1;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+    }
+
+    img {
+        object-fit: cover;
+        object-position: right bottom;
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+
+        mask-image: radial-gradient(ellipse at top right, black 0%, transparent 70%);
+    }
+
+    .soft img {
+        mask-image: radial-gradient(ellipse at 2035px -3054px,black 0%,transparent 90%);
+    }
+
+    h2 {
+        font-size: var(--step-5);
+    }
+
+</style>

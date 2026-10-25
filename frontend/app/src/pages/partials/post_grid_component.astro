@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { PostListUI } from '@dtypes/layout_components'
+import { fetch_posts_by_tags } from '@helpers/fetching/posts'
+import { get_posts_tags } from '@helpers/api.minmatar.org/posts'
+import type { PostTag } from '@dtypes/api.minmatar.org'
+
+let posts:PostListUI[] = []
+let post_fetching_error: Error | false = false
+
+const tag = Astro.url.searchParams.get('tag')
+console.log(tag)
+const post_count = Astro.url.searchParams.get('post_count') ? parseInt(Astro.url.searchParams.get('post_count') as string) : null
+
+let current_tag:PostTag | null = null
+let posts_tags:PostTag[] = []
+
+try {
+    posts_tags = await get_posts_tags()
+    
+    const valid_tag = posts_tags.find(post_tag => post_tag.tag === tag)
+    current_tag = valid_tag ? valid_tag : posts_tags[0]
+
+    posts = await fetch_posts_by_tags(current_tag.tag_id)
+    posts = post_count !== null && post_count > 0 ? posts.slice(0, post_count) : posts
+} catch (error) {
+    post_fetching_error = error as Error
+}
+
+const POST_GRID_PARTIAL_URL = translatePath(`/partials/post_grid_component?tag=${current_tag ? current_tag.tag : tag}&post_count=${post_count}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
+import Grid from '@components/compositions/Grid.astro'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import PropagandaItem from '@components/blocks/PropagandaItem.astro'
+---
+
+{post_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: POST_GRID_PARTIAL_URL,
+            error: post_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <Grid
+        class="[ w-full grid-fill ]"
+        row_gap="var(--space-3xs)"
+        column_gap="var(--space-3xs)"
+        min_item_width='250px'
+    >
+        <PropagandaItem
+            posts={posts}
+            is_video={false}
+            is_editing={false}
+        />
+    </Grid>
+}

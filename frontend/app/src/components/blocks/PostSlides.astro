@@ -1,0 +1,32 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    post_count?:    number;
+    coverless?:     boolean;
+}
+
+const {
+    post_count = 3,
+    coverless = false,
+} = Astro.props
+
+import PostSlideTile from '@components/blocks/PostSlideTile.astro';
+---
+
+<PostSlideTile
+    title='Metropolis'
+    description={t('metropolis_description')}
+    tag='Metropolis'
+    post_count={post_count}
+    coverless={coverless}
+/>
+
+<PostSlideTile
+    title='Frontlines'
+    description={t('frontlines_description')}
+    tag='Frontlines'
+    post_count={post_count}
+    coverless={coverless}
+/>

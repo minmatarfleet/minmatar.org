@@ -5,15 +5,17 @@ const { t, lang, translatePath } = i18n(Astro.url)
 import type { PostListUI } from '@dtypes/layout_components';
 
 interface Props {
-    post:      PostListUI;
-    editor_id?: number;
-    is_editing: boolean;
+    post:           PostListUI;
+    editor_id?:     number;
+    is_editing:     boolean;
+    zoomable?:      boolean;
 }
 
 const {
     post,
     editor_id,
     is_editing,
+    zoomable = false,
 } = Astro.props
 
 // Remove extra amp; characters from the URI for reddit images
@@ -40,7 +42,7 @@ import VisibilityTag from '@components/blocks/VisibilityTag.astro';
         alt={post.title}
         narrow={true}
         thumbnail={true}
-        zoomable={false}
+        zoomable={zoomable}
         astro_image={image_sanitized ? {
             src: image_sanitized,
             width: 300,
@@ -80,7 +82,8 @@ import VisibilityTag from '@components/blocks/VisibilityTag.astro';
         </Flexblock>
     </PictureCard>
 
-    {!is_editing &&
+    {/* The hitbox covers the picture, so a zoomable card leaves it out to keep the picture clickable. */}
+    {!is_editing && !zoomable &&
         <a
             class="[ propaganda-post-card__hitbox ]"
             href={post_href}

@@ -1,0 +1,59 @@
+---
+interface Props {
+    swiper_selector?:   string;
+    gap?:               number;
+    align?:             'start' | 'center' | 'end' | 'stretch';
+    effect?:            'slide' | 'fade' | 'cube' | 'coverflow' | 'flip' | 'cards' | 'creative';
+}
+
+const {
+    swiper_selector = '.swiper',
+    gap = 0,
+    align = 'start',
+    effect = 'fade',
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<FlexInline
+    class:list={['swiper-wrapper select-none', `!items-${align}`]}
+    gap='0'
+    x-data={`{
+        swiper: null,
+        next_slide() {
+            this.swiper.slideNext()
+        },
+        go_slide(number) {
+            this.swiper.slideTo(number)
+        },
+        init() {
+            const INIT_WORKAROUND_TIMER_MS = 100
+
+            setTimeout(() => {
+                this.swiper = new Swiper('${swiper_selector}', {
+                    initialSlide: 0,
+                    slidesPerView: 1,
+                    spaceBetween: ${gap},
+                    pagination: false,
+                    loop: false,
+                    effect: '${effect}',
+                    allowTouchMove: false,
+                    simulateTouch: false,
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                });
+            }, INIT_WORKAROUND_TIMER_MS)
+        }
+    }`}
+>
+    <slot />
+</FlexInline>
+
+<style lang="scss">
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+</style>

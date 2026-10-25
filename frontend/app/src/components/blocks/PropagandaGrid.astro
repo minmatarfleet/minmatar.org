@@ -1,0 +1,73 @@
+---
+import type { PostListUI } from '@dtypes/layout_components'
+
+interface Props {
+    title:          string;
+    description:    string;
+    posts:          PostListUI[];
+    cover?:         string;
+    is_video?:      boolean;
+    editor_id?:     number;
+    is_editing:     boolean;
+    hash:           string;
+    as_subsection?: boolean;
+}
+
+const {
+    title,
+    description,
+    posts,
+    cover,
+    is_video = false,
+    editor_id,
+    is_editing,
+    hash,
+    as_subsection = false,
+} = Astro.props
+
+const HeadingTag = as_subsection ? 'h3' : 'h2'
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import PropagandaItem from '@components/blocks/PropagandaItem.astro';
+---
+
+<Flexblock gap='var(--space-l)'>
+    <TextBox>
+        {!is_editing && <p>{description}</p>}
+    </TextBox>
+    <Wrapper
+        padding_block='0'
+        padding_inline='0'
+        max_width={cover ? 'var(--max-col-width)' : '100%'}
+    >
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width={is_video ? '330px' : '250px'}
+        >
+            <PropagandaItem
+                posts={posts}
+                is_video={is_video}
+                editor_id={editor_id ? editor_id : undefined}
+                is_editing={is_editing}
+            />
+
+        </Grid>
+    </Wrapper>
+</Flexblock>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-3);
+    }
+
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>

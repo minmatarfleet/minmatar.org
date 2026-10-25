@@ -90,6 +90,27 @@ export const ui = {
         'content.connect.feature_denied':
             'Connecting Twitch, YouTube, or Reddit is limited to Thinkspeak members. Ask in Discord if you should be in that group.',
         'content.connect.success': 'Creator account connected.',
+        'content.manage.dialog_title': 'Manage my content',
+        'content.manage.dialog_description':
+            'Everything you need to publish propaganda and connect the platforms you post on.',
+        'content.manage.create_post.title': 'Create a post',
+        'content.manage.create_post.description':
+            'Write a new propaganda post from scratch with the built-in editor and publish it to the content stream.',
+        'content.manage.my_posts.title': 'My posts',
+        'content.manage.my_posts.description':
+            'Review, edit, and manage every post you have published, including drafts and scheduled content.',
+        'content.manage.trash.title': 'Trash',
+        'content.manage.trash.description':
+            'Recover posts you deleted by mistake or permanently remove them from your account.',
+        'content.manage.connect_twitch.title': 'Connect Twitch',
+        'content.manage.connect_twitch.description':
+            'Link your Twitch account so your livestreams are automatically featured in the content stream.',
+        'content.manage.connect_youtube.title': 'Connect YouTube',
+        'content.manage.connect_youtube.description':
+            'Link your YouTube account to share your videos with the rest of the alliance.',
+        'content.manage.connect_reddit.title': 'Link Reddit',
+        'content.manage.connect_reddit.description':
+            'Link your Reddit username so your public posts can be surfaced in the content stream.',
 
         'guides.page_title': 'Guides',
         'guides.back_to_guides': 'Back to guides',
@@ -5021,6 +5042,7 @@ export const ui = {
         'waifu_wars_tooltip': 'Manga style comic about the adventures of the warzone alliance waifus.',
         'comics_title': 'Comics',
         'comic_widget_description': 'Follow the adventures of the warzone characters and waifus thru our serialized publications.',
+        'series_description': 'Serialized comics from the Amarr–Minmatar warzone: follow The Waifu Wars and Rust and Blood as the war unfolds.',
         'fleet_roles': 'Fleet roles',
         'volunteer': 'Volunteer',
         'logi_anchor_label': 'Logi FC',
@@ -6559,7 +6581,6 @@ export const ui = {
         'surveys.fill.open_nudge_text': "You've been flying with us for over a year — that kind of perspective is exactly what leadership leans on most, and the open floor is blank right now. Even a line or two on what we should focus on would genuinely shape what happens next.",
         'surveys.fill.open_nudge_skip': 'Skip anyway',
         'surveys.fill.open_nudge_add': 'Add a note',
-
         'not_published': 'Not published',
         'authentication_required': 'Authentication required',
         'missing_permissions': 'Missing permissions',
@@ -6621,5 +6642,15 @@ export const ui = {
         'tribes.publishing.where.place_label': 'Location',
         'tribes.publishing.where.place_placeholder': 'In game or in person, such as a station or a city',
         'tribes.publishing.where.place_hint': 'Location events are visible to the whole server.',
+        'content_creators': 'Content Creators',
+        'propaganda': 'Propaganda',
+        'dispatches': 'Dispatches',
+        'campaigns': 'Campaigns',
+        'warzone_reports': 'Warzone Reports',
+        'our_guides': 'Our Guides',
+        'back_to_series': 'Back to Series',
+        'back_to_posts': 'Back to Posts',
+        'view_all': 'View all',
+        'visit_rat_bible_2': 'Visit Rat Bible',
     },
 } as const;
