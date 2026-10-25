@@ -21,11 +21,14 @@ from fleets.endpoints.private.schemas import (
     InvitePilot,
     InviteTotals,
     InviteWave,
+    OnboardingCount,
+    PickCount,
     RepingResponse,
     ResolveNamesRequest,
     ResolveNamesResponse,
     ResolvedPilot,
     ShipTargetProgress,
+    TimezoneCount,
     WavePreviewResponse,
     WaveRequest,
     WaveSentResponse,
@@ -53,6 +56,13 @@ from fleets.models import (
     EveFleetInviteWave,
     EveFleetShipVolunteer,
 )
+from timezones.fleet_time import (
+    ANY,
+    clean_codes,
+    fleet_timezones,
+    in_timezones,
+)
+from timezones.services import brackets_for, timezone_tags_for
 
 _ERRORS = {400: ErrorResponse, 403: None, 404: None, 409: ErrorResponse}
 
@@ -70,6 +80,37 @@ def can_manage_invites(user, fleet: EveFleet) -> bool:
 def can_reping(user, fleet: EveFleet) -> bool:
     """Re-ping is for private fleets, and only Strategic FCs send it."""
     return fleet.invite_only and sees_every_private_fleet(user)
+
+
+def can_choose_timezones(user, fleet: EveFleet) -> bool:
+    """Strategic FCs on a strategic or private fleet invite from any
+    timezone; everyone else invites only the fleet's."""
+    return (
+        fleet.type == "strategic" or fleet.invite_only
+    ) and sees_every_private_fleet(user)
+
+
+def chosen_timezones(user, fleet: EveFleet, requested) -> list[str] | None:
+    """The brackets bulk picks are limited to; None for any.
+
+    The fleet's own brackets by default. Others may untick some of them,
+    but never all, and can't add others; a caller who can choose may send
+    any brackets, or "any".
+    """
+    own, _ = fleet_timezones(fleet.start_time)
+    if requested is None:
+        return own
+    if can_choose_timezones(user, fleet):
+        if ANY in requested:
+            return None
+        return clean_codes(requested) or own
+    return [code for code in clean_codes(requested) if code in own] or own
+
+
+def _request_timezones(raw: str) -> list[str] | None:
+    """A comma-separated query parameter; blank means the fleet's own."""
+    codes = [code.strip() for code in (raw or "").split(",") if code.strip()]
+    return codes or None
 
 
 def _private_fleet(request, fleet_id: int):
@@ -215,11 +256,13 @@ def get_fleet_invites(request, fleet_id: int):
         )
     totals = invite_totals(fleet)
     reminded = [i.reminded_at for i in invites if i.reminded_at]
+    own_timezones, nearest = fleet_timezones(fleet.start_time)
     new_pilots = (
-        onboarding_counts(fleet)
+        onboarding_counts(fleet, own_timezones)
         if not fleet.invite_only and fleet.status == "pending"
         else {}
     )
+    empty = {"total": 0, "in_timezone": 0}
     return FleetInvitesResponse(
         fleet_id=fleet.id,
         totals=InviteTotals(
@@ -240,14 +283,35 @@ def get_fleet_invites(request, fleet_id: int):
         can_reping=can_reping(request.user, fleet),
         thread_url=thread_url(fleet),
         invite_only=fleet.invite_only,
-        onboarding_first_week=new_pilots.get("first_week", 0),
-        onboarding_more_fleets=new_pilots.get("more_fleets", 0),
+        onboarding_first_week=new_pilots.get("first_week", empty)["total"],
+        onboarding_more_fleets=new_pilots.get("more_fleets", empty)["total"],
+        onboarding_first_week_in_timezone=new_pilots.get("first_week", empty)[
+            "in_timezone"
+        ],
+        onboarding_more_fleets_in_timezone=new_pilots.get(
+            "more_fleets", empty
+        )["in_timezone"],
+        fleet_timezones=own_timezones,
+        timezones_nearest=nearest,
+        can_choose_timezones=can_choose_timezones(request.user, fleet),
     )
 
 
-def _preview_response(preview: dict) -> WavePreviewResponse:
+def _preview_response(
+    preview: dict, onboarding: dict | None = None
+) -> WavePreviewResponse:
     return WavePreviewResponse(
         picked=preview["picked"],
+        other_timezones=preview["other_timezones"],
+        other_timezones_by_bracket=[
+            TimezoneCount(**row)
+            for row in preview["other_timezones_by_bracket"]
+        ],
+        picks=[PickCount(**row) for row in preview["picks"]],
+        onboarding=[
+            OnboardingCount(bucket=bucket, **counts)
+            for bucket, counts in (onboarding or {}).items()
+        ],
         already_invited=preview["already_invited"],
         new=len(preview["new_user_ids"]),
         will_dm=preview["will_dm"],
@@ -268,6 +332,7 @@ def post_wave_preview(request, fleet_id: int, payload: WaveRequest):
     fleet = _private_fleet(request, fleet_id)
     if isinstance(fleet, tuple):
         return fleet
+    timezones = chosen_timezones(request.user, fleet, payload.timezones)
     return _preview_response(
         wave_preview(
             fleet,
@@ -275,7 +340,14 @@ def post_wave_preview(request, fleet_id: int, payload: WaveRequest):
             corporation_ids=payload.corporation_ids,
             user_ids=payload.user_ids,
             onboarding=_onboarding(fleet, payload),
-        )
+            timezones=timezones,
+        ),
+        # The dialog's new pilot rows follow the timezone choice.
+        onboarding=(
+            onboarding_counts(fleet, timezones)
+            if not fleet.invite_only and fleet.status == "pending"
+            else None
+        ),
     )
 
 
@@ -291,6 +363,7 @@ def post_wave(request, fleet_id: int, payload: WaveRequest):
             corporation_ids=payload.corporation_ids,
             user_ids=payload.user_ids,
             onboarding=_onboarding(fleet, payload),
+            timezones=chosen_timezones(request.user, fleet, payload.timezones),
             note=payload.note,
         )
     except PrivateFleetError as exc:
@@ -348,10 +421,16 @@ def _block_fields(blocks, user_id: int, name: str) -> dict:
 
 
 def get_invite_candidates(
-    request, fleet_id: int, q: str = "", pilots_only: bool = False
+    request,
+    fleet_id: int,
+    q: str = "",
+    pilots_only: bool = False,
+    timezones: str = "",
 ):
     """Tribe groups, corporations and pilots matching ``q``, for the
-    pickers. ``pilots_only`` is the Invites tab's one-pilot search."""
+    pickers. ``pilots_only`` is the Invites tab's one-pilot search.
+    ``timezones`` (comma-separated) is the dialog's timezone choice, for
+    each group's "in timezone" count."""
     fleet = _private_fleet(request, fleet_id)
     if isinstance(fleet, tuple):
         return fleet
@@ -360,26 +439,62 @@ def get_invite_candidates(
         return []
     out: List[InviteCandidate] = []
     if not pilots_only:
-        out += _group_candidates(fleet, q)
+        codes = chosen_timezones(
+            request.user, fleet, _request_timezones(timezones)
+        )
+        out += _group_candidates(fleet, q, codes)
     out += _pilot_candidates(fleet, q)
     return out
 
 
-def _group_candidates(fleet, q: str) -> List[InviteCandidate]:
+def _member_counts(members: set[int], brackets, codes) -> dict:
+    return {
+        "members": len(members),
+        "in_timezone": sum(
+            1
+            for user_id in members
+            if codes is None or in_timezones(brackets.get(user_id), codes)
+        ),
+    }
+
+
+def _group_candidates(fleet, q: str, codes=None) -> List[InviteCandidate]:
     # pylint: disable=import-outside-toplevel
-    from tribes.models import TribeGroup
+    from tribes.models import TribeGroup, TribeGroupMembership
 
     waves = EveFleetInviteWave.objects.filter(eve_fleet=fleet).values_list(
         "tribe_group_ids", "corporation_ids"
     )
     sent_groups = {i for groups, _ in waves for i in groups or []}
     sent_corps = {i for _, corps in waves for i in corps or []}
-    out: List[InviteCandidate] = []
-    for group in (
+    groups = list(
         TribeGroup.objects.filter(is_active=True)
         .filter(Q(name__icontains=q) | Q(tribe__name__icontains=q))
         .select_related("tribe")[:8]
-    ):
+    )
+    corps = list(
+        EveCorporation.objects.filter(
+            Q(name__icontains=q) | Q(ticker__iexact=q)
+        ).order_by("name")[:6]
+    )
+    group_members: dict[int, set[int]] = defaultdict(set)
+    for user_id, group_id in TribeGroupMembership.objects.filter(
+        tribe_group_id__in=[g.id for g in groups],
+        status=TribeGroupMembership.STATUS_ACTIVE,
+        user__is_active=True,
+    ).values_list("user_id", "tribe_group_id"):
+        group_members[group_id].add(user_id)
+    corp_members: dict[int, set[int]] = defaultdict(set)
+    for user_id, corp_id in EveCharacter.objects.filter(
+        corporation_id__in=[c.corporation_id for c in corps],
+        user__is_active=True,
+    ).values_list("user_id", "corporation_id"):
+        corp_members[corp_id].add(user_id)
+    brackets = brackets_for(
+        set().union(*group_members.values(), *corp_members.values())
+    )
+    out: List[InviteCandidate] = []
+    for group in groups:
         out.append(
             InviteCandidate(
                 kind="tribe_group",
@@ -387,11 +502,10 @@ def _group_candidates(fleet, q: str) -> List[InviteCandidate]:
                 name=f"{group.tribe.name} · {group.name}",
                 detail="Tribe group",
                 blocked="invited" if group.id in sent_groups else None,
+                **_member_counts(group_members[group.id], brackets, codes),
             )
         )
-    for corp in EveCorporation.objects.filter(
-        Q(name__icontains=q) | Q(ticker__iexact=q)
-    ).order_by("name")[:6]:
+    for corp in corps:
         out.append(
             InviteCandidate(
                 kind="corporation",
@@ -400,6 +514,9 @@ def _group_candidates(fleet, q: str) -> List[InviteCandidate]:
                 detail=f"[{corp.ticker}]" if corp.ticker else "Corporation",
                 blocked=(
                     "invited" if corp.corporation_id in sent_corps else None
+                ),
+                **_member_counts(
+                    corp_members[corp.corporation_id], brackets, codes
                 ),
             )
         )
@@ -422,6 +539,7 @@ def _pilot_candidates(fleet, q: str) -> List[InviteCandidate]:
         ).values_list("corporation_id", "name")
     )
     blocks = _pilot_blocks(fleet, {c.user_id for c in characters})
+    tags = timezone_tags_for({c.user_id for c in characters})
     for character in characters:
         if character.user_id in seen:
             continue
@@ -432,6 +550,7 @@ def _pilot_candidates(fleet, q: str) -> List[InviteCandidate]:
                 id=character.user_id,
                 name=character.character_name,
                 detail=corp_names.get(character.corporation_id, ""),
+                timezone=tags.get(character.user_id),
                 **_block_fields(
                     blocks, character.user_id, character.character_name
                 ),
@@ -450,11 +569,15 @@ def post_resolve_names(request, fleet_id: int, payload: ResolveNamesRequest):
         resolved = resolve_invite_names(payload.text)
     except PrivateFleetError as exc:
         return exc.status_code, ErrorResponse(detail=str(exc))
-    blocks = _pilot_blocks(fleet, {row["id"] for row in resolved["matched"]})
+    user_ids = {row["id"] for row in resolved["matched"]}
+    blocks = _pilot_blocks(fleet, user_ids)
+    tags = timezone_tags_for(user_ids)
     return ResolveNamesResponse(
         matched=[
             ResolvedPilot(
-                **row, **_block_fields(blocks, row["id"], row["name"])
+                **row,
+                timezone=tags.get(row["id"]),
+                **_block_fields(blocks, row["id"], row["name"]),
             )
             for row in resolved["matched"]
         ],
@@ -484,7 +607,11 @@ ROUTES = (
         {
             "auth": AuthBearer(),
             "response": {200: WavePreviewResponse, **_ERRORS},
-            "description": "Who a send with these picks would reach.",
+            "description": (
+                "Who a send with these picks would reach. Group, "
+                "corporation and new pilot picks only reach pilots who play "
+                "in the chosen timezones (the fleet's own by default)."
+            ),
         },
         post_wave_preview,
     ),

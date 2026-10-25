@@ -27,6 +27,7 @@ from surveys.helpers.tenure import (
     tenure_cohort,
     tenure_days,
 )
+from timezones.services import timezone_for, timezone_tag
 
 logger = logging.getLogger(__name__)
 
@@ -168,13 +169,15 @@ def build_member_context(user) -> dict:
     learning = _learning_progress(user)
     tribes = member_tribe_rows(user)
     tier = activity_tier(fleet_count)
-    prime = _prime_time(user)
+    pilot_timezone = timezone_for(user.id)
 
     return {
         "tenure_note": standing.tenure_note(joined),
         "fleets_note": standing.fleets_note(tier),
         "guides_note": standing.guides_note(learning["guides_completed"]),
-        "timezone_note": standing.timezone_note(prime),
+        "timezone_note": standing.timezone_note(
+            pilot_timezone.home if pilot_timezone else None
+        ),
         "character_id": corp["character_id"],
         "character_name": corp["character_name"],
         "corporation_id": corp["corporation_id"],
@@ -183,7 +186,10 @@ def build_member_context(user) -> dict:
         "ceo_name": corp["ceo_name"],
         "corp_history": corp_hist["corps"],
         "graduated": corp_hist["graduated"],
+        # Declared prime time, frozen onto responses for segmentation.
         "prime_time": _prime_time(user),
+        # What the page shows (a JSON-ready TimezoneTag).
+        "timezone": timezone_tag(pilot_timezone).model_dump(),
         "tribes": tribes,
         "tribe_names": [t["label"] for t in tribes],
         "community_status": community_status(user),

@@ -37,7 +37,7 @@ class CachedRollupKeysTestCase(SimpleTestCase):
     def test_corporation_stats(self):
         rollup = stats_cache.STATS
         self.assertEqual(
-            rollup.key(corporation_id=7), "corporation_profile_stats:v2:7"
+            rollup.key(corporation_id=7), "corporation_profile_stats:v3:7"
         )
         self.assertEqual(
             rollup.lock_key(corporation_id=7),

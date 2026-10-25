@@ -23,6 +23,9 @@ from campaigns.services import structures as structure_service
 from eveonline.models import EveCorporation, EveCharacter, EvePlayer
 from feed.models import FeedKillmail
 from fittings.models import EveFitting
+from timezones.brackets import BRACKET_CODES
+from timezones.schemas import TimezoneTag
+from timezones.services import timezone_tags_for
 
 
 def system_summary(
@@ -427,6 +430,30 @@ def tracked_character_counts(user_ids) -> dict[int, int]:
     )
 
 
+def roster_timezones(rows: list[dict]) -> list[dict]:
+    """Pilots per timezone bracket, in bracket order, then those with none.
+
+    A pilot in two brackets counts in both; empty brackets are left out.
+    """
+    counts = {code: 0 for code in BRACKET_CODES}
+    unknown = 0
+    for row in rows:
+        brackets = row["timezone"].brackets
+        if not brackets:
+            unknown += 1
+        for code in brackets:
+            if code in counts:
+                counts[code] += 1
+    result = [
+        {"bracket": code, "pilots": pilots}
+        for code, pilots in counts.items()
+        if pilots
+    ]
+    if unknown:
+        result.append({"bracket": None, "pilots": unknown})
+    return result
+
+
 def roster_rows(campaign: Campaign) -> list[dict]:
     """The roster, in a handful of queries rather than three per pilot."""
     enlistments = list(
@@ -464,6 +491,7 @@ def roster_rows(campaign: Campaign) -> list[dict]:
         ).values_list("corporation_id", "name")
     )
     tracked_by_user = tracked_character_counts(user_ids)
+    timezones = timezone_tags_for(user_ids)
 
     rows = []
     for enlistment in enlistments:
@@ -484,10 +512,7 @@ def roster_rows(campaign: Campaign) -> list[dict]:
                     if primary
                     else ""
                 ),
-                "prime_time": (player.prime_time if player else "") or "",
-                "observed_prime_time": (
-                    stat.observed_prime_time if stat else ""
-                ),
+                "timezone": timezones.get(enlistment.user_id) or TimezoneTag(),
                 "last_active_day": stat.last_active_day if stat else None,
                 "characters_included": enlistment.included,
                 "characters_tracked": tracked_by_user.get(

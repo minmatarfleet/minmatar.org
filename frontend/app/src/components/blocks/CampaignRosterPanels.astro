@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CampaignRoster } from '@dtypes/api.minmatar.org'
+import { timezone_description } from '@helpers/timezones'
 
 interface Props {
     roster:             CampaignRoster;
@@ -16,7 +17,7 @@ const {
 
 delete attributes.class
 
-const prime_times = Object.entries(roster.by_prime_time ?? {})
+const by_timezone = roster.by_timezone ?? []
 const corporations = roster.corporations ?? []
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -51,14 +52,15 @@ import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astr
         </Flexblock>
     </ComponentBlock>
 
-    {prime_times.length > 0 &&
+    {by_timezone.length > 0 &&
         <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
             <Flexblock gap='var(--space-s)'>
-                <h2>{t('campaigns.roster.by_prime_time')}</h2>
+                <h2>{t('campaigns.roster.by_timezone')}</h2>
                 <FlexInline gap='var(--space-2xs)'>
-                    {prime_times.map(([ label, count ]) =>
+                    {by_timezone.map(({ bracket, pilots }) =>
                         <Tag
-                            text={`${label || t('campaigns.roster.unknown_prime_time')}: ${count}`}
+                            text={`${bracket ?? t('timezones.no_tz_yet')}: ${pilots}`}
+                            title={bracket ? timezone_description(bracket, t) : t('timezones.no_tz_yet_hint')}
                             color='alliance-blue'
                         />
                     )}

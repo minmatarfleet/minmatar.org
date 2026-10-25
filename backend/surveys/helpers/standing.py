@@ -11,17 +11,9 @@ from django.contrib.auth.models import User
 
 from eveonline.models import EvePlayer
 from learning.models import UserLearningProgress
+from timezones.services import home_counts
 
 logger = logging.getLogger(__name__)
-
-PRIME_LABELS = {
-    "US": "US",
-    "US_AP": "US/AP",
-    "AP": "AP",
-    "AP_EU": "AP/EU",
-    "EU": "EU",
-    "EU_US": "EU/US",
-}
 
 
 def _band(percentile: float) -> str:
@@ -83,29 +75,22 @@ def guides_note(count: int) -> str:
         return ""
 
 
-def timezone_note(prime_time: str) -> str:
-    """Communicate how large the member's timezone cohort is."""
-    if not prime_time:
+def timezone_note(home: str | None) -> str:
+    """How large the member's home timezone cohort is (US, EU or AU from
+    the timezones app), among members who hold timezone roles."""
+    if not home:
         return ""
     try:
-        rows = list(
-            EvePlayer.objects.exclude(prime_time__isnull=True)
-            .exclude(prime_time="")
-            .values_list("prime_time", flat=True)
-        )
-        total = len(rows)
+        counts = home_counts()
+        total = sum(counts.values())
         if total < 5:
             return ""
-        counts: dict[str, int] = {}
-        for tz in rows:
-            counts[tz] = counts.get(tz, 0) + 1
-        mine = counts.get(prime_time, 0)
+        mine = counts.get(home, 0)
         if not mine:
             return ""
         share = round(100.0 * mine / total)
-        ranked = sorted(counts.values(), reverse=True)
         note = f"{share}% of members"
-        if counts[prime_time] == ranked[0]:
+        if mine == max(counts.values()):
             note += " · largest TZ"
         return note
     except Exception:  # pragma: no cover - defensive

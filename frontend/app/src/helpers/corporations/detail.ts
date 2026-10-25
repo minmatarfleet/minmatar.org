@@ -1,4 +1,5 @@
-import type { CorporationMemberDetails } from '@dtypes/api.minmatar.org'
+import type { CorporationMemberDetails, TimezoneTag } from '@dtypes/api.minmatar.org'
+import { TIMEZONE_FILTERS, timezone_matches, timezone_rank } from '@helpers/timezones'
 
 // Keep in step with corporation_slug in backend/eveonline/helpers/corporations/slugs.py.
 export function corporation_slug(name: string | null | undefined): string {
@@ -17,8 +18,6 @@ export type MemberSortMetric = 'fleets' | 'kills' | 'voice' | 'timezone' | 'name
 export const MEMBER_SORTS = ['fleets', 'kills', 'name', 'joined', 'last'] as const
 
 export const MEMBER_PAGE_SIZE = 25
-
-const OBSERVED_TZ_ORDER = ['US', 'US_AP', 'AP', 'AP_EU', 'EU', 'EU_US'] as const
 
 export interface CorporationMemberPortrait {
     character_id: number
@@ -45,8 +44,8 @@ export interface CorporationMemberRow {
     fleets_90d: number
     kills_90d: number
     voice_hours_90d: number
-    observed_prime_times: string[]
-    prime_time: string | null
+    // The person's timezone tag (alts share one account, so one tag).
+    timezone: TimezoneTag | null
     community_status: string | null
     // Characters the viewer may not see; only their count is known.
     hidden_character_count: number
@@ -77,7 +76,7 @@ export const NEW_MEMBER_DAYS = 90
 
 export type MemberAttention = 'esi_suspended' | 'no_account' | 'token_missing' | 'trial_ready'
 
-export const MEMBER_TIMEZONE_FILTERS = OBSERVED_TZ_ORDER
+export const MEMBER_TIMEZONE_FILTERS = TIMEZONE_FILTERS
 export const MEMBER_STATUS_FILTERS = ['active', 'trial', 'on_leave', 'none'] as const
 export type MemberStatusFilter = typeof MEMBER_STATUS_FILTERS[number]
 // Linked = the character belongs to a site account; "not linked" are in-game
@@ -89,23 +88,9 @@ export interface MemberFilters {
     query: string
     view?: MemberView | null
     registered_only?: boolean
-    timezone?: string | null
+    timezone?: typeof MEMBER_TIMEZONE_FILTERS[number] | null
     status?: string | null
     account?: MemberAccountFilter | null
-}
-
-export interface MemberTimezones {
-    codes: string[]
-    declared: boolean
-}
-
-// Where they actually fleet; fall back to the timezone they declared.
-export function corporation_member_timezones(row: CorporationMemberRow): MemberTimezones {
-    if (row.observed_prime_times.length > 0)
-        return { codes: row.observed_prime_times, declared: false }
-    if (row.prime_time)
-        return { codes: [row.prime_time], declared: true }
-    return { codes: [], declared: false }
 }
 
 export function member_filter_value<T extends string>(
@@ -137,21 +122,10 @@ function by_activity(a: CorporationMemberDetails, b: CorporationMemberDetails): 
         || a.character_name.localeCompare(b.character_name)
 }
 
-function observed_rank(times: string[]): number {
-    for (const code of times) {
-        const index = OBSERVED_TZ_ORDER.indexOf(code as typeof OBSERVED_TZ_ORDER[number])
-        if (index >= 0)
-            return index
-    }
-    return OBSERVED_TZ_ORDER.length
-}
-
-function unique_observed(members: CorporationMemberDetails[]): string[] {
-    const present = new Set(members.flatMap((member) => member.observed_prime_times ?? []))
-    const known = new Set<string>(OBSERVED_TZ_ORDER)
-    const ordered = OBSERVED_TZ_ORDER.filter((code) => present.has(code))
-    const extras = [...present].filter((code) => !known.has(code))
-    return [...ordered, ...extras]
+function person_timezone(group: CorporationMemberDetails[]): TimezoneTag | null {
+    return group.find((member) => member.timezone?.brackets?.length)?.timezone
+        ?? group.find((member) => member.timezone)?.timezone
+        ?? null
 }
 
 function sum_hours(values: number[]): number {
@@ -198,8 +172,7 @@ function collapse_group(group: CorporationMemberDetails[]): CorporationMemberRow
         fleets_90d: person_fleets(group) ?? group.reduce((sum, member) => sum + member.fleets_90d, 0),
         kills_90d: group.reduce((sum, member) => sum + member.kills_90d, 0),
         voice_hours_90d: sum_hours(group.map((member) => member.voice_hours_90d)),
-        observed_prime_times: unique_observed(group),
-        prime_time: group.find((member) => member.prime_time)?.prime_time ?? null,
+        timezone: person_timezone(group),
         community_status: group.find((member) => member.community_status)?.community_status ?? null,
         hidden_character_count: group.reduce((sum, member) => sum + (member.hidden_character_count ?? 0), 0),
         linked: group.some((member) => Boolean(member.user_name) || Boolean(member.characters_hidden)),
@@ -355,7 +328,7 @@ export function filter_corporation_member_rows(
             return false
         if (options.account === 'unlinked' && row.linked)
             return false
-        if (options.timezone && !corporation_member_timezones(row).codes.includes(options.timezone))
+        if (options.timezone && !timezone_matches(row.timezone, options.timezone))
             return false
         if (options.status === 'none' && row.community_status)
             return false
@@ -387,7 +360,7 @@ export function sort_corporation_member_rows(
             case 'voice':
                 return b.voice_hours_90d - a.voice_hours_90d || b.fleets_90d - a.fleets_90d || by_name
             case 'timezone':
-                return observed_rank(a.observed_prime_times) - observed_rank(b.observed_prime_times) || by_name
+                return timezone_rank(a.timezone) - timezone_rank(b.timezone) || by_name
             case 'name':
                 return by_name
             case 'joined':
@@ -473,7 +446,7 @@ function csv_cell(value: string | number | null | undefined): string {
 export function corporation_members_csv(rows: CorporationMemberRow[]): string {
     const header = [
         'Pilot', 'Alts', 'Status', 'In corp since', 'Fleets (90d)', 'Kills (90d)',
-        'Voice hours (90d)', 'Last fleet', 'Prime time', 'Attention', 'Linked',
+        'Voice hours (90d)', 'Last fleet', 'Timezone', 'Attention', 'Linked',
     ]
     const lines = rows.map((row) => {
         const primary = corporation_member_primary(row)
@@ -489,7 +462,7 @@ export function corporation_members_csv(rows: CorporationMemberRow[]): string {
             row.kills_90d,
             row.linked ? row.voice_hours_90d : '',
             row.last_fleet_at?.slice(0, 10) ?? '',
-            corporation_member_timezones(row).codes.join(' '),
+            (row.timezone?.brackets ?? []).join(' '),
             ATTENTION_CSV_LABELS[corporation_member_attention(row) ?? ''] ?? '',
             row.linked ? 'yes' : 'no',
         ].map(csv_cell).join(',')

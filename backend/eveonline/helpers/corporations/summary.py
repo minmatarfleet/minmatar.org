@@ -13,9 +13,6 @@ from django.utils import timezone
 from eveuniverse.models import EveType
 
 from eveonline.helpers.corporations.kills import ACTIVITY_DAYS, RecentKills
-from eveonline.helpers.corporations.timezones import (
-    observed_prime_buckets_for_users,
-)
 from eveonline.killmail_classes import (
     CAPSULE_TYPE_IDS,
     SMALL_GANG_MAX_ATTACKERS,
@@ -303,13 +300,10 @@ def _fleet_facts(character_ids, user_ids, char_to_user, cutoff):
             _attendance_ships(ship_type_id, ships_by_member.get(member_id))
         )
     ship_counts, pilot_fleets = _ship_roles(hulls_by_pilot_fleet)
-    observed = observed_prime_buckets_for_users(list(user_ids))
-    tier_counts: Counter = Counter()
-    for user_id, fleet_ids in fleets_by_user.items():
-        if not observed.get(user_id):
-            tier_counts[TIER_INACTIVE] += 1
-            continue
-        tier_counts[fleet_tier(len(fleet_ids))] += 1
+    # No fleets in the window is the inactive tier.
+    tier_counts: Counter = Counter(
+        fleet_tier(len(fleet_ids)) for fleet_ids in fleets_by_user.values()
+    )
     return len(instances), tier_counts, ship_counts, pilot_fleets
 
 

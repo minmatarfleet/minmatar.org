@@ -5,64 +5,13 @@ from django.utils import timezone
 from django.core.cache import cache
 
 from app.test import TestCase
-from eveonline.helpers.corporations.timezones import (
-    observed_prime_buckets_for_users,
-    weekday_distribution,
-)
+from eveonline.helpers.corporations.weekdays import weekday_distribution
 from eveonline.models import (
     EveCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
 )
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
-
-
-class ObservedPrimeBucketsTestCase(TestCase):
-    def setUp(self):
-        # Profile stats are cached per corporation id; start clean.
-        cache.clear()
-        super().setUp()
-        signals.post_save.disconnect(
-            sender=EveFleet,
-            dispatch_uid="update_fleet_schedule_on_save",
-        )
-
-    def test_one_fleet_in_eu_counts(self):
-        character = EveCharacter.objects.create(
-            character_id=30001,
-            character_name="Fleet Pilot",
-            user=self.user,
-        )
-        fleet = EveFleet.objects.create(
-            start_time=timezone.now(),
-            type="training",
-            created_by=self.user,
-        )
-        instance = EveFleetInstance.objects.create(id=9001, eve_fleet=fleet)
-        member = EveFleetInstanceMember.objects.create(
-            eve_fleet_instance=instance,
-            character_id=character.character_id,
-            character_name=character.character_name,
-            role="squad_member",
-            role_name="Squad Member",
-            ship_type_id=1,
-            ship_name="Rifter",
-            solar_system_id=1,
-            solar_system_name="Amamake",
-            squad_id=1,
-            wing_id=1,
-        )
-        join_time = (
-            timezone.now()
-            .astimezone(dt_timezone.utc)
-            .replace(hour=17, minute=0, second=0, microsecond=0)
-        )
-        EveFleetInstanceMember.objects.filter(pk=member.pk).update(
-            join_time=join_time
-        )
-
-        buckets = observed_prime_buckets_for_users([self.user.id])
-        self.assertEqual(["EU"], buckets[self.user.id])
 
 
 class WeekdayDistributionTestCase(TestCase):

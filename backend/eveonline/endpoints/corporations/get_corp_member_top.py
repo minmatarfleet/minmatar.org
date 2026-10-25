@@ -17,7 +17,7 @@ from eveonline.helpers.corporations.permissions import (
 )
 from eveonline.helpers.corporations.profile import load_corporation
 from eveonline.helpers.corporations.stats_cache import corporation_stats
-from eveonline.helpers.corporations.timezones import PRIME_BUCKETS
+from timezones.brackets import BRACKET_CODES
 
 router = Router(tags=["Corporations"])
 
@@ -68,13 +68,18 @@ def sort_member_rows(ranked, metric: str):
     return rows
 
 
+_BRACKET_ORDER = {code: index for index, code in enumerate(BRACKET_CODES)}
+
+
 def _timezone_sort_key(row):
-    order = {code: index for index, code in enumerate(PRIME_BUCKETS)}
-    rank = len(PRIME_BUCKETS)
-    for bucket in row.observed_prime_times:
-        if bucket in order:
-            rank = order[bucket]
-            break
+    """Bracket order (USTZ first), then no timezone yet, then by name."""
+    rank = min(
+        (
+            _BRACKET_ORDER.get(code, len(BRACKET_CODES))
+            for code in row.timezone.brackets
+        ),
+        default=len(BRACKET_CODES) + 1,
+    )
     return (rank, row.character_name)
 
 

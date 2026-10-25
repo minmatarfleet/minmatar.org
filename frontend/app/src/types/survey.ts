@@ -1,5 +1,7 @@
 // Types for the quarterly community survey feature.
 
+import type { TimezoneTag } from '@dtypes/api.minmatar.org'
+
 export interface SurveyQuestion {
     key: string
     type: 'scale5' | 'enps' | 'agree' | 'single' | 'multi' | 'matrix' | 'text'
@@ -76,7 +78,7 @@ export interface MemberContext {
     ceo_name: string
     corp_history: CorpHistoryEntry[]
     graduated: boolean
-    prime_time: string
+    timezone: TimezoneTag | null
     tribes: TribeRef[]
     tribe_names: string[]
     community_status: string

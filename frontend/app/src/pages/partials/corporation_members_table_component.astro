@@ -16,7 +16,6 @@ import {
     corporation_member_attention,
     corporation_member_characters,
     corporation_member_primary,
-    corporation_member_timezones,
     days_since,
     filter_corporation_member_rows,
     group_corporation_members,
@@ -38,6 +37,7 @@ import Button from '@components/blocks/Button.astro'
 import HtmxPager from '@components/blocks/HtmxPager.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 
 const BODY_ID = 'corporation-members-body'
 const SEARCH_ID = 'corporation-member-search'
@@ -90,18 +90,6 @@ function view_label(view: MemberView): string {
         case 'unlinked': return t('corporations.members.view_unlinked')
         case 'esi': return t('corporations.members.view_esi')
         default: return view
-    }
-}
-
-function prime_label(code: string): string {
-    switch (code) {
-        case 'US': return t('US')
-        case 'US_AP': return t('US_AP')
-        case 'AP': return t('AP')
-        case 'AP_EU': return t('AP_EU')
-        case 'EU': return t('EU')
-        case 'EU_US': return t('EU_US')
-        default: return code
     }
 }
 
@@ -175,7 +163,7 @@ function sort_label(sort: MemberRosterParams['sort']): string {
 
 const timezone_options = [
     { value: '', label: t('corporations.detail.all_timezones') },
-    ...MEMBER_TIMEZONE_FILTERS.map((code) => ({ value: code, label: prime_label(code) })),
+    ...MEMBER_TIMEZONE_FILTERS.map((code) => ({ value: code, label: code === 'none' ? t('timezones.no_tz_yet') : code })),
 ]
 const status_options = [
     { value: '', label: t('corporations.detail.all_statuses') },
@@ -348,7 +336,7 @@ const selected_template = t('corporations.members.selected')
                                 </th>
                             ))}
                             <th scope="col" class="col-voice is-numeric">{t('corporations.members.voice')}</th>
-                            <th scope="col" class="col-prime">{t('corporations.members.prime_time')}</th>
+                            <th scope="col" class="col-prime">{t('corporations.detail.timezone')}</th>
                             <th scope="col" class="col-chevron"></th>
                         </tr>
                         <tr class="cm-bulk" x-show="picked.length > 0" x-cloak>
@@ -383,7 +371,6 @@ const selected_template = t('corporations.members.selected')
                     {pagination.rows.map((member) => {
                         const primary = corporation_member_primary(member)
                         const characters = corporation_member_characters(member)
-                        const zones = corporation_member_timezones(member)
                         const attention = corporation_member_attention(member)
                         const weeks = bars(member.weekly_fleets)
                         const alts = alts_label(member)
@@ -441,12 +428,8 @@ const selected_template = t('corporations.members.selected')
                                     <td class="col-kills is-numeric"><span class="cm-number">{member.kills_90d}</span></td>
                                     <td class="col-voice is-numeric">{member.linked ? `${member.voice_hours_90d}h` : '—'}</td>
                                     <td class="col-prime">
-                                        {zones.codes.length > 0
-                                            ? <span class="cm-zones">
-                                                {zones.codes.map((code) => (
-                                                    <span class:list={['cm-tz', { 'is-declared': zones.declared }]}>{prime_label(code)}</span>
-                                                ))}
-                                            </span>
+                                        {member.linked
+                                            ? <TimezoneTags timezone={member.timezone} />
                                             : <span class="cm-muted">—</span>
                                         }
                                     </td>
@@ -976,24 +959,6 @@ const selected_template = t('corporations.members.selected')
 
     .col-last.is-stale {
         color: var(--faded);
-    }
-
-    .cm-zones {
-        display: inline-flex;
-        flex-wrap: nowrap;
-        gap: var(--space-3xs);
-    }
-
-    .cm-tz {
-        padding: 0 var(--space-3xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
-        font-size: var(--step--2);
-        font-weight: 700;
-
-        &.is-declared {
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
     }
 
     .cm-attention-text {

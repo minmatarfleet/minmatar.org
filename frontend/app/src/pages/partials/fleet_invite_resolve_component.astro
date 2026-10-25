@@ -45,6 +45,7 @@ const picks_json = JSON.stringify(matched
         id: pilot.id,
         name: pilot.name,
         skip: skip_note(t, lang, pilot),
+        tz: pilot.timezone?.brackets ?? [],
     })))
 ---
 

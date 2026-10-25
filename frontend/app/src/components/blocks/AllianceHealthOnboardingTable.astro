@@ -10,6 +10,7 @@ import type {
     AllianceHealthOrderOption,
     AllianceHealthPilotListRow,
 } from '@helpers/alliance_health_pilot_list'
+import { timezone_text } from '@helpers/alliance_health_pilot_list'
 
 import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
 
@@ -55,7 +56,7 @@ const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => ({
     corp: pilot.corp,
     character_id: pilot.character_id,
     corporation_id: pilot.corporation_id,
-    search_text: `${pilot.pilot} ${pilot.username} ${pilot.corp} ${pilot.timezone ?? ''}`.toLowerCase(),
+    search_text: `${pilot.pilot} ${pilot.username} ${pilot.corp} ${timezone_text(pilot.timezone)}`.toLowerCase(),
     timezone: pilot.timezone,
     note:
         bucket === 'first_week'

@@ -58,7 +58,6 @@ export const append_extraction_corporation = async (api_corporations:Corporation
             member_count: null,
             media: [],
             ticker: null,
-            timezone_distribution: [],
             weekday_distribution: [],
         })
     } catch (error) {

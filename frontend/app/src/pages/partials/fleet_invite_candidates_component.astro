@@ -16,6 +16,7 @@ const q = (Astro.url.searchParams.get('q') ?? '').trim()
 // "single": the Invites tab's one-pilot search, whose rows invite right away.
 // Otherwise the dialog's Select names, whose rows add a pick.
 const single = Astro.url.searchParams.get('mode') === 'single'
+const timezones = Astro.url.searchParams.getAll('timezones').filter(Boolean)
 
 if (!fleet_id)
     return HTTP_404_Not_Found()
@@ -29,13 +30,14 @@ const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?${que
 let candidates:FleetInviteCandidate[] = []
 if (q.length >= 2) {
     try {
-        candidates = await get_fleet_invite_candidates(auth_token as string, fleet_id, q, single)
+        candidates = await get_fleet_invite_candidates(auth_token as string, fleet_id, q, single, timezones)
     } catch (e) {
         console.log(`Invite candidates: ${e.message}`)
     }
 }
 
 import EmptyState from '@components/blocks/EmptyState.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 ---
 
 {q.length >= 2 && (candidates.length === 0 ?
@@ -43,9 +45,13 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     <ul class="[ invite-candidates ]">
         {candidates.map(candidate => {
             const kind = t(t_key('fleets.private.kind_', candidate.kind))
+            // Groups and corporations: how many of their members play in the chosen timezones.
+            const in_timezone = candidate.members !== null && candidate.in_timezone !== null && candidate.in_timezone !== candidate.members ?
+                t('fleets.invites.of_count').replace('{in}', candidate.in_timezone.toString()).replace('{total}', candidate.members.toString()) :
+                null
             const detail = single || candidate.detail === kind ?
                 candidate.detail :
-                [kind, candidate.detail].filter(Boolean).join(' · ')
+                [kind, candidate.detail, in_timezone].filter(Boolean).join(' · ')
             const blocked = candidate.blocked ? t(t_key('fleets.invites.blocked_', candidate.blocked)) : ''
             // Skipped picks can still be added in the dialog; the chip says why.
             const skipped = !single && is_skipped(candidate.blocked)
@@ -55,12 +61,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                 id: candidate.id,
                 name: candidate.name,
                 skip: skip_note(t, lang, candidate),
+                // Pilots: their brackets, so the chip can say when they play in another timezone.
+                ...(candidate.timezone ? { tz: candidate.timezone.brackets } : {}),
             }
             return <li class:list={[{ 'is-blocked': blocked && !skipped, 'is-skipped': skipped }]}>
                 {single ?
                     <div class="[ invite-candidates__row ]">
                         <span>
-                            <b>{candidate.name}</b>
+                            <b>{candidate.name} <TimezoneTags timezone={candidate.timezone} /></b>
                             <small>{detail}</small>
                         </span>
                         {blocked ?
@@ -85,7 +93,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                         title={pick.skip || undefined}
                         x-on:click={blocked && !skipped ? undefined : `$dispatch('pick-candidate', ${JSON.stringify(pick)})`}
                     >
-                        <b>{candidate.name}</b>
+                        <b>{candidate.name} {candidate.kind === 'pilot' && <TimezoneTags timezone={candidate.timezone} />}</b>
                         <small>{skipped ? t('fleets.invites.will_be_skipped').replace('{reason}', blocked) : blocked || detail}</small>
                     </button>
                 }

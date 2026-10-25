@@ -43,6 +43,7 @@ export interface TribeCharacterRef {
     character_name: string;
 }
 
+export type TimezoneTag = ApiResponse<'TimezoneTag'>
 export type TribeQualifyingAssetType = ApiResponse<'QualifyingAssetTypeSchema'>
 
 export interface TribeQualifyingSkill {
@@ -396,12 +397,6 @@ export type CorporationLeadershipRole = 'ceo' | 'director' | 'recruiter' | 'stew
 
 export type CorporationLeadershipMember = ApiResponse<'CorporationLeadershipResponse'>
 
-export interface TimezoneBucketCount {
-    bucket:     string;
-    declared:   number;
-    observed:   number;
-}
-
 export interface WeekdayCount {
     day:        number;
     members:    number;
@@ -677,8 +672,7 @@ export interface CorporationMemberDetails {
     fleets_90d:             number;
     kills_90d:              number;
     voice_hours_90d:        number;
-    prime_time?:            string | null;
-    observed_prime_times?:  string[];
+    timezone?:              TimezoneTag | null;
     community_status?:      string | null;
     corp_joined_at?:        string | null;
     last_fleet_at?:         string | null;
@@ -2555,7 +2549,7 @@ export interface AllianceHealthAttentionPilot {
     active_months:      number;
     character_id?:      number | null;
     corporation_id?:    number | null;
-    timezone?:          string | null;
+    timezone?:          TimezoneTag | null;
 }
 
 export interface AllianceHealthAttention {
@@ -2584,7 +2578,7 @@ export interface AllianceHealthTrialPilot {
     conf:                   string;
     reason:                 string;
     decision?:              string | null;
-    timezone?:              string | null;
+    timezone?:              TimezoneTag | null;
 }
 
 export interface AllianceHealthTrials {
@@ -2623,7 +2617,7 @@ export interface AllianceHealthLeavePilot {
     story:              string;
     conf:               string;
     reason:             string;
-    timezone?:          string | null;
+    timezone?:          TimezoneTag | null;
 }
 
 export interface AllianceHealthLeave {
@@ -2996,8 +2990,7 @@ export interface CampaignRosterPilot {
     character_id:           number | null;
     corporation_id:         number | null;
     corporation_name:       string;
-    prime_time:             string;
-    observed_prime_time:    string;
+    timezone:               TimezoneTag;
     last_active_day:        string | null;
     characters_included:    number;
     characters_tracked:     number;
@@ -3036,7 +3029,8 @@ export interface CampaignRoster {
     pilots:         CampaignRosterPilot[];
     corporations:   CampaignRosterCorporation[];
     coverage:       CampaignCoverageHour[];
-    by_prime_time:  Record<string, number>;
+    /** Pilots per timezone bracket in bracket order; bracket null is No TZ yet. */
+    by_timezone:    { bracket: string | null; pilots: number }[];
 }
 
 export interface CampaignReadinessCharacter {

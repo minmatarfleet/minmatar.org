@@ -5,6 +5,8 @@ Readers:
 - ``timezone_for(user_id)`` / ``timezones_for(user_ids)``: the stored
   PilotTimezone (home, brackets, and the declared and inferred inputs)
 - ``users_in_bracket(code)``: everyone who holds a bracket
+- ``timezone_tags_for(user_ids)``: what pages show (timezones.schemas)
+- ``brackets_for(user_ids)`` / ``home_counts()``: rollups
 
 Hook into changes with the ``pilot_timezone_changed`` signal. It fires
 after a pilot's home, brackets or eligibility change, with the instance and
@@ -28,6 +30,7 @@ from groups.models import UserCommunityStatus
 from timezones.activity import load_events
 from timezones.inference import WINDOW_DAYS, Assessment, assess
 from timezones.models import PilotTimezone
+from timezones.schemas import TimezoneTag
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +47,50 @@ def timezone_for(user_id: int) -> PilotTimezone | None:
     return PilotTimezone.objects.filter(user_id=user_id).first()
 
 
-def timezones_for(user_ids: Iterable[int]) -> dict[int, PilotTimezone]:
+def timezones_for(
+    user_ids: Iterable[int], using: str = "default"
+) -> dict[int, PilotTimezone]:
     ids = {int(uid) for uid in user_ids if uid}
     return {
         row.user_id: row
-        for row in PilotTimezone.objects.filter(user_id__in=ids)
+        for row in PilotTimezone.objects.using(using).filter(user_id__in=ids)
+    }
+
+
+def timezone_tag(row: PilotTimezone | None) -> TimezoneTag:
+    if row is None or not row.brackets:
+        return TimezoneTag()
+    return TimezoneTag(brackets=list(row.brackets), source=row.home_source)
+
+
+def timezone_tags_for(
+    user_ids: Iterable[int], using: str = "default"
+) -> dict[int, TimezoneTag]:
+    """Every asked user's tag; users never assessed get an empty one."""
+    ids = {int(uid) for uid in user_ids if uid}
+    rows = timezones_for(ids, using=using)
+    return {uid: timezone_tag(rows.get(uid)) for uid in ids}
+
+
+def home_counts(eligible_only: bool = True) -> dict[str, int]:
+    """Region (US, EU, AU) -> how many pilots call it home."""
+    rows = PilotTimezone.objects.exclude(home__isnull=True).exclude(home="")
+    if eligible_only:
+        rows = rows.filter(eligible=True)
+    counts: dict[str, int] = {}
+    for home in rows.values_list("home", flat=True):
+        counts[home] = counts.get(home, 0) + 1
+    return counts
+
+
+def brackets_for(user_ids: Iterable[int]) -> dict[int, list[str]]:
+    """user id -> bracket codes, for users who have any."""
+    return {
+        user_id: list(brackets)
+        for user_id, brackets in PilotTimezone.objects.filter(
+            user_id__in={int(uid) for uid in user_ids if uid}
+        ).values_list("user_id", "brackets")
+        if brackets
     }
 
 

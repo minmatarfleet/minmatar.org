@@ -7,7 +7,7 @@ import type {
     AllianceHealthOrderOption,
     AllianceHealthPilotListRow,
 } from '@helpers/alliance_health_pilot_list'
-import { health_confidence_label, health_pilot_card_id } from '@helpers/alliance_health_pilot_list'
+import { health_confidence_label, health_pilot_card_id, timezone_text } from '@helpers/alliance_health_pilot_list'
 
 import {
     alliance_health_table_params,
@@ -75,7 +75,7 @@ const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
     corp: pilot.corp,
     character_id: pilot.character_id,
     corporation_id: pilot.corporation_id,
-    search_text: `${pilot.pilot} ${pilot.username} ${pilot.corp} ${pilot.reason} ${pilot.timezone ?? ''} ${conf_label ?? ''}`.toLowerCase(),
+    search_text: `${pilot.pilot} ${pilot.username} ${pilot.corp} ${pilot.reason} ${timezone_text(pilot.timezone)} ${conf_label ?? ''}`.toLowerCase(),
     timezone: pilot.timezone,
     note: pilot.reason,
     tags: [pilot.path, conf_label, pilot.slice_30d]

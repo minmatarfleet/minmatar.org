@@ -31,6 +31,7 @@ from applications.tasks import (
     sync_application_thread_task,
 )
 from discord.models import DiscordUser
+from timezones.tasks import assess_user_timezone
 from eveonline.models import (
     EveCharacter,
     EveCharacterCorporationHistory,
@@ -865,6 +866,32 @@ class ApplicationPrimeTimeTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(user_player(self.user).prime_time, "US")
+
+    def test_application_timezone_reassesses_the_pilot_timezone(self):
+        """The declared fallback reaches PilotTimezone straight away."""
+        EvePlayer.objects.create(user=self.user, nickname="Player One")
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        description = (
+            "Questionnaire:\n"
+            "- Timezone: Europe/London — EU region, evenings → EUTZ\n"
+        )
+
+        with patch.object(
+            assess_user_timezone, "delay"
+        ) as delay, self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                f"{BASE_URL}corporations/{corporation.corporation_id}"
+                "/applications",
+                data={"description": description},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        delay.assert_called_once_with(self.user.id)
 
     def test_create_corporation_application_without_timezone_leaves_prime_time(
         self,

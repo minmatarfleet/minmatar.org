@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TimezoneTag } from '@dtypes/api.minmatar.org'
+import { timezone_description } from '@helpers/timezones'
+
+/**
+ * A pilot's timezones, the same on every page: one tag per bracket (solid
+ * from activity, dashed when only declared), "No TZ yet" when nothing is
+ * known, or "On Leave" in its place where leave matters.
+ */
+interface Props {
+    timezone?:              TimezoneTag | null;
+    on_leave?:              boolean;
+    [propName: string]: any;
+}
+
+const {
+    timezone,
+    on_leave = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const brackets = timezone?.brackets ?? []
+const declared = timezone?.source === 'declared'
+const title = brackets.length > 0
+    ? `${brackets.map(code => timezone_description(code, t)).join(', ')}. ${declared ? t('timezones.declared') : t('timezones.from_activity')}`
+    : t('timezones.no_tz_yet_hint')
+---
+
+<span class:list={['[ tz-tags ]', Astro.props.class]} title={on_leave ? undefined : title} {...attributes}>
+    {on_leave ?
+        <span class="[ tz-tag tz-tag--leave ]">{t('timezones.on_leave')}</span> :
+    brackets.length > 0 ?
+        brackets.map(code => <span class:list={['[ tz-tag ]', { 'tz-tag--declared': declared }]}>{code}</span>) :
+        <span class="[ tz-tag tz-tag--none ]">{t('timezones.no_tz_yet')}</span>
+    }
+</span>
+
+<style lang="scss">
+    .tz-tags {
+        display: inline-flex;
+        gap: var(--space-3xs);
+        vertical-align: middle;
+    }
+
+    .tz-tag {
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--foreground);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        line-height: 1.6;
+        white-space: nowrap;
+    }
+
+    .tz-tag--declared {
+        border-style: dashed;
+        border-color: var(--hairline-strong);
+        color: var(--foreground);
+    }
+
+    .tz-tag--none {
+        border-color: var(--hairline-medium);
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .tz-tag--leave {
+        border-color: var(--hairline-medium);
+        background-color: var(--hairline);
+        color: var(--text-muted);
+    }
+</style>

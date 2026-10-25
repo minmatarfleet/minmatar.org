@@ -10,7 +10,6 @@ from eveonline.helpers.corporations.profile import (
     corporation_health,
     discord_status,
     load_corporation,
-    missing_prime_time,
 )
 
 router = Router(tags=["Corporations"])
@@ -44,5 +43,4 @@ def get_corporation_admin(request, corporation_id: int):
             }
             for character in corporation.stewards.all()
         ],
-        "leadership_missing_prime_time": missing_prime_time(corporation),
     }

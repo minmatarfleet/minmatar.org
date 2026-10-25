@@ -83,7 +83,8 @@ How the feed records killmails and hands them to campaigns: [docs/architecture/f
   and FCs (FCs ranks fleets led); the API also takes `isk`, `fleets`,
   `structures` and `capitals` (`BOARD_METRICS` in `services/stats.py`). The roster endpoint returns the pilots plus their
   roll-up by corporation (`serializers.roster_corporations`); the page shows
-  the corporation table, the coverage chart and prime times.
+  the corporation table, the coverage chart and pilots by timezone bracket
+  (`by_timezone`, from the `timezones` app; see `docs/timezones.md`).
 - **No streaks.** Day streaks, their bonus and their notification were
   removed in migration `0026_remove_streaks`.
 

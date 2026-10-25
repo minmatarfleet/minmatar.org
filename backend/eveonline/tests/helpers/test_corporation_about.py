@@ -51,10 +51,11 @@ class CorporationAboutTestCase(TestCase):
         self.types = _ship_groups()
         self.history_id = 0
 
-    def test_prime_windows_parse_free_text_and_count_observed_pilots(self):
+    def test_prime_windows_parse_free_text_and_count_bracket_pilots(self):
         windows = prime_windows(
             self.corporation.timezones,
-            {1: ["EU", "AP"], 2: ["EU"], 3: ["US"]},
+            # A pilot in EUTZ and EUTZ+ counts once for EU.
+            {1: ["EUTZ", "EUTZ+", "AUTZ"], 2: ["EUTZ+"], 3: ["USTZ"]},
         )
         self.assertEqual(
             [

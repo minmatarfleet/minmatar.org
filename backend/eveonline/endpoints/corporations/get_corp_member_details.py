@@ -23,6 +23,8 @@ from eveonline.helpers.corporations.profile import load_corporation
 from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import EveCharacter, EvePlayer
 from groups.models import UserCommunityStatus, UserCommunityStatusHistory
+from timezones.schemas import TimezoneTag
+from timezones.services import timezone_tags_for
 from tribes.models import TribeGroupMembership
 
 STATUS_HISTORY_LIMIT = 5
@@ -112,14 +114,14 @@ def member_details(
     reveal_characters: bool = True,
     stats: dict | None = None,
 ) -> list[CorporationMemberDetails]:
-    """Roster rows. Fleets, kills, voice and timezones come from the cached
-    stats (see stats_cache); they read as zero/empty until the first refresh.
+    """Roster rows. Fleets, kills and voice come from the cached stats (see
+    stats_cache); they read as zero until the first refresh. Timezones come
+    from the timezones app.
     """
     stats = stats or {}
     activity = stats.get("member_activity") or {}
-    declared = stats.get("declared_by_user") or {}
-    observed = stats.get("observed_by_user") or {}
     user_ids = [member.user_id for member in members if member.user_id]
+    timezones = timezone_tags_for(user_ids)
     statuses = dict(
         UserCommunityStatus.objects.filter(user_id__in=user_ids).values_list(
             "user_id", "status"
@@ -150,10 +152,7 @@ def member_details(
             fleets_90d=metrics.get("fleets_90d", 0),
             kills_90d=metrics.get("kills_90d", 0),
             voice_hours_90d=metrics.get("voice_hours_90d", 0),
-            prime_time=declared.get(user_id) if user_id else None,
-            observed_prime_times=(
-                observed.get(user_id, []) if user_id else []
-            ),
+            timezone=timezones.get(user_id) or TimezoneTag(),
             community_status=statuses.get(user_id) if user_id else None,
             **facts.get(character.character_id, {}),
             tribe_groups=tribes.get(user_id, []) if user_id else [],
@@ -276,8 +275,7 @@ def _person_row(group: list[CorporationMemberDetails]):
         kills_90d=sum(row.kills_90d for row in group),
         # Voice hours are tracked per person, so every row carries the same.
         voice_hours_90d=max(row.voice_hours_90d for row in group),
-        prime_time=group[0].prime_time,
-        observed_prime_times=group[0].observed_prime_times,
+        timezone=group[0].timezone,
         community_status=group[0].community_status,
         corp_joined_at=min(
             (row.corp_joined_at for row in group if row.corp_joined_at),

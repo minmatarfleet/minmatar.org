@@ -1,6 +1,6 @@
 """Cached 90-day corporation stats for the public profile.
 
-The aggregates (timezones, fleets and kills by weekday, the At a glance
+The aggregates (fleets and kills by weekday, the At a glance
 summary, application pace) scan fleet attendance, killmails and skills, so
 they are far too slow to compute inside a page request. Celery refreshes
 them on a schedule; a request only ever reads the cache and, on a miss,
@@ -20,19 +20,15 @@ from eveonline.helpers.corporations.activity import activity_for_characters
 from eveonline.helpers.corporations.applications import application_process
 from eveonline.helpers.corporations.kills import RecentKills
 from eveonline.helpers.corporations.summary import corporation_public_summary
-from eveonline.helpers.corporations.timezones import (
-    observed_prime_buckets_for_users,
-    prime_time_codes_for_users,
-    timezone_distribution,
-    weekday_distribution,
-)
+from eveonline.helpers.corporations.weekdays import weekday_distribution
 from eveonline.models import EveCharacter, EveCorporation
+from timezones.services import brackets_for
 
 logger = logging.getLogger(__name__)
 
 STATS_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_STATS_KEY = "corporation_profile_stats:v2:{corporation_id}"
+_STATS_KEY = "corporation_profile_stats:v3:{corporation_id}"
 _LOCK_KEY = "corporation_profile_stats:refreshing:{corporation_id}"
 
 
@@ -69,32 +65,14 @@ def compute_corporation_stats(
     if kills is None:
         kills = RecentKills([c.character_id for c in characters])
     user_ids = list({c.user_id for c in characters if c.user_id})
-    # Leaders can be linked only through a token, or have their main outside
-    # the corp, so include their accounts for the leadership tags too.
-    from eveonline.helpers.corporations.profile import (  # pylint: disable=import-outside-toplevel
-        leadership_rows,
-    )
-
-    leader_ids = {
-        row["user_id"]
-        for row in leadership_rows(corporation)
-        if row.get("user_id")
-    }
-    timezone_users = list(set(user_ids) | leader_ids)
-    declared = prime_time_codes_for_users(timezone_users)
-    observed = observed_prime_buckets_for_users(timezone_users)
     return {
-        "about": corporation_about(corporation, characters, observed),
+        "about": corporation_about(
+            corporation, characters, brackets_for(user_ids)
+        ),
         "member_facts": member_facts(characters, corporation),
         "human_count": len(user_ids),
-        # Per person, for leadership tags and the Members table.
-        "declared_by_user": declared,
-        "observed_by_user": observed,
         # Per character fleets / kills / voice for the Members endpoints.
         "member_activity": activity_for_characters(characters, kills),
-        "timezone_distribution": timezone_distribution(
-            user_ids, declared, observed
-        ),
         "weekday_distribution": weekday_distribution(
             user_ids, corporation.corporation_id, kills=kills
         ),
