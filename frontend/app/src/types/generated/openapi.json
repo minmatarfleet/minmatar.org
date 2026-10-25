@@ -17,6 +17,128 @@
         "title": "AcceptInvitationRequest",
         "type": "object"
       },
+      "AccountMoveRequest": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "new_account": {
+            "default": false,
+            "title": "New Account",
+            "type": "boolean"
+          }
+        },
+        "title": "AccountMoveRequest",
+        "type": "object"
+      },
+      "AccountOptionResponse": {
+        "properties": {
+          "characters": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "current": {
+            "title": "Current",
+            "type": "boolean"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "seen_together": {
+            "title": "Seen Together",
+            "type": "integer"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "number",
+          "characters",
+          "size",
+          "full",
+          "seen_together",
+          "current"
+        ],
+        "title": "AccountOptionResponse",
+        "type": "object"
+      },
+      "AccountOptionsResponse": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/AccountOptionResponse"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "current": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "current",
+          "accounts"
+        ],
+        "title": "AccountOptionsResponse",
+        "type": "object"
+      },
+      "AccountResponse": {
+        "properties": {
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterSummaryResponse"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "number",
+          "characters"
+        ],
+        "title": "AccountResponse",
+        "type": "object"
+      },
       "AckDeliveryRequest": {
         "properties": {
           "discord_user_id": {
@@ -1616,6 +1738,68 @@
           "entity_type"
         ],
         "title": "BlueprintOwnerResponse",
+        "type": "object"
+      },
+      "BringRowResponse": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "ships": {
+            "items": {
+              "$ref": "#/components/schemas/BringShipResponse"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "capability",
+          "ships"
+        ],
+        "title": "BringRowResponse",
+        "type": "object"
+      },
+      "BringShipResponse": {
+        "properties": {
+          "accounts": {
+            "title": "Accounts",
+            "type": "integer"
+          },
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "doctrines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "name",
+          "ship_type_id",
+          "capability",
+          "doctrines",
+          "accounts"
+        ],
+        "title": "BringShipResponse",
         "type": "object"
       },
       "BuildPackResponse": {
@@ -4681,6 +4865,19 @@
         "title": "CharacterHangar",
         "type": "object"
       },
+      "CharacterPatchRequest": {
+        "properties": {
+          "not_for_fleets": {
+            "title": "Not For Fleets",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "not_for_fleets"
+        ],
+        "title": "CharacterPatchRequest",
+        "type": "object"
+      },
       "CharacterProducerRef": {
         "description": "Character producing this product type (industry jobs, planetary, and/or mining; total_value_isk aggregated).",
         "properties": {
@@ -4865,6 +5062,104 @@
           "missing_skills"
         ],
         "title": "CharacterSkillsetResponse",
+        "type": "object"
+      },
+      "CharacterSummaryResponse": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "all_done": {
+            "title": "All Done",
+            "type": "boolean"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/GoalResponse"
+            },
+            "title": "Goals",
+            "type": "array"
+          },
+          "goals_ready": {
+            "title": "Goals Ready",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "not_for_fleets": {
+            "title": "Not For Fleets",
+            "type": "boolean"
+          },
+          "nothing_close": {
+            "title": "Nothing Close",
+            "type": "boolean"
+          },
+          "queued": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Queued",
+            "type": "array"
+          },
+          "ready": {
+            "items": {
+              "$ref": "#/components/schemas/ShipResponse"
+            },
+            "title": "Ready",
+            "type": "array"
+          },
+          "skill_points": {
+            "title": "Skill Points",
+            "type": "integer"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/ShipStatusResponse"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "training": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "skill_points",
+          "account",
+          "not_for_fleets",
+          "goals",
+          "goals_ready",
+          "all_done",
+          "training",
+          "queued",
+          "ready",
+          "suggestions",
+          "nothing_close"
+        ],
+        "title": "CharacterSummaryResponse",
         "type": "object"
       },
       "CharacterTagResponse": {
@@ -18092,6 +18387,107 @@
         "title": "GivebackSchema",
         "type": "object"
       },
+      "GoalPatchRequest": {
+        "properties": {
+          "first": {
+            "default": false,
+            "title": "First",
+            "type": "boolean"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          }
+        },
+        "title": "GoalPatchRequest",
+        "type": "object"
+      },
+      "GoalRequest": {
+        "properties": {
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fitting_id"
+        ],
+        "title": "GoalRequest",
+        "type": "object"
+      },
+      "GoalResponse": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "doctrines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "skills": {
+            "title": "Skills",
+            "type": "integer"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "unlocked": {
+            "title": "Unlocked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "name",
+          "ship_type_id",
+          "capability",
+          "doctrines",
+          "ready",
+          "done",
+          "unlocked",
+          "days",
+          "skills",
+          "target"
+        ],
+        "title": "GoalResponse",
+        "type": "object"
+      },
       "GroupStat": {
         "properties": {
           "approved": {
@@ -25991,6 +26387,51 @@
         "title": "PersonaResponse",
         "type": "object"
       },
+      "PlanCharacterResponse": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "is_goal": {
+            "title": "Is Goal",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "account",
+          "ready",
+          "days",
+          "is_goal"
+        ],
+        "title": "PlanCharacterResponse",
+        "type": "object"
+      },
       "PlanCharacterSkillsSchema": {
         "properties": {
           "character_id": {
@@ -26838,6 +27279,34 @@
           "leaf_materials"
         ],
         "title": "PlanResponseSchema",
+        "type": "object"
+      },
+      "PlanStepResponse": {
+        "properties": {
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "skill_id": {
+            "title": "Skill Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "skill_id",
+          "name",
+          "level",
+          "days"
+        ],
+        "title": "PlanStepResponse",
         "type": "object"
       },
       "PlanStockAppliedSchema": {
@@ -29368,6 +29837,32 @@
         "title": "RightNow",
         "type": "object"
       },
+      "RoleResponse": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "fleets_365d": {
+            "title": "Fleets 365D",
+            "type": "integer"
+          },
+          "ready": {
+            "items": {
+              "$ref": "#/components/schemas/ShipResponse"
+            },
+            "title": "Ready",
+            "type": "array"
+          }
+        },
+        "required": [
+          "capability",
+          "ready",
+          "fleets_365d"
+        ],
+        "title": "RoleResponse",
+        "type": "object"
+      },
       "Roster": {
         "properties": {
           "by_prime_time": {
@@ -30069,6 +30564,77 @@
         "title": "ShipLine",
         "type": "object"
       },
+      "ShipOptionResponse": {
+        "properties": {
+          "added": {
+            "title": "Added",
+            "type": "boolean"
+          },
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "doctrines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "skills": {
+            "title": "Skills",
+            "type": "integer"
+          },
+          "strategic": {
+            "title": "Strategic",
+            "type": "boolean"
+          },
+          "unlocked": {
+            "title": "Unlocked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "name",
+          "ship_type_id",
+          "capability",
+          "doctrines",
+          "ready",
+          "done",
+          "unlocked",
+          "days",
+          "skills",
+          "strategic",
+          "added"
+        ],
+        "title": "ShipOptionResponse",
+        "type": "object"
+      },
       "ShipReimbursementProgramAmountResponse": {
         "properties": {
           "created_at": {
@@ -30131,6 +30697,42 @@
           "current_amount"
         ],
         "title": "ShipReimbursementProgramResponse",
+        "type": "object"
+      },
+      "ShipResponse": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "doctrines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "name",
+          "ship_type_id",
+          "capability",
+          "doctrines"
+        ],
+        "title": "ShipResponse",
         "type": "object"
       },
       "ShipSchema": {
@@ -30215,6 +30817,67 @@
           "character_id"
         ],
         "title": "ShipSelection",
+        "type": "object"
+      },
+      "ShipStatusResponse": {
+        "properties": {
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "doctrines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "skills": {
+            "title": "Skills",
+            "type": "integer"
+          },
+          "unlocked": {
+            "title": "Unlocked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "name",
+          "ship_type_id",
+          "capability",
+          "doctrines",
+          "ready",
+          "done",
+          "unlocked",
+          "days",
+          "skills"
+        ],
+        "title": "ShipStatusResponse",
         "type": "object"
       },
       "ShipSuggestionResponse": {
@@ -31584,6 +32247,275 @@
           "channels"
         ],
         "title": "TrackedVoiceChannelsResponse",
+        "type": "object"
+      },
+      "TrainingChangeResponse": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "TrainingChangeResponse",
+        "type": "object"
+      },
+      "TrainingCharacterResponse": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "account_mates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Account Mates",
+            "type": "array"
+          },
+          "all_done": {
+            "title": "All Done",
+            "type": "boolean"
+          },
+          "also_close": {
+            "items": {
+              "$ref": "#/components/schemas/ShipStatusResponse"
+            },
+            "title": "Also Close",
+            "type": "array"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/GoalResponse"
+            },
+            "title": "Goals",
+            "type": "array"
+          },
+          "goals_ready": {
+            "title": "Goals Ready",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "not_for_fleets": {
+            "title": "Not For Fleets",
+            "type": "boolean"
+          },
+          "nothing_close": {
+            "title": "Nothing Close",
+            "type": "boolean"
+          },
+          "queued": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Queued",
+            "type": "array"
+          },
+          "ready": {
+            "items": {
+              "$ref": "#/components/schemas/ShipResponse"
+            },
+            "title": "Ready",
+            "type": "array"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleResponse"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "skill_points": {
+            "title": "Skill Points",
+            "type": "integer"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/ShipStatusResponse"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "training": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GoalResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "skill_points",
+          "account",
+          "not_for_fleets",
+          "goals",
+          "goals_ready",
+          "all_done",
+          "training",
+          "queued",
+          "ready",
+          "suggestions",
+          "nothing_close",
+          "account_mates",
+          "also_close",
+          "roles"
+        ],
+        "title": "TrainingCharacterResponse",
+        "type": "object"
+      },
+      "TrainingOverviewResponse": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/AccountResponse"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "bring": {
+            "items": {
+              "$ref": "#/components/schemas/BringRowResponse"
+            },
+            "title": "Bring",
+            "type": "array"
+          },
+          "unplaced": {
+            "items": {
+              "$ref": "#/components/schemas/CharacterSummaryResponse"
+            },
+            "title": "Unplaced",
+            "type": "array"
+          }
+        },
+        "required": [
+          "accounts",
+          "unplaced",
+          "bring"
+        ],
+        "title": "TrainingOverviewResponse",
+        "type": "object"
+      },
+      "TrainingPlanResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "eve_text": {
+            "title": "Eve Text",
+            "type": "string"
+          },
+          "flown_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Flown By",
+            "type": "array"
+          },
+          "is_goal": {
+            "title": "Is Goal",
+            "type": "boolean"
+          },
+          "is_training": {
+            "title": "Is Training",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "optimal_days": {
+            "title": "Optimal Days",
+            "type": "number"
+          },
+          "optimal_steps": {
+            "items": {
+              "$ref": "#/components/schemas/PlanStepResponse"
+            },
+            "title": "Optimal Steps",
+            "type": "array"
+          },
+          "queue_skills": {
+            "title": "Queue Skills",
+            "type": "integer"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "ready_days": {
+            "title": "Ready Days",
+            "type": "number"
+          },
+          "ready_steps": {
+            "items": {
+              "$ref": "#/components/schemas/PlanStepResponse"
+            },
+            "title": "Ready Steps",
+            "type": "array"
+          },
+          "ship": {
+            "$ref": "#/components/schemas/ShipResponse"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "up_next": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Up Next",
+            "type": "array"
+          },
+          "who": {
+            "items": {
+              "$ref": "#/components/schemas/PlanCharacterResponse"
+            },
+            "title": "Who",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ship",
+          "character_id",
+          "name",
+          "is_goal",
+          "is_training",
+          "target",
+          "ready",
+          "ready_steps",
+          "ready_days",
+          "optimal_steps",
+          "optimal_days",
+          "eve_text",
+          "queue_skills",
+          "up_next",
+          "flown_by",
+          "who"
+        ],
+        "title": "TrainingPlanResponse",
         "type": "object"
       },
       "TransferCorporationApplicationRequest": {
@@ -57451,6 +58383,533 @@
         "summary": "Remove all roles from a discord user on a discord server",
         "tags": [
           "Tech"
+        ]
+      }
+    },
+    "/api/training/": {
+      "get": {
+        "operationId": "capabilities_endpoints_get_overview_get_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingOverviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Your characters: ships they fly, the ship each trains for, ready ships per role",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}": {
+      "get": {
+        "operationId": "capabilities_endpoints_get_character_get_character",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingCharacterResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "One of your characters: its ships, the ones close, ready ships per role",
+        "tags": [
+          "Training"
+        ]
+      },
+      "patch": {
+        "operationId": "capabilities_endpoints_patch_character_patch_character",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CharacterPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Mark one of your characters as not for fleets (or for fleets again)",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}/account": {
+      "put": {
+        "operationId": "capabilities_endpoints_put_account_put_account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountMoveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put a character on another account, a new one, or none",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}/accounts": {
+      "get": {
+        "operationId": "capabilities_endpoints_get_accounts_get_accounts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOptionsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The accounts a character can move to",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}/goals": {
+      "post": {
+        "operationId": "capabilities_endpoints_post_goal_post_goal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add a doctrine fit to a character's training queue",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}/goals/{fitting_id}": {
+      "delete": {
+        "operationId": "capabilities_endpoints_delete_goal_delete_goal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "fitting_id",
+            "required": true,
+            "schema": {
+              "title": "Fitting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Take a ship off a character's training queue",
+        "tags": [
+          "Training"
+        ]
+      },
+      "patch": {
+        "operationId": "capabilities_endpoints_patch_goal_patch_goal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "fitting_id",
+            "required": true,
+            "schema": {
+              "title": "Fitting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoalPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingChangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Train a ship first, or change how far to train it",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}/plans/{fitting_id}": {
+      "get": {
+        "operationId": "capabilities_endpoints_get_plan_get_plan",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "fitting_id",
+            "required": true,
+            "schema": {
+              "title": "Fitting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingPlanResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The skills a character needs for one doctrine fit, in training order",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/characters/{character_id}/ships": {
+      "get": {
+        "operationId": "capabilities_endpoints_get_ships_get_ships",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ShipOptionResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Doctrine fits a character can train for, those in the most doctrines first",
+        "tags": [
+          "Training"
         ]
       }
     },

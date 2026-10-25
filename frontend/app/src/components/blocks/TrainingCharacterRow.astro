@@ -1,0 +1,349 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TrainingCharacterSummary } from '@dtypes/api.minmatar.org'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import {
+    READY_ICONS,
+    TRAINING_MOVE_PARTIAL,
+    TRAINING_PARTIAL,
+    TRAINING_PLAN_PARTIAL,
+    TRAINING_SHIPS_PARTIAL,
+    short_skill_points,
+    time_label,
+    training_url,
+} from '@helpers/training'
+
+import ActionMenu from '@components/blocks/ActionMenu.astro'
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
+
+/**
+ * One character on the Training tab: who it is, the one ship it trains for
+ * (the plan opens in a dialog), and the ships it is ready in.
+ */
+interface Props {
+    character:          TrainingCharacterSummary;
+    [propName: string]: any;
+}
+
+const {
+    character,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const id = character.character_id
+const partial = (params:Record<string, string | number>) => translatePath(training_url(TRAINING_PARTIAL, params))
+const modal = (base:string, params:Record<string, string | number>) =>
+    `show_modal({ partial: '${translatePath(training_url(base, params))}' })`
+
+const status =
+    character.not_for_fleets ? { text: t('training.not_for_fleets'), done: false } :
+    character.all_done ? { text: t('training.done'), done: true } :
+    character.goals.length > 0 ? {
+        text: t('training.ready_count')
+            .replace('{ready}', character.goals_ready.toString())
+            .replace('{total}', character.goals.length.toString()),
+        done: false,
+    } :
+    character.nothing_close ? { text: t('training.nothing_close'), done: false } :
+    { text: t('training.no_ships_yet'), done: false }
+
+const add_label = character.goals.length > 0 ? t('training.add_ship') : t('training.pick_ship')
+const shown_ready = character.ready.slice(0, READY_ICONS)
+const more_ready = character.ready.length - shown_ready.length
+---
+
+<div class:list={['[ training-row ]', Astro.props.class]} {...attributes}>
+    <button
+        type="button"
+        class="[ training-row__who ]"
+        hx-get={partial({ view: 'character', character_id: id })}
+        hx-target="#training"
+        hx-swap="outerHTML"
+    >
+        <img src={get_player_icon(id, 64)} alt="" width="36" height="36" loading="lazy" />
+        <span class="[ training-row__name ]">
+            <strong>{character.name}</strong>
+            <small>
+                <span class="[ training-row__muted ]">{t('training.sp').replace('{sp}', short_skill_points(character.skill_points))} · </span>
+                <span class:list={[{ 'training-row__done': status.done }]}>{status.text}</span>
+            </small>
+        </span>
+    </button>
+
+    <div class="[ training-row__training ]">
+        {character.training &&
+            <button
+                type="button"
+                class="[ training-line ]"
+                x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: character.training.fitting_id })}
+            >
+                <img src={get_item_icon(character.training.ship_type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                <span class="[ training-line__name ]">{character.training.name}</span>
+                <span class="[ training-line__time ]">{time_label(t, character.training.days)}</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
+            </button>
+        }
+        {!character.training && character.suggestions.map(ship =>
+            <button
+                type="button"
+                class="[ training-line training-line--suggestion ]"
+                aria-label={t('training.add_suggestion').replace('{name}', ship.name).replace('{time}', time_label(t, ship.days))}
+                hx-post={partial({ mode: 'add_goal', character_id: id, fitting_id: ship.fitting_id })}
+                hx-target="#training"
+                hx-swap="outerHTML"
+            >
+                <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="26" height="26" loading="lazy" />
+                <span class="[ training-line__name ]">+ {ship.name}</span>
+                <span class="[ training-line__time ]">{time_label(t, ship.days)}</span>
+            </button>
+        )}
+        {!character.training && !character.not_for_fleets &&
+            <button
+                type="button"
+                class="[ training-row__add ]"
+                x-on:click={modal(TRAINING_SHIPS_PARTIAL, { character_id: id })}
+            >
+                {add_label}
+            </button>
+        }
+    </div>
+
+    <div class="[ training-row__ready ]">
+        {shown_ready.map(ship =>
+            <img
+                src={get_item_icon(ship.ship_type_id, 64)}
+                alt={ship.name}
+                title={ship.name}
+                width="32"
+                height="32"
+                loading="lazy"
+            />
+        )}
+        {more_ready > 0 &&
+            <button
+                type="button"
+                class="[ training-row__more ]"
+                aria-label={t('training.more_ready').replace('{count}', character.ready.length.toString())}
+                hx-get={partial({ view: 'character', character_id: id })}
+                hx-target="#training"
+                hx-swap="outerHTML"
+            >
+                +{more_ready}
+            </button>
+        }
+        {character.ready.length === 0 &&
+            <span class="[ training-row__muted ]">{t('training.none_yet')}</span>
+        }
+    </div>
+
+    <div class="[ training-row__menu ]">
+        <ActionMenu
+            variant="button"
+            color="transparent"
+            size="sm"
+            trigger_label={t('training.more_actions').replace('{name}', character.name)}
+        >
+            {!character.not_for_fleets &&
+                <ActionMenuItem x-on:click={`close(); ${modal(TRAINING_SHIPS_PARTIAL, { character_id: id })}`}>
+                    {character.goals.length > 0 ? t('training.add_ship').replace('+ ', '') : t('training.pick_ship').replace('+ ', '')}
+                </ActionMenuItem>
+            }
+            <ActionMenuItem
+                hx-get={partial({ view: 'character', character_id: id })}
+                hx-target="#training"
+                hx-swap="outerHTML"
+            >
+                {t('training.open_character')}
+            </ActionMenuItem>
+            <ActionMenuItem x-on:click={`close(); ${modal(TRAINING_MOVE_PARTIAL, { character_id: id })}`}>
+                {t('training.move_account')}
+            </ActionMenuItem>
+            <ActionMenuItem
+                variant="muted"
+                hx-post={partial({ mode: character.not_for_fleets ? 'for_fleets' : 'not_for_fleets', character_id: id })}
+                hx-target="#training"
+                hx-swap="outerHTML"
+            >
+                {character.not_for_fleets ? t('training.for_fleets') : t('training.not_for_fleets')}
+            </ActionMenuItem>
+        </ActionMenu>
+    </div>
+</div>
+
+<style lang="scss">
+    .training-row {
+        display: grid;
+        grid-template-columns: var(--training-columns);
+        align-items: center;
+        gap: var(--space-s) var(--space-m);
+        padding-block: var(--space-3xs);
+    }
+
+    .training-row__who {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+        padding: 0;
+        background: none;
+        border: 0;
+        color: var(--highlight);
+        text-align: start;
+        cursor: pointer;
+
+        img {
+            border-radius: var(--space-3xs);
+            flex-shrink: 0;
+        }
+
+        &:hover strong,
+        &:focus-visible strong {
+            text-decoration: underline;
+        }
+    }
+
+    .training-row__name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        strong {
+            font-weight: 600;
+        }
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-row__muted {
+        color: var(--text-muted);
+    }
+
+    .training-row__done {
+        color: var(--green);
+        font-weight: 600;
+    }
+
+    .training-row__training {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        max-width: 28rem;
+    }
+
+    .training-line {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: 2.75rem;
+        padding-inline: var(--space-3xs) var(--space-xs);
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+        background: none;
+        color: var(--highlight);
+        text-align: start;
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--fleet-yellow);
+        }
+    }
+
+    .training-line--suggestion {
+        min-height: 2.25rem;
+        border-style: dashed;
+    }
+
+    .training-line__name {
+        flex-grow: 1;
+        min-width: 0;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .training-line__time {
+        color: var(--fleet-yellow);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .training-row__add {
+        align-self: flex-start;
+        padding: var(--space-3xs);
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        cursor: pointer;
+    }
+
+    .training-row__ready {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs);
+
+        img {
+            border-radius: var(--space-3xs);
+            outline: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+            outline-offset: 1px;
+        }
+    }
+
+    .training-row__more {
+        min-width: 2.75rem;
+        min-height: 2rem;
+        padding-inline: var(--space-3xs);
+        border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+        border-radius: var(--space-3xs);
+        background: none;
+        color: var(--green);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .training-row__menu {
+        justify-self: end;
+    }
+
+    @media (max-width: 48rem) {
+        .training-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-areas:
+                "who menu"
+                "training training"
+                "ready ready";
+        }
+
+        .training-row__who { grid-area: who; }
+        .training-row__menu { grid-area: menu; }
+        .training-row__training { grid-area: training; max-width: none; }
+        .training-row__ready { grid-area: ready; }
+
+        .training-row__ready:has(> .training-row__muted:only-child) {
+            display: none;
+        }
+
+        .training-row + .training-row {
+            padding-block-start: var(--space-xs);
+            border-top: 1px solid var(--hairline);
+        }
+    }
+</style>

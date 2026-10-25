@@ -1,0 +1,191 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { TrainingShipOption } from '@dtypes/api.minmatar.org'
+import { get_training_ships } from '@helpers/api.minmatar.org/training'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { TRAINING_PARTIAL, TRAINING_SHIPS_PARTIAL, time_label, training_url } from '@helpers/training'
+
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0') || 0
+const character_name = Astro.url.searchParams.get('name') ?? ''
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!character_id)
+    return HTTP_404_Not_Found()
+
+// The dialog shows this many fits, the ones in the most doctrines; the rest wait behind "Show more".
+const SHOWN = 8
+
+let ships:TrainingShipOption[] = []
+let fetch_error:Error | false = false
+
+try {
+    ships = await get_training_ships(auth_token as string, character_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const doctrine_count = (count:number) =>
+    count === 1 ? t('training.doctrine_count') : t('training.doctrines_count').replace('{count}', count.toString())
+
+const add_url = (fitting_id:number) =>
+    translatePath(training_url(TRAINING_PARTIAL, { mode: 'add_goal', character_id, fitting_id }))
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: translatePath(training_url(TRAINING_SHIPS_PARTIAL, { character_id, name: character_name })),
+            error: fetch_error,
+            delay: delay,
+            target: '#modal-description',
+        }}
+    />
+    :
+    <div class="[ training-ships ]" x-data="{ all: false }">
+        <h2>{t('training.add_title')}</h2>
+        {ships.length === 0 ?
+            <EmptyState title={t('training.no_goals')} />
+            :
+            <ul role="list">
+                {ships.map((ship, index) =>
+                    <li x-show={index < SHOWN ? undefined : 'all'} x-cloak={index < SHOWN ? undefined : true}>
+                        <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                        <span class="[ training-ships__name ]">
+                            <strong>{ship.name}</strong>
+                            <small class="[ training-muted ]">{ship.capability} · {ship.doctrines.join(', ')}</small>
+                        </span>
+                        <span class="[ training-muted ]">{doctrine_count(ship.doctrines.length)}</span>
+                        <span class:list={['[ training-ships__status ]', { ready: ship.ready }]}>
+                            {ship.ready ? t('training.is_ready') : time_label(t, ship.days)}
+                        </span>
+                        {ship.added ?
+                            <span class="[ training-muted training-ships__action ]">{t('training.added')}</span>
+                            :
+                            <button
+                                type="button"
+                                class="[ training-ships__action ]"
+                                modal-action="accept"
+                                hx-post={add_url(ship.fitting_id)}
+                                hx-target="#training"
+                                hx-swap="outerHTML"
+                            >
+                                {t('training.add')}
+                            </button>
+                        }
+                    </li>
+                )}
+            </ul>
+        }
+        {ships.length > SHOWN &&
+            <button type="button" class="[ training-ships__more ]" x-show="!all" x-on:click="all = true">
+                {t('training.show_more').replace('{count}', (ships.length - SHOWN).toString())}
+            </button>
+        }
+    </div>
+}
+
+<style lang="scss">
+    .training-ships {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        color: var(--highlight);
+
+        h2 {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--fleet-yellow);
+        }
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto 5.5rem 4.5rem;
+            align-items: center;
+            gap: var(--space-xs);
+            padding-block: var(--space-2xs);
+
+            & + li {
+                border-top: 1px solid var(--hairline);
+            }
+
+            img {
+                border-radius: var(--space-3xs);
+            }
+        }
+    }
+
+    .training-muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .training-ships__name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-ships__status {
+        color: var(--fleet-yellow);
+        font-weight: 600;
+        text-align: end;
+
+        &.ready {
+            color: var(--green);
+        }
+    }
+
+    .training-ships__action {
+        justify-self: end;
+    }
+
+    button.training-ships__action,
+    .training-ships__more {
+        padding: var(--space-3xs) var(--space-xs);
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        cursor: pointer;
+    }
+
+    .training-ships__more {
+        align-self: flex-start;
+    }
+
+    @media (max-width: 48rem) {
+        .training-ships li {
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+
+            > :nth-child(3) {
+                display: none;
+            }
+        }
+    }
+</style>

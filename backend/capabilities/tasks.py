@@ -28,6 +28,7 @@ def check_sde_build():
 
 
 def recompute_everything(force: bool = False) -> dict:
+    services.refresh_skill_info()
     changed = services.recompute_all_requirements(force=force)
     readiness = services.refresh_readiness()
     capabilities = services.refresh_capabilities()
