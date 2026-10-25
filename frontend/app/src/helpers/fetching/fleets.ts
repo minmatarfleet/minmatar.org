@@ -81,6 +81,8 @@ export function add_fleet_info(
         members_count: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.members,
         fleet_commander_id: fc_character_id ?? 0,
         fleet_commander_name: fleet.fleet_commander_name ?? t('not_available'),
+        fleet_commander_alt_id: fleet.fleet_commander_alt_character_id ?? null,
+        fleet_commander_alt_name: fleet.fleet_commander_alt_name ?? null,
         fleet_commander_fleet_count: fc_character_id === null ? undefined : fleet_commander_metrics.find(metric => metric.primary_character_id === fc_character_id)?.fleet_count,
         corporation_id: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.corporation_id,
         corporation_name: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.corporation_name,
@@ -144,6 +146,8 @@ async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI>
         objective: fleet.objective,
         fleet_commander_id: character_profile?.character_id ?? 0,
         fleet_commander_name: character_profile?.character_name ?? t('unknown_character'),
+        fleet_commander_alt_id: fleet.fleet_commander_alt_character_id ?? null,
+        fleet_commander_alt_name: fleet.fleet_commander_alt_name ?? null,
         location: fleet.location,
         // FleetItem and FleetUI (layout_components) still call this a Date; it is the API's ISO string.
         start_time: fleet.start_time as unknown as Date,

@@ -9,6 +9,7 @@ from authentication import AuthOptional
 from feed.helpers.fleet_kills import fleet_kill_report
 
 from fleets.helpers.fights.serve import pilot_numbers
+from fleets.helpers.fleet_boss import in_game_fleet_commander
 from fleets.helpers.visibility import public_kills_allowed
 from fleets.models import EveFleet, EveFleetFightTimeline, EveFleetInstance
 
@@ -110,7 +111,9 @@ def get_fleet_public_kills(request, fleet_id: int):
     destroyed, lost = report["isk_destroyed"], report["isk_lost"]
     timeline = EveFleetFightTimeline.objects.filter(eve_fleet=fleet).first()
     numbers = pilot_numbers(fleet, timeline.killmails if timeline else None)
-    fc = fleet.fleet_commander
+    # Public: the character that ran the fleet in game, never the main
+    # behind an alt (docs/fleets/fleet-on-alt.md).
+    fc = in_game_fleet_commander(fleet)
     return FleetPublicKillsResponse(
         fleet_id=fleet.id,
         title=fleet.objective or f"Fleet {fleet.id}",

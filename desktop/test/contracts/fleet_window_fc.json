@@ -93,6 +93,8 @@
     "description": "Armor roam",
     "doctrine_name": "Armor Damnations",
     "ended_at": null,
+    "fc_alt_character_id": null,
+    "fc_alt_name": null,
     "fc_character_id": 5000,
     "fc_name": "The FC",
     "fc_system_id": 30002537,

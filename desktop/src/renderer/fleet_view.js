@@ -87,7 +87,9 @@
 
     function fleet_header(v, right) {
         const f = v.fleet, c = v.counts
-        const bits = [f.fc_name ? `FC ${f.fc_name}` : 'No FC', f.type_label]
+        // fc_alt_name: the FC runs the fleet in game on another character (older backends send none).
+        const fc = f.fc_name ? `FC ${f.fc_name}${f.fc_alt_name ? ` as ${f.fc_alt_name}` : ''}` : 'No FC'
+        const bits = [fc, f.type_label]
         if (f.live && c) bits.push(plural(c.in_fleet, 'pilot'), `${c.kills} kills / ${c.losses} lost`)
         return `<section class="fw-head" aria-label="Fleet">
                 ${portrait(f.fc_character_id, 36)}
@@ -385,7 +387,7 @@
                 ${step(1, `Get to ${esc(place || 'the fleet')}`, jumps || esc(f.location_name || ''), v.jumps === 0 ? '' : destination_button(place_id), v.jumps === 0)}
                 ${step(2, picked ? `Board a ${esc(picked.ship_name)}` : 'Pick a ship', picked ? 'fit to clipboard' : 'from the doctrine below',
                     picked ? button('fleet:copy-fit', 'Copy fit', { quiet: true, id: f.id, key: picked.key }) : '')}
-                ${step(3, 'X up for an invite', `Fleet chat in game${f.fc_name ? ` · FC ${esc(f.fc_name)}` : ''}`)}
+                ${step(3, 'X up for an invite', `Fleet chat in game${f.fc_alt_name || f.fc_name ? ` · FC ${esc(f.fc_alt_name || f.fc_name)}` : ''}`)}
             </div>
             ${v.fights && v.fights.latest.fighting ? section('Fighting now') + round_card(v.fights.latest) : ''}
             ${needs ? section('Fleet needs') + `<div class="fw-chips">${needs}</div>` : ''}

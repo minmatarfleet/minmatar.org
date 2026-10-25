@@ -18,6 +18,7 @@ import Grid from '@components/compositions/Grid.astro'
 import CharacterCard from '@components/blocks/CharacterCard.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import Button from '@components/blocks/Button.astro'
 
 const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
 ---
@@ -38,6 +39,21 @@ const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
         submitted: false,
     }`}
 >
+    <Flexblock gap='var(--space-s)'>
+    <Flexblock gap='var(--space-3xs)'>
+        <Button
+            color='green'
+            class="[ w-fit ]"
+            type="submit"
+            x-bind:disabled="submitted"
+        >
+            {t('start_fleet_now')}
+        </Button>
+        <small class="[ start-fleet__hint ]">{t('start_fleet_now_hint')}</small>
+    </Flexblock>
+
+    <details class="[ start-fleet__pick ]">
+    <summary>{t('start_on_another_character')}</summary>
     <Grid
         role="list"
         class="[ w-full grid-fill ]"
@@ -74,10 +90,22 @@ const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
             </StylessButton>
         ))}
     </Grid>
+    </details>
+    </Flexblock>
 </form>
 
 <style lang="scss">
     @use './_phone_media_card.scss' as *;
+
+    .start-fleet__hint {
+        color: var(--text-muted);
+    }
+
+    .start-fleet__pick summary {
+        cursor: pointer;
+        margin-block-end: var(--space-2xs);
+        color: var(--highlight);
+    }
 
     // Phones: compact character picker rows instead of one portrait per screen.
     form :global(button > .card) {

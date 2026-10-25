@@ -138,6 +138,14 @@ test('form-up for a sign-up that formed without you: three steps', () => {
     assert.match(parts.main, /X up for an invite/)
 })
 
+test('an FC on an alt: the header names the main as the alt, and pilots x up to the alt', () => {
+    const fleet = { ...FLEET, fc_alt_character_id: 94234543, fc_alt_name: 'Henri Gray' }
+    const v = fleet_view_of({ mode: 'viewer', jumps: 6, signed_up_key: 'f:1', you: null, fleet })
+    const parts = fleet_tab(snapshot({ kind: 'formup', fleet: v }))
+    assert.match(parts.main, /FC The FC as Henri Gray/)
+    assert.match(parts.main, /Fleet chat in game · FC Henri Gray/)
+})
+
 test('FC pre-flight: checklist, sign-ups, pre-ping and Start', () => {
     const v = fleet_view_of({ fleet: { ...FLEET, live: false, start_time: '2099-01-01T18:00:00Z' } })
     const parts = fleet_tab(snapshot({ kind: 'prep', fleet: v }))

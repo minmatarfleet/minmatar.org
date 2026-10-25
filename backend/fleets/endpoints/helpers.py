@@ -19,6 +19,7 @@ from fleets.models import (
     EveFleetInstance,
     close_fleet_cleanup,
 )
+from fleets.helpers.fleet_boss import alt_for_boss
 from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
@@ -76,12 +77,25 @@ def _primary_character(user):
         return None
 
 
+def fleet_commander_alt_fields(
+    fleet: EveFleet, boss_id: int | None, fc_character=None
+) -> dict:
+    """The FC's other character running the fleet in game (null on the
+    main), for fleet responses. docs/fleets/fleet-on-alt.md."""
+    if fc_character is None:
+        fc_character = _primary_character(fleet.created_by)
+    alt = alt_for_boss(fleet, boss_id, fc_character)
+    return {
+        "fleet_commander_alt_character_id": alt.character_id if alt else None,
+        "fleet_commander_alt_name": alt.character_name if alt else None,
+    }
+
+
 def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
     tracking = None
-    if EveFleetInstance.objects.filter(eve_fleet=fleet).exists():
-        tracking = EveFleetTrackingResponse.model_validate(
-            EveFleetInstance.objects.get(eve_fleet=fleet)
-        )
+    instance = EveFleetInstance.objects.filter(eve_fleet=fleet).first()
+    if instance:
+        tracking = EveFleetTrackingResponse.model_validate(instance)
 
     fc_character = _primary_character(fleet.created_by)
     return {
@@ -96,6 +110,9 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         ),
         "fleet_commander_name": (
             fc_character.character_name if fc_character else None
+        ),
+        **fleet_commander_alt_fields(
+            fleet, instance.boss_id if instance else None, fc_character
         ),
         "location": (
             fleet.formup_location.location_name

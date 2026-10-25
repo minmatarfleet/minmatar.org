@@ -33,7 +33,8 @@ let start_tracking = false
 
 if (Astro.request.method === "POST") {
     try {
-        start_tracking = await start_fleet(auth_token as string, fleet_id)
+        const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '')
+        start_tracking = await start_fleet(auth_token as string, fleet_id, isNaN(character_id) ? undefined : character_id)
         if (start_tracking) send_active_fleet_notification(auth_token as string, fleet_id)
     } catch (error) {
         start_fleet_error = error.message
@@ -105,6 +106,9 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             start_tracking={start_tracking === true}
             fleet_tracking_texts={fleet_tracking_texts}
             disable_motd={fleet.disable_motd}
+            main_character_id={user_character?.character_id}
+            main_character_name={user_character?.character_name}
+            alt_character_name={fleet.fleet_commander_alt_name}
         />
         :
         <DebugTag>{t('no_fleet_unexpected_error')}</DebugTag>

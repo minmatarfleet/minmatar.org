@@ -81,6 +81,11 @@ import TextBox from '@components/layout/TextBox.astro';
                     </div>
                     <Flexblock gap='var(--space-xs)'>
                         <h2 class="[ animate-slide-up-fade animate-delay-250 ]">{fleet.fleet_commander_name}</h2>
+                        {fleet.fleet_commander_alt_name &&
+                            <small class="[ animate-fade-in animate-delay-250 ]">
+                                {t('fleet_in_game')} <b>{fleet.fleet_commander_alt_name}</b>
+                            </small>
+                        }
                         <FlexInline class="[ animate-fade-in animate-duration-250 animate-delay-400 ]">
                             <CorporationBadge
                                 corporation={{

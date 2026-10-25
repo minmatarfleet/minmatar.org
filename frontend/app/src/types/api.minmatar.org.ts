@@ -899,6 +899,9 @@ export type Fleet = ApiResponse<'EveFleetResponse'>
 /** One fleet from GET /fleets/{id}, with what the viewer may do with it. */
 export type FleetDetail = ApiResponse<'EveFleetDetailResponse'>
 
+/** One of the viewer's characters in an in-game fleet (GET /fleets/current). */
+export type UserActiveFleet = ApiResponse<'UserActiveFleetResponse'>
+
 export interface Tracking {
     id:             number;
     start_time:     Date;

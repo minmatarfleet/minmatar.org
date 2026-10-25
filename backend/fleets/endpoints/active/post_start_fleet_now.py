@@ -11,6 +11,7 @@ from eveonline.helpers.characters import user_characters
 
 from fleets.endpoints.helpers import make_fleet_response
 from fleets.endpoints.schemas import EveFleetResponse, StartFleetNowRequest
+from fleets.helpers.fleet_boss import NO_BOSS
 from fleets.helpers.fleet_location import default_staging_location
 from fleets.models import EveFleet, EveFleetAudience
 
@@ -27,8 +28,9 @@ ROUTE_SPEC = {
     },
     "description": (
         "Create a fleet with defaults, link to your current in-game fleet, "
-        "and activate (no Discord). Must be the fleet commander (boss) of "
-        "your in-game fleet and have fleets.create / fleets.add_evefleet."
+        "and activate (no Discord). One of your characters must be the fleet "
+        "commander (boss) of its in-game fleet: fc_character_id, else your "
+        "main, else whichever is boss. Needs fleets.create."
     ),
 }
 
@@ -73,6 +75,8 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
         fleet.activate()
     except Exception as e:
         fleet.delete()
+        if NO_BOSS in str(e):
+            return 400, {"detail": str(e)}
         if "not in a fleet" in str(e):
             return 400, {"detail": "Not currently in a fleet"}
         if "not the fleet commander" in str(e):

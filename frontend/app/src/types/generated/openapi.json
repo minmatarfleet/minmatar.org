@@ -10773,6 +10773,28 @@
             "title": "Fleet Commander",
             "type": "integer"
           },
+          "fleet_commander_alt_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Alt Character Id"
+          },
+          "fleet_commander_alt_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Alt Name"
+          },
           "fleet_commander_character_id": {
             "anyOf": [
               {
@@ -11031,6 +11053,28 @@
           "fleet_commander": {
             "title": "Fleet Commander",
             "type": "integer"
+          },
+          "fleet_commander_alt_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Alt Character Id"
+          },
+          "fleet_commander_alt_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Alt Name"
           },
           "fleet_commander_character_id": {
             "anyOf": [
@@ -12026,6 +12070,28 @@
           "fleet_commander": {
             "title": "Fleet Commander",
             "type": "integer"
+          },
+          "fleet_commander_alt_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Alt Character Id"
+          },
+          "fleet_commander_alt_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Commander Alt Name"
           },
           "fleet_commander_character_id": {
             "anyOf": [
@@ -17963,6 +18029,28 @@
               }
             ],
             "title": "Ended At"
+          },
+          "fc_alt_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Alt Character Id"
+          },
+          "fc_alt_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Alt Name"
           },
           "fc_character_id": {
             "anyOf": [
@@ -45183,7 +45271,7 @@
     },
     "/api/fleets/start-now": {
       "post": {
-        "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). Must be the fleet commander (boss) of your in-game fleet and have fleets.create / fleets.add_evefleet.",
+        "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. Needs fleets.create.",
         "operationId": "fleets_endpoints_active_post_start_fleet_now_start_fleet_now",
         "parameters": [],
         "requestBody": {
@@ -48473,7 +48561,7 @@
     },
     "/api/fleets/{fleet_id}/tracking": {
       "post": {
-        "description": "Start a fleet and send a discord ping, must be the owner of the fleet",
+        "description": "Start a fleet and send a discord ping, must be the owner of the fleet. Without fc_character_id, uses the owner's main, or else whichever of their characters is fleet boss in game.",
         "operationId": "fleets_endpoints_fleet_post_fleet_tracking_start_fleet",
         "parameters": [
           {

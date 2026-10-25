@@ -15,6 +15,11 @@ interface Props {
     start_tracking?:            boolean;
     fleet_tracking_texts?:      FleetTrackingTexts | false;
     disable_motd?:              boolean;
+    /** The FC's main, for "as {main} · Change" under Start. */
+    main_character_id?:         number;
+    main_character_name?:       string;
+    /** The FC's other character running the fleet in game, if any. */
+    alt_character_name?:        string | null;
 }
 
 const {
@@ -27,6 +32,9 @@ const {
     start_tracking = false,
     fleet_tracking_texts = false,
     disable_motd = false,
+    main_character_id,
+    main_character_name,
+    alt_character_name = null,
 } = Astro.props
 
 import { minutes_to } from '@helpers/date';
@@ -43,7 +51,7 @@ const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_compon
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 
-import StartFleetButton from '@components/blocks/StartFleetButton.astro';
+import StartFleetControls from '@components/blocks/StartFleetControls.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
 import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
 ---
@@ -69,6 +77,12 @@ import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
             <Flexblock>
                 <FleetPhaseLabel phase={phase} />
 
+                {start_tracking && alt_character_name &&
+                    <p class="[ tracking-on-alt ]" role="status">
+                        {t('tracking_on_alt')} <b>{alt_character_name}</b>, {t('tracking_on_alt_detail')}
+                    </p>
+                }
+
                 {is_fleet_commander &&
                     <EndFleetButton id={fleet_id} />
                 }
@@ -77,7 +91,11 @@ import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
         }
 
         {is_fleet_commander && is_fleet_time && phase === 'upcoming' &&
-            <StartFleetButton id={fleet_id} />
+            <StartFleetControls
+                id={fleet_id}
+                main_character_id={main_character_id}
+                main_character_name={main_character_name}
+            />
         }
 
         {is_fleet_commander && !is_fleet_time && phase === 'upcoming' &&
@@ -106,7 +124,11 @@ import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
                     }
                 }`}
             >
-                <StartFleetButton id={fleet_id} />
+                <StartFleetControls
+                    id={fleet_id}
+                    main_character_id={main_character_id}
+                    main_character_name={main_character_name}
+                />
             </template>
         }
 

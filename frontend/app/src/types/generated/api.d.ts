@@ -2347,7 +2347,7 @@ export interface paths {
         put?: never;
         /**
          * Start Fleet Now
-         * @description Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). Must be the fleet commander (boss) of your in-game fleet and have fleets.create / fleets.add_evefleet.
+         * @description Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. Needs fleets.create.
          */
         post: operations["fleets_endpoints_active_post_start_fleet_now_start_fleet_now"];
         delete?: never;
@@ -3445,7 +3445,7 @@ export interface paths {
         put?: never;
         /**
          * Start Fleet
-         * @description Start a fleet and send a discord ping, must be the owner of the fleet
+         * @description Start a fleet and send a discord ping, must be the owner of the fleet. Without fc_character_id, uses the owner's main, or else whichever of their characters is fleet boss in game.
          */
         post: operations["fleets_endpoints_fleet_post_fleet_tracking_start_fleet"];
         delete?: never;
@@ -11907,6 +11907,10 @@ export interface components {
             doctrine_name?: string | null;
             /** Fleet Commander */
             fleet_commander: number;
+            /** Fleet Commander Alt Character Id */
+            fleet_commander_alt_character_id?: number | null;
+            /** Fleet Commander Alt Name */
+            fleet_commander_alt_name?: string | null;
             /** Fleet Commander Character Id */
             fleet_commander_character_id?: number | null;
             /** Fleet Commander Name */
@@ -11989,6 +11993,10 @@ export interface components {
             doctrine_name?: string | null;
             /** Fleet Commander */
             fleet_commander: number;
+            /** Fleet Commander Alt Character Id */
+            fleet_commander_alt_character_id?: number | null;
+            /** Fleet Commander Alt Name */
+            fleet_commander_alt_name?: string | null;
             /** Fleet Commander Character Id */
             fleet_commander_character_id?: number | null;
             /** Fleet Commander Name */
@@ -12355,6 +12363,10 @@ export interface components {
             doctrine_name?: string | null;
             /** Fleet Commander */
             fleet_commander: number;
+            /** Fleet Commander Alt Character Id */
+            fleet_commander_alt_character_id?: number | null;
+            /** Fleet Commander Alt Name */
+            fleet_commander_alt_name?: string | null;
             /** Fleet Commander Character Id */
             fleet_commander_character_id?: number | null;
             /** Fleet Commander Name */
@@ -14698,6 +14710,10 @@ export interface components {
             doctrine_name?: string | null;
             /** Ended At */
             ended_at?: string | null;
+            /** Fc Alt Character Id */
+            fc_alt_character_id?: number | null;
+            /** Fc Alt Name */
+            fc_alt_name?: string | null;
             /** Fc Character Id */
             fc_character_id?: number | null;
             /** Fc Name */

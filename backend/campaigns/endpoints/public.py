@@ -30,6 +30,7 @@ from campaigns.services import entities as entity_service
 from campaigns.services import fleets as fleet_service
 from campaigns.services import objectives, plan, stats
 from eveonline.models import EveCharacter
+from fleets.helpers.fleet_boss import in_game_fleet_commander
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
 from groups.helpers.feature_access import require_feature
 
@@ -456,8 +457,7 @@ def get_fleets(request, slug: str, limit: int = 50):
             "objective": fleet.objective or "",
             "start_time": fleet.start_time,
             "status": fleet.status,
-            "fleet_commander": _commander_name(fleet),
-            "fleet_commander_id": _commander_id(fleet),
+            **_commander(fleet),
             "doctrine": fleet.doctrine.name if fleet.doctrine else None,
             "aar_link": fleet.aar_link or None,
             "is_live": fleet.id in live_ids,
@@ -480,18 +480,20 @@ def _fleet_description(fleet) -> str:
     return text
 
 
-def _commander_id(fleet) -> int | None:
-    character = fleet.fleet_commander
-    return character.character_id if character else None
-
-
-def _commander_name(fleet) -> str | None:
-    character = fleet.fleet_commander
+def _commander(fleet) -> dict:
+    """The FC as the public sees them: the character that ran the fleet in
+    game, never the main behind an alt (docs/fleets/fleet-on-alt.md)."""
+    character = in_game_fleet_commander(fleet)
     if character:
-        return character.character_name
-    if fleet.created_by_id:
-        return stats.pilot_name(fleet.created_by_id)
-    return None
+        name = character.character_name
+    elif fleet.created_by_id:
+        name = stats.pilot_name(fleet.created_by_id)
+    else:
+        name = None
+    return {
+        "fleet_commander": name,
+        "fleet_commander_id": character.character_id if character else None,
+    }
 
 
 @router.get(

@@ -47,6 +47,7 @@ const length_text = length_minutes === null ? '—' :
     `${Math.floor(length_minutes / 60)}h ${(length_minutes % 60).toString().padStart(2, '0')}m`
 
 import FleetPortrait from '@components/blocks/FleetPortrait.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import Countdown from '@components/blocks/Countdown.astro'
 import LocalTime from '@components/blocks/LocalTime.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
@@ -122,10 +123,24 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
                 character_id={fleet.fleet_commander_id}
                 character_name={fleet.fleet_commander_name}
                 type={fleet.type}
+                alt_character_id={fleet.fleet_commander_alt_id}
+                alt_character_name={fleet.fleet_commander_alt_name}
                 size={64}
             />
             <span class="[ fleet-facts__fc-text ]">
                 <b>{fleet.fleet_commander_name}</b>
+                {fleet.fleet_commander_alt_name &&
+                    <span class="[ fleet-facts__fc-alt ]">
+                        <span>{t('fleet_in_game')} <b>{fleet.fleet_commander_alt_name}</b></span>
+                        <ClipboardButton
+                            id={`fleet-fc-alt-${fleet.id}`}
+                            text={t('copy_name')}
+                            copied_text={t('name_copied')}
+                            narrow={true}
+                            iconed={false}
+                        >{fleet.fleet_commander_alt_name}</ClipboardButton>
+                    </span>
+                }
                 <span class="[ fleet-facts__fc-meta ]">
                     {corporation_id > 0 &&
                         <CorporationBadge
@@ -220,6 +235,20 @@ import FleetIcon from '@components/icons/FleetIcon.astro'
         flex-wrap: wrap;
         align-items: center;
         gap: var(--space-xs);
+    }
+
+    .fleet-facts__fc-alt {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        b {
+            color: var(--highlight);
+            font-weight: normal;
+        }
     }
 
     .fleet-facts__count {

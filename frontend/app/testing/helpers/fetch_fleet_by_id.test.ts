@@ -71,6 +71,8 @@ describe('fetch_fleet_by_id', () => {
             objective: 'Kill things',
             fleet_commander_id: 90,
             fleet_commander_name: 'Commander',
+            fleet_commander_alt_id: null,
+            fleet_commander_alt_name: null,
             location: 'Amamake - Freeport',
             start_time: '2026-10-17T20:00:00Z',
             type: 'strategic',

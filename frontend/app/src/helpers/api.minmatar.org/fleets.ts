@@ -3,6 +3,7 @@ import type {
     FleetMember,
     Fleet,
     FleetDetail,
+    UserActiveFleet,
     FleetRequest,
     Audience,
     Location,
@@ -146,11 +147,21 @@ export async function start_fleet_now(access_token: string, fc_character_id?: nu
     })
 }
 
-export async function start_fleet(access_token:string, fleet_id:number) {
+/** Without fc_character_id the backend uses the main, else whichever character is fleet boss. */
+export async function start_fleet(access_token:string, fleet_id:number, fc_character_id?:number) {
     return await api_status_is(`${API_ENDPOINT}/${fleet_id}/tracking`, {
         method: 'POST',
         token: access_token,
+        body: fc_character_id != null ? { fc_character_id } : undefined,
         error: 'Error starting the fleet',
+    })
+}
+
+/** The viewer's characters that are in an in-game fleet, and who is boss (ESI, one call per character). */
+export async function get_my_active_fleets(access_token:string) {
+    return await api_request<UserActiveFleet[]>(`${API_ENDPOINT}/current`, {
+        token: access_token,
+        error: 'Error fetching your in-game fleets',
     })
 }
 

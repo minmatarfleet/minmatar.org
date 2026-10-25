@@ -21,13 +21,14 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import StylessButton from './StylessButton.astro';
 import FleetHostTags from '@components/blocks/FleetHostTags.astro';
+import { fleet_commander_label } from '@helpers/fleet_commander'
 ---
 
 <StylessButton href={translatePath(`/fleets/upcoming/${fleet.id}/`)}>
     <FlexInline class="[ flex-nowrap! ]" justification='flex-end'>
         <PilotBadge
             character_id={fleet.fleet_commander_id}
-            character_name={fleet.fleet_commander_name}
+            character_name={fleet_commander_label(fleet, t('fleet_in_game_as'))}
             heading={true}
         >
             <small class="[ text-nowrap! ]">{t(t_key('', fleet.type, '_fleet')) ?? fleet.type}</small>
