@@ -66,6 +66,11 @@ def can_manage_invites(user, fleet: EveFleet) -> bool:
     return fleet.invite_only and sees_every_private_fleet(user)
 
 
+def can_reping(user, fleet: EveFleet) -> bool:
+    """Re-ping is for private fleets, and only Strategic FCs send it."""
+    return fleet.invite_only and sees_every_private_fleet(user)
+
+
 def _private_fleet(request, fleet_id: int):
     """The fleet if the caller may manage its invites, else an error."""
     fleet = (
@@ -231,6 +236,7 @@ def get_fleet_invites(request, fleet_id: int):
             max(reminded) + REPING_COOLDOWN if reminded else None
         ),
         can_see_leak_trace=leak_trace,
+        can_reping=can_reping(request.user, fleet),
         thread_url=thread_url(fleet),
         invite_only=fleet.invite_only,
         onboarding_first_week=new_pilots.get("first_week", 0),
@@ -299,6 +305,8 @@ def post_reping(request, fleet_id: int):
     fleet = _private_fleet(request, fleet_id)
     if isinstance(fleet, tuple):
         return fleet
+    if not can_reping(request.user, fleet):
+        return 403, None
     try:
         pilots = reping_no_answers(fleet)
     except PrivateFleetError as exc:
@@ -489,8 +497,9 @@ ROUTES = (
                 **_ERRORS,
             },
             "description": (
-                "DM everyone who hasn't answered once more. At most once "
-                "every 15 minutes per fleet."
+                "DM everyone who hasn't answered once more. Private fleets "
+                "only, sent by a Strategic FC. At most once every 15 "
+                "minutes per fleet."
             ),
         },
         post_reping,
