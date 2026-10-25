@@ -569,6 +569,8 @@ export interface CorporationRedditPost {
     last_reminder_at:       string | null;
     reddit_account:         LinkedRedditAccount | null;
     discord_linked:         boolean;
+    /** Only the CEO: linking acts on the viewer's own Reddit account. */
+    can_link_account:       boolean;
     markdown_problems:      RedditMarkdownProblem[];
 }
 
@@ -593,6 +595,10 @@ export interface CorporationForumPost {
 export interface CorporationForumPostUpdate {
     url:                string;
 }
+
+export type CorporationDiscordSettings = ApiResponse<'CorporationDiscordSettings'>
+export type CorporationDiscordInvitePreview = ApiResponse<'CorporationDiscordInvitePreview'>
+export type CorporationDiscordInviteRequest = ApiRequest<'CorporationDiscordInviteRequest'>
 
 export interface CorporationPublicSummary {
     window_days:            number;

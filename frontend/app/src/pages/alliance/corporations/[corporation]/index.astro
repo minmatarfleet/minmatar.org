@@ -122,6 +122,7 @@ for (const key of ['reddit', 'reddit_error']) {
 }
 const settings_partial = translatePath(`/partials/corporation_settings_component/?${settings_params}`)
 const forum_post_partial = translatePath(`/partials/corporation_forum_post_component/?corporation_id=${corporation_id}`)
+const discord_partial = translatePath(`/partials/corporation_discord_component/?corporation_id=${corporation_id}`)
 // Leadership tracks the corp's in-game projects; directors put them toward campaigns.
 const can_view_projects = member_access?.can_view_projects ?? false
 const projects_partial = translatePath(`/partials/corporation_projects_component/?${new URLSearchParams({
@@ -301,6 +302,21 @@ const breadcrumbs = [
                                     </span>
                                     <div
                                         hx-get={forum_post_partial}
+                                        hx-trigger="intersect once"
+                                        hx-swap="outerHTML"
+                                    >
+                                        <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
+                                    </div>
+                                </CollapsibleBlock>
+                            </section>
+                            <section class="corp-settings-section">
+                                <CollapsibleBlock id="corporation-settings-discord" expanded={true} padding_inline="0">
+                                    <span slot="head" class="corp-settings-section__head">
+                                        <span class="corp-settings-section__title">{t('corporations.settings.discord_section')}</span>
+                                        <span id="corporation-settings-discord-summary" class="corp-settings-section__summary"></span>
+                                    </span>
+                                    <div
+                                        hx-get={discord_partial}
                                         hx-trigger="intersect once"
                                         hx-swap="outerHTML"
                                     >

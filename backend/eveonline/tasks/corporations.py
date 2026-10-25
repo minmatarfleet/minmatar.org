@@ -18,6 +18,9 @@ from eveonline.helpers.corporations import (
 )
 from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.corporations import projects
+from eveonline.helpers.corporations.discord_invite import (
+    recheck_discord_invite,
+)
 from eveonline.models import EveCharacter, EveCorporation
 
 logger = logging.getLogger(__name__)
@@ -37,6 +40,21 @@ def sync_corporations_projects():
         "corporation_id", flat=True
     ):
         sync_corporation_projects.apply_async(args=[corporation_id])
+
+
+@app.task(exclusive=60 * 60, expires=6 * 60 * 60)
+def check_corporation_discord_invites():
+    """Ask Discord about every corporation's invite, so the page stops
+    showing ones that expired or were deleted."""
+    corporations = EveCorporation.objects.exclude(discord_invite_url="")
+    dead = 0
+    for corporation in corporations:
+        if recheck_discord_invite(corporation) == (
+            EveCorporation.DISCORD_INVITE_DEAD
+        ):
+            dead += 1
+    logger.info("Checked corporation Discord invites, %s dead", dead)
+    return dead
 
 
 @app.task(rate_limit="20/m")

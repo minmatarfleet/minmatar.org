@@ -13,11 +13,11 @@ from eveonline.endpoints.corporations.schemas import (
     CorporationMemberDetails,
 )
 from eveonline.helpers.corporations.permissions import (
+    can_edit_corporation_settings,
     can_manage_corporation_projects,
     can_view_corporation_members,
     can_view_corporation_projects,
     can_view_member_characters,
-    user_is_ceo,
 )
 from eveonline.helpers.corporations.profile import load_corporation
 from eveonline.helpers.corporations.stats_cache import corporation_stats
@@ -72,7 +72,9 @@ def get_corp_member_access(request, corporation_id: int):
         "can_view_characters": can_view_member_characters(
             request.user, corporation
         ),
-        "can_edit_settings": user_is_ceo(request.user, corporation),
+        "can_edit_settings": can_edit_corporation_settings(
+            request.user, corporation
+        ),
         "can_view_projects": can_view_corporation_projects(
             request.user, corporation
         ),

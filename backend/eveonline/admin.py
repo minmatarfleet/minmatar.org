@@ -41,6 +41,10 @@ from .models import (
     EveUniverseSchematic,
 )
 from .helpers.characters import user_primary_character
+from .helpers.corporations.discord_invite import (
+    INVITE_FIELDS,
+    recheck_discord_invite,
+)
 from .tasks import update_corporation
 from groups.helpers import (
     ensure_corporation_groups_for_corp,
@@ -437,6 +441,14 @@ class EveCorporationAdmin(admin.ModelAdmin):
     list_filter = ("alliance", "trial", "generate_corporation_groups")
     filter_horizontal = ("directors", "recruiters", "stewards")
     autocomplete_fields = ("discord_guild",)
+    # Filled from Discord; the invite link itself stays editable.
+    readonly_fields = (
+        "discord_invite_status",
+        "discord_invite_guild_id",
+        "discord_invite_guild_name",
+        "discord_invite_icon",
+        "discord_invite_checked_at",
+    )
     inlines = [EveCorporationMediaInline]
     actions = [refresh_corporations_action]
     change_form_template = "admin/eveonline/evecorporation/change_form.html"
@@ -488,6 +500,12 @@ class EveCorporationAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         if obj.generate_corporation_groups and obj.ticker:
             ensure_corporation_groups_for_corp(obj)
+        if "discord_invite_url" in form.changed_data:
+            # The old link's status says nothing about the new one.
+            obj.discord_invite_status = ""
+            obj.discord_invite_checked_at = None
+            obj.save(update_fields=INVITE_FIELDS)
+            recheck_discord_invite(obj)
 
 
 @admin.register(EveCorporationContract)

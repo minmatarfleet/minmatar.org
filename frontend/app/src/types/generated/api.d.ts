@@ -1782,6 +1782,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The corporation's Discord server (CEO and directors) */
+        get: operations["eveonline_endpoints_corporations_get_corporation_discord_get_corporation_discord"];
+        /** Set the corporation's Discord invite (CEO and directors) */
+        put: operations["eveonline_endpoints_corporations_put_corporation_discord_put_corporation_discord"];
+        post?: never;
+        /** Remove the corporation's Discord server (CEO and directors) */
+        delete: operations["eveonline_endpoints_corporations_delete_corporation_discord_delete_corporation_discord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a Discord invite before saving it (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_check_post_corporation_discord_check"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/info": {
         parameters: {
             query?: never;
@@ -5427,12 +5463,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The corporation's EVE forums recruitment thread (CEO only) */
+        /** The corporation's EVE forums recruitment thread (CEO and directors) */
         get: operations["recruitment_router_get_corporation_forum_post"];
-        /** Link, change or (with an empty url) remove the corporation's EVE forums recruitment thread (CEO only) */
+        /** Link, change or (with an empty url) remove the corporation's EVE forums recruitment thread (CEO and directors) */
         put: operations["recruitment_router_put_corporation_forum_post"];
         post?: never;
-        /** Remove the corporation's EVE forums recruitment thread (CEO only) */
+        /** Remove the corporation's EVE forums recruitment thread (CEO and directors) */
         delete: operations["recruitment_router_delete_corporation_forum_post"];
         options?: never;
         head?: never;
@@ -5515,9 +5551,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The corporation's Reddit post template (CEO only) */
+        /** The corporation's Reddit post template (CEO and directors) */
         get: operations["reddit_router_get_corporation_post"];
-        /** Edit the corporation's Reddit post, pause it, or change how it is sent (CEO only) */
+        /** Edit the corporation's Reddit post, pause it, or change how it is sent (CEO and directors) */
         put: operations["reddit_router_put_corporation_post"];
         post?: never;
         delete?: never;
@@ -9642,6 +9678,39 @@ export interface components {
              */
             slices?: components["schemas"]["CorporationSummarySlice"][];
         };
+        /** CorporationDiscordInvitePreview */
+        CorporationDiscordInvitePreview: {
+            /** Checked */
+            checked: boolean;
+            /** Guild Name */
+            guild_name?: string | null;
+            /** Icon Url */
+            icon_url?: string | null;
+            /** Invite Url */
+            invite_url: string;
+        };
+        /** CorporationDiscordInviteRequest */
+        CorporationDiscordInviteRequest: {
+            /** Invite Url */
+            invite_url: string;
+        };
+        /** CorporationDiscordSettings */
+        CorporationDiscordSettings: {
+            /** Checked At */
+            checked_at?: string | null;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Exists */
+            exists: boolean;
+            /** Guild Name */
+            guild_name?: string | null;
+            /** Icon Url */
+            icon_url?: string | null;
+            /** Invite Url */
+            invite_url?: string | null;
+            /** Status */
+            status?: string | null;
+        };
         /** CorporationFleetParticipationSummary */
         CorporationFleetParticipationSummary: {
             /**
@@ -10250,6 +10319,11 @@ export interface components {
             approved_at?: string | null;
             /** Automatic Status */
             automatic_status: string;
+            /**
+             * Can Link Account
+             * @default false
+             */
+            can_link_account?: boolean;
             /**
              * Change Pending
              * @default false
@@ -25905,6 +25979,192 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationOpenApplication"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_get_corporation_discord_get_corporation_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_put_corporation_discord_put_corporation_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationDiscordInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_delete_corporation_discord_delete_corporation_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_check_post_corporation_discord_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationDiscordInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordInvitePreview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */

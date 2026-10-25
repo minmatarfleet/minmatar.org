@@ -66,6 +66,29 @@ class EveCorporation(models.Model):
         related_name="corporations",
     )
     discord_invite_url = models.URLField(blank=True)
+    # What Discord says about the invite, from the last save or daily check
+    # (eveonline.helpers.corporations.discord_invite). db_default keeps
+    # inserts from code that predates these columns working.
+    DISCORD_INVITE_OK = "ok"
+    DISCORD_INVITE_DEAD = "dead"
+    discord_invite_status = models.CharField(
+        max_length=8,
+        blank=True,
+        db_default="",
+        choices=(
+            (DISCORD_INVITE_OK, "Working"),
+            (DISCORD_INVITE_DEAD, "Expired or deleted"),
+        ),
+        help_text="Blank until Discord has been asked about the invite.",
+    )
+    discord_invite_guild_id = models.BigIntegerField(blank=True, null=True)
+    discord_invite_guild_name = models.CharField(
+        max_length=100, blank=True, db_default=""
+    )
+    discord_invite_icon = models.CharField(
+        max_length=64, blank=True, db_default=""
+    )
+    discord_invite_checked_at = models.DateTimeField(blank=True, null=True)
     highlights = models.TextField(blank=True)
     activity_summary = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)

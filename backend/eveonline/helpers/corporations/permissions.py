@@ -108,3 +108,15 @@ def can_view_corporation_projects(
         and getattr(user, "is_authenticated", False)
         and user.is_superuser
     )
+
+
+def can_edit_corporation_settings(
+    user: User, corporation: EveCorporation
+) -> bool:
+    """The Settings tab (Reddit post, forum thread, Discord server): the CEO
+    and directors."""
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    return user_is_ceo(user, corporation) or user_is_director(
+        user, corporation
+    )

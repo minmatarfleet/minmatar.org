@@ -422,6 +422,36 @@ class RouterTestCase(CorporationPostTestCase):
         self.assertEqual(403, response.status_code)
         self.assertFalse(RedditPostTemplate.objects.exists())
 
+    def test_director_edits_but_sees_the_ceos_account(self):
+        self.make_post(approved=True)
+        self.link_reddit()
+        token = self.other_user_token()
+        director_user = User.objects.get(username="not-ceo")
+        self.corporation.directors.add(
+            EveCharacter.objects.create(
+                character_id=91000002,
+                character_name="Rat Director",
+                user=director_user,
+            )
+        )
+        body = self.client.get(self.url, **self.auth(token)).json()
+        self.assertEqual("BearThatCares", body["reddit_account"]["username"])
+        self.assertFalse(body["can_link_account"])
+        self.assertTrue(
+            self.client.get(self.url, **self.auth()).json()["can_link_account"]
+        )
+        response = self.client.put(
+            self.url,
+            data={
+                "title": "Join the Rat",
+                "content": "We fly together. Ask for a director.",
+                "delivery_method": "automatic",
+            },
+            content_type="application/json",
+            **self.auth(token),
+        )
+        self.assertEqual(200, response.status_code)
+
     def test_superuser_who_is_not_ceo_cannot_edit(self):
         other = self.other_user_token()
         User.objects.filter(username="not-ceo").update(is_superuser=True)
