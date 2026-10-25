@@ -592,11 +592,11 @@ skill most of its pilots don't have, or they fly it slightly differently.
 The account page's **Training** tab (`/account/#training`) is the first player view on these tables. Wireframes: https://claude.ai/artifact/8pdrHDxhCkXs5vUkY61f1x.
 
 - **Goals are ships.** A pilot picks doctrine fits per character (`CharacterShipGoal`, ordered by `position`). One ship trains at a time: the first goal that isn't done is "Training now", the rest are "Up next". A goal is done at Ready (`doctrine_ready`), or at Optimal when the pilot chose `target = optimal`.
-- **Plans are read, not computed.** A plan is the missing levels from the stored readiness row (`missing_required`, plus `missing_core` for strategic fits), with their prerequisites, ordered cheapest-first but never before a lower level or a prerequisite (`engine/plan.py`). Skill ranks and prerequisites come from `CapabilitySkill`, which `store_snapshot` fills from each SDE build, so a request never loads the SDE. Optimal adds every row up to its `optimal_level`. "Copy for EVE" is one `Skill Name IV` line per level.
+- **Plans are read, not computed.** A plan is the missing levels from the stored readiness row (`missing_required`, plus `missing_core` for strategic fits), with their prerequisites, ordered cheapest-first but never before a lower level or a prerequisite (`backend/capabilities/engine/plan.py`). Skill ranks and prerequisites come from `CapabilitySkill`, which `store_snapshot` fills from each SDE build, so a request never loads the SDE. Optimal adds every row up to its `optimal_level`. "Copy for EVE" is one `Skill Name IV` line per level.
 - **What you can bring** counts ready fits per role once per account (a character without an account counts on its own). Characters marked **Not for fleets** (`CharacterTrainingSettings`) get no suggestions and don't count.
 - **Suggestions**: a character without goals shows its two nearest fits within 30 days, or "No doctrine ship within a month".
 - **Account moves** set `CharacterAccountMember.source = pilot` (or no account at all). `infer_accounts` keeps those placements and places the other linked characters around them; empty accounts are dropped.
-- API: `/api/training/` (one module per endpoint in `capabilities/endpoints/`), service in `capabilities/training.py`. On dev data the overview takes about 25 ms.
+- API: `/api/training/` (one module per endpoint in `backend/capabilities/endpoints/`), service in `backend/capabilities/training.py`. On dev data the overview takes about 25 ms.
 
 ## Appendix: per-fitting readiness (players)
 
