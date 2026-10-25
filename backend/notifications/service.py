@@ -162,7 +162,7 @@ def notify_users(
 
 
 def _web_push_configured() -> bool:
-    return bool(getattr(settings, "VAPID_PRIVATE_KEY", "") or "")
+    return bool(getattr(settings, "VAPID_PRIVATE_KEY", ""))
 
 
 def _stagger_countdown(channel: str, indexes: dict[str, int]) -> float:
