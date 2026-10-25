@@ -95,6 +95,8 @@ class FleetInvitesResponse(BaseModel):
     sending: bool
     reping_available_at: Optional[datetime] = None
     can_see_leak_trace: bool
+    # Re-ping no answers: private fleets, Strategic FCs only.
+    can_reping: bool = False
     thread_url: Optional[str] = None
     invite_only: bool = False
     # Standard fleets: new pilots not yet invited, by onboarding bucket.

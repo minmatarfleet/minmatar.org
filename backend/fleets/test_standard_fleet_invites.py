@@ -100,6 +100,17 @@ class StandardInvitesTabTests(StandardInviteTestBase):
             404,
         )
 
+    def test_no_reping_on_a_standard_fleet(self):
+        # Even for a Strategic FC: re-ping is for private fleets.
+        fleet = self.standard_fleet(created_by=self.strat)
+        self.invite_on(fleet, self.pilot)
+        EveFleetInvite.objects.update(dm_delivered=True)
+        body = self.call("get", f"/{fleet.id}/invites", self.strat).json()
+        self.assertFalse(body["can_reping"])
+        response = self.call("post", f"/{fleet.id}/invites/reping", self.strat)
+        self.assertEqual(response.status_code, 403)
+        self.assertIsNone(EveFleetInvite.objects.get().reminded_at)
+
     def test_invited_as_is_kept_per_pilot(self):
         fleet = self.standard_fleet()
         _onboarding_snapshot(first_week=[self.outsider])

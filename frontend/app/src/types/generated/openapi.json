@@ -16241,6 +16241,11 @@
       },
       "FleetInvitesResponse": {
         "properties": {
+          "can_reping": {
+            "default": false,
+            "title": "Can Reping",
+            "type": "boolean"
+          },
           "can_see_leak_trace": {
             "title": "Can See Leak Trace",
             "type": "boolean"
@@ -46563,7 +46568,7 @@
     },
     "/api/fleets/{fleet_id}/invites/reping": {
       "post": {
-        "description": "DM everyone who hasn't answered once more. At most once every 15 minutes per fleet.",
+        "description": "DM everyone who hasn't answered once more. Private fleets only, sent by a Strategic FC. At most once every 15 minutes per fleet.",
         "operationId": "fleets_endpoints_private_invites_post_reping",
         "parameters": [
           {

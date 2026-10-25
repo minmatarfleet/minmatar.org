@@ -335,6 +335,23 @@ class WaveTests(PrivateFleetTestBase):
             send_fleet_invite_reminders(fleet.id, [invite.id])
         self.assertEqual(client.send_dm.call_count, 1)
 
+    def test_reping_is_for_strategic_fcs_only(self):
+        fleet = self.private_fleet(created_by=self.outsider)
+        self.invite(fleet, self.pilot)
+        EveFleetInvite.objects.update(dm_delivered=True)
+        path = f"/{fleet.id}/invites"
+        # The creator manages the invites but isn't a Strategic FC.
+        body = self.call("get", path, self.outsider).json()
+        self.assertFalse(body["can_reping"])
+        response = self.call("post", f"{path}/reping", self.outsider)
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(
+            self.call("get", path, self.strat).json()["can_reping"]
+        )
+        response = self.call("post", f"{path}/reping", self.strat)
+        self.assertEqual(response.status_code, 202, response.content)
+        self.assertEqual(response.json()["pilots"], 1)
+
     def test_invites_tab_leak_trace_for_strategic_fcs_only(self):
         fleet = self.private_fleet(created_by=self.outsider)
         self.invite(fleet, self.pilot)

@@ -2869,7 +2869,7 @@ export interface paths {
         put?: never;
         /**
          * Post Reping
-         * @description DM everyone who hasn't answered once more. At most once every 15 minutes per fleet.
+         * @description DM everyone who hasn't answered once more. Private fleets only, sent by a Strategic FC. At most once every 15 minutes per fleet.
          */
         post: operations["fleets_endpoints_private_invites_post_reping"];
         delete?: never;
@@ -14011,6 +14011,11 @@ export interface components {
         };
         /** FleetInvitesResponse */
         FleetInvitesResponse: {
+            /**
+             * Can Reping
+             * @default false
+             */
+            can_reping?: boolean;
             /** Can See Leak Trace */
             can_see_leak_trace: boolean;
             /** Fleet Id */

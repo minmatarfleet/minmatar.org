@@ -225,7 +225,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                                 </button>
                             )}
                             <div style="grid-area: reping">
-                                {reping_waiting ?
+                                {data.can_reping && (reping_waiting ?
                                     <Button type="button" size="sm" color="transparent" disabled class="[ w-full fleet-invites__secondary ]">
                                         {t('fleets.private.reping_wait').replace('{time}', `${eve_clock(reping_at!)} EVE`)}
                                     </Button> :
@@ -243,7 +243,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                                         >
                                             {t('fleets.private.reping_short').replace('{count}', pending_delivered.toString())}
                                         </Button>
-                                }
+                                )}
                             </div>
                             <div style="grid-area: copy">
                                 {counts.failed > 0 &&
