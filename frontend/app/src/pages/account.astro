@@ -78,6 +78,7 @@ const tabs = [
             flag: 'attention' as const,
         }),
     },
+    { id: 'training', label: t('account.tab.training') },
     ...(has_notifications ? [{ id: 'notifications', label: t('account.tab.notifications') }] : []),
     { id: 'display', label: t('account.tab.display') },
     { id: 'referrals', label: t('account.tab.referrals') },
@@ -89,6 +90,7 @@ const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
 const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
 const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=false`
 const ACCOUNT_REFERRALS_PARTIAL_URL = translatePath('/partials/account_referrals_component/')
+const TRAINING_PARTIAL_URL = translatePath('/partials/training_component/')
 
 const fix_esi_token_error = Astro.url.searchParams.get('error') as string
 
@@ -224,6 +226,15 @@ const page_title = t('account.page_title');
                             }
                         </ComponentBlock>
                     </Context>
+                </SectionTabPanel>
+
+                <SectionTabPanel id="training" id_prefix="account">
+                    <LazyPartial url={TRAINING_PARTIAL_URL} trigger="reveal" swap="outerHTML">
+                        <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
+                            <RifterIcon class="small" />
+                            <p class="[ loading ]">{t('loading')}</p>
+                        </FlexInline>
+                    </LazyPartial>
                 </SectionTabPanel>
 
                 {has_notifications &&

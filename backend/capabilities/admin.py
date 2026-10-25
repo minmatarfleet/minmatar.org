@@ -6,6 +6,8 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from capabilities.models import (
+    CharacterShipGoal,
+    CharacterTrainingSettings,
     CharacterAccount,
     CharacterAccountLink,
     CharacterAccountMember,
@@ -197,3 +199,17 @@ class CharacterAccountLinkAdmin(ReadOnlyAdmin):
     list_select_related = ("user", "character_a", "character_b")
     readonly_fields = [f.name for f in CharacterAccountLink._meta.fields]
     fields = readonly_fields
+
+
+@admin.register(CharacterShipGoal)
+class CharacterShipGoalAdmin(ReadOnlyAdmin):
+    list_display = ("character", "fitting", "position", "target", "created_at")
+    search_fields = ("character__character_name", "fitting__name")
+    list_filter = ("target",)
+
+
+@admin.register(CharacterTrainingSettings)
+class CharacterTrainingSettingsAdmin(ReadOnlyAdmin):
+    list_display = ("character", "not_for_fleets", "updated_at")
+    search_fields = ("character__character_name",)
+    list_filter = ("not_for_fleets",)

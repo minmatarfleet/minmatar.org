@@ -1,0 +1,236 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { TrainingAccountOptions } from '@dtypes/api.minmatar.org'
+import { get_training_accounts } from '@helpers/api.minmatar.org/training'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { TRAINING_MOVE_PARTIAL, TRAINING_PARTIAL, training_url } from '@helpers/training'
+
+const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0') || 0
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!character_id)
+    return HTTP_404_Not_Found()
+
+let options:TrainingAccountOptions | null = null
+let fetch_error:Error | false = false
+
+try {
+    options = await get_training_accounts(auth_token as string, character_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const seen = (count:number) =>
+    count === 0 ? '' :
+    count === 1 ? t('training.seen_together_once') :
+    t('training.seen_together').replace('{count}', count.toString())
+
+const choices = options ? [
+    ...options.accounts.map(account => ({
+        value: account.number.toString(),
+        label: t('training.account').replace('{number}', account.number.toString()),
+        hint: account.characters.join(', '),
+        room: t('training.room').replace('{size}', (account.size + (account.current ? 1 : 0)).toString()),
+        seen: seen(account.seen_together),
+        disabled: account.full,
+    })),
+    {
+        value: 'new',
+        label: t('training.new_account'),
+        hint: t('training.new_account_hint').replace('{name}', options.name),
+        room: '',
+        seen: '',
+        disabled: false,
+    },
+    {
+        value: 'none',
+        label: t('training.no_account'),
+        hint: t('training.no_account_hint'),
+        room: '',
+        seen: '',
+        disabled: false,
+    },
+] : []
+
+const current = options?.current === null || options?.current === undefined ? 'none' : options.current.toString()
+const conflicts = choices.filter(choice => choice.seen).map(choice => choice.value)
+
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: translatePath(training_url(TRAINING_MOVE_PARTIAL, { character_id })),
+            error: fetch_error,
+            delay: delay,
+            target: '#modal-description',
+        }}
+    />
+    : options &&
+    <form
+        class="[ training-move ]"
+        hx-post={translatePath(training_url(TRAINING_PARTIAL, { mode: 'move', character_id }))}
+        hx-target="#training"
+        hx-swap="outerHTML"
+        x-data={`{ selected: '${current}', conflicts: ${JSON.stringify(conflicts)} }`}
+    >
+        <div class="[ training-move__head ]">
+            <img src={get_player_icon(character_id, 64)} alt="" width="44" height="44" />
+            <div>
+                <h2>{t('training.move_title').replace('{name}', options.name)}</h2>
+                <p class="[ training-muted ]">
+                    {options.current !== null ? t('training.now_on').replace('{number}', options.current.toString()) : t('training.now_unplaced')}
+                </p>
+            </div>
+        </div>
+
+        <fieldset>
+            <legend>{t('training.account').replace(' {number}', '')}</legend>
+            {choices.map(choice =>
+                <label class:list={['[ training-move__choice ]', { disabled: choice.disabled }]} x-bind:class={`{ selected: selected === '${choice.value}' }`}>
+                    <input
+                        type="radio"
+                        name="account"
+                        value={choice.value}
+                        checked={choice.value === current}
+                        disabled={choice.disabled}
+                        x-model="selected"
+                    />
+                    <span class="[ training-move__label ]">
+                        <strong>{choice.label}</strong>
+                        {choice.hint && <small class="[ training-muted ]">{choice.hint}</small>}
+                    </span>
+                    {choice.seen && <span class="[ training-move__seen ]">{choice.seen}</span>}
+                    <span class="[ training-muted ]">{choice.room}</span>
+                </label>
+            )}
+        </fieldset>
+
+        <p role="status" class="[ training-move__notice ]" x-show="conflicts.includes(selected)" x-cloak>
+            {t('training.conflict_notice')}
+        </p>
+
+        <div class="[ training-move__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('training.close')}</Button>
+            <Button type="submit" size="sm" color="fleet-red" modal-action="accept">
+                <span x-text={`conflicts.includes(selected) ? '${t('training.move_anyway')}' : '${t('training.move')}'`}>{t('training.move')}</span>
+            </Button>
+        </div>
+    </form>
+}
+
+<style lang="scss">
+    .training-move {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-s);
+        color: var(--highlight);
+    }
+
+    .training-move__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding-inline-end: var(--space-xl);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        h2 {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .training-muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    fieldset {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    legend {
+        padding-block-end: var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .training-move__choice {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        min-height: 3rem;
+        padding: var(--space-3xs) var(--space-s);
+        border: 1px solid var(--hairline);
+        border-radius: var(--space-3xs);
+        cursor: pointer;
+
+        &.selected {
+            border-color: var(--fleet-yellow);
+        }
+
+        &.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        input {
+            accent-color: var(--fleet-yellow);
+        }
+    }
+
+    .training-move__label {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0;
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-move__seen {
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: end;
+    }
+
+    .training-move__notice {
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--fleet-yellow);
+        border-radius: var(--space-3xs);
+    }
+
+    .training-move__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-xs);
+    }
+</style>

@@ -3174,3 +3174,16 @@ export interface IntelReport {
     raw:                string;
     previous?:          { report_id: string; created_at: string; hostile: number; hostile_delta: number } | null;
 }
+
+// Training tab: ships each character trains for, skill plans, accounts.
+export type TrainingOverview = ApiResponse<'TrainingOverviewResponse'>
+export type TrainingCharacterSummary = ApiResponse<'CharacterSummaryResponse'>
+export type TrainingCharacter = ApiResponse<'TrainingCharacterResponse'>
+export type TrainingShip = ApiResponse<'ShipResponse'>
+export type TrainingShipStatus = ApiResponse<'ShipStatusResponse'>
+export type TrainingGoal = ApiResponse<'GoalResponse'>
+export type TrainingPlan = ApiResponse<'TrainingPlanResponse'>
+export type TrainingShipOption = ApiResponse<'ShipOptionResponse'>
+export type TrainingAccountOptions = ApiResponse<'AccountOptionsResponse'>
+export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
+export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>

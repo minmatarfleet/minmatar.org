@@ -1,0 +1,435 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { TrainingPlan } from '@dtypes/api.minmatar.org'
+import { add_training_goal, get_training_plan, update_training_goal } from '@helpers/api.minmatar.org/training'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import {
+    TRAINING_PARTIAL,
+    TRAINING_PLAN_PARTIAL,
+    skill_level,
+    time_label,
+    training_url,
+} from '@helpers/training'
+
+const params = Astro.url.searchParams
+const character_id = parseInt(params.get('character_id') ?? '0') || 0
+const fitting_id = parseInt(params.get('fitting_id') ?? '0') || 0
+const mode = params.get('mode') ?? ''
+const delay = parseInt(params.get('delay') ?? '0')
+const token = auth_token as string
+
+if (!character_id || !fitting_id)
+    return HTTP_404_Not_Found()
+
+let save_error:string | false = false
+
+// Changes made here also refresh the Training tab behind the dialog.
+if (Astro.request.method === 'POST') {
+    try {
+        if (mode === 'add_goal')
+            await add_training_goal(token, character_id, fitting_id)
+        else if (mode === 'target')
+            await update_training_goal(token, character_id, fitting_id, { target: params.get('target') ?? 'ready' })
+        Astro.response.headers.set('HX-Trigger', 'training-changed')
+    } catch (error) {
+        save_error = (error as Error).message || t('training.save_failed')
+    }
+}
+
+let plan:TrainingPlan | null = null
+let fetch_error:Error | false = false
+
+try {
+    plan = await get_training_plan(token, character_id, fitting_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const plan_url = (params:Record<string, string | number>) =>
+    translatePath(training_url(TRAINING_PLAN_PARTIAL, { fitting_id, ...params }))
+const self_url = plan_url({ character_id })
+
+const finishes = plan ? [
+    { id: 'ready', label: t('training.ready'), hint: t('training.ready_hint'), days: plan.ready_days, color: 'fleet-yellow' },
+    { id: 'optimal', label: t('training.optimal'), hint: t('training.optimal_hint'), days: plan.ready_days + plan.optimal_days, color: 'green' },
+] : []
+
+const copy_label = plan?.queue_skills === 1
+    ? t('training.copy_skill')
+    : t('training.copy_skills').replace('{count}', (plan?.queue_skills ?? 0).toString())
+
+const copy_id = `training-plan-${character_id}-${fitting_id}`
+
+import Button from '@components/blocks/Button.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: self_url,
+            error: fetch_error,
+            delay: delay,
+            target: '#modal-description',
+        }}
+    />
+    : plan &&
+    <div class="[ training-plan ]">
+        <div class="[ training-plan__head ]">
+            <img src={get_item_icon(plan.ship.ship_type_id, 64)} alt="" width="56" height="56" />
+            <div>
+                <h2>{plan.ship.name}</h2>
+                <p class="[ training-muted ]">
+                    {[
+                        plan.ship.capability,
+                        plan.ship.doctrines.join(', '),
+                        plan.flown_by.length > 0 ? t('training.already_flies').replace('{names}', plan.flown_by.join(', ')) : '',
+                    ].filter(Boolean).join(' · ')}
+                </p>
+            </div>
+        </div>
+
+        {save_error && <p role="alert" class="[ training-plan__error ]">{save_error}</p>}
+
+        <fieldset>
+            <legend>{t('training.who_trains')}</legend>
+            <div class="[ training-plan__options ]">
+                {plan.who.map(who =>
+                    <button
+                        type="button"
+                        class:list={['[ training-plan__who ]', { selected: who.character_id === plan.character_id }]}
+                        aria-pressed={who.character_id === plan.character_id ? 'true' : 'false'}
+                        hx-get={plan_url({ character_id: who.character_id })}
+                        hx-target="#modal-description"
+                        hx-swap="innerHTML"
+                    >
+                        <img src={get_player_icon(who.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                        <span class="[ training-plan__who-name ]">
+                            <strong>{who.name}</strong>
+                            <small class="[ training-muted ]">
+                                {who.account !== null ? t('training.account').replace('{number}', who.account.toString()) : t('training.now_unplaced')}
+                            </small>
+                        </span>
+                        {who.ready ?
+                            <span class="[ training-plan__ready ]">{t('training.is_ready')}</span>
+                            :
+                            <span class="[ training-plan__time ]">
+                                <small class="[ training-muted ]">{t('training.ready_in')}</small>
+                                <strong>{time_label(t, who.days)}</strong>
+                            </span>
+                        }
+                    </button>
+                )}
+            </div>
+        </fieldset>
+
+        {plan.is_goal ?
+            <fieldset>
+                <legend>{t('training.train_to')}</legend>
+                <div class="[ training-plan__finishes ]">
+                    {finishes.map(finish =>
+                        <button
+                            type="button"
+                            class:list={['[ training-plan__finish ]', { selected: plan.target === finish.id }]}
+                            aria-pressed={plan.target === finish.id ? 'true' : 'false'}
+                            hx-post={plan_url({ character_id, mode: 'target', target: finish.id })}
+                            hx-target="#modal-description"
+                            hx-swap="innerHTML"
+                        >
+                            <span>
+                                <strong style={`color: var(--${finish.color})`}>{finish.label}</strong>
+                                <small class="[ training-muted ]">{finish.hint}</small>
+                            </span>
+                            <strong>{finish.days > 0 ? time_label(t, finish.days) : t('training.is_ready')}</strong>
+                        </button>
+                    )}
+                </div>
+            </fieldset>
+            :
+            <Button
+                type="button"
+                size="sm"
+                color="fleet-red"
+                class="[ self-start ]"
+                hx-post={plan_url({ character_id, mode: 'add_goal' })}
+                hx-target="#modal-description"
+                hx-swap="innerHTML"
+            >
+                {t('training.train_on').replace('{name}', plan.name)}
+            </Button>
+        }
+
+        <div class="[ training-plan__group ]">
+            <div class="[ training-plan__group-head ]">
+                <strong style="color: var(--fleet-yellow)">{t('training.ready')}</strong>
+                <strong>{plan.ready ? t('training.is_ready') : time_label(t, plan.ready_days)}</strong>
+            </div>
+            {plan.ready_steps.length === 0 ?
+                <p class="[ training-muted ]">{t('training.ready_now')}</p>
+                :
+                <ol>
+                    {plan.ready_steps.map((step, index) =>
+                        <li>
+                            <span class="[ training-muted ]">{index + 1}</span>
+                            <span>{`${step.name} ${skill_level(step.level)}`}</span>
+                            <span class="[ training-muted ]">{time_label(t, step.days)}</span>
+                        </li>
+                    )}
+                </ol>
+            }
+        </div>
+
+        {plan.optimal_steps.length > 0 &&
+            <div class:list={['[ training-plan__group ]', { faded: plan.target !== 'optimal' }]}>
+                <div class="[ training-plan__group-head ]">
+                    <strong style="color: var(--green)">
+                        {plan.target === 'optimal' ? t('training.optimal') : t('training.then_optimal')}
+                    </strong>
+                    <strong>+{time_label(t, plan.optimal_days)}</strong>
+                </div>
+                <ol>
+                    {plan.optimal_steps.map((step, index) =>
+                        <li>
+                            <span class="[ training-muted ]">{plan.ready_steps.length + index + 1}</span>
+                            <span>{`${step.name} ${skill_level(step.level)}`}</span>
+                            <span class="[ training-muted ]">{time_label(t, step.days)}</span>
+                        </li>
+                    )}
+                </ol>
+            </div>
+        }
+
+        {plan.is_goal && plan.up_next.length > 0 &&
+            <div class="[ training-plan__next ]">
+                <span><span class="[ training-muted ]">{t('training.up_next')} </span>{plan.up_next.join(', ')}</span>
+                <button
+                    type="button"
+                    class="[ training-plan__link ]"
+                    modal-action="cancel"
+                    hx-get={translatePath(training_url(TRAINING_PARTIAL, { view: 'character', character_id }))}
+                    hx-target="#training"
+                    hx-swap="outerHTML"
+                >
+                    {t('training.change_order')}
+                </button>
+            </div>
+        }
+
+        <div class="[ training-plan__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('training.close')}</Button>
+            {plan.queue_skills > 0 &&
+                <ClipboardButton
+                    id={copy_id}
+                    text={copy_label}
+                    copied_text={t('training.copied')}
+                    color="fleet-red"
+                    size="sm"
+                >{plan.eve_text}</ClipboardButton>
+            }
+        </div>
+    </div>
+}
+
+<style lang="scss">
+    .training-plan {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-s);
+        color: var(--highlight);
+    }
+
+    .training-plan__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding-inline-end: var(--space-xl);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        h2 {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .training-muted {
+        color: var(--text-muted);
+    }
+
+    .training-plan__error {
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--fleet-red);
+        border-radius: var(--space-3xs);
+    }
+
+    fieldset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    legend {
+        padding-block-end: var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .training-plan__options {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .training-plan__who,
+    .training-plan__finish {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-s);
+        border: 1px solid var(--hairline);
+        border-radius: var(--space-3xs);
+        background: none;
+        color: var(--highlight);
+        text-align: start;
+        cursor: pointer;
+
+        &.selected {
+            border-color: var(--fleet-yellow);
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--hairline-strong);
+        }
+
+        &.selected:hover {
+            border-color: var(--fleet-yellow);
+        }
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .training-plan__who-name,
+    .training-plan__finish > span {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0;
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-plan__time {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        white-space: nowrap;
+    }
+
+    .training-plan__ready {
+        color: var(--green);
+        font-weight: 600;
+    }
+
+    .training-plan__finishes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-3xs);
+    }
+
+    .training-plan__group {
+        display: flex;
+        flex-direction: column;
+
+        &.faded {
+            opacity: 0.6;
+        }
+
+        ol {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            border-top: 1px solid var(--hairline);
+        }
+
+        li {
+            color: var(--highlight);
+            display: grid;
+            grid-template-columns: 2rem minmax(0, 1fr) auto;
+            gap: var(--space-xs);
+            padding-block: var(--space-2xs);
+            border-bottom: 1px solid var(--hairline);
+
+            > :last-child {
+                white-space: nowrap;
+            }
+        }
+    }
+
+    .training-plan__group-head {
+        display: flex;
+        justify-content: space-between;
+        padding-block-end: var(--space-2xs);
+    }
+
+    .training-plan__next {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--hairline);
+        border-radius: var(--space-3xs);
+    }
+
+    .training-plan__link {
+        padding: var(--space-3xs);
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        cursor: pointer;
+    }
+
+    .training-plan__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--space-xs);
+    }
+
+    @media (max-width: 48rem) {
+        .training-plan__finishes {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .training-plan__time small {
+            display: none;
+        }
+    }
+</style>

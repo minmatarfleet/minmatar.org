@@ -1,0 +1,389 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TrainingCharacter, TrainingShip } from '@dtypes/api.minmatar.org'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import {
+    TRAINING_PARTIAL,
+    TRAINING_PLAN_PARTIAL,
+    TRAINING_SHIPS_PARTIAL,
+    short_skill_points,
+    time_label,
+    training_url,
+} from '@helpers/training'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+/**
+ * One character on the Training tab: its ships in training order (one
+ * trains now, the rest wait), fits that are close, and ready ships per role.
+ */
+interface Props {
+    character:          TrainingCharacter;
+    [propName: string]: any;
+}
+
+const {
+    character,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const id = character.character_id
+const partial = (params:Record<string, string | number>) => translatePath(training_url(TRAINING_PARTIAL, params))
+const modal = (base:string, params:Record<string, string | number>) =>
+    `show_modal({ partial: '${translatePath(training_url(base, params))}' })`
+
+const where = (ship:TrainingShip, unlocked:boolean, ready:boolean) => [
+    ship.capability,
+    ship.doctrines.join(', '),
+    unlocked && !ready ? t('training.can_fly') : '',
+].filter(Boolean).join(' · ')
+
+const skills_left = (count:number, target:string) =>
+    target === 'optimal' ? t('training.skills_to_optimal').replace('{count}', count.toString()) :
+    count === 1 ? t('training.skill_to_ready') : t('training.skills_to_ready').replace('{count}', count.toString())
+
+const account_line = character.account === null
+    ? t('training.now_unplaced')
+    : character.account_mates.length > 0
+        ? t('training.account_with')
+            .replace('{number}', character.account.toString())
+            .replace('{names}', character.account_mates.join(', '))
+        : t('training.account').replace('{number}', character.account.toString())
+
+const training_id = character.training?.fitting_id
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ training-character ]', Astro.props.class]} {...attributes}>
+    <div class="[ training-character__head ]">
+        <img src={get_player_icon(id, 128)} alt="" width="80" height="80" />
+        <div>
+            <button
+                type="button"
+                class="[ training-link ]"
+                hx-get={partial({})}
+                hx-target="#training"
+                hx-swap="outerHTML"
+            >
+                {t('training.all_characters')}
+            </button>
+            <h2>{character.name}</h2>
+            <p class="[ training-muted ]">
+                {account_line} · {t('training.sp').replace('{sp}', short_skill_points(character.skill_points))}
+            </p>
+        </div>
+    </div>
+
+    <section aria-labelledby="training-ships">
+        <div class="[ training-character__title ]">
+            <h3 id="training-ships">{t('training.ships_title')}</h3>
+            <button type="button" class="[ training-link ]" x-on:click={modal(TRAINING_SHIPS_PARTIAL, { character_id: id })}>
+                {t('training.add_ship').replace('+ ', '')}
+            </button>
+        </div>
+        <ComponentBlock padding_block="0" padding_inline="var(--space-s)">
+            {character.goals.length === 0 ?
+                <EmptyState title={t('training.no_goals')} hint={t('training.no_goals_hint')} />
+                :
+                <ul class="[ training-ships ]" role="list">
+                    {character.goals.map(goal => {
+                        const now = goal.fitting_id === training_id
+                        return (
+                            <li class="[ training-ship ]">
+                                <img src={get_item_icon(goal.ship_type_id, 64)} alt="" width="44" height="44" loading="lazy" />
+                                <span class="[ training-ship__name ]">
+                                    <strong>{goal.name}</strong>
+                                    <small class="[ training-muted ]">{where(goal, goal.unlocked, goal.ready)}</small>
+                                </span>
+                                <span class="[ training-ship__tag ]">
+                                    {goal.done ?
+                                        <Tag text={t('training.is_ready')} color="green" variant="outline" narrow={true} />
+                                        : now ?
+                                        <Tag text={t('training.training_now')} color="fleet-yellow" variant="outline" narrow={true} />
+                                        :
+                                        <Tag text={t('training.up_next')} variant="outline" narrow={true} />
+                                    }
+                                </span>
+                                <span class="[ training-ship__time ]">
+                                    {!goal.done &&
+                                        <>
+                                            <small class="[ training-muted ]">{skills_left(goal.skills, goal.target)}</small>
+                                            <strong class:list={[{ 'training-ship__time--now': now, 'training-muted': !now && !!character.training }]}>
+                                                {now || !character.training ? time_label(t, goal.days) : t('training.after').replace('{name}', character.training.name)}
+                                            </strong>
+                                        </>
+                                    }
+                                </span>
+                                <span class="[ training-ship__actions ]">
+                                    {now || goal.done ?
+                                        <button type="button" class="[ training-link ]" x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: goal.fitting_id })}>
+                                            {t('training.training_plan')}
+                                        </button>
+                                        :
+                                        <button
+                                            type="button"
+                                            class="[ training-link ]"
+                                            hx-post={partial({ mode: 'first', view: 'character', character_id: id, fitting_id: goal.fitting_id })}
+                                            hx-target="#training"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('training.train_first')}
+                                        </button>
+                                    }
+                                    <button
+                                        type="button"
+                                        class="[ training-link training-link--muted ]"
+                                        hx-post={partial({ mode: 'remove_goal', view: 'character', character_id: id, fitting_id: goal.fitting_id })}
+                                        hx-target="#training"
+                                        hx-swap="outerHTML"
+                                        hx-confirm={t('training.remove_confirm').replace('{name}', goal.name)}
+                                    >
+                                        {t('training.remove')}
+                                    </button>
+                                </span>
+                            </li>
+                        )
+                    })}
+                </ul>
+            }
+        </ComponentBlock>
+    </section>
+
+    {character.also_close.length > 0 &&
+        <section aria-labelledby="training-close">
+            <h3 id="training-close">{t('training.also_close')}</h3>
+            <ComponentBlock padding_block="0" padding_inline="var(--space-s)">
+                <ul class="[ training-ships ]" role="list">
+                    {character.also_close.map(ship =>
+                        <li class="[ training-ship training-ship--close ]">
+                            <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                            <span class="[ training-ship__name ]">
+                                <strong>{ship.name}</strong>
+                                <small class="[ training-muted ]">{where(ship, false, false)}</small>
+                            </span>
+                            <strong class="[ training-ship__time ]">{time_label(t, ship.days)}</strong>
+                            <span class="[ training-ship__actions ]">
+                                <button
+                                    type="button"
+                                    class="[ training-link ]"
+                                    hx-post={partial({ mode: 'add_goal', view: 'character', character_id: id, fitting_id: ship.fitting_id })}
+                                    hx-target="#training"
+                                    hx-swap="outerHTML"
+                                >
+                                    {t('training.add')}
+                                </button>
+                            </span>
+                        </li>
+                    )}
+                </ul>
+            </ComponentBlock>
+        </section>
+    }
+
+    <section aria-labelledby="training-roles">
+        <h3 id="training-roles">{t('training.ready_by_role')}</h3>
+        <ComponentBlock padding_block="0" padding_inline="0">
+            <table class="[ training-roles ]">
+                <thead>
+                    <tr>
+                        <th scope="col">{t('training.col_role')}</th>
+                        <th scope="col">{t('training.col_ready_ships')}</th>
+                        <th scope="col">{t('training.col_fleets')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {character.roles.map(role =>
+                        <tr>
+                            <th scope="row">{role.capability}</th>
+                            <td>
+                                <span class="[ training-roles__ships ]">
+                                    {role.ready.map(ship =>
+                                        <span class="[ training-chip ]">
+                                            <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                                            {ship.name}
+                                        </span>
+                                    )}
+                                    {role.ready.length === 0 && <span class="[ training-muted ]">{t('training.none_ready')}</span>}
+                                </span>
+                            </td>
+                            <td>{role.fleets_365d}</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </ComponentBlock>
+    </section>
+</Flexblock>
+
+<style lang="scss">
+    .training-character__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        h2 {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+        }
+    }
+
+    .training-character__title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-s);
+    }
+
+    h3 {
+        margin-block-end: var(--space-xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--fleet-yellow);
+    }
+
+    .training-muted {
+        color: var(--text-muted);
+    }
+
+    .training-link {
+        padding: var(--space-3xs);
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        cursor: pointer;
+    }
+
+    .training-link--muted {
+        color: var(--text-muted);
+    }
+
+    .training-ship {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto 13rem auto;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-xs);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .training-ship--close {
+        grid-template-columns: auto minmax(0, 1fr) 13rem auto;
+    }
+
+    .training-ship__name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-ship__time {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        text-align: end;
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-ship__time--now {
+        color: var(--fleet-yellow);
+    }
+
+    .training-ship__actions {
+        display: flex;
+        gap: var(--space-xs);
+        justify-content: flex-end;
+    }
+
+    .training-roles {
+        width: 100%;
+        border-collapse: collapse;
+
+        th,
+        td {
+            padding: var(--space-xs) var(--space-s);
+            text-align: start;
+            vertical-align: middle;
+        }
+
+        thead th {
+            font-size: var(--step--2);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        th:last-child,
+        td:last-child {
+            text-align: end;
+        }
+
+        tbody tr {
+            border-top: 1px solid var(--hairline);
+        }
+    }
+
+    .training-roles__ships {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .training-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .training-ship {
+            grid-template-columns: auto minmax(0, 1fr) auto;
+        }
+
+        .training-ship__tag,
+        .training-ship__actions {
+            grid-column: 2 / -1;
+            justify-content: flex-start;
+        }
+
+        .training-ship--close .training-ship__actions {
+            grid-column: auto;
+        }
+    }
+</style>

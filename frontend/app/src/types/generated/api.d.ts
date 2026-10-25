@@ -6495,6 +6495,144 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your characters: ships they fly, the ship each trains for, ready ships per role */
+        get: operations["capabilities_endpoints_get_overview_get_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of your characters: its ships, the ones close, ready ships per role */
+        get: operations["capabilities_endpoints_get_character_get_character"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Mark one of your characters as not for fleets (or for fleets again) */
+        patch: operations["capabilities_endpoints_patch_character_patch_character"];
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put a character on another account, a new one, or none */
+        put: operations["capabilities_endpoints_put_account_put_account"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The accounts a character can move to */
+        get: operations["capabilities_endpoints_get_accounts_get_accounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a doctrine fit to a character's training queue */
+        post: operations["capabilities_endpoints_post_goal_post_goal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}/goals/{fitting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Take a ship off a character's training queue */
+        delete: operations["capabilities_endpoints_delete_goal_delete_goal"];
+        options?: never;
+        head?: never;
+        /** Train a ship first, or change how far to train it */
+        patch: operations["capabilities_endpoints_patch_goal_patch_goal"];
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}/plans/{fitting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The skills a character needs for one doctrine fit, in training order */
+        get: operations["capabilities_endpoints_get_plan_get_plan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/characters/{character_id}/ships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Doctrine fits a character can train for, those in the most doctrines first */
+        get: operations["capabilities_endpoints_get_ships_get_ships"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/": {
         parameters: {
             query?: never;
@@ -7386,6 +7524,49 @@ export interface components {
             /** Character Ids */
             character_ids: number[];
         };
+        /** AccountMoveRequest */
+        AccountMoveRequest: {
+            /** Account */
+            account?: number | null;
+            /**
+             * New Account
+             * @default false
+             */
+            new_account?: boolean;
+        };
+        /** AccountOptionResponse */
+        AccountOptionResponse: {
+            /** Characters */
+            characters: string[];
+            /** Current */
+            current: boolean;
+            /** Full */
+            full: boolean;
+            /** Number */
+            number: number;
+            /** Seen Together */
+            seen_together: number;
+            /** Size */
+            size: number;
+        };
+        /** AccountOptionsResponse */
+        AccountOptionsResponse: {
+            /** Accounts */
+            accounts: components["schemas"]["AccountOptionResponse"][];
+            /** Character Id */
+            character_id: number;
+            /** Current */
+            current: number | null;
+            /** Name */
+            name: string;
+        };
+        /** AccountResponse */
+        AccountResponse: {
+            /** Characters */
+            characters: components["schemas"]["CharacterSummaryResponse"][];
+            /** Number */
+            number: number;
+        };
         /** AckDeliveryRequest */
         AckDeliveryRequest: {
             /** Discord User Id */
@@ -8016,6 +8197,28 @@ export interface components {
             entity_type: string;
             /** Primary Character Id */
             primary_character_id?: number | null;
+        };
+        /** BringRowResponse */
+        BringRowResponse: {
+            /** Capability */
+            capability: string;
+            /** Ships */
+            ships: components["schemas"]["BringShipResponse"][];
+        };
+        /** BringShipResponse */
+        BringShipResponse: {
+            /** Accounts */
+            accounts: number;
+            /** Capability */
+            capability: string;
+            /** Doctrines */
+            doctrines: string[];
+            /** Fitting Id */
+            fitting_id: number;
+            /** Name */
+            name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
         };
         /**
          * BuildPackResponse
@@ -9330,6 +9533,11 @@ export interface components {
             /** Ship Type Ids */
             ship_type_ids: number[];
         };
+        /** CharacterPatchRequest */
+        CharacterPatchRequest: {
+            /** Not For Fleets */
+            not_for_fleets: boolean;
+        };
         /**
          * CharacterProducerRef
          * @description Character producing this product type (industry jobs, planetary, and/or mining; total_value_isk aggregated).
@@ -9423,6 +9631,34 @@ export interface components {
             name: string;
             /** Progress */
             progress: number;
+        };
+        /** CharacterSummaryResponse */
+        CharacterSummaryResponse: {
+            /** Account */
+            account: number | null;
+            /** All Done */
+            all_done: boolean;
+            /** Character Id */
+            character_id: number;
+            /** Goals */
+            goals: components["schemas"]["GoalResponse"][];
+            /** Goals Ready */
+            goals_ready: number;
+            /** Name */
+            name: string;
+            /** Not For Fleets */
+            not_for_fleets: boolean;
+            /** Nothing Close */
+            nothing_close: boolean;
+            /** Queued */
+            queued: string[];
+            /** Ready */
+            ready: components["schemas"]["ShipResponse"][];
+            /** Skill Points */
+            skill_points: number;
+            /** Suggestions */
+            suggestions: components["schemas"]["ShipStatusResponse"][];
+            training: components["schemas"]["GoalResponse"] | null;
         };
         /** CharacterTagResponse */
         CharacterTagResponse: {
@@ -14620,6 +14856,46 @@ export interface components {
             community: components["schemas"]["GivebackCommunitySchema"];
             personal: components["schemas"]["GivebackPersonalSchema"];
         };
+        /** GoalPatchRequest */
+        GoalPatchRequest: {
+            /**
+             * First
+             * @default false
+             */
+            first?: boolean;
+            /** Target */
+            target?: string | null;
+        };
+        /** GoalRequest */
+        GoalRequest: {
+            /** Fitting Id */
+            fitting_id: number;
+        };
+        /** GoalResponse */
+        GoalResponse: {
+            /** Capability */
+            capability: string;
+            /** Days */
+            days: number;
+            /** Doctrines */
+            doctrines: string[];
+            /** Done */
+            done: boolean;
+            /** Fitting Id */
+            fitting_id: number;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** Skills */
+            skills: number;
+            /** Target */
+            target: string;
+            /** Unlocked */
+            unlocked: boolean;
+        };
         /** GroupStat */
         GroupStat: {
             /** Approved */
@@ -17808,6 +18084,21 @@ export interface components {
             /** Persona */
             persona: string;
         };
+        /** PlanCharacterResponse */
+        PlanCharacterResponse: {
+            /** Account */
+            account: number | null;
+            /** Character Id */
+            character_id: number;
+            /** Days */
+            days: number;
+            /** Is Goal */
+            is_goal: boolean;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+        };
         /** PlanCharacterSkillsSchema */
         PlanCharacterSkillsSchema: {
             /** Character Id */
@@ -18168,6 +18459,17 @@ export interface components {
             total_duration_seconds: number;
             /** Total Job Cost Isk */
             total_job_cost_isk: number;
+        };
+        /** PlanStepResponse */
+        PlanStepResponse: {
+            /** Days */
+            days: number;
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+            /** Skill Id */
+            skill_id: number;
         };
         /** PlanStockAppliedSchema */
         PlanStockAppliedSchema: {
@@ -19404,6 +19706,15 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** RoleResponse */
+        RoleResponse: {
+            /** Capability */
+            capability: string;
+            /** Fleets 365D */
+            fleets_365d: number;
+            /** Ready */
+            ready: components["schemas"]["ShipResponse"][];
+        };
         /** Roster */
         Roster: {
             /**
@@ -19750,6 +20061,33 @@ export interface components {
             /** Target Id */
             target_id: number;
         };
+        /** ShipOptionResponse */
+        ShipOptionResponse: {
+            /** Added */
+            added: boolean;
+            /** Capability */
+            capability: string;
+            /** Days */
+            days: number;
+            /** Doctrines */
+            doctrines: string[];
+            /** Done */
+            done: boolean;
+            /** Fitting Id */
+            fitting_id: number;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** Skills */
+            skills: number;
+            /** Strategic */
+            strategic: boolean;
+            /** Unlocked */
+            unlocked: boolean;
+        };
         /** ShipReimbursementProgramAmountResponse */
         ShipReimbursementProgramAmountResponse: {
             /** Created At */
@@ -19769,6 +20107,19 @@ export interface components {
             eve_type: components["schemas"]["EveTypeResponse"];
             /** Id */
             id: number;
+        };
+        /** ShipResponse */
+        ShipResponse: {
+            /** Capability */
+            capability: string;
+            /** Doctrines */
+            doctrines: string[];
+            /** Fitting Id */
+            fitting_id: number;
+            /** Name */
+            name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
         };
         /** ShipSchema */
         ShipSchema: {
@@ -19795,6 +20146,29 @@ export interface components {
             fleet_fitting_id?: number | null;
             /** Ship Type Id */
             ship_type_id?: number | null;
+        };
+        /** ShipStatusResponse */
+        ShipStatusResponse: {
+            /** Capability */
+            capability: string;
+            /** Days */
+            days: number;
+            /** Doctrines */
+            doctrines: string[];
+            /** Done */
+            done: boolean;
+            /** Fitting Id */
+            fitting_id: number;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** Skills */
+            skills: number;
+            /** Unlocked */
+            unlocked: boolean;
         };
         /**
          * ShipSuggestionResponse
@@ -20410,6 +20784,88 @@ export interface components {
         TrackedVoiceChannelsResponse: {
             /** Channels */
             channels: components["schemas"]["TrackedVoiceChannelResponse"][];
+        };
+        /** TrainingChangeResponse */
+        TrainingChangeResponse: {
+            /** Ok */
+            ok: boolean;
+        };
+        /** TrainingCharacterResponse */
+        TrainingCharacterResponse: {
+            /** Account */
+            account: number | null;
+            /** Account Mates */
+            account_mates: string[];
+            /** All Done */
+            all_done: boolean;
+            /** Also Close */
+            also_close: components["schemas"]["ShipStatusResponse"][];
+            /** Character Id */
+            character_id: number;
+            /** Goals */
+            goals: components["schemas"]["GoalResponse"][];
+            /** Goals Ready */
+            goals_ready: number;
+            /** Name */
+            name: string;
+            /** Not For Fleets */
+            not_for_fleets: boolean;
+            /** Nothing Close */
+            nothing_close: boolean;
+            /** Queued */
+            queued: string[];
+            /** Ready */
+            ready: components["schemas"]["ShipResponse"][];
+            /** Roles */
+            roles: components["schemas"]["RoleResponse"][];
+            /** Skill Points */
+            skill_points: number;
+            /** Suggestions */
+            suggestions: components["schemas"]["ShipStatusResponse"][];
+            training: components["schemas"]["GoalResponse"] | null;
+        };
+        /** TrainingOverviewResponse */
+        TrainingOverviewResponse: {
+            /** Accounts */
+            accounts: components["schemas"]["AccountResponse"][];
+            /** Bring */
+            bring: components["schemas"]["BringRowResponse"][];
+            /** Unplaced */
+            unplaced: components["schemas"]["CharacterSummaryResponse"][];
+        };
+        /** TrainingPlanResponse */
+        TrainingPlanResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Eve Text */
+            eve_text: string;
+            /** Flown By */
+            flown_by: string[];
+            /** Is Goal */
+            is_goal: boolean;
+            /** Is Training */
+            is_training: boolean;
+            /** Name */
+            name: string;
+            /** Optimal Days */
+            optimal_days: number;
+            /** Optimal Steps */
+            optimal_steps: components["schemas"]["PlanStepResponse"][];
+            /** Queue Skills */
+            queue_skills: number;
+            /** Ready */
+            ready: boolean;
+            /** Ready Days */
+            ready_days: number;
+            /** Ready Steps */
+            ready_steps: components["schemas"]["PlanStepResponse"][];
+            ship: components["schemas"]["ShipResponse"];
+            /** Target */
+            target: string;
+            /** Up Next */
+            up_next: string[];
+            /** Who */
+            who: components["schemas"]["PlanCharacterResponse"][];
         };
         /** TransferCorporationApplicationRequest */
         TransferCorporationApplicationRequest: {
@@ -36763,6 +37219,333 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_overview_get_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingOverviewResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_character_get_character: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingCharacterResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_patch_character_patch_character: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingChangeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_put_account_put_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountMoveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingChangeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_accounts_get_accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOptionsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_post_goal_post_goal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingChangeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_delete_goal_delete_goal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingChangeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_patch_goal_patch_goal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingChangeResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_plan_get_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingPlanResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_ships_get_ships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipOptionResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

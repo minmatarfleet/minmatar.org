@@ -224,13 +224,20 @@ class CharacterAccount(models.Model):
 
 
 class CharacterAccountMember(models.Model):
+    """Where a character sits. A pilot can also say "not on an account"
+    (no account): inference then leaves the character alone."""
+
     character = models.OneToOneField(
         EveCharacter,
         on_delete=models.CASCADE,
         related_name="account_membership",
     )
     account = models.ForeignKey(
-        CharacterAccount, on_delete=models.CASCADE, related_name="members"
+        CharacterAccount,
+        on_delete=models.CASCADE,
+        related_name="members",
+        null=True,
+        blank=True,
     )
     source = models.CharField(
         max_length=16, default=CharacterAccount.SOURCE_INFERRED
@@ -263,3 +270,73 @@ class CharacterAccountLink(models.Model):
                 name="unique_character_account_link",
             )
         ]
+
+
+class CapabilitySkill(models.Model):
+    """Rank and prerequisites of every skill, from the current SDE build.
+
+    Training plans read this in a request instead of loading the SDE.
+    """
+
+    skill_id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=255)
+    rank = models.FloatField(default=1)
+    prerequisites = models.JSONField(
+        default=dict, blank=True, help_text="{skill id: level}"
+    )
+    sde_build = models.IntegerField(default=0)
+
+    def __str__(self):
+        return str(self.name)
+
+
+class CharacterShipGoal(models.Model):
+    """A doctrine fit a pilot is training one character for.
+
+    One ship trains at a time: the first goal by position that isn't
+    ready is the one in training, the rest wait in order.
+    """
+
+    TARGET_READY = "ready"
+    TARGET_OPTIMAL = "optimal"
+    TARGET_CHOICES = [
+        (TARGET_READY, "Ready"),
+        (TARGET_OPTIMAL, "Optimal"),
+    ]
+
+    character = models.ForeignKey(
+        EveCharacter, on_delete=models.CASCADE, related_name="ship_goals"
+    )
+    fitting = models.ForeignKey(
+        EveFitting, on_delete=models.CASCADE, related_name="+"
+    )
+    position = models.IntegerField(default=0)
+    target = models.CharField(
+        max_length=16, choices=TARGET_CHOICES, default=TARGET_READY
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["character", "position", "pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["character", "fitting"],
+                name="unique_character_ship_goal",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.character} → {self.fitting.name}"
+
+
+class CharacterTrainingSettings(models.Model):
+    character = models.OneToOneField(
+        EveCharacter,
+        on_delete=models.CASCADE,
+        related_name="training_settings",
+    )
+    not_for_fleets = models.BooleanField(
+        default=False,
+        help_text="A cyno, market or hauling alt: no suggestions, left out of counts.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)

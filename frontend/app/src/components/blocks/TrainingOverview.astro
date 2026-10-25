@@ -1,0 +1,228 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TrainingOverview } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TrainingCharacterRow from '@components/blocks/TrainingCharacterRow.astro'
+
+/**
+ * The Training tab: ready ships per role across every account, then each
+ * character with the one ship it trains for.
+ */
+interface Props {
+    overview:           TrainingOverview;
+    [propName: string]: any;
+}
+
+const {
+    overview,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const character_count = overview.accounts.reduce((total, account) => total + account.characters.length, 0) + overview.unplaced.length
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ training-overview ]', Astro.props.class]} {...attributes}>
+    <section class="[ training-section ]" aria-labelledby="training-bring">
+        <h2 id="training-bring">{t('training.bring_title')}</h2>
+        <ComponentBlock padding_block="var(--space-3xs)" padding_inline="var(--space-s)">
+            <ul class="[ training-bring ]" role="list">
+                {overview.bring.map(row =>
+                    <li class="[ training-bring__row ]">
+                        <span class="[ training-bring__role ]">{row.capability}</span>
+                        <span class="[ training-bring__ships ]">
+                            {row.ships.map(ship =>
+                                <span class="[ training-chip ]" title={ship.doctrines.join(', ')}>
+                                    <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                                    <span>{ship.name}</span>
+                                    <span class="[ training-muted ]">×{ship.accounts}</span>
+                                </span>
+                            )}
+                            {row.ships.length === 0 &&
+                                <span class="[ training-muted ]">{t('training.none_ready')}</span>
+                            }
+                        </span>
+                    </li>
+                )}
+            </ul>
+        </ComponentBlock>
+    </section>
+
+    <section class="[ training-section ]" aria-labelledby="training-characters">
+        <h2 id="training-characters">{t('training.characters_title')}</h2>
+        <ComponentBlock padding_block="0" padding_inline="0">
+            {character_count === 0 ?
+                <EmptyState title={t('training.empty')} hint={t('training.empty_hint')} />
+                :
+                <div class="[ training-list ]">
+                    <div class="[ training-list__head ]" aria-hidden="true">
+                        <span>{t('training.col_character')}</span>
+                        <span>{t('training.col_training')}</span>
+                        <span>{t('training.col_ready')}</span>
+                        <span></span>
+                    </div>
+                    {overview.accounts.map(account =>
+                        <div class="[ training-list__account ]">
+                            <h3>{t('training.account').replace('{number}', account.number.toString())}</h3>
+                            {account.characters.map(character =>
+                                <TrainingCharacterRow character={character} />
+                            )}
+                        </div>
+                    )}
+                    {overview.accounts.length === 0 &&
+                        <div class="[ training-list__account ]">
+                            {overview.unplaced.map(character =>
+                                <TrainingCharacterRow character={character} />
+                            )}
+                        </div>
+                    }
+                    {overview.accounts.length > 0 && overview.unplaced.length > 0 &&
+                        <div class="[ training-list__account ]" x-data="{ open: false }">
+                            <div class="[ training-list__unplaced ]">
+                                <h3>
+                                    {t('training.not_on_account')} · {t('training.characters_count').replace('{count}', overview.unplaced.length.toString())}
+                                </h3>
+                                <button
+                                    type="button"
+                                    class="[ training-link ]"
+                                    x-on:click="open = !open"
+                                    x-bind:aria-expanded="open.toString()"
+                                    x-text={`open ? '${t('training.hide')}' : '${t('training.show')}'`}
+                                >
+                                    {t('training.show')}
+                                </button>
+                            </div>
+                            <div x-show="open" x-cloak>
+                                {overview.unplaced.map(character =>
+                                    <TrainingCharacterRow character={character} />
+                                )}
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </ComponentBlock>
+    </section>
+</Flexblock>
+
+<style lang="scss">
+    .training-overview {
+        --training-columns: minmax(11rem, 15rem) minmax(0, 1fr) 17rem 7rem;
+    }
+
+    h2 {
+        margin-block-end: var(--space-xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--fleet-yellow);
+    }
+
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+
+    .training-muted {
+        color: var(--text-muted);
+    }
+
+    .training-bring__row {
+        display: grid;
+        grid-template-columns: 8rem minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+    }
+
+    .training-bring__role {
+        font-weight: 600;
+    }
+
+    .training-bring__ships {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .training-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .training-list__head {
+        display: grid;
+        grid-template-columns: var(--training-columns);
+        gap: var(--space-m);
+        padding: var(--space-xs) var(--space-s);
+        border-bottom: 1px solid var(--hairline);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .training-list__account {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+    }
+
+    .training-list__unplaced {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+    }
+
+    .training-link {
+        padding: var(--space-3xs);
+        background: none;
+        border: 0;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+        cursor: pointer;
+    }
+
+    @media (max-width: 48rem) {
+        .training-list__head {
+            display: none;
+        }
+
+        .training-bring__row {
+            grid-template-columns: minmax(0, 1fr);
+            gap: var(--space-3xs);
+        }
+    }
+</style>

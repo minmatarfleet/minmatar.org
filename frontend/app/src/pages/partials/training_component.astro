@@ -1,0 +1,112 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { TrainingCharacter, TrainingOverview as TrainingOverviewData } from '@dtypes/api.minmatar.org'
+import {
+    add_training_goal,
+    get_training_character,
+    get_training_overview,
+    move_training_character,
+    remove_training_goal,
+    set_not_for_fleets,
+    update_training_goal,
+} from '@helpers/api.minmatar.org/training'
+import { TRAINING_PARTIAL, training_url, type TrainingMode } from '@helpers/training'
+
+const params = Astro.url.searchParams
+const mode = (params.get('mode') ?? '') as TrainingMode | ''
+const character_id = parseInt(params.get('character_id') ?? '0') || 0
+const fitting_id = parseInt(params.get('fitting_id') ?? '0') || 0
+const view = params.get('view') === 'character' && character_id ? 'character' : 'overview'
+const delay = parseInt(params.get('delay') ?? '0')
+const token = auth_token as string
+
+let save_error:string | false = false
+
+if (Astro.request.method === 'POST' && mode && character_id) {
+    const form = await Astro.request.formData()
+    try {
+        if (mode === 'add_goal')
+            await add_training_goal(token, character_id, fitting_id)
+        else if (mode === 'remove_goal')
+            await remove_training_goal(token, character_id, fitting_id)
+        else if (mode === 'first')
+            await update_training_goal(token, character_id, fitting_id, { first: true })
+        else if (mode === 'target')
+            await update_training_goal(token, character_id, fitting_id, { target: String(form.get('target') ?? 'ready') })
+        else if (mode === 'not_for_fleets' || mode === 'for_fleets')
+            await set_not_for_fleets(token, character_id, mode === 'not_for_fleets')
+        else if (mode === 'move') {
+            const account = String(form.get('account') ?? '')
+            await move_training_character(token, character_id, {
+                account: account === 'new' || account === 'none' ? null : parseInt(account),
+                new_account: account === 'new',
+            })
+        }
+    } catch (error) {
+        console.log(`Training ${mode} failed: ${(error as Error).message}`)
+        save_error = (error as Error).message || t('training.save_failed')
+    }
+}
+
+let overview:TrainingOverviewData | null = null
+let character:TrainingCharacter | null = null
+let fetch_error:Error | false = false
+
+try {
+    if (view === 'character')
+        character = await get_training_character(token, character_id)
+    else
+        overview = await get_training_overview(token)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const refetch_url = translatePath(training_url(TRAINING_PARTIAL, view === 'character' ? { view, character_id } : {}))
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TrainingOverview from '@components/blocks/TrainingOverview.astro'
+import TrainingCharacterView from '@components/blocks/TrainingCharacterView.astro'
+---
+
+<div
+    id="training"
+    class="[ training ]"
+    hx-get={refetch_url}
+    hx-trigger="training-changed from:body"
+    hx-swap="outerHTML"
+>
+    {save_error && <p role="alert" class="[ training__error ]">{save_error}</p>}
+    {fetch_error ?
+        <ErrorRefetch
+            args={{
+                partial: refetch_url,
+                error: fetch_error,
+                delay: delay,
+                target: '#training',
+            }}
+        />
+        : character ?
+        <TrainingCharacterView character={character} />
+        : overview &&
+        <TrainingOverview overview={overview} />
+    }
+</div>
+
+<style lang="scss">
+    .training__error {
+        margin-block-end: var(--space-s);
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--fleet-red);
+        border-radius: var(--space-3xs);
+    }
+</style>

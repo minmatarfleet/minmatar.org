@@ -59,6 +59,7 @@ from reddit.router import router as reddit_router
 from recruitment.router import router as recruitment_router
 from surveys.router import router as surveys_router
 from campaigns.router import router as campaigns_router
+from capabilities.endpoints import router as training_router
 from intel.router import router as intel_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
@@ -96,6 +97,7 @@ api.add_router("reddit", reddit_router)
 api.add_router("recruitment", recruitment_router)
 api.add_router("surveys", surveys_router)
 api.add_router("campaigns", campaigns_router)
+api.add_router("training", training_router)
 api.add_router("intel", intel_router)
 
 

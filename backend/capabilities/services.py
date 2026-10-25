@@ -29,6 +29,7 @@ from capabilities.engine.requirements import (
     compute,
 )
 from capabilities.models import (
+    CapabilitySkill,
     CharacterAccount,
     CharacterAccountLink,
     CharacterAccountMember,
@@ -176,7 +177,35 @@ def store_snapshot(snapshot: dict) -> SdeSnapshot:
         )[:KEEP_SNAPSHOTS]
         SdeSnapshot.objects.exclude(pk__in=list(keep)).delete()
     _SDE_CACHE.clear()
+    refresh_skill_info()
     return row
+
+
+def refresh_skill_info() -> int:
+    """Copy skill ranks and prerequisites of the current build for plans."""
+    sde = current_sde()
+    if sde is None:
+        return 0
+    if (
+        CapabilitySkill.objects.filter(sde_build=sde.build).exists()
+        and not CapabilitySkill.objects.exclude(sde_build=sde.build).exists()
+    ):
+        return 0
+    rows = [
+        CapabilitySkill(
+            skill_id=tid,
+            name=sde.name(tid),
+            rank=sde.skill_rank(tid),
+            prerequisites=sde.required_skills(tid),
+            sde_build=sde.build,
+        )
+        for tid in sde.types
+        if sde.category(tid) == sde_mod.CAT_SKILL
+    ]
+    with transaction.atomic():
+        CapabilitySkill.objects.all().delete()
+        CapabilitySkill.objects.bulk_create(rows, batch_size=1000)
+    return len(rows)
 
 
 def load_snapshot_from_path(path: str | Path) -> SdeSnapshot:
@@ -895,22 +924,26 @@ def refresh_account_links() -> int:
 
 
 def group_accounts(
-    characters: list[int], links: dict[frozenset, int]
+    characters: list[int],
+    links: dict[frozenset, int],
+    seeds: list[list[int]] | None = None,
 ) -> list[list[int]]:
     """Assign characters to accounts: linked characters never share one.
 
     The most-linked characters come first, so the player's core characters
     (the largest group seen online together) each open their own account.
     A character joins the first account it has no link with and that has
-    room; characters without links stay unassigned.
+    room; characters without links stay unassigned. Seeds are accounts a
+    pilot already filled; they come first and keep their characters.
     """
     degree = defaultdict(int)
     for pair, count in links.items():
         for c in pair:
             degree[c] += count
-    accounts: list[list[int]] = []
+    accounts: list[list[int]] = [list(seed) for seed in seeds or []]
+    placed = {c for account in accounts for c in account}
     for c in sorted(characters, key=lambda x: (-degree[x], x)):
-        if not degree[c]:
+        if not degree[c] or c in placed:
             continue
         for account in accounts:
             if len(account) < CHARACTERS_PER_ACCOUNT and not any(
@@ -924,37 +957,69 @@ def group_accounts(
 
 
 def infer_accounts() -> int:
-    """Rebuild inferred accounts; users who placed characters themselves keep theirs."""
+    """Rebuild inferred placements around the ones pilots made themselves.
+
+    A character a pilot moved (or left off every account) stays put; the
+    rest are placed again from the fleet links.
+    """
     links: dict[int, dict[frozenset, int]] = defaultdict(dict)
     for user, a, b, n in CharacterAccountLink.objects.values_list(
         "user_id", "character_a_id", "character_b_id", "fleets_together"
     ):
         links[user][frozenset((a, b))] = n
-    pilot_users = set(
-        CharacterAccount.objects.filter(
-            source=CharacterAccount.SOURCE_PILOT
-        ).values_list("user_id", flat=True)
-    )
     count = 0
     with transaction.atomic():
-        CharacterAccount.objects.filter(
+        CharacterAccountMember.objects.filter(
             source=CharacterAccount.SOURCE_INFERRED
-        ).exclude(user_id__in=pilot_users).delete()
-        for user, user_links in links.items():
-            if user in pilot_users:
-                continue
-            characters = sorted({c for pair in user_links for c in pair})
-            for number, members in enumerate(
-                group_accounts(characters, user_links), start=1
-            ):
-                account = CharacterAccount.objects.create(
-                    user_id=user, number=number
-                )
+        ).delete()
+        CharacterAccount.objects.filter(members__isnull=True).delete()
+        kept: dict[int, dict[int, list[int]]] = defaultdict(dict)
+        pinned: dict[int, set[int]] = defaultdict(set)
+        for user, character, account, number in (
+            CharacterAccountMember.objects.filter(
+                source=CharacterAccount.SOURCE_PILOT
+            )
+            .order_by("account__number")
+            .values_list(
+                "character__user_id",
+                "character_id",
+                "account_id",
+                "account__number",
+            )
+        ):
+            pinned[user].add(character)
+            if account is not None:
+                kept[user].setdefault(number, [account]).append(character)
+        for user in set(links) | set(kept):
+            user_links = links.get(user, {})
+            seeds = [members[1:] for _, members in sorted(kept[user].items())]
+            seed_ids = [
+                members[0] for _, members in sorted(kept[user].items())
+            ]
+            characters = sorted(
+                {c for pair in user_links for c in pair} - pinned[user]
+            )
+            accounts = group_accounts(characters, user_links, seeds)
+            numbers = iter(range(1, 1000))
+            used = set(kept[user])
+            for index, members in enumerate(accounts):
+                if index < len(seeds):
+                    account_id = seed_ids[index]
+                    new = members[len(seeds[index]) :]
+                else:
+                    number = next(n for n in numbers if n not in used)
+                    used.add(number)
+                    account_id = CharacterAccount.objects.create(
+                        user_id=user, number=number
+                    ).pk
+                    new = members
+                    count += 1
                 CharacterAccountMember.objects.bulk_create(
                     [
-                        CharacterAccountMember(character_id=c, account=account)
-                        for c in members
+                        CharacterAccountMember(
+                            character_id=c, account_id=account_id
+                        )
+                        for c in new
                     ]
                 )
-                count += 1
     return count
