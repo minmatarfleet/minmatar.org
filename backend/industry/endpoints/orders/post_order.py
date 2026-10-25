@@ -22,6 +22,7 @@ from industry.helpers.order_submit import (
     validate_owned_delivery_entity,
     validate_produced_catalog_items,
 )
+from industry.helpers import order_pricing
 from industry.helpers.public_short_code import (
     pick_unique_public_short_code_among_actives,
 )
@@ -208,6 +209,25 @@ def _enqueue_post_create_tasks(order_id: int, user_id: int) -> None:
         )
 
 
+def _line_target_unit_price(item):
+    """Ask price from the line's price basis, or None to keep Jita fallback."""
+    if item.price_basis is None:
+        return None
+    try:
+        pricing = order_pricing.line_pricing(item.eve_type_id, item.quantity)
+    except Exception:  # noqa: BLE001 — an unpriced line still gets ordered
+        logger.exception(
+            "Order pricing failed for type %s x%s",
+            item.eve_type_id,
+            item.quantity,
+        )
+        return None
+    price, _, _ = order_pricing.resolve_unit_price(
+        pricing, item.price_basis, item.margin_percent
+    )
+    return price if price > 0 else None
+
+
 def post_order(request, payload: CreateOrderRequest):
     context, err = _resolve_create_context(request, payload)
     if err:
@@ -231,6 +251,7 @@ def post_order(request, payload: CreateOrderRequest):
             eve_type=eve_types[item.eve_type_id],
             quantity=item.quantity,
             self_assign_maximum=item.self_assign_maximum,
+            target_unit_price=_line_target_unit_price(item),
         )
     _enqueue_post_create_tasks(order.pk, request.user.id)
     return 201, CreateOrderResponse(

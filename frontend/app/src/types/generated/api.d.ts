@@ -4002,6 +4002,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/industry/orders/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Amamake build cost and Jita prices for an order line */
+        get: operations["industry_endpoints_orders_get_order_line_pricing_get_order_line_pricing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/industry/orders/profit-summary": {
         parameters: {
             query?: never;
@@ -17862,6 +17879,10 @@ export interface components {
         OrderItemInput: {
             /** Eve Type Id */
             eve_type_id: number;
+            /** Margin Percent */
+            margin_percent?: number | null;
+            /** Price Basis */
+            price_basis?: ("jita_buy" | "jita_split" | "jita_sell" | "margin") | null;
             /** Quantity */
             quantity: number;
             /** Self Assign Maximum */
@@ -17911,6 +17932,28 @@ export interface components {
             target_unit_price?: string | null;
             /** Unassigned Quantity */
             unassigned_quantity: number;
+        };
+        /**
+         * OrderLinePricingResponse
+         * @description Build-cost floor and Jita prices for one order line (per unit).
+         */
+        OrderLinePricingResponse: {
+            /** Build Cost Per Unit */
+            build_cost_per_unit: number;
+            /** Jita Buy */
+            jita_buy: number | null;
+            /** Jita Delivered */
+            jita_delivered: number | null;
+            /** Jita Sell */
+            jita_sell: number | null;
+            /** Jita Split */
+            jita_split: number | null;
+            /** Quantity */
+            quantity: number;
+            /** Ship In Per Unit */
+            ship_in_per_unit: number;
+            /** Type Id */
+            type_id: number;
         };
         /**
          * OrderListItemResponse
@@ -31587,6 +31630,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IndustryOrderCharacterStatResponse"][];
+                };
+            };
+        };
+    };
+    industry_endpoints_orders_get_order_line_pricing_get_order_line_pricing: {
+        parameters: {
+            query: {
+                type_id: number;
+                quantity?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderLinePricingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

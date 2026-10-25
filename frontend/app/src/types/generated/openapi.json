@@ -25882,6 +25882,34 @@
             "title": "Eve Type Id",
             "type": "integer"
           },
+          "margin_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin Percent"
+          },
+          "price_basis": {
+            "anyOf": [
+              {
+                "enum": [
+                  "jita_buy",
+                  "jita_split",
+                  "jita_sell",
+                  "margin"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Basis"
+          },
           "quantity": {
             "title": "Quantity",
             "type": "integer"
@@ -26032,6 +26060,83 @@
           "assignments"
         ],
         "title": "OrderItemResponse",
+        "type": "object"
+      },
+      "OrderLinePricingResponse": {
+        "description": "Build-cost floor and Jita prices for one order line (per unit).",
+        "properties": {
+          "build_cost_per_unit": {
+            "title": "Build Cost Per Unit",
+            "type": "integer"
+          },
+          "jita_buy": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jita Buy"
+          },
+          "jita_delivered": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jita Delivered"
+          },
+          "jita_sell": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jita Sell"
+          },
+          "jita_split": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jita Split"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "ship_in_per_unit": {
+            "title": "Ship In Per Unit",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "quantity",
+          "build_cost_per_unit",
+          "jita_buy",
+          "jita_split",
+          "jita_sell",
+          "ship_in_per_unit",
+          "jita_delivered"
+        ],
+        "title": "OrderLinePricingResponse",
         "type": "object"
       },
       "OrderListItemResponse": {
@@ -50595,6 +50700,74 @@
           }
         },
         "summary": "Manufacturers with delivered industry-order ISK estimates in the past 30 days, keyed by primary character. Restricted to active members of manufacturing production tribe groups.",
+        "tags": [
+          "Industry",
+          "Industry - Orders"
+        ]
+      }
+    },
+    "/api/industry/orders/pricing": {
+      "get": {
+        "operationId": "industry_endpoints_orders_get_order_line_pricing_get_order_line_pricing",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quantity",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Quantity",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderLinePricingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Amamake build cost and Jita prices for an order line",
         "tags": [
           "Industry",
           "Industry - Orders"
