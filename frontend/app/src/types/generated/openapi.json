@@ -1746,8 +1746,23 @@
             "title": "Column",
             "type": "string"
           },
+          "days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days"
+          },
           "ready": {
             "title": "Ready",
+            "type": "integer"
+          },
+          "seats": {
+            "title": "Seats",
             "type": "integer"
           },
           "ships": {
@@ -1763,7 +1778,9 @@
           "column",
           "ships",
           "ready",
-          "state"
+          "state",
+          "seats",
+          "days"
         ],
         "title": "BringCellResponse",
         "type": "object"
@@ -1785,6 +1802,10 @@
             "title": "Name",
             "type": "string"
           },
+          "seats": {
+            "title": "Seats",
+            "type": "integer"
+          },
           "ship_type_id": {
             "title": "Ship Type Id",
             "type": "integer"
@@ -1799,6 +1820,7 @@
           "name",
           "strategic",
           "ship_type_id",
+          "seats",
           "cells"
         ],
         "title": "BringDoctrineResponse",
@@ -1823,10 +1845,15 @@
             },
             "title": "Doctrines",
             "type": "array"
+          },
+          "seats": {
+            "title": "Seats",
+            "type": "integer"
           }
         },
         "required": [
           "academy",
+          "seats",
           "columns",
           "doctrines"
         ],
@@ -9810,6 +9837,13 @@
             "title": "Name",
             "type": "string"
           },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/DoctrineSeatResponse"
+            },
+            "title": "Seats",
+            "type": "array"
+          },
           "ship_type_id": {
             "title": "Ship Type Id",
             "type": "integer"
@@ -9827,7 +9861,8 @@
           "name",
           "column",
           "ship_type_id",
-          "ships"
+          "ships",
+          "seats"
         ],
         "title": "DoctrineCellResponse",
         "type": "object"
@@ -9943,6 +9978,66 @@
           "location_ids"
         ],
         "title": "DoctrineResponse",
+        "type": "object"
+      },
+      "DoctrineSeatResponse": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "ships": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "account",
+          "character_id",
+          "name",
+          "ready",
+          "ships",
+          "fitting_id",
+          "days"
+        ],
+        "title": "DoctrineSeatResponse",
         "type": "object"
       },
       "DoctrineShipResponse": {

@@ -8253,8 +8253,12 @@ export interface components {
         BringCellResponse: {
             /** Column */
             column: string;
+            /** Days */
+            days: number | null;
             /** Ready */
             ready: number;
+            /** Seats */
+            seats: number;
             /** Ships */
             ships: number;
             /** State */
@@ -8268,6 +8272,8 @@ export interface components {
             doctrine_id: number;
             /** Name */
             name: string;
+            /** Seats */
+            seats: number;
             /** Ship Type Id */
             ship_type_id: number;
             /** Strategic */
@@ -8281,6 +8287,8 @@ export interface components {
             columns: string[];
             /** Doctrines */
             doctrines: components["schemas"]["BringDoctrineResponse"][];
+            /** Seats */
+            seats: number;
         };
         /**
          * BuildPackResponse
@@ -11568,6 +11576,8 @@ export interface components {
             doctrine_id: number;
             /** Name */
             name: string;
+            /** Seats */
+            seats: components["schemas"]["DoctrineSeatResponse"][];
             /** Ship Type Id */
             ship_type_id: number;
             /** Ships */
@@ -11620,6 +11630,23 @@ export interface components {
             updated_at: string;
             /** Utility Fittings */
             utility_fittings: components["schemas"]["FittingResponse"][];
+        };
+        /** DoctrineSeatResponse */
+        DoctrineSeatResponse: {
+            /** Account */
+            account: number | null;
+            /** Character Id */
+            character_id: number;
+            /** Days */
+            days: number;
+            /** Fitting Id */
+            fitting_id: number | null;
+            /** Name */
+            name: string;
+            /** Ready */
+            ready: boolean;
+            /** Ships */
+            ships: string[];
         };
         /** DoctrineShipResponse */
         DoctrineShipResponse: {
