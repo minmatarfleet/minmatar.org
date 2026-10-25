@@ -6,6 +6,7 @@ import requests
 from django.contrib.auth.models import Group, User
 from django.db.models import signals as django_signals
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from discord.models import DiscordGuild, DiscordUser
 from discord.signals import group_post_save, user_group_changed
@@ -13,6 +14,7 @@ from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from tribes.helpers.external_guild import (
     CLEANUP_FAILURE_ALERT_THRESHOLD,
+    CLEANUP_PERMISSION_RETRY,
     FISHERMEN_ALERT_CHANNEL_ID,
     FISHERMEN_MEMBER_ROLE_ID,
     append_query,
@@ -301,21 +303,61 @@ class ExternalGuildSeatTestCase(TestCase):
         discord_cls.return_value.create_message.assert_called_once()
         discord_cls.return_value.send_dm.assert_not_called()
 
+        kicks_when_alerted = client.kick_guild_member.call_count
         reconcile_external_guilds()
         seat.refresh_from_db()
-        self.assertEqual(
-            seat.failure_count, CLEANUP_FAILURE_ALERT_THRESHOLD + 1
-        )
+        self.assertEqual(seat.failure_count, CLEANUP_FAILURE_ALERT_THRESHOLD)
         self.assertEqual(
             seat.status, TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
         )
+        self.assertEqual(
+            client.kick_guild_member.call_count, kicks_when_alerted
+        )
         discord_cls.return_value.create_message.assert_called_once()
 
+        TribeExternalGuildSeat.objects.filter(pk=seat.pk).update(
+            updated_at=timezone.now() - CLEANUP_PERMISSION_RETRY
+        )
         client.kick_guild_member.side_effect = None
         reconcile_external_guilds()
         seat.refresh_from_db()
         self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_REMOVED)
         discord_cls.return_value.create_message.assert_called_once()
+
+    @patch("tribes.helpers.external_guild.DiscordClient")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_permission_denied_realerts_after_cooldown(
+        self, client_for_binding, discord_cls
+    ):
+        client = client_for_binding.return_value
+        client.kick_guild_member.side_effect = _missing_permissions_error()
+        seat = self._present_seat()
+        seat.status = TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        seat.failure_count = 52
+        seat.last_error = (
+            "kick: 403 Missing Permissions (code 50013). "
+            "Member is still in the guild; the bot cannot kick them "
+            "(role hierarchy or missing Kick Members)."
+        )
+        seat.save(
+            update_fields=[
+                "status",
+                "failure_count",
+                "last_error",
+                "updated_at",
+            ]
+        )
+        TribeExternalGuildSeat.objects.filter(pk=seat.pk).update(
+            updated_at=timezone.now() - CLEANUP_PERMISSION_RETRY
+        )
+
+        reconcile_external_guilds()
+        discord_cls.return_value.create_message.assert_called_once()
+        seat.refresh_from_db()
+        self.assertEqual(seat.failure_count, 53)
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        )
 
     @patch("tribes.helpers.external_guild.DiscordClient")
     @patch("tribes.helpers.external_guild.client_for_binding")

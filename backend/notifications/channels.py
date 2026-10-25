@@ -20,7 +20,11 @@ from eveonline.helpers.characters import user_primary_character
 from notifications.discord_buttons import mark_as_read_components
 from notifications.discord_format import discord_embed_from_payload
 from notifications.models import NotificationChannel
-from notifications.rate_limit import acquire
+from notifications.rate_limit import (
+    DISCORD_DM_TOKENS,
+    EVE_MAIL_TOKENS,
+    acquire,
+)
 from subscriptions.models import UserSubscription
 
 try:
@@ -30,6 +34,15 @@ except ImportError:  # pragma: no cover - optional until Pipfile install
     webpush = None
 
 logger = logging.getLogger(__name__)
+
+DISCORD_DM_LOCAL_BUCKET = "Discord DM rate limited (local bucket)"
+EVE_MAIL_LOCAL_BUCKET = "Eve mail rate limited (local bucket)"
+LOCAL_BUCKET_ERRORS = frozenset(
+    {DISCORD_DM_LOCAL_BUCKET, EVE_MAIL_LOCAL_BUCKET}
+)
+# A burst may outlast the 8 failure retries. Keep waiting out the bucket,
+# then give up so a stuck Redis key cannot retry forever.
+LOCAL_BUCKET_DEADLINE_SECONDS = 15 * 60
 
 
 class ChannelSendError(Exception):
@@ -147,11 +160,11 @@ def _send_discord(
         "discord_dm",
         rate_per_second=rate,
         capacity=max(rate * 2, 2),
-        tokens=2.0,  # open DM channel + send
+        tokens=DISCORD_DM_TOKENS,  # open DM channel + send
     )
     if not allowed:
         raise ChannelSendError(
-            "Discord DM rate limited (local bucket)",
+            DISCORD_DM_LOCAL_BUCKET,
             retryable=True,
             retry_after=max(retry_after, 1.0),
         )
@@ -215,11 +228,11 @@ def _send_eve_mail(user, payload: dict[str, Any]) -> None:
         "eve_mail",
         rate_per_second=rate,
         capacity=max(rate * 2, 1),
-        tokens=1.0,
+        tokens=EVE_MAIL_TOKENS,
     )
     if not allowed:
         raise ChannelSendError(
-            "Eve mail rate limited (local bucket)",
+            EVE_MAIL_LOCAL_BUCKET,
             retryable=True,
             retry_after=max(retry_after, 2.0),
         )

@@ -16,6 +16,11 @@ from notifications.models import (
     NotificationDeliveryStatus,
     NotificationPreference,
 )
+from notifications.rate_limit import (
+    DISCORD_DM_TOKENS,
+    EVE_MAIL_TOKENS,
+    paced_spacing,
+)
 from notifications.registry import NotificationType, all_types, get_type
 from notifications.tasks import deliver_notification
 
@@ -104,6 +109,11 @@ def notify_users(
                 enabled = ntype.default_enabled(channel)
             if not enabled:
                 continue
+            if (
+                channel == NotificationChannel.WEB
+                and not _web_push_configured()
+            ):
+                continue
             if idempotency_key:
                 # Fan-out: include user so each recipient can be notified once.
                 store_key = f"{idempotency_key}:u{user.id}"
@@ -151,14 +161,17 @@ def notify_users(
     return created
 
 
+def _web_push_configured() -> bool:
+    return bool(getattr(settings, "VAPID_PRIVATE_KEY", "") or "")
+
+
 def _stagger_countdown(channel: str, indexes: dict[str, int]) -> float:
     """Seconds to delay enqueue; paces Discord / Eve mail under rate budgets."""
     if channel == NotificationChannel.DISCORD:
         rate = float(
             getattr(settings, "NOTIFICATIONS_DISCORD_DM_RATE_PER_SECOND", 2.0)
         )
-        # 1.5× spacing leaves headroom vs the Redis token bucket.
-        spacing = (1.5 / rate) if rate > 0 else 1.0
+        spacing = paced_spacing(rate, DISCORD_DM_TOKENS)
         idx = indexes[NotificationChannel.DISCORD]
         indexes[NotificationChannel.DISCORD] = idx + 1
         return idx * spacing
@@ -166,7 +179,7 @@ def _stagger_countdown(channel: str, indexes: dict[str, int]) -> float:
         rate = float(
             getattr(settings, "NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND", 0.5)
         )
-        spacing = (1.5 / rate) if rate > 0 else 2.0
+        spacing = paced_spacing(rate, EVE_MAIL_TOKENS)
         idx = indexes[NotificationChannel.EVE_MAIL]
         indexes[NotificationChannel.EVE_MAIL] = idx + 1
         return idx * spacing

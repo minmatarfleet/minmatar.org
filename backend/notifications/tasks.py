@@ -8,7 +8,13 @@ from typing import Any
 from django.utils import timezone
 
 from app.celery import app
-from notifications.channels import ChannelSendError, ChannelSkip, send_channel
+from notifications.channels import (
+    LOCAL_BUCKET_DEADLINE_SECONDS,
+    LOCAL_BUCKET_ERRORS,
+    ChannelSendError,
+    ChannelSkip,
+    send_channel,
+)
 from notifications.models import (
     NotificationDelivery,
     NotificationDeliveryStatus,
@@ -59,12 +65,30 @@ def _mark_delivery_sent(
     return "sent"
 
 
+def _is_local_bucket(exc: ChannelSendError) -> bool:
+    return str(exc) in LOCAL_BUCKET_ERRORS
+
+
+def _should_retry(self, delivery, exc: ChannelSendError) -> bool:
+    if not exc.retryable:
+        return False
+    if _is_local_bucket(exc):
+        age = (timezone.now() - delivery.created_at).total_seconds()
+        return age < LOCAL_BUCKET_DEADLINE_SECONDS
+    return self.request.retries < self.max_retries
+
+
 def _handle_send_error(self, delivery, exc: ChannelSendError) -> str:
-    if exc.retryable and self.request.retries < self.max_retries:
+    if _should_retry(self, delivery, exc):
         delivery.error = str(exc)
         delivery.save(update_fields=["error", "updated_at"])
         countdown = int(exc.retry_after or (2**self.request.retries))
-        raise self.retry(exc=exc, countdown=max(countdown, 1))
+        retry_kwargs = {"exc": exc, "countdown": max(countdown, 1)}
+        # Bucket waits must not consume the 8-try failure budget. Allow
+        # exactly one more Celery retry; the deadline above is the cap.
+        if _is_local_bucket(exc):
+            retry_kwargs["max_retries"] = self.request.retries + 1
+        raise self.retry(**retry_kwargs)
     delivery.status = NotificationDeliveryStatus.FAILED
     delivery.error = str(exc)
     delivery.save(update_fields=["status", "error", "updated_at"])

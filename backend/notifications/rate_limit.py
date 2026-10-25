@@ -9,6 +9,22 @@ from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
+# One Discord DM spends two tokens (open the DM channel, then send).
+DISCORD_DM_TOKENS = 2.0
+EVE_MAIL_TOKENS = 1.0
+
+
+def paced_spacing(rate_per_second: float, tokens: float) -> float:
+    """Enqueue gap so a fan-out stays under the token bucket, with headroom.
+
+    ``rate_per_second`` is tokens per second, matching ``acquire``. Spacing is
+    1.5× the time those tokens take to refill.
+    """
+    if rate_per_second <= 0:
+        return max(tokens, 1.0)
+    return 1.5 * tokens / rate_per_second
+
+
 # Lua: token bucket. KEYS[1]=bucket key; ARGV=rate, capacity, now, requested
 _TOKEN_BUCKET_LUA = """
 local key = KEYS[1]
