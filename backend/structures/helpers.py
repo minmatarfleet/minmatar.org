@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
+from eveuniverse.models import EvePlanet, EveSolarSystem, EveType
 
 from structures.models import EveStructure, EveStructurePing
 
@@ -248,6 +249,23 @@ def parse_structure_notification(text: str):
     }
 
 
+# Higher rank is a later stage of the same fight. A repeat of the same
+# stage inside an hour is noise. A higher stage (reinforce, armor, hull,
+# destroyed) is a new fact and must still ping.
+_EVENT_SEVERITY = {
+    "StructureUnderAttack": 1,
+    "StructureLostShields": 2,
+    "StructureLostArmor": 3,
+    "StructureDestroyed": 4,
+    "OrbitalAttacked": 1,
+    "OrbitalReinforced": 2,
+}
+
+
+def _event_severity(notification_type: str) -> int:
+    return _EVENT_SEVERITY.get(notification_type, 0)
+
+
 def is_new_event(
     event: EveStructurePing, current_time: datetime | None = None
 ) -> bool:
@@ -271,8 +289,9 @@ def is_new_event(
 
     latest_delta = event.event_time - latest.event_time
     if latest_delta.total_seconds() < 3600:
-        # Last event for structure less than an hour ago
-        return False
+        return _event_severity(event.notification_type) > _event_severity(
+            latest.notification_type
+        )
 
     return True
 
@@ -416,6 +435,54 @@ def _attacker_line_from_notification_text(text: str | None) -> str:
     return f"{char_name} ({corp_name})"
 
 
+def _catalog_name(model, object_id: int | None) -> str | None:
+    if not object_id:
+        return None
+    return (
+        model.objects.filter(id=object_id)
+        .values_list("name", flat=True)
+        .first()
+    )
+
+
+def _parse_shield_level(text: str | None) -> float | None:
+    if not text:
+        return None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("shieldLevel:"):
+            try:
+                return float(stripped.split()[-1])
+            except (ValueError, IndexError):
+                return None
+    return None
+
+
+def _orbital_ping_lines(ping: EveStructurePing) -> str:
+    """Customs offices and skyhooks have no EveStructure row.
+
+    The notification carries typeID and solarSystemID. Name those from
+    the eveuniverse catalog instead of calling every orbital a skyhook.
+    """
+    parsed = _parse_structure_notification_lines(ping.text or "")
+    type_name = _catalog_name(EveType, parsed["type_id"]) or "Orbital"
+    lines = [f"Structure: {type_name} \n"]
+    system_name = _catalog_name(EveSolarSystem, parsed["solar_system_id"])
+    if system_name:
+        lines.append(f"Location: {system_name} \n")
+    elif parsed["solar_system_id"]:
+        lines.append(f"Location: {parsed['solar_system_id']} \n")
+    planet_name = _catalog_name(EvePlanet, parsed["planet_id"])
+    if planet_name:
+        lines.append(f"Planet: {planet_name} \n")
+    elif parsed["planet_id"]:
+        lines.append(f"Planet: {parsed['planet_id']} \n")
+    shield = _parse_shield_level(ping.text)
+    if shield is not None:
+        lines.append(f"Shield: {shield * 100:.1f}% \n")
+    return "".join(lines)
+
+
 def discord_message_for_ping(ping: EveStructurePing) -> str:
     ping_text = ":scream: STRUCTURE UNDER ATTACK :scream: \n"
 
@@ -426,11 +493,8 @@ def discord_message_for_ping(ping: EveStructurePing) -> str:
             f"Type: {structure.type_name} ({structure.type_id}) \n"
             f"Location: {structure.system_name} \n"
         )
-    elif ping.structure_id < 0:
-        details = (ping.summary or "—")[:200]
-        if len(ping.summary or "") > 200:
-            details += "…"
-        ping_text += f"Structure: Orbital (e.g. Skyhook) – not in structure list \nDetails: {details} \n"
+    elif ping.structure_id is not None and ping.structure_id < 0:
+        ping_text += _orbital_ping_lines(ping)
     else:
         ping_text += f"Structure: {ping.structure_id} (not in database) \n"
 

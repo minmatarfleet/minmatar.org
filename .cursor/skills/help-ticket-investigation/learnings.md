@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-25 — Structure-pings channel mislabels orbitals and drops reinforce
+
+**Category:** pulse.technology (structure-pings channel; no HelpTicket row)
+**Verdict:** bug
+**Discord:** no reply (not a help thread; test-guild bot 403s the production guild)
+**PR:** fix+skill
+**Symptom vs cause:** An orbital attack posted as a skyhook with the raw notification body. The reinforce, and earlier shield/armor/destroyed stages, stayed `discord_success` false because `is_new_event` treated any second event on that structure inside an hour as a duplicate.
+**Durable rule:** That channel URL is not a HelpTicket. Escalations still ping inside the hour. Name the orbital from `typeID`. Do not post the investigation into the channel.
+**Skill update:** added the structure-pings row.
+
 ## 2026-10-17 — Previous corp Discord role stays after the main moves
 
 **Category:** pulse.technology

@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 from esi.models import Token, Scope
@@ -200,6 +200,49 @@ class StructureHelperTest(unittest.TestCase):
 
         self.assertFalse(is_new_event(event, now))
 
+    def test_escalation_still_pings_inside_the_hour(self):
+        now = datetime(2026, 10, 25, 12, 5, tzinfo=timezone.utc)
+        EveStructurePing.objects.create(
+            notification_id=20001,
+            notification_type="OrbitalAttacked",
+            summary="attack",
+            structure_id=4242,
+            event_time=now - timedelta(minutes=8),
+        )
+        reinforced = EveStructurePing.objects.create(
+            notification_id=20002,
+            notification_type="OrbitalReinforced",
+            summary="reinforced",
+            structure_id=4242,
+            event_time=now,
+        )
+        self.assertTrue(is_new_event(reinforced, now))
+
+        repeat_attack = EveStructurePing.objects.create(
+            notification_id=20003,
+            notification_type="OrbitalAttacked",
+            summary="attack again",
+            structure_id=4242,
+            event_time=now,
+        )
+        self.assertFalse(is_new_event(repeat_attack, now))
+
+        EveStructurePing.objects.create(
+            notification_id=20004,
+            notification_type="StructureUnderAttack",
+            summary="shields",
+            structure_id=4243,
+            event_time=now - timedelta(minutes=12),
+        )
+        lost_shields = EveStructurePing.objects.create(
+            notification_id=20005,
+            notification_type="StructureLostShields",
+            summary="armor timer",
+            structure_id=4243,
+            event_time=now,
+        )
+        self.assertTrue(is_new_event(lost_shields, now))
+
     def test_structure_ping_discord_message(self):
         # Plain unittest: nothing is rolled back, so don't assume a pk.
         corp, _ = EveCorporation.objects.get_or_create(
@@ -242,10 +285,29 @@ class StructureHelperTest(unittest.TestCase):
         self.assertNotIn("Jita", message)
 
         ping.structure_id = -123456789
+        ping.summary = "aggressorAllianceID: 1\nshieldLevel: 0.99\n"
+        ping.text = (
+            "typeID: 2233\n"
+            "solarSystemID: 31001742\n"
+            "planetID: 40441090\n"
+            "shieldLevel: 0.989842\n"
+        )
         ping.save()
-        message = discord_message_for_ping(ping)
-        self.assertIn("Orbital", message)
-        self.assertIn("Skyhook", message)
+
+        def catalog(model, object_id):
+            return {
+                (2233, "EveType"): "Customs Office",
+                (31001742, "EveSolarSystem"): "J140932",
+            }.get((object_id, model.__name__))
+
+        with patch("structures.helpers._catalog_name", side_effect=catalog):
+            message = discord_message_for_ping(ping)
+        self.assertIn("Customs Office", message)
+        self.assertIn("J140932", message)
+        self.assertIn("Planet: 40441090", message)
+        self.assertIn("Shield: 99.0%", message)
+        self.assertNotIn("Skyhook", message)
+        self.assertNotIn("aggressor", message)
 
     @patch("structures.helpers.EsiClient")
     def test_discord_message_includes_attacker_when_in_notification(
