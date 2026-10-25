@@ -279,6 +279,13 @@ CELERYBEAT_GROUPS = [
             "schedule": crontab(minute=12, hour="*/4"),
         },
     ),
+    (
+        "[Groups] Assess pilot timezones and sync timezone roles",
+        {
+            "task": "timezones.tasks.assess_timezones",
+            "schedule": crontab(minute=37, hour="*/6"),
+        },
+    ),
 ]
 
 # Tribes

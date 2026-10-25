@@ -34,6 +34,7 @@ Writing a **source** (tribe membership inactive, affiliation change, community s
 |--------|------------------|
 | Corp groups | Desired-state beat `sync_eve_corporation_groups` (~30m) |
 | Tribe - Chief | Desired-state beat `sync_tribe_chief_group` |
+| Timezone roles (`USTZ`, `EUTZ+`, ...) | Desired-state reconciler `timezones.discord_roles.apply_roles`, run by `assess_timezones` (~6h); see [timezones.md](../timezones.md) |
 | Tribe membership | `TribeGroupMembership.save` is `atomic()` so Discord failure rolls back status; inactive sweep also retries (~2h) |
 | Affiliation / community | `UserAffiliation` / `UserCommunityStatus` saves are `atomic()`; beats `update_affiliations` + `sync_community_groups` re-run `sync_user_community_groups` |
 
@@ -57,6 +58,7 @@ Use [`offboard_user`](../../backend/users/helpers.py) / `offboard_group`. They u
 | Community reconciler | `backend/groups/tasks.py` → `sync_community_groups` |
 | Corp group sync | `backend/groups/tasks.py` → `sync_eve_corporation_groups` |
 | Tribe auth groups | `backend/tribes/helpers/tribe_auth_groups.py`, `backend/tribes/signals.py` |
+| Timezone role groups | `backend/timezones/discord_roles.py` |
 | Live verify runner | `backend/discord/live_verify.py` |
 | Live verify command | `manage.py verify_discord_groups` |
 

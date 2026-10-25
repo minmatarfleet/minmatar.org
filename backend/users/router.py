@@ -23,6 +23,7 @@ from audit.models import AuditEntry
 
 # from eveonline.models import EvePlayer
 from groups.tasks import sync_user_corporation_groups, update_affiliation
+from timezones.discord_roles import apply_roles as apply_timezone_roles
 from users.endpoints import router as endpoints_router
 from users.eve_sso import EVE_LOGIN_SCOPES
 from users.jwt_auth import (
@@ -371,6 +372,7 @@ def sync_user(request, user_id: int):
     try:
         update_affiliation(user_id)
         sync_user_corporation_groups(request.user)
+        apply_timezone_roles([user_id])
         sync_discord_user(user_id)
     except DiscordRoleAssignmentError as e:
         # Offboard inside affiliation's atomic block rolls back; redo outside.

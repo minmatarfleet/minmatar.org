@@ -91,6 +91,8 @@ INSTALLED_APPS = [
     # Live multi-system Faction Warfare campaigns
     "campaigns.apps.CampaignsConfig",
     "capabilities.apps.CapabilitiesConfig",
+    # Pilot timezones and the USTZ/EUTZ/AUTZ Discord roles
+    "timezones.apps.TimezonesConfig",
 ]
 
 # Discord Login
