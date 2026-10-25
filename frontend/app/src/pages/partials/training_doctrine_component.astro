@@ -1,0 +1,181 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { TrainingDoctrineCell } from '@dtypes/api.minmatar.org'
+import { get_training_doctrine } from '@helpers/api.minmatar.org/training'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { TRAINING_DOCTRINE_PARTIAL, TRAINING_PARTIAL, time_label, training_url } from '@helpers/training'
+
+const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0') || 0
+const column = Astro.url.searchParams.get('column') ?? ''
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!doctrine_id || !column)
+    return HTTP_404_Not_Found()
+
+let cell:TrainingDoctrineCell | null = null
+let fetch_error:Error | false = false
+
+try {
+    cell = await get_training_doctrine(auth_token as string, doctrine_id, column)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const ready = cell ? cell.ships.filter(ship => ship.accounts > 0).length : 0
+
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: translatePath(training_url(TRAINING_DOCTRINE_PARTIAL, { doctrine_id, column })),
+            error: fetch_error,
+            delay: delay,
+            target: '#modal-description',
+        }}
+    />
+    : cell &&
+    <div class="[ training-doctrine ]">
+        <div class="[ training-doctrine__head ]">
+            <img src={get_item_icon(cell.ship_type_id, 64)} alt="" width="52" height="52" />
+            <div>
+                <h2>{`${cell.name} · ${cell.column}`}</h2>
+                <p class="[ training-muted ]">
+                    {t('training.ready_of').replace('{ready}', ready.toString()).replace('{total}', cell.ships.length.toString())}
+                </p>
+            </div>
+        </div>
+
+        <ul role="list">
+            {cell.ships.map(ship =>
+                <li>
+                    <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                    <strong class="[ training-doctrine__name ]">{ship.name}</strong>
+                    {ship.accounts > 0 ?
+                        <span class="[ training-doctrine__ready ]">
+                            ✓ <span class="[ training-muted ]">×{ship.accounts}</span>
+                        </span>
+                        : ship.closest ?
+                        <>
+                            <span class="[ training-doctrine__closest ]">
+                                <strong>{time_label(t, ship.closest.days)}</strong>
+                                <small class="[ training-muted ]">{ship.closest.name}</small>
+                            </span>
+                            <Button
+                                type="button"
+                                size="sm"
+                                color="fleet-red"
+                                modal-action="accept"
+                                hx-post={translatePath(training_url(TRAINING_PARTIAL, { mode: 'add_goal', character_id: ship.closest.character_id, fitting_id: ship.fitting_id }))}
+                                hx-target="#training"
+                                hx-swap="outerHTML"
+                            >
+                                {t('training.train')}
+                            </Button>
+                        </>
+                        :
+                        <span class="[ training-muted ]">{t('training.nobody_close')}</span>
+                    }
+                </li>
+            )}
+        </ul>
+
+        <div class="[ training-doctrine__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('training.close')}</Button>
+        </div>
+    </div>
+}
+
+<style lang="scss">
+    .training-doctrine {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-height: 88dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: var(--space-s);
+        color: var(--highlight);
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-s);
+            min-height: 3.5rem;
+            padding-block: var(--space-2xs);
+            border-top: 1px solid var(--hairline);
+
+            img {
+                border-radius: var(--space-3xs);
+            }
+        }
+    }
+
+    .training-doctrine__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding-inline-end: var(--space-xl);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        h2 {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .training-muted {
+        color: var(--text-muted);
+    }
+
+    .training-doctrine__name {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .training-doctrine__ready {
+        color: var(--green);
+        font-weight: 700;
+    }
+
+    .training-doctrine__closest {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+
+        strong {
+            color: var(--fleet-yellow);
+        }
+
+        small {
+            font-size: var(--step--2);
+        }
+    }
+
+    .training-doctrine__actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+</style>

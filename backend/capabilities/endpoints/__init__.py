@@ -4,6 +4,7 @@ from ninja import Router
 
 from capabilities.endpoints import (
     get_overview,
+    get_doctrine,
     get_character,
     patch_character,
     get_ships,
@@ -19,6 +20,7 @@ router = Router(tags=["Training"])
 
 for module in (
     get_overview,
+    get_doctrine,
     get_character,
     patch_character,
     get_ships,

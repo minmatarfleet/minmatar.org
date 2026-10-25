@@ -6667,6 +6667,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/doctrines/{doctrine_id}/{column}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One doctrine's ships for one role, and who flies each */
+        get: operations["capabilities_endpoints_get_doctrine_get_doctrine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/": {
         parameters: {
             query?: never;
@@ -8232,27 +8249,38 @@ export interface components {
             /** Primary Character Id */
             primary_character_id?: number | null;
         };
-        /** BringRowResponse */
-        BringRowResponse: {
-            /** Capability */
-            capability: string;
+        /** BringCellResponse */
+        BringCellResponse: {
+            /** Column */
+            column: string;
+            /** Ready */
+            ready: number;
             /** Ships */
-            ships: components["schemas"]["BringShipResponse"][];
+            ships: number;
+            /** State */
+            state: string;
         };
-        /** BringShipResponse */
-        BringShipResponse: {
-            /** Accounts */
-            accounts: number;
-            /** Capability */
-            capability: string;
-            /** Doctrines */
-            doctrines: string[];
-            /** Fitting Id */
-            fitting_id: number;
+        /** BringDoctrineResponse */
+        BringDoctrineResponse: {
+            /** Cells */
+            cells: components["schemas"]["BringCellResponse"][];
+            /** Doctrine Id */
+            doctrine_id: number;
             /** Name */
             name: string;
             /** Ship Type Id */
             ship_type_id: number;
+            /** Strategic */
+            strategic: boolean;
+        };
+        /** BringResponse */
+        BringResponse: {
+            /** Academy */
+            academy: boolean;
+            /** Columns */
+            columns: string[];
+            /** Doctrines */
+            doctrines: components["schemas"]["BringDoctrineResponse"][];
         };
         /**
          * BuildPackResponse
@@ -9778,6 +9806,15 @@ export interface components {
             close_reason?: string;
             /** Closed By Discord Id */
             closed_by_discord_id: number;
+        };
+        /** ClosestCharacterResponse */
+        ClosestCharacterResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Days */
+            days: number;
+            /** Name */
+            name: string;
         };
         /** CohortRow */
         CohortRow: {
@@ -11501,6 +11538,19 @@ export interface components {
             /** Nickname */
             nickname: string | null;
         };
+        /** DoctrineCellResponse */
+        DoctrineCellResponse: {
+            /** Column */
+            column: string;
+            /** Doctrine Id */
+            doctrine_id: number;
+            /** Name */
+            name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /** Ships */
+            ships: components["schemas"]["DoctrineShipResponse"][];
+        };
         /**
          * DoctrineFittingResponse
          * @description Fitting in a doctrine
@@ -11548,6 +11598,22 @@ export interface components {
             updated_at: string;
             /** Utility Fittings */
             utility_fittings: components["schemas"]["FittingResponse"][];
+        };
+        /** DoctrineShipResponse */
+        DoctrineShipResponse: {
+            /** Accounts */
+            accounts: number;
+            /** Capability */
+            capability: string;
+            closest: components["schemas"]["ClosestCharacterResponse"] | null;
+            /** Doctrines */
+            doctrines: string[];
+            /** Fitting Id */
+            fitting_id: number;
+            /** Name */
+            name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
         };
         /** EnlistRequest */
         EnlistRequest: {
@@ -20905,8 +20971,7 @@ export interface components {
         TrainingOverviewResponse: {
             /** Accounts */
             accounts: components["schemas"]["AccountResponse"][];
-            /** Bring */
-            bring: components["schemas"]["BringRowResponse"][];
+            bring: components["schemas"]["BringResponse"];
             /** Unplaced */
             unplaced: components["schemas"]["CharacterSummaryResponse"][];
         };
@@ -37708,6 +37773,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShipOptionResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_doctrine_get_doctrine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctrine_id: number;
+                column: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctrineCellResponse"];
                 };
             };
             /** @description Not Found */

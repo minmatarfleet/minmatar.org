@@ -3,6 +3,7 @@ import type {
     TrainingAccountMove,
     TrainingAccountOptions,
     TrainingCharacter,
+    TrainingDoctrineCell,
     TrainingGoalPatch,
     TrainingOverview,
     TrainingPlan,
@@ -17,6 +18,13 @@ export async function get_training_overview(access_token:string) {
     return await api_request<TrainingOverview>(`${API_ENDPOINT}/`, {
         token: access_token,
         error: 'Error fetching training',
+    })
+}
+
+export async function get_training_doctrine(access_token:string, doctrine_id:number, column:string) {
+    return await api_request<TrainingDoctrineCell>(`${API_ENDPOINT}/doctrines/${doctrine_id}/${encodeURIComponent(column)}`, {
+        token: access_token,
+        error: 'Error fetching the doctrine',
     })
 }
 

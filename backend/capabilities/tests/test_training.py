@@ -19,7 +19,8 @@ from capabilities.tests.helpers import (
     store_fixture_snapshot,
 )
 from capabilities.tests.test_services import give_skills
-from eveonline.models import EveCharacter
+from applications.l3arn import L3ARN_CORPORATION_NAME
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 SDE = fixture_sde()
@@ -114,9 +115,23 @@ class OverviewTest(TrainingTestCase):
         self.assertEqual(
             [s["fitting_id"] for s in logi["ready"]], [self.guardian.pk]
         )
-        bring = {row["capability"]: row["ships"] for row in view["bring"]}
-        self.assertEqual(bring["Logistics"][0]["accounts"], 1)
-        self.assertEqual(bring["DPS"], [])
+        bring = view["bring"]
+        self.assertFalse(bring["academy"])
+        self.assertEqual(bring["columns"], ["Logistics"])
+        [armor] = bring["doctrines"]
+        self.assertEqual(armor["name"], "Armor")
+        self.assertTrue(armor["strategic"])
+        self.assertEqual(
+            armor["cells"],
+            [
+                {
+                    "column": "Logistics",
+                    "ships": 1,
+                    "ready": 1,
+                    "state": "ready",
+                }
+            ],
+        )
 
     def test_a_character_without_goals_gets_the_nearest_fits(self):
         alt = self._summary(training.overview(self.user), "Alt")
@@ -130,14 +145,61 @@ class OverviewTest(TrainingTestCase):
         training.set_not_for_fleets(self.user, self.alt.character_id, True)
         view = training.overview(self.user)
         self.assertEqual(self._summary(view, "Alt")["suggestions"], [])
-        bring = {row["capability"]: row["ships"] for row in view["bring"]}
-        self.assertEqual(bring["Logistics"], [])
+        [cell] = view["bring"]["doctrines"][0]["cells"]
+        self.assertEqual(cell["state"], "needs_work")
 
     def test_a_ready_goal_is_done_until_optimal_is_asked_for(self):
         training.add_goal(self.user, self.logi.character_id, self.guardian.pk)
         logi = self._summary(training.overview(self.user), "Logi")
         self.assertTrue(logi["all_done"])
         self.assertIsNone(logi["training"])
+
+
+class BringTest(TrainingTestCase):
+    def _secondary(self):
+        napoc = self._fit("napoc", NAPOC)
+        EveDoctrineFitting.objects.filter(fitting=napoc).update(
+            role="secondary"
+        )
+        self._rate()
+        return napoc
+
+    def _make_academy(self):
+        EveCorporation.objects.create(
+            corporation_id=98000001, name=L3ARN_CORPORATION_NAME
+        )
+        self.logi.corporation_id = 98000001
+        self.logi.save()
+        EvePlayer.objects.create(user=self.user, primary_character=self.logi)
+
+    def test_secondary_fits_are_hidden_outside_the_academy(self):
+        napoc = self._secondary()
+        view = training.overview(self.user)
+        self.assertEqual(view["bring"]["columns"], ["Logistics"])
+        options = training.ship_options(self.user, self.alt.character_id)
+        self.assertNotIn(napoc.pk, [o["fitting_id"] for o in options])
+
+    def test_academy_pilots_see_only_secondary_fits(self):
+        napoc = self._secondary()
+        self._make_academy()
+        view = training.overview(self.user)
+        self.assertTrue(view["bring"]["academy"])
+        self.assertEqual(view["bring"]["columns"], ["DPS"])
+        options = training.ship_options(self.user, self.alt.character_id)
+        self.assertEqual([o["fitting_id"] for o in options], [napoc.pk])
+
+    def test_a_cell_lists_its_ships_and_the_closest_character(self):
+        cell = training.doctrine_cell(self.user, self.doctrine.pk, "Logistics")
+        [ship] = cell["ships"]
+        self.assertEqual(ship["fitting_id"], self.guardian.pk)
+        self.assertEqual(ship["accounts"], 1)
+        self.assertIsNone(ship["closest"])
+
+        training.set_not_for_fleets(self.user, self.logi.character_id, True)
+        cell = training.doctrine_cell(self.user, self.doctrine.pk, "Logistics")
+        self.assertEqual(cell["ships"][0]["closest"]["name"], "Alt")
+        with self.assertRaises(training.TrainingError):
+            training.doctrine_cell(self.user, self.doctrine.pk, "DPS")
 
 
 class PlanTest(TrainingTestCase):
@@ -280,6 +342,17 @@ class TrainingApiTest(TrainingTestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertTrue(response.json()["is_training"])
+
+    def test_doctrine_cell(self):
+        response = self._client().get(
+            f"/api/training/doctrines/{self.doctrine.pk}/Logistics"
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["name"], "Armor")
+        response = self._client().get(
+            f"/api/training/doctrines/{self.doctrine.pk}/Recon"
+        )
+        self.assertEqual(response.status_code, 404)
 
     def test_someone_elses_character_is_not_found(self):
         stranger = User.objects.create(username="stranger")
