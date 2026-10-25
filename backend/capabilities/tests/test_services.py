@@ -252,6 +252,73 @@ class CapabilityServicesTestCase(TestCase):
             CharacterCapability.objects.filter(character=pilot).count(), 8
         )
 
+    def test_unchanged_readiness_is_not_rewritten(self):
+        pilot = self._character(2030, "Logi", all_skills_at(SDE, 5))
+        services.recompute_all_requirements()
+        self.assertEqual(services.refresh_readiness(), 1)
+        self.assertEqual(services.refresh_readiness(), 0)
+        self.assertEqual(services.refresh_capabilities(), 8)
+        self.assertEqual(services.refresh_capabilities(), 0)
+        EveCharacterSkill.objects.filter(
+            character=pilot, skill_id=SDE.resolve("Capacitor Management")
+        ).update(skill_level=0)
+        self.assertEqual(services.refresh_readiness(), 1)
+        row = CharacterFittingReadiness.objects.get(character=pilot)
+        self.assertFalse(row.core_ready)
+
+    def test_only_a_full_pass_drops_rows_of_unrated_fittings(self):
+        napoc = self._fit("napoc", 17726, "primary")
+        pilot = self._character(2031, "Pilot", all_skills_at(SDE, 5))
+        services.recompute_all_requirements()
+        services.refresh_readiness()
+        # The Napoc stops being rated without its own cleanup running.
+        FittingRequirementSet.objects.filter(fitting=napoc).update(
+            is_current=False
+        )
+        services.refresh_readiness(character_pks=[pilot.pk])
+        self.assertTrue(
+            CharacterFittingReadiness.objects.filter(fitting=napoc).exists()
+        )
+        services.refresh_readiness()
+        self.assertFalse(
+            CharacterFittingReadiness.objects.filter(fitting=napoc).exists()
+        )
+        self.assertTrue(
+            CharacterFittingReadiness.objects.filter(
+                fitting=self.guardian
+            ).exists()
+        )
+
+    def test_unchanged_fitting_is_recomputed_weekly(self):
+        rs = services.recompute_fitting(self.guardian.pk)
+        self.assertEqual(
+            services.recompute_fitting(self.guardian.pk).pk, rs.pk
+        )
+        FittingRequirementSet.objects.filter(pk=rs.pk).update(
+            computed_at=timezone.now() - timedelta(days=8)
+        )
+        self.assertNotEqual(
+            services.recompute_fitting(self.guardian.pk).pk, rs.pk
+        )
+
+    def test_skill_sync_queues_a_rerate_only_when_levels_changed(self):
+        # pylint: disable=import-outside-toplevel
+        from eveonline.tasks import characters as character_tasks
+
+        pilot = self._character(2032, "Logi", {})
+        for changed, expected in ((False, 0), (True, 1)):
+            with mock.patch.object(
+                character_tasks,
+                "refresh_character_skills",
+                return_value=changed,
+            ), mock.patch.object(
+                character_tasks.app, "signature"
+            ) as signature:
+                character_tasks._refresh_skills_and_readiness(  # pylint: disable=protected-access
+                    pilot
+                )
+            self.assertEqual(signature.call_count, expected)
+
     def test_fitting_save_queues_a_recompute(self):
         with mock.patch.object(
             tasks.recompute_fitting_requirements, "apply_async"

@@ -22,8 +22,11 @@ class EveCharacterSkillResponse(pydantic.BaseModel):
     trained_skill_level: int
 
 
-def upsert_character_skills(character_id: int):
-    """Populate skills from eve and save them to the character."""
+def upsert_character_skills(character_id: int) -> bool:
+    """Populate skills from eve and save them to the character.
+
+    Returns True when a skill was added or changed level.
+    """
     logger.debug("Upserting skills for character %s", character_id)
     character = EveCharacter.objects.get(character_id=character_id)
     response = EsiClient(character).get_character_skills()
@@ -38,18 +41,22 @@ def upsert_character_skills(character_id: int):
             response.error_text(),
             character.summary(),
         )
-        return
+        return False
+    changed = False
     for skill in response.results():
-        upsert_character_skill(character, skill)
+        changed = upsert_character_skill(character, skill) or changed
+    return changed
 
 
-def upsert_character_skill(character: EveCharacter, esi_skill):
+def upsert_character_skill(character: EveCharacter, esi_skill) -> bool:
+    """Save one skill. True when it is new or its trained level changed."""
     skill_type = EsiClient(None).get_eve_type(esi_skill["skill_id"])
     qry = EveCharacterSkill.objects.filter(
         character=character, skill_id=esi_skill["skill_id"]
     ).order_by("-skill_points")
     logger.debug("Query count %d", qry.count())
     if qry.count() == 0:
+        changed = True
         skill = EveCharacterSkill(
             character=character,
             skill_id=esi_skill["skill_id"],
@@ -59,6 +66,7 @@ def upsert_character_skill(character: EveCharacter, esi_skill):
         )
     else:
         skill = qry.first()
+        changed = skill.skill_level != esi_skill["trained_skill_level"]
         skill.skill_points = esi_skill["skillpoints_in_skill"]
         skill.skill_level = esi_skill["trained_skill_level"]
     skill.save()
@@ -69,6 +77,7 @@ def upsert_character_skill(character: EveCharacter, esi_skill):
             character.character_id,
         )
         qry.last().delete()
+    return changed
 
 
 def compare_skills_to_skillset(character_id: int, skillset: EveSkillset):

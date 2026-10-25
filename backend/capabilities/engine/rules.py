@@ -27,6 +27,10 @@ EMPIRICAL_QUANTILE = 0.1
 # R12: flag a core row for the doctrine team when fewer Proven pilots meet it.
 OVER_ASK_FLAG_SHARE = 0.7
 
+# Recompute a fitting at least this often even when its inputs are the
+# same: the empirical levels move as Proven pilots train.
+REQUIREMENTS_MAX_AGE_DAYS = 7
+
 # Proven: distinct fleets in the capability over this many days.
 PROVEN_WINDOW_DAYS = 365
 

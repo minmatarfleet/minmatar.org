@@ -64,9 +64,9 @@ def _refresh_industry_jobs_and_notify(eve_character_id: int) -> None:
 
 
 def _refresh_skills_and_readiness(character: EveCharacter):
-    """Sync skills, then let the capability engine re-rate the character."""
-    refresh_character_skills(character.character_id)
-    if character.user_id:
+    """Sync skills; re-rate the character only when a level changed."""
+    changed = refresh_character_skills(character.character_id)
+    if changed and character.user_id:
         app.signature(
             "capabilities.tasks.refresh_character_readiness",
             args=[character.pk],

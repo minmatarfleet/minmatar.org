@@ -68,19 +68,23 @@ def update_character_assets(eve_character_id: int) -> tuple[int, int, int]:
     return created, updated, deleted
 
 
-def update_character_skills(eve_character_id: int) -> None:
-    """Update skills and skillsets for a character."""
+def update_character_skills(eve_character_id: int) -> bool:
+    """Update skills and skillsets for a character.
+
+    Returns True when a skill was added or changed level.
+    """
     character = EveCharacter.objects.get(character_id=eve_character_id)
     if character.esi_suspended:
         logger.info(
             "Skipping skills update for character %s", eve_character_id
         )
-        return
+        return False
 
     logger.info("Updating skills for character %s", eve_character_id)
-    upsert_character_skills(eve_character_id)
+    changed = upsert_character_skills(eve_character_id)
     for skillset in EveSkillset.objects.all():
         create_eve_character_skillset(eve_character_id, skillset)
+    return bool(changed)
 
 
 def _optional(row: dict, key: str):

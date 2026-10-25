@@ -382,7 +382,15 @@ def recompute_fitting(
     substitutes = _substitutes(fitting)
     key = _input_key(fitting, entry, sde, overrides, substitutes, len(pilots))
     existing = current_set(fitting_id)
-    if existing and existing.input_key == key and not force:
+    max_age = timedelta(days=rules.REQUIREMENTS_MAX_AGE_DAYS)
+    if (
+        existing
+        and existing.input_key == key
+        and not force
+        and existing.computed_at >= timezone.now() - max_age
+    ):
+        # Unchanged inputs. Proven pilots keep training, so the empirical
+        # levels still get a fresh look once a week.
         return existing
     req = compute(
         sde,
@@ -561,11 +569,62 @@ def _contexts(sde, fitting_ids=None) -> list[_FittingContext]:
     return [_CONTEXT_CACHE[key] for key in keys.values()]
 
 
+READINESS_FIELDS = (
+    "requirement_set_id",
+    "unlocked",
+    "hard_ready",
+    "core_ready",
+    "doctrine_ready",
+    "missing_required",
+    "missing_core",
+    "fit_problems",
+    "days_to_hard",
+    "days_to_core",
+    "support_score",
+)
+
+
+def _readiness_values(ctx, r) -> tuple:
+    """Values in READINESS_FIELDS order, comparable with stored rows."""
+    return (
+        ctx.rs.pk,
+        r.unlocked,
+        r.hard_ready,
+        r.core_ready,
+        r.core_ready if ctx.rs.strategic else r.hard_ready,
+        r.missing_required,
+        r.missing_core,
+        r.fit_problems,
+        r.days_to_hard,
+        r.days_to_core,
+        r.support_score,
+    )
+
+
+def _stored_readiness(character_pks, fitting_ids) -> dict[tuple, tuple]:
+    rows = CharacterFittingReadiness.objects.filter(
+        character_id__in=list(character_pks), fitting_id__in=list(fitting_ids)
+    ).values_list("character_id", "fitting_id", *READINESS_FIELDS)
+    return {(row[0], row[1]): tuple(row[2:]) for row in rows}
+
+
 def refresh_readiness(fitting_ids=None, character_pks=None) -> int:
-    """Rewrite CharacterFittingReadiness for these fittings × characters."""
+    """Update CharacterFittingReadiness for these fittings × characters.
+
+    Only rows whose values changed are written, so a nightly pass over an
+    unchanged alliance writes almost nothing. Returns the rows written.
+    """
     sde = current_sde()
     if sde is None:
         return 0
+    full_pass = fitting_ids is None and character_pks is None
+    if full_pass:
+        # Drop rows of fittings that are no longer rated.
+        CharacterFittingReadiness.objects.exclude(
+            fitting_id__in=FittingRequirementSet.objects.filter(
+                is_current=True
+            ).values("fitting_id")
+        ).delete()
     contexts = _contexts(sde, fitting_ids)
     if not contexts:
         return 0
@@ -573,63 +632,41 @@ def refresh_readiness(fitting_ids=None, character_pks=None) -> int:
     if character_pks is not None:
         characters = characters.filter(pk__in=list(character_pks))
     pks = list(characters.values_list("pk", flat=True))
+    fids = [ctx.rs.fitting_id for ctx in contexts]
     written = 0
     for start in range(0, len(pks), 500):
         chunk = pks[start : start + 500]
         skills = skill_maps(chunk)
+        stored = _stored_readiness(chunk, fids)
         rows = []
         for pk in chunk:
             char_skills = skills.get(pk, {})
             for ctx in contexts:
-                r = evaluate(
-                    sde, ctx.req, ctx.checker, ctx.hull_req, char_skills
+                values = _readiness_values(
+                    ctx,
+                    evaluate(
+                        sde, ctx.req, ctx.checker, ctx.hull_req, char_skills
+                    ),
                 )
+                if stored.get((pk, ctx.rs.fitting_id)) == values:
+                    continue
                 rows.append(
                     CharacterFittingReadiness(
                         character_id=pk,
                         fitting_id=ctx.rs.fitting_id,
-                        requirement_set=ctx.rs,
-                        unlocked=r.unlocked,
-                        hard_ready=r.hard_ready,
-                        core_ready=r.core_ready,
-                        doctrine_ready=(
-                            r.core_ready if ctx.rs.strategic else r.hard_ready
-                        ),
-                        missing_required=r.missing_required,
-                        missing_core=r.missing_core,
-                        fit_problems=r.fit_problems,
-                        days_to_hard=r.days_to_hard,
-                        days_to_core=r.days_to_core,
-                        support_score=r.support_score,
                         computed_at=timezone.now(),
+                        **dict(zip(READINESS_FIELDS, values)),
                     )
                 )
-        _upsert(
-            CharacterFittingReadiness,
-            rows,
-            ["character", "fitting"],
-            [
-                "requirement_set",
-                "unlocked",
-                "hard_ready",
-                "core_ready",
-                "doctrine_ready",
-                "missing_required",
-                "missing_core",
-                "fit_problems",
-                "days_to_hard",
-                "days_to_core",
-                "support_score",
-                "computed_at",
-            ],
-        )
+        if rows:
+            _upsert(
+                CharacterFittingReadiness,
+                rows,
+                ["character", "fitting"],
+                [f.removesuffix("_id") for f in READINESS_FIELDS]
+                + ["computed_at"],
+            )
         written += len(rows)
-    # Fittings no longer rated.
-    CharacterFittingReadiness.objects.exclude(
-        fitting_id__in=FittingRequirementSet.objects.filter(
-            is_current=True
-        ).values("fitting_id")
-    ).delete()
     return written
 
 
@@ -755,7 +792,19 @@ def _capability_row(pk, capability, ready, flown) -> CharacterCapability:
     )
 
 
+CAPABILITY_FIELDS = (
+    "level",
+    "best_fitting_id",
+    "ready_fittings",
+    "unlocked_fittings",
+    "fleets_365d",
+    "strategic_fleets_365d",
+    "last_flown",
+)
+
+
 def refresh_capabilities(character_pks=None) -> int:
+    """Update CharacterCapability; only changed rows are written."""
     sde = current_sde()
     if sde is None:
         return 0
@@ -765,31 +814,32 @@ def refresh_capabilities(character_pks=None) -> int:
     pk_by_eve_id = dict(characters.values_list("character_id", "pk"))
     flown = _flown(sde, pk_by_eve_id, subset=character_pks is not None)
     readiness = _readiness_by_capability(pk_by_eve_id.values())
-    rows = [
-        _capability_row(
-            pk,
-            capability,
-            readiness.get((pk, capability)),
-            flown.get((pk, capability)),
+    stored = {
+        (row[0], row[1]): tuple(row[2:])
+        for row in CharacterCapability.objects.filter(
+            character_id__in=list(pk_by_eve_id.values())
+        ).values_list("character_id", "capability", *CAPABILITY_FIELDS)
+    }
+    rows = []
+    for pk in pk_by_eve_id.values():
+        for capability in rules.CAPABILITIES:
+            row = _capability_row(
+                pk,
+                capability,
+                readiness.get((pk, capability)),
+                flown.get((pk, capability)),
+            )
+            values = tuple(getattr(row, f) for f in CAPABILITY_FIELDS)
+            if stored.get((pk, capability)) != values:
+                rows.append(row)
+    if rows:
+        _upsert(
+            CharacterCapability,
+            rows,
+            ["character", "capability"],
+            [f.removesuffix("_id") for f in CAPABILITY_FIELDS]
+            + ["computed_at"],
         )
-        for pk in pk_by_eve_id.values()
-        for capability in rules.CAPABILITIES
-    ]
-    _upsert(
-        CharacterCapability,
-        rows,
-        ["character", "capability"],
-        [
-            "level",
-            "best_fitting",
-            "ready_fittings",
-            "unlocked_fittings",
-            "fleets_365d",
-            "strategic_fleets_365d",
-            "last_flown",
-            "computed_at",
-        ],
-    )
     return len(rows)
 
 

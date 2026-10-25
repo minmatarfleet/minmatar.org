@@ -381,14 +381,34 @@ once: one character per account.
 
 ## 8. How heavy is it, and when does it run
 
-**Nothing here runs in a request**, and none of it is heavy:
+**Nothing here runs in a request**, and none of it is heavy. These are
+measured on MySQL with prod-scale data (51 fittings, about 3,400 characters,
+530k skill rows, a year of fleet seats):
 
-| Work | When | Cost |
+| Work | When | Measured |
 |---|---|---|
-| Requirements for one fitting | A fitting gets a new `latest_version` (EFT, overrides, capability), an `EveDoctrineFitting` is added or removed, or the SDE extract or `RULES_VERSION` changes | Under 1 s per fitting. All 51 fittings, including the empirical stats, take a few seconds. |
-| Readiness for one character | After `update_character` syncs its skills | One skill query plus 51 fittings × ~40 rows compared in memory: milliseconds. |
-| Readiness for every character on one fitting | After that fitting's requirements change | ~3.4k characters, one bulk skill query: a few seconds. |
-| Proven, account links, full readiness pass | Nightly | The prototype read 530k skill rows and 90k seats in about a minute and computed every fitting × character pair in seconds. |
+| Re-rate one character | After `update_character` syncs skills **and a level changed** (an unchanged sync queues nothing) | 15 ms median, 21 ms worst; 0.5 s on a worker's first task while it loads the fitting contexts |
+| One fitting changed | 15 s after a fitting, correction, substitution, doctrine link or doctrine type change | About 4 s: recompute plus every character on that fitting |
+| Nightly pass | 03:15 UTC | 12 s when nothing changed; about 30 s when everything changed, e.g. after a new SDE build |
+| Weekly | Inside the nightly pass | Each fitting is recomputed at least every 7 days, so the empirical levels follow pilots' training |
+| New SDE build | 12:40 UTC check, when CCP publishes one | About 100 MB download; parsing takes 1.2 s and peaks at 50 MB |
+
+Writes:
+
+- Readiness and capability rows are written only when a value changed, so
+  an unchanged night writes no rows.
+- At prod scale (about 4,700 characters) the readiness table is about
+  100 MB.
+- Rows of fittings that are no longer rated are dropped only by full
+  passes, never by a one-character refresh.
+- `computed_at` on a readiness or capability row means when its values
+  last changed.
+
+Memory: a worker process that runs these tasks keeps the SDE (37 MB) and
+the fitting contexts in memory. A full pass peaks at about 260 MB for that
+process, and repeated passes stay there.
+
+ESI: none. The engine reads the skills the existing sync already stores.
 
 **Why store readiness instead of computing it on read?** One player's page
 alone could be computed live: 5–20 characters against 51 fittings is cheap.
@@ -401,8 +421,8 @@ lesson: prod is far bigger than dev.
 **Queue:** no new queue or worker. The tasks live in the new `capabilities`
 app, routed as `"capabilities.": "community"` next to `fittings.`. The
 per-character refresh is chained from the skill sync on `eveonline`. They are
-`AppTask`s with `cooldown` on the per-fitting and per-character tasks, so a
-burst of edits collapses into one run. The nightly job is `exclusive`, and
+`AppTask`s queued with a short countdown, so a burst of edits collapses
+into one queued copy. The nightly job is `exclusive`, and
 every task is safe to run twice.
 
 ## 9. Golden checks (prod fittings, rule H)
