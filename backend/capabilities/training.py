@@ -30,8 +30,10 @@ from capabilities.models import (
     FittingRequirementSet,
     FittingSkillRequirement,
 )
-from eveonline.models import EveCharacter, EveCharacterSkill
-from fittings.models import EveDoctrineFitting
+from applications.l3arn import L3ARN_CORPORATION_NAME
+from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCharacter, EveCharacterSkill, EveCorporation
+from fittings.models import DOCTRINE_TYPE_STRATEGIC, EveDoctrineFitting
 
 # Suggestions for a character without goals: the nearest fits, if any is
 # this close.
@@ -40,10 +42,26 @@ SUGGESTIONS = 2
 ALSO_CLOSE = 3
 # Fitting names start with the alliance tag ("[FL33T] Guardian").
 NAME_TAG = re.compile(r"^\[[^\]]*\]\s*")
+# Academy pilots see only a doctrine's secondary fits; everyone else never does.
+SECONDARY = "secondary"
+# "What you can bring" columns: capitals share one.
+CAPITALS = "Capitals"
+COLUMN = {"Dreads": CAPITALS, "Carriers": CAPITALS}
+COLUMNS = tuple(dict.fromkeys(COLUMN.get(c, c) for c in rules.CAPABILITIES))
 
 
 class TrainingError(Exception):
     pass
+
+
+def is_academy(user) -> bool:
+    """The player's main is in the Minmatar Fleet Academy."""
+    primary = user_primary_character(user)
+    if primary is None or not primary.corporation_id:
+        return False
+    return EveCorporation.objects.filter(
+        corporation_id=primary.corporation_id, name=L3ARN_CORPORATION_NAME
+    ).exists()
 
 
 class _Player:
@@ -71,12 +89,31 @@ class _Player:
                 self.levels[pk][skill] = level
                 self.trained_sp[pk][skill] = sp
             self.skill_names[skill] = name
-        self.sets = {
+        self.academy = is_academy(user)
+        sets = {
             rs.fitting_id: rs
             for rs in FittingRequirementSet.objects.filter(
                 is_current=True, fitting__deleted__isnull=True
             ).select_related("fitting")
         }
+        # The doctrine places this player may see each fit in.
+        self.doctrine_fits = [
+            row
+            for row in EveDoctrineFitting.objects.filter(
+                fitting_id__in=list(sets)
+            )
+            .order_by("doctrine__name")
+            .values(
+                "fitting_id",
+                "role",
+                "doctrine_id",
+                "doctrine__name",
+                "doctrine__type",
+            )
+            if (row["role"] == SECONDARY) == self.academy
+        ]
+        visible = {row["fitting_id"] for row in self.doctrine_fits}
+        self.sets = {fid: rs for fid, rs in sets.items() if fid in visible}
         self.readiness = {
             (r.character_id, r.fitting_id): r
             for r in CharacterFittingReadiness.objects.filter(
@@ -94,13 +131,10 @@ class _Player:
             ).values_list("character_id", flat=True)
         )
         self.doctrines: dict[int, list[str]] = defaultdict(list)
-        for fitting_id, name in (
-            EveDoctrineFitting.objects.filter(fitting_id__in=list(self.sets))
-            .order_by("doctrine__name")
-            .values_list("fitting_id", "doctrine__name")
-        ):
-            if name not in self.doctrines[fitting_id]:
-                self.doctrines[fitting_id].append(name)
+        for row in self.doctrine_fits:
+            names = self.doctrines[row["fitting_id"]]
+            if row["doctrine__name"] not in names:
+                names.append(row["doctrine__name"])
         self.memberships = {
             m.character_id: m
             for m in CharacterAccountMember.objects.filter(
@@ -330,8 +364,8 @@ def overview(user) -> dict:
     }
 
 
-def _bring(player: _Player) -> list[dict]:
-    """Ready ships per role, counted once per account."""
+def _ready_seats(player: _Player) -> dict[int, set]:
+    """Per fit, the accounts (or lone characters) with someone ready in it."""
     seats: dict[int, set] = defaultdict(set)
     for (pk, fid), row in player.readiness.items():
         if row.doctrine_ready and pk not in player.not_for_fleets:
@@ -342,16 +376,122 @@ def _bring(player: _Player) -> list[dict]:
                 else ("character", pk)
             )
             seats[fid].add(seat)
+    return seats
+
+
+def _doctrine_fits(player: _Player) -> dict[int, dict]:
+    """Each doctrine's visible fits by column, strategic doctrines first."""
+    doctrines: dict[int, dict] = {}
+    for row in player.doctrine_fits:
+        fid = row["fitting_id"]
+        doctrine = doctrines.setdefault(
+            row["doctrine_id"],
+            {
+                "doctrine_id": row["doctrine_id"],
+                "name": row["doctrine__name"],
+                "strategic": row["doctrine__type"] == DOCTRINE_TYPE_STRATEGIC,
+                "fits": defaultdict(list),
+                "lead": None,
+            },
+        )
+        rs = player.sets[fid]
+        column = COLUMN.get(rs.capability, rs.capability)
+        if fid not in doctrine["fits"][column]:
+            doctrine["fits"][column].append(fid)
+        if doctrine["lead"] is None and column == "DPS":
+            doctrine["lead"] = fid
+    return dict(
+        sorted(
+            doctrines.items(),
+            key=lambda item: (not item[1]["strategic"], item[1]["name"]),
+        )
+    )
+
+
+def _bring(player: _Player) -> dict:
+    """Per doctrine and role: is every ship in it flown by someone?"""
+    seats = _ready_seats(player)
+    doctrines = _doctrine_fits(player)
+    columns = [
+        c for c in COLUMNS if any(d["fits"].get(c) for d in doctrines.values())
+    ]
     rows = []
-    for capability in rules.CAPABILITIES:
-        ships = [
-            {**player.ship(fid), "accounts": len(seat_set)}
-            for fid, seat_set in seats.items()
-            if player.sets[fid].capability == capability
-        ]
-        ships.sort(key=lambda s: (-s["accounts"], s["name"]))
-        rows.append({"capability": capability, "ships": ships})
-    return rows
+    for doctrine in doctrines.values():
+        fits = doctrine["fits"]
+        lead = doctrine["lead"] or next(iter(fits.values()))[0]
+        cells = []
+        for column in columns:
+            ids = fits.get(column, [])
+            ready = sum(1 for fid in ids if seats.get(fid))
+            cells.append(
+                {
+                    "column": column,
+                    "ships": len(ids),
+                    "ready": ready,
+                    "state": (
+                        "none"
+                        if not ids
+                        else "ready" if ready == len(ids) else "needs_work"
+                    ),
+                }
+            )
+        rows.append(
+            {
+                "doctrine_id": doctrine["doctrine_id"],
+                "name": doctrine["name"],
+                "strategic": doctrine["strategic"],
+                "ship_type_id": player.sets[lead].fitting.ship_id,
+                "cells": cells,
+            }
+        )
+    return {"academy": player.academy, "columns": columns, "doctrines": rows}
+
+
+def doctrine_cell(user, doctrine_id: int, column: str) -> dict:
+    """One doctrine's ships for one role: who flies each, or who is closest."""
+    player = _Player(user)
+    doctrine = _doctrine_fits(player).get(doctrine_id)
+    if doctrine is None or column not in doctrine["fits"]:
+        raise TrainingError("Not one of your doctrines.")
+    seats = _ready_seats(player)
+    pilots = [
+        c for c in player.characters if c.pk not in player.not_for_fleets
+    ]
+    ships = []
+    for fid in doctrine["fits"][column]:
+        closest = None
+        if not seats.get(fid):
+            candidates = [c for c in pilots if (c.pk, fid) in player.readiness]
+            if candidates:
+                best = min(
+                    candidates,
+                    key=lambda c, fid=fid: (
+                        player.estimate(c.pk, fid),
+                        c.character_name,
+                    ),
+                )
+                closest = {
+                    "character_id": best.character_id,
+                    "name": best.character_name,
+                    "days": player.status(best.pk, fid)["days"],
+                }
+        ships.append(
+            {
+                **player.ship(fid),
+                "accounts": len(seats.get(fid, ())),
+                "closest": closest,
+            }
+        )
+    ships.sort(key=lambda s: (s["accounts"] == 0, s["name"]))
+    return {
+        "doctrine_id": doctrine_id,
+        "name": doctrine["name"],
+        "column": column,
+        "ship_type_id": player.sets[
+            doctrine["lead"] or doctrine["fits"][column][0]
+        ].fitting.ship_id,
+        "ships": ships,
+    }
 
 
 def character_view(user, character_id: int) -> dict:

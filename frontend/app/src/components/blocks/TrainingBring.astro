@@ -1,0 +1,285 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TrainingBring, TrainingBringDoctrine } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { TRAINING_DOCTRINE_PARTIAL, training_url } from '@helpers/training'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+/**
+ * "What you can bring": one row per doctrine, one cell per role. A cell is
+ * ✓ when every ship in it is flown by one of the pilot's accounts; it opens
+ * the doctrine's ships for that role.
+ */
+interface Props {
+    bring:              TrainingBring;
+    [propName: string]: any;
+}
+
+const {
+    bring,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const groups = [
+    { title: t('training.strategic'), doctrines: bring.doctrines.filter(doctrine => doctrine.strategic) },
+    { title: t('training.other_doctrines'), doctrines: bring.doctrines.filter(doctrine => !doctrine.strategic) },
+].filter(group => group.doctrines.length > 0)
+
+const open_cell = (doctrine:TrainingBringDoctrine, column:string) =>
+    `show_modal({ partial: '${translatePath(training_url(TRAINING_DOCTRINE_PARTIAL, { doctrine_id: doctrine.doctrine_id, column }))}' })`
+
+const needs_work = (doctrine:TrainingBringDoctrine) =>
+    doctrine.cells.filter(cell => cell.state === 'needs_work').map(cell => cell.column)
+
+const cell_label = (doctrine:TrainingBringDoctrine, column:string, state:string) =>
+    t(state === 'ready' ? 'training.cell_ready' : 'training.cell_needs_work')
+        .replace('{doctrine}', doctrine.name)
+        .replace('{role}', column)
+---
+
+<ComponentBlock padding_block="0" padding_inline="0" class:list={['[ training-bring ]', Astro.props.class]} {...attributes}>
+    {bring.doctrines.length === 0 ?
+        <EmptyState title={t('training.no_doctrines')} />
+        :
+        <>
+            <XFadeScroll class="[ training-bring__wide ]">
+                <table style={`--bring-columns: ${bring.columns.length}`}>
+                    <thead>
+                        <tr>
+                            <th scope="col">{t('training.col_doctrine')}</th>
+                            {bring.columns.map(column => <th scope="col">{column}</th>)}
+                        </tr>
+                    </thead>
+                    {groups.map(group =>
+                        <tbody>
+                            <tr class="[ training-bring__group ]">
+                                <th scope="colgroup" colspan={bring.columns.length + 1}>{group.title}</th>
+                            </tr>
+                            {group.doctrines.map(doctrine =>
+                                <tr>
+                                    <th scope="row">
+                                        <span class="[ training-bring__doctrine ]">
+                                            <img src={get_item_icon(doctrine.ship_type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                                            {doctrine.name}
+                                        </span>
+                                    </th>
+                                    {doctrine.cells.map(cell =>
+                                        <td>
+                                            {cell.state === 'none' ?
+                                                <span class="[ training-bring__none ]" aria-label={t('training.cell_none')}>—</span>
+                                                :
+                                                <button
+                                                    type="button"
+                                                    class:list={['[ training-bring__cell ]', cell.state]}
+                                                    aria-label={cell_label(doctrine, cell.column, cell.state)}
+                                                    x-on:click={open_cell(doctrine, cell.column)}
+                                                >
+                                                    {cell.state === 'ready' ? '✓' : t('training.needs_work')}
+                                                </button>
+                                            }
+                                        </td>
+                                    )}
+                                </tr>
+                            )}
+                        </tbody>
+                    )}
+                </table>
+            </XFadeScroll>
+
+            <div class="[ training-bring__narrow ]">
+                {groups.map(group =>
+                    <section>
+                        <h3>{group.title}</h3>
+                        <ul role="list">
+                            {group.doctrines.map(doctrine => {
+                                const todo = needs_work(doctrine)
+                                const first = todo[0] ?? doctrine.cells.find(cell => cell.state !== 'none')?.column ?? ''
+                                return (
+                                    <li>
+                                        <button type="button" x-on:click={open_cell(doctrine, first)}>
+                                            <img src={get_item_icon(doctrine.ship_type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                                            <span class="[ training-bring__name ]">
+                                                <strong>{doctrine.name}</strong>
+                                                {todo.length > 0 &&
+                                                    <small>{t('training.needs_work_in').replace('{roles}', todo.join(', '))}</small>
+                                                }
+                                            </span>
+                                            {todo.length === 0 &&
+                                                <span class="[ training-bring__all ]" aria-label={t('training.all_ready')}>✓</span>
+                                            }
+                                        </button>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    </section>
+                )}
+            </div>
+        </>
+    }
+</ComponentBlock>
+
+<style lang="scss">
+    table {
+        width: 100%;
+        min-width: calc(16rem + var(--bring-columns) * 7.5rem);
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    thead th:first-child {
+        width: 16rem;
+    }
+
+    thead th {
+        padding: var(--space-xs) var(--space-s);
+        border-bottom: 1px solid var(--hairline);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        text-align: center;
+
+        &:first-child {
+            text-align: start;
+        }
+    }
+
+    .training-bring__group th {
+        padding: var(--space-s) var(--space-s) var(--space-3xs);
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        font-weight: normal;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        text-align: start;
+    }
+
+    tbody th[scope="row"],
+    td {
+        padding: var(--space-3xs) var(--space-s);
+    }
+
+    td {
+        text-align: center;
+    }
+
+    .training-bring__doctrine {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-weight: 600;
+        color: var(--highlight);
+        text-align: start;
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .training-bring__cell {
+        width: 100%;
+        min-height: 2.75rem;
+        border: 1px solid;
+        border-radius: var(--space-3xs);
+        background: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        &.ready {
+            border-color: color-mix(in srgb, var(--green) 35%, transparent);
+            color: var(--green);
+            font-size: var(--step-1);
+            font-weight: 700;
+        }
+
+        &.needs_work {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+            color: var(--fleet-yellow);
+            font-size: var(--step--1);
+            white-space: nowrap;
+        }
+
+        &:hover,
+        &:focus-visible {
+            background: var(--surface-sunken);
+        }
+    }
+
+    .training-bring__none {
+        color: var(--text-muted);
+    }
+
+    .training-bring__narrow {
+        display: none;
+
+        h3 {
+            padding: var(--space-s) var(--space-s) 0;
+            font-family: var(--heading-font);
+            font-size: var(--step--1);
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            width: 100%;
+            min-height: 3.5rem;
+            padding: var(--space-3xs) var(--space-s);
+            border: 0;
+            background: none;
+            color: var(--highlight);
+            text-align: start;
+            cursor: pointer;
+
+            img {
+                border-radius: var(--space-3xs);
+            }
+        }
+    }
+
+    .training-bring__name {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0;
+
+        small {
+            font-size: var(--step--2);
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .training-bring__all {
+        color: var(--green);
+        font-size: var(--step-1);
+        font-weight: 700;
+    }
+
+    @media (max-width: 48rem) {
+        .training-bring__wide {
+            display: none;
+        }
+
+        .training-bring__narrow {
+            display: block;
+        }
+    }
+</style>

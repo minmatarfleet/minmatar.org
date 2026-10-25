@@ -44,19 +44,50 @@ class AccountResponse(Schema):
     characters: list[CharacterSummaryResponse]
 
 
-class BringShipResponse(ShipResponse):
-    accounts: int
+class BringCellResponse(Schema):
+    column: str
+    ships: int
+    ready: int
+    state: str
 
 
-class BringRowResponse(Schema):
-    capability: str
-    ships: list[BringShipResponse]
+class BringDoctrineResponse(Schema):
+    doctrine_id: int
+    name: str
+    strategic: bool
+    ship_type_id: int
+    cells: list[BringCellResponse]
+
+
+class BringResponse(Schema):
+    academy: bool
+    columns: list[str]
+    doctrines: list[BringDoctrineResponse]
 
 
 class TrainingOverviewResponse(Schema):
     accounts: list[AccountResponse]
     unplaced: list[CharacterSummaryResponse]
-    bring: list[BringRowResponse]
+    bring: BringResponse
+
+
+class ClosestCharacterResponse(Schema):
+    character_id: int
+    name: str
+    days: float
+
+
+class DoctrineShipResponse(ShipResponse):
+    accounts: int
+    closest: ClosestCharacterResponse | None
+
+
+class DoctrineCellResponse(Schema):
+    doctrine_id: int
+    name: str
+    column: str
+    ship_type_id: int
+    ships: list[DoctrineShipResponse]
 
 
 class RoleResponse(Schema):

@@ -4,6 +4,7 @@ export const TRAINING_PARTIAL = '/partials/training_component/'
 export const TRAINING_PLAN_PARTIAL = '/partials/training_plan_component/'
 export const TRAINING_SHIPS_PARTIAL = '/partials/training_ships_component/'
 export const TRAINING_MOVE_PARTIAL = '/partials/training_move_component/'
+export const TRAINING_DOCTRINE_PARTIAL = '/partials/training_doctrine_component/'
 
 /** Ready ships shown in a character row before the "+N" chip. */
 export const READY_ICONS = 6

@@ -17,6 +17,7 @@ import {
 
 import ActionMenu from '@components/blocks/ActionMenu.astro'
 import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
 
 /**
  * One character on the Training tab: who it is, the one ship it trains for
@@ -48,7 +49,6 @@ const status =
             .replace('{total}', character.goals.length.toString()),
         done: false,
     } :
-    character.nothing_close ? { text: t('training.nothing_close'), done: false } :
     { text: t('training.no_ships_yet'), done: false }
 
 const add_label = character.goals.length > 0 ? t('training.add_ship') : t('training.pick_ship')
@@ -76,31 +76,31 @@ const more_ready = character.ready.length - shown_ready.length
 
     <div class="[ training-row__training ]">
         {character.training &&
-            <button
-                type="button"
-                class="[ training-line ]"
-                x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: character.training.fitting_id })}
-            >
-                <img src={get_item_icon(character.training.ship_type_id, 64)} alt="" width="32" height="32" loading="lazy" />
-                <span class="[ training-line__name ]">{character.training.name}</span>
-                <span class="[ training-line__time ]">{time_label(t, character.training.days)}</span>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
-            </button>
+            <div class="[ training-line-wrap ]">
+                <button
+                    type="button"
+                    class="[ training-line ]"
+                    x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: character.training.fitting_id })}
+                >
+                    <img src={get_item_icon(character.training.ship_type_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                    <span class="[ training-line__name ]">{character.training.name}</span>
+                    <span class="[ training-line__time ]">{time_label(t, character.training.days)}</span>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
+                </button>
+                <button
+                    type="button"
+                    class="[ training-line__remove ]"
+                    aria-label={t('training.stop_training').replace('{name}', character.training.name)}
+                    title={t('training.stop_training').replace('{name}', character.training.name)}
+                    hx-post={partial({ mode: 'remove_goal', character_id: id, fitting_id: character.training.fitting_id })}
+                    hx-target="#training"
+                    hx-swap="outerHTML"
+                    hx-confirm={t('training.remove_confirm').replace('{name}', character.training.name)}
+                >
+                    <TrashIcon />
+                </button>
+            </div>
         }
-        {!character.training && character.suggestions.map(ship =>
-            <button
-                type="button"
-                class="[ training-line training-line--suggestion ]"
-                aria-label={t('training.add_suggestion').replace('{name}', ship.name).replace('{time}', time_label(t, ship.days))}
-                hx-post={partial({ mode: 'add_goal', character_id: id, fitting_id: ship.fitting_id })}
-                hx-target="#training"
-                hx-swap="outerHTML"
-            >
-                <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="26" height="26" loading="lazy" />
-                <span class="[ training-line__name ]">+ {ship.name}</span>
-                <span class="[ training-line__time ]">{time_label(t, ship.days)}</span>
-            </button>
-        )}
         {!character.training && !character.not_for_fleets &&
             <button
                 type="button"
@@ -237,7 +237,15 @@ const more_ready = character.ready.length - shown_ready.length
         max-width: 28rem;
     }
 
+    .training-line-wrap {
+        display: flex;
+        align-items: stretch;
+        gap: var(--space-3xs);
+    }
+
     .training-line {
+        flex-grow: 1;
+        min-width: 0;
         display: flex;
         align-items: center;
         gap: var(--space-xs);
@@ -261,9 +269,29 @@ const more_ready = character.ready.length - shown_ready.length
         }
     }
 
-    .training-line--suggestion {
-        min-height: 2.25rem;
-        border-style: dashed;
+    .training-line__remove {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: 2.75rem;
+        padding: 0;
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+        background: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        :global(svg) {
+            width: 0.75rem;
+            height: 0.75rem;
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--fleet-red);
+            color: var(--highlight);
+        }
     }
 
     .training-line__name {

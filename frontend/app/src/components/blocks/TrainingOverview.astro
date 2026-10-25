@@ -1,17 +1,18 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { TrainingOverview } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { TRAINING_MOVE_PARTIAL, training_url } from '@helpers/training'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import TrainingBring from '@components/blocks/TrainingBring.astro'
 import TrainingCharacterRow from '@components/blocks/TrainingCharacterRow.astro'
 
 /**
- * The Training tab: ready ships per role across every account, then each
+ * The Training tab: doctrines and the roles you can fill in them, then each
  * character with the one ship it trains for.
  */
 interface Props {
@@ -26,33 +27,16 @@ const {
 
 delete attributes.class
 
+const move_picker = (account:number) =>
+    `show_modal({ partial: '${translatePath(training_url(TRAINING_MOVE_PARTIAL, { account }))}' })`
+
 const character_count = overview.accounts.reduce((total, account) => total + account.characters.length, 0) + overview.unplaced.length
 ---
 
 <Flexblock gap="var(--space-l)" class:list={['[ training-overview ]', Astro.props.class]} {...attributes}>
     <section class="[ training-section ]" aria-labelledby="training-bring">
         <h2 id="training-bring">{t('training.bring_title')}</h2>
-        <ComponentBlock padding_block="var(--space-3xs)" padding_inline="var(--space-s)">
-            <ul class="[ training-bring ]" role="list">
-                {overview.bring.map(row =>
-                    <li class="[ training-bring__row ]">
-                        <span class="[ training-bring__role ]">{row.capability}</span>
-                        <span class="[ training-bring__ships ]">
-                            {row.ships.map(ship =>
-                                <span class="[ training-chip ]" title={ship.doctrines.join(', ')}>
-                                    <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
-                                    <span>{ship.name}</span>
-                                    <span class="[ training-muted ]">×{ship.accounts}</span>
-                                </span>
-                            )}
-                            {row.ships.length === 0 &&
-                                <span class="[ training-muted ]">{t('training.none_ready')}</span>
-                            }
-                        </span>
-                    </li>
-                )}
-            </ul>
-        </ComponentBlock>
+        <TrainingBring bring={overview.bring} />
     </section>
 
     <section class="[ training-section ]" aria-labelledby="training-characters">
@@ -70,7 +54,12 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
                     </div>
                     {overview.accounts.map(account =>
                         <div class="[ training-list__account ]">
-                            <h3>{t('training.account').replace('{number}', account.number.toString())}</h3>
+                            <div class="[ training-list__account-head ]">
+                                <h3>{t('training.account').replace('{number}', account.number.toString())}</h3>
+                                <button type="button" class="[ training-link ]" x-on:click={move_picker(account.number)}>
+                                    {t('training.move_a_character')}
+                                </button>
+                            </div>
                             {account.characters.map(character =>
                                 <TrainingCharacterRow character={character} />
                             )}
@@ -131,47 +120,6 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         color: var(--text-muted);
     }
 
-    .training-muted {
-        color: var(--text-muted);
-    }
-
-    .training-bring__row {
-        display: grid;
-        grid-template-columns: 8rem minmax(0, 1fr);
-        align-items: center;
-        gap: var(--space-s);
-        padding-block: var(--space-2xs);
-
-        & + & {
-            border-top: 1px solid var(--hairline);
-        }
-    }
-
-    .training-bring__role {
-        font-weight: 600;
-    }
-
-    .training-bring__ships {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .training-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
-        border: 1px solid var(--hairline-medium);
-        border-radius: var(--space-3xs);
-        font-size: var(--step--1);
-        font-weight: 600;
-
-        img {
-            border-radius: var(--space-3xs);
-        }
-    }
-
     .training-list__head {
         display: grid;
         grid-template-columns: var(--training-columns);
@@ -196,6 +144,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         }
     }
 
+    .training-list__account-head,
     .training-list__unplaced {
         display: flex;
         align-items: center;
@@ -220,9 +169,5 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
             display: none;
         }
 
-        .training-bring__row {
-            grid-template-columns: minmax(0, 1fr);
-            gap: var(--space-3xs);
-        }
     }
 </style>

@@ -1740,46 +1740,45 @@
         "title": "BlueprintOwnerResponse",
         "type": "object"
       },
-      "BringRowResponse": {
+      "BringCellResponse": {
         "properties": {
-          "capability": {
-            "title": "Capability",
+          "column": {
+            "title": "Column",
             "type": "string"
           },
+          "ready": {
+            "title": "Ready",
+            "type": "integer"
+          },
           "ships": {
-            "items": {
-              "$ref": "#/components/schemas/BringShipResponse"
-            },
             "title": "Ships",
-            "type": "array"
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
           }
         },
         "required": [
-          "capability",
-          "ships"
+          "column",
+          "ships",
+          "ready",
+          "state"
         ],
-        "title": "BringRowResponse",
+        "title": "BringCellResponse",
         "type": "object"
       },
-      "BringShipResponse": {
+      "BringDoctrineResponse": {
         "properties": {
-          "accounts": {
-            "title": "Accounts",
-            "type": "integer"
-          },
-          "capability": {
-            "title": "Capability",
-            "type": "string"
-          },
-          "doctrines": {
+          "cells": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/BringCellResponse"
             },
-            "title": "Doctrines",
+            "title": "Cells",
             "type": "array"
           },
-          "fitting_id": {
-            "title": "Fitting Id",
+          "doctrine_id": {
+            "title": "Doctrine Id",
             "type": "integer"
           },
           "name": {
@@ -1789,17 +1788,49 @@
           "ship_type_id": {
             "title": "Ship Type Id",
             "type": "integer"
+          },
+          "strategic": {
+            "title": "Strategic",
+            "type": "boolean"
           }
         },
         "required": [
-          "fitting_id",
+          "doctrine_id",
           "name",
+          "strategic",
           "ship_type_id",
-          "capability",
-          "doctrines",
-          "accounts"
+          "cells"
         ],
-        "title": "BringShipResponse",
+        "title": "BringDoctrineResponse",
+        "type": "object"
+      },
+      "BringResponse": {
+        "properties": {
+          "academy": {
+            "title": "Academy",
+            "type": "boolean"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "doctrines": {
+            "items": {
+              "$ref": "#/components/schemas/BringDoctrineResponse"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "academy",
+          "columns",
+          "doctrines"
+        ],
+        "title": "BringResponse",
         "type": "object"
       },
       "BuildPackResponse": {
@@ -5325,6 +5356,29 @@
           "closed_by_discord_id"
         ],
         "title": "CloseHelpTicketRequest",
+        "type": "object"
+      },
+      "ClosestCharacterResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "days"
+        ],
+        "title": "ClosestCharacterResponse",
         "type": "object"
       },
       "CohortRow": {
@@ -9706,6 +9760,42 @@
         "title": "DiscordUserSchema",
         "type": "object"
       },
+      "DoctrineCellResponse": {
+        "properties": {
+          "column": {
+            "title": "Column",
+            "type": "string"
+          },
+          "doctrine_id": {
+            "title": "Doctrine Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "ships": {
+            "items": {
+              "$ref": "#/components/schemas/DoctrineShipResponse"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doctrine_id",
+          "name",
+          "column",
+          "ship_type_id",
+          "ships"
+        ],
+        "title": "DoctrineCellResponse",
+        "type": "object"
+      },
       "DoctrineFittingResponse": {
         "description": "Fitting in a doctrine",
         "properties": {
@@ -9817,6 +9907,58 @@
           "location_ids"
         ],
         "title": "DoctrineResponse",
+        "type": "object"
+      },
+      "DoctrineShipResponse": {
+        "properties": {
+          "accounts": {
+            "title": "Accounts",
+            "type": "integer"
+          },
+          "capability": {
+            "title": "Capability",
+            "type": "string"
+          },
+          "closest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClosestCharacterResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "doctrines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "name",
+          "ship_type_id",
+          "capability",
+          "doctrines",
+          "accounts",
+          "closest"
+        ],
+        "title": "DoctrineShipResponse",
         "type": "object"
       },
       "EnlistRequest": {
@@ -32710,11 +32852,7 @@
             "type": "array"
           },
           "bring": {
-            "items": {
-              "$ref": "#/components/schemas/BringRowResponse"
-            },
-            "title": "Bring",
-            "type": "array"
+            "$ref": "#/components/schemas/BringResponse"
           },
           "unplaced": {
             "items": {
@@ -59795,6 +59933,62 @@
           }
         ],
         "summary": "Doctrine fits a character can train for, those in the most doctrines first",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/doctrines/{doctrine_id}/{column}": {
+      "get": {
+        "operationId": "capabilities_endpoints_get_doctrine_get_doctrine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctrine_id",
+            "required": true,
+            "schema": {
+              "title": "Doctrine Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "column",
+            "required": true,
+            "schema": {
+              "title": "Column",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctrineCellResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "One doctrine's ships for one role, and who flies each",
         "tags": [
           "Training"
         ]

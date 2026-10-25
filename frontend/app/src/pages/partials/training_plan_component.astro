@@ -70,6 +70,14 @@ const copy_label = plan?.queue_skills === 1
 
 const copy_id = `training-plan-${character_id}-${fitting_id}`
 
+// "Who trains it" shows the picked character and the closest few; the rest wait behind "Show all".
+const WHO_SHOWN = 3
+const who_shown = new Set([
+    plan?.character_id,
+    ...(plan?.who ?? []).filter(who => who.character_id !== plan?.character_id).slice(0, WHO_SHOWN).map(who => who.character_id),
+])
+const who_hidden = (plan?.who.length ?? 0) - who_shown.size
+
 import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -104,10 +112,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         <fieldset>
             <legend>{t('training.who_trains')}</legend>
-            <div class="[ training-plan__options ]">
+            <div class="[ training-plan__options ]" x-data="{ all: false }">
                 {plan.who.map(who =>
                     <button
                         type="button"
+                        x-show={who_shown.has(who.character_id) ? undefined : 'all'}
+                        x-cloak={who_shown.has(who.character_id) ? undefined : true}
                         class:list={['[ training-plan__who ]', { selected: who.character_id === plan.character_id }]}
                         aria-pressed={who.character_id === plan.character_id ? 'true' : 'false'}
                         hx-get={plan_url({ character_id: who.character_id })}
@@ -131,6 +141,11 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         }
                     </button>
                 )}
+                {who_hidden > 0 &&
+                    <button type="button" class="[ training-plan__link self-start ]" x-show="!all" x-on:click="all = true">
+                        {t('training.show_all_characters').replace('{count}', plan.who.length.toString())}
+                    </button>
+                }
             </div>
         </fieldset>
 
@@ -246,6 +261,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
+        max-height: 88dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
         padding: var(--space-s);
         color: var(--highlight);
     }
