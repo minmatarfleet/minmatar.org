@@ -5,9 +5,6 @@ the Discord role and aborts the change when Discord fails
 (docs/auth/discord-groups.md). This module is the desired-state reconciler
 for that source: eligible pilots hold their brackets' groups, nobody else
 holds any. A failed add or remove is retried on the next run.
-
-Off unless settings.TIMEZONES_DISCORD_ROLES is set, so assessments can be
-reviewed in admin before any role moves.
 """
 
 from __future__ import annotations
@@ -16,7 +13,6 @@ import logging
 from collections import Counter
 from typing import Iterable
 
-from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 from django.dispatch import receiver
@@ -29,19 +25,21 @@ from timezones.services import pilot_timezone_changed
 logger = logging.getLogger(__name__)
 
 
-def enabled() -> bool:
-    return bool(settings.TIMEZONES_DISCORD_ROLES)
+def existing_groups() -> dict[str, Group]:
+    """Bracket code -> auth group, for the groups created so far."""
+    return {
+        role.code: role.group
+        for role in TimezoneRole.objects.select_related("group")
+    }
 
 
 def ensure_groups() -> dict[str, Group]:
     """Bracket code -> auth group, creating any that are missing.
 
-    Creating a group creates (or adopts, by name) its Discord role.
+    Creating a group creates (or adopts, by name) its Discord role, so only
+    the scheduled reconcile does this, never a request.
     """
-    roles = {
-        role.code: role.group
-        for role in TimezoneRole.objects.select_related("group")
-    }
+    roles = existing_groups()
     for code in BRACKET_CODES:
         if code in roles:
             continue
@@ -65,13 +63,14 @@ def desired_brackets(user_ids: Iterable[int] | None = None) -> dict[int, set]:
 def apply_roles(user_ids: Iterable[int] | None = None) -> Counter:
     """Add and remove bracket groups so membership matches PilotTimezone.
 
-    With ``user_ids`` None, reconciles everyone: eligible pilots and anyone
-    holding a bracket group.
+    With ``user_ids`` None, reconciles everyone (eligible pilots and anyone
+    holding a bracket group) and creates missing groups first. With
+    ``user_ids``, uses only the groups that already exist.
     """
     outcome: Counter = Counter()
-    if not enabled():
+    groups = ensure_groups() if user_ids is None else existing_groups()
+    if not groups:
         return outcome
-    groups = ensure_groups()
     group_codes = {group.id: code for code, group in groups.items()}
     if user_ids is not None:
         user_ids = {int(uid) for uid in user_ids}
@@ -92,7 +91,7 @@ def apply_roles(user_ids: Iterable[int] | None = None) -> Counter:
         user = users.get(user_id)
         if user is None:
             continue
-        want = desired.get(user_id, set())
+        want = desired.get(user_id, set()) & set(groups)
         have = held.get(user_id, set())
         for code in sorted(want - have):
             outcome[_change(user, groups[code], add=True)] += 1

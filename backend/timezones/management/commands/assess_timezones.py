@@ -7,9 +7,9 @@ from timezones import discord_roles, services
 
 class Command(BaseCommand):
     help = (
-        "Assess pilot timezones now. --dry-run prints what would be stored "
-        "without saving; roles are only applied when "
-        "TIMEZONES_DISCORD_ROLES is on."
+        "Assess pilot timezones now and sync their Discord roles. "
+        "--dry-run prints what would be stored without saving or touching "
+        "Discord."
     )
 
     def add_arguments(self, parser):
@@ -42,11 +42,6 @@ class Command(BaseCommand):
         self.stdout.write(f"Eligible pilots per bracket: {dict(brackets)}")
         if dry_run:
             self.stdout.write("Dry run: nothing saved, no roles changed")
-            return
-        if not discord_roles.enabled():
-            self.stdout.write(
-                "TIMEZONES_DISCORD_ROLES is off: no roles changed"
-            )
             return
         self.stdout.write(
             f"Roles: {dict(discord_roles.apply_roles(options['user']))}"

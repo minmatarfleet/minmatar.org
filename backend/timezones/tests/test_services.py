@@ -5,7 +5,6 @@ from unittest import mock
 import factory
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
-from django.test import override_settings
 from django.utils import timezone
 
 from app.test import TestCase
@@ -223,7 +222,6 @@ class LoadEventsTestCase(MuteDiscordMixin, TestCase):
         self.assertEqual(len(events[user.id]), 4)
 
 
-@override_settings(TIMEZONES_DISCORD_ROLES=True)
 class DiscordRolesTestCase(MuteDiscordMixin, TestCase):
     def setUp(self):
         super().setUp()
@@ -260,6 +258,16 @@ class DiscordRolesTestCase(MuteDiscordMixin, TestCase):
         discord_roles.apply_roles()
         self.assertEqual(self._held(), set())
 
+    def test_one_pilot_never_creates_the_groups(self):
+        # "Sync with Discord" must not create Discord roles mid-request.
+        self.assertEqual(discord_roles.apply_roles([self.user.id]), {})
+        self.assertFalse(TimezoneRole.objects.exists())
+
+        discord_roles.apply_roles()
+        self.user.groups.clear()
+        outcome = discord_roles.apply_roles([self.user.id])
+        self.assertEqual(outcome["added"], 2)
+
     def test_leaves_other_groups_alone(self):
         other = Group.objects.create(name="Corp FL33T")
         self.user.groups.add(other)
@@ -280,8 +288,3 @@ class DiscordRolesTestCase(MuteDiscordMixin, TestCase):
         self.assertEqual(self._held(), set())
 
         self.assertEqual(discord_roles.apply_roles()["added"], 2)
-
-    @override_settings(TIMEZONES_DISCORD_ROLES=False)
-    def test_off_by_default(self):
-        self.assertEqual(discord_roles.apply_roles(), {})
-        self.assertFalse(TimezoneRole.objects.exists())
