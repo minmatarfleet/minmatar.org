@@ -1,7 +1,7 @@
 ---
 // no-error-refetch: resolving a paste; the form keeps working if this fails.
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -16,6 +16,7 @@ if (!fleet_id)
     return HTTP_404_Not_Found()
 
 import { resolve_fleet_invite_names, type FleetResolvedPilot } from '@helpers/api.minmatar.org/fleets'
+import { is_skipped, skip_note } from '@helpers/fleet_invites'
 
 let matched:FleetResolvedPilot[] = []
 let not_found:string[] = []
@@ -35,11 +36,16 @@ if (Astro.request.method === 'POST') {
     }
 }
 
-const picks_json = JSON.stringify(matched.map(pilot => ({
-    kind: pilot.kind,
-    id: pilot.id,
-    name: pilot.name,
-})))
+// Pilots the send would skip are still added, marked Skipped; ones already
+// on this fleet are left out.
+const picks_json = JSON.stringify(matched
+    .filter(pilot => !pilot.blocked || is_skipped(pilot.blocked))
+    .map(pilot => ({
+        kind: pilot.kind,
+        id: pilot.id,
+        name: pilot.name,
+        skip: skip_note(t, lang, pilot),
+    })))
 ---
 
 <div

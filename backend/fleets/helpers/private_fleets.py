@@ -8,9 +8,11 @@ volunteering ships on the fleet page (or I'm in with no ship yet); Sitting
 out is one click.
 
 On a standard fleet an invite is a nudge: a pilot gets at most
-``WEEKLY_INVITE_CAP`` Non-Strategic or Training invites a week and can turn
-them off ("Stop fleet invites"). A private fleet (``invite_only``) is made
-by a Strategic FC; its invites ignore both, carry the opsec line, and pilots
+``WEEKLY_INVITE_CAP`` fleet invite a week, whoever sends it, and can turn
+them off ("Stop fleet invites"). A send locks the pilots' accounts while it
+checks and records invites, so two FCs sending at once can't both invite
+the same pilot. A private fleet (``invite_only``) is made by a Strategic FC;
+its invites ignore both and don't count, carry the opsec line, and pilots
 who are in join its private coordination thread
 (fleets.helpers.private_fleet_discord). See docs/fleets/private-fleets.md.
 """
@@ -41,9 +43,9 @@ MAX_WAVE_SIZE = 300
 REPING_COOLDOWN = timedelta(minutes=15)
 # Paste-a-list resolves at most this many names in one go.
 MAX_RESOLVE_NAMES = 50
-# Standard fleet invites a pilot can get in a rolling week. Strategic and
-# private fleet invites don't count and aren't limited.
-WEEKLY_INVITE_CAP = 2
+# Standard fleet invites a pilot can get in a rolling week, from any FC.
+# Private fleet invites don't count and aren't limited.
+WEEKLY_INVITE_CAP = 1
 INVITE_CAP_WINDOW = timedelta(days=7)
 # The notification preference a pilot turns off with Stop fleet invites.
 INVITE_NOTIFICATION_TYPE = "fleets.invite"
@@ -67,37 +69,58 @@ class PrivateFleetError(Exception):
 
 
 def is_capped_fleet(fleet: EveFleet) -> bool:
-    """Standard fleets whose invites count against the weekly cap and
+    """Standard fleets, whose invites count against the weekly cap and
     respect Stop fleet invites."""
-    return not fleet.invite_only and fleet.type != "strategic"
+    return not fleet.invite_only
 
 
-def _capped_fleets_q(prefix: str = "") -> Q:
-    return Q(**{f"{prefix}invite_only": False}) & ~Q(
-        **{f"{prefix}type": "strategic"}
-    )
-
-
-def capped_user_ids(user_ids, now=None) -> set[int]:
+def weekly_invites(user_ids, now=None) -> dict[int, dict]:
     """Pilots who already got ``WEEKLY_INVITE_CAP`` standard fleet invites
-    in the last week. An invite counts once it's made, unless its DM
-    couldn't be delivered."""
+    in the last week: user_id -> the latest invite's ``fleet`` title and
+    ``invited_at``, and ``free_at``, when they can be invited again. An
+    invite counts once it's made, unless its DM couldn't be delivered."""
     if not user_ids:
-        return set()
+        return {}
     since = (now or timezone.now()) - INVITE_CAP_WINDOW
     rows = (
         EveFleetInvite.objects.filter(
-            _capped_fleets_q("eve_fleet__"),
+            eve_fleet__invite_only=False,
             user_id__in=list(user_ids),
             created_at__gte=since,
         )
         .exclude(dm_delivered=False)
-        .values_list("user_id", flat=True)
+        .order_by("created_at")
+        .values_list(
+            "user_id",
+            "created_at",
+            "eve_fleet_id",
+            "eve_fleet__objective",
+            "eve_fleet__description",
+        )
     )
-    counts: dict[int, int] = defaultdict(int)
-    for user_id in rows:
-        counts[user_id] += 1
-    return {u for u, n in counts.items() if n >= WEEKLY_INVITE_CAP}
+    by_user: dict[int, list] = defaultdict(list)
+    for row in rows:
+        by_user[row[0]].append(row)
+    out: dict[int, dict] = {}
+    for user_id, invites in by_user.items():
+        if len(invites) < WEEKLY_INVITE_CAP:
+            continue
+        # Free again once enough of the oldest invites leave the window.
+        oldest_kept = invites[len(invites) - WEEKLY_INVITE_CAP]
+        _, invited_at, fleet_id, objective, description = invites[-1]
+        out[user_id] = {
+            "fleet": objective
+            or (description or "")[:80]
+            or f"Fleet {fleet_id}",
+            "invited_at": invited_at,
+            "free_at": oldest_kept[1] + INVITE_CAP_WINDOW,
+        }
+    return out
+
+
+def capped_user_ids(user_ids, now=None) -> set[int]:
+    """Pilots who already got their standard fleet invites this week."""
+    return set(weekly_invites(user_ids, now=now))
 
 
 def opted_out_user_ids(user_ids) -> set[int]:
@@ -234,11 +257,11 @@ def wave_preview(
         already.add(fleet.created_by_id)
     new = picked - already
     opted_out: set[int] = set()
-    capped: set[int] = set()
+    capped: dict[int, dict] = {}
     if is_capped_fleet(fleet):
         opted_out = opted_out_user_ids(new)
-        capped = capped_user_ids(new - opted_out, now=now)
-        new = new - opted_out - capped
+        capped = weekly_invites(new - opted_out, now=now)
+        new = new - opted_out - set(capped)
     with_discord = set(
         DiscordUser.objects.filter(user_id__in=new).values_list(
             "user_id", flat=True
@@ -250,6 +273,7 @@ def wave_preview(
         "already_invited": len(picked & already),
         "opted_out": len(opted_out),
         "capped": len(capped),
+        "capped_pilots": _capped_pilots(capped),
         "new_user_ids": sorted(new),
         "no_discord_user_ids": no_discord,
         "will_dm": len(with_discord),
@@ -258,6 +282,40 @@ def wave_preview(
             u: b for u, b in new_pilots.items() if u in new
         },
     }
+
+
+# The preview names at most this many pilots skipped for the weekly cap.
+MAX_CAPPED_NAMES = 50
+
+
+def _capped_pilots(capped: dict[int, dict]) -> list[dict]:
+    """Pilots skipped for the weekly cap, soonest free first, by their
+    primary character's name."""
+    if not capped:
+        return []
+    # pylint: disable=import-outside-toplevel
+    from eveonline.helpers.characters.identity import (
+        primary_characters_for_users,
+    )
+
+    order = sorted(capped, key=lambda u: (capped[u]["free_at"], u))
+    order = order[:MAX_CAPPED_NAMES]
+    mains = primary_characters_for_users(order)
+    names = dict(
+        User.objects.filter(id__in=order).values_list("id", "username")
+    )
+    return [
+        {
+            "user_id": user_id,
+            "name": (
+                mains[user_id].character_name
+                if user_id in mains
+                else names.get(user_id, f"User {user_id}")
+            ),
+            **capped[user_id],
+        }
+        for user_id in order
+    ]
 
 
 def invite_sources(
@@ -526,14 +584,19 @@ def send_wave(
             "Your last invites are still sending", status_code=409
         )
     no_discord = set(preview["no_discord_user_ids"])
-    sources = invite_sources(
-        new,
-        onboarding_by_user=preview["onboarding_by_user"],
-        picked_user_ids=user_ids,
-        tribe_group_ids=tribe_group_ids,
-        corporation_ids=corporation_ids,
-    )
     with transaction.atomic():
+        new = _lock_new_invitees(fleet, new)
+        if not new:
+            raise PrivateFleetError(
+                "Someone else just invited them", status_code=409
+            )
+        sources = invite_sources(
+            new,
+            onboarding_by_user=preview["onboarding_by_user"],
+            picked_user_ids=user_ids,
+            tribe_group_ids=tribe_group_ids,
+            corporation_ids=corporation_ids,
+        )
         number = (
             EveFleetInviteWave.objects.filter(eve_fleet=fleet).aggregate(
                 top=Max("number")
@@ -575,12 +638,38 @@ def send_wave(
     return wave
 
 
+def _lock_new_invitees(fleet: EveFleet, user_ids) -> list[int]:
+    """Lock the pilots' accounts until the send commits, then check them
+    again: an FC on another fleet may have invited one since the preview.
+    Two sends that share a pilot run one after the other, so the second
+    sees the first's invite and skips them. Locking in id order keeps two
+    sends from deadlocking. Call inside ``transaction.atomic()``."""
+    user_ids = sorted(set(user_ids))
+    if is_capped_fleet(fleet):
+        list(
+            User.objects.select_for_update()
+            .filter(id__in=user_ids)
+            .order_by("id")
+            .values_list("id", flat=True)
+        )
+    taken = set(
+        EveFleetInvite.objects.filter(
+            eve_fleet=fleet, user_id__in=user_ids
+        ).values_list("user_id", flat=True)
+    )
+    if is_capped_fleet(fleet):
+        rest = set(user_ids) - taken
+        opted_out = opted_out_user_ids(rest)
+        taken |= opted_out | capped_user_ids(rest - opted_out)
+    return [user_id for user_id in user_ids if user_id not in taken]
+
+
 def _nobody_new_message(preview: dict) -> str:
     if preview["capped"] and not preview["opted_out"]:
         return (
-            f"Already had {WEEKLY_INVITE_CAP} fleet invites this week"
+            "Already invited to a fleet this week"
             if preview["picked"] == 1
-            else "Everyone new in these picks had their invites this week"
+            else "Everyone you picked was invited to a fleet this week"
         )
     if preview["opted_out"] and preview["picked"] == 1:
         return "This pilot turned off fleet invites"

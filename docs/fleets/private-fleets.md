@@ -4,7 +4,7 @@ Any fleet's FC can invite pilots over Discord DM from the fleet's Invites tab: n
 
 A private fleet is an alliance fleet that only the invited know about. It never goes on the schedule. Pilots who are in join a private coordination thread under the audience's channel (#pings for the alliance audience), where the start ping goes. Everything else about the fleet works as usual.
 
-Wireframes: the "Private Fleets" and "Standard Fleet Invites" design canvases (Oct 2026).
+Wireframes: the "Private Fleets", "Standard Fleet Invites" and "Weekly Fleet Invite Limit" design canvases (Oct 2026).
 
 ## Invites on a standard fleet
 
@@ -14,8 +14,10 @@ On a fleet that isn't invite only, an invite is a nudge, not access: the fleet s
 |---|---|
 | Who invites | The fleet's FC (its creator) and superusers, while the fleet is upcoming. |
 | New pilots | The Invite pilots dialog's New pilots tab invites the alliance health page's onboarding lists from the latest snapshot: First week (in the alliance 7 days or less, no fleets) and Under 3 fleets (past their first week, fewer than 3 fleets); `classify_onboarding_need` in `alliance/helpers/hygiene.py`. The Invites tab's empty state counts the first list. |
-| Weekly cap | A pilot gets at most 2 Non-Strategic or Training fleet invites in a rolling 7 days (`WEEKLY_INVITE_CAP`). An invite counts once it's made, unless its DM couldn't be delivered. Strategic and private fleet invites don't count and aren't capped. |
-| Stop fleet invites | A button on a Non-Strategic or Training invite DM. It turns off the `fleets.invite` Discord notification preference, which Account › Notifications shows and can turn back on. Pilots who turned it off are skipped; Strategic and private fleet invites still reach them. |
+| Weekly cap | A pilot gets one fleet invite in a rolling 7 days (`WEEKLY_INVITE_CAP`), whoever sends it and whatever the fleet type (Strategic, Non-Strategic or Training). An invite counts once it's made, unless its DM couldn't be delivered. Private fleet invites don't count and aren't capped. |
+| Skipped picks | The FC can still pick a pilot who had their invite this week or turned invites off: the search row says "will be skipped", the chip is dashed with a Skipped tag, and hovering it names the fleet, when, and the day they can be invited again. Reach lists who the cap skips, soonest free first (`capped_pilots`). When every pick would be skipped, Send is off. Pilots already on this fleet can't be picked. |
+| Send lock | A send locks the picked pilots' accounts (`select_for_update` on their `User` rows, in id order) and checks the cap again before it records invites, so two FCs sending at once can't both invite one pilot: the second send waits, then skips them (409 if nobody is left). The lock is per account, like the cap: a pilot's alts share one invite a week. Private fleet sends take no lock. |
+| Stop fleet invites | A button on every standard fleet invite DM. It turns off the `fleets.invite` Discord notification preference, which Account › Notifications shows and can turn back on. Pilots who turned it off are skipped; private fleet invites still reach them. |
 | The DM | "{FC} would like you on this fleet", the note, when, form-up and doctrine. Pilots invited from a new pilot list also get a link to the Your First Fleet guide. No opsec line. |
 | I'm in, no ship yet | From the fleet page's invite banner. The FC sees "No ship yet" in the Bringing column. Picking a ship later says I'm in too. |
 | Invited as | Each invite keeps why the pilot was invited (`source_kind`: `first_week`, `more_fleets`, `pilot`, `tribe_group`, `corporation`, and the group or corp's name). A new pilot list wins, then by name, then a group, then a corporation. |
@@ -63,7 +65,7 @@ DMs go out from `fleets.tasks.send_fleet_invite_wave` at about one a second, not
 - `EveFleet.invite_only`, `declassified_at`, `discord_thread_id`, `discord_summary_message_id`.
 - `EveFleetInviteWave` (fleet, number, sent_by, note, the picks including `onboarding` buckets, finished_at) and `EveFleetInvite` (fleet, wave, user, answer, answered_at, source_kind, source_name, first_viewed_at, sent_at, dm_delivered, the DM's ids, in_thread). One invite per fleet and user.
 - `EveFleetShipTarget` (fleet, name, target, order, ship_type_ids, group_ids).
-- FC (and Strategic FCs on a private fleet): `GET /api/fleets/{id}/invites`, `POST …/invites/preview`, `POST …/invites/waves` (`onboarding: ["first_week", "more_fleets"]` on a standard fleet), `POST …/invites/reping` (private fleets, Strategic FCs only: `can_reping`), `GET …/invites/candidates?q=&pilots_only=` (each row says why it can't be invited: `invited`, `opted_out`, `capped`), `POST …/invites/resolve` (paste of character / Discord names), `POST /api/fleets/{id}/declassify`.
+- FC (and Strategic FCs on a private fleet): `GET /api/fleets/{id}/invites`, `POST …/invites/preview`, `POST …/invites/waves` (`onboarding: ["first_week", "more_fleets"]` on a standard fleet), `POST …/invites/reping` (private fleets, Strategic FCs only: `can_reping`), `GET …/invites/candidates?q=&pilots_only=` (each row says why it can't be invited: `invited`, `opted_out`, `capped`, and for `capped` the invite that counts; `opted_out` and `capped` rows can still be picked and are skipped), `POST …/invites/resolve` (paste of character / Discord names), `POST /api/fleets/{id}/declassify`.
 - Pilots: `POST /api/fleets/{id}/invites/me/out`, `POST /api/fleets/{id}/invites/me/in` (I'm in, no ship yet). The bot's Sitting out button (`fleet_invite:out:<invite id>`, `bot/app/fleet_invites`) calls `POST /api/fleets/invites/{invite_id}/discord-out`; Stop fleet invites (`fleet_invite:stop:<invite id>`) calls `POST /api/fleets/invites/{invite_id}/discord-stop`.
 - `DISCORD_PRIVATE_FLEET_CHANNEL_ID` overrides the thread's parent channel; unset, it's the audience's channel. The bot needs Create Private Threads, Manage Threads and Mention Everyone there.
 
