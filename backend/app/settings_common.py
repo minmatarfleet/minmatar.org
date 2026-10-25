@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "surveys.apps.SurveysConfig",
     # Live multi-system Faction Warfare campaigns
     "campaigns.apps.CampaignsConfig",
+    "capabilities.apps.CapabilitiesConfig",
 ]
 
 # Discord Login

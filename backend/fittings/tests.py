@@ -32,6 +32,10 @@ def _empty_fitting_inline_formsets(**overrides):
         "module_substitutions-INITIAL_FORMS": "0",
         "module_substitutions-MIN_NUM_FORMS": "0",
         "module_substitutions-MAX_NUM_FORMS": "1000",
+        "skill_overrides-TOTAL_FORMS": "0",
+        "skill_overrides-INITIAL_FORMS": "0",
+        "skill_overrides-MIN_NUM_FORMS": "0",
+        "skill_overrides-MAX_NUM_FORMS": "1000",
     }
     data.update(overrides)
     return data

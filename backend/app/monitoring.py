@@ -46,6 +46,7 @@ CRON_MONITORED_SCHEDULES = (
     "[Campaigns] Generate daily orders",
     "[Characters] Update Characters (assets, skills, killmails)",
     "[Market] Fetch Market Item History",
+    "[Capabilities] Load new SDE builds",
 )
 
 # Error events carry the queue as a tag, so issues can be filtered by

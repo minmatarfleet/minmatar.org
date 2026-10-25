@@ -63,6 +63,16 @@ def _refresh_industry_jobs_and_notify(eve_character_id: int) -> None:
         ).delay()
 
 
+def _refresh_skills_and_readiness(character: EveCharacter):
+    """Sync skills; re-rate the character only when a level changed."""
+    changed = refresh_character_skills(character.character_id)
+    if changed and character.user_id:
+        app.signature(
+            "capabilities.tasks.refresh_character_readiness",
+            args=[character.pk],
+        ).delay()
+
+
 @app.task(rate_limit="5/m")
 def update_character(eve_character_id):
     """Update a character's assets, skills, killmails, contracts, and industry jobs."""
@@ -103,7 +113,7 @@ def update_character(eve_character_id):
     if Token.get_token(eve_character_id, SCOPE_ASSETS):
         refresh_character_assets(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_SKILLS):
-        refresh_character_skills(eve_character_id)
+        _refresh_skills_and_readiness(character)
     if Token.get_token(eve_character_id, SCOPE_KILLMAILS):
         refresh_character_killmails(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_CONTRACTS):

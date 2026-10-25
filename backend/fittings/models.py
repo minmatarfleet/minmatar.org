@@ -41,6 +41,20 @@ EVE_FITTING_VERSIONED_SCALAR_FIELDS = (
     "recommended_pod",
 )
 
+FITTING_CAPABILITY_CHOICES = [
+    (c, c)
+    for c in (
+        "DPS",
+        "Logistics",
+        "Links",
+        "Support",
+        "Tackle",
+        "Recon",
+        "Dreads",
+        "Carriers",
+    )
+]
+
 # Versioned payload fields including tags (slug lists in change-request JSON).
 EVE_FITTING_VERSIONED_FIELDS = EVE_FITTING_VERSIONED_SCALAR_FIELDS + ("tags",)
 
@@ -124,6 +138,15 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     minimum_pod = models.TextField(blank=True)
     recommended_pod = models.TextField(blank=True)
+    # Fleet job this fit does. Blank: the capability engine classifies it
+    # from the EFT and doctrine roles (capabilities.engine.requirements).
+    capability = models.CharField(
+        max_length=16,
+        choices=FITTING_CAPABILITY_CHOICES,
+        blank=True,
+        default="",
+        help_text="Leave blank to classify automatically from the fit.",
+    )
     pods = models.ManyToManyField(
         "EveFittingPod",
         blank=True,
@@ -330,6 +353,50 @@ class EveFitting(MinmatarSoftDeleteModel):
 
         super().save(*args, **kwargs)
 
+    def skill_override_snapshot(self) -> list[dict]:
+        """Overrides as stored in EveFittingHistory.skill_overrides."""
+        if self.pk is None:
+            return []
+        return [
+            {
+                "skill_id": o.skill_id,
+                "action": o.action,
+                "tier": o.tier,
+                "level": o.level,
+                "note": o.note,
+            }
+            for o in self.skill_overrides.order_by("skill_id", "tier")
+        ]
+
+    def record_requirement_change(
+        self, old_capability: str, old_overrides: list
+    ):
+        """Version a capability or skill-override edit like a tag edit.
+
+        Writes the previous state to EveFittingHistory and bumps
+        latest_version, so the capability engine recomputes this fitting.
+        """
+        if not self.latest_version:
+            return
+        EveFittingHistory.objects.create(
+            fitting_id=self.pk,
+            superseded_version_id=self.latest_version,
+            name=self.name,
+            ship_id=self.ship_id,
+            eft_format=self.eft_format,
+            description=self.description,
+            aliases=self.aliases,
+            minimum_pod=self.minimum_pod,
+            recommended_pod=self.recommended_pod,
+            tags=self.tag_slugs(),
+            capability=old_capability or "",
+            skill_overrides=old_overrides,
+        )
+        self.latest_version = str(uuid.uuid4())
+        EveFitting.all_objects.filter(pk=self.pk).update(
+            latest_version=self.latest_version
+        )
+
     @staticmethod
     def ship_name_from_eft(eft_format):
         """Ship name from the EFT header ``[ShipName, Fitting name]``."""
@@ -405,6 +472,8 @@ class EveFittingHistory(models.Model):
     minimum_pod = models.TextField(blank=True)
     recommended_pod = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)
+    capability = models.CharField(max_length=16, blank=True, default="")
+    skill_overrides = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -528,6 +597,70 @@ class EveFittingModuleSubstitution(models.Model):
                     )
                 }
             )
+
+
+class EveFittingSkillOverride(models.Model):
+    """
+    A doctrine-team correction to the computed skill requirements of a
+    fitting. Most fittings never need one: the capability engine computes
+    every requirement. Edited on the fitting's admin page.
+    """
+
+    ACTION_SET_LEVEL = "set_level"
+    ACTION_EXCLUDE = "exclude"
+    ACTION_CHOICES = [
+        (ACTION_SET_LEVEL, "Require this level"),
+        (ACTION_EXCLUDE, "Remove this skill"),
+    ]
+    TIER_CHOICES = [
+        ("required", "Required (to fly it)"),
+        ("core", "Core (doctrine-ready)"),
+        ("optimal", "Optimal (worth training)"),
+    ]
+
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        related_name="skill_overrides",
+    )
+    skill = models.ForeignKey(
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="+",
+        limit_choices_to={"eve_group__eve_category_id": 16},
+    )
+    action = models.CharField(
+        max_length=16, choices=ACTION_CHOICES, default=ACTION_SET_LEVEL
+    )
+    tier = models.CharField(
+        max_length=16, choices=TIER_CHOICES, default="core"
+    )
+    level = models.PositiveSmallIntegerField(default=0)
+    note = models.CharField(max_length=255, blank=True, default="")
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["fitting", "skill", "tier"],
+                name="unique_fitting_skill_override",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.action == self.ACTION_SET_LEVEL and not 1 <= self.level <= 5:
+            raise ValidationError({"level": "Pick a level from 1 to 5."})
+
+    def __str__(self):
+        return f"{self.fitting} – {self.skill} {self.action} {self.tier} {self.level}"
 
 
 class EveDoctrine(models.Model):
