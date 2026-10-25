@@ -600,13 +600,11 @@ class _Builder:
         for preferred in self.substituted:
             for s, lv in self.alt_reqs[preferred].items():
                 r = self.rows.get(s)
-                if (
-                    r
-                    and not r.overridden
-                    and r.required_level == lv
-                    and self.hard.get(s, 0) < lv
-                ):
-                    r.required_level = self.hard.get(s, 0)
+                if r is None or r.overridden or r.required_level != lv:
+                    continue
+                rest = self.hard.get(s, 0)
+                if rest < lv:
+                    r.required_level = rest
                     r.reason = r.reason or "or a substitute module"
 
 
