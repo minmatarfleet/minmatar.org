@@ -1,4 +1,4 @@
-import type { Post, PostParams, PostTag, PostRequest, RestrictedResponse } from '@dtypes/api.minmatar.org'
+import type { Post, PostListItem, PostParams, PostTag, PostRequest, RestrictedResponse } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
@@ -28,7 +28,7 @@ export async function get_posts(post_request:PostRequest, access_token?:string |
 
         return {
             total_posts: total_posts ? parseInt(total_posts) : 0,
-            posts: await response.json() as Post[]
+            posts: await response.json() as PostListItem[]
         }
     } catch (error) {
         throw new Error(`Error fetching posts: ${error.message}`, { cause: error.cause });

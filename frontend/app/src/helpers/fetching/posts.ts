@@ -36,6 +36,8 @@ export async function fetch_posts(post_request:PostRequest, access_token?:string
                 character_id: post.author_character_id ?? 0,
                 character_name: post.author_character_name ?? t('index.page_title'),
             },
+            // The API sends the first image in the post body as its cover.
+            ...(post.image && { image: post.image }),
             ...post_host_fields(post),
         } as PostListUI
     })

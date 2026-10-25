@@ -734,7 +734,7 @@ export interface PostListUI {
     user_id:            number;
     author:             CharacterBasic;
     tags:               string[];
-    /** Never filled: the posts API has no image, so cards show the author. */
+    /** The first image in the post body; cards show the author when there is none. */
     image?:             string;
     /** The tribe group a group post is published as; null or absent for alliance posts. */
     host_group?:        TribeGroupRefUI | null;
