@@ -53,7 +53,7 @@ export const ui = {
         'alliance.description': 'Browse our corporations, teams and special interest groups portfolio and submit your application. Read about our recent events.',
 
         'alliance.story.page_title': 'Our story',
-        'alliance.values.page_title': 'Alliance Values',
+        'alliance.values.page_title': 'Our values',
         'alliance.playstyle.page_title': 'Our playstyle',
 
         'content.page_title': 'Our content',
@@ -277,6 +277,7 @@ export const ui = {
             'Combat stats, surrender terms, and timeline from Minmatar Fleet\'s 2023 Hek campaign — 65B ISK destroyed in Hek and 20B surrender ISK.',
 
         'propaganda.page_title': 'Propaganda',
+        'alliance.propaganda.page_title': 'Our content',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
         'propaganda.description': 'All our propaganda in a single place.',
@@ -2282,7 +2283,7 @@ export const ui = {
         'teams.list.leading_text': 'You are welcome to request membership in any of the following teams. Your request will be promptly reviewed by one of our team directors, and you will be contacted via Discord for further details.',
         'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
 
-        'tribes.page_title': 'Tribes',
+        'tribes.page_title': 'Our tribes',
         'tribes.leading_text': 'Tribes are focused communities within Minmatar Fleet built around a shared purpose. They span multiple corporations, and are often where the vast majority of alliance efforts occur.',
         'tribes.meta_description': 'Discover the tribes of Minmatar Fleet Alliance: specialized communities with clear leadership, trackable output, and a place for every pilot.',
         'page_finder.tribes.description': 'Directory of all tribe groups, filterable by parent tribe.',
@@ -2795,7 +2796,7 @@ export const ui = {
         'tribes.detail.requirement_skill': 'Skills',
         'tribes.detail.leadership': 'Leadership',
         'tribes.detail.role_chief': 'Chief',
-        'back_to_tribes': 'Back to Tribes',
+        'back_to_tribes': 'Back to our tribes',
         'tribes_available': 'Tribes available',
         'tribe_available': 'Tribe available',
 
@@ -2857,17 +2858,17 @@ export const ui = {
 
         'teams.management.page_title': 'Teams management',
 
-        'corporations.page_title': 'Corporations',
+        'corporations.page_title': 'Our corporations',
         'corporations.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         'corporations.cover_alt': 'Outspace starry sky',
         
         'dna.leading_text': 'Minmatar Fleet breaks from the traditional alliance mold-embracing a bit of chaos, acting first, and sorting out the questions later. Learn what makes us tick.',
         'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, and tribes.',
 
-        'corporations.list.page_title': 'Corporations',
+        'corporations.list.page_title': 'Our corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
         'corporations.list.meta_description': 'Learn more about the corporations of Minmatar Fleet Alliance, who runs them, and what differentiates them from each other.',
-        'corporations.detail.back': 'Corporations',
+        'corporations.detail.back': 'Our corporations',
         'corporations.detail.about': 'About',
         'corporations.detail.notable': 'Notable participation',
         'corporations.detail.discord': 'Discord',
