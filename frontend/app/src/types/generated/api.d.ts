@@ -22373,6 +22373,15 @@ export interface operations {
                     "application/json": components["schemas"]["CorporationApplicationResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Forbidden */
             403: {
                 headers: {
@@ -22403,6 +22412,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationApplicationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */

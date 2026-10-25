@@ -14,10 +14,12 @@ from app.celery import app
 from .discord import (
     create_application_thread,
     notify_application_accepted,
+    notify_application_joined,
     notify_application_rejected,
     notify_application_thread_deleted,
     notify_application_transferred,
 )
+from .joined import accept_applications_of_members
 from .models import EveCorporationApplication
 
 logger = logging.getLogger(__name__)
@@ -27,14 +29,19 @@ THREAD_CREATE_MAX_RETRIES = 3
 DECISION_NOTIFIERS = {
     "accepted": notify_application_accepted,
     "rejected": notify_application_rejected,
+    # Accepted because the applicant joined in game (applications.joined).
+    "joined": notify_application_joined,
 }
 
 
-def _ensure_application_thread(application_id: int):
+def _ensure_application_thread(application_id: int, status: str):
     """The application with its forum thread, creating the thread if needed.
 
     The row lock stops two queued tasks for the same application from
     opening two threads. Returns None when the application no longer exists.
+    No thread is opened for a pending save of an application that has since
+    been decided without one (accepted on joining): it would ping the
+    applicant and recruiters about a closed application, and stay open.
     """
     with transaction.atomic():
         application = (
@@ -43,6 +50,8 @@ def _ensure_application_thread(application_id: int):
             .first()
         )
         if application is None or application.discord_thread_id is not None:
+            return application
+        if status == "pending" and application.status != "pending":
             return application
         thread_id = create_application_thread(application)
         # update(), not save(): saving would fire post_save and queue again.
@@ -58,7 +67,7 @@ def sync_application_thread_task(self, application_id: int, status: str):
     """Open the application's forum thread if it has none, then post the
     accepted/rejected notice for `status` (the status the save had)."""
     try:
-        application = _ensure_application_thread(application_id)
+        application = _ensure_application_thread(application_id, status)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.exception(
             "Could not create the Discord thread for application %s",
@@ -124,3 +133,27 @@ def notify_application_transferred_task(
             "Could not post the transfer notice for application %s",
             application_id,
         )
+
+
+@app.task()
+def accept_applications_of_members_task():
+    """Accept pending applications whose applicant joined the corporation,
+    and post the joined notice in each forum thread.
+
+    An application without a thread gets none: opening one now would ping
+    the applicant and the recruiters about an application that is closed.
+    """
+    accepted = accept_applications_of_members()
+    with_thread = EveCorporationApplication.objects.filter(
+        pk__in=accepted, discord_thread_id__isnull=False
+    ).values_list("pk", flat=True)
+    for application_id in with_thread:
+        # The application is already accepted, so a lost notice is never
+        # retried; keep queueing the rest.
+        try:
+            sync_application_thread_task.delay(application_id, "joined")
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception(
+                "Could not queue the joined notice for application %s",
+                application_id,
+            )

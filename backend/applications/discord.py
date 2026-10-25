@@ -125,6 +125,24 @@ def notify_application_accepted(application) -> None:
     discord.close_thread(channel_id=application.discord_thread_id)
 
 
+def application_joined_message() -> str:
+    return (
+        ":tada: You've joined the corporation, so this application is "
+        "closed. Welcome!\n"
+        f"- Read our [alliance values]({site_url('/alliance/values/')})\n"
+        f"- Start with the [Learning Center]({site_url('/learning/')}) "
+        "for guides and certificates"
+    )
+
+
+def notify_application_joined(application) -> None:
+    discord.create_message(
+        channel_id=application.discord_thread_id,
+        message=application_joined_message(),
+    )
+    discord.close_thread(channel_id=application.discord_thread_id)
+
+
 def notify_application_rejected(application) -> None:
     message = (
         ":bangbang: Your application has been rejected, "

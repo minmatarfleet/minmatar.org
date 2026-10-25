@@ -217,6 +217,7 @@ def get_corporation_application_by_id(
     auth=AuthBearer(),
     response={
         200: CorporationApplicationResponse,
+        400: ErrorResponse,
         403: ErrorResponse,
     },
 )
@@ -230,6 +231,10 @@ def accept_corporation_application(
     application = EveCorporationApplication.objects.get(
         corporation_id=corporation_id, id=application_id
     )
+    if application.status != "pending":
+        return 400, {
+            "detail": f"This application is already {application.status}."
+        }
     application.status = "accepted"
     application.processed_by = request.user
     application.save()
@@ -254,6 +259,7 @@ def accept_corporation_application(
     auth=AuthBearer(),
     response={
         200: CorporationApplicationResponse,
+        400: ErrorResponse,
         403: ErrorResponse,
     },
 )
@@ -267,6 +273,10 @@ def reject_corporation_application(
     application = EveCorporationApplication.objects.get(
         corporation_id=corporation_id, id=application_id
     )
+    if application.status != "pending":
+        return 400, {
+            "detail": f"This application is already {application.status}."
+        }
     application.status = "rejected"
     application.processed_by = request.user
     application.save()
