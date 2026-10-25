@@ -364,19 +364,34 @@ def overview(user) -> dict:
     }
 
 
+def _seat(player: _Player, pk: int) -> tuple:
+    """One seat in a fleet: an account, or a character on no account."""
+    member = player.memberships.get(pk)
+    if member and member.account_id:
+        return ("account", member.account_id)
+    return ("character", pk)
+
+
+def _pilots(player: _Player) -> list[EveCharacter]:
+    return [c for c in player.characters if c.pk not in player.not_for_fleets]
+
+
 def _ready_seats(player: _Player) -> dict[int, set]:
     """Per fit, the accounts (or lone characters) with someone ready in it."""
     seats: dict[int, set] = defaultdict(set)
     for (pk, fid), row in player.readiness.items():
         if row.doctrine_ready and pk not in player.not_for_fleets:
-            member = player.memberships.get(pk)
-            seat = (
-                ("account", member.account_id)
-                if member and member.account_id
-                else ("character", pk)
-            )
-            seats[fid].add(seat)
+            seats[fid].add(_seat(player, pk))
     return seats
+
+
+def _soonest(player: _Player, fits: list[int]) -> float | None:
+    """Stored days until anyone is ready in one of these fits."""
+    days = min(
+        (player.estimate(c.pk, fid) for c in _pilots(player) for fid in fits),
+        default=float("inf"),
+    )
+    return None if days == float("inf") else days
 
 
 def _doctrine_fits(player: _Player) -> dict[int, dict]:
@@ -409,7 +424,11 @@ def _doctrine_fits(player: _Player) -> dict[int, dict]:
 
 
 def _bring(player: _Player) -> dict:
-    """Per doctrine and role: is every ship in it flown by someone?"""
+    """Per doctrine and role: how many seats can fly it, or how soon one can.
+
+    A seat is an account (one character flies at a time) or a character on
+    no account, so the counts are how many ships the player can bring at once.
+    """
     seats = _ready_seats(player)
     doctrines = _doctrine_fits(player)
     columns = [
@@ -420,9 +439,12 @@ def _bring(player: _Player) -> dict:
         fits = doctrine["fits"]
         lead = doctrine["lead"] or next(iter(fits.values()))[0]
         cells = []
+        doctrine_seats: set = set()
         for column in columns:
             ids = fits.get(column, [])
             ready = sum(1 for fid in ids if seats.get(fid))
+            column_seats = set().union(*(seats.get(fid, set()) for fid in ids))
+            doctrine_seats |= column_seats
             cells.append(
                 {
                     "column": column,
@@ -433,6 +455,12 @@ def _bring(player: _Player) -> dict:
                         if not ids
                         else "ready" if ready == len(ids) else "needs_work"
                     ),
+                    "seats": len(column_seats),
+                    "days": (
+                        _soonest(player, ids)
+                        if ids and not column_seats
+                        else None
+                    ),
                 }
             )
         rows.append(
@@ -441,10 +469,16 @@ def _bring(player: _Player) -> dict:
                 "name": doctrine["name"],
                 "strategic": doctrine["strategic"],
                 "ship_type_id": player.sets[lead].fitting.ship_id,
+                "seats": len(doctrine_seats),
                 "cells": cells,
             }
         )
-    return {"academy": player.academy, "columns": columns, "doctrines": rows}
+    return {
+        "academy": player.academy,
+        "seats": len({_seat(player, c.pk) for c in _pilots(player)}),
+        "columns": columns,
+        "doctrines": rows,
+    }
 
 
 def doctrine_cell(user, doctrine_id: int, column: str) -> dict:
@@ -454,9 +488,7 @@ def doctrine_cell(user, doctrine_id: int, column: str) -> dict:
     if doctrine is None or column not in doctrine["fits"]:
         raise TrainingError("Not one of your doctrines.")
     seats = _ready_seats(player)
-    pilots = [
-        c for c in player.characters if c.pk not in player.not_for_fleets
-    ]
+    pilots = _pilots(player)
     ships = []
     for fid in doctrine["fits"][column]:
         closest = None
@@ -491,7 +523,68 @@ def doctrine_cell(user, doctrine_id: int, column: str) -> dict:
             doctrine["lead"] or doctrine["fits"][column][0]
         ].fitting.ship_id,
         "ships": ships,
+        "seats": _cell_seats(player, doctrine["fits"][column]),
     }
+
+
+def _cell_seats(player: _Player, fits: list[int]) -> list[dict]:
+    """One row per seat: its best character for these fits.
+
+    That is the character ready in the most of them, else the one closest to
+    being ready in one. Seats with nobody rated for any fit are left out.
+    """
+    by_seat: dict[tuple, list[EveCharacter]] = defaultdict(list)
+    for c in _pilots(player):
+        by_seat[_seat(player, c.pk)].append(c)
+    rows = []
+    for seat, characters in by_seat.items():
+        best, ready = None, []
+        for c in characters:
+            flies = [
+                fid
+                for fid in fits
+                if (row := player.readiness.get((c.pk, fid)))
+                and row.doctrine_ready
+            ]
+            if len(flies) > len(ready):
+                best, ready = c, flies
+        fitting_id, days = None, 0.0
+        if best is None:
+            candidates = [
+                (player.estimate(c.pk, fid), c.character_name, c, fid)
+                for c in characters
+                for fid in fits
+                if (c.pk, fid) in player.readiness
+            ]
+            if not candidates:
+                continue
+            _, _, best, fitting_id = min(candidates, key=lambda x: x[:2])
+            days = player.status(best.pk, fitting_id)["days"]
+        rows.append(
+            {
+                "account": (
+                    player.account_number(best.pk)
+                    if seat[0] == "account"
+                    else None
+                ),
+                "character_id": best.character_id,
+                "name": best.character_name,
+                "ready": bool(ready),
+                "ships": [player.ship(fid)["name"] for fid in ready]
+                or [player.ship(fitting_id)["name"]],
+                "fitting_id": fitting_id,
+                "days": days,
+            }
+        )
+    rows.sort(
+        key=lambda r: (
+            not r["ready"],
+            r["days"],
+            r["account"] or 99,
+            r["name"],
+        )
+    )
+    return rows
 
 
 def character_view(user, character_id: int) -> dict:

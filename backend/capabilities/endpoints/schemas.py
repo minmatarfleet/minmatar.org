@@ -49,6 +49,8 @@ class BringCellResponse(Schema):
     ships: int
     ready: int
     state: str
+    seats: int
+    days: float | None
 
 
 class BringDoctrineResponse(Schema):
@@ -56,11 +58,13 @@ class BringDoctrineResponse(Schema):
     name: str
     strategic: bool
     ship_type_id: int
+    seats: int
     cells: list[BringCellResponse]
 
 
 class BringResponse(Schema):
     academy: bool
+    seats: int
     columns: list[str]
     doctrines: list[BringDoctrineResponse]
 
@@ -82,12 +86,23 @@ class DoctrineShipResponse(ShipResponse):
     closest: ClosestCharacterResponse | None
 
 
+class DoctrineSeatResponse(Schema):
+    account: int | None
+    character_id: int
+    name: str
+    ready: bool
+    ships: list[str]
+    fitting_id: int | None
+    days: float
+
+
 class DoctrineCellResponse(Schema):
     doctrine_id: int
     name: str
     column: str
     ship_type_id: int
     ships: list[DoctrineShipResponse]
+    seats: list[DoctrineSeatResponse]
 
 
 class RoleResponse(Schema):

@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrainingDoctrineCell } from '@dtypes/api.minmatar.org'
 import { get_training_doctrine } from '@helpers/api.minmatar.org/training'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
 import { TRAINING_DOCTRINE_PARTIAL, TRAINING_PARTIAL, time_label, training_url } from '@helpers/training'
 
 const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0') || 0
@@ -31,9 +31,11 @@ try {
     fetch_error = error as Error
 }
 
-const ready = cell ? cell.ships.filter(ship => ship.accounts > 0).length : 0
+// One row per account (or character on no account): its best character.
+const ready = cell ? cell.seats.filter(seat => seat.ready).length : 0
 
 import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
@@ -52,45 +54,51 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             <img src={get_item_icon(cell.ship_type_id, 64)} alt="" width="52" height="52" />
             <div>
                 <h2>{`${cell.name} · ${cell.column}`}</h2>
-                <p class="[ training-muted ]">
-                    {t('training.ready_of').replace('{ready}', ready.toString()).replace('{total}', cell.ships.length.toString())}
-                </p>
+                {cell.seats.length > 1 &&
+                    <p class="[ training-muted ]">
+                        {t('training.accounts_ready').replace('{ready}', ready.toString()).replace('{total}', cell.seats.length.toString())}
+                    </p>
+                }
             </div>
         </div>
 
-        <ul role="list">
-            {cell.ships.map(ship =>
-                <li>
-                    <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
-                    <strong class="[ training-doctrine__name ]">{ship.name}</strong>
-                    {ship.accounts > 0 ?
-                        <span class="[ training-doctrine__ready ]">
-                            ✓ <span class="[ training-muted ]">×{ship.accounts}</span>
+        {cell.seats.length === 0 ?
+            <EmptyState title={t('training.nobody_close')} />
+            :
+            <ul role="list">
+                {cell.seats.map(seat =>
+                    <li>
+                        <span class="[ training-doctrine__account ]">
+                            {seat.account !== null && t('training.account').replace('{number}', seat.account.toString())}
                         </span>
-                        : ship.closest ?
-                        <>
+                        <img src={get_player_icon(seat.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                        <span class="[ training-doctrine__name ]">
+                            <strong>{seat.name}</strong>
+                            <small class="[ training-muted ]">{seat.ships.join(', ')}</small>
+                        </span>
+                        {seat.ready ?
+                            <span class="[ training-doctrine__ready ]" aria-label={t('training.ready')}>✓</span>
+                            :
                             <span class="[ training-doctrine__closest ]">
-                                <strong>{time_label(t, ship.closest.days)}</strong>
-                                <small class="[ training-muted ]">{ship.closest.name}</small>
+                                <strong>{time_label(t, seat.days)}</strong>
+                                {seat.fitting_id !== null &&
+                                    <button
+                                        type="button"
+                                        class="[ training-doctrine__train ]"
+                                        modal-action="accept"
+                                        hx-post={translatePath(training_url(TRAINING_PARTIAL, { mode: 'add_goal', character_id: seat.character_id, fitting_id: seat.fitting_id }))}
+                                        hx-target="#training"
+                                        hx-swap="outerHTML"
+                                    >
+                                        {t('training.train')}
+                                    </button>
+                                }
                             </span>
-                            <Button
-                                type="button"
-                                size="sm"
-                                color="fleet-red"
-                                modal-action="accept"
-                                hx-post={translatePath(training_url(TRAINING_PARTIAL, { mode: 'add_goal', character_id: ship.closest.character_id, fitting_id: ship.fitting_id }))}
-                                hx-target="#training"
-                                hx-swap="outerHTML"
-                            >
-                                {t('training.train')}
-                            </Button>
-                        </>
-                        :
-                        <span class="[ training-muted ]">{t('training.nobody_close')}</span>
-                    }
-                </li>
-            )}
-        </ul>
+                        }
+                    </li>
+                )}
+            </ul>
+        }
 
         <div class="[ training-doctrine__actions ]">
             <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('training.close')}</Button>
@@ -150,9 +158,35 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         color: var(--text-muted);
     }
 
+    .training-doctrine__account {
+        flex: 0 0 6rem;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+
     .training-doctrine__name {
+        display: flex;
+        flex-direction: column;
         flex-grow: 1;
         min-width: 0;
+
+        small {
+            font-size: var(--step--1);
+        }
+    }
+
+    .training-doctrine__train {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
     }
 
     .training-doctrine__ready {
@@ -167,10 +201,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         strong {
             color: var(--fleet-yellow);
-        }
-
-        small {
-            font-size: var(--step--2);
         }
     }
 

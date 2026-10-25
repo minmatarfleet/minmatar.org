@@ -129,9 +129,30 @@ class OverviewTest(TrainingTestCase):
                     "ships": 1,
                     "ready": 1,
                     "state": "ready",
+                    "seats": 1,
+                    "days": None,
                 }
             ],
         )
+        # Logi and Alt are on no account, so each is a seat of its own.
+        self.assertEqual(bring["seats"], 2)
+        self.assertEqual(armor["seats"], 1)
+
+    def test_one_account_is_one_seat(self):
+        account = CharacterAccount.objects.create(user=self.user, number=1)
+        for character in (self.logi, self.alt):
+            CharacterAccountMember.objects.create(
+                account=account, character=character
+            )
+        bring = training.overview(self.user)["bring"]
+        self.assertEqual(bring["seats"], 1)
+        self.assertEqual(bring["doctrines"][0]["cells"][0]["seats"], 1)
+
+    def test_a_role_nobody_flies_says_how_soon(self):
+        training.set_not_for_fleets(self.user, self.logi.character_id, True)
+        [cell] = training.overview(self.user)["bring"]["doctrines"][0]["cells"]
+        self.assertEqual(cell["seats"], 0)
+        self.assertGreater(cell["days"], 0)
 
     def test_a_character_without_goals_gets_the_nearest_fits(self):
         alt = self._summary(training.overview(self.user), "Alt")
@@ -194,6 +215,12 @@ class BringTest(TrainingTestCase):
         self.assertEqual(ship["fitting_id"], self.guardian.pk)
         self.assertEqual(ship["accounts"], 1)
         self.assertIsNone(ship["closest"])
+        ready, closest = cell["seats"]
+        self.assertEqual((ready["name"], ready["ready"]), ("Logi", True))
+        self.assertEqual(ready["ships"], ["Guardian"])
+        self.assertEqual((closest["name"], closest["ready"]), ("Alt", False))
+        self.assertEqual(closest["fitting_id"], self.guardian.pk)
+        self.assertGreater(closest["days"], 0)
 
         training.set_not_for_fleets(self.user, self.logi.character_id, True)
         cell = training.doctrine_cell(self.user, self.doctrine.pk, "Logistics")
