@@ -32,6 +32,7 @@ When a step fails, the script writes one line saying what failed and whether the
 - **Migrations must work with the code that's already running.** The old containers keep serving after the migrations have run. Add columns and tables in one release; drop or rename them in a later one, after the code that reads them is gone.
 - **Don't publish ports on `app` or `frontend`, or give them a `container_name`.** A rollout can't start a second container if you do. Send new traffic through `edge`.
 - **Container names change with every deploy** (`app-1`, then `app-2`). `docker compose exec app ...` still finds the running one; don't hard-code the container name.
+- **Use `docker compose run --rm`** for one-off commands. A stopped container left under `app` or `frontend` makes `docker rollout` skip the update, so `deploy.sh` removes stopped containers of those services (and their logs) before each rollout.
 - **Changing `edge` itself** (Traefik version, entry points) recreates it, which drops connections for a second or two.
 - **The host's nginx must proxy to `edge`**: `127.0.0.1:8020` and `127.0.0.1:4321`, as before. A proxy that reaches `app:8000` or `frontend:4321` over a Docker network bypasses `edge` and sees downtime again.
 - **The first deploy after this change** recreates the whole stack once, because the old `app` and `frontend` still hold the host ports. It has the usual short outage.

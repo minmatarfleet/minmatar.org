@@ -91,6 +91,15 @@ else
     docker compose up -d --no-deps edge
     for service in "${ROLLOUT_SERVICES[@]}"; do
         step="rollout:$service"
+        # docker rollout only replaces stopped containers when the service has
+        # any (e.g. a `compose run` without --rm) and exits 0 without touching
+        # the running one, so clear them first.
+        stopped=$(docker compose ps -a --quiet --status exited --status created --status dead "$service")
+        if [ -n "$stopped" ]; then
+            echo "==> Removing stopped $service containers"
+            # shellcheck disable=SC2086 # one ID per word
+            docker rm $stopped
+        fi
         echo "==> Rolling out $service"
         docker rollout --timeout "$HEALTHY_TIMEOUT" --pre-stop-hook "$PRE_STOP_HOOK" "$service"
         released+=("$service")
