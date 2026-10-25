@@ -36,24 +36,26 @@ class CorporationStatsCacheTestCase(TestCase):
         compute.assert_not_called()
         self.assertLessEqual(
             {
-                "timezone_distribution",
                 "weekday_distribution",
                 "public_summary",
                 "application_process",
                 "member_activity",
-                "declared_by_user",
-                "observed_by_user",
                 "human_count",
                 "about",
                 "member_facts",
             },
             set(stats),
         )
+        # Pilot timezones are read live from the timezones app.
+        self.assertFalse(
+            {"timezone_distribution", "declared_by_user", "observed_by_user"}
+            & set(stats)
+        )
 
     def test_task_refreshes_one_corporation(self):
         self.assertEqual(1, refresh_corporation_profile_stats(98726134))
         self.assertIsNotNone(
-            cache.get("corporation_profile_stats:v2:98726134")
+            cache.get("corporation_profile_stats:v3:98726134")
         )
 
     def test_cache_outage_degrades_to_no_stats(self):

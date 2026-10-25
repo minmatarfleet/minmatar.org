@@ -12,9 +12,10 @@ interface Props {
 const { leadership, show_heading = true } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
-import { leader_timezones } from '@helpers/corporations/leadership'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 
 const role_order = ['ceo', 'director', 'recruiter', 'steward'] as const
 type LeadershipRole = (typeof role_order)[number]
@@ -53,20 +54,6 @@ function role_label(role: LeadershipRole) {
         }
     }
 }
-
-function prime_label(code: string | null) {
-    if (!code)
-        return ''
-    switch (code) {
-        case 'US': return t('US')
-        case 'US_AP': return t('US_AP')
-        case 'AP': return t('AP')
-        case 'AP_EU': return t('AP_EU')
-        case 'EU': return t('EU')
-        case 'EU_US': return t('EU_US')
-        default: return code
-    }
-}
 ---
 
 {groups.length > 0 &&
@@ -81,9 +68,7 @@ function prime_label(code: string | null) {
                     <span class="[ lead-card__count ]">{group.people.length}</span>
                 </header>
                 <ul class="[ lead-card__people ]">
-                    {group.people.map((person) => {
-                        const zones = leader_timezones(person)
-                        return (
+                    {group.people.map((person) => (
                         <li class="[ lead-person ]">
                             <img
                                 class="[ lead-person__portrait ]"
@@ -95,25 +80,10 @@ function prime_label(code: string | null) {
                             />
                             <span class="[ lead-person__text ]">
                                 <span class="[ lead-person__name ]">{person.character_name}</span>
-                                <span class="[ lead-person__zones ]">
-                                    {zones.kind === 'on_leave' &&
-                                        <span class="[ lead-tz lead-tz--leave ]">{t('corporations.detail.fleet_inactive')}</span>
-                                    }
-                                    {zones.kind === 'observed' && zones.codes.map((code) => code === zones.declared
-                                        ? <span class="[ lead-tz lead-tz--declared ]" title={t('corporations.detail.declared')}>{prime_label(code)}</span>
-                                        : <span class="[ lead-tz ]">{prime_label(code)}</span>
-                                    )}
-                                    {zones.kind === 'declared' &&
-                                        <span class="[ lead-tz lead-tz--declared ]" title={t('corporations.detail.timezone_declared')}>{prime_label(zones.code)}</span>
-                                    }
-                                    {zones.kind === 'missing' &&
-                                        <span class="[ lead-tz lead-tz--missing ]">{t('corporations.detail.tz_missing')}</span>
-                                    }
-                                </span>
+                                <TimezoneTags timezone={person.timezone} on_leave={person.on_leave} />
                             </span>
                         </li>
-                        )
-                    })}
+                    ))}
                 </ul>
             </section>
         ))}
@@ -204,43 +174,6 @@ function prime_label(code: string | null) {
         white-space: nowrap;
         font-size: var(--step-0);
         font-weight: 500;
-        color: var(--highlight);
-    }
-
-    .lead-person__zones {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: var(--space-3xs);
-    }
-
-    .lead-tz {
-        padding: 0.1em var(--space-3xs);
-        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
-        background: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
-        color: var(--fleet-yellow);
-        font-family: var(--default-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        line-height: 1.4;
-        white-space: nowrap;
-    }
-
-    .lead-tz--declared {
-        border-color: color-mix(in srgb, var(--alliance-blue) 60%, transparent);
-        background: color-mix(in srgb, var(--alliance-blue) 22%, transparent);
-        color: color-mix(in srgb, var(--alliance-blue) 45%, var(--highlight));
-    }
-
-    .lead-tz--missing {
-        border-color: var(--border-color);
-        background: transparent;
-        color: var(--faded);
-    }
-
-    .lead-tz--leave {
-        border-color: color-mix(in srgb, var(--fleet-red) 80%, transparent);
-        background: color-mix(in srgb, var(--fleet-red) 45%, transparent);
         color: var(--highlight);
     }
 </style>

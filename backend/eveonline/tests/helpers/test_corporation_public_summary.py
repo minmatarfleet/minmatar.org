@@ -1,7 +1,6 @@
 """Aggregate public corporation About stats."""
 
 from datetime import timedelta
-from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.db.models import signals
@@ -118,17 +117,17 @@ class CorporationPublicSummaryTestCase(TestCase):
             fleets["slices"],
         )
 
-    @patch(
-        "eveonline.helpers.corporations.summary.observed_prime_buckets_for_users",
-        return_value={},
-    )
-    def test_pilots_without_active_timezone_count_as_on_leave(
-        self, observed_mock
-    ):
-        pilot = User.objects.create_user(username="tzless-pilot")
-        character = self._character(206, "Tzless", pilot)
+    def test_fleets_flown_outside_the_corp_leave_a_member_inactive(self):
+        pilot = User.objects.create_user(username="elsewhere-pilot")
+        self._character(206, "Member", pilot)
+        outside = EveCharacter.objects.create(
+            character_id=207,
+            character_name="Outside Alt",
+            corporation_id=98000999,
+            user=pilot,
+        )
         for instance_id in range(20, 24):
-            self._attend(character, instance_id, self.groups["battleship"])
+            self._attend(outside, instance_id, self.groups["battleship"])
 
         summary = corporation_public_summary(self.corporation)
         self.assertEqual(

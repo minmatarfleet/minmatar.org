@@ -21,13 +21,19 @@ const capped_more = (preview?.capped ?? 0) - capped_pilots.length
 // Tells the dialog how many new invites the picks make, for its Send button
 // (null before anything is picked).
 const reach = preview && preview.picked > 0 ? preview.new : null
+// Fresh in-timezone counts for the dialog's group chips and new pilot rows.
+const pick_counts = Object.fromEntries((preview?.picks ?? []).map(pick => [`${pick.kind}:${pick.id}`, [pick.in_timezone, pick.total]]))
+const onboarding_counts = (preview?.onboarding ?? []).length > 0 ?
+    Object.fromEntries((preview?.onboarding ?? []).map(row => [row.bucket, [row.in_timezone, row.total]])) :
+    null
+const other_timezones = preview?.other_timezones_by_bracket ?? []
 
 import { invite_day } from '@helpers/fleet_invites'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
-<div class="[ visually-hidden ]" x-data x-init={`$dispatch('invite-reach', { new: ${JSON.stringify(reach)} })`}></div>
+<div class="[ visually-hidden ]" x-data x-init={`$dispatch('invite-reach', { new: ${JSON.stringify(reach)}, picks: ${JSON.stringify(pick_counts)}, onboarding: ${JSON.stringify(onboarding_counts)} })`}></div>
 
 {error && <small class="[ wave-preview__error ]" role="alert">{error}</small>}
 
@@ -41,6 +47,24 @@ import Flexblock from '@components/compositions/Flexblock.astro'
             </p>
             <dl class="[ wave-preview__rows ]">
                 <dt>{t('fleets.private.preview_picked')}</dt><dd>{preview.picked}</dd>
+                {preview.other_timezones > 0 &&
+                    <Fragment>
+                        <dt>
+                            <details class="[ wave-preview__capped wave-preview__zones ]">
+                                <summary>{t('fleets.invites.preview_other_timezones')}</summary>
+                                <ul>
+                                    {other_timezones.map(row =>
+                                        <li>
+                                            <span>{row.code}</span>
+                                            <span>{row.count}</span>
+                                        </li>
+                                    )}
+                                </ul>
+                            </details>
+                        </dt>
+                        <dd>−{preview.other_timezones}</dd>
+                    </Fragment>
+                }
                 {preview.already_invited > 0 &&
                     <Fragment>
                         <dt>{t('fleets.private.preview_already')}</dt>
@@ -168,6 +192,15 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         li > span:first-child {
             color: var(--highlight);
         }
+    }
+
+    .wave-preview__zones ul {
+        border-left-color: var(--hairline-strong);
+    }
+
+    .wave-preview__zones li > span:last-child {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
     }
 
     .wave-preview__error {

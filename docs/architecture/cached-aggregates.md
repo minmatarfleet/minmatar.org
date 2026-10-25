@@ -12,7 +12,7 @@ Redis is an accelerator, not a dependency. `cache_get`, `cache_set`, `cache_add`
 
 ```python
 STATS = CachedRollup(
-    key="corporation_profile_stats:v2:{corporation_id}",
+    key="corporation_profile_stats:v3:{corporation_id}",
     ttl=6 * 60 * 60,
     lock_key="corporation_profile_stats:refreshing:{corporation_id}",
     lock_ttl=10 * 60,

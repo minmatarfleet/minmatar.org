@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 import type {
     AllianceHealthPilotListRow,
 } from '@helpers/alliance_health_pilot_list'
-import { csv_record_from_pilot, sort_value_attr } from '@helpers/alliance_health_pilot_list'
+import { csv_record_from_pilot, sort_value_attr, timezone_sort_value } from '@helpers/alliance_health_pilot_list'
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -15,6 +15,7 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import CorporationPicture from '@components/blocks/CorporationPicture.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Button from '@components/blocks/Button.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 
 interface Props {
     row: AllianceHealthPilotListRow
@@ -31,7 +32,7 @@ const sorts: Record<string, string> = {
 for (const metric of row.metrics) {
     sorts[metric.id] = sort_value_attr(metric.sort)
 }
-if (row.timezone) sorts.tz = row.timezone.toLowerCase()
+if (row.timezone) sorts.tz = timezone_sort_value(row.timezone)
 ---
 
 <div
@@ -67,7 +68,7 @@ if (row.timezone) sorts.tz = row.timezone.toLowerCase()
                     <FlexInline gap="var(--space-xs)" class="[ alliance-health-pilot-card__name ]">
                         <strong>{row.name}</strong>
                         {row.timezone ? (
-                            <span class="[ alliance-health-pilot-card__tz ]">{row.timezone}</span>
+                            <TimezoneTags timezone={row.timezone} class="[ alliance-health-pilot-card__tz ]" />
                         ) : null}
                     </FlexInline>
                     {row.corporation_id ? (
@@ -196,12 +197,6 @@ if (row.timezone) sorts.tz = row.timezone.toLowerCase()
 
     .alliance-health-pilot-card__tz {
         flex-shrink: 0;
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--fleet-yellow);
     }
 
     .alliance-health-pilot-card__corp {

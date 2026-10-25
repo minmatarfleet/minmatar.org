@@ -4,7 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { CorporationLeadershipMember } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { prime_codes } from '@helpers/corporations/leadership'
+import { timezone_regions } from '@helpers/timezones'
 
 interface Props {
     leadership: CorporationLeadershipMember[]
@@ -32,9 +32,9 @@ const directors = leadership.filter((member) => member.role === 'director')
                     <div class="ceo-copy">
                         <h3 class="eyebrow">{t('corporations.about.ceo')}</h3>
                         <span class="ceo-name">{ceo.character_name}</span>
-                        {prime_codes(ceo).length > 0 &&
+                        {timezone_regions(ceo.timezone).length > 0 &&
                             <span class="zones">
-                                {prime_codes(ceo).map((code) => <span class="zone">{code}</span>)}
+                                {timezone_regions(ceo.timezone).map((code) => <span class="zone">{code}</span>)}
                             </span>
                         }
                     </div>

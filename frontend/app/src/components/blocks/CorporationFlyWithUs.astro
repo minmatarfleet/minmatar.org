@@ -4,7 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { prime_codes } from '@helpers/corporations/leadership'
+import { timezone_regions } from '@helpers/timezones'
 import { CORPORATION_APPLY_ID } from '@helpers/corporations/detail'
 
 import Button from '@components/blocks/Button.astro'
@@ -59,7 +59,7 @@ const open_header_apply = `const target = document.querySelector('#${CORPORATION
                             <li>
                                 <img src={get_player_icon(recruiter.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
                                 <span class="recruiter-name">{recruiter.character_name}</span>
-                                {prime_codes(recruiter).map((code) => <span class="zone">{code}</span>)}
+                                {timezone_regions(recruiter.timezone).map((code) => <span class="zone">{code}</span>)}
                             </li>
                         ))}
                     </ul>

@@ -42,6 +42,7 @@ from fleets.models import (
     EveFleetInstance,
     EveFleetInstanceMember,
 )
+from timezones.models import PilotTimezone
 
 
 class AllianceHealthComputeTestCase(TestCase):
@@ -1415,12 +1416,15 @@ class AllianceHealthEndpointTestCase(TestCase):
 
 
 class AllianceHealthTimezoneTestCase(TestCase):
-    def test_trials_attach_prime_time_label(self):
+    def test_trials_attach_timezone_tag(self):
         user = User.objects.create_user(username="tz_pilot")
-        EvePlayer.objects.create(
+        PilotTimezone.objects.create(
             user=user,
-            nickname="tz_pilot",
-            prime_time="EU_US",
+            home="EU",
+            home_source="activity",
+            brackets=["EUTZ", "EUTZ+"],
+            assessed_at=timezone.now(),
+            changed_at=timezone.now(),
         )
         payload = {
             "computed_at": "now",
@@ -1449,7 +1453,39 @@ class AllianceHealthTimezoneTestCase(TestCase):
             },
         }
         body = trials_from_payload(payload, "current")
-        self.assertEqual(body.pilots[0].timezone, "EU / US")
+        self.assertEqual(body.pilots[0].timezone.brackets, ["EUTZ", "EUTZ+"])
+        self.assertEqual(body.pilots[0].timezone.source, "activity")
+
+    def test_unassessed_pilot_gets_an_empty_tag(self):
+        payload = {
+            "computed_at": "now",
+            "hygiene": {
+                "trial": {
+                    "counts": {"current": 1},
+                    "buckets": {
+                        "current": [
+                            {
+                                "user_id": 987654,
+                                "username": "nobody",
+                                "pilot": "Nobody",
+                                "corp": "Test",
+                                "fleets": 0,
+                                "kills": 0,
+                                "kills_small": 0,
+                                "voice_hours": 0.0,
+                                "slice_30d": "quiet",
+                                "path": "—",
+                                "conf": "—",
+                                "reason": "x",
+                            }
+                        ]
+                    },
+                }
+            },
+        }
+        body = trials_from_payload(payload, "current")
+        self.assertEqual(body.pilots[0].timezone.brackets, [])
+        self.assertIsNone(body.pilots[0].timezone.source)
 
 
 class ClassifyQuietAttentionTestCase(TestCase):

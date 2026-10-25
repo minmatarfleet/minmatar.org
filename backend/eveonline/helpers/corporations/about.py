@@ -34,6 +34,7 @@ from eveonline.models import (
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
 from fleets.helpers.private_visibility import private_hidden_q
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
+from timezones.brackets import BRACKETS_BY_CODE
 from tribes.models import TribeGroupMembership
 
 # Private fleets stay out of corp pages until declassified.
@@ -59,14 +60,12 @@ _PRIME_WINDOW = re.compile(
     r"\b(AU|EU|US)TZ\b\s*\(\s*(\d{1,2})(?::\d{2})?\s*[-–]\s*(\d{1,2})(?::\d{2})?\s*\)",
     re.IGNORECASE,
 )
-# Declared zone -> the observed fleet-time bucket it lines up with.
-ZONE_BUCKET = {"AU": "AP", "EU": "EU", "US": "US"}
 
 
 def corporation_about(
     corporation: EveCorporation,
     characters: list[EveCharacter],
-    observed: dict[int, list[str]],
+    brackets: dict[int, list[str]],
     now: datetime | None = None,
 ) -> dict:
     """The About tab's cached facts for one corporation."""
@@ -97,7 +96,7 @@ def corporation_about(
         "founded": founded.isoformat() if founded else None,
         "home_system": _home_system(recent),
         "heatmap": _heatmap(recent, owners),
-        "prime_windows": prime_windows(corporation.timezones, observed),
+        "prime_windows": prime_windows(corporation.timezones, brackets),
         "tenure": _tenure(mains, stints, now),
         "founders": _founders(mains, stints, founded),
         "hulls": _top_hulls(recent, owners),
@@ -193,16 +192,21 @@ def member_facts(
 
 
 def prime_windows(
-    text: str | None, observed: dict[int, list[str]]
+    text: str | None, brackets: dict[int, list[str]]
 ) -> list[dict]:
     """Prime-time windows parsed from the corp's timezone text, with the
-    number of pilots seen flying in each matching fleet-time bucket."""
+    number of members holding a timezone bracket in that region (USTZ or
+    USTZ+ for US, and so on; see timezones.brackets)."""
     if not text:
         return []
     pilots = Counter()
-    for buckets in observed.values():
-        for bucket in buckets:
-            pilots[bucket] += 1
+    for codes in brackets.values():
+        for region in {
+            BRACKETS_BY_CODE[code].region
+            for code in codes
+            if code in BRACKETS_BY_CODE
+        }:
+            pilots[region] += 1
     windows = []
     seen = set()
     for match in _PRIME_WINDOW.finditer(text):
@@ -216,7 +220,7 @@ def prime_windows(
                 "zone": zone,
                 "start_hour": start,
                 "end_hour": end,
-                "pilots": pilots.get(ZONE_BUCKET[zone], 0),
+                "pilots": pilots.get(zone, 0),
             }
         )
     return windows

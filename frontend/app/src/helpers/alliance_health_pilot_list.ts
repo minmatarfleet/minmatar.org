@@ -1,3 +1,6 @@
+import type { TimezoneTag } from '@dtypes/api.minmatar.org'
+import { timezone_rank } from '@helpers/timezones'
+
 export function health_confidence_label(
     conf: string | null | undefined,
     t: (key: string) => string,
@@ -61,7 +64,7 @@ export interface AllianceHealthPilotListRow {
     character_id?: number | null
     corporation_id?: number | null
     search_text: string
-    timezone?: string | null
+    timezone?: TimezoneTag | null
     note?: string
     tags?: AllianceHealthPilotTag[]
     metrics: AllianceHealthPilotMetric[]
@@ -138,7 +141,7 @@ export function row_health_sort_value(
 ): string {
     if (order_by === 'name') return row.name.toLowerCase()
     if (order_by === 'corp') return row.corp.toLowerCase()
-    if (order_by === 'tz') return (row.timezone ?? '').toLowerCase()
+    if (order_by === 'tz') return timezone_sort_value(row.timezone)
     const metric = row.metrics.find((item) => item.id === order_by)
     return sort_value_attr(metric?.sort)
 }
@@ -173,6 +176,16 @@ export function paged_health_list_rows(
     const page = Math.max(1, opts.page)
     const start = (page - 1) * opts.page_size
     return sorted.slice(start, start + opts.page_size)
+}
+
+// Bracket order as a sortable string (USTZ first, No TZ yet last).
+export function timezone_sort_value(timezone: TimezoneTag | null | undefined): string {
+    return String(timezone_rank(timezone)).padStart(2, '0')
+}
+
+// The bracket codes, for search text and CSV cells.
+export function timezone_text(timezone: TimezoneTag | null | undefined): string {
+    return (timezone?.brackets ?? []).join(' ')
 }
 
 export function sort_value_attr(value: number | string | null | undefined): string {
@@ -289,7 +302,7 @@ export function csv_record_from_pilot(row: AllianceHealthPilotListRow): string[]
     return [
         row.name,
         row.corp,
-        row.timezone ?? '',
+        timezone_text(row.timezone),
         ...row.metrics.map((metric) => metric.value),
         row.note ?? '',
     ]

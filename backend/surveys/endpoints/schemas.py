@@ -1,6 +1,8 @@
 from typing import Any, Dict, List, Optional
 
-from ninja import Schema
+from ninja import Field, Schema
+
+from timezones.schemas import TimezoneTag
 
 
 # ---- Question / definition rendering ----
@@ -55,7 +57,7 @@ class MemberContextSchema(Schema):
     ceo_name: str = ""
     corp_history: List[Dict[str, Any]] = []
     graduated: bool = False
-    prime_time: str = ""
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
     tribes: List[TribeRefSchema] = []
     tribe_names: List[str] = []
     community_status: str = ""

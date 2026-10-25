@@ -2,6 +2,7 @@
 import type { MemberContext } from '@dtypes/survey'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
 
 interface Props {
@@ -10,15 +11,6 @@ interface Props {
 }
 
 const { context } = Astro.props
-
-const PRIME_LABELS: Record<string, string> = {
-    US: 'US',
-    US_AP: 'US / AP',
-    AP: 'AP',
-    AP_EU: 'AP / EU',
-    EU: 'EU',
-    EU_US: 'EU / US',
-}
 
 // Red → green colour for the relative-standing bands.
 const BAND_COLOR: Record<string, string> = {
@@ -46,9 +38,6 @@ const stats = [
     },
 ]
 
-const prime_label = context.prime_time
-    ? PRIME_LABELS[context.prime_time] ?? context.prime_time
-    : 'Prime time not set'
 ---
 
 <div class="[ profile ]">
@@ -72,12 +61,7 @@ const prime_label = context.prime_time
                         {context.community_status}
                     </span>
                 )}
-                <span
-                    class:list={['[ tz-pill ]', { 'tz-pill--unset': !context.prime_time }]}
-                    title={context.timezone_note}
-                >
-                    {prime_label}
-                </span>
+                <TimezoneTags timezone={context.timezone} {...(context.timezone_note && { title: context.timezone_note })} />
             </FlexInline>
         </Flexblock>
     </div>
@@ -271,14 +255,6 @@ const prime_label = context.prime_time
         color: var(--fleet-yellow);
         opacity: 0.8;
     }
-    .tz-pill {
-        font-size: 0.72em;
-        padding: 2px 10px;
-        border-radius: 999px;
-        border: 1px solid var(--border-color);
-        color: var(--fleet-yellow);
-    }
-    .tz-pill--unset { color: var(--foreground); opacity: 0.5; }
 
     @media (max-width: 34rem) {
         .profile__head { flex-wrap: wrap; }

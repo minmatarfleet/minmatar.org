@@ -9,6 +9,8 @@ import {
     health_pilot_card_id,
     next_health_order_state,
     paged_health_list_rows,
+    timezone_sort_value,
+    timezone_text,
     tone_vs_median,
 } from '@helpers/alliance_health_pilot_list'
 
@@ -144,5 +146,15 @@ describe('alliance_health_pilot_list', () => {
             ['Pilot', 'Corp'],
             ['Kayra, Nathuul', 'Banshee Squadron'],
         ])).toBe('Pilot,Corp\n"Kayra, Nathuul",Banshee Squadron\n')
+    })
+
+    it('sorts timezones in bracket order with No TZ yet last', () => {
+        const us = timezone_sort_value({ brackets: ['USTZ'], source: 'activity' })
+        const au = timezone_sort_value({ brackets: ['AUTZ+'], source: 'declared' })
+        const none = timezone_sort_value({ brackets: [], source: null })
+        expect(compare_health_sort_values(us, au, 'text', 'asc')).toBeLessThan(0)
+        expect(compare_health_sort_values(au, none, 'text', 'asc')).toBeLessThan(0)
+        expect(timezone_text({ brackets: ['EUTZ', 'EUTZ+'], source: 'activity' })).toBe('EUTZ EUTZ+')
+        expect(timezone_text(null)).toBe('')
     })
 })

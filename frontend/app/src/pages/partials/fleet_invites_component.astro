@@ -34,6 +34,8 @@ const wave_request = (form:FormData):FleetWaveRequest => ({
     corporation_ids: ids(form, 'corporation_ids'),
     user_ids: ids(form, 'pilot_ids'),
     onboarding: form.getAll('onboarding').map(value => value as string),
+    // The dialog's timezone choice; none for the fleet's own.
+    ...(form.getAll('timezones').length > 0 ? { timezones: form.getAll('timezones').map(value => value as string) } : {}),
     note: ((form.get('note') as string) ?? '').trim(),
 })
 

@@ -8,6 +8,8 @@ from typing import Literal
 from ninja import Schema
 from pydantic import Field
 
+from timezones.schemas import TimezoneTag
+
 
 class CampaignSystemSummary(Schema):
     id: int
@@ -378,8 +380,7 @@ class RosterRow(Schema):
     character_id: int | None = None
     corporation_id: int | None = None
     corporation_name: str = ""
-    prime_time: str = ""
-    observed_prime_time: str = ""
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
     last_active_day: date | None = None
     characters_included: int = 0
     characters_tracked: int = 0
@@ -406,11 +407,17 @@ class RosterCorporation(Schema):
     last_active_day: date | None = None
 
 
+class RosterTimezoneCount(Schema):
+    # A timezone bracket (USTZ, EUTZ+, ...); None counts pilots with none.
+    bracket: str | None = None
+    pilots: int = 0
+
+
 class Roster(Schema):
     pilots: list[RosterRow] = []
     corporations: list[RosterCorporation] = []
     coverage: list[dict] = []
-    by_prime_time: dict = {}
+    by_timezone: list[RosterTimezoneCount] = []
 
 
 class CharacterReadiness(Schema):

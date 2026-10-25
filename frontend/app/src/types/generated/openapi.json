@@ -835,15 +835,11 @@
             "type": "string"
           },
           "timezone": {
-            "anyOf": [
+            "allOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "null"
+                "$ref": "#/components/schemas/TimezoneTag"
               }
-            ],
-            "title": "Timezone"
+            ]
           },
           "user_id": {
             "title": "User Id",
@@ -5761,14 +5757,6 @@
             ],
             "title": "Humans"
           },
-          "leadership_missing_prime_time": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/CorporationLeadershipResponse"
-            },
-            "title": "Leadership Missing Prime Time",
-            "type": "array"
-          },
           "stewards": {
             "default": [],
             "items": {
@@ -6663,14 +6651,6 @@
             ],
             "title": "Ticker"
           },
-          "timezone_distribution": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/TimezoneBucketCount"
-            },
-            "title": "Timezone Distribution",
-            "type": "array"
-          },
           "timezones": {
             "anyOf": [
               {
@@ -6832,33 +6812,21 @@
             "title": "Character Name",
             "type": "string"
           },
-          "observed_prime_times": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Observed Prime Times",
-            "type": "array"
-          },
           "on_leave": {
             "default": false,
             "title": "On Leave",
             "type": "boolean"
           },
-          "prime_time": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Prime Time"
-          },
           "role": {
             "title": "Role",
             "type": "string"
+          },
+          "timezone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              }
+            ]
           }
         },
         "required": [
@@ -7036,14 +7004,6 @@
             ],
             "title": "Last Fleet At"
           },
-          "observed_prime_times": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Observed Prime Times",
-            "type": "array"
-          },
           "person_fleets_90d": {
             "anyOf": [
               {
@@ -7077,17 +7037,6 @@
             ],
             "title": "Primary Character Name"
           },
-          "prime_time": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Prime Time"
-          },
           "registered": {
             "default": false,
             "title": "Registered",
@@ -7100,6 +7049,13 @@
             },
             "title": "Status History",
             "type": "array"
+          },
+          "timezone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              }
+            ]
           },
           "token_count": {
             "default": 0,
@@ -8194,14 +8150,6 @@
               }
             ],
             "title": "Ticker"
-          },
-          "timezone_distribution": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/TimezoneBucketCount"
-            },
-            "title": "Timezone Distribution",
-            "type": "array"
           },
           "timezones": {
             "anyOf": [
@@ -16438,6 +16386,11 @@
       },
       "FleetInvitesResponse": {
         "properties": {
+          "can_choose_timezones": {
+            "default": false,
+            "title": "Can Choose Timezones",
+            "type": "boolean"
+          },
           "can_reping": {
             "default": false,
             "title": "Can Reping",
@@ -16450,6 +16403,14 @@
           "fleet_id": {
             "title": "Fleet Id",
             "type": "integer"
+          },
+          "fleet_timezones": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Fleet Timezones",
+            "type": "array"
           },
           "invite_only": {
             "default": false,
@@ -16468,9 +16429,19 @@
             "title": "Onboarding First Week",
             "type": "integer"
           },
+          "onboarding_first_week_in_timezone": {
+            "default": 0,
+            "title": "Onboarding First Week In Timezone",
+            "type": "integer"
+          },
           "onboarding_more_fleets": {
             "default": 0,
             "title": "Onboarding More Fleets",
+            "type": "integer"
+          },
+          "onboarding_more_fleets_in_timezone": {
+            "default": 0,
+            "title": "Onboarding More Fleets In Timezone",
             "type": "integer"
           },
           "reping_available_at": {
@@ -16506,6 +16477,11 @@
               }
             ],
             "title": "Thread Url"
+          },
+          "timezones_nearest": {
+            "default": false,
+            "title": "Timezones Nearest",
+            "type": "boolean"
           },
           "totals": {
             "$ref": "#/components/schemas/InviteTotals"
@@ -21189,13 +21165,45 @@
             "title": "Id",
             "type": "integer"
           },
+          "in_timezone": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Timezone"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
           },
+          "members": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Members"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -21939,15 +21947,11 @@
             "type": "string"
           },
           "timezone": {
-            "anyOf": [
+            "allOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "null"
+                "$ref": "#/components/schemas/TimezoneTag"
               }
-            ],
-            "title": "Timezone"
+            ]
           },
           "user_id": {
             "title": "User Id",
@@ -24187,11 +24191,6 @@
             "title": "Persona",
             "type": "string"
           },
-          "prime_time": {
-            "default": "",
-            "title": "Prime Time",
-            "type": "string"
-          },
           "role_flags": {
             "default": [],
             "items": {
@@ -24220,6 +24219,13 @@
             "default": "",
             "title": "Tenure Note",
             "type": "string"
+          },
+          "timezone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              }
+            ]
           },
           "timezone_note": {
             "default": "",
@@ -25498,6 +25504,29 @@
           "failed"
         ],
         "title": "NudgeResult",
+        "type": "object"
+      },
+      "OnboardingCount": {
+        "properties": {
+          "bucket": {
+            "title": "Bucket",
+            "type": "string"
+          },
+          "in_timezone": {
+            "title": "In Timezone",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "total",
+          "in_timezone"
+        ],
+        "title": "OnboardingCount",
         "type": "object"
       },
       "OnboardingCounts": {
@@ -27064,6 +27093,35 @@
           "confirmed"
         ],
         "title": "PersonaResponse",
+        "type": "object"
+      },
+      "PickCount": {
+        "description": "A group or corporation pick: its members, and how many of them play\nin the chosen timezones.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "in_timezone": {
+            "title": "In Timezone",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "total",
+          "in_timezone"
+        ],
+        "title": "PickCount",
         "type": "object"
       },
       "PlanCharacterResponse": {
@@ -30381,6 +30439,16 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -30565,11 +30633,13 @@
       },
       "Roster": {
         "properties": {
-          "by_prime_time": {
-            "additionalProperties": true,
-            "default": {},
-            "title": "By Prime Time",
-            "type": "object"
+          "by_timezone": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RosterTimezoneCount"
+            },
+            "title": "By Timezone",
+            "type": "array"
           },
           "corporations": {
             "default": [],
@@ -30760,20 +30830,17 @@
             "title": "Losses",
             "type": "integer"
           },
-          "observed_prime_time": {
-            "default": "",
-            "title": "Observed Prime Time",
-            "type": "string"
-          },
           "primary_character": {
             "default": "",
             "title": "Primary Character",
             "type": "string"
           },
-          "prime_time": {
-            "default": "",
-            "title": "Prime Time",
-            "type": "string"
+          "timezone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              }
+            ]
           },
           "user_id": {
             "title": "User Id",
@@ -30784,6 +30851,28 @@
           "user_id"
         ],
         "title": "RosterRow",
+        "type": "object"
+      },
+      "RosterTimezoneCount": {
+        "properties": {
+          "bracket": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bracket"
+          },
+          "pilots": {
+            "default": 0,
+            "title": "Pilots",
+            "type": "integer"
+          }
+        },
+        "title": "RosterTimezoneCount",
         "type": "object"
       },
       "ScheduleChange": {
@@ -32889,27 +32978,48 @@
         "title": "TimerAttachRequest",
         "type": "object"
       },
-      "TimezoneBucketCount": {
+      "TimezoneCount": {
         "properties": {
-          "bucket": {
-            "title": "Bucket",
+          "code": {
+            "title": "Code",
             "type": "string"
           },
-          "declared": {
-            "default": 0,
-            "title": "Declared",
-            "type": "integer"
-          },
-          "observed": {
-            "default": 0,
-            "title": "Observed",
+          "count": {
+            "title": "Count",
             "type": "integer"
           }
         },
         "required": [
-          "bucket"
+          "code",
+          "count"
         ],
-        "title": "TimezoneBucketCount",
+        "title": "TimezoneCount",
+        "type": "object"
+      },
+      "TimezoneTag": {
+        "description": "A pilot's timezones as every page shows them: the bracket codes\n(USTZ, EUTZ+, ...) and where they came from, \"activity\" or \"declared\".\nNo brackets means nothing is known yet.",
+        "properties": {
+          "brackets": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Brackets",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "title": "TimezoneTag",
         "type": "object"
       },
       "TokenType": {
@@ -33400,15 +33510,11 @@
             "type": "string"
           },
           "timezone": {
-            "anyOf": [
+            "allOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "null"
+                "$ref": "#/components/schemas/TimezoneTag"
               }
-            ],
-            "title": "Timezone"
+            ]
           },
           "user_id": {
             "title": "User Id",
@@ -36202,14 +36308,43 @@
             "title": "No Discord",
             "type": "integer"
           },
+          "onboarding": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OnboardingCount"
+            },
+            "title": "Onboarding",
+            "type": "array"
+          },
           "opted_out": {
             "default": 0,
             "title": "Opted Out",
             "type": "integer"
           },
+          "other_timezones": {
+            "default": 0,
+            "title": "Other Timezones",
+            "type": "integer"
+          },
+          "other_timezones_by_bracket": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TimezoneCount"
+            },
+            "title": "Other Timezones By Bracket",
+            "type": "array"
+          },
           "picked": {
             "title": "Picked",
             "type": "integer"
+          },
+          "picks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PickCount"
+            },
+            "title": "Picks",
+            "type": "array"
           },
           "will_dm": {
             "title": "Will Dm",
@@ -36250,6 +36385,20 @@
             },
             "title": "Onboarding",
             "type": "array"
+          },
+          "timezones": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezones"
           },
           "tribe_group_ids": {
             "default": [],
@@ -46596,6 +46745,16 @@
               "title": "Pilots Only",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "timezones",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Timezones",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -46752,7 +46911,7 @@
     },
     "/api/fleets/{fleet_id}/invites/preview": {
       "post": {
-        "description": "Who a send with these picks would reach.",
+        "description": "Who a send with these picks would reach. Group, corporation and new pilot picks only reach pilots who play in the chosen timezones (the fleet's own by default).",
         "operationId": "fleets_endpoints_private_invites_post_wave_preview",
         "parameters": [
           {

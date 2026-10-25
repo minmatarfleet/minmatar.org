@@ -11,7 +11,9 @@ On a standard fleet an invite is a nudge: a pilot gets at most
 ``WEEKLY_INVITE_CAP`` fleet invite a week, whoever sends it, and can turn
 them off ("Stop fleet invites"). A send locks the pilots' accounts while it
 checks and records invites, so two FCs sending at once can't both invite
-the same pilot. A private fleet (``invite_only``) is made by a Strategic FC;
+the same pilot. Groups, corporations and new pilot lists only reach pilots
+who play at the fleet time (timezones.fleet_time); pilots picked by name
+are always invited. A private fleet (``invite_only``) is made by a Strategic FC;
 its invites ignore both and don't count, carry the opsec line, and pilots
 who are in join its private coordination thread
 (fleets.helpers.private_fleet_discord). See docs/fleets/private-fleets.md.
@@ -36,6 +38,8 @@ from fleets.models import (
     EveFleetShipTarget,
     EveFleetShipVolunteer,
 )
+from timezones.fleet_time import clean_codes, in_timezones
+from timezones.services import brackets_for
 
 # One wave reaches at most this many players.
 MAX_WAVE_SIZE = 300
@@ -180,19 +184,29 @@ def onboarding_user_ids(buckets=ONBOARDING_BUCKETS) -> dict[int, str]:
     return out
 
 
-def onboarding_counts(fleet: EveFleet) -> dict[str, int]:
-    """How many pilots in each onboarding bucket aren't invited to this
-    fleet yet."""
-    by_user = onboarding_user_ids()
+def onboarding_counts(
+    fleet: EveFleet, timezones=None, by_user: dict[int, str] | None = None
+) -> dict[str, dict[str, int]]:
+    """Pilots in each onboarding bucket not invited to this fleet yet:
+    bucket -> {"total", "in_timezone"}. ``in_timezone`` counts those who
+    play in ``timezones`` (all of them when it is None)."""
+    if by_user is None:
+        by_user = onboarding_user_ids()
     invited = set(
         EveFleetInvite.objects.filter(
             eve_fleet=fleet, user_id__in=list(by_user)
         ).values_list("user_id", flat=True)
     )
-    counts = {bucket: 0 for bucket in ONBOARDING_BUCKETS}
+    brackets = brackets_for(by_user) if timezones is not None else {}
+    counts = {
+        bucket: {"total": 0, "in_timezone": 0} for bucket in ONBOARDING_BUCKETS
+    }
     for user_id, bucket in by_user.items():
-        if user_id not in invited and user_id != fleet.created_by_id:
-            counts[bucket] += 1
+        if user_id in invited or user_id == fleet.created_by_id:
+            continue
+        counts[bucket]["total"] += 1
+        if timezones is None or in_timezones(brackets.get(user_id), timezones):
+            counts[bucket]["in_timezone"] += 1
     return counts
 
 
@@ -220,6 +234,52 @@ def _corporation_user_ids(corporation_ids) -> set[int]:
     )
 
 
+def _active(user_ids) -> set[int]:
+    return set(
+        User.objects.filter(id__in=list(user_ids), is_active=True).values_list(
+            "id", flat=True
+        )
+    )
+
+
+def _home_bracket(brackets) -> str:
+    """The bracket a skipped pilot is counted under: their first evening
+    bracket (brackets are stored in bracket order, home prime included)."""
+    evenings = [code for code in brackets if not code.endswith("+")]
+    return (evenings or list(brackets))[0]
+
+
+def _pick_counts(
+    tribe_group_ids, corporation_ids, grouped, brackets, timezones
+) -> list[dict]:
+    """Each group or corporation pick's members, and how many play in the
+    fleet's timezones."""
+
+    def count(kind, pick_id, members):
+        members = members & grouped
+        return {
+            "kind": kind,
+            "id": pick_id,
+            "total": len(members),
+            "in_timezone": sum(
+                1
+                for user_id in members
+                if timezones is None
+                or in_timezones(brackets.get(user_id), timezones)
+            ),
+        }
+
+    out = [
+        count("tribe_group", group_id, _tribe_group_user_ids([group_id]))
+        for group_id in dict.fromkeys(tribe_group_ids)
+    ]
+    out += [
+        count("corporation", corp_id, _corporation_user_ids([corp_id]))
+        for corp_id in dict.fromkeys(corporation_ids)
+    ]
+    return out
+
+
 def wave_preview(
     fleet: EveFleet,
     *,
@@ -227,35 +287,43 @@ def wave_preview(
     corporation_ids=(),
     user_ids=(),
     onboarding=(),
+    timezones=None,
     now=None,
 ) -> dict:
-    """Who a send would reach: new players, who is skipped (already invited,
-    invites off, weekly cap), who can't be DM'd, and how many of them own a
-    hull for each ship target."""
+    """Who a send would reach: new players, who is skipped (another
+    timezone, already invited, invites off, weekly cap), who can't be DM'd,
+    and how many of them own a hull for each ship target.
+
+    ``timezones`` (bracket codes, None for any) limits the group,
+    corporation and new pilot picks to pilots who play then. Pilots picked
+    by name, and pilots with no timezone yet, are never left out for it.
+    """
     new_pilots = onboarding_user_ids(onboarding) if onboarding else {}
-    picked = (
+    named = _active(user_ids)
+    grouped = _active(
         _tribe_group_user_ids(tribe_group_ids)
         | _corporation_user_ids(corporation_ids)
         | set(new_pilots)
-        | set(
-            User.objects.filter(
-                id__in=list(user_ids), is_active=True
-            ).values_list("id", flat=True)
-        )
     )
-    picked = set(
-        User.objects.filter(id__in=picked, is_active=True).values_list(
-            "id", flat=True
-        )
-    )
+    picked = grouped | named
+    brackets = brackets_for(grouped) if timezones is not None else {}
+    other_timezone: dict[str, int] = defaultdict(int)
+    elsewhere = set()
+    if timezones is not None:
+        for user_id in grouped - named:
+            pilot_brackets = brackets.get(user_id)
+            if not in_timezones(pilot_brackets, timezones):
+                elsewhere.add(user_id)
+                other_timezone[_home_bracket(pilot_brackets)] += 1
+    reachable = picked - elsewhere
     already = set(
         EveFleetInvite.objects.filter(
-            eve_fleet=fleet, user_id__in=picked
+            eve_fleet=fleet, user_id__in=reachable
         ).values_list("user_id", flat=True)
     )
     if fleet.created_by_id:
         already.add(fleet.created_by_id)
-    new = picked - already
+    new = reachable - already
     opted_out: set[int] = set()
     capped: dict[int, dict] = {}
     if is_capped_fleet(fleet):
@@ -270,7 +338,15 @@ def wave_preview(
     no_discord = sorted(new - with_discord)
     return {
         "picked": len(picked),
-        "already_invited": len(picked & already),
+        "other_timezones": len(elsewhere),
+        "other_timezones_by_bracket": [
+            {"code": code, "count": other_timezone[code]}
+            for code in clean_codes(other_timezone)
+        ],
+        "picks": _pick_counts(
+            tribe_group_ids, corporation_ids, grouped, brackets, timezones
+        ),
+        "already_invited": len(reachable & already),
         "opted_out": len(opted_out),
         "capped": len(capped),
         "capped_pilots": _capped_pilots(capped),
@@ -558,6 +634,7 @@ def send_wave(
     corporation_ids=(),
     user_ids=(),
     onboarding=(),
+    timezones=None,
     note: str = "",
 ) -> EveFleetInviteWave:
     """Invite the new players in these picks and queue their DMs."""
@@ -569,6 +646,7 @@ def send_wave(
         corporation_ids=corporation_ids,
         user_ids=user_ids,
         onboarding=onboarding,
+        timezones=timezones,
     )
     new = preview["new_user_ids"]
     if not new:
@@ -665,6 +743,10 @@ def _lock_new_invitees(fleet: EveFleet, user_ids) -> list[int]:
 
 
 def _nobody_new_message(preview: dict) -> str:
+    if preview["other_timezones"] and preview["other_timezones"] == (
+        preview["picked"]
+    ):
+        return "Nobody in these picks plays at the fleet time"
     if preview["capped"] and not preview["opted_out"]:
         return (
             "Already invited to a fleet this week"

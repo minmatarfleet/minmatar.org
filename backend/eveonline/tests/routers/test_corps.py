@@ -32,6 +32,9 @@ from eveonline.models import (
 )
 from groups.helpers import PEOPLE_TEAM
 from groups.models import UserCommunityStatus
+from timezones.models import PilotTimezone
+from timezones.schemas import TimezoneTag
+from timezones.services import assess_users
 
 BASE_URL = "/api/eveonline/corporations/"
 
@@ -219,6 +222,7 @@ class CorporationRouterTestCase(TestCase):
         EvePlayer.objects.create(
             nickname="dan", user=self.user, prime_time="EU"
         )
+        assess_users([self.user.id])
         EveCorporationMedia.objects.create(
             corporation=corp,
             kind="youtube",
@@ -233,7 +237,13 @@ class CorporationRouterTestCase(TestCase):
         self.assertEqual("Op film", payload["media"][0]["caption"])
         self.assertEqual("abc123XYZ", payload["media"][0]["youtube_id"])
         self.assertEqual("director", payload["leadership"][0]["role"])
-        self.assertEqual("EU", payload["leadership"][0]["prime_time"])
+        tag = payload["leadership"][0]["timezone"]
+        self.assertEqual("declared", tag["source"])
+        self.assertTrue(tag["brackets"])
+        self.assertTrue(
+            all(code.startswith("EUTZ") for code in tag["brackets"])
+        )
+        self.assertNotIn("timezone_distribution", payload)
         self.assertFalse(payload["leadership"][0]["on_leave"])
 
     def test_public_leadership_flags_on_leave(self):
@@ -296,7 +306,14 @@ class CorporationRouterTestCase(TestCase):
             user=recruiter_user,
         )
         set_primary_character(recruiter_user, recruiter_main)
-        EvePlayer.objects.filter(user=recruiter_user).update(prime_time="EU")
+        PilotTimezone.objects.create(
+            user=recruiter_user,
+            home="EU",
+            home_source="activity",
+            brackets=["EUTZ"],
+            assessed_at=timezone.now(),
+            changed_at=timezone.now(),
+        )
         corp.recruiters.add(recruiter_alt)
         corp.recruiters.add(
             EveCharacter.objects.create(
@@ -367,7 +384,14 @@ class CorporationRouterTestCase(TestCase):
             [row["character_name"] for row in recruiter_rows],
         )
         self.assertEqual(40005, recruiter_rows[0]["character_id"])
-        self.assertEqual("EU", recruiter_rows[0]["prime_time"])
+        self.assertEqual(
+            {"brackets": ["EUTZ"], "source": "activity"},
+            recruiter_rows[0]["timezone"],
+        )
+        self.assertEqual(
+            {"brackets": [], "source": None},
+            by_role["ceo"][0]["timezone"],
+        )
         self.assertEqual(
             ["Gunner Main"],
             [row["character_name"] for row in by_role["steward"]],
@@ -580,35 +604,65 @@ class CorporationRouterTestCase(TestCase):
             by_name["Alt Ace"]["primary_character_name"],
         )
 
-    def test_member_timezone_sort_uses_observed_buckets(self):
-        us_active = CorporationMemberDetails(
+    def test_member_timezone_sort_uses_bracket_order(self):
+        us_late = CorporationMemberDetails(
             character_id=1,
             character_name="Zed",
-            prime_time="EU",
-            observed_prime_times=["US"],
+            timezone=TimezoneTag(brackets=["USTZ+"], source="activity"),
         )
-        eu_active = CorporationMemberDetails(
+        eu_and_us = CorporationMemberDetails(
             character_id=2,
             character_name="Ann",
-            prime_time="US",
-            observed_prime_times=["EU"],
+            timezone=TimezoneTag(brackets=["EUTZ", "USTZ"], source="activity"),
         )
-        unset = CorporationMemberDetails(
-            character_id=3,
-            character_name="Mia",
-            prime_time="US",
-            observed_prime_times=[],
+        au = CorporationMemberDetails(
+            character_id=4,
+            character_name="Bob",
+            timezone=TimezoneTag(brackets=["AUTZ"], source="declared"),
         )
+        unset = CorporationMemberDetails(character_id=3, character_name="Mia")
         ordered = sort_member_rows(
-            [us_active, unset, eu_active],
+            [us_late, unset, au, eu_and_us],
             "timezone",
         )
         self.assertEqual(
-            ["Zed", "Ann", "Mia"],
+            ["Ann", "Zed", "Bob", "Mia"],
             [row.character_name for row in ordered],
         )
 
-    def test_admin_reports_missing_timezone_and_bot(self):
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_member_rows_carry_timezone_tags(self):
+        self.make_superuser()
+        self.create_corp(12345, "TestCorp")
+        EveCharacter.objects.create(
+            character_id=20002,
+            character_name="Director Dan",
+            user=self.user,
+            corporation_id=12345,
+        )
+        PilotTimezone.objects.create(
+            user=self.user,
+            home="US",
+            home_source="activity",
+            brackets=["USTZ", "USTZ+"],
+            assessed_at=timezone.now(),
+            changed_at=timezone.now(),
+        )
+
+        response = self.client.get(
+            BASE_URL + "corporations/12345/members",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        row = response.json()[0]
+        self.assertEqual(
+            {"brackets": ["USTZ", "USTZ+"], "source": "activity"},
+            row["timezone"],
+        )
+        self.assertNotIn("prime_time", row)
+
+    def test_admin_reports_discord_bot(self):
         corp = self.create_corp(12345, "TestCorp")
         director = EveCharacter.objects.create(
             character_id=20002,
@@ -630,10 +684,7 @@ class CorporationRouterTestCase(TestCase):
         payload = response.json()
         self.assertTrue(payload["discord_bot_present"])
         self.assertEqual("Corp Ops", payload["discord_guild_name"])
-        self.assertEqual(
-            "Director Dan",
-            payload["leadership_missing_prime_time"][0]["character_name"],
-        )
+        self.assertNotIn("leadership_missing_prime_time", payload)
         self.assertEqual("Executor notes", payload["executor_notes"])
 
     def test_managed_includes_director(self):

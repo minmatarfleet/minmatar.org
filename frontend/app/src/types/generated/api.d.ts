@@ -2849,7 +2849,7 @@ export interface paths {
         put?: never;
         /**
          * Post Wave Preview
-         * @description Who a send with these picks would reach.
+         * @description Who a send with these picks would reach. Group, corporation and new pilot picks only reach pilots who play in the chosen timezones (the fleet's own by default).
          */
         post: operations["fleets_endpoints_private_invites_post_wave_preview"];
         delete?: never;
@@ -7882,8 +7882,7 @@ export interface components {
             pilot: string;
             /** Status */
             status: string;
-            /** Timezone */
-            timezone?: string | null;
+            timezone?: components["schemas"]["TimezoneTag"];
             /** User Id */
             user_id: number;
         };
@@ -9961,11 +9960,6 @@ export interface components {
             /** Humans */
             humans?: number | null;
             /**
-             * Leadership Missing Prime Time
-             * @default []
-             */
-            leadership_missing_prime_time?: components["schemas"]["CorporationLeadershipResponse"][];
-            /**
              * Stewards
              * @default []
              */
@@ -10268,11 +10262,6 @@ export interface components {
             requirements?: string[] | null;
             /** Ticker */
             ticker?: string | null;
-            /**
-             * Timezone Distribution
-             * @default []
-             */
-            timezone_distribution?: components["schemas"]["TimezoneBucketCount"][];
             /** Timezones */
             timezones?: string[] | null;
             /**
@@ -10353,19 +10342,13 @@ export interface components {
             /** Character Name */
             character_name: string;
             /**
-             * Observed Prime Times
-             * @default []
-             */
-            observed_prime_times?: string[];
-            /**
              * On Leave
              * @default false
              */
             on_leave?: boolean;
-            /** Prime Time */
-            prime_time?: string | null;
             /** Role */
             role: string;
+            timezone?: components["schemas"]["TimezoneTag"];
         };
         /** CorporationMediaResponse */
         CorporationMediaResponse: {
@@ -10451,19 +10434,12 @@ export interface components {
             kills_90d?: number;
             /** Last Fleet At */
             last_fleet_at?: string | null;
-            /**
-             * Observed Prime Times
-             * @default []
-             */
-            observed_prime_times?: string[];
             /** Person Fleets 90D */
             person_fleets_90d?: number | null;
             /** Primary Character Id */
             primary_character_id?: number | null;
             /** Primary Character Name */
             primary_character_name?: string | null;
-            /** Prime Time */
-            prime_time?: string | null;
             /**
              * Registered
              * @default false
@@ -10474,6 +10450,7 @@ export interface components {
              * @default []
              */
             status_history?: components["schemas"]["CorporationMemberStatusChange"][];
+            timezone?: components["schemas"]["TimezoneTag"];
             /**
              * Token Count
              * @default 0
@@ -10876,11 +10853,6 @@ export interface components {
             stewards?: components["schemas"]["CorporationRoleCharacterResponse"][];
             /** Ticker */
             ticker?: string | null;
-            /**
-             * Timezone Distribution
-             * @default []
-             */
-            timezone_distribution?: components["schemas"]["TimezoneBucketCount"][];
             /** Timezones */
             timezones?: string[] | null;
             /**
@@ -14073,6 +14045,11 @@ export interface components {
         /** FleetInvitesResponse */
         FleetInvitesResponse: {
             /**
+             * Can Choose Timezones
+             * @default false
+             */
+            can_choose_timezones?: boolean;
+            /**
              * Can Reping
              * @default false
              */
@@ -14081,6 +14058,11 @@ export interface components {
             can_see_leak_trace: boolean;
             /** Fleet Id */
             fleet_id: number;
+            /**
+             * Fleet Timezones
+             * @default []
+             */
+            fleet_timezones?: string[];
             /**
              * Invite Only
              * @default false
@@ -14094,10 +14076,20 @@ export interface components {
              */
             onboarding_first_week?: number;
             /**
+             * Onboarding First Week In Timezone
+             * @default 0
+             */
+            onboarding_first_week_in_timezone?: number;
+            /**
              * Onboarding More Fleets
              * @default 0
              */
             onboarding_more_fleets?: number;
+            /**
+             * Onboarding More Fleets In Timezone
+             * @default 0
+             */
+            onboarding_more_fleets_in_timezone?: number;
             /** Reping Available At */
             reping_available_at?: string | null;
             /** Sending */
@@ -14106,6 +14098,11 @@ export interface components {
             targets: components["schemas"]["ShipTargetProgress"][];
             /** Thread Url */
             thread_url?: string | null;
+            /**
+             * Timezones Nearest
+             * @default false
+             */
+            timezones_nearest?: boolean;
             totals: components["schemas"]["InviteTotals"];
             /** Waves */
             waves: components["schemas"]["InviteWave"][];
@@ -15937,10 +15934,15 @@ export interface components {
             detail: string;
             /** Id */
             id: number;
+            /** In Timezone */
+            in_timezone?: number | null;
             /** Kind */
             kind: string;
+            /** Members */
+            members?: number | null;
             /** Name */
             name: string;
+            timezone?: components["schemas"]["TimezoneTag"] | null;
         };
         /** InvitePilot */
         InvitePilot: {
@@ -16246,8 +16248,7 @@ export interface components {
             reason: string;
             /** Story */
             story: string;
-            /** Timezone */
-            timezone?: string | null;
+            timezone?: components["schemas"]["TimezoneTag"];
             /** User Id */
             user_id: number;
             /** Username */
@@ -17171,11 +17172,6 @@ export interface components {
              */
             persona?: string;
             /**
-             * Prime Time
-             * @default
-             */
-            prime_time?: string;
-            /**
              * Role Flags
              * @default []
              */
@@ -17192,6 +17188,7 @@ export interface components {
              * @default
              */
             tenure_note?: string;
+            timezone?: components["schemas"]["TimezoneTag"];
             /**
              * Timezone Note
              * @default
@@ -17689,6 +17686,15 @@ export interface components {
             players: number;
             /** Sent At */
             sent_at: string;
+        };
+        /** OnboardingCount */
+        OnboardingCount: {
+            /** Bucket */
+            bucket: string;
+            /** In Timezone */
+            in_timezone: number;
+            /** Total */
+            total: number;
         };
         /** OnboardingCounts */
         OnboardingCounts: {
@@ -18297,6 +18303,21 @@ export interface components {
             confirmed: boolean;
             /** Persona */
             persona: string;
+        };
+        /**
+         * PickCount
+         * @description A group or corporation pick: its members, and how many of them play
+         *     in the chosen timezones.
+         */
+        PickCount: {
+            /** Id */
+            id: number;
+            /** In Timezone */
+            in_timezone: number;
+            /** Kind */
+            kind: string;
+            /** Total */
+            total: number;
         };
         /** PlanCharacterResponse */
         PlanCharacterResponse: {
@@ -19839,6 +19860,7 @@ export interface components {
             matched_as: string;
             /** Name */
             name: string;
+            timezone?: components["schemas"]["TimezoneTag"] | null;
         };
         /**
          * RestrictedResponse
@@ -19935,12 +19957,10 @@ export interface components {
         /** Roster */
         Roster: {
             /**
-             * By Prime Time
-             * @default {}
+             * By Timezone
+             * @default []
              */
-            by_prime_time?: {
-                [key: string]: unknown;
-            };
+            by_timezone?: components["schemas"]["RosterTimezoneCount"][];
             /**
              * Corporations
              * @default []
@@ -20070,22 +20090,23 @@ export interface components {
              */
             losses?: number;
             /**
-             * Observed Prime Time
-             * @default
-             */
-            observed_prime_time?: string;
-            /**
              * Primary Character
              * @default
              */
             primary_character?: string;
-            /**
-             * Prime Time
-             * @default
-             */
-            prime_time?: string;
+            timezone?: components["schemas"]["TimezoneTag"];
             /** User Id */
             user_id: number;
+        };
+        /** RosterTimezoneCount */
+        RosterTimezoneCount: {
+            /** Bracket */
+            bracket?: string | null;
+            /**
+             * Pilots
+             * @default 0
+             */
+            pilots?: number;
         };
         /** ScheduleChange */
         ScheduleChange: {
@@ -20970,20 +20991,27 @@ export interface components {
             /** Timer Id */
             timer_id: number;
         };
-        /** TimezoneBucketCount */
-        TimezoneBucketCount: {
-            /** Bucket */
-            bucket: string;
+        /** TimezoneCount */
+        TimezoneCount: {
+            /** Code */
+            code: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * TimezoneTag
+         * @description A pilot's timezones as every page shows them: the bracket codes
+         *     (USTZ, EUTZ+, ...) and where they came from, "activity" or "declared".
+         *     No brackets means nothing is known yet.
+         */
+        TimezoneTag: {
             /**
-             * Declared
-             * @default 0
+             * Brackets
+             * @default []
              */
-            declared?: number;
-            /**
-             * Observed
-             * @default 0
-             */
-            observed?: number;
+            brackets?: string[];
+            /** Source */
+            source?: string | null;
         };
         /**
          * TokenType
@@ -21181,8 +21209,7 @@ export interface components {
             reason: string;
             /** Slice 30D */
             slice_30d: string;
-            /** Timezone */
-            timezone?: string | null;
+            timezone?: components["schemas"]["TimezoneTag"];
             /** User Id */
             user_id: number;
             /** Username */
@@ -22317,12 +22344,32 @@ export interface components {
             /** No Discord */
             no_discord: number;
             /**
+             * Onboarding
+             * @default []
+             */
+            onboarding?: components["schemas"]["OnboardingCount"][];
+            /**
              * Opted Out
              * @default 0
              */
             opted_out?: number;
+            /**
+             * Other Timezones
+             * @default 0
+             */
+            other_timezones?: number;
+            /**
+             * Other Timezones By Bracket
+             * @default []
+             */
+            other_timezones_by_bracket?: components["schemas"]["TimezoneCount"][];
             /** Picked */
             picked: number;
+            /**
+             * Picks
+             * @default []
+             */
+            picks?: components["schemas"]["PickCount"][];
             /** Will Dm */
             will_dm: number;
         };
@@ -22343,6 +22390,8 @@ export interface components {
              * @default []
              */
             onboarding?: string[];
+            /** Timezones */
+            timezones?: string[] | null;
             /**
              * Tribe Group Ids
              * @default []
@@ -28962,6 +29011,7 @@ export interface operations {
             query?: {
                 q?: string;
                 pilots_only?: boolean;
+                timezones?: string;
             };
             header?: never;
             path: {

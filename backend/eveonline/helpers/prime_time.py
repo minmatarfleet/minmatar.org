@@ -1,9 +1,12 @@
 """Which prime time an hour of play falls in.
 
-Uses the codes a pilot picks on their profile (EvePlayer.prime_choices), so
-an observed prime time can sit next to the declared one. The fleets page,
-the corporation timezone charts and the campaign roster all bucket hours
-here. AP_EU is a code pilots can declare, but no observed hour maps to it.
+Uses the codes a pilot picks on their profile (EvePlayer.prime_choices).
+The fleets page buckets a fleet's start hour here (the fleet's time region),
+and campaign stats store a pilot's busiest hour with it. AP_EU is a code
+pilots can declare, but no observed hour maps to it.
+
+A pilot's own timezone is not this: read it from the timezones app
+(timezones.services, see docs/timezones.md).
 """
 
 from __future__ import annotations

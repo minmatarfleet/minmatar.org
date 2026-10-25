@@ -67,7 +67,12 @@ The misses are mostly US pilots who only fly EU-time fleets in their afternoon, 
 ## Reading timezones
 
 ```python
-from timezones.services import timezone_for, timezones_for, users_in_bracket
+from timezones.services import (
+    timezone_for,
+    timezone_tags_for,
+    timezones_for,
+    users_in_bracket,
+)
 
 row = timezone_for(user.id)  # PilotTimezone or None
 row.home, row.home_source, row.brackets
@@ -75,16 +80,34 @@ row.declared_prime_time, row.declared_home  # what they said
 row.inferred_home, row.inferred_confidence  # what activity says
 
 users_in_bracket("EUTZ+")  # eligible pilots holding a bracket
+timezone_tags_for(user_ids)  # user id -> TimezoneTag, for pages
 ```
 
 `eligible` is true for active and trial members with Discord linked. On-leave pilots keep a timezone but hold no roles.
+
+Pages show a pilot's timezone as a `TimezoneTag` (`timezones.schemas`): `brackets` and `source` (`"activity"` or `"declared"`; no brackets means nothing is known yet). Build them in one query with `timezone_tags_for(user_ids)`, and render them with the website's `TimezoneTags` component: solid tags from activity, dashed when only declared, "No TZ yet", or "On Leave" in its place where leave matters.
+
+## Where pilots' timezones show
+
+Every one of these reads `PilotTimezone`; none reads `EvePlayer.prime_time` or guesses from fleet attendance itself.
+
+| Surface | Field | Notes |
+| --- | --- | --- |
+| Corporation page, Leadership | `leadership[].timezone` on `CorporationResponse` / `CorporationInfoResponse` | On Leave (community status) replaces the tags. The CEO and recruiter zone pills are the tag's regions (US, EU, AU). Read live, not from the cached profile stats. |
+| Corporation page, About | `about.prime_windows[].pilots` | Members holding a bracket in that window's region. The windows themselves come from the corp's own free-text timezones. |
+| Corporation Members roster | `CorporationMemberDetails.timezone` | Filter by USTZ, EUTZ or AUTZ (each takes in its + bracket) or No TZ yet; the timezone sort is bracket order. |
+| Alliance Health pilot cards | `timezone` on attention, trial and leave pilots | Sorts in bracket order; search matches bracket codes. |
+| Campaign roster | `RosterRow.timezone`, `Roster.by_timezone` | "Pilots by timezone": one count per bracket, then No TZ yet. |
+| Survey context card | `MemberContextSchema.timezone`, `timezone_note` | The note is the pilot's home region's share of eligible pilots (`home_counts()`). Survey responses still freeze the declared `prime_time` for segmentation, so past quarters stay comparable. |
+
+Not pilot timezones, and left alone: a fleet's `time_region` (when the fleet ran), and a corporation's own declared timezones text.
 
 To react to changes, connect to `timezones.services.pilot_timezone_changed`. It is sent with `instance`, `previous_home`, `previous_brackets` and `previous_eligible` whenever a pilot's home, brackets or eligibility change.
 
 ## When it runs
 
 - `timezones.tasks.assess_timezones` every 6 hours reassesses everyone, then reconciles Discord roles.
-- Saving a new declared prime time queues `assess_user_timezone` for that pilot, so the change takes effect straight away.
+- Saving a new declared prime time queues `assess_user_timezone` for that pilot, so the change takes effect straight away. That includes the prime time parsed from a corporation application's "Timezone:" line.
 - **Sync with Discord** on the account page applies the pilot's stored brackets (`users/router.py`).
 - `manage.py assess_timezones [--user ID] [--dry-run]` runs an assessment by hand.
 
@@ -104,6 +127,8 @@ A group adopts an existing Discord role with the same name instead of creating o
 | Activity sources | `backend/timezones/activity.py` |
 | Home model and bracket rules | `backend/timezones/inference.py` |
 | Storage, readers, change signal | `backend/timezones/services.py` |
+| Page schema (`TimezoneTag`) | `backend/timezones/schemas.py` |
+| Website tag and helpers | `frontend/app/src/components/blocks/TimezoneTags.astro`, `frontend/app/src/helpers/timezones.ts` |
 | Discord role reconciler | `backend/timezones/discord_roles.py` |
 | Tasks | `backend/timezones/tasks.py` |
 | Declared prime time hook | `backend/timezones/signals.py` |

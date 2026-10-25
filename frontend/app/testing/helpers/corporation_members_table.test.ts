@@ -8,7 +8,6 @@ import {
     parse_member_params,
     corporation_member_characters,
     corporation_member_primary,
-    corporation_member_timezones,
     filter_corporation_member_rows,
     group_corporation_members,
     paginate_corporation_member_rows,
@@ -25,7 +24,6 @@ function member(overrides: Partial<CorporationMemberDetails> & Pick<CorporationM
         fleets_90d: 0,
         kills_90d: 0,
         voice_hours_90d: 0,
-        observed_prime_times: [],
         ...overrides,
     }
 }
@@ -41,7 +39,7 @@ describe('corporation member table', () => {
                 primary_character_name: 'Director Dan',
                 fleets_90d: 4,
                 registered: true,
-                observed_prime_times: ['EU'],
+                timezone: { brackets: ['EUTZ'], source: 'activity' },
             }),
             member({
                 character_id: 1,
@@ -51,7 +49,7 @@ describe('corporation member table', () => {
                 primary_character_name: 'Director Dan',
                 fleets_90d: 1,
                 token_count: 1,
-                observed_prime_times: ['EU'],
+                timezone: { brackets: ['EUTZ'], source: 'activity' },
             }),
             member({
                 character_id: 9,
@@ -79,7 +77,7 @@ describe('corporation member table', () => {
                 character_name: 'Alt Ace',
                 primary_character_id: 1,
                 primary_character_name: 'Director Dan',
-                observed_prime_times: ['EU'],
+                timezone: { brackets: ['EUTZ'], source: 'activity' },
             }),
             member({
                 character_id: 3,
@@ -101,24 +99,22 @@ describe('corporation member table', () => {
         })).toHaveLength(1)
     })
 
-    it('sorts timezone by observed buckets and paginates', () => {
+    it('sorts timezone by bracket order and paginates', () => {
         const grouped = group_corporation_members([
             member({
                 character_id: 1,
                 character_name: 'Ann',
-                observed_prime_times: ['EU'],
-                prime_time: 'US',
+                timezone: { brackets: ['EUTZ'], source: 'activity' },
             }),
             member({
                 character_id: 2,
                 character_name: 'Zed',
-                observed_prime_times: ['US'],
-                prime_time: 'EU',
+                timezone: { brackets: ['USTZ+'], source: 'declared' },
             }),
             member({
                 character_id: 3,
                 character_name: 'Mia',
-                prime_time: 'US',
+                timezone: { brackets: [], source: null },
             }),
         ])
         const sorted = sort_corporation_member_rows(grouped, 'timezone')
@@ -161,27 +157,35 @@ describe('corporation member table', () => {
 
     it('filters by timezone and community status, searching alts too', () => {
         const rows = group_corporation_members([
-            member({ character_id: 1, character_name: 'Director Dan', user_name: 'dan', primary_character_id: 1, primary_character_name: 'Director Dan', observed_prime_times: ['EU'], community_status: 'active' }),
+            member({ character_id: 1, character_name: 'Director Dan', user_name: 'dan', primary_character_id: 1, primary_character_name: 'Director Dan', timezone: { brackets: ['EUTZ'], source: 'activity' }, community_status: 'active' }),
             member({ character_id: 2, character_name: 'Alt Ace', user_name: 'dan', primary_character_id: 1, primary_character_name: 'Director Dan' }),
-            member({ character_id: 3, character_name: 'Trial Tom', user_name: 'tom', primary_character_id: 3, primary_character_name: 'Trial Tom', prime_time: 'US', community_status: 'trial' }),
+            member({ character_id: 3, character_name: 'Trial Tom', user_name: 'tom', primary_character_id: 3, primary_character_name: 'Trial Tom', timezone: { brackets: ['USTZ+'], source: 'declared' }, community_status: 'trial' }),
             member({ character_id: 4, character_name: 'Quiet Quinn', user_name: 'quinn', primary_character_id: 4, primary_character_name: 'Quiet Quinn' }),
         ])
         const names = (filters: Parameters<typeof filter_corporation_member_rows>[1]) =>
             filter_corporation_member_rows(rows, filters).map((row) => corporation_member_primary(row).character_name).sort()
 
         expect(names({ query: 'ace' })).toEqual(['Director Dan'])
-        expect(names({ query: '', timezone: 'EU' })).toEqual(['Director Dan'])
-        expect(names({ query: '', timezone: 'US' })).toEqual(['Trial Tom'])
+        expect(names({ query: '', timezone: 'EUTZ' })).toEqual(['Director Dan'])
+        // A base filter takes in the late bracket too.
+        expect(names({ query: '', timezone: 'USTZ' })).toEqual(['Trial Tom'])
+        expect(names({ query: '', timezone: 'none' })).toEqual(['Quiet Quinn'])
         expect(names({ query: '', status: 'trial' })).toEqual(['Trial Tom'])
         expect(names({ query: '', status: 'none' })).toEqual(['Quiet Quinn'])
         expect(names({ query: 'ace', status: 'trial' })).toEqual([])
     })
 
-    it('falls back to the declared timezone when no fleets were seen', () => {
+    it('keeps the person timezone from whichever character carries it', () => {
         const [row] = group_corporation_members([
-            member({ character_id: 5, character_name: 'Decl', user_name: 'd', prime_time: 'AP' }),
+            member({ character_id: 5, character_name: 'Main', user_name: 'd', primary_character_id: 5, timezone: { brackets: [], source: null } }),
+            member({ character_id: 6, character_name: 'Alt', user_name: 'd', primary_character_id: 5, timezone: { brackets: ['AUTZ'], source: 'declared' } }),
         ])
-        expect(corporation_member_timezones(row)).toEqual({ codes: ['AP'], declared: true })
+        expect(row.timezone).toEqual({ brackets: ['AUTZ'], source: 'declared' })
+    })
+
+    it('parses only known timezone filters from the URL', () => {
+        expect(parse_member_params(new URLSearchParams('tz=EUTZ')).timezone).toBe('EUTZ')
+        expect(parse_member_params(new URLSearchParams('tz=EU')).timezone).toBeNull()
     })
 })
 

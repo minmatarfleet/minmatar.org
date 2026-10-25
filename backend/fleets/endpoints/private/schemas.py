@@ -5,6 +5,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from timezones.schemas import TimezoneTag
+
 
 class WaveRequest(BaseModel):
     tribe_group_ids: List[int] = []
@@ -12,6 +14,10 @@ class WaveRequest(BaseModel):
     user_ids: List[int] = []
     # Alliance health onboarding buckets: "first_week", "more_fleets".
     onboarding: List[str] = []
+    # Bracket codes the group, corporation and new pilot picks must play
+    # in; "any" for no limit (Strategic FCs on strategic or private fleets
+    # only). Null for the fleet's own timezones.
+    timezones: Optional[List[str]] = None
     note: str = Field(default="", max_length=300)
 
 
@@ -33,8 +39,36 @@ class CappedPilot(BaseModel):
     free_at: datetime
 
 
+class TimezoneCount(BaseModel):
+    code: str
+    count: int
+
+
+class PickCount(BaseModel):
+    """A group or corporation pick: its members, and how many of them play
+    in the chosen timezones."""
+
+    kind: str
+    id: int
+    total: int
+    in_timezone: int
+
+
+class OnboardingCount(BaseModel):
+    bucket: str
+    total: int
+    in_timezone: int
+
+
 class WavePreviewResponse(BaseModel):
     picked: int
+    # Group, corporation and new pilot picks who play in other timezones,
+    # and how many by the bracket they play in.
+    other_timezones: int = 0
+    other_timezones_by_bracket: List[TimezoneCount] = []
+    picks: List[PickCount] = []
+    # Standard fleets: new pilots per onboarding bucket in these timezones.
+    onboarding: List[OnboardingCount] = []
     already_invited: int
     new: int
     will_dm: int
@@ -116,6 +150,15 @@ class FleetInvitesResponse(BaseModel):
     # Standard fleets: new pilots not yet invited, by onboarding bucket.
     onboarding_first_week: int = 0
     onboarding_more_fleets: int = 0
+    # The same, only those who play at the fleet time.
+    onboarding_first_week_in_timezone: int = 0
+    onboarding_more_fleets_in_timezone: int = 0
+    # The brackets that play at the fleet's start time (the nearest one when
+    # none does, with timezones_nearest set). Bulk picks are limited to
+    # these; can_choose_timezones lets the caller pick any instead.
+    fleet_timezones: List[str] = []
+    timezones_nearest: bool = False
+    can_choose_timezones: bool = False
 
 
 class WaveSentResponse(BaseModel):
@@ -163,6 +206,12 @@ class InviteCandidate(BaseModel):
     blocked: Optional[str] = None
     # "capped" only: the invite that counts this week.
     capped: Optional[CappedPilot] = None
+    # Pilots: their timezones.
+    timezone: Optional[TimezoneTag] = None
+    # Groups and corporations: members, and how many play in the chosen
+    # timezones.
+    members: Optional[int] = None
+    in_timezone: Optional[int] = None
 
 
 class ResolveNamesRequest(BaseModel):
@@ -180,6 +229,7 @@ class ResolvedPilot(BaseModel):
     # As on InviteCandidate.
     blocked: Optional[str] = None
     capped: Optional[CappedPilot] = None
+    timezone: Optional[TimezoneTag] = None
 
 
 class ResolveNamesResponse(BaseModel):

@@ -733,11 +733,6 @@ def get_roster(request, slug: str):
 
     rows = serializers.roster_rows(campaign)
 
-    by_prime_time: dict[str, int] = {}
-    for row in rows:
-        label = row["prime_time"] or row["observed_prime_time"] or "Unknown"
-        by_prime_time[label] = by_prime_time.get(label, 0) + 1
-
     return {
         "pilots": rows,
         "corporations": serializers.roster_corporations(
@@ -747,5 +742,5 @@ def get_roster(request, slug: str):
             fleets_by_user=fleet_service.fleet_ids_by_user(campaign),
         ),
         "coverage": serializers.coverage_by_hour(campaign),
-        "by_prime_time": by_prime_time,
+        "by_timezone": serializers.roster_timezones(rows),
     }

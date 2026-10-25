@@ -2,14 +2,15 @@
 
 from typing import Any, Literal, Protocol, TypeVar, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from alliance.helpers.health import is_gone_for_months_pilot
 from alliance.helpers.hygiene import (
     classify_onboarding_need,
     trial_under_min_tenure,
 )
-from alliance.helpers.player_prime_time import prime_time_labels_for_users
+from alliance.helpers.pilot_timezones import pilot_timezone_tags
+from timezones.schemas import TimezoneTag
 
 CountModelT = TypeVar("CountModelT", bound=BaseModel)
 
@@ -153,7 +154,7 @@ class AttentionPilot(BaseModel):
     active_months: int
     character_id: int | None = None
     corporation_id: int | None = None
-    timezone: str | None = None
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
 
 
 class HealthAttentionResponse(BaseModel):
@@ -242,7 +243,7 @@ class TrialHygienePilot(BaseModel):
     conf: str
     reason: str
     decision: str | None = None
-    timezone: str | None = None
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
 
 
 class HealthTrialsResponse(BaseModel):
@@ -274,7 +275,7 @@ class LeaveHygienePilot(BaseModel):
     story: str
     conf: str
     reason: str
-    timezone: str | None = None
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
 
 
 class HealthLeaveResponse(BaseModel):
@@ -304,16 +305,16 @@ class HealthStatusChangeResponse(BaseModel):
 
 class _HasUserTimezone(Protocol):
     user_id: int
-    timezone: str | None
+    timezone: TimezoneTag
 
 
 PilotT = TypeVar("PilotT", bound=_HasUserTimezone)
 
 
 def _apply_timezones(pilots: list[PilotT]) -> list[PilotT]:
-    labels = prime_time_labels_for_users(p.user_id for p in pilots)
+    tags = pilot_timezone_tags(p.user_id for p in pilots)
     for pilot in pilots:
-        pilot.timezone = labels.get(pilot.user_id)
+        pilot.timezone = tags.get(pilot.user_id) or TimezoneTag()
     return pilots
 
 

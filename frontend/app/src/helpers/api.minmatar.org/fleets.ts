@@ -811,10 +811,14 @@ export async function reping_fleet_invites(access_token:string, fleet_id:number)
     })
 }
 
-/** Groups, corporations and pilots to invite; pilots_only for the one-pilot search. */
-export async function get_fleet_invite_candidates(access_token:string, fleet_id:number, q:string, pilots_only = false) {
+/**
+ * Groups, corporations and pilots to invite; pilots_only for the one-pilot search.
+ * `timezones` is the dialog's timezone choice, for each group's in-timezone count.
+ */
+export async function get_fleet_invite_candidates(access_token:string, fleet_id:number, q:string, pilots_only = false, timezones:string[] = []) {
     const pilots = pilots_only ? '&pilots_only=true' : ''
-    return await api_request<FleetInviteCandidate[]>(`${API_ENDPOINT}/${fleet_id}/invites/candidates?q=${encodeURIComponent(q)}${pilots}`, {
+    const zones = timezones.length > 0 ? `&timezones=${encodeURIComponent(timezones.join(','))}` : ''
+    return await api_request<FleetInviteCandidate[]>(`${API_ENDPOINT}/${fleet_id}/invites/candidates?q=${encodeURIComponent(q)}${pilots}${zones}`, {
         token: access_token,
     }) ?? []
 }

@@ -4,7 +4,9 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from ninja import Schema
+from ninja import Field, Schema
+
+from timezones.schemas import TimezoneTag
 
 
 class CorporationType(str, Enum):
@@ -32,15 +34,8 @@ class CorporationLeadershipResponse(Schema):
     character_id: int
     character_name: str
     role: str
-    prime_time: Optional[str] = None
-    observed_prime_times: List[str] = []
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
     on_leave: bool = False
-
-
-class TimezoneBucketCount(Schema):
-    bucket: str
-    declared: int = 0
-    observed: int = 0
 
 
 class WeekdayCount(Schema):
@@ -88,7 +83,6 @@ class CorporationResponse(Schema):
     human_count: Optional[int] = None
     ceo: Optional[CorporationCeoResponse] = None
     leadership: List[CorporationLeadershipResponse] = []
-    timezone_distribution: List[TimezoneBucketCount] = []
     weekday_distribution: List[WeekdayCount] = []
     highlights: Optional[str] = None
     activity_summary: Optional[str] = None
@@ -237,7 +231,6 @@ class CorporationInfoResponse(Schema):
     human_count: Optional[int] = None
     ceo: Optional[CorporationCeoResponse] = None
     leadership: List[CorporationLeadershipResponse] = []
-    timezone_distribution: List[TimezoneBucketCount] = []
     weekday_distribution: List[WeekdayCount] = []
     highlights: Optional[str] = None
     activity_summary: Optional[str] = None
@@ -276,8 +269,7 @@ class CorporationMemberDetails(Schema):
     fleets_90d: int = 0
     kills_90d: int = 0
     voice_hours_90d: float = 0
-    prime_time: Optional[str] = None
-    observed_prime_times: List[str] = []
+    timezone: TimezoneTag = Field(default_factory=TimezoneTag)
     community_status: Optional[str] = None
     corp_joined_at: Optional[str] = None
     last_fleet_at: Optional[str] = None
@@ -377,7 +369,6 @@ class CorporationAdminResponse(Schema):
     active_90d_pct: Optional[float] = None
     growth_90d_pct: Optional[float] = None
     stewards: List[CorporationRoleCharacterResponse] = []
-    leadership_missing_prime_time: List[CorporationLeadershipResponse] = []
 
 
 class CorporationProjectTarget(Schema):
