@@ -1020,6 +1020,8 @@ export interface CampaignStructureAttachRequest {
 export type VerifyStructureTimerRequest = ApiRequest<'EveStructureTimerVerificationRequest'>
 
 export type Post = ApiResponse<'EvePostResponse'>
+/** A post in GET /blog/posts: no content, but its first image as `image`. */
+export type PostListItem = ApiResponse<'EvePostListResponse'>
 
 export interface PostParams {
     title?:             string;
