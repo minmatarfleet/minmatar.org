@@ -20,6 +20,7 @@ import {
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
 import { get_locations } from '@helpers/api.minmatar.org/locations'
 import { fetch_campaign_options } from '@helpers/fetching/campaigns'
+import { parse_margin, parse_price_basis } from '@helpers/order_pricing'
 import type {
     CreateOrderItemInput,
     CampaignListItem,
@@ -127,6 +128,17 @@ if (Astro.request.method === 'POST') {
                 quantity: Math.max(1, Number(row.quantity) || 1),
             }))
             .filter((row) => row.eve_type_id > 0)
+            .map((row) => {
+                // The line's pricing partial posts its own basis and margin.
+                const basis = form.get(`price_basis_${row.eve_type_id}`)
+                if (basis === null)
+                    return row
+                return {
+                    ...row,
+                    price_basis: parse_price_basis(String(basis)),
+                    margin_percent: parse_margin(String(form.get(`margin_${row.eve_type_id}`) ?? '')),
+                }
+            })
 
         if (!submitted_needed_by)
             throw new Error(t('industry.orders.create.needed_by'))
@@ -186,6 +198,9 @@ const quantity_label = t('industry.orders.create.quantity')
 const remove_label = t('industry.orders.create.remove_item')
 const search_placeholder = t('industry.orders.create.search_product')
 const no_match_label = t('industry.orders.create.no_matching_products')
+const pricing_loading_label = t('industry.orders.create.pricing_loading')
+const pricing_partial = translatePath('/partials/order_line_pricing_component')
+const totals_partial = translatePath('/partials/order_pricing_totals_component')
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
@@ -271,6 +286,8 @@ const breadcrumbs = [
                             remove_label: ${JSON.stringify(remove_label)},
                             search_placeholder: ${JSON.stringify(search_placeholder)},
                             no_match_label: ${JSON.stringify(no_match_label)},
+                            pricing_loading_label: ${JSON.stringify(pricing_loading_label)},
+                            pricing_partial: ${JSON.stringify(pricing_partial)},
                             get filtered() {
                                 const q = this.search.trim().toLowerCase()
                                 if (!q) return []
@@ -286,6 +303,9 @@ const breadcrumbs = [
                                 const existing = this.lines.find(line => line.eve_type_id === product.type_id)
                                 if (existing) {
                                     existing.quantity += 1
+                                    this.$nextTick(() => this.$root
+                                        .querySelector('[data-order-line="' + product.type_id + '"]')
+                                        ?.dispatchEvent(new CustomEvent('order-line-repriced', { bubbles: true })))
                                 } else {
                                     this.lines.push({
                                         eve_type_id: product.type_id,
@@ -294,9 +314,11 @@ const breadcrumbs = [
                                     })
                                 }
                                 this.search = ''
+                                this.$nextTick(() => this.$dispatch('order-lines-changed'))
                             },
                             remove_line(index) {
                                 this.lines.splice(index, 1)
+                                this.$nextTick(() => this.$dispatch('order-lines-changed'))
                             },
                             set_qty(index, value) {
                                 const line = this.lines[index]
@@ -491,45 +513,69 @@ const breadcrumbs = [
                                     x-cloak
                                 >
                                     <template x-for="(line, index) in lines" x-bind:key="line.eve_type_id">
-                                        <li class="[ create-order-form__line ]">
-                                            <img
-                                                class="[ create-order-form__icon ]"
-                                                width="32"
-                                                height="32"
-                                                loading="lazy"
-                                                x-bind:src="`https://images.evetech.net/types/${line.eve_type_id}/icon?size=32`"
-                                                x-bind:alt="line.name"
-                                            />
-                                            <span
-                                                class="[ create-order-form__product-name truncate ]"
-                                                x-text="line.name"
-                                            ></span>
-                                            <label class="[ create-order-form__qty ]">
-                                                <span
-                                                    class="[ create-order-form__qty-label ]"
-                                                    x-text="quantity_label"
-                                                ></span>
-                                                <input
-                                                    class="[ create-order-form__qty-input ]"
-                                                    type="number"
-                                                    min="1"
-                                                    x-bind:value="line.quantity"
-                                                    x-on:change="set_qty(index, $event.target.value)"
-                                                    x-bind:aria-label="quantity_label"
+                                        <li class="[ create-order-form__line ]" x-bind:data-order-line="line.eve_type_id">
+                                            <div class="[ create-order-form__line-head ]">
+                                                <img
+                                                    class="[ create-order-form__icon ]"
+                                                    width="32"
+                                                    height="32"
+                                                    loading="lazy"
+                                                    x-bind:src="`https://images.evetech.net/types/${line.eve_type_id}/icon?size=32`"
+                                                    x-bind:alt="line.name"
                                                 />
-                                            </label>
-                                            <button
-                                                type="button"
-                                                class="[ create-order-form__remove ]"
-                                                x-on:click="remove_line(index)"
-                                                x-text="remove_label"
-                                            ></button>
+                                                <span
+                                                    class="[ create-order-form__product-name truncate ]"
+                                                    x-text="line.name"
+                                                ></span>
+                                                <label class="[ create-order-form__qty ]">
+                                                    <span
+                                                        class="[ create-order-form__qty-label ]"
+                                                        x-text="quantity_label"
+                                                    ></span>
+                                                    <input
+                                                        class="[ create-order-form__qty-input ]"
+                                                        type="number"
+                                                        min="1"
+                                                        x-bind:name="`quantity_${line.eve_type_id}`"
+                                                        x-bind:value="line.quantity"
+                                                        x-on:change="set_qty(index, $event.target.value)"
+                                                        x-bind:aria-label="quantity_label"
+                                                    />
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    class="[ create-order-form__remove ]"
+                                                    x-on:click="remove_line(index)"
+                                                    x-text="remove_label"
+                                                ></button>
+                                            </div>
+                                            <div
+                                                class="[ create-order-form__pricing ]"
+                                                x-bind:hx-get="`${pricing_partial}?type_id=${line.eve_type_id}`"
+                                                hx-trigger="load, change from:closest li delay:250ms, order-line-repriced from:closest li"
+                                                hx-include="closest li"
+                                                hx-target="this"
+                                                hx-swap="innerHTML"
+                                                x-init="$nextTick(() => htmx.process($el))"
+                                            >
+                                                <small x-text="pricing_loading_label"></small>
+                                            </div>
                                         </li>
                                     </template>
                                 </ul>
                             </Flexblock>
 
                             <input type="hidden" name="items_json" x-bind:value="items_json()" />
+
+                            <div
+                                class="[ create-order-form__totals ]"
+                                hx-get={totals_partial}
+                                hx-trigger="load delay:500ms, change from:closest form delay:400ms, order-lines-changed from:closest form delay:400ms"
+                                hx-include="closest form"
+                                hx-target="this"
+                                hx-swap="innerHTML"
+                                x-show="lines.length > 0"
+                            ></div>
 
                             <Button
                                 type="submit"
@@ -590,16 +636,27 @@ const breadcrumbs = [
 
     .create-order-form__line {
         display: flex;
-        flex-wrap: nowrap;
+        flex-direction: column;
         gap: var(--space-xs);
-        align-items: center;
         width: 100%;
-        padding-block: var(--space-2xs);
+        padding-block: var(--space-xs);
         border-bottom: 1px solid var(--border-color);
 
         &:last-child {
             border-bottom: 0;
         }
+    }
+
+    .create-order-form__line-head {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: var(--space-xs);
+        align-items: center;
+        width: 100%;
+    }
+
+    .create-order-form__pricing small {
+        color: var(--text-muted);
     }
 
     .create-order-form__product-name {

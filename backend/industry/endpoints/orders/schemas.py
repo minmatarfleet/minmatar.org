@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List
+from typing import List, Literal
 
 from pydantic import BaseModel
 
@@ -150,6 +150,12 @@ class OrderItemInput(BaseModel):
     eve_type_id: int
     quantity: int
     self_assign_maximum: int | None = None
+    # Sets the line's ask price. Never below the build cost for the
+    # quantity; a preset under it falls back to the build cost.
+    price_basis: (
+        Literal["jita_buy", "jita_split", "jita_sell", "margin"] | None
+    ) = None
+    margin_percent: float | None = None
 
 
 class CreateOrderRequest(BaseModel):
@@ -161,6 +167,19 @@ class CreateOrderRequest(BaseModel):
     contract_to: str = ""
     campaign_id: int | None = None
     items: List[OrderItemInput]
+
+
+class OrderLinePricingResponse(BaseModel):
+    """Build-cost floor and Jita prices for one order line (per unit)."""
+
+    type_id: int
+    quantity: int
+    build_cost_per_unit: int
+    jita_buy: int | None
+    jita_split: int | None
+    jita_sell: int | None
+    ship_in_per_unit: int
+    jita_delivered: int | None
 
 
 class CreateOrderResponse(BaseModel):

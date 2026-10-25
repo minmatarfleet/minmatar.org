@@ -15,6 +15,7 @@ import type {
     OrderCapabilities,
     CreateOrderRequest,
     CreateOrderResponse,
+    OrderLinePricing,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -27,6 +28,19 @@ export async function get_order_capabilities(access_token: string) {
     return await api_request<OrderCapabilities>(ENDPOINT, {
         token: access_token,
         error: 'Error fetching order capabilities',
+    })
+}
+
+export async function get_order_line_pricing(
+    access_token: string,
+    type_id: number,
+    quantity: number,
+) {
+    const ENDPOINT = `${API_ENDPOINT}/orders/pricing?${query_string({ type_id, quantity })}`
+
+    return await api_request<OrderLinePricing>(ENDPOINT, {
+        token: access_token,
+        error: 'Error fetching order line pricing',
     })
 }
 

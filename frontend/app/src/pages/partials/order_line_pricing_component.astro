@@ -1,0 +1,344 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token)
+    return HTTP_403_Forbidden()
+
+import { get_order_line_pricing } from '@helpers/api.minmatar.org/industry'
+import type { OrderLinePricing, OrderPriceBasis } from '@dtypes/api.minmatar.org'
+import {
+    ORDER_PRICE_BASES,
+    parse_margin,
+    parse_price_basis,
+    preset_available,
+    preset_price,
+    resolve_line_price,
+} from '@helpers/order_pricing'
+import { format_isk, ISK_COMPACT_PRECISE } from '@helpers/numbers'
+
+const isk = (value: number | null, suffix = '') => format_isk(value, { format: ISK_COMPACT_PRECISE, suffix })
+import { query_string } from '@helpers/string'
+
+// Field names carry the type id so every line on the create form posts its
+// own basis and margin; the line's quantity input is included the same way.
+const params = Astro.url.searchParams
+const type_id = parseInt(params.get('type_id') ?? '0')
+const quantity = Math.max(1, parseInt(params.get(`quantity_${type_id}`) ?? params.get('quantity') ?? '1') || 1)
+const requested_basis = parse_price_basis(params.get(`price_basis_${type_id}`))
+const requested_margin = parse_margin(params.get(`margin_${type_id}`))
+const delay = parseInt(params.get('delay') ?? '0') || 0
+
+let pricing: OrderLinePricing | null = null
+let fetching_error: Error | false = false
+
+try {
+    if (!type_id)
+        throw new Error('Invalid type id', { cause: 400 })
+    pricing = await get_order_line_pricing(auth_token, type_id, quantity)
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const partial_url = translatePath(`/partials/order_line_pricing_component?${query_string({
+    type_id,
+    quantity,
+    [`price_basis_${type_id}`]: requested_basis,
+    [`margin_${type_id}`]: requested_margin,
+})}`)
+
+const basis_labels: Record<OrderPriceBasis, string> = {
+    jita_buy: t('industry.orders.create.price_jita_buy'),
+    jita_split: t('industry.orders.create.price_jita_split'),
+    jita_sell: t('industry.orders.create.price_jita_sell'),
+    margin: t('industry.orders.create.price_margin'),
+}
+
+const line = pricing ? resolve_line_price(pricing, requested_basis, requested_margin) : null
+
+const options = pricing && line ? ORDER_PRICE_BASES.map((basis) => {
+    const available = preset_available(pricing, basis)
+    const value = preset_price(pricing, basis)
+    return {
+        basis,
+        label: basis_labels[basis],
+        available,
+        checked: line.basis === basis,
+        sub: basis === 'margin'
+            ? (line.basis === 'margin' ? `${line.margin}%` : t('industry.orders.create.price_custom'))
+            : available ? isk(value) : t('industry.orders.create.price_below_cost'),
+        hint: !available && value !== null
+            ? t('industry.orders.create.price_below_cost_hint')
+                .replace('{preset}', basis_labels[basis])
+                .replace('{price}', isk(value))
+                .replace('{quantity}', String(quantity))
+                .replace('{cost}', isk(pricing.build_cost_per_unit))
+            : undefined,
+    }
+}) : []
+
+// Bar from the build cost (left) to Jita delivered or the price, whichever is higher.
+let profit_width = 0
+let saving_width = 0
+if (pricing && line) {
+    const low = pricing.build_cost_per_unit
+    const high = Math.max(pricing.jita_delivered ?? line.price, line.price)
+    const span = high - low
+    profit_width = span > 0 ? (line.price - low) / span * 100 : 0
+    saving_width = span > 0 && line.saving !== null && line.saving > 0 ? line.saving / span * 100 : 0
+}
+
+const saving_text = line && line.saving !== null
+    ? (line.saving >= 0 ? t('industry.orders.create.you_save') : t('industry.orders.create.costs_more'))
+        .replace('{amount}', isk(Math.abs(line.saving)))
+    : null
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetching_error !== false || !pricing || !line ?
+    <ErrorRefetch args={{
+        partial: partial_url,
+        error: fetching_error || new Error(t('industry.orders.create.error')),
+        delay,
+    }} />
+    :
+    <div class="[ order-line-pricing ]">
+        <small class="[ order-line-pricing__cost ]">
+            {t('industry.orders.create.build_cost')
+                .replace('{cost}', isk(pricing.build_cost_per_unit))
+                .replace('{quantity}', String(quantity))}
+        </small>
+
+        <div class="[ order-line-pricing__controls ]">
+            <fieldset class="[ order-line-pricing__options ]">
+                <legend class="[ visually-hidden ]">{t('industry.orders.create.price')}</legend>
+                {options.map((option) =>
+                    <label
+                        class:list={['[ order-line-pricing__option ]', { 'is-unavailable': !option.available }]}
+                        title={option.hint}
+                    >
+                        <input
+                            type="radio"
+                            class="[ visually-hidden ]"
+                            name={`price_basis_${type_id}`}
+                            value={option.basis}
+                            checked={option.checked}
+                            disabled={!option.available}
+                        />
+                        <span class="[ order-line-pricing__option-label ]">{option.label}</span>
+                        <span class="[ order-line-pricing__option-sub ]">{option.sub}</span>
+                    </label>
+                )}
+            </fieldset>
+
+            <div class="[ order-line-pricing__price ]">
+                <strong>{isk(line.price)}</strong>
+                <small>{t('industry.orders.create.each')}</small>
+            </div>
+        </div>
+
+        {line.basis === 'margin' &&
+            <label class="[ order-line-pricing__margin ]">
+                <span>{t('industry.orders.create.margin_label')}</span>
+                <input
+                    type="number"
+                    name={`margin_${type_id}`}
+                    min="0"
+                    step="1"
+                    value={line.margin}
+                />
+                <span>%</span>
+            </label>
+        }
+
+        <div class="[ order-line-pricing__bar ]" aria-hidden="true">
+            <span class="[ order-line-pricing__bar-profit ]" style={`width: ${profit_width}%`}></span>
+            <span class="[ order-line-pricing__bar-saving ]" style={`left: ${profit_width}%; width: ${saving_width}%`}></span>
+            <span class="[ order-line-pricing__bar-tick ]" style={`left: ${profit_width}%`}></span>
+        </div>
+
+        <div class="[ order-line-pricing__outcome ]">
+            <small class="[ order-line-pricing__earns ]">
+                {t('industry.orders.create.builder_earns').replace('{amount}', isk(line.profit))}
+            </small>
+            {saving_text &&
+                <small class:list={['[ order-line-pricing__saving ]', { 'is-costlier': (line.saving ?? 0) < 0 }]}>
+                    {saving_text}
+                </small>
+            }
+        </div>
+    </div>
+}
+
+<style lang="scss">
+    .order-line-pricing {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        grid-column: 1 / -1;
+    }
+
+    .order-line-pricing__cost {
+        color: var(--text-muted);
+    }
+
+    .order-line-pricing__controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs) var(--space-m);
+    }
+
+    .order-line-pricing__options {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin: 0;
+        padding: 0;
+        border: 1px solid var(--hairline-strong);
+        min-width: 0;
+
+        @media (max-width: 30rem) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+        }
+    }
+
+    .order-line-pricing__option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 3rem;
+        padding-inline: var(--space-s);
+        border-right: 1px solid var(--hairline-medium);
+        color: var(--foreground);
+        cursor: pointer;
+        transition: background-color var(--fast-transition);
+
+        &:last-child {
+            border-right: 0;
+        }
+
+        &:has(input:checked) {
+            background-color: var(--foreground);
+            color: var(--background);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--highlight);
+            outline-offset: -2px;
+        }
+
+        &.is-unavailable {
+            color: var(--faded);
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        @media (hover: hover) {
+            &:not(.is-unavailable):not(:has(input:checked)):hover {
+                background-color: var(--hairline-medium);
+            }
+        }
+    }
+
+    .order-line-pricing__option-label {
+        font-size: var(--step--1);
+        font-weight: 600;
+    }
+
+    .order-line-pricing__option-sub {
+        font-size: var(--step--2);
+    }
+
+    .order-line-pricing__price {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-left: auto;
+
+        strong {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            line-height: 1;
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .order-line-pricing__margin {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        color: var(--text-muted);
+
+        input {
+            width: 6rem;
+            padding: var(--space-3xs) var(--space-2xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--hairline-strong);
+            color: var(--highlight);
+            font: inherit;
+        }
+    }
+
+    .order-line-pricing__bar {
+        position: relative;
+        height: var(--space-2xs);
+        background-color: var(--hairline);
+
+        span {
+            position: absolute;
+        }
+    }
+
+    .order-line-pricing__bar-profit,
+    .order-line-pricing__bar-saving {
+        top: 0;
+        bottom: 0;
+    }
+
+    .order-line-pricing__bar-profit {
+        left: 0;
+        background-color: var(--green);
+    }
+
+    .order-line-pricing__bar-saving {
+        background-color: var(--alliance-blue);
+    }
+
+    .order-line-pricing__bar-tick {
+        top: calc(var(--space-3xs) * -1);
+        bottom: calc(var(--space-3xs) * -1);
+        width: 2px;
+        background-color: var(--highlight);
+    }
+
+    .order-line-pricing__outcome {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-3xs) var(--space-m);
+    }
+
+    .order-line-pricing__earns {
+        color: color-mix(in srgb, var(--green) 55%, var(--highlight));
+    }
+
+    .order-line-pricing__saving {
+        color: color-mix(in srgb, var(--alliance-blue) 45%, var(--highlight));
+
+        &.is-costlier {
+            color: var(--fleet-red-blind);
+        }
+    }
+</style>

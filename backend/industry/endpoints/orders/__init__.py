@@ -32,6 +32,12 @@ from industry.endpoints.orders.get_order_capabilities import (
     get_order_capabilities,
     METHOD as get_order_capabilities_method,
 )
+from industry.endpoints.orders.get_order_line_pricing import (
+    PATH as get_order_line_pricing_path,
+    ROUTE_SPEC as get_order_line_pricing_spec,
+    get_order_line_pricing,
+    METHOD as get_order_line_pricing_method,
+)
 from industry.endpoints.orders.get_order import (
     PATH as get_order_path,
     ROUTE_SPEC as get_order_spec,
@@ -162,6 +168,12 @@ _ROUTES = (
         get_order_capabilities_path,
         get_order_capabilities_spec,
         get_order_capabilities,
+    ),
+    (
+        get_order_line_pricing_method,
+        get_order_line_pricing_path,
+        get_order_line_pricing_spec,
+        get_order_line_pricing,
     ),
     (post_order_method, post_order_path, post_order_spec, post_order),
     (get_order_method, get_order_path, get_order_spec, get_order),

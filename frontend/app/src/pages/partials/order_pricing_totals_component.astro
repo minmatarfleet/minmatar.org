@@ -1,0 +1,125 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token)
+    return HTTP_403_Forbidden()
+
+import { get_order_line_pricing } from '@helpers/api.minmatar.org/industry'
+import { parse_margin, parse_price_basis, resolve_line_price } from '@helpers/order_pricing'
+import { format_isk, ISK_COMPACT_PRECISE } from '@helpers/numbers'
+
+const isk = (value: number | null, suffix = '') => format_isk(value, { format: ISK_COMPACT_PRECISE, suffix })
+
+// Reads the whole create form: items_json plus each line's basis and margin.
+const params = Astro.url.searchParams
+let lines: { eve_type_id: number, quantity: number }[] = []
+try {
+    const parsed = JSON.parse(params.get('items_json') ?? '[]')
+    lines = (Array.isArray(parsed) ? parsed : [])
+        .map((row) => ({
+            eve_type_id: Number(row.eve_type_id),
+            quantity: Math.max(1, Number(row.quantity) || 1),
+        }))
+        .filter((row) => row.eve_type_id > 0)
+} catch {
+    lines = []
+}
+
+let total = 0
+let profit = 0
+let saving = 0
+let has_saving = false
+let fetching_error: Error | false = false
+
+try {
+    const priced = await Promise.all(lines.map((row) =>
+        get_order_line_pricing(auth_token, row.eve_type_id, row.quantity)
+    ))
+    priced.forEach((pricing, index) => {
+        const { eve_type_id, quantity } = lines[index]
+        const line = resolve_line_price(
+            pricing,
+            parse_price_basis(params.get(`price_basis_${eve_type_id}`)),
+            parse_margin(params.get(`margin_${eve_type_id}`)),
+        )
+        total += line.price * quantity
+        profit += line.profit * quantity
+        if (line.saving !== null) {
+            saving += line.saving * quantity
+            has_saving = true
+        }
+    })
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const saving_text = (saving >= 0
+    ? t('industry.orders.create.you_save_total')
+    : t('industry.orders.create.costs_more_total')
+).replace('{amount}', isk(Math.abs(saving)))
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch args={{
+        partial: translatePath('/partials/order_pricing_totals_component'),
+        error: fetching_error,
+        delay: 0,
+    }} />
+    : lines.length > 0 &&
+    <dl class="[ order-pricing-totals ]">
+        <div>
+            <dt>{t('industry.orders.create.order_total')}</dt>
+            <dd>{isk(total, ' ISK')}</dd>
+        </div>
+        <div>
+            <dt>{t('industry.orders.create.builders_earn')}</dt>
+            <dd class="[ order-pricing-totals__earn ]">{isk(profit)}</dd>
+        </div>
+        {has_saving &&
+            <div>
+                <dt>{t('industry.orders.create.vs_jita')}</dt>
+                <dd class:list={['[ order-pricing-totals__saving ]', { 'is-costlier': saving < 0 }]}>{saving_text}</dd>
+            </div>
+        }
+    </dl>
+}
+
+<style lang="scss">
+    .order-pricing-totals {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-l);
+        margin: 0;
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+            font-weight: 700;
+            font-size: var(--step-1);
+            color: var(--highlight);
+
+            &.order-pricing-totals__earn {
+                color: color-mix(in srgb, var(--green) 55%, var(--highlight));
+            }
+
+            &.order-pricing-totals__saving {
+                color: color-mix(in srgb, var(--alliance-blue) 45%, var(--highlight));
+            }
+
+            &.is-costlier {
+                color: var(--fleet-red-blind);
+            }
+        }
+    }
+</style>

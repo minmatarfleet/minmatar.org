@@ -129,8 +129,6 @@
       "ColonyEntry": "closest backend schema ColonyEntry, no field or null drift found; alias it when its domain is next changed",
       "RootItem": "closest backend schema OrderItemQuantityResponse, no field or null drift found; alias it when its domain is next changed",
       "OrderCapabilities": "closest backend schema OrderCapabilitiesResponse, no field or null drift found; alias it when its domain is next changed",
-      "CreateOrderItemInput": "closest backend schema OrderItemInput, no field or null drift found; alias it when its domain is next changed",
-      "CreateOrderRequest": "closest backend schema CreateOrderRequest, no field or null drift found; alias it when its domain is next changed",
       "CreateOrderResponse": "closest backend schema CreateOrderResponse, no field or null drift found; alias it when its domain is next changed",
       "OrdersProfitSummaryOrder": "closest backend schema ProfitSummaryOrderResponse, no field or null drift found; alias it when its domain is next changed",
       "OrdersProfitSummaryRow": "closest backend schema ProfitSummaryRowResponse, no field or null drift found; alias it when its domain is next changed",

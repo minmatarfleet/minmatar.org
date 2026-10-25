@@ -4,6 +4,7 @@ import json
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 import jwt
 from django.conf import settings
@@ -21,6 +22,7 @@ from groups.management.commands.sync_pilot_features import (
     Command as SyncPilotFeaturesCommand,
 )
 from groups.models import PilotFeature
+from industry.helpers.order_pricing import LinePricing
 from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
@@ -1074,3 +1076,98 @@ class MarketOrderSubmitApiTests(OrdersEndpointTestCase):
         )
         self.assertEqual(response.status_code, 400, response.content)
         self.assertIn("14 days", response.json()["detail"])
+
+    def _line_pricing(self, floor=137_500_000):
+        return LinePricing(
+            type_id=self.produced_type.id,
+            quantity=10,
+            build_cost_per_unit=floor,
+            jita_buy=138_100_000,
+            jita_split=146_550_000,
+            jita_sell=155_000_000,
+            ship_in_per_unit=22_500_000,
+            jita_delivered=177_500_000,
+        )
+
+    def test_line_pricing_endpoint(self):
+        with patch(
+            "industry.helpers.order_pricing.line_pricing",
+            return_value=self._line_pricing(),
+        ) as pricing:
+            response = self.client.get(
+                f"/api/industry/orders/pricing?type_id={self.produced_type.id}"
+                "&quantity=10",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(response.status_code, 200, response.content)
+        pricing.assert_called_once_with(self.produced_type.id, 10)
+        data = response.json()
+        self.assertEqual(data["build_cost_per_unit"], 137_500_000)
+        self.assertEqual(data["jita_delivered"], 177_500_000)
+
+    def test_create_sets_ask_from_price_basis(self):
+        body = self._create_body(
+            self.produced_type.id,
+            items=[
+                {
+                    "eve_type_id": self.produced_type.id,
+                    "quantity": 10,
+                    "price_basis": "jita_split",
+                }
+            ],
+        )
+        with patch(
+            "industry.helpers.order_pricing.line_pricing",
+            return_value=self._line_pricing(),
+        ):
+            response = self.client.post(
+                "/api/industry/orders",
+                data=json.dumps(body),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(response.status_code, 201, response.content)
+        item = IndustryOrderItem.objects.get(
+            order_id=response.json()["order_id"]
+        )
+        self.assertEqual(item.target_unit_price, Decimal("146550000"))
+
+    def test_create_holds_ask_at_build_cost(self):
+        body = self._create_body(
+            self.produced_type.id,
+            items=[
+                {
+                    "eve_type_id": self.produced_type.id,
+                    "quantity": 10,
+                    "price_basis": "jita_buy",
+                }
+            ],
+        )
+        with patch(
+            "industry.helpers.order_pricing.line_pricing",
+            return_value=self._line_pricing(floor=140_000_000),
+        ):
+            response = self.client.post(
+                "/api/industry/orders",
+                data=json.dumps(body),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+        self.assertEqual(response.status_code, 201, response.content)
+        item = IndustryOrderItem.objects.get(
+            order_id=response.json()["order_id"]
+        )
+        self.assertEqual(item.target_unit_price, Decimal("140000000"))
+
+    def test_create_without_price_basis_leaves_ask_unset(self):
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(self._create_body(self.produced_type.id)),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        item = IndustryOrderItem.objects.get(
+            order_id=response.json()["order_id"]
+        )
+        self.assertIsNone(item.target_unit_price)

@@ -1516,20 +1516,10 @@ export interface OrderCapabilities {
     produced_only:  boolean;
 }
 
-export interface CreateOrderItemInput {
-    eve_type_id:            number;
-    quantity:               number;
-    self_assign_maximum?:   number | null;
-}
-
-export interface CreateOrderRequest {
-    needed_by:      string;
-    character_id?:   number | null;
-    location_id?:    number | null;
-    contract_to?:    string;
-    items:          CreateOrderItemInput[];
-    campaign_id?:    number | null;
-}
+export type CreateOrderItemInput = ApiRequest<'OrderItemInput'>
+export type CreateOrderRequest = ApiRequest<'CreateOrderRequest'>
+export type OrderPriceBasis = NonNullable<CreateOrderItemInput['price_basis']>
+export type OrderLinePricing = ApiResponse<'OrderLinePricingResponse'>
 
 export interface CreateOrderResponse {
     order_id:           number;
