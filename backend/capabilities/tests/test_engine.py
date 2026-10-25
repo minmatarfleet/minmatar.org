@@ -219,6 +219,25 @@ class ReadinessTest(SimpleTestCase):
         self.assertEqual(r.missing_core[0][0], skill("Capacitor Management"))
 
 
+class CoreAboveRequiredTest(SimpleTestCase):
+    def test_core_level_above_a_required_level_still_gates(self):
+        """Revelation: Amarr Dreadnought I to fly it, higher for core."""
+        fit, req = requirements("revelation")
+        ad = skill("Amarr Dreadnought")
+        row = req.rows[ad]
+        self.assertLess(row.required_level, row.core_level)
+        skills = all_skills_at(SDE, 5)
+        skills[ad] = row.required_level
+        checker = FitChecker(SDE, fit, req)
+        hull = SDE.with_prerequisites(SDE.required_skills(fit.hull))
+        result = evaluate(SDE, req, checker, hull, skills)
+        self.assertTrue(result.hard_ready)
+        self.assertFalse(result.core_ready)
+        self.assertEqual(
+            result.missing_core, [[ad, row.required_level, row.core_level]]
+        )
+
+
 class OverrideAndSubstitutionTest(SimpleTestCase):
     def test_exclude_removes_a_row(self):
         target = skill("Signature Analysis")

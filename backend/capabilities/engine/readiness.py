@@ -107,10 +107,13 @@ def evaluate(
     hard_ready = unlocked and not missing_required and not fit_problems
 
     core = req.core()
+    # A skill can be required at one level and core at a higher one
+    # (Amarr Dreadnought I to fly a Revelation, IV for core): only the part
+    # the required check already reports is left out.
     missing_core = [
         [s, skills.get(s, 0), lv]
         for s, lv in core.items()
-        if skills.get(s, 0) < lv and s not in required
+        if skills.get(s, 0) < lv and required.get(s, 0) < lv
     ]
     core_ready = hard_ready and not missing_core
 
