@@ -182,6 +182,10 @@ REDDIT_REVIEWER_DISCORD_IDS = [
     if i.strip()
 ]
 
+# Timezone Discord roles (docs/timezones.md). Off until assessments have
+# been reviewed in admin; pilot timezones are assessed either way.
+TIMEZONES_DISCORD_ROLES = env_bool("TIMEZONES_DISCORD_ROLES")
+
 # Notifications (web push / Discord DM / Eve mail)
 NOTIFICATIONS_EVE_MAIL_CHARACTER_ID = int(
     os.environ.get("NOTIFICATIONS_EVE_MAIL_CHARACTER_ID", "634915984")
