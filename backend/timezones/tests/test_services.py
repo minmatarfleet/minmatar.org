@@ -258,6 +258,16 @@ class DiscordRolesTestCase(MuteDiscordMixin, TestCase):
         discord_roles.apply_roles()
         self.assertEqual(self._held(), set())
 
+    def test_one_pilot_never_creates_the_groups(self):
+        # "Sync with Discord" must not create Discord roles mid-request.
+        self.assertEqual(discord_roles.apply_roles([self.user.id]), {})
+        self.assertFalse(TimezoneRole.objects.exists())
+
+        discord_roles.apply_roles()
+        self.user.groups.clear()
+        outcome = discord_roles.apply_roles([self.user.id])
+        self.assertEqual(outcome["added"], 2)
+
     def test_leaves_other_groups_alone(self):
         other = Group.objects.create(name="Corp FL33T")
         self.user.groups.add(other)

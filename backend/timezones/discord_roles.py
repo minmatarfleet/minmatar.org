@@ -25,15 +25,21 @@ from timezones.services import pilot_timezone_changed
 logger = logging.getLogger(__name__)
 
 
-def ensure_groups() -> dict[str, Group]:
-    """Bracket code -> auth group, creating any that are missing.
-
-    Creating a group creates (or adopts, by name) its Discord role.
-    """
-    roles = {
+def existing_groups() -> dict[str, Group]:
+    """Bracket code -> auth group, for the groups created so far."""
+    return {
         role.code: role.group
         for role in TimezoneRole.objects.select_related("group")
     }
+
+
+def ensure_groups() -> dict[str, Group]:
+    """Bracket code -> auth group, creating any that are missing.
+
+    Creating a group creates (or adopts, by name) its Discord role, so only
+    the scheduled reconcile does this, never a request.
+    """
+    roles = existing_groups()
     for code in BRACKET_CODES:
         if code in roles:
             continue
@@ -57,11 +63,14 @@ def desired_brackets(user_ids: Iterable[int] | None = None) -> dict[int, set]:
 def apply_roles(user_ids: Iterable[int] | None = None) -> Counter:
     """Add and remove bracket groups so membership matches PilotTimezone.
 
-    With ``user_ids`` None, reconciles everyone: eligible pilots and anyone
-    holding a bracket group.
+    With ``user_ids`` None, reconciles everyone (eligible pilots and anyone
+    holding a bracket group) and creates missing groups first. With
+    ``user_ids``, uses only the groups that already exist.
     """
     outcome: Counter = Counter()
-    groups = ensure_groups()
+    groups = ensure_groups() if user_ids is None else existing_groups()
+    if not groups:
+        return outcome
     group_codes = {group.id: code for code, group in groups.items()}
     if user_ids is not None:
         user_ids = {int(uid) for uid in user_ids}
@@ -82,7 +91,7 @@ def apply_roles(user_ids: Iterable[int] | None = None) -> Counter:
         user = users.get(user_id)
         if user is None:
             continue
-        want = desired.get(user_id, set())
+        want = desired.get(user_id, set()) & set(groups)
         have = held.get(user_id, set())
         for code in sorted(want - have):
             outcome[_change(user, groups[code], add=True)] += 1
