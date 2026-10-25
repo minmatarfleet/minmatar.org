@@ -31,6 +31,7 @@ RUN --mount=type=secret,id=frontend_env,dst=/app/.env,required=false \
 FROM base AS runtime
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY healthcheck.mjs ./healthcheck.mjs
 
 ENV HOST=0.0.0.0
 ENV PORT=4321
