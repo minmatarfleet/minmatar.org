@@ -1,0 +1,316 @@
+---
+// no-error-refetch: a section save; a failed check or save shows in the form it swaps back.
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationDiscordInvitePreview, CorporationDiscordSettings } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    DiscordInviteError,
+    check_corporation_discord,
+    get_corporation_discord,
+    remove_corporation_discord,
+    update_corporation_discord,
+} from '@helpers/api.minmatar.org/corporations'
+import {
+    discord_error_key,
+    discord_invite_label,
+    discord_section_summary,
+    discord_server_initials,
+    discord_status_key,
+    parse_discord_action,
+} from '@helpers/corporations/discord_settings'
+import type { DiscordSettingsFlash } from '@helpers/corporations/discord_settings'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+
+const ROOT_ID = 'corporation-discord'
+const URL_HELP_ID = 'corp-discord-url-help'
+// Lives in the accordion header on the corporation page; refreshed out of band.
+const SUMMARY_ID = 'corporation-settings-discord-summary'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_discord_component/?${query_string({
+    corporation_id: String(corporation_id),
+})}`)
+
+let flash: DiscordSettingsFlash | null = null
+// The typed link survives a failed check or save.
+let draft_url: string | null = null
+let preview: CorporationDiscordInvitePreview | null = null
+let editing = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = parse_discord_action(form.get('action'))
+    const typed_url = String(form.get('invite_url') ?? '').trim()
+    try {
+        if (action === 'check') {
+            editing = true
+            draft_url = typed_url
+            preview = await check_corporation_discord(auth_token, corporation_id, typed_url)
+            draft_url = preview.invite_url
+        } else if (action === 'save') {
+            await update_corporation_discord(auth_token, corporation_id, typed_url)
+            flash = { kind: 'success', key: 'corporations.discord.saved' }
+        } else if (action === 'remove') {
+            await remove_corporation_discord(auth_token, corporation_id)
+            flash = { kind: 'success', key: 'corporations.discord.removed' }
+        } else if (action === 'replace') {
+            editing = true
+        }
+    } catch (error) {
+        editing = true
+        draft_url = typed_url
+        preview = null
+        flash = {
+            kind: 'error',
+            key: error instanceof DiscordInviteError
+                ? discord_error_key(error.message)
+                : 'corporations.settings.error_save',
+        }
+    }
+}
+
+const settings = await get_corporation_discord(auth_token, corporation_id) as CorporationDiscordSettings | null
+if (!settings) return HTTP_403_Forbidden()
+
+const is_dead = settings.exists && settings.status === 'dead'
+// No server or a dead link: the invite box is the only way forward.
+const show_input = editing || !settings.exists || is_dead
+const can_cancel = editing && settings.exists && !is_dead
+const summary = discord_section_summary(settings, {
+    not_set: t('corporations.discord.summary_not_set'),
+    set: t('corporations.discord.summary_set'),
+    dead: t('corporations.discord.summary_dead'),
+})
+const server_name = settings.guild_name ?? t('corporations.discord.unknown_server')
+---
+
+<span id={SUMMARY_ID} hx-swap-oob="innerHTML">
+    <span class:list={['[ corp-discord__summary ]', { 'is-attention': is_dead }]}>{summary}</span>
+</span>
+
+<div id={ROOT_ID} class="[ corp-discord ]">
+    <form
+        method="post"
+        action={PARTIAL_URL}
+        hx-post={PARTIAL_URL}
+        hx-target={`#${ROOT_ID}`}
+        hx-swap="outerHTML"
+    >
+        <Flexblock gap="var(--space-m)">
+            {!settings.exists &&
+                <p class="[ corp-discord__muted ]">{t('corporations.discord.leading')}</p>
+            }
+
+            {flash &&
+                <p
+                    class:list={['[ corp-discord__flash ]', { 'is-error': flash.kind === 'error' }]}
+                    role={flash.kind === 'error' ? 'alert' : 'status'}
+                >
+                    {t(flash.key)}
+                </p>
+            }
+
+            {settings.exists &&
+                <div class="[ corp-discord__server ]">
+                    {settings.icon_url ?
+                        <img class="[ corp-discord__avatar ]" src={settings.icon_url} alt="" width="48" height="48" loading="lazy" />
+                        :
+                        <span class="[ corp-discord__avatar ]" aria-hidden="true">{discord_server_initials(settings.guild_name)}</span>
+                    }
+                    <div class="[ corp-discord__name ]">
+                        <span class="[ corp-discord__title ]">{server_name}</span>
+                        <a href={settings.invite_url} target="_blank" rel="noreferrer noopener">
+                            <small>{discord_invite_label(settings.invite_url)}</small>
+                        </a>
+                    </div>
+                    <small class:list={['[ corp-discord__status ]', `is-${settings.status}`]}>
+                        {t(discord_status_key(settings.status))}
+                    </small>
+                    <FlexInline gap="var(--space-3xs)">
+                        {!show_input &&
+                            <Button type="submit" name="action" value="replace" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                                {t('corporations.discord.replace')}
+                            </Button>
+                        }
+                        <Button type="submit" name="action" value="remove" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                            {t('corporations.discord.remove')}
+                        </Button>
+                    </FlexInline>
+                </div>
+            }
+
+            {is_dead && !flash &&
+                <p class="[ corp-discord__attention ]">{t('corporations.discord.dead_help')}</p>
+            }
+
+            {show_input &&
+                <Flexblock gap="var(--space-3xs)">
+                    <label class="[ corp-discord__label ]" for="corp-discord-url">
+                        {t('corporations.discord.url_label')}
+                    </label>
+                    <FlexInline gap="var(--space-xs)" class="[ corp-discord__field ]">
+                        <Input
+                            id="corp-discord-url"
+                            name="invite_url"
+                            type="text"
+                            inputmode="url"
+                            autocomplete="off"
+                            placeholder="https://discord.gg/…"
+                            value={draft_url ?? ''}
+                            aria-describedby={URL_HELP_ID}
+                            aria-invalid={flash?.kind === 'error' ? 'true' : undefined}
+                            required
+                        />
+                        <Button type="submit" name="action" value="check" color="transparent" size="sm" off_disable={true}>
+                            {t('corporations.discord.check')}
+                        </Button>
+                    </FlexInline>
+                    <small id={URL_HELP_ID} class="[ corp-discord__muted ]">
+                        {t('corporations.discord.url_help')}
+                    </small>
+                </Flexblock>
+            }
+
+            {preview &&
+                <Flexblock gap="var(--space-s)">
+                    <div class="[ corp-discord__server ]">
+                        {preview.icon_url ?
+                            <img class="[ corp-discord__avatar ]" src={preview.icon_url} alt="" width="48" height="48" loading="lazy" />
+                            :
+                            <span class="[ corp-discord__avatar ]" aria-hidden="true">{discord_server_initials(preview.guild_name)}</span>
+                        }
+                        <div class="[ corp-discord__name ]">
+                            <span class="[ corp-discord__title ]">{preview.guild_name ?? t('corporations.discord.unknown_server')}</span>
+                            <small class="[ corp-discord__muted ]">{discord_invite_label(preview.invite_url)}</small>
+                        </div>
+                        {preview.checked &&
+                            <small class="[ corp-discord__status is-ok ]">{t('corporations.discord.never_expires')}</small>
+                        }
+                    </div>
+                    {!preview.checked &&
+                        <p class="[ corp-discord__muted ]">{t('corporations.discord.unchecked')}</p>
+                    }
+                </Flexblock>
+            }
+
+            {(preview || can_cancel) &&
+                <FlexInline gap="var(--space-m)">
+                    {preview &&
+                        <Button type="submit" name="action" value="save" color="fleet-red" size="sm" off_disable={true}>
+                            {t('corporations.discord.save')}
+                        </Button>
+                    }
+                    {can_cancel &&
+                        <Button type="submit" name="action" value="cancel" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                            {t('corporations.discord.cancel')}
+                        </Button>
+                    }
+                </FlexInline>
+            }
+        </Flexblock>
+    </form>
+</div>
+
+<style lang="scss">
+    .corp-discord {
+        max-width: var(--max-text-width);
+    }
+
+    // Flexblock spaces children with margin-block-start; keep that intact.
+    p {
+        margin-block-end: 0;
+    }
+
+    .corp-discord__muted {
+        color: var(--faded);
+    }
+
+    .corp-discord__attention,
+    .corp-discord__summary.is-attention {
+        color: var(--fleet-yellow);
+    }
+
+    .corp-discord__label {
+        font-family: var(--button-font);
+        color: var(--highlight);
+    }
+
+    // The button drops below the box on phones instead of squeezing it.
+    .corp-discord__field > :global(:first-child) {
+        flex: 1 1 calc(var(--space-3xl) * 3);
+        min-width: 0;
+    }
+
+    .corp-discord__server {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-s);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    .corp-discord__avatar {
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: var(--space-xl);
+        height: var(--space-xl);
+        border-radius: 50%;
+        background-color: var(--surface-sunken);
+        color: var(--highlight);
+        font-weight: 700;
+    }
+
+    .corp-discord__name {
+        display: flex;
+        flex-direction: column;
+        // Wide enough for a server name before the status wraps below it.
+        flex: 1 1 calc(var(--space-3xl) * 2);
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .corp-discord__title {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .corp-discord__status {
+        font-weight: 600;
+        color: var(--faded);
+
+        &.is-ok {
+            color: var(--green);
+        }
+
+        &.is-dead {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .corp-discord__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+</style>

@@ -132,6 +132,13 @@ CELERYBEAT_CORPORATIONS = [
         },
     ),
     (
+        "[Corporations] Check Discord invites",
+        {
+            "task": "eveonline.tasks.corporations.check_corporation_discord_invites",
+            "schedule": crontab(minute=20, hour=6),
+        },
+    ),
+    (
         "[Corporations] Structure Notifications",
         {
             "task": "structures.tasks.process_structure_notifications",

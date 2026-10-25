@@ -5577,6 +5577,133 @@
         "title": "CorporationCommunitySummary",
         "type": "object"
       },
+      "CorporationDiscordInvitePreview": {
+        "properties": {
+          "checked": {
+            "title": "Checked",
+            "type": "boolean"
+          },
+          "guild_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Name"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Url"
+          },
+          "invite_url": {
+            "title": "Invite Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite_url",
+          "checked"
+        ],
+        "title": "CorporationDiscordInvitePreview",
+        "type": "object"
+      },
+      "CorporationDiscordInviteRequest": {
+        "properties": {
+          "invite_url": {
+            "title": "Invite Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite_url"
+        ],
+        "title": "CorporationDiscordInviteRequest",
+        "type": "object"
+      },
+      "CorporationDiscordSettings": {
+        "properties": {
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "exists": {
+            "title": "Exists",
+            "type": "boolean"
+          },
+          "guild_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Name"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Url"
+          },
+          "invite_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Url"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "exists"
+        ],
+        "title": "CorporationDiscordSettings",
+        "type": "object"
+      },
       "CorporationFleetParticipationSummary": {
         "properties": {
           "fleet_instances": {
@@ -7097,6 +7224,11 @@
           "automatic_status": {
             "title": "Automatic Status",
             "type": "string"
+          },
+          "can_link_account": {
+            "default": false,
+            "title": "Can Link Account",
+            "type": "boolean"
           },
           "change_pending": {
             "default": false,
@@ -41709,6 +41841,274 @@
         ]
       }
     },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord": {
+      "delete": {
+        "operationId": "eveonline_endpoints_corporations_delete_corporation_discord_delete_corporation_discord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove the corporation's Discord server (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      },
+      "get": {
+        "operationId": "eveonline_endpoints_corporations_get_corporation_discord_get_corporation_discord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The corporation's Discord server (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      },
+      "put": {
+        "operationId": "eveonline_endpoints_corporations_put_corporation_discord_put_corporation_discord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationDiscordInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set the corporation's Discord invite (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/check": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_check_post_corporation_discord_check",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationDiscordInviteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordInvitePreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Check a Discord invite before saving it (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
     "/api/eveonline/corporations/corporations/{corporation_id}/info": {
       "get": {
         "operationId": "eveonline_endpoints_corporations_get_corporation_info_get_corporation_info",
@@ -53732,7 +54132,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Remove the corporation's EVE forums recruitment thread (CEO only)",
+        "summary": "Remove the corporation's EVE forums recruitment thread (CEO and directors)",
         "tags": [
           "Recruitment"
         ]
@@ -53787,7 +54187,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "The corporation's EVE forums recruitment thread (CEO only)",
+        "summary": "The corporation's EVE forums recruitment thread (CEO and directors)",
         "tags": [
           "Recruitment"
         ]
@@ -53862,7 +54262,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Link, change or (with an empty url) remove the corporation's EVE forums recruitment thread (CEO only)",
+        "summary": "Link, change or (with an empty url) remove the corporation's EVE forums recruitment thread (CEO and directors)",
         "tags": [
           "Recruitment"
         ]
@@ -54170,7 +54570,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "The corporation's Reddit post template (CEO only)",
+        "summary": "The corporation's Reddit post template (CEO and directors)",
         "tags": [
           "Reddit"
         ]
@@ -54245,7 +54645,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Edit the corporation's Reddit post, pause it, or change how it is sent (CEO only)",
+        "summary": "Edit the corporation's Reddit post, pause it, or change how it is sent (CEO and directors)",
         "tags": [
           "Reddit"
         ]

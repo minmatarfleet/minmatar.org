@@ -309,11 +309,35 @@ CorporationMemberDetails.model_rebuild()
 class CorporationMemberAccess(Schema):
     can_view_members: bool
     can_view_characters: bool
-    # CEO only: the corporation page's Settings tab.
+    # CEO and directors: the corporation page's Settings tab.
     can_edit_settings: bool = False
     # Projects tab: corp leadership sees it; CEO and directors attach.
     can_view_projects: bool = False
     can_manage_projects: bool = False
+
+
+class CorporationDiscordSettings(Schema):
+    corporation_id: int
+    exists: bool
+    invite_url: Optional[str] = None
+    # ok, dead (expired or deleted: hidden from visitors), or unchecked
+    # (Discord couldn't be asked yet). None when no server is set.
+    status: Optional[str] = None
+    guild_name: Optional[str] = None
+    icon_url: Optional[str] = None
+    checked_at: Optional[datetime] = None
+
+
+class CorporationDiscordInviteRequest(Schema):
+    invite_url: str
+
+
+class CorporationDiscordInvitePreview(Schema):
+    invite_url: str
+    # False when Discord couldn't be asked; the link still saves.
+    checked: bool
+    guild_name: Optional[str] = None
+    icon_url: Optional[str] = None
 
 
 class CorporationMembersTopResponse(Schema):

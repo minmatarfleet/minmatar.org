@@ -292,6 +292,12 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
         )
 
+    def get_invite(self, code: str) -> dict:
+        """An invite and its server. 404 when it expired or was deleted."""
+        return self.get(
+            f"{BASE_URL}/invites/{quote(code, safe='')}?with_expiration=true"
+        )
+
     def get_channel(self, channel_id):
         """Get a discord channel by id (includes forum available_tags)."""
         return self.get(f"{BASE_URL}/channels/{channel_id}")

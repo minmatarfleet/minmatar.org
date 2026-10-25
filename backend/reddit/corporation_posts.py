@@ -1,8 +1,9 @@
-"""The CEO's view of their corporation's Reddit post template."""
+"""The Settings tab's view of a corporation's Reddit post template."""
 
 from django.utils import timezone
 
 from discord.models import DiscordUser
+from eveonline.helpers.corporations.permissions import ceo_user, user_is_ceo
 from reddit.markdown import check_reddit_markdown
 from reddit import approval, schedule
 from reddit.models import (
@@ -71,8 +72,13 @@ def post_settings(corporation, user) -> dict:
     template = RedditPostTemplate.objects.filter(
         corporation=corporation
     ).first()
-    account = RedditAccount.objects.filter(user=user).first()
-    discord_linked = DiscordUser.objects.filter(user=user).exists()
+    # Posts go out as the CEO and reminders DM the CEO, so a director sees
+    # the CEO's accounts, not their own.
+    ceo = ceo_user(corporation)
+    account = RedditAccount.objects.filter(user=ceo).first() if ceo else None
+    discord_linked = bool(
+        ceo and DiscordUser.objects.filter(user=ceo).exists()
+    )
     data = {
         "corporation_id": corporation.corporation_id,
         "exists": template is not None,
@@ -104,6 +110,8 @@ def post_settings(corporation, user) -> dict:
             else None
         ),
         "discord_linked": discord_linked,
+        # Linking acts on the viewer's own Reddit account, so only the CEO.
+        "can_link_account": user_is_ceo(user, corporation),
         "markdown_problems": [],
     }
     if template is None:

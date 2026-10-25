@@ -11,7 +11,9 @@ from ninja import Router
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers.feature_access import require_feature
-from eveonline.helpers.corporations.permissions import user_is_ceo
+from eveonline.helpers.corporations.permissions import (
+    can_edit_corporation_settings,
+)
 from eveonline.helpers.corporations.profile import load_corporation
 from recruitment.forum_posts import (
     ForumPostError,
@@ -36,13 +38,16 @@ from recruitment.scout_links import (
 router = Router(tags=["Recruitment"])
 
 
-def _ceo_corporation(request, corporation_id: int):
-    """(corporation, None) for the CEO, else (None, error response)."""
+def _settings_corporation(request, corporation_id: int):
+    """(corporation, None) for the CEO or a director, else (None, error)."""
     corporation = load_corporation(corporation_id)
     if corporation is None:
         return None, (404, ErrorResponse(detail="Corporation not found"))
-    if not user_is_ceo(request.user, corporation):
-        return None, (403, ErrorResponse(detail="Only the CEO can do this"))
+    if not can_edit_corporation_settings(request.user, corporation):
+        return None, (
+            403,
+            ErrorResponse(detail="Only the CEO and directors can do this"),
+        )
     return corporation, None
 
 
@@ -54,10 +59,10 @@ def _ceo_corporation(request, corporation_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="The corporation's EVE forums recruitment thread (CEO only)",
+    summary="The corporation's EVE forums recruitment thread (CEO and directors)",
 )
 def get_corporation_forum_post(request, corporation_id: int):
-    corporation, error = _ceo_corporation(request, corporation_id)
+    corporation, error = _settings_corporation(request, corporation_id)
     if error:
         return error
     return forum_post_settings(corporation)
@@ -73,12 +78,12 @@ def get_corporation_forum_post(request, corporation_id: int):
     },
     auth=AuthBearer(),
     summary="Link, change or (with an empty url) remove the corporation's "
-    "EVE forums recruitment thread (CEO only)",
+    "EVE forums recruitment thread (CEO and directors)",
 )
 def put_corporation_forum_post(
     request, corporation_id: int, payload: CorporationForumPostUpdate
 ):
-    corporation, error = _ceo_corporation(request, corporation_id)
+    corporation, error = _settings_corporation(request, corporation_id)
     if error:
         return error
     if not payload.url.strip():
@@ -100,10 +105,10 @@ def put_corporation_forum_post(
     },
     auth=AuthBearer(),
     summary="Remove the corporation's EVE forums recruitment thread "
-    "(CEO only)",
+    "(CEO and directors)",
 )
 def delete_corporation_forum_post(request, corporation_id: int):
-    corporation, error = _ceo_corporation(request, corporation_id)
+    corporation, error = _settings_corporation(request, corporation_id)
     if error:
         return error
     remove_forum_post(corporation)

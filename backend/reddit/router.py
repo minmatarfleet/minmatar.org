@@ -12,7 +12,9 @@ from ninja import Router
 
 from app.errors import ErrorResponse, create_error_id
 from authentication import AuthBearer
-from eveonline.helpers.corporations.permissions import user_is_ceo
+from eveonline.helpers.corporations.permissions import (
+    can_edit_corporation_settings,
+)
 from eveonline.helpers.corporations.profile import load_corporation
 from reddit.corporation_posts import (
     PostSettingsError,
@@ -43,13 +45,16 @@ SESSION_REDIRECT_KEY = "reddit_oauth_redirect_url"
 SESSION_USER_KEY = "reddit_oauth_user_id"
 
 
-def _ceo_corporation(request, corporation_id: int):
-    """(corporation, None) for the CEO, else (None, error response)."""
+def _settings_corporation(request, corporation_id: int):
+    """(corporation, None) for the CEO or a director, else (None, error)."""
     corporation = load_corporation(corporation_id)
     if corporation is None:
         return None, (404, ErrorResponse(detail="Corporation not found"))
-    if not user_is_ceo(request.user, corporation):
-        return None, (403, ErrorResponse(detail="Only the CEO can do this"))
+    if not can_edit_corporation_settings(request.user, corporation):
+        return None, (
+            403,
+            ErrorResponse(detail="Only the CEO and directors can do this"),
+        )
     return corporation, None
 
 
@@ -61,10 +66,10 @@ def _ceo_corporation(request, corporation_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="The corporation's Reddit post template (CEO only)",
+    summary="The corporation's Reddit post template (CEO and directors)",
 )
 def get_corporation_post(request, corporation_id: int):
-    corporation, error = _ceo_corporation(request, corporation_id)
+    corporation, error = _settings_corporation(request, corporation_id)
     if error:
         return error
     return post_settings(corporation, request.user)
@@ -79,12 +84,12 @@ def get_corporation_post(request, corporation_id: int):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="Edit the corporation's Reddit post, pause it, or change how it is sent (CEO only)",
+    summary="Edit the corporation's Reddit post, pause it, or change how it is sent (CEO and directors)",
 )
 def put_corporation_post(
     request, corporation_id: int, payload: CorporationRedditPostUpdate
 ):
-    corporation, error = _ceo_corporation(request, corporation_id)
+    corporation, error = _settings_corporation(request, corporation_id)
     if error:
         return error
     try:

@@ -1,5 +1,11 @@
 from ninja import Router
 
+from eveonline.endpoints.corporations import (
+    delete_corporation_discord,
+    get_corporation_discord,
+    post_corporation_discord_check,
+    put_corporation_discord,
+)
 from eveonline.endpoints.corporations.get_corp_member_details import (
     router as get_corp_member_details_router,
 )
@@ -42,5 +48,20 @@ router.add_router("", get_corporation_admin_router)
 router.add_router("", get_corporation_applications_open_router)
 router.add_router("", get_managed_corp_ids_router)
 router.add_router("", get_corporation_projects_router)
+
+# The Discord endpoints share a path, so they go on one router: ninja answers
+# 405 when a second router repeats a path with another method.
+discord_router = Router(tags=["Corporations"])
+for endpoint in (
+    get_corporation_discord,
+    put_corporation_discord,
+    delete_corporation_discord,
+    post_corporation_discord_check,
+):
+    view = getattr(endpoint, endpoint.__name__.rsplit(".", 1)[-1])
+    getattr(discord_router, endpoint.METHOD)(
+        endpoint.PATH, **endpoint.ROUTE_SPEC
+    )(view)
+router.add_router("", discord_router)
 
 __all__ = ["router"]

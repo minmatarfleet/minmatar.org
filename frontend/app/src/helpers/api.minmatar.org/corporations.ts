@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview } from '@dtypes/api.minmatar.org'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -79,4 +79,48 @@ export async function refresh_corporation_projects(access_token: string, id: num
         })
     }
     return response.status
+}
+
+/** Thrown for a 400: `message` is the API's error code (e.g. `invite_expires`). */
+export class DiscordInviteError extends Error {}
+
+async function discord_invite_request<T>(access_token: string, endpoint: string, method: string, invite_url?: string) {
+    const response = await api_response(endpoint, {
+        method,
+        token: access_token,
+        body: invite_url === undefined ? undefined : { invite_url },
+        allow: [400],
+    })
+    if (response.status === 400) {
+        const body = await response.json().catch(() => ({}))
+        throw new DiscordInviteError(body.detail ?? 'invalid')
+    }
+    return await response.json() as T
+}
+
+/** The corporation's Discord server, or null when the user can't edit settings. */
+export async function get_corporation_discord(access_token: string, corporation_id: number) {
+    return await api_request<CorporationDiscordSettings>(`${API_ENDPOINT}/corporations/${corporation_id}/discord`, {
+        token: access_token,
+        allow: [403, 404],
+    })
+}
+
+/** What Discord says about an invite, without saving it. */
+export async function check_corporation_discord(access_token: string, corporation_id: number, invite_url: string) {
+    return await discord_invite_request<CorporationDiscordInvitePreview>(
+        access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord/check`, 'POST', invite_url,
+    )
+}
+
+export async function update_corporation_discord(access_token: string, corporation_id: number, invite_url: string) {
+    return await discord_invite_request<CorporationDiscordSettings>(
+        access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord`, 'PUT', invite_url,
+    )
+}
+
+export async function remove_corporation_discord(access_token: string, corporation_id: number) {
+    return await discord_invite_request<CorporationDiscordSettings>(
+        access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord`, 'DELETE',
+    )
 }

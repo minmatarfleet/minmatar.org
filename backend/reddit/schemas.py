@@ -63,8 +63,12 @@ class CorporationRedditPost(Schema):
     last_post_at: Optional[datetime] = None
     last_reddit_post_url: Optional[str] = None
     last_reminder_at: Optional[datetime] = None
+    # The CEO's account and Discord link: posts and reminders go to them.
     reddit_account: Optional[LinkedRedditAccount] = None
     discord_linked: bool
+    # False for directors: linking acts on the viewer's own account and
+    # posts go out as the CEO.
+    can_link_account: bool = False
     markdown_problems: list[MarkdownProblem] = []
 
 

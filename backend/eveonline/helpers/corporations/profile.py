@@ -11,6 +11,7 @@ from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_characters_for_users,
 )
+from eveonline.helpers.corporations.discord_invite import public_invite_url
 from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import (
     EveCharacter,
@@ -117,7 +118,7 @@ def public_profile(corporation: EveCorporation) -> dict:
         "highlights": corporation.highlights or None,
         "activity_summary": corporation.activity_summary or None,
         "media": [_media_item(item) for item in corporation.media.all()],
-        "discord_invite_url": corporation.discord_invite_url or None,
+        "discord_invite_url": public_invite_url(corporation),
     }
 
 
