@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-25 — Thinkspeak asked for print-ready rat art
+
+**Category:** pulse.thinkspeak
+**Verdict:** clarify
+**Discord:** no reply (test-guild bot 403 on the production guild; content queue, do not hijack without the thread)
+**PR:** skill-only
+**Symptom vs cause:** Open propaganda ticket asking for high-resolution rat art for stickers. The website only ships display assets (`holy-rat.png` is 240×240; chronicle art is a page illustration). The category assignee already owns the idea.
+**Durable rule:** `pulse.thinkspeak` is not a technology ticket. Do not treat a merch/art request as a site bug, and do not tag BearThatCares. A 403 Missing Access from the cloud bot means follow-ups are invisible — do not invent a thread reply.
+**Skill update:** added the thinkspeak art row; noted test-guild 403 next to the archived-thread row.
+
 ## 2026-10-25 — Structure-pings channel mislabels orbitals and drops reinforce
 
 **Category:** pulse.technology (structure-pings channel; no HelpTicket row)

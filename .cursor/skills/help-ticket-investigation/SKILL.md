@@ -86,8 +86,9 @@ URL shape: `https://discord.com/channels/<guild_id>/<thread_id>`
 - **No URL / “each discord thread” / open help tickets:**
   `find_channel help` + `list_active_threads` (parent `#help`) and dump
   `HelpTicket` `status=open`. Ingest every row. Pulse-technology gets a
-  1/2/3 reply. Do **not** hijack a non-Pulse thread whose assignee is
-  already working it (corp applications, LP team). Do **not** ping
+  1/2/3 reply. Do **not** hijack a non-technology thread whose assignee is
+  already working it (corp applications, LP team, `pulse.thinkspeak`
+  propaganda). Do **not** ping
   BearThatCares on their own note-to-self ticket. If they already
   answered the product question in-thread, do not re-ask — implement or
   confirm the next Pulse step.
@@ -106,6 +107,12 @@ other connected Discord MCP.
 
 **Embeds are often invisible to MCP.** Starter posts look like empty content
 plus a mention ping (assignees). That is **not** the ticket body.
+
+A cloud-agent `DISCORD_BOT_TOKEN` is the **test guild**. `GET` and `POST`
+on a production thread return **403** `Missing Access` (50001). That is
+not an archived thread and not “user not in Discord.” Still load
+`HelpTicket.body`. Follow-up replies are invisible, so do not assume the
+thread is unanswered and do not invent a `send_message`.
 
 ### Ticket body (source of truth)
 
@@ -205,7 +212,8 @@ Scan this table before inventing a new theory.
 | Wiki `/en/…` connection timed out | `wiki.minmatar.org` is external. Current paths drop the MediaWiki `/en/` prefix (`/alliance/Onboarding`, not `/en/alliance/Onboarding`). Site links should not use `/en/`. If the wiki itself times out, that is hosting, not Django. Onboarding also lives on my.minmatar.org. |
 | SRP dialog is only a warning plus Submit another request / Close | Resolve failed and `killmail_candidate_fleets_component` rendered unused `endpoint_error`. Often the victim `EveCharacter.user` is null (character not on the account). A hull can still be on `ShipReimbursementProgram` (Revelation is a dread). Dump victim `user_id` before calling the ship uncovered. |
 | Combat log analyze submits, then “no stored combat log” and no result | The analyzer form sits in `<template x-teleport="body">`. htmx never sees that markup, so Submit is a normal POST of the page and the list stays empty. `htmx.process` the teleported form (`x-init` and again when the dialog opens). A real combat log still analyzes; zero stored rows means the API was never called. Do not close the dialog on the submit click before htmx reads the form. |
-| Discord thread 404 / “Channel not found” but HelpTicket is still open | Thread was archived or deleted. Still use `HelpTicket.body`. Do not invent a Discord reply if `send_message` cannot see the thread. |
+| Discord thread 404 / “Channel not found” but HelpTicket is still open | Thread was archived or deleted. Still use `HelpTicket.body`. Do not invent a Discord reply if `send_message` cannot see the thread. A **403** `Missing Access` from the cloud bot is the test guild, not a deleted thread — same rule: no invented reply. |
+| Hi-rez rats / sticker art / Fanfest merch, or any `pulse.thinkspeak` idea | Category title is “Submit a propaganda or news idea.” Not a site bug. Public rat art is display-sized (`holy-rat.png` is 240×240; `rat-genesis.png` is a chronicle illustration). Print masters are not in the website repo. The category assignee owns the piece. Do not tag BearThatCares. Do not hijack the thread. |
 | “Can’t reapply” because an old Discord application thread is locked | `create_corporation_application` does not look at old Discord threads. “You do not have permission to post in this channel” is that thread, not a site block. New applications are `/alliance/corporations/` and open a new thread. |
 | Build planner job cost is about half of in-game | Resbroko (and other Hydra systems) hardcode `HYDRA_FW_SYSTEM_COST_BONUS` (−50%). Amamake uses its own FW bonus; Basgerin and Auner are 0. There is no slider. Product call already made: price upgraded systems. Do not re-ask. |
 | Buy-from-stock contract doesn’t say where it is created | Sell copy already says contract in Amo. Purchase confirm uses `buyback.purchase.contract_where` from buyback `settings.location`. Structure id is `EveBuybackSettings.stockpile_structure_id`. |
