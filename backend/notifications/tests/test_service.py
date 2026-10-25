@@ -1,9 +1,16 @@
+from datetime import timedelta
 from unittest.mock import patch
 
+from celery.exceptions import Retry
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.utils import timezone
 
-from notifications.channels import ChannelSkip
+from notifications.channels import (
+    DISCORD_DM_LOCAL_BUCKET,
+    ChannelSendError,
+    ChannelSkip,
+)
 from notifications.models import (
     NotificationChannel,
     NotificationDelivery,
@@ -11,6 +18,7 @@ from notifications.models import (
     NotificationPreference,
     NotificationTopicSubscription,
 )
+from notifications.rate_limit import paced_spacing
 from notifications.registry import get_type
 from notifications.service import (
     effective_preferences,
@@ -63,7 +71,28 @@ class NotifyServiceTestCase(TestCase):
                 },
             )
         channels = {d.channel for d in deliveries}
-        # defaults: web + discord on, eve_mail off
+        # Web stays off until VAPID is configured. Discord is on; eve mail is off.
+        self.assertEqual(channels, {NotificationChannel.DISCORD})
+        self.assertEqual(mock_delay.call_count, 1)
+
+    @override_settings(VAPID_PRIVATE_KEY="test-key")
+    @patch("notifications.service.deliver_notification.delay")
+    def test_notify_includes_web_when_vapid_is_set(self, mock_delay):
+        with self.captureOnCommitCallbacks(execute=True):
+            deliveries = notify_user(
+                self.user,
+                "industry.order.assignment",
+                {
+                    "order_id": 1,
+                    "public_short_code": "ABC",
+                    "item_id": 2,
+                    "assignment_id": 3,
+                    "item_name": "Rifter",
+                    "quantity": 1,
+                    "coordinators": [],
+                },
+            )
+        channels = {d.channel for d in deliveries}
         self.assertEqual(
             channels,
             {NotificationChannel.WEB, NotificationChannel.DISCORD},
@@ -107,8 +136,8 @@ class NotifyServiceTestCase(TestCase):
             call.kwargs.get("countdown", 0)
             for call in mock_async.call_args_list
         )
-        self.assertGreater(countdowns[0], 0)
-        self.assertGreater(countdowns[1], countdowns[0])
+        spacing = paced_spacing(2.0, 2.0)
+        self.assertEqual(countdowns, [spacing, spacing * 2])
 
     @patch("notifications.service.deliver_notification.delay")
     def test_idempotency_skips_duplicate(self, mock_delay):
@@ -199,6 +228,136 @@ class DeliveryTaskTestCase(TestCase):
         self.assertEqual(result, "skipped")
         delivery.refresh_from_db()
         self.assertEqual(delivery.status, NotificationDeliveryStatus.SKIPPED)
+
+    @patch("notifications.tasks.send_channel")
+    def test_local_bucket_retries_past_failure_budget(self, mock_send):
+        mock_send.side_effect = ChannelSendError(
+            DISCORD_DM_LOCAL_BUCKET,
+            retryable=True,
+            retry_after=2.5,
+        )
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+        )
+        request = deliver_notification.request
+        previous = request.retries
+        request.retries = deliver_notification.max_retries
+        captured = {}
+
+        def stop_retry(**kwargs):
+            captured.update(kwargs)
+            raise Retry()
+
+        try:
+            with patch.object(deliver_notification, "retry", stop_retry):
+                with self.assertRaises(Retry):
+                    deliver_notification(delivery.id)
+        finally:
+            request.retries = previous
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.PENDING)
+        self.assertEqual(delivery.attempts, 1)
+        self.assertEqual(
+            captured["max_retries"], deliver_notification.max_retries + 1
+        )
+        self.assertEqual(captured["countdown"], 2)
+
+    @patch("notifications.tasks.send_channel")
+    def test_local_bucket_denials_still_send(self, mock_send):
+        calls = {"n": 0}
+
+        def send(*args, **kwargs):
+            del args, kwargs
+            calls["n"] += 1
+            if calls["n"] <= deliver_notification.max_retries:
+                raise ChannelSendError(
+                    DISCORD_DM_LOCAL_BUCKET,
+                    retryable=True,
+                    retry_after=1.0,
+                )
+            return {"discord_channel_id": "1", "discord_message_id": "2"}
+
+        mock_send.side_effect = send
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+        )
+        request = deliver_notification.request
+        previous = request.retries
+
+        def stop_retry(**kwargs):
+            del kwargs
+            raise Retry()
+
+        try:
+            with patch.object(deliver_notification, "retry", stop_retry):
+                result = None
+                for attempt in range(deliver_notification.max_retries + 2):
+                    request.retries = attempt
+                    try:
+                        result = deliver_notification(delivery.id)
+                        break
+                    except Retry:
+                        continue
+        finally:
+            request.retries = previous
+        self.assertEqual(result, "sent")
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.SENT)
+        self.assertGreater(delivery.attempts, deliver_notification.max_retries)
+
+    @patch("notifications.tasks.send_channel")
+    def test_local_bucket_fails_after_deadline(self, mock_send):
+        mock_send.side_effect = ChannelSendError(
+            DISCORD_DM_LOCAL_BUCKET,
+            retryable=True,
+            retry_after=1.0,
+        )
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+        )
+        NotificationDelivery.objects.filter(pk=delivery.pk).update(
+            created_at=timezone.now() - timedelta(minutes=16)
+        )
+        result = deliver_notification(delivery.id)
+        self.assertEqual(result, "failed")
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.FAILED)
+
+    @patch("notifications.tasks.send_channel")
+    def test_other_errors_stop_at_max_retries(self, mock_send):
+        mock_send.side_effect = ChannelSendError(
+            "Discord API rate limited",
+            retryable=True,
+            retry_after=5.0,
+        )
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+        )
+        request = deliver_notification.request
+        previous = request.retries
+        request.retries = deliver_notification.max_retries
+        try:
+            with patch.object(
+                deliver_notification, "retry", side_effect=Retry()
+            ):
+                result = deliver_notification(delivery.id)
+        finally:
+            request.retries = previous
+        self.assertEqual(result, "failed")
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.FAILED)
 
     @patch("notifications.tasks.send_channel")
     def test_deliver_does_not_overwrite_read(self, mock_send):

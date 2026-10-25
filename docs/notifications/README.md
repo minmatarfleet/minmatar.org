@@ -19,14 +19,16 @@ They still never run inside a web request; see [Discord outside notifications](#
 - **Channel preferences** — per user × type × channel enablement (`NotificationPreference`). Missing row → type defaults.
 - **Topic subscriptions** — for broadcast types only: opt into the *audience* (`NotificationTopicSubscription`), separate from how you receive messages.
 - **Delivery** — `notify_users` / `notify_user` create `NotificationDelivery` rows and enqueue Celery `deliver_notification`. Discord and Eve mail are never sent inline in HTTP handlers.
-- **Rate limits** — Redis token buckets for Discord DMs and Eve mail (cluster-safe). Celery retries on transient failures.
+- **Rate limits** — Redis token buckets for Discord DMs and Eve mail (cluster-safe). A Discord DM spends two tokens (open the channel, then send), so the default 2 tokens/second is one DM per second. Fan-out is spaced at 1.5× that refill time. A local bucket denial keeps retrying for 15 minutes and does not use the 8-try failure budget. Other transient errors still stop after 8 tries.
 
 ## Settings
 
 - `NOTIFICATIONS_EVE_MAIL_CHARACTER_ID` (default BearThatCares)
 - `NOTIFICATIONS_DISCORD_DM_RATE_PER_SECOND` (default `2`)
 - `NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND` (default `0.5`)
-- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_CONTACT` (backend send; frontend still needs public key for SW registration)
+- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_CONTACT` (backend send; frontend still needs the public key for service-worker registration)
+
+Web push is off until `VAPID_PRIVATE_KEY` is set: the web channel is not enqueued, so a missing key does not leave a skipped delivery. To turn it on, generate a key pair (`npx web-push generate-vapid-keys`), set all three variables on the backend (`VAPID_CONTACT` is a `mailto:` address), and set the same public key on the frontend.
 
 ## APIs
 

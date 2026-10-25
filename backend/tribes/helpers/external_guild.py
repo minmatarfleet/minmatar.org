@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import requests
@@ -30,6 +31,10 @@ from tribes.models import (
 logger = logging.getLogger(__name__)
 
 CLEANUP_FAILURE_ALERT_THRESHOLD = 3
+# A 403 kick (role hierarchy or missing Kick Members) does not change until
+# someone fixes the guild. Retrying every reconcile only burns the API.
+CLEANUP_PERMISSION_RETRY = timedelta(days=1)
+_PERMISSION_KICK_MARKER = "the bot cannot kick them"
 OAUTH_STATE_SALT = "tribes.external_guild.oauth"
 OAUTH_STATE_MAX_AGE = 60 * 60 * 24 * 7
 
@@ -209,10 +214,34 @@ def _kick_failure_message(exc: Exception) -> str:
     return f"kick: {summary}"
 
 
+def _is_permission_kick_error(message: str) -> bool:
+    return _PERMISSION_KICK_MARKER in (message or "")
+
+
+def _permission_kick_on_cooldown(seat: TribeExternalGuildSeat) -> bool:
+    """True when a 403 kick was tried recently and should not be repeated."""
+    if seat.status != TribeExternalGuildSeat.STATUS_CLEANUP_FAILED:
+        return False
+    if not _is_permission_kick_error(seat.last_error):
+        return False
+    if seat.updated_at is None:
+        return False
+    return timezone.now() - seat.updated_at < CLEANUP_PERMISSION_RETRY
+
+
 def _record_seat_error(
     seat: TribeExternalGuildSeat, error: str, *, alert: bool = False
 ) -> None:
-    seat.last_error = str(error)[:2000]
+    message = str(error)[:2000]
+    # updated_at is still the previous attempt until this save.
+    realert = (
+        alert
+        and seat.status == TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
+        and _is_permission_kick_error(message)
+        and seat.updated_at is not None
+        and timezone.now() - seat.updated_at >= CLEANUP_PERMISSION_RETRY
+    )
+    seat.last_error = message
     seat.failure_count = (seat.failure_count or 0) + 1
     fields = ["last_error", "failure_count"]
     if alert and seat.failure_count >= CLEANUP_FAILURE_ALERT_THRESHOLD:
@@ -222,7 +251,7 @@ def _record_seat_error(
         seat.status = TribeExternalGuildSeat.STATUS_CLEANUP_FAILED
         fields.append("status")
         _save_seat(seat, *fields)
-        if not already_failed:
+        if not already_failed or realert:
             _alert_cleanup_failed(seat)
         return
     _save_seat(seat, *fields)
@@ -356,7 +385,12 @@ def apply_seat(
 def _apply_remove(seat: TribeExternalGuildSeat, client: DiscordClient) -> str:
     if seat.status == TribeExternalGuildSeat.STATUS_REMOVED:
         return seat.status
-    # Stay on cleanup_failed across retries so the chief is alerted once.
+    # A permission-denied kick does not succeed until the guild changes.
+    # Leave the seat failed and try again after CLEANUP_PERMISSION_RETRY.
+    if _permission_kick_on_cooldown(seat):
+        return seat.status
+    # Stay on cleanup_failed across retries so the chief is alerted once
+    # per cooldown, not on every pass.
     if seat.status != TribeExternalGuildSeat.STATUS_CLEANUP_FAILED:
         seat.status = TribeExternalGuildSeat.STATUS_PENDING_REMOVE
         _save_seat(seat, "status")
