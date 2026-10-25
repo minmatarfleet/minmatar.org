@@ -2244,7 +2244,6 @@ export const ui = {
         'training.done': '✓ Done',
         'training.ready_count': '{ready} of {total} ready',
         'training.no_ships_yet': 'Nothing in training',
-        'training.nothing_close': 'No doctrine ship within a month',
         'training.not_for_fleets': 'Not for fleets',
         'training.for_fleets': 'For fleets again',
         'training.add_ship': '+ Add a ship',
