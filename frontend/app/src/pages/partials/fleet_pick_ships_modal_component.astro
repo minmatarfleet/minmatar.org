@@ -53,6 +53,11 @@ try {
     fetch_error = error
 }
 
+// Academy fits are only for Minmatar Fleet Academy pilots; the backend refuses
+// them for everyone else.
+if (!pilots.some(pilot => pilot.can_fly_academy))
+    composition = composition.filter(entry => entry.role !== 'secondary')
+
 // A pilot bringing a hull the FC didn't list: shown under "Off doctrine".
 const hull_names = new Map(hulls.map(hull => [hull.type_id, hull.name]))
 const HULLS_LIST_ID = `pick-ships-hulls-${fleet_id}`

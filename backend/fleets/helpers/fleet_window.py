@@ -65,7 +65,7 @@ FIT_ROLES = ("logi", "links", "cyno")
 FIT_ROLE_LABELS = {"logi": "Logi", "links": "Links", "cyno": "Cyno"}
 DOCTRINE_ROLE_LABELS = {
     "primary": "Mainline",
-    "secondary": "Secondary",
+    "secondary": "Academy",
     "support": "Support",
     "utility": "Utility",
 }

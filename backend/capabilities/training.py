@@ -30,10 +30,13 @@ from capabilities.models import (
     FittingRequirementSet,
     FittingSkillRequirement,
 )
-from applications.l3arn import L3ARN_CORPORATION_NAME
-from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter, EveCharacterSkill, EveCorporation
-from fittings.models import DOCTRINE_TYPE_STRATEGIC, EveDoctrineFitting
+from applications.l3arn import is_academy
+from eveonline.models import EveCharacter, EveCharacterSkill
+from fittings.models import (
+    ACADEMY_ROLE,
+    DOCTRINE_TYPE_STRATEGIC,
+    EveDoctrineFitting,
+)
 
 # Suggestions for a character without goals: the nearest fits, if any is
 # this close.
@@ -42,8 +45,7 @@ SUGGESTIONS = 2
 ALSO_CLOSE = 3
 # Fitting names start with the alliance tag ("[FL33T] Guardian").
 NAME_TAG = re.compile(r"^\[[^\]]*\]\s*")
-# Academy pilots see only a doctrine's secondary fits; everyone else never does.
-SECONDARY = "secondary"
+# Academy pilots see only a doctrine's Academy fits; everyone else never does.
 # "What you can bring" columns: capitals share one.
 CAPITALS = "Capitals"
 COLUMN = {"Dreads": CAPITALS, "Carriers": CAPITALS}
@@ -52,16 +54,6 @@ COLUMNS = tuple(dict.fromkeys(COLUMN.get(c, c) for c in rules.CAPABILITIES))
 
 class TrainingError(Exception):
     pass
-
-
-def is_academy(user) -> bool:
-    """The player's main is in the Minmatar Fleet Academy."""
-    primary = user_primary_character(user)
-    if primary is None or not primary.corporation_id:
-        return False
-    return EveCorporation.objects.filter(
-        corporation_id=primary.corporation_id, name=L3ARN_CORPORATION_NAME
-    ).exists()
 
 
 class _Player:
@@ -110,7 +102,7 @@ class _Player:
                 "doctrine__name",
                 "doctrine__type",
             )
-            if (row["role"] == SECONDARY) == self.academy
+            if (row["role"] == ACADEMY_ROLE) == self.academy
         ]
         visible = {row["fitting_id"] for row in self.doctrine_fits}
         self.sets = {fid: rs for fid, rs in sets.items() if fid in visible}

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 from eveuniverse.models import EveType
 from fittings.eft import eft_item_names
-from fittings.models import EveDoctrineFitting, EveFitting
+from fittings.models import ACADEMY_ROLE, EveDoctrineFitting, EveFitting
 
 from fleets.helpers.eft_items import module_slots_for
 from fleets.helpers.fit_roles import FitRoles, fit_roles
@@ -155,6 +155,11 @@ def fleet_composition(eve_fleet) -> list[CompositionEntry]:
         }
 
     return entries
+
+
+def academy_keys(composition: list[CompositionEntry]) -> set[str]:
+    """Keys of the Academy fits: only Academy pilots may bring them."""
+    return {entry.key for entry in composition if entry.role == ACADEMY_ROLE}
 
 
 def composition_catalog_fitting_ids(eve_fleet) -> set[int]:

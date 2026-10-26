@@ -76,6 +76,16 @@ def _eve_doctrine_scalar_equal(field: str, old_val, new_val) -> bool:
 # Doctrine fitting roles in display order. Utility holds ships a fleet
 # brings a few of regardless of doctrine size: cynos, boosters, scouts.
 DOCTRINE_FITTING_ROLES = ("primary", "secondary", "support", "utility")
+# The "secondary" role is shown as Academy: only Minmatar Fleet Academy pilots
+# fly these fits. The stored key stays "secondary" (API field names and
+# released desktop apps read it).
+ACADEMY_ROLE = "secondary"
+DOCTRINE_FITTING_ROLE_LABELS = {
+    "primary": "Primary",
+    ACADEMY_ROLE: "Academy",
+    "support": "Support",
+    "utility": "Utility",
+}
 
 
 def composition_snapshot_for_doctrine(doctrine) -> dict:
@@ -797,12 +807,7 @@ class EveDoctrineFitting(models.Model):
     Model for storing fittings in a doctrine
     """
 
-    role_choices = (
-        ("primary", "Primary"),
-        ("secondary", "Secondary"),
-        ("support", "Support"),
-        ("utility", "Utility"),
-    )
+    role_choices = tuple(DOCTRINE_FITTING_ROLE_LABELS.items())
 
     doctrine = models.ForeignKey(EveDoctrine, on_delete=models.CASCADE)
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)

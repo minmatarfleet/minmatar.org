@@ -6,6 +6,7 @@ from typing import List
 from django.db.models import Max
 from django.utils import timezone
 
+from applications.l3arn import is_academy
 from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
 
@@ -15,7 +16,7 @@ from fleets.endpoints.schemas import (
     ShipSelection,
     ShipSuggestionResponse,
 )
-from fleets.helpers.composition import fleet_composition
+from fleets.helpers.composition import academy_keys, fleet_composition
 from fleets.helpers.ship_suggestions import suggest_ships
 from fleets.models import (
     EveFleet,
@@ -34,7 +35,8 @@ ROUTE_SPEC = {
         "the last 30 days, with the ship each one is currently volunteered for. "
         "Until the caller has volunteered any character, recent characters "
         "carry a suggestion: the composition hull they flew most in past "
-        "fleets."
+        "fleets. can_fly_academy says whether the caller may bring the "
+        "fleet's Academy fits (main in the Minmatar Fleet Academy)."
     ),
 }
 
@@ -71,11 +73,14 @@ def get_fleet_my_pilots(request, fleet_id: int):
     }
     # Only before the first save, and only for characters shown by default:
     # a hidden character must not sign up just because Save was pressed.
+    academy = is_academy(request.user)
     suggestions = {}
     if not selections:
-        suggestions = suggest_ships(
-            fleet, list(last_seen), fleet_composition(fleet)
-        )
+        composition = fleet_composition(fleet)
+        if not academy:
+            blocked = academy_keys(composition)
+            composition = [e for e in composition if e.key not in blocked]
+        suggestions = suggest_ships(fleet, list(last_seen), composition)
     # Recently active characters first, most recent fleet first.
     characters.sort(
         key=lambda c: (
@@ -93,6 +98,7 @@ def get_fleet_my_pilots(request, fleet_id: int):
             character_id=c.character_id,
             character_name=c.character_name,
             recent_fleets=c.character_id in last_seen,
+            can_fly_academy=academy,
             selection=selections.get(c.character_id),
             suggestion=(
                 ShipSuggestionResponse(**vars(suggestions[c.character_id]))

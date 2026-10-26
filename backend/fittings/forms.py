@@ -268,8 +268,9 @@ class EveDoctrineForm(forms.ModelForm):
     )
     secondary_fittings = forms.ModelMultipleChoiceField(
         queryset=EveFitting.objects.all(),
-        widget=FilteredSelectMultiple("Secondary Fittings", is_stacked=False),
+        widget=FilteredSelectMultiple("Academy Fittings", is_stacked=False),
         required=False,
+        help_text="Only Minmatar Fleet Academy pilots can bring these to fleets.",
     )
     support_fittings = forms.ModelMultipleChoiceField(
         queryset=EveFitting.objects.all(),

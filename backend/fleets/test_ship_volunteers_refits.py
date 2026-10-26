@@ -9,12 +9,13 @@ from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import make_token
+from applications.l3arn import L3ARN_CORPORATION_NAME
 from discord.models import DiscordUser
 from esi.models import Scope, Token
 
 from eveonline.client import SUCCESS, EsiResponse
 from eveonline.helpers.characters import set_primary_character
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCorporation
 from fittings.eft import fitted_modules
 from fittings.models import (
     EveDoctrine,
@@ -603,6 +604,42 @@ class FleetShipVolunteerRefitRouterTestCase(TestCase):
     def test_ship_volunteer_rejects_foreign_character(self):
         response = self._volunteer(self.fitting.id, character_id=4242)
         self.assertEqual(400, response.status_code)
+
+    def _academy_fit(self):
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine,
+            fitting=self.other_fitting,
+            role="secondary",
+        )
+
+    def _join_academy(self):
+        EveCorporation.objects.create(
+            corporation_id=98000001, name=L3ARN_CORPORATION_NAME
+        )
+        self.character.corporation_id = 98000001
+        self.character.save()
+        set_primary_character(self.user, self.character)
+
+    def test_academy_fits_are_for_academy_pilots(self):
+        self._academy_fit()
+        self.assertFalse(self._my_pilots()[1001]["can_fly_academy"])
+        response = self._volunteer(self.other_fitting.id)
+        self.assertEqual(400, response.status_code)
+        self.assertIn("Academy", response.json()["detail"])
+
+        self._join_academy()
+        self.assertTrue(self._my_pilots()[1001]["can_fly_academy"])
+        response = self._volunteer(self.other_fitting.id)
+        self.assertEqual(200, response.status_code, response.content)
+
+    def test_academy_fits_are_never_suggested_outside_the_academy(self):
+        self._academy_fit()
+        self._flew(631, doctrine=self.doctrine)
+        self.assertIsNone(self._my_pilots()[1001]["suggestion"])
+
+        self._join_academy()
+        suggestion = self._my_pilots()[1001]["suggestion"]
+        self.assertEqual(self.other_fitting.id, suggestion["fitting_id"])
 
     def test_fc_can_remove_another_users_ship_volunteer(self):
         volunteer = EveFleetShipVolunteer.objects.create(

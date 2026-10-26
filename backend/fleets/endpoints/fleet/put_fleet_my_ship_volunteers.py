@@ -1,11 +1,13 @@
 """PUT /{fleet_id}/my-ship-volunteers — set which ship each of the caller's characters brings."""
 
 import logging
+from functools import cache
 from typing import List
 
 from django.db import transaction
 
 from app.errors import ErrorResponse
+from applications.l3arn import is_academy
 from authentication import AuthBearer
 from eveonline.client import EsiClient, live_esi_allowed
 from eveonline.helpers.characters import user_characters
@@ -21,7 +23,11 @@ from fleets.endpoints.schemas import (
     EveFleetShipVolunteerResponse,
     SetMyShipVolunteersRequest,
 )
-from fleets.helpers.composition import resolve_composition_target
+from fleets.helpers.composition import (
+    academy_keys,
+    fleet_composition,
+    resolve_composition_target,
+)
 from fleets.helpers.fit_roles import canonical_bursts, fit_roles
 from fleets.helpers.fleet_window import forget_fleet_window
 from fleets.helpers.private_fleets import sync_answer_from_ships
@@ -46,7 +52,9 @@ ROUTE_SPEC = {
         "or ship_type_id removes that character. Characters not listed are "
         "left unchanged. "
         "bursts picks the command bursts a links fit runs online; omitted, "
-        "it defaults to the fit's online bursts."
+        "it defaults to the fit's online bursts. "
+        "Academy fits are only for pilots whose main is in the Minmatar "
+        "Fleet Academy."
     ),
 }
 
@@ -96,6 +104,32 @@ def _resolve_bursts(selection, fitting, fleet_fitting):
     return canonical_bursts(selection.bursts), None
 
 
+def _blocked_academy_keys(user, fleet) -> set[str]:
+    """Composition keys the user may not bring: Academy fits, unless Academy."""
+    if is_academy(user):
+        return set()
+    return academy_keys(fleet_composition(fleet))
+
+
+def _resolve_fit(fleet, selection, blocked):
+    """(fitting, fleet_fitting, bursts, error) for a composition pick."""
+    fitting, fleet_fitting, err = resolve_composition_target(
+        fleet, selection.fitting_id, selection.fleet_fitting_id
+    )
+    if err:
+        return None, None, None, err
+    key = f"f:{fitting.id}" if fitting else f"m:{fleet_fitting.id}"
+    if key in blocked():
+        return (
+            None,
+            None,
+            None,
+            "Academy ships are for Minmatar Fleet Academy pilots",
+        )
+    bursts, err = _resolve_bursts(selection, fitting, fleet_fitting)
+    return fitting, fleet_fitting, bursts, err
+
+
 def set_my_ship_volunteers(
     request, fleet_id: int, payload: SetMyShipVolunteersRequest
 ):
@@ -107,6 +141,9 @@ def set_my_ship_volunteers(
     allowed = {
         c.character_id: c.character_name for c in user_characters(request.user)
     }
+
+    # Fits the caller may not bring; loaded on the first fit picked.
+    blocked = cache(lambda: _blocked_academy_keys(request.user, fleet))
 
     resolved = []
     for selection in payload.selections:
@@ -129,12 +166,9 @@ def set_my_ship_volunteers(
         if selection.fitting_id is None and selection.fleet_fitting_id is None:
             resolved.append((selection.character_id, None, None, [], None))
             continue
-        fitting, fleet_fitting, err = resolve_composition_target(
-            fleet, selection.fitting_id, selection.fleet_fitting_id
+        fitting, fleet_fitting, bursts, err = _resolve_fit(
+            fleet, selection, blocked
         )
-        if err:
-            return 400, {"detail": err}
-        bursts, err = _resolve_bursts(selection, fitting, fleet_fitting)
         if err:
             return 400, {"detail": err}
         resolved.append(

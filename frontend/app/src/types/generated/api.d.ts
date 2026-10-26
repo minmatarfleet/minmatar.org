@@ -3027,7 +3027,7 @@ export interface paths {
         };
         /**
          * Get Fleet My Pilots
-         * @description The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for. Until the caller has volunteered any character, recent characters carry a suggestion: the composition hull they flew most in past fleets.
+         * @description The caller's characters, flagged when they joined a tracked fleet in the last 30 days, with the ship each one is currently volunteered for. Until the caller has volunteered any character, recent characters carry a suggestion: the composition hull they flew most in past fleets. can_fly_academy says whether the caller may bring the fleet's Academy fits (main in the Minmatar Fleet Academy).
          */
         get: operations["fleets_endpoints_fleet_get_fleet_my_pilots_get_fleet_my_pilots"];
         put?: never;
@@ -3048,7 +3048,7 @@ export interface paths {
         get?: never;
         /**
          * Set My Ship Volunteers
-         * @description Replace the caller's ship volunteers for this fleet: one ship per character. ship_type_id instead brings a hull outside the composition. A selection with none of fitting_id, fleet_fitting_id or ship_type_id removes that character. Characters not listed are left unchanged. bursts picks the command bursts a links fit runs online; omitted, it defaults to the fit's online bursts.
+         * @description Replace the caller's ship volunteers for this fleet: one ship per character. ship_type_id instead brings a hull outside the composition. A selection with none of fitting_id, fleet_fitting_id or ship_type_id removes that character. Characters not listed are left unchanged. bursts picks the command bursts a links fit runs online; omitted, it defaults to the fit's online bursts. Academy fits are only for pilots whose main is in the Minmatar Fleet Academy.
          */
         put: operations["fleets_endpoints_fleet_put_fleet_my_ship_volunteers_set_my_ship_volunteers"];
         post?: never;
@@ -17505,6 +17505,11 @@ export interface components {
         };
         /** MyFleetPilotResponse */
         MyFleetPilotResponse: {
+            /**
+             * Can Fly Academy
+             * @default false
+             */
+            can_fly_academy?: boolean;
             /** Character Id */
             character_id: number;
             /** Character Name */

@@ -25,6 +25,24 @@ def is_l3arn_corporation(corporation) -> bool:
     )
 
 
+def is_academy(user) -> bool:
+    """The player's main is in the Minmatar Fleet Academy."""
+    # Imported here: eveonline helpers import applications models.
+    from eveonline.helpers.characters import (  # pylint: disable=import-outside-toplevel
+        user_primary_character,
+    )
+    from eveonline.models import (  # pylint: disable=import-outside-toplevel
+        EveCorporation,
+    )
+
+    primary = user_primary_character(user)
+    if primary is None or not primary.corporation_id:
+        return False
+    return EveCorporation.objects.filter(
+        corporation_id=primary.corporation_id, name=L3ARN_CORPORATION_NAME
+    ).exists()
+
+
 def application_discord_description(description: str) -> str:
     """Strip web-only questionnaire lines before Discord posting or length checks."""
     return HOW_FOUND_LINE_PATTERN.sub("", description)
