@@ -12,6 +12,7 @@ from capabilities.models import (
     CharacterAccountMember,
     CharacterShipGoal,
 )
+from capabilities.engine.plan import step_days
 from capabilities.tests.helpers import (
     all_skills_at,
     fixture_eft,
@@ -249,6 +250,25 @@ class PlanTest(TrainingTestCase):
         self.assertEqual(
             self._summary(status, "Alt")["suggestions"][0]["days"],
             view["ready_days"],
+        )
+
+    def test_days_use_the_skill_rank_before_the_nightly_fills_it(self):
+        CapabilitySkill.objects.all().delete()
+        view = training.plan_view(
+            self.user, self.alt.character_id, self.guardian.pk
+        )
+        step = max(
+            (
+                s
+                for s in view["ready_steps"]
+                if s["name"] == "Capacitor Management"
+            ),
+            key=lambda s: s["level"],
+        )
+        rank = SDE.skill_rank(SDE.resolve("Capacitor Management"))
+        self.assertGreater(rank, 1)
+        self.assertAlmostEqual(
+            step["days"], round(step_days(rank, step["level"]), 2), places=2
         )
 
     def test_optimal_adds_its_steps_to_the_queue(self):
