@@ -880,7 +880,7 @@ class EveFleetFitting(models.Model):
 
     ROLE_CHOICES = (
         ("primary", "Primary"),
-        ("secondary", "Secondary"),
+        ("secondary", "Academy"),
         ("support", "Support"),
         ("utility", "Utility"),
     )

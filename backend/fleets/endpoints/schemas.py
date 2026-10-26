@@ -425,6 +425,8 @@ class MyFleetPilotResponse(BaseModel):
     character_id: int
     character_name: str
     recent_fleets: bool
+    # Main in the Minmatar Fleet Academy: may bring the fleet's Academy fits.
+    can_fly_academy: bool = False
     selection: Optional[ShipSelection] = None
     # Pre-pick until the caller has saved a ship on this fleet. Not saved.
     suggestion: Optional[ShipSuggestionResponse] = None

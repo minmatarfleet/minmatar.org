@@ -27,7 +27,7 @@ DOCTRINE_TYPE_LABELS = {
 
 COMPOSITION_ROLE_LABELS = {
     "primary": "Primary",
-    "secondary": "Secondary",
+    "secondary": "Academy",
     "support": "Support",
     "utility": "Utility",
 }

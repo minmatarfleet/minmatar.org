@@ -391,6 +391,8 @@ export interface MyFleetPilot {
     character_name: string
     /** Joined a tracked fleet in the last 30 days. */
     recent_fleets: boolean
+    /** Main in the Minmatar Fleet Academy: may bring the fleet's Academy fits. */
+    can_fly_academy?: boolean
     selection: ShipSelection | null
     /** What they usually fly, until the caller first saves on this fleet. */
     suggestion?: ShipSuggestion | null
