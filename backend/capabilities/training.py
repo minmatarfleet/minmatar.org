@@ -17,6 +17,7 @@ from django.db.models import Max, Min
 
 from capabilities.engine import plan as plan_mod
 from capabilities.engine import rules
+from capabilities import services
 from capabilities.services import CHARACTERS_PER_ACCOUNT
 from capabilities.models import (
     CapabilitySkill,
@@ -158,6 +159,10 @@ class _Player:
 
     def info(self):
         if self._info is None:
+            # Ranks are copied when an SDE build loads or nightly; until
+            # then every skill would plan as rank 1.
+            if not CapabilitySkill.objects.exists():
+                services.refresh_skill_info()
             ranks, prereqs, names = {}, {}, {}
             for (
                 skill_id,
