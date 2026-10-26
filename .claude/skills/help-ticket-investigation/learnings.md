@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-25 — Sticker rats are the brand-page Sneak poses
+
+**Category:** pulse.thinkspeak
+**Verdict:** clarify
+**Discord:** no reply (test-guild bot is not in the production guild)
+**PR:** skill-only
+**Symptom vs cause:** Follow-up asked for high-resolution rats to send back. The sticker set is the `/brand/` mascots, not `holy-rat.png`. Sneak poses are 512×512 with transparency. Scurry’s file is 128×128. A 4× Lanczos upscale keeps the beanie badge; tracing the PNG does not.
+**Durable rule:** Send Sneak from `sneak-idle.png`, `sneak.png`, `sneak-duck.png`, `sneak-coffee.png`, and `sneak-present-icon.png`. Do not trace them. Do not upscale `brand/scurry.png` and call it print-ready. The cloud bot still cannot post on the production thread.
+**Skill update:** rewrote the thinkspeak art row with the real file sizes.
+
 ## 2026-10-25 — Thinkspeak asked for print-ready rat art
 
 **Category:** pulse.thinkspeak
