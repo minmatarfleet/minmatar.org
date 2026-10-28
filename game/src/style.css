@@ -38,6 +38,10 @@ html, body {
   grid-template-rows: auto 1fr auto;
 }
 
+header { grid-row: 1; }
+#pick, #cards, #end { grid-row: 2; }
+footer { grid-row: 3; }
+
 header, footer, .panel, #cards, #backend, button {
   pointer-events: auto;
 }
@@ -71,16 +75,16 @@ footer {
 
 #bars { display: grid; gap: 0.25rem; width: min(22rem, 70vw); }
 
-.bar {
+.meter {
   height: 0.45rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
-.bar span { display: block; height: 100%; }
-.shield span { background: var(--shield); }
-.armor span { background: var(--armor); }
-.hull span { background: var(--hull); }
+.meter span { display: block; height: 100%; }
+.meter-shield span { background: var(--shield); }
+.meter-armor span { background: var(--armor); }
+.meter-hull span { background: var(--hull); }
 
 #slots {
   margin: 0.45rem 0;

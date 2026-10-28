@@ -42,6 +42,7 @@ const orderReadout = required<HTMLElement>('#order')
 const targetReadout = required<HTMLElement>('#target')
 const cards = required<HTMLElement>('#cards')
 const endPanel = required<HTMLElement>('#end')
+const dock = required<HTMLElement>('#dock')
 const backend = required<HTMLElement>('#backend')
 const fpsReadout = required<HTMLElement>('#fps')
 
@@ -127,6 +128,7 @@ function begin(nextHull: HullId, nextSeed: number): void {
   world = createWorld(hull, seed)
   rocks = beltRocks(seed)
   pickPanel.hidden = true
+  dock.hidden = false
   endPanel.hidden = true
   cards.hidden = true
   cardKey = ''
@@ -284,7 +286,7 @@ function endButton(label: string, onClick: () => void): HTMLButtonElement {
 
 function bar(kind: string, value: number, max: number): HTMLElement {
   const row = document.createElement('div')
-  row.className = `bar ${kind}`
+  row.className = `meter meter-${kind}`
   const fill = document.createElement('span')
   fill.style.width = `${max <= 0 ? 0 : Math.max(0, Math.min(100, (value / max) * 100))}%`
   row.append(fill)

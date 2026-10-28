@@ -52,7 +52,10 @@ fn fsAdd(input: VsOut) -> @location(0) vec4<f32> {
 
 export async function createGpuRenderer(canvas: HTMLCanvasElement): Promise<Frame | null> {
   if (!navigator.gpu) return null
-  const adapter = await navigator.gpu.requestAdapter()
+  const adapter = await Promise.race([
+    navigator.gpu.requestAdapter(),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+  ])
   if (!adapter) return null
   const device = await adapter.requestDevice()
   const context = canvas.getContext('webgpu')
