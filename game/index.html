@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Veldspar Belt</title>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <div id="hud">
+      <header>
+        <div id="clock">0:00</div>
+        <div>
+          <p id="banner"></p>
+          <p id="next"></p>
+        </div>
+        <div id="fps"></div>
+      </header>
+      <section id="pick" class="panel">
+        <h1>Veldspar Belt</h1>
+        <p>Eight minutes. Four bosses. Killing the Controller clears the belt. Living until the clock runs out does not.</p>
+        <div id="hulls"></div>
+      </section>
+      <section id="cards" hidden></section>
+      <section id="end" class="panel" hidden></section>
+      <footer>
+        <div id="bars"></div>
+        <pre id="slots"></pre>
+        <div id="helm">
+          <button type="button" data-order="approach">Approach</button>
+          <button type="button" data-order="orbit">Orbit</button>
+          <button type="button" data-order="keep">Keep at Range</button>
+          <button type="button" data-action="prop">Propulsion</button>
+          <span id="order"></span>
+          <span id="range"></span>
+          <span id="speed"></span>
+          <span id="target"></span>
+        </div>
+        <p id="hint">Click a ship to select it. Click empty space to align. Double-click approaches. Wheel sets range. A orbit, K keep, F propulsion, 1–3 a card.</p>
+      </footer>
+      <p id="backend"></p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

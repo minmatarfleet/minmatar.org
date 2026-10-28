@@ -1,0 +1,155 @@
+:root {
+  color-scheme: dark;
+  --ink: #e6e0d4;
+  --muted: #a79b88;
+  --amber: #e2b15a;
+  --line: rgba(226, 177, 90, 0.4);
+  --panel: rgba(10, 11, 14, 0.82);
+  --danger: #d4533c;
+  --shield: #6ea8c9;
+  --armor: #d2a15a;
+  --hull: #c9c2b4;
+  font-family: "Segoe UI", "Avenir Next", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #07080b;
+  color: var(--ink);
+}
+
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+header, footer, .panel, #cards, #backend, button {
+  pointer-events: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem 0;
+  text-shadow: 0 1px 0 #000;
+}
+
+#clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.6rem;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+}
+
+#banner, #next, #fps, #hint, #backend {
+  margin: 0;
+  color: var(--muted);
+}
+
+#banner { color: var(--ink); min-height: 1.2em; }
+
+footer {
+  padding: 0 1rem 0.7rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+}
+
+#bars { display: grid; gap: 0.25rem; width: min(22rem, 70vw); }
+
+.bar {
+  height: 0.45rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.bar span { display: block; height: 100%; }
+.shield span { background: var(--shield); }
+.armor span { background: var(--armor); }
+.hull span { background: var(--hull); }
+
+#slots {
+  margin: 0.45rem 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+#helm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+button {
+  background: #14160f;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--amber); }
+button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+#speed.scram { color: var(--danger); font-weight: 650; }
+#order, #range, #speed, #target { font-variant-numeric: tabular-nums; }
+
+.panel, #cards {
+  justify-self: center;
+  align-self: center;
+  width: min(52rem, calc(100% - 2rem));
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 1.1rem 1.2rem 1.3rem;
+}
+
+h1, h2 { font-weight: 560; letter-spacing: 0.02em; margin: 0 0 0.4rem; }
+h1 { color: var(--amber); }
+
+#hulls, #cards, #end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.hull, .card {
+  flex: 1 1 14rem;
+  text-align: left;
+  display: grid;
+  gap: 0.3rem;
+  min-height: 7rem;
+}
+
+.hull strong, .card strong { font-size: 1.05rem; }
+.hull em, .card em { color: var(--amber); font-style: normal; font-size: 0.8rem; }
+.hull span, .card span { color: var(--muted); }
+
+#end { display: grid; }
+#end[hidden], #cards[hidden], #pick[hidden] { display: none; }
+
+#backend {
+  position: fixed;
+  right: 0.8rem;
+  bottom: 0.4rem;
+  font-size: 0.75rem;
+}
+
+#hint { margin-top: 0.45rem; font-size: 0.82rem; }
