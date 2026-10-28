@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, MemberInsights } from '@dtypes/api.minmatar.org'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -27,6 +27,13 @@ export async function get_corporation_members(access_token: string, id: number) 
     return await api_request<CorporationMemberDetails[] | null>(endpoint, {
         token: access_token,
         allow: [403, 404],
+    })
+}
+
+export async function get_corporation_member_insights(access_token: string, id: number, character_id: number) {
+    return await api_request<MemberInsights>(`${API_ENDPOINT}/corporations/${id}/members/${character_id}/insights`, {
+        token: access_token,
+        error: 'Error fetching member insights',
     })
 }
 

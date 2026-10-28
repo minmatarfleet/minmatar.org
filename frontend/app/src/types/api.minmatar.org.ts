@@ -3173,6 +3173,15 @@ export type TrainingPlan = ApiResponse<'TrainingPlanResponse'>
 export type TrainingShipOption = ApiResponse<'ShipOptionResponse'>
 export type TrainingAccountOptions = ApiResponse<'AccountOptionsResponse'>
 export type TrainingBring = ApiResponse<'BringResponse'>
+
+// Trial tab and the corp Members row: trial length, tiers, ships, kills.
+export type TrialReport = ApiResponse<'TrialReportResponse'>
+export type TrialStatus = ApiResponse<'TrialStatusResponse'>
+export type TrialProgress = ApiResponse<'TrialProgressResponse'>
+export type TrialCompare = ApiResponse<'TrialCompareResponse'>
+export type TrialShips = ApiResponse<'TrialShipsResponse'>
+export type TrialFleet = ApiResponse<'TrialFleetResponse'>
+export type MemberInsights = ApiResponse<'MemberInsightsResponse'>
 export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>

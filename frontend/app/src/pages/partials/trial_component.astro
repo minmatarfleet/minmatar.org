@@ -1,0 +1,316 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { TrialReport } from '@dtypes/api.minmatar.org'
+import { get_my_trial } from '@helpers/api.minmatar.org/trial'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let report:TrialReport | null = null
+let fetch_error:Error | false = false
+
+try {
+    report = await get_my_trial(auth_token as string)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const refetch_url = translatePath('/partials/trial_component/')
+const trial = report?.trial ?? null
+const ticker = report?.corporation_ticker ?? null
+const ships = report?.ships ?? null
+const all_helpful = !!ships && ships.doctrine_fleets > 0 && ships.helpful_fleets === ships.doctrine_fleets
+const brought_academy = !!report && !report.academy && report.fleets.some((fleet) => fleet.role === 'secondary')
+
+const group = trial?.average_scope === 'corporation' && ticker ? ticker : t('trial.alliance')
+const pace_line = !trial ? '' : trial.on_pace
+    ? t('trial.pace_on').replace('{day}', String(trial.review_day)).replace('{group}', group)
+    : trial.average_days !== null
+        ? t('trial.pace_behind').replace('{group}', group).replace('{days}', String(trial.average_days))
+        : t('trial.pace_behind_no_average').replace('{day}', String(trial.review_day))
+
+const SIGNALS = ['fleets', 'kills', 'voice'] as const
+const compare = new Map((report?.compare ?? []).map((row) => [row.signal, row.tier]))
+
+const short_date = (iso:string) => new Date(iso).toLocaleDateString(lang, { month: 'short', day: 'numeric' })
+const role_label = (role:string | null) => t(t_key('trial.role.', role ?? 'none'))
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TrialProgressBar from '@components/blocks/TrialProgressBar.astro'
+import TierScale from '@components/blocks/TierScale.astro'
+---
+
+<div id="trial" class="[ trial ]">
+    {fetch_error ?
+        <ErrorRefetch
+            args={{
+                partial: refetch_url,
+                error: fetch_error,
+                delay: delay,
+                target: '#trial',
+            }}
+        />
+        : !report?.on_trial ?
+        <EmptyState title={t('trial.not_on_trial')} />
+        :
+        <Flexblock gap="var(--space-l)">
+            {trial &&
+                <ComponentBlock>
+                    <section class="[ trial-section ]" aria-labelledby="trial-length">
+                        <div class="[ trial-section__head ]">
+                            <h2 id="trial-length">
+                                {trial.day === null ? t('trial.your_trial') : t('trial.day_of').replace('{day}', String(trial.day))}
+                            </h2>
+                            <span class:list={['[ trial-pace ]', trial.on_pace ? 'trial-good' : 'trial-warn']}>
+                                {trial.on_pace ? t('trial.on_pace') : t('trial.behind_pace')}
+                            </span>
+                        </div>
+                        <TrialProgressBar trial={trial} ticker={ticker} />
+                        <p class="[ trial-section__line ]">{pace_line}</p>
+                    </section>
+                </ComponentBlock>
+            }
+
+            <ComponentBlock>
+                <section class="[ trial-section ]" aria-labelledby="trial-compare">
+                    <div class="[ trial-section__head ]">
+                        <div>
+                            <h2 id="trial-compare">{t('trial.compare_title')}</h2>
+                            <p class="[ trial-muted ]">{t('trial.compare_hint')}</p>
+                        </div>
+                    </div>
+                    <div class="[ trial-rows ]">
+                        {SIGNALS.map((signal) =>
+                            <TierScale
+                                class="[ trial-row ]"
+                                label={t(t_key('trial.signal.', signal))}
+                                hint={t(t_key('trial.signal.', signal, '_hint'))}
+                                tier={compare.get(signal) ?? null}
+                            />
+                        )}
+                    </div>
+                </section>
+            </ComponentBlock>
+
+            <ComponentBlock>
+                <section class="[ trial-section ]" aria-labelledby="trial-ships">
+                    <div class="[ trial-section__head ]">
+                        <h2 id="trial-ships">{t('trial.ships_title')}</h2>
+                        <a class="[ trial-link ]" href={`${translatePath('/account/')}#training`}>{t('trial.ships_link')}</a>
+                    </div>
+                    {!ships || ships.doctrine_fleets === 0 ?
+                        <EmptyState title={t('trial.no_fleets')} hint={t('trial.no_fleets_hint')} />
+                        :
+                        <>
+                            <p class="[ trial-headline ]">
+                                <span class:list={['[ trial-headline__count ]', all_helpful ? 'trial-good' : 'trial-warn']}>
+                                    {t('trial.ships_count').replace('{helpful}', String(ships.helpful_fleets)).replace('{total}', String(ships.doctrine_fleets))}
+                                </span>
+                                <span>
+                                    {t('trial.ships_headline')}{' '}
+                                    {all_helpful ? t('trial.ships_all_helpful') : brought_academy ? t('trial.ships_academy_hint') : t('trial.ships_doctrine_hint')}
+                                </span>
+                            </p>
+                            <ul class="[ trial-fleets ]">
+                                {report.fleets.map((fleet) =>
+                                    <li class="[ trial-fleet ]">
+                                        <span class="[ trial-muted trial-fleet__date ]">{short_date(fleet.start_time)}</span>
+                                        <img src={get_item_icon(fleet.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                        <span class="[ trial-fleet__ship ]">
+                                            <span class="[ trial-fleet__name ]">{fleet.ship_name}</span>
+                                            <span class="[ trial-muted ]">
+                                                <span class="[ trial-fleet__inline-date ]">{short_date(fleet.start_time)} · </span>
+                                                {fleet.doctrine_name ? t('trial.doctrine_fleet').replace('{doctrine}', fleet.doctrine_name) : t('trial.role.none')}
+                                            </span>
+                                        </span>
+                                        {fleet.role &&
+                                            <span class:list={['[ trial-role ]', { 'trial-warn': !fleet.helpful }]}>{role_label(fleet.role)}</span>
+                                        }
+                                    </li>
+                                )}
+                            </ul>
+                        </>
+                    }
+                </section>
+            </ComponentBlock>
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    .trial {
+        --trial_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
+        --trial_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+    }
+
+    .trial-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .trial-section__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs) var(--space-s);
+
+        h2 {
+            margin: 0;
+        }
+    }
+
+    .trial-section__line {
+        margin: 0;
+    }
+
+    .trial-muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .trial-pace,
+    .trial-role {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        white-space: nowrap;
+        color: var(--text-muted);
+        background: var(--hairline);
+    }
+
+    .trial-pace::before {
+        content: '';
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    .trial-good {
+        color: var(--trial_good);
+        background: color-mix(in srgb, var(--trial_good) 12%, transparent);
+    }
+
+    .trial-warn {
+        color: var(--trial_warn);
+        background: color-mix(in srgb, var(--trial_warn) 12%, transparent);
+    }
+
+    .trial-rows {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .trial-row {
+        padding-block: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .trial-link {
+        font-size: var(--step--1);
+        font-weight: 600;
+    }
+
+    .trial-headline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-xs) var(--space-s);
+        margin: 0;
+        color: var(--highlight);
+    }
+
+    .trial-headline__count {
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+
+        &.trial-good,
+        &.trial-warn {
+            background: none;
+        }
+    }
+
+    .trial-fleets {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .trial-fleet {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs) var(--space-s);
+        padding-block: var(--space-2xs);
+        border-top: 1px solid var(--hairline);
+
+        img {
+            flex: none;
+            width: var(--space-xl);
+            height: var(--space-xl);
+        }
+    }
+
+    .trial-fleet__date {
+        flex: none;
+        width: 4.5em;
+    }
+
+    .trial-fleet__ship {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        min-width: 0;
+
+        > span {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .trial-fleet__inline-date {
+        display: none;
+    }
+
+    @media (max-width: 48rem) {
+        .trial-fleet__date {
+            display: none;
+        }
+
+        .trial-fleet__inline-date {
+            display: inline;
+        }
+
+        .trial-fleet img {
+            width: var(--space-l);
+            height: var(--space-l);
+        }
+    }
+
+    .trial-fleet__name {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+</style>

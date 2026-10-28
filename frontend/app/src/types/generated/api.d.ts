@@ -157,6 +157,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/alliance/trial/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current user's trial: length, tiers and ships brought */
+        get: operations["alliance_endpoints_trial_get_my_trial_get_my_trial"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alliance/trial/me/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the current user is on trial (shows the Trial tab) */
+        get: operations["alliance_endpoints_trial_get_my_trial_status_get_my_trial_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/applications/corporations/{corporation_id}/applications": {
         parameters: {
             query?: never;
@@ -1912,6 +1946,23 @@ export interface paths {
         };
         /** Top corporation members by activity */
         get: operations["eveonline_endpoints_corporations_get_corp_member_top_get_corp_member_top"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trial, tiers, ships and kills for one member (leadership only) */
+        get: operations["eveonline_endpoints_corporations_get_corp_member_insights_get_corp_member_insights"];
         put?: never;
         post?: never;
         delete?: never;
@@ -17245,6 +17296,21 @@ export interface components {
             /** Shared */
             shared: number;
         };
+        /** MemberInsightsResponse */
+        MemberInsightsResponse: {
+            /**
+             * Academy
+             * @default false
+             */
+            academy?: boolean;
+            /** Compare */
+            compare?: components["schemas"]["TrialCompareResponse"][] | null;
+            /** Corporation Ticker */
+            corporation_ticker?: string | null;
+            kills: components["schemas"]["TrialKillsResponse"];
+            ships: components["schemas"]["TrialShipsResponse"];
+            trial?: components["schemas"]["TrialProgressResponse"] | null;
+        };
         /** MembershipCharacterHistorySchema */
         MembershipCharacterHistorySchema: {
             /** Action */
@@ -21164,6 +21230,48 @@ export interface components {
             /** Corporation Id */
             corporation_id: number;
         };
+        /** TrialCompareResponse */
+        TrialCompareResponse: {
+            /** Percentile */
+            percentile?: number | null;
+            /** Signal */
+            signal: string;
+            /** Tier */
+            tier?: string | null;
+        };
+        /** TrialFleetResponse */
+        TrialFleetResponse: {
+            /** Doctrine Name */
+            doctrine_name?: string | null;
+            /** Fleet Id */
+            fleet_id: number;
+            /** Helpful */
+            helpful: boolean;
+            /** Role */
+            role?: string | null;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+        };
+        /** TrialHullResponse */
+        TrialHullResponse: {
+            /** Count */
+            count: number;
+            /** Helpful */
+            helpful: boolean;
+            /** Role */
+            role: string;
+            /** Ship Name */
+            ship_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+        };
         /** TrialHygieneCounts */
         TrialHygieneCounts: {
             /**
@@ -21264,6 +21372,73 @@ export interface components {
             username: string;
             /** Voice Hours */
             voice_hours: number;
+        };
+        /** TrialKillsResponse */
+        TrialKillsResponse: {
+            /** Fleet */
+            fleet: number;
+            /** Last Kill At */
+            last_kill_at?: string | null;
+            /** Losses */
+            losses: number;
+            /** Small Gang */
+            small_gang: number;
+            /** Solo */
+            solo: number;
+            /** Top Ship Name */
+            top_ship_name?: string | null;
+            /** Top Ship Type Id */
+            top_ship_type_id?: number | null;
+        };
+        /** TrialProgressResponse */
+        TrialProgressResponse: {
+            /** Average Days */
+            average_days?: number | null;
+            /** Average Scope */
+            average_scope?: string | null;
+            /** Day */
+            day?: number | null;
+            /** On Pace */
+            on_pace: boolean;
+            /** Review Day */
+            review_day: number;
+            /** Scale Days */
+            scale_days: number;
+        };
+        /** TrialReportResponse */
+        TrialReportResponse: {
+            /**
+             * Academy
+             * @default false
+             */
+            academy?: boolean;
+            /** Compare */
+            compare?: components["schemas"]["TrialCompareResponse"][] | null;
+            /** Corporation Ticker */
+            corporation_ticker?: string | null;
+            /**
+             * Fleets
+             * @default []
+             */
+            fleets?: components["schemas"]["TrialFleetResponse"][];
+            /** On Trial */
+            on_trial: boolean;
+            ships?: components["schemas"]["TrialShipsResponse"] | null;
+            trial?: components["schemas"]["TrialProgressResponse"] | null;
+        };
+        /** TrialShipsResponse */
+        TrialShipsResponse: {
+            /** Doctrine Fleets */
+            doctrine_fleets: number;
+            /** Helpful Fleets */
+            helpful_fleets: number;
+            /** Hulls */
+            hulls: components["schemas"]["TrialHullResponse"][];
+        };
+        /** TrialStatusResponse */
+        TrialStatusResponse: {
+            /** On Trial */
+            on_trial: boolean;
         };
         /** TribeAboutCorporationSchema */
         TribeAboutCorporationSchema: {
@@ -23095,6 +23270,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    alliance_endpoints_trial_get_my_trial_get_my_trial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialReportResponse"];
+                };
+            };
+        };
+    };
+    alliance_endpoints_trial_get_my_trial_status_get_my_trial_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStatusResponse"];
                 };
             };
         };
@@ -27280,6 +27495,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationMembersTopResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_get_corp_member_insights_get_corp_member_insights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberInsightsResponse"];
                 };
             };
             /** @description Forbidden */

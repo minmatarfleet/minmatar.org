@@ -1,0 +1,138 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/**
+ * One signal on the five-tier scale against active alliance pilots: five
+ * segments with the pilot's tier lit, and the tier's name. No numbers.
+ */
+const TIERS = ['well_below', 'below', 'average', 'above', 'well_above'] as const
+
+interface Props {
+    label:              string;
+    tier:               string | null;
+    hint?:              string;
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    label,
+    tier,
+    hint,
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const index = tier ? TIERS.indexOf(tier as typeof TIERS[number]) : -1
+const tone = index < 0 ? 'none' : index < 2 ? 'warn' : index === 2 ? 'average' : 'good'
+const tier_label = index < 0 ? t('trial.tier.none') : t(t_key('trial.tier.', tier as string))
+---
+
+<div
+    class:list={['[ tier-scale ]', `is-${tone}`, { 'is-compact': compact }, Astro.props.class]}
+    {...attributes}
+>
+    <div class="[ tier-scale__label ]">
+        <span class="[ tier-scale__name ]">{label}</span>
+        {hint && <span class="[ tier-scale__hint ]">{hint}</span>}
+    </div>
+    <div class="[ tier-scale__value ]" role="img" aria-label={`${label}: ${tier_label}`}>
+        <span class="[ tier-scale__segments ]" aria-hidden="true">
+            {TIERS.map((_, i) => <span class:list={{ 'is-on': i === index }}></span>)}
+        </span>
+        <span class="[ tier-scale__tier ]">{tier_label}</span>
+    </div>
+</div>
+
+<style lang="scss">
+    .tier-scale {
+        --tier_color: var(--text-muted);
+
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-m);
+
+        &.is-warn { --tier_color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow)); }
+        &.is-average { --tier_color: var(--fleet-yellow); }
+        &.is-good { --tier_color: color-mix(in srgb, var(--green) 60%, var(--highlight)); }
+    }
+
+    .tier-scale__label {
+        display: flex;
+        flex: 1 1 14rem;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .tier-scale__name {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .tier-scale__hint {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .tier-scale__value {
+        display: flex;
+        flex: 0 1 26rem;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .tier-scale__segments {
+        display: grid;
+        flex: 1;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-3xs);
+
+        span {
+            height: var(--space-xs);
+            background: var(--hairline-medium);
+
+            &.is-on {
+                background: var(--tier_color);
+            }
+        }
+    }
+
+    .tier-scale__tier {
+        flex: none;
+        width: 7.5em;
+        text-align: end;
+        font-weight: 600;
+        color: var(--tier_color);
+    }
+
+    .is-compact {
+        flex-wrap: nowrap;
+        gap: var(--space-xs);
+        font-size: var(--step--1);
+
+        .tier-scale__label {
+            flex: none;
+            width: 4em;
+        }
+
+        .tier-scale__value {
+            flex: 1;
+            gap: var(--space-xs);
+        }
+
+        .tier-scale__segments span {
+            height: var(--space-2xs);
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .tier-scale:not(.is-compact) .tier-scale__value {
+            flex-basis: 100%;
+        }
+    }
+</style>

@@ -20,6 +20,7 @@ import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_
 import { get_account_characters, get_character_error_ui } from '@helpers/fetching/characters'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
 import { get_notification_preferences } from '@helpers/api.minmatar.org/notification_preferences'
+import { get_my_trial_status } from '@helpers/api.minmatar.org/trial'
 import type { NotificationFeaturePreferences } from '@helpers/api.minmatar.org/notification_preferences'
 
 let pilots:SummaryCharacter[] = []
@@ -65,6 +66,14 @@ try {
     console.log(error)
 }
 
+// The Trial tab shows only while the account is on trial.
+let on_trial = false
+try {
+    on_trial = (await get_my_trial_status(auth_token as string)).on_trial
+} catch (error) {
+    console.log(error)
+}
+
 const main_character = pilots.find((pilot) => pilot.is_primary) ?? null
 const has_notifications = can_use_push_notifications || notification_features.length > 0
 
@@ -79,6 +88,7 @@ const tabs = [
         }),
     },
     { id: 'training', label: t('account.tab.training') },
+    ...(on_trial ? [{ id: 'trial', label: t('account.tab.trial') }] : []),
     ...(has_notifications ? [{ id: 'notifications', label: t('account.tab.notifications') }] : []),
     { id: 'display', label: t('account.tab.display') },
     { id: 'referrals', label: t('account.tab.referrals') },
@@ -91,6 +101,7 @@ const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/'
 const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=false`
 const ACCOUNT_REFERRALS_PARTIAL_URL = translatePath('/partials/account_referrals_component/')
 const TRAINING_PARTIAL_URL = translatePath('/partials/training_component/')
+const TRIAL_PARTIAL_URL = translatePath('/partials/trial_component/')
 
 const fix_esi_token_error = Astro.url.searchParams.get('error') as string
 
@@ -236,6 +247,17 @@ const page_title = t('account.page_title');
                         </FlexInline>
                     </LazyPartial>
                 </SectionTabPanel>
+
+                {on_trial &&
+                    <SectionTabPanel id="trial" id_prefix="account">
+                        <LazyPartial url={TRIAL_PARTIAL_URL} trigger="reveal" swap="outerHTML">
+                            <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
+                                <RifterIcon class="small" />
+                                <p class="[ loading ]">{t('loading')}</p>
+                            </FlexInline>
+                        </LazyPartial>
+                    </SectionTabPanel>
+                }
 
                 {has_notifications &&
                     <SectionTabPanel id="notifications" id_prefix="account">
