@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.db.models import Max, Sum
 
 from alliance.helpers.hygiene import assemble_hygiene
+from alliance.helpers.trial_peers import build_peers, build_trial_lengths
 from applications.models import EveCorporationApplication
 from discord.models import DiscordChannelActivityRecord
 from eveonline.models import (
@@ -294,7 +295,7 @@ def compute_hygiene_payload(  # noqa: C901
         uid: len(user_eves.get(uid, ())) for uid in hygiene_uids
     }
 
-    return assemble_hygiene(
+    hygiene = assemble_hygiene(
         trial_user_ids=trial_user_ids,
         active_user_ids=active_user_ids,
         on_leave_user_ids=on_leave_user_ids,
@@ -319,3 +320,15 @@ def compute_hygiene_payload(  # noqa: C901
         rejoin_grace=rejoin_grace,
         corp_display_name=corp_display_name,
     )
+    # For the Trial tab and corp Members row (alliance.helpers.trial_peers).
+    hygiene["peers"] = build_peers(
+        active_user_ids=active_user_ids,
+        member_user_ids=hygiene_uids,
+        fleets_30d=fleets_30d,
+        kills_30d=kills_30d,
+        voice_hours_30d=voice_hours_30d,
+    )
+    hygiene["trial_lengths"] = build_trial_lengths(
+        now=now, primary_corp=primary_corp
+    )
+    return hygiene

@@ -1,0 +1,282 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MemberInsights } from '@dtypes/api.minmatar.org'
+import { get_corporation_member_insights } from '@helpers/api.minmatar.org/corporations'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+/**
+ * The first row of an opened corp Members row (loaded when it opens): how the
+ * person compares with active pilots (and their trial bar while on trial),
+ * the ships they bring to fleets, and their kills, so leadership doesn't
+ * need zKillboard to check.
+ */
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '0') || 0
+const character_id = parseInt(params.get('character_id') ?? '0') || 0
+const delay = parseInt(params.get('delay') ?? '0')
+
+let insights:MemberInsights | null = null
+let fetch_error:Error | false = false
+
+try {
+    insights = await get_corporation_member_insights(auth_token as string, corporation_id, character_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const refetch_url = translatePath(`/partials/corporation_member_insights_component/?corporation_id=${corporation_id}&character_id=${character_id}`)
+const target_id = `member-insights-${character_id}`
+
+const SIGNALS = ['fleets', 'kills', 'voice'] as const
+const compare = new Map((insights?.compare ?? []).map((row) => [row.signal, row.tier]))
+const ships = insights?.ships
+const kills = insights?.kills
+const all_helpful = !!ships && ships.doctrine_fleets > 0 && ships.helpful_fleets === ships.doctrine_fleets
+
+const days_ago = (iso:string | null) => {
+    if (!iso) return t('trial.kills_none')
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+    if (days <= 0) return t('corporations.members.today')
+    if (days === 1) return t('corporations.members.yesterday')
+    return t('corporations.members.days_ago').replace('~COUNT', String(days))
+}
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TrialProgressBar from '@components/blocks/TrialProgressBar.astro'
+import TierScale from '@components/blocks/TierScale.astro'
+---
+
+<div id={target_id} class="[ member-insights ]">
+    {fetch_error || !insights ?
+        <ErrorRefetch
+            args={{
+                partial: refetch_url,
+                error: fetch_error || new Error(t('trial.insights_failed')),
+                delay: delay,
+                target: `#${target_id}`,
+            }}
+        />
+        :
+        <div class="[ member-insights__grid ]">
+            <div class="[ member-insights__block ]">
+                {insights.trial && insights.trial.day !== null &&
+                    <div class="[ member-insights__trial ]">
+                        <div class="[ member-insights__trial-head ]">
+                            <span class="[ member-insights__strong ]">{t('trial.member_day').replace('{day}', String(insights.trial.day))}</span>
+                            <span class:list={['[ member-insights__pace ]', insights.trial.on_pace ? 'insights-good' : 'insights-warn']}>
+                                {insights.trial.on_pace ? t('trial.on_pace') : t('trial.behind_pace')}
+                            </span>
+                        </div>
+                        <TrialProgressBar trial={insights.trial} ticker={insights.corporation_ticker} compact />
+                    </div>
+                }
+                <h4 class="[ member-insights__eyebrow ]">{t('trial.member_compare')}</h4>
+                {SIGNALS.map((signal) =>
+                    <TierScale label={t(t_key('trial.signal.', signal))} tier={compare.get(signal) ?? null} compact />
+                )}
+            </div>
+
+            <div class="[ member-insights__block ]">
+                <h4 class="[ member-insights__eyebrow ]">{t('trial.member_ships')}</h4>
+                {!ships || ships.doctrine_fleets === 0 ?
+                    <p class="[ member-insights__muted ]">{t('trial.member_no_fleets')}</p>
+                    :
+                    <>
+                        <p class="[ member-insights__line ]">
+                            <span class:list={['[ member-insights__count ]', all_helpful ? 'insights-good' : 'insights-warn']}>
+                                {t('trial.ships_count').replace('{helpful}', String(ships.helpful_fleets)).replace('{total}', String(ships.doctrine_fleets))}
+                            </span>
+                            {' '}<span class="[ member-insights__muted ]">{t('trial.member_ships_headline')}</span>
+                        </p>
+                        <ul class="[ member-insights__list ]">
+                            {ships.hulls.slice(0, 6).map((hull) =>
+                                <li>
+                                    <span class="[ member-insights__hull ]">
+                                        <img src={get_item_icon(hull.ship_type_id, 32)} alt="" width="24" height="24" loading="lazy" />
+                                        <span class="[ member-insights__strong ]">{hull.ship_name}</span>
+                                        <span class="[ member-insights__muted ]">×{hull.count}</span>
+                                    </span>
+                                    <span class:list={['[ member-insights__role ]', { 'insights-warn': !hull.helpful }]}>{t(t_key('trial.role.', hull.role))}</span>
+                                </li>
+                            )}
+                        </ul>
+                    </>
+                }
+            </div>
+
+            <div class="[ member-insights__block ]">
+                <h4 class="[ member-insights__eyebrow ]">{t('trial.member_kills')}</h4>
+                {kills &&
+                    <dl class="[ member-insights__facts ]">
+                        <dt>{t('trial.kills_solo')}</dt><dd>{kills.solo}</dd>
+                        <dt>{t('trial.kills_small_gang')}</dt><dd>{kills.small_gang}</dd>
+                        <dt>{t('trial.kills_fleet')}</dt><dd>{kills.fleet}</dd>
+                        <dt>{t('trial.kills_losses')}</dt><dd>{kills.losses}</dd>
+                        <dt>{t('trial.kills_flying')}</dt><dd>{kills.top_ship_name ?? '—'}</dd>
+                        <dt>{t('trial.kills_last')}</dt><dd>{days_ago(kills.last_kill_at)}</dd>
+                    </dl>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style lang="scss">
+    .member-insights {
+        --insights_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
+        --insights_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+    }
+
+    .member-insights__grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-xs);
+    }
+
+    .member-insights__block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        padding: var(--space-s);
+        background: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
+    }
+
+    .member-insights__eyebrow {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        font-weight: normal;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .member-insights__trial {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding-block-end: var(--space-2xs);
+        margin-block-end: var(--space-3xs);
+        border-bottom: 1px solid var(--hairline);
+    }
+
+    .member-insights__trial-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        font-size: var(--step--1);
+    }
+
+    .member-insights__strong {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .member-insights__muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .member-insights__pace {
+        font-size: var(--step--1);
+        font-weight: 600;
+
+        &.insights-good { color: var(--insights_good); }
+        &.insights-warn { color: var(--insights_warn); }
+    }
+
+    .member-insights__line {
+        margin: 0;
+        font-size: var(--step--1);
+    }
+
+    .member-insights__count {
+        font-weight: 600;
+
+        &.insights-good { color: var(--insights_good); }
+        &.insights-warn { color: var(--insights_warn); }
+    }
+
+    .member-insights__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--1);
+
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-xs);
+        }
+    }
+
+    .member-insights__hull {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+
+        img {
+            flex: none;
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+    }
+
+    .member-insights__role {
+        flex: none;
+        padding: 0 var(--space-2xs);
+        font-weight: 600;
+        color: var(--text-muted);
+        background: var(--hairline);
+
+        &.insights-warn {
+            color: var(--insights_warn);
+            background: color-mix(in srgb, var(--insights_warn) 12%, transparent);
+        }
+    }
+
+    .member-insights__facts {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: var(--space-3xs) var(--space-s);
+        margin: 0;
+        font-size: var(--step--1);
+
+        dt {
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+            text-align: end;
+            font-weight: 600;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .member-insights__grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>

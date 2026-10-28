@@ -24333,6 +24333,62 @@
         "title": "MemberCrosscheckRow",
         "type": "object"
       },
+      "MemberInsightsResponse": {
+        "properties": {
+          "academy": {
+            "default": false,
+            "title": "Academy",
+            "type": "boolean"
+          },
+          "compare": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TrialCompareResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compare"
+          },
+          "corporation_ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Ticker"
+          },
+          "kills": {
+            "$ref": "#/components/schemas/TrialKillsResponse"
+          },
+          "ships": {
+            "$ref": "#/components/schemas/TrialShipsResponse"
+          },
+          "trial": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrialProgressResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "ships",
+          "kills"
+        ],
+        "title": "MemberInsightsResponse",
+        "type": "object"
+      },
       "MembershipCharacterHistorySchema": {
         "properties": {
           "action": {
@@ -33460,6 +33516,130 @@
         "title": "TransferCorporationApplicationRequest",
         "type": "object"
       },
+      "TrialCompareResponse": {
+        "properties": {
+          "percentile": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percentile"
+          },
+          "signal": {
+            "title": "Signal",
+            "type": "string"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          }
+        },
+        "required": [
+          "signal"
+        ],
+        "title": "TrialCompareResponse",
+        "type": "object"
+      },
+      "TrialFleetResponse": {
+        "properties": {
+          "doctrine_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Name"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "helpful": {
+            "title": "Helpful",
+            "type": "boolean"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          },
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "start_time",
+          "ship_type_id",
+          "ship_name",
+          "helpful"
+        ],
+        "title": "TrialFleetResponse",
+        "type": "object"
+      },
+      "TrialHullResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "helpful": {
+            "title": "Helpful",
+            "type": "boolean"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "ship_name",
+          "role",
+          "count",
+          "helpful"
+        ],
+        "title": "TrialHullResponse",
+        "type": "object"
+      },
       "TrialHygieneCounts": {
         "properties": {
           "add": {
@@ -33654,6 +33834,234 @@
           "reason"
         ],
         "title": "TrialHygienePilot",
+        "type": "object"
+      },
+      "TrialKillsResponse": {
+        "properties": {
+          "fleet": {
+            "title": "Fleet",
+            "type": "integer"
+          },
+          "last_kill_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Kill At"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "small_gang": {
+            "title": "Small Gang",
+            "type": "integer"
+          },
+          "solo": {
+            "title": "Solo",
+            "type": "integer"
+          },
+          "top_ship_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Ship Name"
+          },
+          "top_ship_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Ship Type Id"
+          }
+        },
+        "required": [
+          "solo",
+          "small_gang",
+          "fleet",
+          "losses"
+        ],
+        "title": "TrialKillsResponse",
+        "type": "object"
+      },
+      "TrialProgressResponse": {
+        "properties": {
+          "average_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Days"
+          },
+          "average_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Scope"
+          },
+          "day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day"
+          },
+          "on_pace": {
+            "title": "On Pace",
+            "type": "boolean"
+          },
+          "review_day": {
+            "title": "Review Day",
+            "type": "integer"
+          },
+          "scale_days": {
+            "title": "Scale Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "review_day",
+          "scale_days",
+          "on_pace"
+        ],
+        "title": "TrialProgressResponse",
+        "type": "object"
+      },
+      "TrialReportResponse": {
+        "properties": {
+          "academy": {
+            "default": false,
+            "title": "Academy",
+            "type": "boolean"
+          },
+          "compare": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TrialCompareResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compare"
+          },
+          "corporation_ticker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Ticker"
+          },
+          "fleets": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TrialFleetResponse"
+            },
+            "title": "Fleets",
+            "type": "array"
+          },
+          "on_trial": {
+            "title": "On Trial",
+            "type": "boolean"
+          },
+          "ships": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrialShipsResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trial": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrialProgressResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "on_trial"
+        ],
+        "title": "TrialReportResponse",
+        "type": "object"
+      },
+      "TrialShipsResponse": {
+        "properties": {
+          "doctrine_fleets": {
+            "title": "Doctrine Fleets",
+            "type": "integer"
+          },
+          "helpful_fleets": {
+            "title": "Helpful Fleets",
+            "type": "integer"
+          },
+          "hulls": {
+            "items": {
+              "$ref": "#/components/schemas/TrialHullResponse"
+            },
+            "title": "Hulls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doctrine_fleets",
+          "helpful_fleets",
+          "hulls"
+        ],
+        "title": "TrialShipsResponse",
+        "type": "object"
+      },
+      "TrialStatusResponse": {
+        "properties": {
+          "on_trial": {
+            "title": "On Trial",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on_trial"
+        ],
+        "title": "TrialStatusResponse",
         "type": "object"
       },
       "TribeAboutCorporationSchema": {
@@ -37710,6 +38118,62 @@
         "tags": [
           "Alliance",
           "Alliance - Health"
+        ]
+      }
+    },
+    "/api/alliance/trial/me": {
+      "get": {
+        "operationId": "alliance_endpoints_trial_get_my_trial_get_my_trial",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialReportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The current user's trial: length, tiers and ships brought",
+        "tags": [
+          "Alliance",
+          "Alliance"
+        ]
+      }
+    },
+    "/api/alliance/trial/me/status": {
+      "get": {
+        "operationId": "alliance_endpoints_trial_get_my_trial_status_get_my_trial_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Whether the current user is on trial (shows the Trial tab)",
+        "tags": [
+          "Alliance",
+          "Alliance"
         ]
       }
     },
@@ -44274,6 +44738,73 @@
           }
         ],
         "summary": "Top corporation members by activity",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/insights": {
+      "get": {
+        "operationId": "eveonline_endpoints_corporations_get_corp_member_insights_get_corp_member_insights",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberInsightsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Trial, tiers, ships and kills for one member (leadership only)",
         "tags": [
           "Corporations",
           "Corporations"

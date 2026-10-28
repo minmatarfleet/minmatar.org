@@ -1,0 +1,163 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TrialProgress } from '@dtypes/api.minmatar.org'
+
+/**
+ * Day of trial on a day 1 → scale_days bar, with markers where review opens
+ * and at the corp's average trial length. Green when on pace, orange when
+ * behind. `compact` is the corp Members row version (short marker labels).
+ */
+interface Props {
+    trial:              TrialProgress;
+    ticker?:            string | null;
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    trial,
+    ticker = null,
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const scale = Math.max(trial.scale_days, trial.day ?? 0, trial.average_days ?? 0) || 1
+const at = (day:number) => `${Math.min(100, Math.round((day / scale) * 1000) / 10)}%`
+const day = trial.day ?? 0
+const group = trial.average_scope === 'corporation' && ticker ? ticker : t('trial.alliance')
+
+const average_label = trial.average_days === null ? null : compact
+    ? t('trial.average_short').replace('{days}', String(trial.average_days))
+    : t('trial.average_marker').replace('{group}', group).replace('{days}', String(trial.average_days))
+const review_label = compact
+    ? t('trial.review_short').replace('{day}', String(trial.review_day))
+    : t('trial.review_marker').replace('{day}', String(trial.review_day))
+
+const aria = [
+    t('trial.aria_day').replace('{day}', String(day)),
+    review_label,
+    average_label,
+].filter(Boolean).join('. ')
+---
+
+<div
+    class:list={['[ trial-bar ]', { 'is-on-pace': trial.on_pace, 'is-compact': compact }, Astro.props.class]}
+    {...attributes}
+>
+    {average_label && !compact &&
+        <div class="[ trial-bar__top ]">
+            <span class="[ trial-bar__label is-strong ]" style={`left: ${at(trial.average_days as number)}`}>{average_label}</span>
+        </div>
+    }
+    <div class="[ trial-bar__track ]" role="img" aria-label={aria}>
+        <div class="[ trial-bar__fill ]" style={`width: ${at(day)}`}></div>
+        <div class="[ trial-bar__mark is-soft ]" style={`left: ${at(trial.review_day)}`}></div>
+        {trial.average_days !== null &&
+            <div class="[ trial-bar__mark ]" style={`left: ${at(trial.average_days)}`}></div>
+        }
+    </div>
+    <div class="[ trial-bar__bottom ]" aria-hidden="true">
+        {!compact && <span class="[ trial-bar__end ]">{t('trial.day_one')}</span>}
+        <span class="[ trial-bar__label is-review ]" style={`left: ${at(trial.review_day)}`}>{review_label}</span>
+        {compact && average_label &&
+            <span class="[ trial-bar__label is-strong is-after ]" style={`left: ${at(trial.average_days as number)}`}>{average_label}</span>
+        }
+        {!compact && <span class="[ trial-bar__end is-right ]">{t('trial.day_n').replace('{day}', String(scale))}</span>}
+    </div>
+</div>
+
+<style lang="scss">
+    .trial-bar {
+        --trial_bar_color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        &.is-on-pace {
+            --trial_bar_color: color-mix(in srgb, var(--green) 60%, var(--highlight));
+        }
+    }
+
+    .trial-bar__top,
+    .trial-bar__bottom {
+        position: relative;
+        min-height: var(--space-m);
+    }
+
+    .trial-bar__track {
+        position: relative;
+        height: var(--space-xs);
+        background: var(--hairline-medium);
+    }
+
+    .is-compact .trial-bar__track {
+        height: var(--space-2xs);
+    }
+
+    .trial-bar__fill {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: 0;
+        background: var(--trial_bar_color);
+    }
+
+    .trial-bar__mark {
+        position: absolute;
+        inset-block: calc(var(--space-3xs) * -1);
+        width: 2px;
+        background: var(--highlight);
+
+        &.is-soft {
+            background: var(--hairline-strong);
+        }
+    }
+
+    .trial-bar__label {
+        position: absolute;
+        top: 0;
+        white-space: nowrap;
+        transform: translateX(-50%);
+
+        &.is-strong {
+            color: var(--highlight);
+        }
+
+        &.is-after {
+            transform: none;
+            padding-inline-start: var(--space-3xs);
+        }
+    }
+
+    .is-compact .trial-bar__label.is-review {
+        transform: translateX(-100%);
+        padding-inline-end: var(--space-3xs);
+    }
+
+    .trial-bar__end {
+        position: absolute;
+        top: 0;
+        inset-inline-start: 0;
+
+        &.is-right {
+            inset-inline-start: auto;
+            inset-inline-end: 0;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .trial-bar__end {
+            display: none;
+        }
+
+        .trial-bar__top .trial-bar__label {
+            transform: translateX(-100%);
+        }
+    }
+</style>

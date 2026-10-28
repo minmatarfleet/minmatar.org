@@ -5,7 +5,7 @@ const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_corporation_members } from '@helpers/api.minmatar.org/corporations'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image_server'
 import {
     MEMBER_ATTENTION_VIEWS,
     MEMBER_PAGE_SIZE,
@@ -38,6 +38,8 @@ import HtmxPager from '@components/blocks/HtmxPager.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import TimezoneTags from '@components/blocks/TimezoneTags.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 const BODY_ID = 'corporation-members-body'
 const SEARCH_ID = 'corporation-member-search'
@@ -217,7 +219,7 @@ const selected_template = t('corporations.members.selected')
             <fieldset id="cm-views" class="cm-views">
                 <legend class="visually-hidden">{t('corporations.members.views')}</legend>
                 {MEMBER_VIEWS.map((view) => (
-                    <label class:list={['cm-view', { 'is-on': params.view === view }]}>
+                    <label class:list={['cm-chip', { 'is-on': params.view === view }]}>
                         <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
                         <span>{view_label(view)}</span>
                         <span class="cm-count">{count_with({ view })}</span>
@@ -291,7 +293,8 @@ const selected_template = t('corporations.members.selected')
     {pagination.rows.length === 0
         ? <EmptyState title={t('corporations.detail.no_members')} />
         : (
-            <div class="cm-table-wrap">
+            <div class="cm-panel">
+            <XFadeScroll>
                 <table class="cm-table">
                     <thead>
                         <tr x-show="picked.length === 0">
@@ -398,7 +401,7 @@ const selected_template = t('corporations.members.selected')
                                                 <span class="cm-pilot__sub">
                                                     {alts && <span class="cm-muted">{alts}</span>}
                                                     {attention &&
-                                                        <span class:list={['cm-attention-text', attention === 'trial_ready' ? 'is-good' : 'is-warn']}>● {attention_label(attention)}</span>
+                                                        <span class:list={['cm-attention-text', attention === 'trial_ready' ? 'is-good' : 'is-warn']}>{attention_label(attention)}</span>
                                                     }
                                                     {!attention &&
                                                         <span class="cm-mobile-meta cm-muted">{tenure_label(member.corp_joined_at)} · {last}</span>
@@ -408,10 +411,10 @@ const selected_template = t('corporations.members.selected')
                                         </button>
                                     </td>
                                     <td class="col-status">
-                                        <span class="cm-pill" data-status={member.community_status ?? 'none'}>{status_label(member.community_status)}</span>
+                                        <span class="cm-status" data-status={member.community_status ?? 'none'}>{status_label(member.community_status)}</span>
                                     </td>
                                     <td class="col-joined">
-                                        <span class="cm-stack">
+                                        <span class="cm-joined">
                                             <span class="cm-strong">{tenure_label(member.corp_joined_at)}</span>
                                             <span class="cm-muted">{month_year(member.corp_joined_at, lang)}</span>
                                         </span>
@@ -442,39 +445,28 @@ const selected_template = t('corporations.members.selected')
                                 <tr class="cm-detail" x-show="open" x-cloak>
                                     <td colspan="10">
                                         <div class="cm-detail__body">
-                                            {member.trial_ready &&
-                                                <p class="cm-callout">
-                                                    {member.trial_reason
-                                                        ? t('corporations.members.trial_review').replace('~REASON', member.trial_reason)
-                                                        : attention_label('trial_ready')}
-                                                </p>
-                                            }
+                                            <LazyPartial
+                                                class="cm-insights"
+                                                url={translatePath(`/partials/corporation_member_insights_component/?corporation_id=${corporation_id}&character_id=${primary.character_id}`)}
+                                                trigger="reveal"
+                                                indicator={false}
+                                            >
+                                                <p class="cm-muted cm-insights__loading">{t('corporations.members.insights_loading')}</p>
+                                            </LazyPartial>
                                             <div class="cm-detail__grid">
                                                 <div class="cm-block">
-                                                    <h4 class="cm-eyebrow">{t('corporations.members.activity')}</h4>
-                                                    <dl class="cm-facts">
-                                                        <div><dt>{t('corporations.members.fleets')}</dt><dd>{member.fleets_90d}</dd></div>
-                                                        <div><dt>{t('corporations.members.kills_lower')}</dt><dd>{member.kills_90d}</dd></div>
-                                                        <div><dt>{t('corporations.members.on_voice')}</dt><dd>{member.linked ? `${member.voice_hours_90d}h` : '—'}</dd></div>
-                                                        <div>
-                                                            <dt>{t('corporations.members.most_flown')}</dt>
-                                                            <dd class="cm-hull">
-                                                                {member.top_hull_id
-                                                                    ? <><img src={get_item_icon(member.top_hull_id, 32)} alt="" width="20" height="20" loading="lazy" />{member.top_hull_name}</>
-                                                                    : '—'}
-                                                            </dd>
-                                                        </div>
-                                                    </dl>
-                                                </div>
-                                                <div class="cm-block">
                                                     <h4 class="cm-eyebrow">{t('corporations.members.fleets_per_week')}</h4>
-                                                    <span class="cm-spark cm-spark--big" aria-hidden="true">
+                                                    <span class="cm-weeks" aria-hidden="true">
                                                         {weeks.map((bar) => <span style={`height: ${bar.height}%`}></span>)}
+                                                    </span>
+                                                    <span class="cm-weeks__axis cm-muted" aria-hidden="true">
+                                                        <span>{t('corporations.members.weeks_ago').replace('~COUNT', String(weeks.length))}</span>
+                                                        <span>{t('corporations.members.this_week')}</span>
                                                     </span>
                                                 </div>
                                                 <div class="cm-block">
                                                     <h4 class="cm-eyebrow">{t('corporations.members.characters').replace('~COUNT', String(character_count))}</h4>
-                                                    <ul class="cm-characters">
+                                                    <ul class="cm-list cm-characters">
                                                         <li>
                                                             <span class="cm-strong">{primary.character_name}</span>
                                                             <span class="cm-muted">{t('corporations.members.main')}</span>
@@ -504,21 +496,21 @@ const selected_template = t('corporations.members.selected')
                                                 </div>
                                                 <div class="cm-block">
                                                     <h4 class="cm-eyebrow">{t('corporations.members.history')}</h4>
-                                                    <ul class="cm-history">
+                                                    <ul class="cm-list cm-history">
                                                         {member.corp_joined_at &&
                                                             <li>
-                                                                <span class="cm-muted">{short_date(member.corp_joined_at, lang)}</span>
                                                                 <span>{t('corporations.members.joined_corp')}</span>
+                                                                <span class="cm-muted">{short_date(member.corp_joined_at, lang)}</span>
                                                             </li>
                                                         }
                                                         {member.status_history.map((change) => (
                                                             <li>
-                                                                <span class="cm-muted">{short_date(change.changed_at, lang)}</span>
                                                                 <span>{t('corporations.members.became').replace('~STATUS', status_label(change.to_status))}</span>
+                                                                <span class="cm-muted">{short_date(change.changed_at, lang)}</span>
                                                             </li>
                                                         ))}
                                                     </ul>
-                                                    <h4 class="cm-eyebrow">{t('corporations.members.tribes')}</h4>
+                                                    <h4 class="cm-eyebrow cm-block__subhead">{t('corporations.members.tribes')}</h4>
                                                     <p class="cm-tribes">{member.tribe_groups.length > 0 ? member.tribe_groups.join(', ') : t('corporations.members.none_yet')}</p>
                                                 </div>
                                             </div>
@@ -548,6 +540,7 @@ const selected_template = t('corporations.members.selected')
                         )
                     })}
                 </table>
+            </XFadeScroll>
             </div>
         )
     }
@@ -573,6 +566,10 @@ const selected_template = t('corporations.members.selected')
 
 <style lang="scss">
     .cm {
+        // Trial bar met reads green; every other "needs attention" signal reads orange.
+        --cm_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
+        --cm_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
@@ -582,15 +579,15 @@ const selected_template = t('corporations.members.selected')
     .cm-controls {
         display: flex;
         flex-direction: column;
-        gap: var(--space-s);
+        gap: var(--space-xs);
     }
 
+    // Views and the needs-attention views share one wrapping chip row.
     .cm-filter-row {
         display: flex;
         flex-wrap: wrap;
-        justify-content: space-between;
         align-items: center;
-        gap: var(--space-s);
+        gap: var(--space-2xs) var(--space-s);
     }
 
     fieldset {
@@ -600,76 +597,76 @@ const selected_template = t('corporations.members.selected')
         min-width: 0;
     }
 
-    .cm-views {
-        display: flex;
-        flex-wrap: wrap;
-        background: var(--component-background);
-        border: 1px solid var(--border-color-hover);
-    }
-
-    .cm-view {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-height: 44px;
-        padding-inline: var(--space-s);
-        cursor: pointer;
-        font-weight: 600;
-        font-size: var(--step--1);
-
-        &.is-on {
-            background: color-mix(in srgb, var(--highlight) 10%, transparent);
-            color: var(--highlight);
-            box-shadow: inset 0 -2px 0 var(--fleet-red);
-        }
-
-        &:has(input:focus-visible) {
-            outline: 2px solid var(--highlight);
-            outline-offset: -2px;
-        }
-    }
-
-    .cm-count {
-        font-family: var(--heading-font);
-        font-variant-numeric: tabular-nums;
-    }
-
+    .cm-views,
     .cm-attention {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: var(--space-2xs);
+    }
+
+    .cm-attention {
+        padding-inline-start: var(--space-s);
+        border-inline-start: 1px solid var(--hairline-strong);
 
         legend {
             float: left;
-            margin-inline-end: var(--space-2xs);
+            margin-inline-end: var(--space-3xs);
         }
     }
 
     .cm-eyebrow {
         margin: 0;
         font-family: var(--heading-font);
-        font-size: var(--step--1);
+        font-size: var(--step--2);
         font-weight: normal;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--faded);
+        color: var(--text-muted);
     }
 
     .cm-chip {
+        --chip_color: var(--fleet-yellow);
+
         display: inline-flex;
         align-items: center;
         gap: var(--space-2xs);
-        min-height: 36px;
+        min-height: var(--space-l);
         padding-inline: var(--space-xs);
-        cursor: pointer;
-        font-weight: 600;
+        border: 1px solid var(--hairline-strong);
+        color: var(--chip_color);
+        font-family: var(--button-font);
         font-size: var(--step--1);
-        border: 1px solid currentColor;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+            border-color var(--fast-transition),
+            background-color var(--fast-transition),
+            color var(--fast-transition);
 
-        &.is-good { color: color-mix(in srgb, var(--green) 60%, var(--highlight)); }
-        &.is-warn { color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow)); }
-        &.is-on { background: color-mix(in srgb, var(--highlight) 10%, transparent); }
+        &.is-good {
+            --chip_color: var(--cm_good);
+            border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
+        }
+
+        &.is-warn {
+            --chip_color: var(--cm_warn);
+            border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
+        }
+
+        &.is-on {
+            background: var(--chip_color);
+            border-color: var(--chip_color);
+            color: var(--background);
+        }
+
+        @media (hover: hover) {
+            &:not(.is-on):hover {
+                border-color: color-mix(in srgb, var(--chip_color) 60%, transparent);
+                color: var(--highlight);
+            }
+        }
 
         &:has(input:focus-visible) {
             outline: 2px solid var(--highlight);
@@ -677,10 +674,23 @@ const selected_template = t('corporations.members.selected')
         }
     }
 
+    .cm-count {
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        opacity: 0.7;
+    }
+
+    // Search and both dropdowns: one row of matching fields.
     .cm-toolbar {
         display: grid;
         grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 13rem));
-        gap: var(--space-xs);
+        gap: var(--space-2xs);
+
+        :global(input),
+        :global(select) {
+            background-color: var(--component-background);
+            border-color: var(--hairline-strong);
+        }
 
         @media (max-width: 48rem) {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -709,10 +719,10 @@ const selected_template = t('corporations.members.selected')
         }
     }
 
-    .cm-table-wrap {
-        overflow-x: auto;
+    .cm-panel {
+        min-width: 0;
         background: var(--component-background);
-        border: 1px solid var(--border-color-hover);
+        border: 1px solid var(--hairline-medium);
     }
 
     .cm-table {
@@ -724,7 +734,7 @@ const selected_template = t('corporations.members.selected')
 
         th,
         td {
-            padding: var(--space-2xs) var(--space-3xs);
+            padding: var(--space-2xs) var(--space-2xs);
             text-align: left;
             vertical-align: middle;
             background: transparent;
@@ -733,12 +743,13 @@ const selected_template = t('corporations.members.selected')
 
         th {
             font-family: var(--heading-font);
+            font-size: var(--step--2);
             font-weight: normal;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: var(--fleet-yellow);
+            color: var(--text-muted);
             white-space: nowrap;
-            border-bottom: 1px solid var(--border-color-hover);
+            border-bottom: 1px solid var(--hairline-strong);
         }
 
         .is-numeric {
@@ -746,15 +757,15 @@ const selected_template = t('corporations.members.selected')
         }
 
         tbody + tbody .cm-row td {
-            border-top: 1px solid var(--border-color-hover);
+            border-top: 1px solid var(--hairline);
         }
     }
 
     .col-check { width: var(--space-l); }
     .col-chevron { width: var(--space-xl); }
     .col-status { width: 6rem; }
-    .col-joined { width: 6.5rem; }
-    .col-fleets { width: 8.5rem; }
+    .col-joined { width: 8rem; }
+    .col-fleets { width: 9rem; }
     .col-last { width: 6.5rem; }
     .col-kills,
     .col-voice { width: 3.5rem; }
@@ -772,12 +783,17 @@ const selected_template = t('corporations.members.selected')
         white-space: nowrap;
     }
 
+    .cm-table .col-chevron {
+        text-align: end;
+    }
+
     .cm-bulk th {
         background: color-mix(in srgb, var(--alliance-blue) 45%, var(--component-background));
         color: var(--highlight);
         text-transform: none;
         letter-spacing: 0;
         font-family: var(--default-font);
+        font-size: var(--step--1);
     }
 
     .cm-bulk-row {
@@ -798,7 +814,7 @@ const selected_template = t('corporations.members.selected')
         display: inline-flex;
         align-items: center;
         gap: var(--space-3xs);
-        min-height: 44px;
+        min-height: var(--space-l);
         padding: 0;
         background: none;
         border: 0;
@@ -807,6 +823,16 @@ const selected_template = t('corporations.members.selected')
         letter-spacing: inherit;
         text-transform: inherit;
         cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    th[aria-sort] .cm-sort {
+        color: var(--highlight);
     }
 
     .cm-check {
@@ -823,13 +849,12 @@ const selected_template = t('corporations.members.selected')
 
     @media (hover: hover) {
         .cm-row:hover {
-            background: color-mix(in srgb, var(--highlight) 4%, transparent);
+            background: var(--hairline);
         }
     }
 
     tbody.is-open .cm-row {
-        background: color-mix(in srgb, var(--fleet-red) 10%, transparent);
-        box-shadow: inset 3px 0 0 var(--fleet-red);
+        background: var(--hairline);
     }
 
     .cm-pilot {
@@ -837,7 +862,7 @@ const selected_template = t('corporations.members.selected')
         align-items: center;
         gap: var(--space-xs);
         min-width: 0;
-        min-height: 44px;
+        min-height: var(--space-l);
         width: 100%;
         padding: 0;
         background: none;
@@ -858,7 +883,6 @@ const selected_template = t('corporations.members.selected')
     .cm-pilot__text {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
         min-width: 0;
     }
 
@@ -866,7 +890,6 @@ const selected_template = t('corporations.members.selected')
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: var(--step-0);
         font-weight: 600;
         color: var(--highlight);
     }
@@ -875,6 +898,7 @@ const selected_template = t('corporations.members.selected')
         display: flex;
         gap: var(--space-2xs);
         flex-wrap: wrap;
+        font-size: var(--step--1);
     }
 
     .cm-mobile-meta {
@@ -882,42 +906,51 @@ const selected_template = t('corporations.members.selected')
     }
 
     .cm-muted {
-        color: var(--faded);
+        color: var(--text-muted);
     }
 
     .cm-strong {
         color: var(--highlight);
     }
 
-    .cm-stack {
-        display: flex;
-        flex-direction: column;
+    .cm-joined {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
     }
 
-    .cm-pill {
-        display: inline-block;
-        padding: 2px var(--space-2xs);
-        font-size: var(--step--2);
-        font-weight: 700;
+    // Status is a dot and a word: Active in the default colour, Trial orange, On leave muted.
+    .cm-status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
         white-space: nowrap;
+        color: var(--foreground);
 
-        &[data-status='active'] {
-            background: color-mix(in srgb, var(--green) 25%, transparent);
-            color: color-mix(in srgb, var(--green) 55%, var(--highlight));
+        &::before {
+            content: '';
+            flex: none;
+            width: 0.5em;
+            height: 0.5em;
+            border-radius: 50%;
+            background: currentColor;
         }
 
         &[data-status='trial'] {
-            background: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
-            color: color-mix(in srgb, var(--alliance-blue) 35%, var(--highlight));
+            color: var(--cm_warn);
         }
 
         &[data-status='on_leave'] {
-            background: color-mix(in srgb, var(--highlight) 10%, transparent);
+            color: var(--text-muted);
         }
 
         &[data-status='none'] {
-            border: 1px dashed var(--faded);
             color: var(--faded);
+
+            &::before {
+                background: transparent;
+                border: 1px solid currentColor;
+            }
         }
     }
 
@@ -928,61 +961,63 @@ const selected_template = t('corporations.members.selected')
     }
 
     .cm-number {
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
+        font-weight: 600;
         color: var(--highlight);
     }
 
     .cm-fleets .cm-number {
-        width: var(--space-m);
+        min-width: 2ch;
         text-align: end;
     }
 
     .cm-spark {
-        display: flex;
+        display: inline-flex;
         align-items: flex-end;
         gap: 2px;
-        flex: 1;
-        height: var(--space-m);
-        border-bottom: 1px solid var(--border-color-hover);
+        height: var(--space-s);
 
         span {
-            flex: 1;
-            background: var(--fleet-red);
+            width: var(--space-3xs);
+            min-height: 1px;
+            background: color-mix(in srgb, var(--fleet-yellow) 70%, transparent);
         }
     }
 
-    .cm-spark--big {
-        flex: none;
-        height: var(--space-2xl);
-    }
-
     .col-last.is-stale {
-        color: var(--faded);
+        color: var(--cm_warn);
     }
 
     .cm-attention-text {
-        font-size: var(--step--1);
         font-weight: 600;
         white-space: nowrap;
 
-        &.is-good { color: color-mix(in srgb, var(--green) 60%, var(--highlight)); }
-        &.is-warn { color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow)); }
+        &.is-good { color: var(--cm_good); }
+        &.is-warn { color: var(--cm_warn); }
     }
 
     .cm-chevron {
-        display: grid;
+        display: inline-grid;
         place-items: center;
-        width: 44px;
-        height: 44px;
+        width: var(--space-l);
+        height: var(--space-l);
         padding: 0;
         background: none;
-        border: 0;
+        border: 1px solid transparent;
         color: var(--fleet-yellow);
         cursor: pointer;
+        transition:
+            border-color var(--fast-transition),
+            color var(--fast-transition);
 
         svg {
             transition: transform var(--fast-transition);
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+                color: var(--highlight);
+            }
         }
     }
 
@@ -990,80 +1025,77 @@ const selected_template = t('corporations.members.selected')
         transform: rotate(180deg);
     }
 
-    .cm-detail td {
-        padding: 0;
+    .cm-table .cm-detail td {
+        padding: 0 var(--space-s) var(--space-m) var(--space-2xl);
+        background: var(--hairline);
     }
 
     .cm-detail__body {
         display: flex;
         flex-direction: column;
-        gap: var(--space-m);
-        padding: var(--space-m) var(--space-m) var(--space-m) var(--space-2xl);
-        background: color-mix(in srgb, var(--background) 60%, transparent);
-        box-shadow: inset 3px 0 0 var(--fleet-red);
+        gap: var(--space-s);
     }
 
-    .cm-callout {
+    // Row 1: the insights partial lays out its own blocks.
+    .cm-insights {
+        width: 100%;
+    }
+
+    .cm-insights__loading {
         margin: 0;
-        padding: var(--space-xs) var(--space-s);
-        background: color-mix(in srgb, var(--green) 15%, transparent);
-        border: 1px solid color-mix(in srgb, var(--green) 50%, transparent);
-        color: var(--highlight);
+        font-size: var(--step--1);
     }
 
+    // Row 2: three equal panels with the same anatomy.
     .cm-detail__grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
-        gap: var(--space-l);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-xs);
     }
 
     .cm-block {
         display: flex;
         flex-direction: column;
-        gap: var(--space-xs);
+        gap: var(--space-2xs);
         min-width: 0;
+        padding: var(--space-s);
+        background: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
     }
 
-    .cm-facts {
-        margin: 0;
+    .cm-block__subhead {
+        margin-top: var(--space-2xs);
+    }
+
+    .cm-weeks {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--space-xs) var(--space-s);
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        align-items: end;
+        gap: 3px;
+        height: var(--space-2xl);
+        border-bottom: 1px solid var(--hairline-strong);
 
-        div {
-            display: flex;
-            flex-direction: column-reverse;
-        }
-
-        dt {
-            color: var(--faded);
-            font-size: var(--step--2);
-        }
-
-        dd {
-            margin: 0;
-            font-family: var(--heading-font);
-            font-size: var(--step-1);
-            color: var(--highlight);
+        span {
+            min-height: 2px;
+            background: color-mix(in srgb, var(--fleet-yellow) 70%, transparent);
         }
     }
 
-    .cm-facts .cm-hull {
+    .cm-weeks__axis {
         display: flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
+        justify-content: space-between;
+        font-size: var(--step--2);
     }
 
-    .cm-characters,
-    .cm-history {
+    .cm-list {
         list-style: none;
         margin: 0;
         padding: 0;
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
+        font-size: var(--step--1);
 
         li {
             display: flex;
@@ -1079,11 +1111,10 @@ const selected_template = t('corporations.members.selected')
     }
 
     .cm-history li {
-        flex-wrap: wrap;
-        column-gap: var(--space-xs);
+        justify-content: space-between;
     }
 
-    .cm-history li > :first-child {
+    .cm-history li > :last-child {
         flex: none;
         white-space: nowrap;
     }
@@ -1095,10 +1126,10 @@ const selected_template = t('corporations.members.selected')
     .cm-token {
         font-size: var(--step--2);
         font-weight: 600;
-        color: var(--faded);
+        color: var(--text-muted);
 
         &.is-warn {
-            color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+            color: var(--cm_warn);
         }
     }
 
@@ -1120,6 +1151,11 @@ const selected_template = t('corporations.members.selected')
 
     // Phones: one compact row per person; the rest lives in the details.
     @media (max-width: 48rem) {
+        .cm-attention {
+            padding-inline-start: 0;
+            border-inline-start: 0;
+        }
+
         .cm-table {
             min-width: 0;
             table-layout: fixed;
@@ -1155,7 +1191,7 @@ const selected_template = t('corporations.members.selected')
             display: inline;
         }
 
-        .cm-detail__body {
+        .cm-table .cm-detail td {
             padding-inline: var(--space-s);
         }
 
