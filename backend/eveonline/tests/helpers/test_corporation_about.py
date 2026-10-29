@@ -30,7 +30,7 @@ from eveonline.tests.helpers.test_corporation_public_summary import (
     _ship_groups,
 )
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
-from groups.models import UserCommunityStatusHistory
+from groups.models import UserCommunityStatus, UserCommunityStatusHistory
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 CORP_ID = 98726134
@@ -270,6 +270,10 @@ class CorporationAboutTestCase(TestCase):
         self._character(701, "Trialist", trialist, main=True)
         UserCommunityStatusHistory.objects.create(
             user=trialist, from_status=None, to_status="trial"
+        )
+        # bulk_create: no community-group sync for this fixture.
+        UserCommunityStatus.objects.bulk_create(
+            [UserCommunityStatus(user=trialist, status="trial")]
         )
         AllianceHealthSnapshot.objects.create(
             computed_at=timezone.now(),
