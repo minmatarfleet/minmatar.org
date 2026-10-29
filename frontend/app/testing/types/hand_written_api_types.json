@@ -64,7 +64,6 @@
       "CorporationApplicationDetails": "closest backend schema CorporationApplicationDetailResponse, no field or null drift found; alias it when its domain is next changed",
       "Character": "closest backend schema BasicCharacterResponse, no field or null drift found; alias it when its domain is next changed",
       "UserProfile": "closest backend schema UserProfileSchema, no field or null drift found; alias it when its domain is next changed",
-      "UserGates": "closest backend schema UserGatesSchema, no field or null drift found; alias it when its domain is next changed",
       "DiscordUserProfile": "closest backend schema DiscordUserSchema, no field or null drift found; alias it when its domain is next changed",
       "EveCharacterProfile": "EveCharacterSchema plus user_id, which get_users_character (fetching/characters.ts) adds client-side",
       "CharacterSkillset": "closest backend schema CharacterSkillsetResponse, no field or null drift found; alias it when its domain is next changed",

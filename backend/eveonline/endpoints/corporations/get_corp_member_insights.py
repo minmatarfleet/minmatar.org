@@ -12,10 +12,12 @@ from alliance.helpers.trial_report import member_insights
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.helpers.corporations.permissions import (
+    can_promote_corporation_trials,
     can_view_corporation_members,
 )
 from eveonline.helpers.corporations.profile import load_corporation
 from eveonline.models import EveCharacter
+from groups.models import UserCommunityStatus
 
 router = Router(tags=["Corporations"])
 
@@ -41,15 +43,31 @@ def get_corp_member_insights(request, corporation_id: int, character_id: int):
         .select_related("user")
         .first()
     )
-    if character is None or not _in_corporation(character, corporation_id):
+    if character is None or not in_corporation(character, corporation_id):
         return 404, ErrorResponse(detail="Member not found")
+    insights = member_insights(character, corporation_id)
+    # The trial bar comes from the daily snapshot; the status is live, so a
+    # member promoted today stops showing a trial straight away.
+    status = (
+        UserCommunityStatus.objects.filter(user_id=character.user_id)
+        .values_list("status", flat=True)
+        .first()
+        if character.user_id
+        else None
+    )
+    on_trial = status == UserCommunityStatus.STATUS_TRIAL
+    if not on_trial:
+        insights["trial"] = None
     return MemberInsightsResponse(
         corporation_ticker=corporation.ticker,
-        **member_insights(character, corporation_id),
+        on_trial=on_trial,
+        can_promote=on_trial
+        and can_promote_corporation_trials(request.user, corporation),
+        **insights,
     )
 
 
-def _in_corporation(character: EveCharacter, corporation_id: int) -> bool:
+def in_corporation(character: EveCharacter, corporation_id: int) -> bool:
     """The character, or another character of the same person, is in the
     corp (a roster row can show a main that sits in another corp)."""
     if character.corporation_id == corporation_id:

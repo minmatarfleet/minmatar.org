@@ -735,14 +735,8 @@ export interface UserProfile {
 
 export type GateSource = 'legacy' | 'shadow' | 'features'
 
-export interface UserGates {
-    features:    string[];
-    legacy:      {
-        permissions:  string[];
-        is_superuser: boolean;
-    };
-    gate_source: GateSource;
-}
+export type UserGates = ApiResponse<'UserGatesSchema'>
+export type LedCorporation = ApiResponse<'LedCorporationSchema'>
 
 export interface DiscordUserProfile {
     id:          number;
@@ -3182,6 +3176,7 @@ export type TrialCompare = ApiResponse<'TrialCompareResponse'>
 export type TrialShips = ApiResponse<'TrialShipsResponse'>
 export type TrialFleet = ApiResponse<'TrialFleetResponse'>
 export type MemberInsights = ApiResponse<'MemberInsightsResponse'>
+export type CorporationMemberPromote = ApiResponse<'CorporationMemberPromoteResponse'>
 export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>

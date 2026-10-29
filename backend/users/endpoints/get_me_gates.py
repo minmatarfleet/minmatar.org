@@ -6,6 +6,9 @@ from django.conf import settings
 from ninja import Router, Schema
 
 from authentication import AuthBearer
+from eveonline.constants import HOLDING_CORPORATION_TICKER
+from eveonline.helpers.alliances import member_corporations
+from eveonline.helpers.characters.identity import owned_by_q
 from groups.helpers.feature_access import get_user_feature_codes
 from users.helpers import get_user_permissions
 
@@ -20,10 +23,19 @@ class LegacyGatesSchema(Schema):
     is_superuser: bool
 
 
+class LedCorporationSchema(Schema):
+    corporation_id: int
+    name: str
+
+
 class UserGatesSchema(Schema):
     features: List[str]
     legacy: LegacyGatesSchema
     gate_source: str
+    # Alliance corporations the user is CEO or a director of, CEO first (not
+    # the holding corporation): the navigation links them to their
+    # corporation page.
+    led_corporations: List[LedCorporationSchema] = []
 
 
 def frontend_gate_source() -> str:
@@ -53,4 +65,29 @@ def get_me_gates(request):
             is_superuser=user.is_superuser,
         ),
         gate_source=frontend_gate_source(),
+        led_corporations=led_corporations(user.id),
     )
+
+
+def led_corporations(user_id: int) -> list[LedCorporationSchema]:
+    corporations = member_corporations().exclude(
+        ticker=HOLDING_CORPORATION_TICKER
+    )
+    ceo_of = set(
+        corporations.filter(owned_by_q(user_id, "ceo__")).values_list(
+            "corporation_id", flat=True
+        )
+    )
+    rows = (
+        corporations.filter(
+            owned_by_q(user_id, "ceo__") | owned_by_q(user_id, "directors__")
+        )
+        .values_list("corporation_id", "name")
+        .distinct()
+    )
+    return [
+        LedCorporationSchema(corporation_id=corporation_id, name=name)
+        for corporation_id, name in sorted(
+            rows, key=lambda row: (row[0] not in ceo_of, row[1])
+        )
+    ]

@@ -11,19 +11,33 @@ if (!user)
     return HTTP_403_Forbidden()
 
 import type { MemberInsights } from '@dtypes/api.minmatar.org'
-import { get_corporation_member_insights } from '@helpers/api.minmatar.org/corporations'
+import { get_corporation_member_insights, promote_corporation_member } from '@helpers/api.minmatar.org/corporations'
 import { get_item_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
 
 /**
  * The first row of an opened corp Members row (loaded when it opens): how the
  * person compares with active pilots (and their trial bar while on trial),
  * the ships they bring to fleets, and their kills, so leadership doesn't
- * need zKillboard to check.
+ * need zKillboard to check. The CEO, directors and People team can promote a
+ * trial member to active from here; the roster then reloads.
  */
 const params = Astro.url.searchParams
 const corporation_id = parseInt(params.get('corporation_id') ?? '0') || 0
 const character_id = parseInt(params.get('character_id') ?? '0') || 0
 const delay = parseInt(params.get('delay') ?? '0')
+const character_name = (params.get('name') ?? '').slice(0, 64)
+
+let promote_error:string | false = false
+
+if (Astro.request.method === 'POST' && params.get('action') === 'promote') {
+    try {
+        await promote_corporation_member(auth_token as string, corporation_id, character_id)
+        Astro.response.headers.set('HX-Trigger', 'corporation-members-changed')
+    } catch (error) {
+        promote_error = (error as Error).message || t('trial.promote_failed')
+    }
+}
 
 let insights:MemberInsights | null = null
 let fetch_error:Error | false = false
@@ -34,13 +48,22 @@ try {
     fetch_error = error as Error
 }
 
-const refetch_url = translatePath(`/partials/corporation_member_insights_component/?corporation_id=${corporation_id}&character_id=${character_id}`)
+const refetch_url = translatePath(`/partials/corporation_member_insights_component/?${query_string({
+    corporation_id: String(corporation_id),
+    character_id: String(character_id),
+    name: character_name,
+})}`)
+const promote_url = `${refetch_url}&action=promote`
+const promote_confirm = character_name
+    ? t('trial.promote_confirm').replace('{name}', character_name)
+    : t('trial.promote_confirm_unnamed')
 const target_id = `member-insights-${character_id}`
 
 const SIGNALS = ['fleets', 'kills', 'voice'] as const
 const compare = new Map((insights?.compare ?? []).map((row) => [row.signal, row.tier]))
 const ships = insights?.ships
 const kills = insights?.kills
+const trial_day = insights?.trial?.day ?? null
 const all_helpful = !!ships && ships.doctrine_fleets > 0 && ships.helpful_fleets === ships.doctrine_fleets
 
 const days_ago = (iso:string | null) => {
@@ -54,6 +77,7 @@ const days_ago = (iso:string | null) => {
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import TrialProgressBar from '@components/blocks/TrialProgressBar.astro'
 import TierScale from '@components/blocks/TierScale.astro'
+import Button from '@components/blocks/Button.astro'
 ---
 
 <div id={target_id} class="[ member-insights ]">
@@ -69,15 +93,37 @@ import TierScale from '@components/blocks/TierScale.astro'
         :
         <div class="[ member-insights__grid ]">
             <div class="[ member-insights__block ]">
-                {insights.trial && insights.trial.day !== null &&
+                {insights.on_trial && (trial_day !== null || insights.can_promote) &&
                     <div class="[ member-insights__trial ]">
                         <div class="[ member-insights__trial-head ]">
-                            <span class="[ member-insights__strong ]">{t('trial.member_day').replace('{day}', String(insights.trial.day))}</span>
-                            <span class:list={['[ member-insights__pace ]', insights.trial.on_pace ? 'insights-good' : 'insights-warn']}>
-                                {insights.trial.on_pace ? t('trial.on_pace') : t('trial.behind_pace')}
+                            <span class="[ member-insights__strong ]">
+                                {trial_day !== null ? t('trial.member_day').replace('{day}', String(trial_day)) : t('trial.member_on_trial')}
                             </span>
+                            {insights.trial && trial_day !== null &&
+                                <span class:list={['[ member-insights__pace ]', insights.trial.on_pace ? 'insights-good' : 'insights-warn']}>
+                                    {insights.trial.on_pace ? t('trial.on_pace') : t('trial.behind_pace')}
+                                </span>
+                            }
                         </div>
-                        <TrialProgressBar trial={insights.trial} ticker={insights.corporation_ticker} compact />
+                        {insights.trial && trial_day !== null &&
+                            <TrialProgressBar trial={insights.trial} ticker={insights.corporation_ticker} compact />
+                        }
+                        {insights.can_promote &&
+                            <div class="[ member-insights__promote ]">
+                                {promote_error && <p class="[ member-insights__error ]" role="alert">{promote_error}</p>}
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="green"
+                                    hx-post={promote_url}
+                                    hx-target={`#${target_id}`}
+                                    hx-swap="outerHTML"
+                                    hx-confirm={promote_confirm}
+                                >
+                                    {t('trial.promote')}
+                                </Button>
+                            </div>
+                        }
                     </div>
                 }
                 <h4 class="[ member-insights__eyebrow ]">{t('trial.member_compare')}</h4>
@@ -178,6 +224,22 @@ import TierScale from '@components/blocks/TierScale.astro'
         justify-content: space-between;
         gap: var(--space-xs);
         font-size: var(--step--1);
+    }
+
+    .member-insights__promote {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-2xs);
+        padding-block-start: var(--space-3xs);
+    }
+
+    .member-insights__error {
+        margin: 0;
+        margin-inline-end: auto;
+        font-size: var(--step--1);
+        color: var(--insights_warn);
     }
 
     .member-insights__strong {

@@ -1,5 +1,5 @@
 import type { User } from '@dtypes/jwt'
-import type { GateSource, UserGates } from '@dtypes/api.minmatar.org'
+import type { GateSource, LedCorporation, UserGates } from '@dtypes/api.minmatar.org'
 import { get_user_gates } from '@helpers/api.minmatar.org/gates'
 import { get_request_user } from '@helpers/request_user'
 import feature_gates from '@json/feature_gates.json'
@@ -35,6 +35,8 @@ export interface GateContext {
     /** JWT claim, which is what the inline checks read. */
     is_superuser:       boolean;
     gate_source:        GateSource;
+    /** Alliance corporations the user is CEO or a director of, CEO first. */
+    led_corporations:   LedCorporation[];
     reported?:          Set<string>;
 }
 
@@ -46,6 +48,7 @@ export const ANONYMOUS_GATES: GateContext = {
     legacy_permissions: [],
     is_superuser: false,
     gate_source: 'legacy',
+    led_corporations: [],
 }
 
 const GATE_SOURCES: GateSource[] = ['legacy', 'shadow', 'features']
@@ -59,6 +62,7 @@ export function gate_context_from(user: User | false, gates: UserGates | null): 
         legacy_permissions: gates?.legacy?.permissions ?? [],
         is_superuser: Boolean(user.is_superuser),
         gate_source: GATE_SOURCES.includes(gates?.gate_source as GateSource) ? gates?.gate_source as GateSource : 'legacy',
+        led_corporations: gates?.led_corporations ?? [],
         reported: new Set(),
     }
 }
