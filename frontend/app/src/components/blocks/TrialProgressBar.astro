@@ -8,6 +8,8 @@ import type { TrialProgress } from '@dtypes/api.minmatar.org'
  * Day of trial on a day 1 → scale_days bar, with markers where review opens
  * and at the corp's average trial length. Green when on pace, orange when
  * behind. `compact` is the corp Members row version (short marker labels).
+ * The average label sits above the track and the review label below it, so
+ * the two never overlap however close the markers are.
  */
 interface Props {
     trial:              TrialProgress;
@@ -28,6 +30,19 @@ delete attributes.class
 const scale = Math.max(trial.scale_days, trial.day ?? 0, trial.average_days ?? 0) || 1
 const at = (day:number) => `${Math.min(100, Math.round((day / scale) * 1000) / 10)}%`
 const day = trial.day ?? 0
+
+// Labels centre on their marker, except near an end of the track where they
+// line up with it instead of spilling past it.
+const EDGE_PERCENT = 15
+function label_place(marker_day:number) {
+    const percent = Math.min(100, (marker_day / scale) * 100)
+    return {
+        style: `left: ${at(marker_day)}`,
+        edge: percent < EDGE_PERCENT ? 'is-start' : percent > 100 - EDGE_PERCENT ? 'is-end' : null,
+    }
+}
+const average_place = trial.average_days === null ? null : label_place(trial.average_days)
+const review_place = label_place(trial.review_day)
 const group = trial.average_scope === 'corporation' && ticker ? ticker : t('trial.alliance')
 
 const average_label = trial.average_days === null ? null : compact
@@ -48,9 +63,9 @@ const aria = [
     class:list={['[ trial-bar ]', { 'is-on-pace': trial.on_pace, 'is-compact': compact }, Astro.props.class]}
     {...attributes}
 >
-    {average_label && !compact &&
-        <div class="[ trial-bar__top ]">
-            <span class="[ trial-bar__label is-strong ]" style={`left: ${at(trial.average_days as number)}`}>{average_label}</span>
+    {average_label && average_place &&
+        <div class="[ trial-bar__top ]" aria-hidden="true">
+            <span class:list={['[ trial-bar__label is-strong ]', average_place.edge]} style={average_place.style}>{average_label}</span>
         </div>
     }
     <div class="[ trial-bar__track ]" role="img" aria-label={aria}>
@@ -62,10 +77,7 @@ const aria = [
     </div>
     <div class="[ trial-bar__bottom ]" aria-hidden="true">
         {!compact && <span class="[ trial-bar__end ]">{t('trial.day_one')}</span>}
-        <span class="[ trial-bar__label is-review ]" style={`left: ${at(trial.review_day)}`}>{review_label}</span>
-        {compact && average_label &&
-            <span class="[ trial-bar__label is-strong is-after ]" style={`left: ${at(trial.average_days as number)}`}>{average_label}</span>
-        }
+        <span class:list={['[ trial-bar__label is-review ]', review_place.edge]} style={review_place.style}>{review_label}</span>
         {!compact && <span class="[ trial-bar__end is-right ]">{t('trial.day_n').replace('{day}', String(scale))}</span>}
     </div>
 </div>
@@ -129,15 +141,18 @@ const aria = [
             color: var(--highlight);
         }
 
-        &.is-after {
+        &.is-start {
             transform: none;
-            padding-inline-start: var(--space-3xs);
+        }
+
+        &.is-end {
+            transform: translateX(-100%);
         }
     }
 
-    .is-compact .trial-bar__label.is-review {
-        transform: translateX(-100%);
-        padding-inline-end: var(--space-3xs);
+    .is-compact .trial-bar__top,
+    .is-compact .trial-bar__bottom {
+        min-height: var(--space-s);
     }
 
     .trial-bar__end {
@@ -156,7 +171,7 @@ const aria = [
             display: none;
         }
 
-        .trial-bar__top .trial-bar__label {
+        .trial-bar__top .trial-bar__label:not(.is-start) {
             transform: translateX(-100%);
         }
     }

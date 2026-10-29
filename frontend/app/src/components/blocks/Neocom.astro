@@ -19,7 +19,15 @@ const primary_character = Astro.cookies.has('primary_pilot')
 const can_view_fleets = can(gates, 'fleets.view')
 const can_view_campaigns = can(gates, 'campaigns.view')
 
+// CEOs and directors get a shortcut to their corporation's page (the first
+// one they're CEO of), lit on any corporation page they lead.
+const led_corporation_paths = gates.led_corporations.map((corporation) =>
+    translatePath(corporation_path(corporation.corporation_id, corporation.name))
+)
+const led_corporation_path = led_corporation_paths[0] ?? null
+
 import { is_prod_mode } from '@helpers/env'
+import { corporation_path } from '@helpers/corporations/detail'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -35,6 +43,7 @@ import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
+import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
 import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
@@ -46,6 +55,7 @@ let minute = new Date().getUTCMinutes()
 const time =  `${hour < 10 ? '0' : ''}${hour}:${minute < 10 ? '0' : ''}${minute}`
 
 const page = Astro.url.pathname
+const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(path))
 ---
 
 <header
@@ -92,13 +102,23 @@ const page = Astro.url.pathname
                         <UserAuth active={page.startsWith(translatePath('/account'))} />
                     </Flexblock>
                     <NeocomButton
-                        active={page.startsWith(translatePath('/alliance'))}
+                        active={page.startsWith(translatePath('/alliance')) && !on_led_corporation}
                         title='neocom.alliance'
                         description='alliance.description'
                         href={translatePath('/alliance/')}
                     >
                         <AllianceEvEIcon />
                     </NeocomButton>
+                    {led_corporation_path &&
+                        <NeocomButton
+                            active={on_led_corporation}
+                            title='neocom.corporation'
+                            description='neocom.corporation_description'
+                            href={led_corporation_path}
+                        >
+                            <CorporationEvEIcon />
+                        </NeocomButton>
+                    }
                     <NeocomButton
                         active={page.startsWith(translatePath('/learning'))}
                         title='neocom.learning'

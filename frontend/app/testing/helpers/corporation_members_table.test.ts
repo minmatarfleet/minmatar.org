@@ -268,4 +268,39 @@ describe('roster views, attention and export', () => {
         expect(csv[0]).toMatch(/^Pilot,Alts,Status/)
         expect(csv[2]).toMatch(/^"New, ""Bob""",/)
     })
+
+    describe('sorting', () => {
+        const person = (overrides: Partial<CorporationMemberDetails> & Pick<CorporationMemberDetails, 'character_id' | 'character_name'>) =>
+            member({ user_name: `user-${overrides.character_id}`, primary_character_id: overrides.character_id, ...overrides })
+        const rows = group_corporation_members([
+            person({ character_id: 1, character_name: 'Ann', fleets_90d: 5, voice_hours_90d: 2, community_status: 'active', corp_joined_at: '2022-01-01T00:00:00Z', last_fleet_at: '2026-10-01T00:00:00Z' }),
+            person({ character_id: 2, character_name: 'bob', fleets_90d: 1, voice_hours_90d: 9, community_status: 'trial', corp_joined_at: '2026-09-01T00:00:00Z' }),
+            person({ character_id: 3, character_name: 'Cy', fleets_90d: 3, voice_hours_90d: 0, community_status: 'on_leave', last_fleet_at: '2026-10-20T00:00:00Z' }),
+        ])
+        const names = (metric: Parameters<typeof sort_corporation_member_rows>[1], direction?: 'asc' | 'desc') =>
+            sort_corporation_member_rows(rows, metric, direction).map((row) => row.character_name)
+
+        it('sorts every column in its default direction', () => {
+            expect(names('fleets')).toEqual(['Ann', 'Cy', 'bob'])
+            expect(names('voice')).toEqual(['bob', 'Ann', 'Cy'])
+            expect(names('name')).toEqual(['Ann', 'bob', 'Cy'])
+            expect(names('status')).toEqual(['bob', 'Ann', 'Cy'])
+            expect(names('joined')).toEqual(['Ann', 'bob', 'Cy'])
+            expect(names('last')).toEqual(['Cy', 'Ann', 'bob'])
+        })
+
+        it('reverses, keeping rows without a value at the bottom', () => {
+            expect(names('fleets', 'asc')).toEqual(['bob', 'Cy', 'Ann'])
+            expect(names('name', 'desc')).toEqual(['Cy', 'bob', 'Ann'])
+            expect(names('joined', 'asc')).toEqual(['bob', 'Ann', 'Cy'])
+            expect(names('last', 'asc')).toEqual(['Ann', 'Cy', 'bob'])
+        })
+
+        it('reads the direction from the URL, defaulting per column', () => {
+            expect(parse_member_params(new URLSearchParams('sort=name')).direction).toBe('asc')
+            expect(parse_member_params(new URLSearchParams('sort=kills')).direction).toBe('desc')
+            expect(parse_member_params(new URLSearchParams('sort=voice&dir=asc'))).toMatchObject({ sort: 'voice', direction: 'asc' })
+            expect(parse_member_params(new URLSearchParams('sort=status&dir=sideways')).direction).toBe('asc')
+        })
+    })
 })

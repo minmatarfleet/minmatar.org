@@ -1971,6 +1971,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a trial member to active (CEO, directors, People team) */
+        post: operations["eveonline_endpoints_corporations_post_corp_member_promote_post_corp_member_promote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/projects": {
         parameters: {
             query?: never;
@@ -10555,6 +10572,11 @@ export interface components {
              */
             weekly_fleets?: number[];
         };
+        /** CorporationMemberPromoteResponse */
+        CorporationMemberPromoteResponse: {
+            /** Community Status */
+            community_status: string;
+        };
         /** CorporationMemberResponse */
         CorporationMemberResponse: {
             /** Character Id */
@@ -16324,6 +16346,13 @@ export interface components {
             /** Voice Hours */
             voice_hours: number;
         };
+        /** LedCorporationSchema */
+        LedCorporationSchema: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Name */
+            name: string;
+        };
         /** LegacyGatesSchema */
         LegacyGatesSchema: {
             /** Is Superuser */
@@ -17303,11 +17332,21 @@ export interface components {
              * @default false
              */
             academy?: boolean;
+            /**
+             * Can Promote
+             * @default false
+             */
+            can_promote?: boolean;
             /** Compare */
             compare?: components["schemas"]["TrialCompareResponse"][] | null;
             /** Corporation Ticker */
             corporation_ticker?: string | null;
             kills: components["schemas"]["TrialKillsResponse"];
+            /**
+             * On Trial
+             * @default false
+             */
+            on_trial?: boolean;
             ships: components["schemas"]["TrialShipsResponse"];
             trial?: components["schemas"]["TrialProgressResponse"] | null;
         };
@@ -22463,6 +22502,11 @@ export interface components {
             features: string[];
             /** Gate Source */
             gate_source: string;
+            /**
+             * Led Corporations
+             * @default []
+             */
+            led_corporations?: components["schemas"]["LedCorporationSchema"][];
             legacy: components["schemas"]["LegacyGatesSchema"];
         };
         /**
@@ -27549,6 +27593,56 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corp_member_promote_post_corp_member_promote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationMemberPromoteResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

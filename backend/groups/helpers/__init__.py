@@ -203,6 +203,30 @@ def process_bulk_community_status_row(
     return (True, None, None)
 
 
+def promote_from_trial(user: User, changed_by: User, reason: str) -> bool:
+    """Move a trial member to active, recording who did it. False when the
+    user isn't on trial."""
+    ucs = UserCommunityStatus.objects.filter(
+        user=user, status=UserCommunityStatus.STATUS_TRIAL
+    ).first()
+    if ucs is None:
+        return False
+    ucs.status = UserCommunityStatus.STATUS_ACTIVE
+    ucs.save(update_fields=["status"])
+    latest = (
+        UserCommunityStatusHistory.objects.filter(
+            user=user, to_status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        .order_by("-changed_at")
+        .first()
+    )
+    if latest:
+        latest.changed_by = changed_by
+        latest.reason = reason
+        latest.save(update_fields=["changed_by", "reason"])
+    return True
+
+
 def reconcile_community_status_for_affiliation(user: User) -> None:
     """Clear trial/on_leave when the user is no longer Alliance."""
     affiliation = (

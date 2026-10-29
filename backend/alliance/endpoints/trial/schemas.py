@@ -76,6 +76,9 @@ class TrialReportResponse(Schema):
 
 class MemberInsightsResponse(Schema):
     corporation_ticker: Optional[str] = None
+    # Live community status, and whether the viewer may promote them.
+    on_trial: bool = False
+    can_promote: bool = False
     trial: Optional[TrialProgressResponse] = None
     compare: Optional[list[TrialCompareResponse]] = None
     academy: bool = False

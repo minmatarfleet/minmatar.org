@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, MemberInsights } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights } from '@dtypes/api.minmatar.org'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -34,6 +34,15 @@ export async function get_corporation_member_insights(access_token: string, id: 
     return await api_request<MemberInsights>(`${API_ENDPOINT}/corporations/${id}/members/${character_id}/insights`, {
         token: access_token,
         error: 'Error fetching member insights',
+    })
+}
+
+/** Move a trial member to active (CEO, directors, People team). */
+export async function promote_corporation_member(access_token: string, id: number, character_id: number) {
+    return await api_request<CorporationMemberPromote>(`${API_ENDPOINT}/corporations/${id}/members/${character_id}/promote`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error promoting member',
     })
 }
 

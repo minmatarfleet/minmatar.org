@@ -238,6 +238,7 @@ describe('get_gates()', () => {
             features: ['fleets.view'],
             legacy: { permissions: ['fleets.view_evefleet'], is_superuser: true },
             gate_source: 'shadow',
+            led_corporations: [],
         })
         const request = astro(token({ user_id: 3, username: 'pilot', is_superuser: false }))
 
@@ -270,8 +271,18 @@ describe('get_gates()', () => {
     it('falls back to legacy for an unknown gate source', () => {
         const ctx = gate_context_from(
             { user_id: 1, username: 'x', avatar: '', is_superuser: false, permissions: [] },
-            { features: [], legacy: { permissions: [], is_superuser: false }, gate_source: 'nonsense' as any },
+            { features: [], legacy: { permissions: [], is_superuser: false }, gate_source: 'nonsense' as any, led_corporations: [] },
         )
         expect(ctx.gate_source).toBe('legacy')
+    })
+
+    it('carries the corporations the user leads, empty from an older API', () => {
+        const user = { user_id: 1, username: 'x', avatar: '', is_superuser: false, permissions: [] }
+        const legacy = { permissions: [], is_superuser: false }
+        const led = [{ corporation_id: 98000001, name: 'Fosfo Test' }]
+
+        expect(gate_context_from(user, { features: [], legacy, gate_source: 'legacy', led_corporations: led }).led_corporations).toEqual(led)
+        expect(gate_context_from(user, { features: [], legacy, gate_source: 'legacy' } as any).led_corporations).toEqual([])
+        expect(ANONYMOUS_GATES.led_corporations).toEqual([])
     })
 })

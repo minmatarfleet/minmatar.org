@@ -7144,6 +7144,19 @@
         "title": "CorporationMemberDetails",
         "type": "object"
       },
+      "CorporationMemberPromoteResponse": {
+        "properties": {
+          "community_status": {
+            "title": "Community Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "community_status"
+        ],
+        "title": "CorporationMemberPromoteResponse",
+        "type": "object"
+      },
       "CorporationMemberResponse": {
         "properties": {
           "character_id": {
@@ -21981,6 +21994,24 @@
         "title": "LeaveHygienePilot",
         "type": "object"
       },
+      "LedCorporationSchema": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "name"
+        ],
+        "title": "LedCorporationSchema",
+        "type": "object"
+      },
       "LegacyGatesSchema": {
         "properties": {
           "is_superuser": {
@@ -24340,6 +24371,11 @@
             "title": "Academy",
             "type": "boolean"
           },
+          "can_promote": {
+            "default": false,
+            "title": "Can Promote",
+            "type": "boolean"
+          },
           "compare": {
             "anyOf": [
               {
@@ -24367,6 +24403,11 @@
           },
           "kills": {
             "$ref": "#/components/schemas/TrialKillsResponse"
+          },
+          "on_trial": {
+            "default": false,
+            "title": "On Trial",
+            "type": "boolean"
           },
           "ships": {
             "$ref": "#/components/schemas/TrialShipsResponse"
@@ -36551,6 +36592,14 @@
             "title": "Gate Source",
             "type": "string"
           },
+          "led_corporations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LedCorporationSchema"
+            },
+            "title": "Led Corporations",
+            "type": "array"
+          },
           "legacy": {
             "$ref": "#/components/schemas/LegacyGatesSchema"
           }
@@ -44805,6 +44854,83 @@
           }
         ],
         "summary": "Trial, tiers, ships and kills for one member (leadership only)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/promote": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corp_member_promote_post_corp_member_promote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationMemberPromoteResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Move a trial member to active (CEO, directors, People team)",
         "tags": [
           "Corporations",
           "Corporations"

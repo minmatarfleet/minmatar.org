@@ -351,3 +351,122 @@ class TrialEndpointsTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {make_token(boss)}",
         )
         self.assertEqual(response.status_code, 404)
+
+
+PROMOTE_URL = (
+    f"/api/eveonline/corporations/corporations/{CORP_ID}/members/2001/promote"
+)
+INSIGHTS_URL = (
+    f"/api/eveonline/corporations/corporations/{CORP_ID}/members/2001/insights"
+)
+
+
+class PromoteFromTrialTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.corporation = EveCorporation.objects.create(
+            corporation_id=CORP_ID, name="Fosfo Test", ticker="FOSFO"
+        )
+        self.character = EveCharacter.objects.create(
+            character_id=2001,
+            character_name="Vosk Arran",
+            user=self.user,
+            corporation_id=CORP_ID,
+        )
+        UserCommunityStatus.objects.create(
+            user=self.user, status=UserCommunityStatus.STATUS_TRIAL
+        )
+        self.director = User.objects.create(username="director")
+        self.corporation.directors.add(
+            EveCharacter.objects.create(
+                character_id=2002,
+                character_name="Director",
+                user=self.director,
+                corporation_id=CORP_ID,
+            )
+        )
+        self.client = Client()
+
+    def _as(self, user):
+        return {"HTTP_AUTHORIZATION": f"Bearer {make_token(user)}"}
+
+    def test_director_promotes_and_history_records_who(self):
+        response = self.client.post(PROMOTE_URL, **self._as(self.director))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"community_status": "active"})
+        self.assertEqual(
+            UserCommunityStatus.objects.get(user=self.user).status, "active"
+        )
+        change = UserCommunityStatusHistory.objects.filter(
+            user=self.user, to_status="active"
+        ).first()
+        self.assertEqual(change.from_status, "trial")
+        self.assertEqual(change.changed_by, self.director)
+        self.assertIn("FOSFO", change.reason)
+
+    def test_recruiter_cannot_promote(self):
+        recruiter = User.objects.create(username="recruiter")
+        self.corporation.recruiters.add(
+            EveCharacter.objects.create(
+                character_id=2003,
+                character_name="Recruiter",
+                user=recruiter,
+                corporation_id=CORP_ID,
+            )
+        )
+        response = self.client.post(PROMOTE_URL, **self._as(recruiter))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            UserCommunityStatus.objects.get(user=self.user).status, "trial"
+        )
+
+    def test_not_on_trial_is_409(self):
+        UserCommunityStatus.objects.filter(user=self.user).update(
+            status="active"
+        )
+        response = self.client.post(PROMOTE_URL, **self._as(self.director))
+        self.assertEqual(response.status_code, 409)
+
+    def test_outside_corp_is_404(self):
+        EveCharacter.objects.filter(character_id=2001).update(corporation_id=1)
+        response = self.client.post(PROMOTE_URL, **self._as(self.director))
+        self.assertEqual(response.status_code, 404)
+
+    def test_insights_offer_promotion_only_while_on_trial(self):
+        data = self.client.get(INSIGHTS_URL, **self._as(self.director)).json()
+        self.assertTrue(data["on_trial"])
+        self.assertTrue(data["can_promote"])
+        self.client.post(PROMOTE_URL, **self._as(self.director))
+        data = self.client.get(INSIGHTS_URL, **self._as(self.director)).json()
+        self.assertFalse(data["on_trial"])
+        self.assertFalse(data["can_promote"])
+        self.assertIsNone(data["trial"])
+
+    def test_roster_drops_trial_bar_met_once_promoted(self):
+        AllianceHealthSnapshot.objects.create(
+            computed_at=timezone.now(),
+            payload={
+                "hygiene": {
+                    "trial": {
+                        "buckets": {
+                            "approve": [
+                                {"user_id": self.user.id, "reason": "fleets"}
+                            ]
+                        }
+                    }
+                }
+            },
+        )
+        roster_url = (
+            f"/api/eveonline/corporations/corporations/{CORP_ID}/members"
+        )
+
+        def ready():
+            rows = self.client.get(roster_url, **self._as(self.director))
+            return {
+                row["character_id"]: row["trial_ready"] for row in rows.json()
+            }[2001]
+
+        self.assertTrue(ready())
+        self.client.post(PROMOTE_URL, **self._as(self.director))
+        self.assertFalse(ready())

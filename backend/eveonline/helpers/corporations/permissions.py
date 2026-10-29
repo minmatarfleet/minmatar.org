@@ -45,6 +45,20 @@ def can_manage_corporation(user: User, corporation: EveCorporation) -> bool:
     return False
 
 
+def can_promote_corporation_trials(
+    user: User, corporation: EveCorporation
+) -> bool:
+    """The CEO, directors and the People team move the corp's trial members
+    to active from the Members tab."""
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    if user.is_superuser or user_is_ceo(user, corporation):
+        return True
+    return user_is_director(user, corporation) or user_in_team(
+        user, PEOPLE_TEAM
+    )
+
+
 def _holds_role(user: User, characters) -> bool:
     return characters.filter(owned_by_q(user.id)).exists()
 

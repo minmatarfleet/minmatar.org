@@ -130,7 +130,13 @@ def member_details(
     facts = stats.get("member_facts") or {}
     tribes = _tribe_groups_by_user(user_ids)
     history = _status_history_by_user(user_ids)
-    trial_ready = _trial_ready_users()
+    # The review is a daily snapshot; someone promoted since is no longer
+    # waiting on it.
+    trial_ready = {
+        user_id: reason
+        for user_id, reason in _trial_ready_users().items()
+        if statuses.get(user_id) == UserCommunityStatus.STATUS_TRIAL
+    }
     players_by_user = {
         player.user_id: player
         for player in EvePlayer.objects.filter(

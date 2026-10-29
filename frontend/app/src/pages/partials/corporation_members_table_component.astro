@@ -9,6 +9,7 @@ import { get_player_icon } from '@helpers/eve_image_server'
 import {
     MEMBER_ATTENTION_VIEWS,
     MEMBER_PAGE_SIZE,
+    MEMBER_SORT_DEFAULT_DIRECTION,
     MEMBER_STATUS_FILTERS,
     MEMBER_TIMEZONE_FILTERS,
     MEMBER_VIEWS,
@@ -26,6 +27,7 @@ import type {
     CorporationMemberRow,
     MemberAttention,
     MemberRosterParams,
+    MemberSortMetric,
     MemberView,
 } from '@helpers/corporations/detail'
 import { month_year, short_date } from '@helpers/corporations/about'
@@ -80,6 +82,7 @@ const export_url = translatePath(`/api/corporations/members.csv?${query_string({
     status: params.status ?? '',
     view: params.view,
     sort: params.sort,
+    dir: params.direction,
 })}`)
 
 function view_label(view: MemberView): string {
@@ -153,10 +156,13 @@ function bars(weeks: number[]) {
     return weeks.map((week) => ({ week, height: week > 0 ? Math.max(12, Math.round((week / peak) * 100)) : 0 }))
 }
 
-function sort_label(sort: MemberRosterParams['sort']): string {
+function sort_label(sort: MemberSortMetric): string {
     switch (sort) {
         case 'kills': return t('corporations.members.sort_kills')
+        case 'voice': return t('corporations.members.sort_voice')
+        case 'timezone': return t('corporations.members.sort_timezone')
         case 'name': return t('corporations.members.sort_name')
+        case 'status': return t('corporations.members.sort_status')
         case 'joined': return t('corporations.members.sort_joined')
         case 'last': return t('corporations.members.sort_last')
         default: return t('corporations.members.sort_fleets')
@@ -173,27 +179,51 @@ const status_options = [
 ]
 
 // Every request swaps the body plus the controls whose counts or values change;
-// the search box is never replaced, so it keeps focus while typing.
+// the search box is never replaced, so it keeps focus while typing. Its blur
+// `change` is skipped: keyup already searched, and a second reload would close
+// the row the click that blurred it just opened.
 const hx_swap = {
     'hx-target': `#${BODY_ID}`,
     'hx-select': `#${BODY_ID}`,
-    'hx-select-oob': '#cm-views,#cm-attention,#cm-sort',
+    'hx-select-oob': '#cm-views,#cm-attention,#cm-sort,#cm-dir',
     'hx-swap': 'outerHTML',
 }
 
+const sorted_by_label = params.direction === MEMBER_SORT_DEFAULT_DIRECTION[params.sort]
+    ? sort_label(params.sort)
+    : t('corporations.members.sort_reversed').replace('~SORT', sort_label(params.sort))
+
 interface SortHeader {
-    key: MemberRosterParams['sort']
+    key: MemberSortMetric
     label: string
+    short_label?: string
     css: string
 }
 
-const pilot_header: SortHeader = { key: 'name', label: t('corporations.members.pilot'), css: 'col-pilot' }
+// Clicking the sorted column reverses it; another column starts in its own
+// default direction.
 const sort_headers: SortHeader[] = [
+    { key: 'name', label: t('corporations.members.pilot'), css: 'col-pilot' },
+    { key: 'status', label: t('corporations.members.status'), css: 'col-status' },
     { key: 'joined', label: t('corporations.members.in_corp'), css: 'col-joined' },
-    { key: 'fleets', label: t('corporations.members.fleets_weeks'), css: 'col-fleets' },
+    { key: 'fleets', label: t('corporations.members.fleets_weeks'), short_label: t('corporations.detail.fleets'), css: 'col-fleets' },
     { key: 'last', label: t('corporations.members.last_fleet'), css: 'col-last' },
     { key: 'kills', label: t('corporations.members.kills'), css: 'col-kills is-numeric' },
+    { key: 'voice', label: t('corporations.members.voice'), css: 'col-voice is-numeric' },
+    { key: 'timezone', label: t('corporations.detail.timezone'), css: 'col-prime' },
 ]
+
+function next_direction(key: MemberSortMetric) {
+    if (params.sort !== key)
+        return MEMBER_SORT_DEFAULT_DIRECTION[key]
+    return params.direction === 'asc' ? 'desc' : 'asc'
+}
+
+function aria_sort(key: MemberSortMetric) {
+    if (params.sort !== key)
+        return undefined
+    return params.direction === 'asc' ? 'ascending' : 'descending'
+}
 
 const names_by_id = Object.fromEntries(pagination.rows.map((row) => [row.character_id, corporation_member_primary(row).character_name]))
 const page_ids = pagination.rows.map((row) => row.character_id)
@@ -210,11 +240,12 @@ const selected_template = t('corporations.members.selected')
         class="cm-controls"
         role="search"
         hx-get={partial_url()}
-        hx-trigger={`keyup changed delay:300ms from:#${SEARCH_ID}, search from:#${SEARCH_ID}, change, submit`}
+        hx-trigger={`keyup changed delay:300ms from:#${SEARCH_ID}, search from:#${SEARCH_ID}, change[target.id!='${SEARCH_ID}'], submit`}
         hx-sync="this:replace"
         {...hx_swap}
     >
         <input type="hidden" id="cm-sort" name="sort" value={params.sort} />
+        <input type="hidden" id="cm-dir" name="dir" value={params.direction} />
         <div class="cm-filter-row">
             <fieldset id="cm-views" class="cm-views">
                 <legend class="visually-hidden">{t('corporations.members.views')}</legend>
@@ -290,6 +321,14 @@ const selected_template = t('corporations.members.selected')
         },
     }`}
 >
+    {/* A promotion in an opened row reloads the roster on the same page. */}
+    <div
+        hidden
+        hx-get={partial_url({ page: String(pagination.page) })}
+        hx-include={`#${FORM_ID}`}
+        hx-trigger="corporation-members-changed from:body"
+        {...hx_swap}
+    ></div>
     {pagination.rows.length === 0
         ? <EmptyState title={t('corporations.detail.no_members')} />
         : (
@@ -307,39 +346,23 @@ const selected_template = t('corporations.members.selected')
                                     x-on:change="toggle_all($event.target.checked)"
                                 />
                             </th>
-                            <th scope="col" class={pilot_header.css} aria-sort={params.sort === pilot_header.key ? 'ascending' : undefined}>
-                                <button
-                                    type="button"
-                                    class="cm-sort"
-                                    hx-get={partial_url()}
-                                    hx-include={`#${FORM_ID}`}
-                                    hx-vals={JSON.stringify({ sort: pilot_header.key, page: '1' })}
-                                    {...hx_swap}
-                                >
-                                    {pilot_header.label}
-                                    {params.sort === pilot_header.key && <span aria-hidden="true">▾</span>}
-                                </button>
-                            </th>
-                            <th scope="col" class="col-status">{t('corporations.members.status')}</th>
                             {sort_headers.map((header) => (
-                                <th scope="col" class={header.css} aria-sort={params.sort === header.key ? 'descending' : undefined}>
+                                <th scope="col" class={header.css} aria-sort={aria_sort(header.key)}>
                                     <button
                                         type="button"
                                         class="cm-sort"
                                         hx-get={partial_url()}
                                         hx-include={`#${FORM_ID}`}
-                                        hx-vals={JSON.stringify({ sort: header.key, page: '1' })}
+                                        hx-vals={JSON.stringify({ sort: header.key, dir: next_direction(header.key), page: '1' })}
                                         {...hx_swap}
                                     >
-                                        {header.key === 'fleets'
-                                            ? <><span class="cm-label-full">{header.label}</span><span class="cm-label-short">{t('corporations.detail.fleets')}</span></>
+                                        {header.short_label
+                                            ? <><span class="cm-label-full">{header.label}</span><span class="cm-label-short">{header.short_label}</span></>
                                             : header.label}
-                                        {params.sort === header.key && <span aria-hidden="true">▾</span>}
+                                        {params.sort === header.key && <span aria-hidden="true">{params.direction === 'asc' ? '▴' : '▾'}</span>}
                                     </button>
                                 </th>
                             ))}
-                            <th scope="col" class="col-voice is-numeric">{t('corporations.members.voice')}</th>
-                            <th scope="col" class="col-prime">{t('corporations.detail.timezone')}</th>
                             <th scope="col" class="col-chevron"></th>
                         </tr>
                         <tr class="cm-bulk" x-show="picked.length > 0" x-cloak>
@@ -447,7 +470,11 @@ const selected_template = t('corporations.members.selected')
                                         <div class="cm-detail__body">
                                             <LazyPartial
                                                 class="cm-insights"
-                                                url={translatePath(`/partials/corporation_member_insights_component/?corporation_id=${corporation_id}&character_id=${primary.character_id}`)}
+                                                url={translatePath(`/partials/corporation_member_insights_component/?${query_string({
+                                                    corporation_id: String(corporation_id),
+                                                    character_id: String(primary.character_id),
+                                                    name: primary.character_name,
+                                                })}`)}
                                                 trigger="reveal"
                                                 indicator={false}
                                             >
@@ -555,7 +582,7 @@ const selected_template = t('corporations.members.selected')
         buttons_gap="var(--space-2xs)"
     >
         <span slot="status" class="cm-muted">
-            {range_start}–{range_end} / {pagination.total} · {t('corporations.members.sorted_by').replace('~SORT', sort_label(params.sort))}
+            {range_start}–{range_end} / {pagination.total} · {t('corporations.members.sorted_by').replace('~SORT', sorted_by_label)}
         </span>
         <Button slot="actions" size="sm" color="transparent" href={export_url}>
             {t('corporations.members.export_csv')}

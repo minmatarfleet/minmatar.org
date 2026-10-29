@@ -14,8 +14,26 @@ export function corporation_path(corporation_id: number, name?: string | null): 
 // The detail page header's apply control; other Apply buttons on the page point here.
 export const CORPORATION_APPLY_ID = 'corporation-apply'
 
-export type MemberSortMetric = 'fleets' | 'kills' | 'voice' | 'timezone' | 'name' | 'joined' | 'last'
-export const MEMBER_SORTS = ['fleets', 'kills', 'name', 'joined', 'last'] as const
+export const MEMBER_SORTS = ['fleets', 'kills', 'voice', 'timezone', 'name', 'status', 'joined', 'last'] as const
+export type MemberSortMetric = typeof MEMBER_SORTS[number]
+export const MEMBER_SORT_DIRECTIONS = ['asc', 'desc'] as const
+export type MemberSortDirection = typeof MEMBER_SORT_DIRECTIONS[number]
+
+// What a column sorts by first: names, statuses and timezones A→Z, numbers and
+// dates biggest or most recent first, time in corp longest first.
+export const MEMBER_SORT_DEFAULT_DIRECTION: Record<MemberSortMetric, MemberSortDirection> = {
+    fleets: 'desc',
+    kills: 'desc',
+    voice: 'desc',
+    timezone: 'asc',
+    name: 'asc',
+    status: 'asc',
+    joined: 'desc',
+    last: 'desc',
+}
+
+// Trials first: they're the ones leadership acts on.
+const STATUS_SORT_RANK: Record<string, number> = { trial: 0, active: 1, on_leave: 2 }
 
 export const MEMBER_PAGE_SIZE = 25
 
@@ -345,33 +363,80 @@ export function filter_corporation_member_rows(
     })
 }
 
+// Longer in the corp sorts higher.
+function tenure_value(row: CorporationMemberRow): number | null {
+    return row.corp_joined_at ? -Date.parse(row.corp_joined_at) : null
+}
+
+function last_fleet_time(row: CorporationMemberRow): number | null {
+    return row.last_fleet_at ? Date.parse(row.last_fleet_at) : null
+}
+
+// Ascending order of one metric; null means the row has no value for it.
+function sort_value(row: CorporationMemberRow, metric: MemberSortMetric): number | string | null {
+    switch (metric) {
+        case 'fleets': return row.fleets_90d
+        case 'kills': return row.kills_90d
+        case 'voice': return row.linked ? row.voice_hours_90d : null
+        case 'timezone': return row.timezone?.brackets?.length ? timezone_rank(row.timezone) : null
+        case 'name': return row.character_name.toLowerCase()
+        case 'status': return row.community_status ? STATUS_SORT_RANK[row.community_status] ?? 3 : null
+        case 'joined': return tenure_value(row)
+        case 'last': return last_fleet_time(row)
+        default: {
+            const unexpected: never = metric
+            return unexpected
+        }
+    }
+}
+
+// Ties fall back to activity, then the name.
+const SORT_TIEBREAKS: Record<MemberSortMetric, MemberSortMetric[]> = {
+    fleets: ['kills'],
+    kills: ['fleets'],
+    voice: ['fleets'],
+    timezone: [],
+    name: [],
+    status: ['fleets'],
+    joined: [],
+    last: [],
+}
+
+function compare_values(a: number | string, b: number | string): number {
+    if (typeof a === 'string' && typeof b === 'string')
+        return a.localeCompare(b)
+    return (a as number) - (b as number)
+}
+
+/**
+ * Sorts by `metric` in `direction` (its default direction when omitted).
+ * Rows without a value (no join date, no fleet, no timezone) stay at the
+ * bottom both ways; ties fall back to activity, then the name A→Z.
+ */
 export function sort_corporation_member_rows(
     rows: CorporationMemberRow[],
     metric: MemberSortMetric,
+    direction: MemberSortDirection = MEMBER_SORT_DEFAULT_DIRECTION[metric],
 ): CorporationMemberRow[] {
+    const sign = direction === 'asc' ? 1 : -1
     const sorted = [...rows]
     sorted.sort((a, b) => {
-        const by_name = a.character_name.localeCompare(b.character_name)
-        switch (metric) {
-            case 'fleets':
-                return b.fleets_90d - a.fleets_90d || b.kills_90d - a.kills_90d || by_name
-            case 'kills':
-                return b.kills_90d - a.kills_90d || b.fleets_90d - a.fleets_90d || by_name
-            case 'voice':
-                return b.voice_hours_90d - a.voice_hours_90d || b.fleets_90d - a.fleets_90d || by_name
-            case 'timezone':
-                return timezone_rank(a.timezone) - timezone_rank(b.timezone) || by_name
-            case 'name':
-                return by_name
-            case 'joined':
-                return (a.corp_joined_at ?? '9999').localeCompare(b.corp_joined_at ?? '9999') || by_name
-            case 'last':
-                return (b.last_fleet_at ?? '').localeCompare(a.last_fleet_at ?? '') || by_name
-            default: {
-                const unexpected: never = metric
-                return unexpected
-            }
+        const primary_a = sort_value(a, metric)
+        const primary_b = sort_value(b, metric)
+        if (primary_a === null || primary_b === null) {
+            if (primary_a !== primary_b)
+                return primary_a === null ? 1 : -1
+        } else {
+            const primary = compare_values(primary_a, primary_b)
+            if (primary !== 0)
+                return sign * primary
         }
+        for (const tiebreak of SORT_TIEBREAKS[metric]) {
+            const tie = compare_values(sort_value(a, tiebreak) ?? 0, sort_value(b, tiebreak) ?? 0)
+            if (tie !== 0)
+                return sign * tie
+        }
+        return a.character_name.localeCompare(b.character_name)
     })
     return sorted
 }
@@ -396,7 +461,8 @@ export function paginate_corporation_member_rows<T>(
 
 export interface MemberRosterParams extends MemberFilters {
     view: MemberView
-    sort: typeof MEMBER_SORTS[number]
+    sort: MemberSortMetric
+    direction: MemberSortDirection
     page: number
     // Export only these characters (row character ids), when set.
     ids: number[]
@@ -405,12 +471,14 @@ export interface MemberRosterParams extends MemberFilters {
 // One parser for the table partial and the CSV export, so both filter alike.
 export function parse_member_params(params: URLSearchParams): MemberRosterParams {
     const views = [...MEMBER_VIEWS, ...MEMBER_ATTENTION_VIEWS] as const
+    const sort = member_filter_value(params.get('sort'), MEMBER_SORTS) ?? 'fleets'
     return {
         query: (params.get('q') ?? '').trim().slice(0, 80),
         timezone: member_filter_value(params.get('tz'), MEMBER_TIMEZONE_FILTERS),
         status: member_filter_value(params.get('status'), MEMBER_STATUS_FILTERS),
         view: member_filter_value(params.get('view'), views) ?? 'all',
-        sort: member_filter_value(params.get('sort'), MEMBER_SORTS) ?? 'fleets',
+        sort,
+        direction: member_filter_value(params.get('dir'), MEMBER_SORT_DIRECTIONS) ?? MEMBER_SORT_DEFAULT_DIRECTION[sort],
         page: corporation_member_page(params.get('page')),
         ids: (params.get('ids') ?? '')
             .split(',')
@@ -427,7 +495,7 @@ export function build_member_roster(
     const picked = params.ids.length > 0
         ? filtered.filter((row) => params.ids.includes(row.character_id))
         : filtered
-    return sort_corporation_member_rows(picked, params.sort)
+    return sort_corporation_member_rows(picked, params.sort, params.direction)
 }
 
 // Spreadsheet readers get words, not codes.
