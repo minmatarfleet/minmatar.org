@@ -56,7 +56,6 @@ class BuybackContractManager(
             super()
             .get_queryset()
             .filter(
-                corporation__corporation_id=BUYBACK_CORPORATION_ID,
                 type=BUYBACK_CONTRACT_TYPE,
                 assignee_id=BUYBACK_CORPORATION_ID,
             )
@@ -64,7 +63,12 @@ class BuybackContractManager(
 
 
 class BuybackContract(EveCorporationContract):
-    """Proxy view over EveCorporationContract for M-EXC item-exchange buybacks."""
+    """Item-exchange contracts assigned to M-EXC.
+
+    The row's corporation FK is whichever corp last synced that contract_id.
+    An issuer corp we also ingest can move the FK off M-EXC, so this proxy
+    keys off assignee_id, the same way freight does.
+    """
 
     objects = BuybackContractManager()
 

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from buyback.helpers.contracts_ledger import (
     classify_contract_direction,
+    sync_contract_ledger_entries,
     upsert_ledger_from_contract_items,
 )
 from buyback.helpers.hangar import quantities_from_assets
@@ -156,6 +157,45 @@ class ContractLedgerUpsertTestCase(TestCase):
         self.assertEqual(entry.source_id, "234840893:99")
         self.assertEqual(entry.counterparty_id, 1)
         self.assertTrue(entry.counterparty_name)
+
+    @patch("buyback.helpers.contracts_ledger.fetch_contract_items")
+    def test_sync_includes_outbound_stored_under_assignee_corp(
+        self, mock_items
+    ):
+        buyer = EveCorporation.objects.create(
+            corporation_id=98832280,
+            name="Buyer Corp",
+            ticker="BUY",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=42,
+            corporation=buyer,
+            type=BUYBACK_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=7,
+            issuer_corporation_id=BUYBACK_CORPORATION_ID,
+            assignee_id=buyer.corporation_id,
+            date_issued=timezone.now(),
+            date_completed=timezone.now(),
+            price=100,
+            volume=1,
+        )
+        mock_items.return_value = [
+            {
+                "type_id": self.eve_type.id,
+                "quantity": 10,
+                "record_id": 1,
+                "is_included": True,
+            }
+        ]
+        result = sync_contract_ledger_entries(contract_ids=[42])
+        self.assertEqual(result["scanned"], 1)
+        self.assertEqual(result["created"], 1)
+        entry = BuybackLedgerEntry.objects.get()
+        self.assertEqual(entry.reason, BuybackLedgerEntry.Reason.SOLD_CONTRACT)
+        self.assertEqual(entry.quantity, 10)
+        self.assertEqual(entry.counterparty_id, buyer.corporation_id)
+        self.assertEqual(entry.counterparty_kind, "corporation")
 
 
 class UnknownResidualTestCase(TestCase):
