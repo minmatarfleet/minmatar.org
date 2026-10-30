@@ -52,11 +52,15 @@ class BuybackContractProxyTestCase(TestCase):
         defaults.update(overrides)
         return EveCorporationContract.objects.create(**defaults)
 
-    def test_proxy_filters_to_buyback_corporation(self):
+    def test_proxy_includes_contracts_synced_under_another_corp(self):
+        """Assignee is M-EXC even if another corp's ESI ingest stored the row."""
         self._make_contract(contract_id=1)
         self._make_contract(contract_id=2, corporation=self.other_corp)
-        self.assertEqual(BuybackContract.objects.count(), 1)
-        self.assertEqual(BuybackContract.objects.first().contract_id, 1)
+        self.assertEqual(BuybackContract.objects.count(), 2)
+        self.assertEqual(
+            set(BuybackContract.objects.values_list("contract_id", flat=True)),
+            {1, 2},
+        )
 
     def test_proxy_filters_to_item_exchange_type(self):
         self._make_contract(contract_id=1)

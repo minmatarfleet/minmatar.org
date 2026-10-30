@@ -74,6 +74,20 @@ def _in_or_out_q() -> Q:
     )
 
 
+def mexc_item_exchange_contracts():
+    """M-EXC in/out item exchanges, whoever last stored the row.
+
+    ``update_corporation_contracts`` upserts by contract_id and sets
+    ``corporation`` to the corp being synced. A sale assigned to another
+    corp we ingest (or an inbound contract issued by one) is then no
+    longer filed under M-EXC. Direction comes from the ESI issuer and
+    assignee ids, not that foreign key.
+    """
+    return EveCorporationContract.objects.filter(
+        type=BUYBACK_CONTRACT_TYPE,
+    ).filter(_in_or_out_q())
+
+
 def fetch_contract_items(contract_id: int) -> list[dict]:
     try:
         corp = EveCorporation.objects.get(
@@ -173,10 +187,7 @@ def sync_contract_ledger_entries(
     """
     Fetch ESI items for M-EXC in/out item_exchange contracts and upsert ledger.
     """
-    qs = EveCorporationContract.objects.filter(
-        corporation__corporation_id=BUYBACK_CORPORATION_ID,
-        type=BUYBACK_CONTRACT_TYPE,
-    ).filter(_in_or_out_q())
+    qs = mexc_item_exchange_contracts()
     if contract_ids is not None:
         qs = qs.filter(contract_id__in=contract_ids)
 
@@ -228,10 +239,7 @@ def sync_contract_ledger_entries(
 
 def backfill_contract_counterparties() -> dict[str, int]:
     """Fill counterparty fields on existing contract ledger rows from headers."""
-    qs = EveCorporationContract.objects.filter(
-        corporation__corporation_id=BUYBACK_CORPORATION_ID,
-        type=BUYBACK_CONTRACT_TYPE,
-    ).filter(_in_or_out_q())
+    qs = mexc_item_exchange_contracts()
     by_contract_id = {c.contract_id: c for c in qs}
     party_ids: set[int] = set()
     for contract in by_contract_id.values():

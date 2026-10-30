@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-10-30 — Old buyback sales stay open after the contract finishes
+
+**Category:** pulse.technology (buyback forum; no HelpTicket row)
+**Verdict:** bug
+**Discord:** no reply (forum channel, not a help thread; cloud bot 403s the production guild)
+**PR:** fix+skill
+**Symptom vs cause:** Pending hangar sales stayed open after a finished item-exchange to the buyer's corporation. Another corp's contract sync stored that `contract_id` under itself, and the ledger sync only read rows whose corporation FK was still M-EXC, so no `sold_contract` row existed to auto-complete the order.
+**Durable rule:** Match M-EXC in/out contracts by `assignee_id` and `issuer_corporation_id`. The corporation FK is whoever synced last. A corp assignee still counts as the buyer when one of their characters is in that corp.
+**Skill update:** added the buyback sale-threads row.
+
 ## 2026-10-25 — Structure-pings channel mislabels orbitals and drops reinforce
 
 **Category:** pulse.technology (structure-pings channel; no HelpTicket row)
