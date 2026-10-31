@@ -7,6 +7,7 @@ import { formatIsk } from '@/data/campaigns/hek'
 import { COVER_IMAGE as WARZONE_COVER, PERMALINK_PATH as WARZONE_PATH, YC128_07 } from '@/data/warzone/yc128-07'
 import { PERMALINK_PATH as WARZONE_08_PATH, YC128_08 } from '@/data/warzone/yc128-08'
 import { PERMALINK_PATH as WARZONE_09_PATH, YC128_09 } from '@/data/warzone/yc128-09'
+import { PERMALINK_PATH as WARZONE_10_PATH, YC128_10 } from '@/data/warzone/yc128-10'
 import {
     COVER_IMAGE as AMAMAKE_COVER,
     PERMALINK_PATH as AMAMAKE_08_PATH,
@@ -16,6 +17,10 @@ import {
     PERMALINK_PATH as AMAMAKE_09_PATH,
     YC128_09 as AMAMAKE_YC128_09,
 } from '@/data/amamake-market/yc128-09'
+import {
+    PERMALINK_PATH as AMAMAKE_10_PATH,
+    YC128_10 as AMAMAKE_YC128_10,
+} from '@/data/amamake-market/yc128-10'
 
 export type CampaignKind = 'campaign' | 'siege' | 'warzone'
 export type WarzoneReportType = 'frontline' | 'economic'
@@ -140,6 +145,19 @@ export const campaigns: CampaignMeta[] = [
         published_at: new Date('2026-09-30T00:00:00Z'),
     },
     {
+        slug: 'yc128-10',
+        path: WARZONE_10_PATH,
+        nameKey: 'warzone.yc128_10.name',
+        periodKey: 'warzone.yc128_10.period',
+        excerptKey: 'warzone.yc128_10.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: YC128_10.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'frontline',
+        published_at: new Date('2026-10-31T00:00:00Z'),
+    },
+    {
         slug: 'amamake-market-yc128-08',
         path: AMAMAKE_08_PATH,
         nameKey: 'amamake_market.yc128_08.name',
@@ -166,6 +184,20 @@ export const campaigns: CampaignMeta[] = [
         warzone_type: 'economic',
         isk_label_key: 'sold',
         published_at: AMAMAKE_YC128_09.published_at,
+    },
+    {
+        slug: 'amamake-market-yc128-10',
+        path: AMAMAKE_10_PATH,
+        nameKey: 'amamake_market.yc128_10.name',
+        periodKey: 'amamake_market.yc128_10.period',
+        excerptKey: 'amamake_market.yc128_10.leading_text',
+        coverImage: AMAMAKE_COVER,
+        iskDestroyed: AMAMAKE_YC128_10.sales.isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'economic',
+        isk_label_key: 'sold',
+        published_at: AMAMAKE_YC128_10.published_at,
     },
 ]
 
