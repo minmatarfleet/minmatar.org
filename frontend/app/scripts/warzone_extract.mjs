@@ -162,7 +162,9 @@ for (const sid of system_ids) {
     } catch {
         html = await fetch_text(`https://evemaps.dotlan.net/system/${encodeURIComponent(name)}`)
         await writeFile(file, html)
-        await sleep(1_100)
+        // Dotlan has blocked this script before. One page per system, then a long
+        // pause. The HTML is cached, so a re-run does not ask again.
+        await sleep(5_000)
     }
     const owner = dotlan_holder_asof(html, month_end)
     if (owner) month_end_resolved += 1
@@ -329,13 +331,16 @@ for (const g of candidates) {
             await writeFile(file, JSON.stringify(rows))
             await sleep(1_100)
         }
+        // An empty page is the end. A short page is not: zKill sometimes returns
+        // fewer than 200 kills on a page that still has older kills behind it.
         if (!Array.isArray(rows) || rows.length === 0) { exhausted = true; break }
         total += rows.filter((k) => !CAPSULES.has(k.victim?.ship_type_id) && !k.zkb?.npc).length
         if (total > limit) break
-        if (rows.length < 200) { exhausted = true; break }
         page += 1
+        if (page > 100) break
     }
-    const share = exhausted && total > 0 ? g.killmails / total : 0
+    // total < warzone kills means the group feed was incomplete. Don't treat that as a keep.
+    const share = exhausted && total >= g.killmails ? g.killmails / total : 0
     if (share > FW_SHARE_THRESHOLD) {
         const dominant = [...g.factions.entries()].sort((a, b) => b[1] - a[1])[0]
         const dominant_id = dominant ? dominant[0] : null

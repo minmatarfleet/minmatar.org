@@ -350,9 +350,18 @@ async function esi_hydrate_types(ids) {
 // ---------------------------------------------------------------- Sales feed
 async function monthly_sales(year, month) {
     const closed = new Date(Date.UTC(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1)) <= today
+    const name = `sales-${LOCATION_ID}-${year}-${pad2(month)}.json`
+    const file = path.join(MARKET_CACHE, name)
+    // Open months refetch from the API when a staff token is set. A
+    // production_readonly dump written for this run is the fallback: the
+    // monthly endpoint only returns by_type to staff.
+    if (!closed && !EXTRACT_TOKEN && existsSync(file)) {
+        console.error(`sales: ${year}-${pad2(month)} from cache (open month, no extract token)`)
+        return JSON.parse(await readFile(file, 'utf8'))
+    }
     const qs = `location_id=${LOCATION_ID}&year=${year}&month=${month}&include_types=true`
     return cached_json(
-        `sales-${LOCATION_ID}-${year}-${pad2(month)}.json`,
+        name,
         `${API}/api/market/inferred-sales/monthly?${qs}`,
         { cache: closed },
     )
