@@ -17,14 +17,18 @@ import { campaigns, getAllCampaigns, getWarzoneReports } from '@/data/campaigns'
 import { defaultLang, ui } from '@i18n/ui'
 
 describe('amamake market issue registry', () => {
-    it('lists yc128-09 as the latest issue', () => {
-        expect(get_latest_issue().slug).toBe('yc128-09')
+    it('lists yc128-10 as the latest issue', () => {
+        expect(get_latest_issue().slug).toBe('yc128-10')
+        expect(get_issue('yc128-10')?.permalink_path).toBe('/amamake-market/yc128-10/')
         expect(get_issue('yc128-09')?.permalink_path).toBe('/amamake-market/yc128-09/')
         expect(get_issue('yc128-08')?.permalink_path).toBe('/amamake-market/yc128-08/')
+        expect(get_issue_slugs()).toContain('yc128-10')
         expect(get_issue_slugs()).toContain('yc128-09')
         expect(get_issue_slugs()).toContain('yc128-08')
-        expect(ISSUES).toHaveLength(2)
-        expect(issue_label(get_latest_issue())).toBe('September YC128')
+        expect(ISSUES).toHaveLength(3)
+        expect(issue_label(get_latest_issue())).toBe('October YC128')
+        expect(get_adjacent_issues('yc128-10').older?.slug).toBe('yc128-09')
+        expect(get_adjacent_issues('yc128-09').newer?.slug).toBe('yc128-10')
         expect(get_adjacent_issues('yc128-09').older?.slug).toBe('yc128-08')
         expect(get_adjacent_issues('yc128-08').newer?.slug).toBe('yc128-09')
     })
@@ -55,8 +59,8 @@ describe('amamake market issue registry', () => {
 
     it('uses a complete production month of inferred sales', () => {
         const issue = get_latest_issue()
-        expect(issue.days).toHaveLength(30)
-        expect(issue.sales.days_with_sales).toBe(30)
+        expect(issue.days).toHaveLength(31)
+        expect(issue.sales.days_with_sales).toBe(31)
         expect(issue.days.every((day) => day.isk > 0)).toBe(true)
     })
 
@@ -182,7 +186,7 @@ describe('amamake market issue registry', () => {
         expect(volume.dek).toContain('Everything that moved')
         expect(volume.location_id).toBeGreaterThan(0)
         expect(volume.year).toBe(2026)
-        expect(volume.month).toBe(9)
+        expect(volume.month).toBe(10)
         expect(methodology.some((entry) => entry.label === 'All Items Sold')).toBe(true)
         expect(
             methodology.find((entry) => entry.label === 'All Items Sold')!.text,
@@ -230,17 +234,18 @@ describe('amamake market issue registry', () => {
 })
 
 describe('amamake market content-hub registration', () => {
-    it('lists the September issue as a warzone economic report on its permalink', () => {
-        const entry = campaigns.find((campaign) => campaign.slug === 'amamake-market-yc128-09')
+    it('lists the October issue as a warzone economic report on its permalink', () => {
+        const entry = campaigns.find((campaign) => campaign.slug === 'amamake-market-yc128-10')
 
         expect(entry).toBeDefined()
         expect(entry).toMatchObject({
             kind: 'warzone',
             warzone_type: 'economic',
-            path: '/amamake-market/yc128-09/',
+            path: '/amamake-market/yc128-10/',
             isk_label_key: 'sold',
         })
         expect(entry?.iskDestroyed).toBe(get_latest_issue().sales.isk)
+        expect(getWarzoneReports().some((report) => report.slug === 'amamake-market-yc128-10')).toBe(true)
         expect(getWarzoneReports().some((report) => report.slug === 'amamake-market-yc128-09')).toBe(true)
         expect(get_issue('yc128-08')?.sales.isk).toBe(
             campaigns.find((campaign) => campaign.slug === 'amamake-market-yc128-08')?.iskDestroyed,
@@ -264,6 +269,13 @@ describe('amamake market content-hub registration', () => {
         expect(copy['amamake_market.yc128_09.leading_text']).toBe(copy['amamake_market.yc128_08.leading_text'])
         expect(copy['page_finder.amamake_market.yc128_09.description']).toBe(
             'September YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
+        )
+        expect(copy['amamake_market.yc128_10.name']).toBe('Amamake Economic Report · October YC128')
+        expect(copy['amamake_market.yc128_10.page_title']).toBe('Amamake Economic Report · October YC128')
+        expect(copy['amamake_market.yc128_10.period']).toBe('1–31 Oct YC128')
+        expect(copy['amamake_market.yc128_10.leading_text']).toBe(copy['amamake_market.yc128_08.leading_text'])
+        expect(copy['page_finder.amamake_market.yc128_10.description']).toBe(
+            'October YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         )
         expect(copy['amamake_market.page_title']).toBe('Amamake Economic Report')
         expect(copy['content.kind.warzone.frontline']).toBe('Frontline Report')
