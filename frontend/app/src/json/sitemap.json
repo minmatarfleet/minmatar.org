@@ -234,6 +234,13 @@
         "keywords": ["warzone", "frontline report", "October YC128", "Amamake", "Huola", "Frerstorn", "faction warfare"]
     },
     {
+        "slug": "warzone.gallente_caldari_yc128_10",
+        "path": "/warzone/gallente-caldari-yc128-10/",
+        "publish": true,
+        "description": "page_finder.warzone.gallente_caldari_yc128_10.description",
+        "keywords": ["warzone", "frontline report", "October YC128", "Gallente", "Caldari", "Tama", "Aldranette", "faction warfare"]
+    },
+    {
         "slug": "newsletter",
         "path": "/newsletter/",
         "publish": true,

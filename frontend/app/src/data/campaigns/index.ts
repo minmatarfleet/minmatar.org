@@ -8,6 +8,7 @@ import { COVER_IMAGE as WARZONE_COVER, PERMALINK_PATH as WARZONE_PATH, YC128_07 
 import { PERMALINK_PATH as WARZONE_08_PATH, YC128_08 } from '@/data/warzone/yc128-08'
 import { PERMALINK_PATH as WARZONE_09_PATH, YC128_09 } from '@/data/warzone/yc128-09'
 import { PERMALINK_PATH as WARZONE_10_PATH, YC128_10 } from '@/data/warzone/yc128-10'
+import { PERMALINK_PATH as WARZONE_GC_10_PATH, GALLENTE_CALDARI_YC128_10 } from '@/data/warzone/gallente-caldari-yc128-10'
 import {
     COVER_IMAGE as AMAMAKE_COVER,
     PERMALINK_PATH as AMAMAKE_08_PATH,
@@ -152,6 +153,19 @@ export const campaigns: CampaignMeta[] = [
         excerptKey: 'warzone.yc128_10.leading_text',
         coverImage: WARZONE_COVER,
         iskDestroyed: YC128_10.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        warzone_type: 'frontline',
+        published_at: new Date('2026-10-31T00:00:00Z'),
+    },
+    {
+        slug: 'gallente-caldari-yc128-10',
+        path: WARZONE_GC_10_PATH,
+        nameKey: 'warzone.gallente_caldari_yc128_10.name',
+        periodKey: 'warzone.gallente_caldari_yc128_10.period',
+        excerptKey: 'warzone.gallente_caldari_yc128_10.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: GALLENTE_CALDARI_YC128_10.sampled_isk,
         sortOrder: 0,
         kind: 'warzone',
         warzone_type: 'frontline',

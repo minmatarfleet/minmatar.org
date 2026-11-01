@@ -2,7 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import type { WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
+import type { WarzoneHolderId, WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
+import MilitiaEmblem from '@components/blocks/warzone/MilitiaEmblem.astro'
 import { get_adjacent_issues } from '@/data/warzone'
 import { ISK_REPORT_MILLIONS, format_compact } from '@helpers/numbers'
 
@@ -11,8 +12,6 @@ import Button from '@components/blocks/Button.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
-import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
-import AmarrLogo from '@components/logos/AmarrLogo.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import GuidePostCard from '@components/blocks/GuidePostCard.astro'
@@ -48,8 +47,17 @@ function issue_label(iss: WarzoneIssue): string {
     return `${month} YC${iss.published_at.getUTCFullYear() - 1898}`
 }
 
-function militia_label(id: WarzoneMilitiaId): string {
-    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
+const MILITIA_LABELS: Record<WarzoneHolderId, string> = {
+    minmatar: 'Minmatar', // pragma: allowlist secret
+    amarr: 'Amarr',
+    gallente: 'Gallente',
+    caldari: 'Caldari',
+    angel: 'Angel Cartel',
+    guristas: 'Guristas',
+}
+
+function militia_label(id: WarzoneHolderId): string {
+    return MILITIA_LABELS[id]
 }
 
 const format_isk = (value: number) => format_compact(value, ISK_REPORT_MILLIONS)
@@ -66,6 +74,7 @@ function resolve_href(href: string): string {
     return is_external(href) ? href : translatePath(href)
 }
 
+const show_deltas = issue.show_deltas !== false
 const vs_label = `vs ${issue.previous_period_label}`
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -78,61 +87,57 @@ function date_sort_key(label: string): number {
 }
 const occupancy_sorted = [...issue.occupancy].sort((a, b) => date_sort_key(a.date_label) - date_sort_key(b.date_label))
 
-const minmatar = issue.scoreboard.find((side) => side.militia === 'minmatar')!
-const amarr = issue.scoreboard.find((side) => side.militia === 'amarr')!
-const total_systems = minmatar.systems_held + amarr.systems_held
-const minmatar_share = percent(minmatar.systems_held, total_systems)
-const amarr_share = 100 - minmatar_share
+const home = issue.scoreboard[0]
+const away = issue.scoreboard[1]
+const total_systems = home.systems_held + away.systems_held
+const home_share = percent(home.systems_held, total_systems)
+const away_share = 100 - home_share
 
-// This month's front-line movement, drawn on the split bar. The prior holding is
-// taken from the previous issue's own month-end count when available (grounding
-// the band in real data rather than the hand-authored occupancy_net); it falls
-// back to systems_held - occupancy_net for the first issue. + = Minmatar gained.
-const older_minmatar_held = older?.scoreboard.find((side) => side.militia === 'minmatar')?.systems_held
-const prev_minmatar_held = older_minmatar_held ?? minmatar.systems_held - minmatar.occupancy_net
-const net_change = minmatar.systems_held - prev_minmatar_held
-const gain_side: WarzoneMilitiaId | null =
-    net_change > 0 ? 'minmatar' : net_change < 0 ? 'amarr' : null
+// Front-line movement on the split bar. Hidden when this zone has no prior month.
+const older_home_held = older?.scoreboard.find((side) => side.militia === home.militia)?.systems_held
+const prev_home_held = older_home_held ?? home.systems_held - home.occupancy_net
+const net_change = home.systems_held - prev_home_held
+const gain_side: WarzoneMilitiaId | null = !show_deltas || net_change === 0
+    ? null
+    : net_change > 0 ? home.militia : away.militia
 const gain_count = Math.abs(net_change)
-const prev_minmatar_share = percent(prev_minmatar_held, total_systems)
-const gain_band_left = Math.min(prev_minmatar_share, minmatar_share)
-const gain_band_width = Math.abs(prev_minmatar_share - minmatar_share)
+const prev_home_share = percent(prev_home_held, total_systems)
+const gain_band_left = Math.min(prev_home_share, home_share)
+const gain_band_width = Math.abs(prev_home_share - home_share)
 
 const compare_rows = [
     {
         label: 'Enlisted pilots',
-        minmatar: minmatar.enlisted_pilots,
-        amarr: amarr.enlisted_pilots,
-        minmatar_label: minmatar.enlisted_pilots_label,
-        amarr_label: amarr.enlisted_pilots_label,
-        minmatar_vs: undefined as number | undefined,
-        amarr_vs: undefined as number | undefined,
+        home: home.enlisted_pilots,
+        away: away.enlisted_pilots,
+        home_label: home.enlisted_pilots_label,
+        away_label: away.enlisted_pilots_label,
+        home_vs: undefined as number | undefined,
+        away_vs: undefined as number | undefined,
     },
     {
         label: 'Active pilots',
-        minmatar: minmatar.active_pilots,
-        amarr: amarr.active_pilots,
-        minmatar_label: minmatar.active_pilots_label,
-        amarr_label: amarr.active_pilots_label,
-        minmatar_vs: minmatar.active_pilots_vs,
-        amarr_vs: amarr.active_pilots_vs,
+        home: home.active_pilots,
+        away: away.active_pilots,
+        home_label: home.active_pilots_label,
+        away_label: away.active_pilots_label,
+        home_vs: show_deltas ? home.active_pilots_vs : undefined,
+        away_vs: show_deltas ? away.active_pilots_vs : undefined,
     },
     {
         label: 'Kills',
-        minmatar: minmatar.kills,
-        amarr: amarr.kills,
-        minmatar_label: number_thousand_separator(minmatar.kills),
-        amarr_label: number_thousand_separator(amarr.kills),
-        minmatar_vs: minmatar.kills_vs,
-        amarr_vs: amarr.kills_vs,
+        home: home.kills,
+        away: away.kills,
+        home_label: number_thousand_separator(home.kills),
+        away_label: number_thousand_separator(away.kills),
+        home_vs: show_deltas ? home.kills_vs : undefined,
+        away_vs: show_deltas ? away.kills_vs : undefined,
     },
 ].map((row) => {
-    const max = Math.max(row.minmatar, row.amarr)
+    const max = Math.max(row.home, row.away)
     return {
         ...row,
-        minmatar_pct: percent(row.minmatar, max),
-        amarr_pct: percent(row.amarr, max),
-        leader: row.minmatar === row.amarr ? null : row.minmatar > row.amarr ? 'minmatar' : 'amarr',
+        leader: row.home === row.away ? null : row.home > row.away ? home.militia : away.militia,
     }
 })
 
@@ -141,8 +146,8 @@ const max_traffic = Math.max(...issue.traffic.map((row) => row.ships))
 const front_total = issue.fronts.reduce((sum, front) => sum + front.ships, 0)
 
 const focus = issue.focus
-const focus_loss_max = Math.max(focus.minmatar_ships, focus.amarr_ships, focus.other_ships)
-const engagement_total = focus.engagement_mix.reduce((sum, slice) => sum + slice.value, 0)
+const focus_loss_max = focus ? Math.max(focus.minmatar_ships, focus.amarr_ships, focus.other_ships) : 0 // pragma: allowlist secret
+const engagement_total = focus ? focus.engagement_mix.reduce((sum, slice) => sum + slice.value, 0) : 0
 const engagement_colors = ['rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.45)', 'rgba(255, 255, 255, 0.2)']
 
 /** Custom alliance logos for groups CCP/zKill has no logo for yet. Transparent PNGs. */
@@ -191,7 +196,7 @@ const featured_guides = issue.get_involved.featured_guides
                 <div>
                     <span class="[ wz-hero-stat__label ]">Ships destroyed</span>
                     <b class="[ wz-hero-stat__value ]">{number_thousand_separator(issue.sampled_ships)}</b>
-                    {issue.sampled_ships_vs !== undefined && issue.sampled_ships_vs !== 0 && (
+                    {show_deltas && issue.sampled_ships_vs !== undefined && issue.sampled_ships_vs !== 0 && (
                         <span class:list={['wz-trend', issue.sampled_ships_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>
                             <span aria-hidden="true">{issue.sampled_ships_vs > 0 ? '▲' : '▼'}</span>{number_thousand_separator(Math.abs(issue.sampled_ships_vs))} vs {issue.previous_period_label}
                         </span>
@@ -205,13 +210,14 @@ const featured_guides = issue.get_involved.featured_guides
                 <div>
                     <span class="[ wz-hero-stat__label ]">ISK destroyed</span>
                     <b class="[ wz-hero-stat__value ]">{format_isk(issue.sampled_isk)}</b>
-                    {issue.sampled_isk_vs !== undefined && issue.sampled_isk_vs !== 0 && (
+                    {show_deltas && issue.sampled_isk_vs !== undefined && issue.sampled_isk_vs !== 0 && (
                         <span class:list={['wz-trend', issue.sampled_isk_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>
                             <span aria-hidden="true">{issue.sampled_isk_vs > 0 ? '▲' : '▼'}</span>{format_isk(Math.abs(issue.sampled_isk_vs))} vs {issue.previous_period_label}
                         </span>
                     )}
                 </div>
             </div>
+            {issue.focus_name && (
             <div class="[ wz-hero-stat ]">
                 <span class="[ wz-hero-stat__icon ]" aria-hidden="true">
                     <img src="/images/icons/64px-Warreport.png" alt="" width="64" height="64" loading="lazy" />
@@ -221,12 +227,13 @@ const featured_guides = issue.get_involved.featured_guides
                     <b class="[ wz-hero-stat__value ]">{issue.focus_name}</b>
                 </div>
             </div>
+            )}
         </div>
 
     </div>
 
     <nav class="[ wz-jump ]" aria-label="Jump to section">
-        {SECTION_NAV.map((section) => (
+        {SECTION_NAV.filter((section) => section.id !== 'focus' || focus).map((section) => (
             <a class="[ wz-jump__link ]" href={`#${section.id}`}>{section.label}</a>
         ))}
     </nav>
@@ -241,25 +248,25 @@ const featured_guides = issue.get_involved.featured_guides
 
         <ComponentBlock>
             <div class="[ wz-versus ]">
-                <div class="[ wz-versus__side wz-versus__side--minmatar ]">
-                    <span class="[ wz-versus__logo ]" aria-hidden="true"><MinmatarLogo /></span>
+                <div class:list={['wz-versus__side', `wz-versus__side--${home.militia}`]}>
+                    <span class="[ wz-versus__logo ]" aria-hidden="true"><MilitiaEmblem holder={home.militia} /></span>
                     <div>
-                        <h3>Minmatar</h3>
+                        <h3>{militia_label(home.militia)}</h3>
                     </div>
                 </div>
-                <div class="[ wz-versus__side wz-versus__side--amarr ]">
-                    <span class="[ wz-versus__logo ]" aria-hidden="true"><AmarrLogo /></span>
+                <div class:list={['wz-versus__side', `wz-versus__side--${away.militia}`]}>
+                    <span class="[ wz-versus__logo ]" aria-hidden="true"><MilitiaEmblem holder={away.militia} /></span>
                     <div>
-                        <h3>Amarr</h3>
+                        <h3>{militia_label(away.militia)}</h3>
                     </div>
                 </div>
             </div>
 
-            <div class="[ wz-split ]" role="img" aria-label={`Minmatar hold ${minmatar.systems_held} systems, Amarr hold ${amarr.systems_held}, of ${total_systems}.${gain_side ? ` This month ${gain_side === 'minmatar' ? 'Minmatar' : 'Amarr'} gained ${gain_count}.` : ''}`}>
-                <b class="[ wz-split__value wz-minmatar-text ]">{minmatar.systems_held}</b>
+            <div class="[ wz-split ]" role="img" aria-label={`${militia_label(home.militia)} hold ${home.systems_held} systems, ${militia_label(away.militia)} hold ${away.systems_held}, of ${total_systems}.${gain_side ? ` This month ${militia_label(gain_side)} gained ${gain_count}.` : ''}`}>
+                <b class:list={['wz-split__value', `wz-${home.militia}-text`]}>{home.systems_held}</b>
                 <div class="[ wz-split__bar ]">
-                    <span class="[ wz-split__fill wz-split__fill--minmatar ]" style={`width: ${minmatar_share}%`}></span>
-                    <span class="[ wz-split__fill wz-split__fill--amarr ]" style={`width: ${amarr_share}%`}></span>
+                    <span class:list={['wz-split__fill', `wz-split__fill--${home.militia}`]} style={`width: ${home_share}%`}></span>
+                    <span class:list={['wz-split__fill', `wz-split__fill--${away.militia}`]} style={`width: ${away_share}%`}></span>
                     {gain_side && (
                         <span
                             class:list={['wz-split__gain', `wz-split__gain--${gain_side}`]}
@@ -271,28 +278,28 @@ const featured_guides = issue.get_involved.featured_guides
                             class:list={['wz-split__flag', `wz-split__flag--${gain_side}`]}
                             style={`left: ${gain_band_left + gain_band_width / 2}%`}
                         >
-                            <span aria-hidden="true">{gain_side === 'minmatar' ? '▶' : '◀'}</span>+{gain_count}
+                            <span aria-hidden="true">{gain_side === home.militia ? '▶' : '◀'}</span>+{gain_count}
                         </span>
                     )}
                 </div>
-                <b class="[ wz-split__value wz-amarr-text ]">{amarr.systems_held}</b>
+                <b class:list={['wz-split__value', `wz-${away.militia}-text`]}>{away.systems_held}</b>
             </div>
 
             <div class="[ wz-compare ]">
                 {compare_rows.map((row) => (
                     <div class="[ wz-compare__row ]">
-                        <b class:list={['wz-compare__value wz-compare__value--minmatar', row.leader === 'minmatar' && 'is-leader']}>
-                            {row.minmatar_label}
-                            {row.minmatar_vs !== undefined && row.minmatar_vs !== 0 && (
-                                <span class:list={['wz-compare__trend', row.minmatar_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{row.minmatar_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.minmatar_vs))}</span>
+                        <b class:list={['wz-compare__value', `wz-compare__value--${home.militia}`, row.leader === home.militia && 'is-leader']}>
+                            {row.home_label}
+                            {row.home_vs !== undefined && row.home_vs !== 0 && (
+                                <span class:list={['wz-compare__trend', row.home_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{row.home_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.home_vs))}</span>
                             )}
                         </b>
                         <span class="[ wz-compare__label ]">{row.label}</span>
-                        <b class:list={['wz-compare__value wz-compare__value--amarr', row.leader === 'amarr' && 'is-leader']}>
-                            {row.amarr_vs !== undefined && row.amarr_vs !== 0 && (
-                                <span class:list={['wz-compare__trend', row.amarr_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{row.amarr_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.amarr_vs))}</span>
+                        <b class:list={['wz-compare__value', `wz-compare__value--${away.militia}`, row.leader === away.militia && 'is-leader']}>
+                            {row.away_vs !== undefined && row.away_vs !== 0 && (
+                                <span class:list={['wz-compare__trend', row.away_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{row.away_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.away_vs))}</span>
                             )}
-                            {row.amarr_label}
+                            {row.away_label}
                         </b>
                     </div>
                 ))}
@@ -319,13 +326,13 @@ const featured_guides = issue.get_involved.featured_guides
                             <th scope="col">Previous owner</th>
                             <th scope="col">New owner</th>
                             <th scope="col" class="[ wz-table__num ]">Ships</th>
-                            <th scope="col" class="[ wz-table__num ]">{vs_label}</th>
+                            {show_deltas && <th scope="col" class="[ wz-table__num ]">{vs_label}</th>}
                             <th scope="col" class="[ wz-table__num ]">ISK</th>
                         </tr>
                     </thead>
                     <tbody>
                         {occupancy_sorted.map((change) => {
-                            const previous_owner = change.taken_by === 'amarr' ? 'minmatar' : 'amarr'
+                            const previous_owner = change.previous_owner ?? (change.taken_by === away.militia ? home.militia : away.militia)
                             return (
                                 <tr>
                                     <td class="[ wz-table__when ]">{change.date_label}</td>
@@ -335,7 +342,7 @@ const featured_guides = issue.get_involved.featured_guides
                                     <td data-label="Previous owner">
                                         <span class="[ wz-owner ]">
                                             <span class:list={['wz-faction-mark', `wz-faction-mark--${previous_owner}`]} aria-hidden="true">
-                                                {previous_owner === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                                <MilitiaEmblem holder={previous_owner} />
                                             </span>
                                             <span>{militia_label(previous_owner)}</span>
                                         </span>
@@ -343,18 +350,20 @@ const featured_guides = issue.get_involved.featured_guides
                                     <td data-label="New owner">
                                         <span class="[ wz-owner ]">
                                             <span class:list={['wz-faction-mark', `wz-faction-mark--${change.taken_by}`]} aria-hidden="true">
-                                                {change.taken_by === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                                <MilitiaEmblem holder={change.taken_by} />
                                             </span>
                                             <span>{militia_label(change.taken_by)}</span>
                                         </span>
                                     </td>
                                     <td class="[ wz-table__num ]" data-label="Ships"><b>{number_thousand_separator(change.ships)}</b></td>
+                                    {show_deltas && (
                                     <td class="[ wz-table__num ]" data-label={vs_label}>
                                         <span class:list={['wz-delta', change.vs_last_month >= 0 ? 'wz-delta--up' : 'wz-delta--down']}>
                                             <span class="[ wz-delta__arrow ]">{change.vs_last_month >= 0 ? '▲' : '▼'}</span>
                                             <span class="[ wz-delta__num ]">{number_thousand_separator(Math.abs(change.vs_last_month))}</span>
                                         </span>
                                     </td>
+                                    )}
                                     <td class="[ wz-table__num ]" data-label="ISK">{change.isk_label}</td>
                                 </tr>
                             )
@@ -375,7 +384,7 @@ const featured_guides = issue.get_involved.featured_guides
                         <tr>
                             <th scope="col">System</th>
                             <th scope="col" class="[ wz-table__bar-head ]">Ships destroyed</th>
-                            <th scope="col" class="[ wz-table__num ]">{vs_label}</th>
+                            {show_deltas && <th scope="col" class="[ wz-table__num ]">{vs_label}</th>}
                             <th scope="col" class="[ wz-table__num ]">ISK</th>
                         </tr>
                     </thead>
@@ -385,7 +394,7 @@ const featured_guides = issue.get_involved.featured_guides
                                 <td>
                                     <span class="[ wz-table__owner ]">
                                         <span class:list={['wz-faction-mark', `wz-faction-mark--${row.holds_today}`]} title={`Held by ${militia_label(row.holds_today)}`} aria-label={`Held by ${militia_label(row.holds_today)}`} role="img">
-                                            {row.holds_today === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                            <MilitiaEmblem holder={row.holds_today} />
                                         </span>
                                         <span>
                                             <span class="[ wz-table__system ]">
@@ -405,12 +414,14 @@ const featured_guides = issue.get_involved.featured_guides
                                     </div>
                                     <b>{number_thousand_separator(row.ships)}</b>
                                 </td>
+                                {show_deltas && (
                                 <td class="[ wz-table__num ]" data-label={vs_label}>
                                     <span class:list={['wz-delta', row.vs_last_month >= 0 ? 'wz-delta--up' : 'wz-delta--down']}>
                                         <span class="[ wz-delta__arrow ]">{row.vs_last_month >= 0 ? '▲' : '▼'}</span>
                                         <span class="[ wz-delta__num ]">{number_thousand_separator(Math.abs(row.vs_last_month))}</span>
                                     </span>
                                 </td>
+                                )}
                                 <td class="[ wz-table__num ]" data-label="ISK">{row.isk_label}</td>
                             </tr>
                         ))}
@@ -433,7 +444,7 @@ const featured_guides = issue.get_involved.featured_guides
                     <div class="[ wz-share__bar ]">
                         {issue.fronts.map((front, index) => (
                             <span
-                                class:list={['wz-share__fill', index === 0 ? 'wz-share__fill--minmatar' : 'wz-share__fill--amarr']}
+                                class:list={['wz-share__fill', `wz-share__fill--${issue.scoreboard[index]?.militia ?? home.militia}`]}
                                 style={`width: ${percent(front.ships, front_total)}%`}
                             >
                                 <span class="[ wz-share__pct ]">{Math.round(percent(front.ships, front_total))}%</span>
@@ -444,7 +455,7 @@ const featured_guides = issue.get_involved.featured_guides
                 </div>
                 <div class="[ wz-fronts ]">
                     {issue.fronts.map((front, index) => (
-                        <div class:list={['wz-front', index === 0 ? 'wz-front--minmatar' : 'wz-front--amarr']}>
+                        <div class:list={['wz-front', `wz-front--${issue.scoreboard[index]?.militia ?? home.militia}`]}>
                             <div class="[ wz-front__head ]">
                                 <div>
                                     <h3>{front.name}</h3>
@@ -456,7 +467,7 @@ const featured_guides = issue.get_involved.featured_guides
                                     <dt>Ships destroyed</dt>
                                     <dd>
                                         {front.ships_label}
-                                        {front.ships_vs !== undefined && front.ships_vs !== 0 && (
+                                        {show_deltas && front.ships_vs !== undefined && front.ships_vs !== 0 && (
                                             <span class:list={['wz-compare__trend', front.ships_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{front.ships_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(front.ships_vs))}</span>
                                         )}
                                     </dd>
@@ -474,6 +485,7 @@ const featured_guides = issue.get_involved.featured_guides
         </ComponentBlock>
     </section>
 
+    {focus && (
     <section id="focus" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
             <h2>Focus of the month</h2>
@@ -514,7 +526,7 @@ const featured_guides = issue.get_involved.featured_guides
                         <h4>Ships lost by side</h4>
                         <ul class="[ wz-losses ]">
                             <li>
-                                <span class="[ wz-losses__logo ]" aria-hidden="true"><MinmatarLogo /></span>
+                                <span class="[ wz-losses__logo ]" aria-hidden="true"><MilitiaEmblem holder="minmatar" /></span> <!-- pragma: allowlist secret -->
                                 <div class="[ wz-losses__body ]">
                                     <div class="[ wz-losses__meta ]">
                                         <b class="[ wz-minmatar-text ]">Minmatar</b>
@@ -524,7 +536,7 @@ const featured_guides = issue.get_involved.featured_guides
                                 </div>
                             </li>
                             <li>
-                                <span class="[ wz-losses__logo ]" aria-hidden="true"><AmarrLogo /></span>
+                                <span class="[ wz-losses__logo ]" aria-hidden="true"><MilitiaEmblem holder="amarr" /></span>
                                 <div class="[ wz-losses__body ]">
                                     <div class="[ wz-losses__meta ]">
                                         <b class="[ wz-amarr-text ]">Amarr</b>
@@ -579,6 +591,8 @@ const featured_guides = issue.get_involved.featured_guides
         </ComponentBlock>
     </section>
 
+    )}
+
     <section id="pilots" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
             <h2>Pilots of the month</h2>
@@ -590,13 +604,13 @@ const featured_guides = issue.get_involved.featured_guides
                     <Flexblock gap="var(--space-m)" class="[ h-full ]">
                         <h3>{board.title}</h3>
                         {[
-                            { id: 'minmatar' as const, label: 'Minmatar', pilots: board.minmatar },
-                            { id: 'amarr' as const, label: 'Amarr', pilots: board.amarr },
+                            { id: home.militia, label: militia_label(home.militia), pilots: board[home.militia] ?? [] },
+                            { id: away.militia, label: militia_label(away.militia), pilots: board[away.militia] ?? [] },
                         ].map((side) => (
                             <div class="[ wz-board__side ]">
                                 <div class:list={['wz-board__faction', `wz-board__faction--${side.id}`]}>
                                     <span class="[ wz-board__logo ]" aria-hidden="true">
-                                        {side.id === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                        <MilitiaEmblem holder={side.id} />
                                     </span>
                                     <span>{side.label}</span>
                                 </div>
@@ -731,7 +745,7 @@ const featured_guides = issue.get_involved.featured_guides
                             <tr>
                                 <td class="[ wz-table__rank ]">
                                     {index + 1}
-                                    {group.rank_delta != null && group.rank_delta !== 0 && (
+                                    {show_deltas && group.rank_delta != null && group.rank_delta !== 0 && (
                                         <span class:list={['wz-rank__move', group.rank_delta > 0 ? 'wz-delta--up' : 'wz-delta--down']} title={`${group.rank_delta > 0 ? 'Up' : 'Down'} ${Math.abs(group.rank_delta)} vs last month`}>{group.rank_delta > 0 ? '▲' : '▼'}{Math.abs(group.rank_delta)}</span>
                                     )}
                                 </td>
@@ -757,10 +771,8 @@ const featured_guides = issue.get_involved.featured_guides
                                                 {group.new_to_board && <span class="[ wz-badge ]">NEW</span>}
                                             </span>
                                             <span class:list={['wz-group-faction', group.militia && `wz-group-faction--${group.militia}`]}>
-                                                {group.faction_id === 500002 ? (
-                                                    <span class="[ wz-group-faction__logo ]" aria-hidden="true"><MinmatarLogo /></span>
-                                                ) : group.faction_id === 500003 ? (
-                                                    <span class="[ wz-group-faction__logo ]" aria-hidden="true"><AmarrLogo /></span>
+                                                {group.faction_id === 500002 || group.faction_id === 500003 || group.faction_id === 500004 || group.faction_id === 500001 ? (
+                                                    <span class="[ wz-group-faction__logo ]" aria-hidden="true"><MilitiaEmblem holder={group.faction_id === 500002 ? 'minmatar' : group.faction_id === 500003 ? 'amarr' : group.faction_id === 500004 ? 'gallente' : 'caldari'} /></span> <!-- pragma: allowlist secret -->
                                                 ) : group.faction_id && PIRATE_LOGO_CORP[group.faction_id] ? (
                                                     <img
                                                         class="[ wz-group-faction__logo ]"
@@ -778,7 +790,7 @@ const featured_guides = issue.get_involved.featured_guides
                                 </td>
                                 <td class="[ wz-table__num ]" data-label="Killmails">
                                     <b>{number_thousand_separator(group.killmails)}</b>
-                                    {group.killmails_pct != null && group.killmails_pct !== 0 && (
+                                    {show_deltas && group.killmails_pct != null && group.killmails_pct !== 0 && (
                                         <span class:list={['wz-compare__trend', group.killmails_pct > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{group.killmails_pct > 0 ? '▲' : '▼'}{Math.abs(group.killmails_pct)}%</span>
                                     )}
                                 </td>
@@ -799,7 +811,7 @@ const featured_guides = issue.get_involved.featured_guides
     <section id="get-involved" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
             <h2>How to get involved</h2>
-            <p class="[ wz-dek ]">New to faction warfare, or new to the Minmatar side of it? Three steps, then the guides.</p>
+            <p class="[ wz-dek ]">New to faction warfare, or new to the {militia_label(home.militia)} side of it? Three steps, then the guides.</p>
         </header>
 
         <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)" class="[ wz-equal wz-steps ]">
@@ -2503,4 +2515,52 @@ const featured_guides = issue.get_involved.featured_guides
             gap: var(--space-3xs);
         }
     }
+
+    .warzone-report {
+        --wz-gallente: color-mix(in srgb, var(--militia-purple) 45%, var(--alliance-blue) 55%);
+        --wz-caldari: color-mix(in srgb, var(--alliance-blue) 72%, white 28%);
+    }
+
+    .wz-gallente-text { color: var(--wz-gallente); }
+    .wz-caldari-text { color: var(--wz-caldari); }
+
+    .wz-versus__side--gallente :global(path),
+    .wz-faction-mark--gallente :global(path),
+    .wz-group-faction--gallente .wz-group-faction__logo :global(path),
+    .wz-board__faction--gallente :global(path) { fill: var(--wz-gallente); }
+
+    .wz-versus__side--caldari :global(path),
+    .wz-faction-mark--caldari :global(path),
+    .wz-group-faction--caldari .wz-group-faction__logo :global(path),
+    .wz-board__faction--caldari :global(path) { fill: var(--wz-caldari); }
+
+    .wz-split__fill--gallente,
+    .wz-split__gain--gallente,
+    .wz-bar__fill--gallente,
+    .wz-share__fill--gallente { background: var(--wz-gallente); }
+
+    .wz-split__fill--caldari,
+    .wz-split__gain--caldari,
+    .wz-bar__fill--caldari,
+    .wz-share__fill--caldari { background: var(--wz-caldari); }
+
+    .wz-split__flag--gallente,
+    .wz-group-faction--gallente,
+    .wz-board__faction--gallente,
+    .wz-compare__value--gallente { color: var(--wz-gallente); }
+
+    .wz-split__flag--caldari,
+    .wz-group-faction--caldari,
+    .wz-board__faction--caldari,
+    .wz-compare__value--caldari { color: var(--wz-caldari); }
+
+    .wz-front--gallente { border-left-color: var(--wz-gallente); }
+    .wz-front--caldari { border-left-color: var(--wz-caldari); }
+
+    .wz-faction-mark img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
 </style>

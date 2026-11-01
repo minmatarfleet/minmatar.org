@@ -1,0 +1,27 @@
+---
+import type { WarzoneHolderId } from '@/data/warzone/types'
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro' // pragma: allowlist secret
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
+import GallenteLogo from '@components/logos/GallenteLogo.astro'
+import CaldariLogo from '@components/logos/CaldariLogo.astro'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+
+interface Props {
+    holder: WarzoneHolderId
+}
+
+const { holder } = Astro.props
+
+const PIRATE_LOGO_CORP: Record<string, number> = {
+    angel: 1_000_138,
+    guristas: 1_000_127,
+}
+---
+
+{holder === 'minmatar' && <MinmatarLogo />} <!-- pragma: allowlist secret -->
+{holder === 'amarr' && <AmarrLogo />}
+{holder === 'gallente' && <GallenteLogo />}
+{holder === 'caldari' && <CaldariLogo />}
+{(holder === 'angel' || holder === 'guristas') && (
+    <img src={get_corporation_logo(PIRATE_LOGO_CORP[holder], 32)} alt="" width="32" height="32" />
+)}

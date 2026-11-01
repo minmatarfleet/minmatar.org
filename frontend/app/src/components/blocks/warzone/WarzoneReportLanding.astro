@@ -3,7 +3,9 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { WarzoneIssue } from '@/data/warzone/types'
+import { get_latest_issue_in_zone, issue_zone, ZONE_SIDES } from '@/data/warzone'
 import { build_warzone_report_json_ld } from '@/data/warzone/seo'
+import WarzoneZoneSwap from '@components/blocks/warzone/WarzoneZoneSwap.astro'
 import { get_site_origin } from '@helpers/seo'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -19,6 +21,8 @@ interface Props {
 }
 
 const { issue, canonical_path } = Astro.props
+const other_zone = issue_zone(issue) === 'gallente-caldari' ? 'amarr-minmatar' : 'gallente-caldari' // pragma: allowlist secret
+const other_issue = get_latest_issue_in_zone(other_zone)
 
 const i18n_prefix = `warzone.${issue.slug.replaceAll('-', '_')}`
 const page_title = t(t_key('', i18n_prefix, '.page_title'))
@@ -65,6 +69,7 @@ const structured_data = build_warzone_report_json_ld({
         }}
     >
         <Flexblock gap="var(--space-xl)">
+            <div class="[ wz-hero-row ]">
             <TextBox class="[ wz-hero ]">
                 <Flexblock gap="var(--space-m)">
                     <a class="[ wz-hero__back ]" href={translatePath('/alliance/content#WarzoneReports')}>‹ Warzone Reports</a>
@@ -74,6 +79,13 @@ const structured_data = build_warzone_report_json_ld({
                     </PageTitle>
                 </Flexblock>
             </TextBox>
+            {other_issue && (
+                <WarzoneZoneSwap
+                    href={translatePath(other_issue.permalink_path)}
+                    militias={ZONE_SIDES[other_zone]}
+                />
+            )}
+            </div>
 
             <WarzoneReportIssue issue={issue} />
         </Flexblock>
@@ -81,6 +93,18 @@ const structured_data = build_warzone_report_json_ld({
 </Viewport>
 
 <style lang="scss">
+    .wz-hero-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-l);
+    }
+
+    .wz-hero-row :global(.zone-swap) {
+        margin-top: var(--space-xl);
+        flex: 0 0 auto;
+    }
+
     .wz-hero {
         max-width: 60rem;
     }

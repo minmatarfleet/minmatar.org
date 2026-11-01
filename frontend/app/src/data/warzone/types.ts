@@ -1,4 +1,9 @@
-export type WarzoneMilitiaId = 'minmatar' | 'amarr'
+export type WarzoneMilitiaId = 'minmatar' | 'amarr' | 'gallente' | 'caldari' // pragma: allowlist secret
+
+/** A system holder, including the pirate insurgencies that can take a system. */
+export type WarzoneHolderId = WarzoneMilitiaId | 'angel' | 'guristas'
+
+export type WarzoneZoneId = 'amarr-minmatar' | 'gallente-caldari' // pragma: allowlist secret
 
 export type WarzoneMilitiaScoreboard = {
     militia: WarzoneMilitiaId
@@ -31,11 +36,13 @@ export type WarzoneFightPin = {
 export type WarzoneOccupancyChange = {
     date_label: string
     system: string
-    taken_by: WarzoneMilitiaId
+    taken_by: WarzoneHolderId
+    /** Who held it before this flip. Omitted on older issues; the other militia is assumed. */
+    previous_owner?: WarzoneHolderId | null
     ships: number
     vs_last_month: number
     isk_label: string
-    holds_today: WarzoneMilitiaId
+    holds_today: WarzoneHolderId
     dotlan_href: string
     zkill_href: string
 }
@@ -49,7 +56,7 @@ export type WarzoneTrafficRow = {
     vs_last_month: number
     isk?: number
     isk_label: string
-    holds_today: WarzoneMilitiaId
+    holds_today: WarzoneHolderId
 }
 
 export type WarzoneFrontCard = {
@@ -88,9 +95,7 @@ export type WarzonePilot = {
 
 export type WarzonePilotBoard = {
     title: string
-    minmatar: readonly WarzonePilot[]
-    amarr: readonly WarzonePilot[]
-}
+} & Partial<Record<WarzoneMilitiaId, readonly WarzonePilot[]>> // pragma: allowlist secret
 
 export type WarzoneShip = {
     typeId: number
@@ -121,7 +126,7 @@ export type WarzoneGroup = {
     militia: WarzoneMilitiaId | null
     /** Display faction: 'Minmatar', 'Amarr', 'Angel Cartel', 'Guristas', or 'Neutral'. */
     faction: string
-    /** Dominant militia faction id (500002/500003/500011/500010), or null if none. */
+    /** Dominant faction id (empire or pirate), or null if none. */
     faction_id: number | null
     /** Share of the group's kills this month that happened in the warzone. */
     fw_share: number
@@ -141,6 +146,13 @@ export type WarzoneMethodologyEntry = {
 
 export type WarzoneIssue = {
     slug: string
+    /** Which faction-warfare warzone this issue covers. Defaults to the Amarr–Minmatar zone. */ // pragma: allowlist secret
+    zone?: WarzoneZoneId
+    /**
+     * Month-over-month arrows. False for the first issue of a zone, which has
+     * no prior month to compare.
+     */
+    show_deltas?: boolean
     permalink_path: string
     cover_image: string
     published_at: Date
@@ -155,7 +167,7 @@ export type WarzoneIssue = {
     /** Month-over-month change in sampled ships / ISK destroyed (optional trend). */
     sampled_ships_vs?: number
     sampled_isk_vs?: number
-    focus_name: string
+    focus_name?: string
     occupancy_changes: number
     occupancy_net_amarr: number
     systems_that_moved: number
@@ -166,7 +178,7 @@ export type WarzoneIssue = {
     traffic: readonly WarzoneTrafficRow[]
     traffic_footnote: string
     fronts: readonly WarzoneFrontCard[]
-    focus: {
+    focus?: {
         title: string
         window_label: string
         dek: readonly string[]
