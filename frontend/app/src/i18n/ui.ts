@@ -248,6 +248,12 @@ export const ui = {
         'amamake_market.yc128_09.leading_text': 'What sold at the Amamake keepstar, and what died in the warzone.',
         'amamake_market.yc128_09.meta_title': 'Amamake Economic Report · September YC128 | {site}',
         'amamake_market.yc128_09.meta_description': 'September YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone. Published by Minmatar Fleet.',
+        'amamake_market.yc128_10.name': 'Amamake Economic Report · October YC128',
+        'amamake_market.yc128_10.page_title': 'Amamake Economic Report · October YC128',
+        'amamake_market.yc128_10.period': '1–31 Oct YC128',
+        'amamake_market.yc128_10.leading_text': 'What sold at the Amamake keepstar, and what died in the warzone.',
+        'amamake_market.yc128_10.meta_title': 'Amamake Economic Report · October YC128 | {site}',
+        'amamake_market.yc128_10.meta_description': 'October YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone. Published by Minmatar Fleet.',
         'amamake_market.latest.page_title': 'Amamake Economic Report',
         'amamake_market.page_title': 'Amamake Economic Report',
 
@@ -4289,6 +4295,7 @@ export const ui = {
         'page_finder.amamake_market.description': 'Monthly Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         'page_finder.amamake_market.yc128_08.description': 'August YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         'page_finder.amamake_market.yc128_09.description': 'September YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
+        'page_finder.amamake_market.yc128_10.description': 'October YC128 Amamake Economic Report. What sold at the Amamake keepstar, and what died in the warzone.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':
