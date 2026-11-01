@@ -227,6 +227,13 @@
         "keywords": ["warzone", "frontline report", "September YC128", "Amamake", "Kamela", "Kourmonen", "faction warfare"]
     },
     {
+        "slug": "warzone.yc128_10",
+        "path": "/warzone/yc128-10/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_10.description",
+        "keywords": ["warzone", "frontline report", "October YC128", "Amamake", "Huola", "Frerstorn", "faction warfare"]
+    },
+    {
         "slug": "newsletter",
         "path": "/newsletter/",
         "publish": true,
