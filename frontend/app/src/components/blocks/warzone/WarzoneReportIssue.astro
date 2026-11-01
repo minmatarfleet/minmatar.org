@@ -77,6 +77,60 @@ function resolve_href(href: string): string {
 const show_deltas = issue.show_deltas !== false
 const vs_label = `vs ${issue.previous_period_label}`
 
+/** Prior issue's groups, for month-over-month ticks on metrics the extract only stores as levels. */
+const prior_groups = new Map((older?.groups.rows ?? []).map((row) => [row.id, row]))
+
+function percent_change(current: number, previous: number | undefined): number | null {
+    if (previous == null || previous <= 0) return null
+    return Math.round(((current - previous) / previous) * 100)
+}
+
+/** Warzone share is already a percent, so the tick is percentage points, not a relative change. */
+function share_point_change(current: number, previous: number | undefined): number | null {
+    if (previous == null) return null
+    return Math.round((current - previous) * 100)
+}
+
+const system_isk = new Map(issue.system_stats.map((row) => [row.system, row.isk]))
+const prior_system_isk = new Map((older?.system_stats ?? []).map((row) => [row.system, row.isk]))
+
+/** Ship counts already carry vs_last_month. ISK is only stored as a level, so compare with the previous issue. */
+function system_isk_delta(system: string, current: number | undefined): number | null {
+    if (!older || current == null) return null
+    return current - (prior_system_isk.get(system) ?? 0)
+}
+
+/** Same rounding the system table already uses for its ISK column. */
+function isk_table_label(value: number): string {
+    if (value >= 1e12) return `${(value / 1e12).toFixed(2)}T`
+    if (value >= 100e9) return `${Math.round(value / 1e9)}B`
+    if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`
+    return `${Math.round(value / 1e6)}M`
+}
+
+function isk_delta_trend(delta: number | null): { up: boolean, label: string, title: string } | null {
+    if (delta == null || delta === 0) return null
+    const up = delta > 0
+    const label = isk_table_label(Math.abs(delta))
+    if (label.startsWith('0')) return null
+    const direction = up ? 'Up' : 'Down'
+    return { up, label, title: `${direction} ${label} ${vs_label}` }
+}
+
+function metric_trend(change: number | null, unit: 'percent' | 'points'): { up: boolean, text: string, title: string } | null {
+    if (change == null || change === 0) return null
+    const up = change > 0
+    const magnitude = Math.abs(change)
+    const direction = up ? 'Up' : 'Down'
+    const points = magnitude === 1 ? 'percentage point' : 'percentage points'
+    const detail = unit === 'points' ? `${magnitude} ${points}` : `${magnitude}%`
+    return {
+        up,
+        text: `${up ? '▲' : '▼'}${magnitude}%`,
+        title: `${direction} ${detail} ${vs_label}`,
+    }
+}
+
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 function date_sort_key(label: string): number {
     const match = label.match(/(\d{1,2})\s+([A-Za-z]{3})/)
@@ -333,6 +387,7 @@ const featured_guides = issue.get_involved.featured_guides
                     <tbody>
                         {occupancy_sorted.map((change) => {
                             const previous_owner = change.previous_owner ?? (change.taken_by === away.militia ? home.militia : away.militia)
+                            const isk_trend = show_deltas ? isk_delta_trend(system_isk_delta(change.system, system_isk.get(change.system))) : null
                             return (
                                 <tr>
                                     <td class="[ wz-table__when ]">{change.date_label}</td>
@@ -364,7 +419,15 @@ const featured_guides = issue.get_involved.featured_guides
                                         </span>
                                     </td>
                                     )}
-                                    <td class="[ wz-table__num ]" data-label="ISK">{change.isk_label}</td>
+                                    <td class="[ wz-table__num ]" data-label="ISK">
+                                        {change.isk_label}
+                                        {isk_trend && (
+                                            <span class:list={['wz-delta', 'wz-delta--fit', isk_trend.up ? 'wz-delta--up' : 'wz-delta--down']} title={isk_trend.title} aria-label={isk_trend.title}>
+                                                <span class="[ wz-delta__arrow ]">{isk_trend.up ? '▲' : '▼'}</span>
+                                                <span class="[ wz-delta__num ]">{isk_trend.label}</span>
+                                            </span>
+                                        )}
+                                    </td>
                                 </tr>
                             )
                         })}
@@ -389,7 +452,9 @@ const featured_guides = issue.get_involved.featured_guides
                         </tr>
                     </thead>
                     <tbody>
-                        {issue.traffic.map((row) => (
+                        {issue.traffic.map((row) => {
+                            const isk_trend = show_deltas ? isk_delta_trend(system_isk_delta(row.system, row.isk)) : null
+                            return (
                             <tr>
                                 <td>
                                     <span class="[ wz-table__owner ]">
@@ -422,9 +487,18 @@ const featured_guides = issue.get_involved.featured_guides
                                     </span>
                                 </td>
                                 )}
-                                <td class="[ wz-table__num ]" data-label="ISK">{row.isk_label}</td>
+                                <td class="[ wz-table__num ]" data-label="ISK">
+                                    {row.isk_label}
+                                    {isk_trend && (
+                                        <span class:list={['wz-delta', 'wz-delta--fit', isk_trend.up ? 'wz-delta--up' : 'wz-delta--down']} title={isk_trend.title} aria-label={isk_trend.title}>
+                                            <span class="[ wz-delta__arrow ]">{isk_trend.up ? '▲' : '▼'}</span>
+                                            <span class="[ wz-delta__num ]">{isk_trend.label}</span>
+                                        </span>
+                                    )}
+                                </td>
                             </tr>
-                        ))}
+                            )
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -741,7 +815,13 @@ const featured_guides = issue.get_involved.featured_guides
                         </tr>
                     </thead>
                     <tbody>
-                        {issue.groups.rows.map((group, index) => (
+                        {issue.groups.rows.map((group, index) => {
+                            const prior = prior_groups.get(group.id)
+                            const killmail_trend = show_deltas ? metric_trend(group.killmails_pct ?? null, 'percent') : null
+                            const isk_trend = show_deltas ? metric_trend(percent_change(group.isk_destroyed, prior?.isk_destroyed), 'percent') : null
+                            const ships_trend = show_deltas ? metric_trend(percent_change(group.ships_lost, prior?.ships_lost), 'percent') : null
+                            const share_trend = show_deltas ? metric_trend(share_point_change(group.fw_share, prior?.fw_share), 'points') : null
+                            return (
                             <tr>
                                 <td class="[ wz-table__rank ]">
                                     {index + 1}
@@ -790,15 +870,31 @@ const featured_guides = issue.get_involved.featured_guides
                                 </td>
                                 <td class="[ wz-table__num ]" data-label="Killmails">
                                     <b>{number_thousand_separator(group.killmails)}</b>
-                                    {show_deltas && group.killmails_pct != null && group.killmails_pct !== 0 && (
-                                        <span class:list={['wz-compare__trend', group.killmails_pct > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{group.killmails_pct > 0 ? '▲' : '▼'}{Math.abs(group.killmails_pct)}%</span>
+                                    {killmail_trend && (
+                                        <span class:list={['wz-compare__trend', killmail_trend.up ? 'wz-delta--up' : 'wz-delta--down']} title={killmail_trend.title} aria-label={killmail_trend.title}>{killmail_trend.text}</span>
                                     )}
                                 </td>
-                                <td class="[ wz-table__num ]" data-label="ISK destroyed">{format_isk(group.isk_destroyed)}</td>
-                                <td class="[ wz-table__num ]" data-label="Ships lost">{number_thousand_separator(group.ships_lost)}</td>
-                                <td class="[ wz-table__num ]" data-label="In warzone">{Math.round(group.fw_share * 100)}%</td>
+                                <td class="[ wz-table__num ]" data-label="ISK destroyed">
+                                    {format_isk(group.isk_destroyed)}
+                                    {isk_trend && (
+                                        <span class:list={['wz-compare__trend', isk_trend.up ? 'wz-delta--up' : 'wz-delta--down']} title={isk_trend.title} aria-label={isk_trend.title}>{isk_trend.text}</span>
+                                    )}
+                                </td>
+                                <td class="[ wz-table__num ]" data-label="Ships lost">
+                                    {number_thousand_separator(group.ships_lost)}
+                                    {ships_trend && (
+                                        <span class:list={['wz-compare__trend', ships_trend.up ? 'wz-delta--up' : 'wz-delta--down']} title={ships_trend.title} aria-label={ships_trend.title}>{ships_trend.text}</span>
+                                    )}
+                                </td>
+                                <td class="[ wz-table__num ]" data-label="In warzone">
+                                    {Math.round(group.fw_share * 100)}%
+                                    {share_trend && (
+                                        <span class:list={['wz-compare__trend', share_trend.up ? 'wz-delta--up' : 'wz-delta--down']} title={share_trend.title} aria-label={share_trend.title}>{share_trend.text}</span>
+                                    )}
+                                </td>
                             </tr>
-                        ))}
+                            )
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -1508,6 +1604,11 @@ const featured_guides = issue.get_involved.featured_guides
 
     .wz-delta__num {
         text-align: right;
+    }
+
+    .wz-delta--fit {
+        grid-template-columns: 1em auto;
+        margin-inline-start: 0.45em;
     }
 
     /* Bars and table ------------------------------------------------------ */

@@ -117,6 +117,7 @@ export const GALLENTE_CALDARI_YC128_10: WarzoneIssue = {
         occupancy_row('29 Oct', 'Alparena', 'gallente', 'caldari'),
         occupancy_row('30 Oct', 'Hasmijaala', 'caldari', 'gallente'),
     ],
+    system_stats: [...SYSTEM_STATS],
     traffic: TRAFFIC,
     traffic_footnote:
         'Busiest systems by ships destroyed in October, across all 90 warzone systems. Source: zKillboard per-system API, capsules removed.',
