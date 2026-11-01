@@ -78,3 +78,45 @@ test('group rows show month-over-month ticks on every metric', async () => {
     expect(july_row).toContain('▲31%')
     expect(july_row).not.toContain('percentage points')
 })
+
+test('system ISK shows a month-over-month tick', async () => {
+    const container = await AstroContainer.create()
+    const issue = get_latest_issue()
+    const prior = get_issue('yc128-09')!
+    const result = await container.renderToString(WarzoneReportIssue, { props: { issue } })
+    const systems = result.slice(result.indexOf('id="systems"'), result.indexOf('id="fronts"'))
+    const traffic = systems.slice(systems.indexOf('wz-table--traffic'))
+
+    const row_for = (id: number) => {
+        const marker = `/system/${id}/`
+        const start = traffic.indexOf(marker)
+        const next = traffic.indexOf('/system/', start + marker.length)
+        expect(start).toBeGreaterThan(-1)
+        return traffic.slice(start, next === -1 ? undefined : next)
+    }
+
+    const tick = (id: number) => {
+        const row = issue.traffic.find((entry) => entry.system_id === id)!
+        const previous = prior.system_stats.find((entry) => entry.system === row.system)!.isk
+        const delta = row.isk! - previous
+        const amount = Math.abs(delta)
+        const label = amount >= 1e12 ? `${(amount / 1e12).toFixed(2)}T`
+            : amount >= 100e9 ? `${Math.round(amount / 1e9)}B`
+            : amount >= 1e9 ? `${(amount / 1e9).toFixed(1)}B`
+            : `${Math.round(amount / 1e6)}M`
+        const html = row_for(id)
+        expect(html).toContain(delta < 0 ? 'wz-delta--down' : 'wz-delta--up')
+        expect(html).toContain(label)
+        expect(html).toContain(`title="${delta < 0 ? 'Down' : 'Up'} ${label} vs September"`)
+    }
+
+    tick(issue.traffic[0].system_id!)
+    const off_the_prior_board = issue.traffic.find((row) => !prior.traffic.some((entry) => entry.system_id === row.system_id))!
+    tick(off_the_prior_board.system_id!)
+
+    const july = await container.renderToString(WarzoneReportIssue, {
+        props: { issue: get_issue('yc128-07')! },
+    })
+    const july_systems = july.slice(july.indexOf('id="systems"'), july.indexOf('id="fronts"'))
+    expect(july_systems).not.toContain('wz-delta--fit')
+})

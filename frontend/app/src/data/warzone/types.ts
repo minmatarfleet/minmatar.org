@@ -163,6 +163,7 @@ export type WarzoneIssue = {
     scoreboard: readonly WarzoneMilitiaScoreboard[]
     fights: readonly WarzoneFightPin[]
     occupancy: readonly WarzoneOccupancyChange[]
+    system_stats: { system: string, isk: number }[]
     traffic: readonly WarzoneTrafficRow[]
     traffic_footnote: string
     fronts: readonly WarzoneFrontCard[]

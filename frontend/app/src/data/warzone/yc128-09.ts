@@ -214,6 +214,7 @@ export const YC128_09: WarzoneIssue = {
             zkill_href: 'https://zkillboard.com/system/30003068/',
         },
     ],
+    system_stats: [...SYSTEM_STATS],
     traffic: TRAFFIC,
     traffic_footnote:
         'Busiest systems by ships destroyed in September, across all 70 warzone systems. Source: zKillboard per-system API, capsules removed.',
