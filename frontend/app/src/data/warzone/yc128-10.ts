@@ -52,17 +52,17 @@ export const YC128_10: WarzoneIssue = {
     esi_as_of: '31 Oct 2026',
     who_won: 'Minmatar took one system. Amamake cost 461 billion.',
     opening:
-        'October ended 27 systems Minmatar, 43 Amarr, one more than September. Minmatar took Gebuladi, Sirekur, and Frerstorn. Amarr took Helgatild and Evati. On the tenth Amamake threw another birthday brawl, and a Hel died. That night is the focus below.',
+        'October ended 27 systems Minmatar, 42 Amarr, one more Minmatar system than September. Huola finished with the Angel Cartel. Minmatar took Gebuladi, Sirekur, and Frerstorn. Amarr took Helgatild and Evati. On the tenth Amamake threw another birthday brawl, and a Hel died. That night is the focus below.',
     sampled_ships: BOARDS_SAMPLED_KILLS,
     sampled_isk: BOARDS_TOTAL_ISK,
     sampled_ships_vs: BOARDS_SAMPLED_KILLS_VS,
     sampled_isk_vs: BOARDS_TOTAL_ISK_VS,
     focus_name: 'Amamake',
-    occupancy_changes: 11,
-    occupancy_net_amarr: -1,
-    systems_that_moved: 5,
+    occupancy_changes: 12,
+    occupancy_net_amarr: -2,
+    systems_that_moved: 6,
     occupancy_dek:
-        'Five systems finished in new hands, and the month ended 27 Minmatar, 43 Amarr. Minmatar took Gebuladi, Sirekur, and Frerstorn. Amarr took Helgatild and Evati. Klogori spent a day with the Angel Cartel and was Minmatar again on the fourth. Huola changed hands four times and finished Amarr.',
+        'Six systems finished in new hands, and the month ended 27 Minmatar, 42 Amarr. Minmatar took Gebuladi, Sirekur, and Frerstorn. Amarr took Helgatild and Evati. Huola changed hands five times and finished with the Angel Cartel on the thirty-first. Klogori spent a day with the Angel Cartel and was Minmatar again on the fourth.',
     scoreboard: [
         {
             militia: 'minmatar',
@@ -80,7 +80,7 @@ export const YC128_10: WarzoneIssue = {
         },
         {
             militia: 'amarr',
-            occupancy_net: -1,
+            occupancy_net: -2,
             systems_held: SCOREBOARD_STATS.amarr.systems,
             enlisted_pilots: SCOREBOARD_STATS.amarr.pilots,
             enlisted_pilots_label: count_label(SCOREBOARD_STATS.amarr.pilots),
@@ -180,12 +180,12 @@ export const YC128_10: WarzoneIssue = {
         {
             name: 'Amarr front',
             regions: 'Devoid and The Bleak Lands',
-            occupancy_label: '4 occupancy changes',
+            occupancy_label: '5 occupancy changes',
             ships: FRONTS.amarr.ships,
             ships_label: FRONTS.amarr.ships_label,
             ships_vs: FRONTS.amarr.ships_vs,
             hottest_system: FRONTS.amarr.hottest_system,
-            dek: 'Devoid and The Bleak Lands. Kourmonen was the loudest system here, quieter than September. Huola was the map story: Angel Cartel on the twenty-second, Minmatar on the twenty-third, Amarr again on the twenty-sixth.',
+            dek: 'Devoid and The Bleak Lands. Kourmonen was the loudest system here, quieter than September. Huola was the map story: Angel Cartel on the twenty-second, Minmatar on the twenty-third, Amarr on the twenty-sixth, and the Angel Cartel again at 17:20 on the thirty-first.',
         },
     ],
     focus: {
