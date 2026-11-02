@@ -15,6 +15,7 @@ test('WarzoneReportIssue renders the latest issue sections', async () => {
     expect(result).toContain('Active pilots')
     expect(result).toContain('Focus of the month')
     expect(result).toContain('Amamake')
+    if (!issue.focus) throw new Error('latest Amarr–Minmatar issue includes a focus') // pragma: allowlist secret
     expect(result).toContain(issue.focus.title)
     expect(result).toContain('Where the ships died')
     expect(result).toContain('Ships lost by side')

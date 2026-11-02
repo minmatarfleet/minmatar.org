@@ -53,5 +53,14 @@
   "custom_logo_dir": "frontend/app/public/images/warzone/logos",
   "cutout_helper": "frontend/app/scripts/cutout_logo.py",
   "rate_limit_seconds": 1.1,
-  "user_agent_env": "ZKILL_USER_AGENT"
+  "user_agent_env": "ZKILL_USER_AGENT",
+  "zones": {
+    "gallente-caldari": {
+      "militia_faction_ids": { "gallente": 500004, "caldari": 500001 },
+      "fronts": {
+        "gallente": ["Placid", "Essence", "Verge Vendor"],
+        "caldari": ["Black Rise", "The Citadel", "Lonetrek"]
+      }
+    }
+  }
 }

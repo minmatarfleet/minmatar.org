@@ -59,6 +59,14 @@ Example: August YC128 → year 2026, month 8, slug `yc128-08`.
    ```bash
    npm run warzone:extract -- --year 2026 --month 8 --slug yc128-08 --traffic 12
    ```
+   The Gallente–Caldari warzone is the same script with `--zone gallente-caldari`.
+   Its first issue has no prior month, so pass `--compare 0` (no month-over-month
+   arrows) and leave `focus` off the issue. Slug it apart from the Amarr–Minmatar <!-- pragma: allowlist secret -->
+   series, e.g. `gallente-caldari-yc128-10`, and set `zone: 'gallente-caldari'`
+   and `show_deltas: false`. `/warzone/` stays the latest Amarr–Minmatar issue. <!-- pragma: allowlist secret -->
+   ```bash
+   npm run warzone:extract -- --year 2026 --month 10 --slug gallente-caldari-yc128-10 --zone gallente-caldari --compare 0 --traffic 12
+   ```
    First run fetches the two months (~10–20 min, rate-limited); it prints progress to
    stderr and writes `src/data/warzone/yc128-08-boards.ts`. Re-runs are instant from
    cache. The file exports: `SCOREBOARD_STATS`, `BOARDS_SAMPLED_KILLS`,
@@ -153,8 +161,9 @@ Then preview `http://localhost:4321/warzone/` (dev server usually already runnin
 - Empty pilot boards ("Not in this month's extract") mean the extract didn't run or
   the month is wrong — check the `--year/--month/--slug` args.
 - Occupancy flip dates and the flip count are the only figures not from a public API
-  (Dotlan). "Holds today" per system is ESI-live and may differ from `taken_by` when a
-  system flipped back after the snapshot — reflect that in the note text.
+  (Dotlan). Dotlan lists changes newest-first; the month-end holder is the first row on
+  or before the last day of the month. "Holds today" per system is ESI-live and may differ
+  from `taken_by` when a system flipped back after the snapshot — reflect that in the note text.
 - Keep the raw-page cache (`.cache/warzone/`) between runs; deleting it forces a full
   re-fetch. The Amamake Market Report extractor (`scripts/amamake_market_extract.mjs`,
   skill `amamake-market-report`) reads the same per-system cache, so generate the

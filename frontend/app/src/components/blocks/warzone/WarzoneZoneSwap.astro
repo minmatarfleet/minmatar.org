@@ -1,0 +1,84 @@
+---
+import type { WarzoneMilitiaId } from '@/data/warzone/types'
+import MilitiaEmblem from '@components/blocks/warzone/MilitiaEmblem.astro'
+
+interface Props {
+    href: string
+    militias: readonly [WarzoneMilitiaId, WarzoneMilitiaId] // pragma: allowlist secret
+}
+
+const { href, militias } = Astro.props
+
+const LABELS: Record<WarzoneMilitiaId, string> = {
+    minmatar: 'Minmatar', // pragma: allowlist secret
+    amarr: 'Amarr',
+    gallente: 'Gallente',
+    caldari: 'Caldari',
+}
+const label = `${LABELS[militias[0]]} versus ${LABELS[militias[1]]}`
+---
+
+<a class="[ zone-swap ]" href={href}>
+    <span class:list={['zone-swap__mark', `zone-swap__mark--${militias[0]}`]} aria-hidden="true"><MilitiaEmblem holder={militias[0]} /></span>
+    <span class="[ zone-swap__vs ]" aria-hidden="true">vs</span>
+    <span class:list={['zone-swap__mark', `zone-swap__mark--${militias[1]}`]} aria-hidden="true"><MilitiaEmblem holder={militias[1]} /></span>
+    <span class="visually-hidden">{label} warzone</span>
+</a>
+
+<style lang="scss">
+    .zone-swap {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-2xs) var(--space-xs);
+        border: solid 1px var(--hairline-medium);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--background) 55%, transparent);
+        text-decoration: none;
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
+
+        &:hover {
+            border-color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    .zone-swap__mark {
+        display: grid;
+        place-items: center;
+        width: 2.75rem;
+        height: 2.75rem;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .zone-swap__mark--minmatar :global(path) { // pragma: allowlist secret
+        fill: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+    }
+
+    .zone-swap__mark--amarr :global(path) {
+        fill: var(--fleet-yellow);
+    }
+
+    .zone-swap__mark--gallente :global(path) {
+        fill: var(--green);
+    }
+
+    .zone-swap__mark--caldari :global(path) {
+        fill: color-mix(in srgb, var(--alliance-blue) 72%, white 28%);
+    }
+
+    .zone-swap__vs {
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+</style>

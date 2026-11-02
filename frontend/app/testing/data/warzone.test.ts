@@ -14,7 +14,12 @@ describe('warzone issue registry', () => {
         expect(get_issue_slugs()).toContain('yc128-09')
         expect(get_issue_slugs()).toContain('yc128-08')
         expect(get_issue_slugs()).toContain('yc128-07')
-        expect(ISSUES).toHaveLength(4)
+        expect(get_issue('gallente-caldari-yc128-10')?.permalink_path).toBe('/warzone/gallente-caldari-yc128-10/')
+        expect(get_issue('gallente-caldari-yc128-10')).toMatchObject({
+            zone: 'gallente-caldari',
+            show_deltas: false,
+        })
+        expect(ISSUES).toHaveLength(5)
     })
 
     it('returns undefined for an unknown slug', () => {
@@ -26,6 +31,7 @@ describe('warzone content-hub registration', () => {
     it('nests frontline and economic reports in one Warzone Reports list', () => {
         expect(getWarzoneReports().map((report) => report.slug)).toEqual([
             'yc128-10',
+            'gallente-caldari-yc128-10',
             'amamake-market-yc128-10',
             'yc128-09',
             'amamake-market-yc128-09',

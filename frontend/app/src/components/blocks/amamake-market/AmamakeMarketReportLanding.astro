@@ -19,6 +19,8 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import AmamakeMarketReportIssue from '@components/blocks/amamake-market/AmamakeMarketReportIssue.astro'
+import WarzoneZoneSwap from '@components/blocks/warzone/WarzoneZoneSwap.astro'
+import { get_latest_issue_in_zone, ZONE_SIDES } from '@/data/warzone'
 
 interface Props {
     issue: AmamakeMarketIssue
@@ -26,6 +28,7 @@ interface Props {
 }
 
 const { issue, canonical_path } = Astro.props
+const other_warzone = get_latest_issue_in_zone('gallente-caldari')
 
 const i18n_prefix = `amamake_market.${issue.slug.replaceAll('-', '_')}`
 const page_title = t(t_key('', i18n_prefix, '.page_title'))
@@ -75,6 +78,7 @@ const structured_data = build_amamake_market_json_ld({
         }}
     >
         <Flexblock gap="var(--space-xl)">
+            <div class="[ mk-hero-row ]">
             <TextBox class="[ mk-hero ]">
                 <Flexblock gap="var(--space-m)">
                     <a class="[ mk-hero__back ]" href={translatePath(ALL_REPORTS_PATH)}>‹ {t('warzone.reports.section_title')}</a>
@@ -84,6 +88,13 @@ const structured_data = build_amamake_market_json_ld({
                     </PageTitle>
                 </Flexblock>
             </TextBox>
+            {other_warzone && (
+                <WarzoneZoneSwap
+                    href={translatePath(other_warzone.permalink_path)}
+                    militias={ZONE_SIDES['gallente-caldari']}
+                />
+            )}
+            </div>
 
             <AmamakeMarketReportIssue issue={issue} />
         </Flexblock>
@@ -91,6 +102,18 @@ const structured_data = build_amamake_market_json_ld({
 </Viewport>
 
 <style lang="scss">
+    .mk-hero-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-l);
+    }
+
+    .mk-hero-row :global(.zone-swap) {
+        margin-top: var(--space-xl);
+        flex: 0 0 auto;
+    }
+
     .mk-hero {
         max-width: 60rem;
     }
