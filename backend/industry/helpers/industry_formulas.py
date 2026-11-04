@@ -48,6 +48,104 @@ def required_material_quantity(
     return max(runs, math.ceil(adjusted))
 
 
+def job_run_batches(
+    total_runs: int, max_runs_per_job: int | None
+) -> list[int]:
+    """Split `total_runs` into blueprint-copy sized jobs.
+
+    ``None``, ``0``, or a cap at least as large as ``total_runs`` is one job.
+    A shorter last job keeps the leftover runs.
+    """
+    if total_runs <= 0:
+        return []
+    if (
+        max_runs_per_job is None
+        or max_runs_per_job <= 0
+        or max_runs_per_job >= total_runs
+    ):
+        return [total_runs]
+    full, remainder = divmod(total_runs, max_runs_per_job)
+    batches = [max_runs_per_job] * full
+    if remainder:
+        batches.append(remainder)
+    return batches
+
+
+def batched_material_quantity(
+    total_runs: int,
+    base_quantity: int,
+    me_total: float,
+    max_runs_per_job: int | None = None,
+) -> int:
+    """Materials for several jobs, each ceiled on its own.
+
+    One 500-run job and fifty 10-run jobs do not use the same quantity:
+    EVE rounds each job, then the jobs are added.
+    """
+    return sum(
+        required_material_quantity(runs, base_quantity, me_total)
+        for runs in job_run_batches(total_runs, max_runs_per_job)
+    )
+
+
+def sum_job_costs(parts: Sequence[JobCostBreakdown]) -> JobCostBreakdown:
+    """Add per-job install costs. Rates are taken from the first part."""
+    if not parts:
+        raise ValueError("sum_job_costs requires at least one job")
+    first = parts[0]
+    return JobCostBreakdown(
+        eiv=sum(part.eiv for part in parts),
+        gross_cost=sum(part.gross_cost for part in parts),
+        tax=sum(part.tax for part in parts),
+        total=sum(part.total for part in parts),
+        system_cost_index=first.system_cost_index,
+        structure_isk_bonus=first.structure_isk_bonus,
+        facility_tax=first.facility_tax,
+        scc_surcharge=first.scc_surcharge,
+        system_cost_bonus=first.system_cost_bonus,
+        facility_tax_isk=sum(part.facility_tax_isk for part in parts),
+        scc_tax_isk=sum(part.scc_tax_isk for part in parts),
+    )
+
+
+def batched_job_installation_cost(
+    total_eiv: float,
+    total_runs: int,
+    max_runs_per_job: int | None,
+    system_cost_index: float,
+    structure_isk_bonus: float = 0.0,
+    facility_tax: float = 0.0,
+    scc_surcharge: float = 0.04,
+    system_cost_bonus: float = 0.0,
+) -> JobCostBreakdown:
+    """Install cost floored per job, then summed.
+
+    A single job uses ``total_eiv`` unchanged so the one-job path stays
+    identical. Extra jobs split EIV by runs; the last job gets the remainder.
+    """
+    batches = job_run_batches(total_runs, max_runs_per_job)
+    kwargs = {
+        "system_cost_index": system_cost_index,
+        "structure_isk_bonus": structure_isk_bonus,
+        "facility_tax": facility_tax,
+        "scc_surcharge": scc_surcharge,
+        "system_cost_bonus": system_cost_bonus,
+    }
+    if len(batches) <= 1:
+        return job_installation_cost(total_eiv, **kwargs)
+    eiv_per_run = total_eiv / total_runs
+    parts: list[JobCostBreakdown] = []
+    allocated = 0.0
+    for index, runs in enumerate(batches):
+        if index == len(batches) - 1:
+            part_eiv = total_eiv - allocated
+        else:
+            part_eiv = eiv_per_run * runs
+            allocated += part_eiv
+        parts.append(job_installation_cost(part_eiv, **kwargs))
+    return sum_job_costs(parts)
+
+
 def time_efficiency_multiplier(
     blueprint_te: float,
     structure_role_te: float,

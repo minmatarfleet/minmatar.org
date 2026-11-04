@@ -338,6 +338,9 @@ def _plan_response_body(
                 "job_class": j.job_class.value,
                 "bucket": j.bucket.value,
                 "runs": j.runs,
+                "job_count": j.job_count,
+                "runs_per_job": j.runs_per_job,
+                "remainder_runs": j.remainder_runs,
                 "facility": j.facility_name,
                 "blueprint_me": j.blueprint_me,
                 "blueprint_te": j.blueprint_te,
@@ -447,6 +450,12 @@ def _resolve_plan_request(request, payload: PlanRequestSchema):
     except ValueError as exc:
         return None, (400, ErrorResponse(detail=str(exc)))
 
+    if payload.max_runs_per_job is not None and payload.max_runs_per_job < 1:
+        return None, (
+            400,
+            ErrorResponse(detail="max_runs_per_job must be at least 1"),
+        )
+
     exclude_type_ids = list(payload.exclude_type_ids or [])
     if payload.product_type_id in exclude_type_ids:
         return None, (
@@ -471,6 +480,7 @@ def _execute_plan_build(eve_type, payload, key, me, te, exclude_type_ids):
             facility=key,
             build_fuel_blocks=payload.build_fuel_blocks,
             exclude_type_ids=exclude_type_ids,
+            max_runs_per_job=payload.max_runs_per_job,
         )
     except ValueError as exc:
         msg = str(exc)

@@ -30,8 +30,11 @@ from industry.helpers.facility_profiles import (
     get_facility_system_id,
 )
 from industry.helpers.industry_formulas import (
+    batched_job_installation_cost,
+    batched_material_quantity,
     estimated_item_value,
     job_installation_cost,
+    job_run_batches,
     material_efficiency_total,
     required_material_quantity,
     time_efficiency_multiplier,
@@ -131,6 +134,53 @@ class IndustryFormulasTestCase(TestCase):
         self.assertEqual(cost.tax, 4_000_000)
         self.assertEqual(cost.total, 6_375_000)
         self.assertEqual(cost.system_cost_bonus, -0.50)
+
+    def test_job_batches_keep_a_short_last_copy(self):
+        self.assertEqual(job_run_batches(500, None), [500])
+        self.assertEqual(job_run_batches(500, 10), [10] * 50)
+        self.assertEqual(job_run_batches(25, 10), [10, 10, 5])
+
+    def test_batched_materials_ceil_each_copy(self):
+        me = material_efficiency_total(0.0, 0.01, 0.02 * 2.1)
+        one_job = required_material_quantity(100, 22400, me)
+        per_copy = required_material_quantity(10, 22400, me)
+        batched = batched_material_quantity(100, 22400, me, 10)
+        self.assertEqual(batched, per_copy * 10)
+        self.assertGreater(batched, one_job)
+        self.assertEqual(
+            batched_material_quantity(100, 22400, me, None), one_job
+        )
+
+    def test_batched_install_cost_floors_each_copy(self):
+        one = job_installation_cost(
+            eiv=100,
+            system_cost_index=0.015,
+            structure_isk_bonus=0.0,
+            facility_tax=0.0,
+            scc_surcharge=0.0,
+        )
+        split = batched_job_installation_cost(
+            100,
+            10,
+            1,
+            system_cost_index=0.015,
+            structure_isk_bonus=0.0,
+            facility_tax=0.0,
+            scc_surcharge=0.0,
+        )
+        # floor(100 * 0.015) = 1; ten jobs of eiv 10 floor to 0.
+        self.assertEqual(one.gross_cost, 1)
+        self.assertEqual(split.gross_cost, 0)
+        same = batched_job_installation_cost(
+            100_000_000,
+            10,
+            None,
+            system_cost_index=0.05,
+            structure_isk_bonus=0.05,
+            facility_tax=0.0,
+            scc_surcharge=0.04,
+        )
+        self.assertEqual(same.total, 8_750_000)
 
     def test_eiv_uses_me0_base_quantities_times_adjusted_price(self):
         # ME-adjusted shopping qty must not feed EIV; only blueprint base × runs.

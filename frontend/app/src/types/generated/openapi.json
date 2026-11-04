@@ -27790,6 +27790,11 @@
             "title": "Job Cost Isk",
             "type": "integer"
           },
+          "job_count": {
+            "default": 1,
+            "title": "Job Count",
+            "type": "integer"
+          },
           "materials": {
             "items": {
               "$ref": "#/components/schemas/PlanMaterialSchema"
@@ -27809,8 +27814,18 @@
             "title": "Product Type Id",
             "type": "integer"
           },
+          "remainder_runs": {
+            "default": 0,
+            "title": "Remainder Runs",
+            "type": "integer"
+          },
           "runs": {
             "title": "Runs",
+            "type": "integer"
+          },
+          "runs_per_job": {
+            "default": 0,
+            "title": "Runs Per Job",
             "type": "integer"
           },
           "te_multiplier": {
@@ -28044,6 +28059,17 @@
               }
             ],
             "title": "Isk Per Lp"
+          },
+          "max_runs_per_job": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Runs Per Job"
           },
           "product_type_id": {
             "title": "Product Type Id",

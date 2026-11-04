@@ -18680,6 +18680,11 @@ export interface components {
             job_class: string;
             /** Job Cost Isk */
             job_cost_isk: number;
+            /**
+             * Job Count
+             * @default 1
+             */
+            job_count?: number;
             /** Materials */
             materials: components["schemas"]["PlanMaterialSchema"][];
             /** Me Total */
@@ -18688,8 +18693,18 @@ export interface components {
             product_name: string;
             /** Product Type Id */
             product_type_id: number;
+            /**
+             * Remainder Runs
+             * @default 0
+             */
+            remainder_runs?: number;
             /** Runs */
             runs: number;
+            /**
+             * Runs Per Job
+             * @default 0
+             */
+            runs_per_job?: number;
             /** Te Multiplier */
             te_multiplier: number;
         };
@@ -18778,6 +18793,8 @@ export interface components {
             facility_key?: string;
             /** Isk Per Lp */
             isk_per_lp?: number | null;
+            /** Max Runs Per Job */
+            max_runs_per_job?: number | null;
             /** Product Type Id */
             product_type_id: number;
             /**
