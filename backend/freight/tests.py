@@ -1,8 +1,11 @@
+import importlib
 from datetime import timedelta
 from unittest.mock import patch
 
+from django.apps import apps
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.test import Client, RequestFactory
 from django.utils import timezone
 
@@ -40,6 +43,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -47,6 +51,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -81,6 +86,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -88,6 +94,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -113,6 +120,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -120,6 +128,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -168,6 +177,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -175,6 +185,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -206,6 +217,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -213,6 +225,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -240,6 +253,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -247,6 +261,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -271,6 +286,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc1",
             solar_system_id=1,
             solar_system_name="System 1",
+            freight_active=True,
         )
         loc2 = EveLocation.objects.create(
             location_id=2,
@@ -278,6 +294,7 @@ class FreightRouterTestCase(TestCase):
             short_name="Loc2",
             solar_system_id=2,
             solar_system_name="System 2",
+            freight_active=True,
         )
         route = EveFreightRoute.objects.create(
             origin_location=loc1,
@@ -1035,3 +1052,141 @@ class FreightContractsStatsEndpointTestCase(TestCase):
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual(response.json()["active_haulers_count"], 1)
+
+
+def _freight_location(location_id, name, *, freight_active=True):
+    return EveLocation.objects.create(
+        location_id=location_id,
+        location_name=name,
+        short_name=name,
+        solar_system_id=location_id,
+        solar_system_name=name,
+        freight_active=freight_active,
+    )
+
+
+class FreightLocationDisableRoutesTestCase(TestCase):
+    """Disabling a freight location turns off routes that touch it."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.hub = _freight_location(1, "Amamake")
+        self.spoke = _freight_location(2, "Auner")
+        self.other = _freight_location(3, "Jita")
+        self.outbound = EveFreightRoute.objects.create(
+            origin_location=self.spoke,
+            destination_location=self.hub,
+            isk_per_m3=100,
+        )
+        self.inbound = EveFreightRoute.objects.create(
+            origin_location=self.hub,
+            destination_location=self.spoke,
+            isk_per_m3=100,
+        )
+        self.unrelated = EveFreightRoute.objects.create(
+            origin_location=self.other,
+            destination_location=self.hub,
+            isk_per_m3=100,
+        )
+
+    def test_disabling_location_disables_routes_to_and_from_it(self):
+        self.spoke.freight_active = False
+        self.spoke.save()
+
+        self.outbound.refresh_from_db()
+        self.inbound.refresh_from_db()
+        self.unrelated.refresh_from_db()
+        self.assertFalse(self.outbound.active)
+        self.assertFalse(self.inbound.active)
+        self.assertTrue(self.unrelated.active)
+
+        response = self.client.get(
+            f"{BASE_URL}/routes",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        route_ids = {route["route_id"] for route in response.json()}
+        self.assertEqual(route_ids, {self.unrelated.id})
+
+    def test_reenabling_location_leaves_routes_off(self):
+        self.spoke.freight_active = False
+        self.spoke.save()
+        self.spoke.freight_active = True
+        self.spoke.save()
+
+        self.outbound.refresh_from_db()
+        self.inbound.refresh_from_db()
+        self.assertFalse(self.outbound.active)
+        self.assertFalse(self.inbound.active)
+
+    def test_editing_a_closed_location_does_not_disable_other_routes(self):
+        self.spoke.freight_active = False
+        self.spoke.save()
+        self.unrelated.active = True
+        self.unrelated.save()
+        self.spoke.short_name = "Auner Forge"
+        self.spoke.save()
+
+        self.unrelated.refresh_from_db()
+        self.assertTrue(self.unrelated.active)
+
+    def test_soft_delete_disables_routes(self):
+        self.spoke.delete()
+
+        self.outbound.refresh_from_db()
+        self.inbound.refresh_from_db()
+        self.unrelated.refresh_from_db()
+        self.assertFalse(self.outbound.active)
+        self.assertFalse(self.inbound.active)
+        self.assertTrue(self.unrelated.active)
+
+    def test_public_list_hides_a_closed_location(self):
+        EveLocation.objects.filter(pk=self.spoke.pk).update(
+            freight_active=False
+        )
+        self.outbound.refresh_from_db()
+        self.assertTrue(self.outbound.active)
+
+        listed = self.client.get(
+            f"{BASE_URL}/routes",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, listed.status_code)
+        listed_ids = {route["route_id"] for route in listed.json()}
+        self.assertNotIn(self.outbound.id, listed_ids)
+        self.assertIn(self.unrelated.id, listed_ids)
+
+        cost = self.client.get(
+            f"{BASE_URL}/routes/{self.outbound.id}/cost?m3=10&collateral=0",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(404, cost.status_code)
+
+    def test_route_cannot_be_turned_on_while_an_end_is_closed(self):
+        self.spoke.freight_active = False
+        self.spoke.save()
+        self.outbound.refresh_from_db()
+        self.outbound.active = True
+        with self.assertRaises(ValidationError):
+            self.outbound.full_clean()
+
+    def test_existing_rows_are_deactivated_for_locations_already_off(self):
+        EveLocation.objects.filter(pk=self.spoke.pk).update(
+            freight_active=False
+        )
+        self.outbound.refresh_from_db()
+        self.assertTrue(self.outbound.active)
+
+        migration = importlib.import_module(
+            "freight.migrations."
+            "0016_deactivate_routes_for_inactive_locations"
+        )
+        migration.deactivate_routes_for_inactive_locations(apps, None)
+
+        self.outbound.refresh_from_db()
+        self.inbound.refresh_from_db()
+        self.unrelated.refresh_from_db()
+        self.assertFalse(self.outbound.active)
+        self.assertFalse(self.inbound.active)
+        self.assertTrue(self.unrelated.active)

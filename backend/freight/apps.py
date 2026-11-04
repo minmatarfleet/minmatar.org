@@ -11,3 +11,5 @@ class FreightConfig(AppConfig):
         from freight.admin import apply_freight_admin_customizations
 
         apply_freight_admin_customizations()
+        # pylint: disable=import-outside-toplevel,unused-import
+        import freight.signals
