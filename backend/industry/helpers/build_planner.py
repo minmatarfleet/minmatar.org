@@ -31,11 +31,12 @@ from industry.helpers.facility_profiles import (
 )
 from industry.helpers.industry_formulas import (
     JobCostBreakdown,
+    batched_job_installation_cost,
+    batched_material_quantity,
     estimated_item_value,
     job_duration_seconds,
-    job_installation_cost,
+    job_run_batches,
     material_efficiency_total,
-    required_material_quantity,
     time_efficiency_multiplier,
 )
 from industry.helpers.type_breakdown import (
@@ -102,6 +103,9 @@ class JobPlan:
     duration_seconds: float
     job_cost: JobCostBreakdown
     eiv: float
+    job_count: int = 1
+    runs_per_job: int = 0
+    remainder_runs: int = 0
 
 
 @dataclass
@@ -354,6 +358,7 @@ def _stabilize_demand(
     profile: Dict[JobClass, FacilityBonuses],
     is_buildable,
     recipe_for,
+    max_runs_per_job: Optional[int] = None,
 ) -> Tuple[Dict[int, int], Dict[int, Tuple[Recipe, int, JobClass]]]:
     """Iterate until run counts stabilize (ME can change upstream demand)."""
     demand: Dict[int, int] = defaultdict(int)
@@ -384,8 +389,8 @@ def _stabilize_demand(
             )
             next_jobs[type_id] = (recipe, runs, job_class)
             for mid, _, base_qty in recipe.materials:
-                new_demand[mid] += required_material_quantity(
-                    runs, base_qty, me_total
+                new_demand[mid] += batched_material_quantity(
+                    runs, base_qty, me_total, max_runs_per_job
                 )
 
         if next_jobs == jobs_meta and new_demand == demand:
@@ -412,6 +417,7 @@ def _build_job_plan(
     prices: Dict[int, float],
     manufacturing_index: float,
     reaction_index: float,
+    max_runs_per_job: Optional[int] = None,
 ) -> JobPlan:
     bonuses = profile[job_class]
     is_reaction = recipe.activity_id == ACTIVITY_REACTION
@@ -434,7 +440,9 @@ def _build_job_plan(
         MaterialLine(
             type_id=mid,
             name=name,
-            quantity=required_material_quantity(runs, base_qty, me_total),
+            quantity=batched_material_quantity(
+                runs, base_qty, me_total, max_runs_per_job
+            ),
             base_quantity_per_run=base_qty,
         )
         for mid, name, base_qty in recipe.materials
@@ -447,13 +455,19 @@ def _build_job_plan(
         runs,
     )
     index = reaction_index if is_reaction else manufacturing_index
-    cost = job_installation_cost(
+    cost = batched_job_installation_cost(
         eiv,
-        index,
+        runs,
+        max_runs_per_job,
+        system_cost_index=index,
         structure_isk_bonus=bonuses.structure_isk_bonus,
         facility_tax=bonuses.facility_tax,
         scc_surcharge=bonuses.scc_surcharge,
         system_cost_bonus=bonuses.system_cost_bonus,
+    )
+    batches = job_run_batches(runs, max_runs_per_job)
+    remainder_runs = (
+        batches[-1] if len(batches) > 1 and batches[-1] != batches[0] else 0
     )
     return JobPlan(
         product_type_id=type_id,
@@ -471,6 +485,9 @@ def _build_job_plan(
         duration_seconds=job_duration_seconds(recipe.base_time, runs, te_mult),
         job_cost=cost,
         eiv=eiv,
+        job_count=len(batches),
+        runs_per_job=batches[0] if batches else 0,
+        remainder_runs=remainder_runs,
     )
 
 
@@ -601,6 +618,7 @@ def plan_build(
     system_id: Optional[int] = None,
     build_fuel_blocks: bool = True,
     exclude_type_ids: Optional[Iterable[int]] = None,
+    max_runs_per_job: Optional[int] = None,
 ) -> BuildPlan:
     """
     Expand `product` into a full job tree at the given facility profile.
@@ -616,8 +634,11 @@ def plan_build(
     expanded), matching ``build_fuel_blocks=False`` for intermediate fuel-block
     groups. If a descendant of an excluded type is *not* excluded (the user
     wants to build it), ancestors are still expanded so that job stays in the
-    plan. The root product is always expanded when it has a recipe — including
+    plan.     The root product is always expanded when it has a recipe — including
     when the order itself is a fuel block.
+
+    ``max_runs_per_job`` splits every job into blueprint-copy sized batches
+    before material and install-cost rounding. Omit it for one job.
     """
     if quantity <= 0:
         raise ValueError("quantity must be positive")
@@ -670,6 +691,7 @@ def plan_build(
         profile=profile,
         is_buildable=is_buildable,
         recipe_for=recipe_for,
+        max_runs_per_job=max_runs_per_job,
     )
     buckets = _assign_buckets(jobs_meta, root.id)
 
@@ -692,6 +714,7 @@ def plan_build(
             prices=prices,
             manufacturing_index=manufacturing_index,
             reaction_index=reaction_index,
+            max_runs_per_job=max_runs_per_job,
         )
         for type_id, (recipe, runs, job_class) in sorted(
             jobs_meta.items(), key=lambda item: item[1][0].product_name
@@ -742,6 +765,9 @@ def plan_to_dict(plan: BuildPlan) -> Dict[str, Any]:
                 "job_class": j.job_class.value,
                 "bucket": j.bucket.value,
                 "runs": j.runs,
+                "job_count": j.job_count,
+                "runs_per_job": j.runs_per_job,
+                "remainder_runs": j.remainder_runs,
                 "facility": j.facility_name,
                 "blueprint_me": j.blueprint_me,
                 "blueprint_te": j.blueprint_te,

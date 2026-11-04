@@ -102,6 +102,9 @@ class PlanRequestSchema(Schema):
     isk_per_lp: Optional[float] = None
     # Optional EVE inventory / assets / Multibuy paste; subtracts from shopping list.
     stock_paste: Optional[str] = None
+    # Cap each job at this many runs (blueprint copy limit). Omit for one job.
+    # Materials and install cost are rounded per job, then summed.
+    max_runs_per_job: Optional[int] = None
 
 
 class PlanProductSchema(Schema):
@@ -123,6 +126,10 @@ class PlanJobSchema(Schema):
     job_class: str
     bucket: str
     runs: int
+    # How the runs are split across blueprint copies. One job when uncapped.
+    job_count: int = 1
+    runs_per_job: int = 0
+    remainder_runs: int = 0
     facility: str
     blueprint_me: float
     blueprint_te: float

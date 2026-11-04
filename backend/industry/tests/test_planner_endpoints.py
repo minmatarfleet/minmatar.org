@@ -346,6 +346,71 @@ class PlannerPlanEndpointTestCase(TestCase):
         self.assertIn("scc_tax", line_keys)
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_post_plan_max_runs_per_job_rounds_each_copy(
+        self, resolve_indices
+    ):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        body = {
+            "product_type_id": self.hull.id,
+            "quantity": 25,
+            "blueprint_me": 0,
+            "blueprint_te": 0,
+            "facility_key": "amamake",
+            "compressed": False,
+        }
+        one = self.client.post(
+            f"{BASE}/plans",
+            data=body,
+            content_type="application/json",
+            **self.auth,
+        )
+        split = self.client.post(
+            f"{BASE}/plans",
+            data={**body, "max_runs_per_job": 10},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(one.status_code, 200, one.content)
+        self.assertEqual(split.status_code, 200, split.content)
+        one_job = next(
+            job
+            for job in one.json()["jobs"]
+            if job["product_type_id"] == self.hull.id
+        )
+        split_job = next(
+            job
+            for job in split.json()["jobs"]
+            if job["product_type_id"] == self.hull.id
+        )
+        self.assertEqual(one_job["job_count"], 1)
+        self.assertEqual(one_job["runs_per_job"], 25)
+        self.assertEqual(one_job["remainder_runs"], 0)
+        self.assertEqual(one_job["runs"], 25)
+        self.assertEqual(split_job["runs"], 25)
+        self.assertEqual(split_job["job_count"], 3)
+        self.assertEqual(split_job["runs_per_job"], 10)
+        self.assertEqual(split_job["remainder_runs"], 5)
+        one_trit = next(
+            line["quantity"]
+            for line in one_job["materials"]
+            if line["type_id"] == 34
+        )
+        split_trit = next(
+            line["quantity"]
+            for line in split_job["materials"]
+            if line["type_id"] == 34
+        )
+        self.assertGreaterEqual(split_trit, one_trit)
+
+        rejected = self.client.post(
+            f"{BASE}/plans",
+            data={**body, "max_runs_per_job": 0},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(rejected.status_code, 400)
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
     def test_post_plan_omitted_me_te_defaults_to_10_20(self, resolve_indices):
         resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
         response = self.client.post(

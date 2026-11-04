@@ -39,6 +39,46 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-03 — Planner bill ignores blueprint copy run cap
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** no reply (test-guild bot 403s the production help thread)
+**PR:** fix+skill
+**Symptom vs cause:** A large manufacturing run was priced as one job. A blueprint copy that only holds a few runs (a battleship copy at 10) is many jobs, and each job ceils materials and floors install cost on its own.
+**Durable rule:** `max_runs_per_job` splits the plan. Blank stays one job. The pilot supplies the cap; eveuniverse has no max-runs column.
+**Skill update:** added the planner BPC run-cap row.
+
+## 2026-11-03 — SRP submit refused for a hull with no program
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** no reply (test-guild bot 403s the production help thread)
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Resolve succeeded for a character already on the account. The lost hull has no `ShipReimbursementProgram` row, so the wizard shows the ineligible-ship warning and does not offer a fleet.
+**Durable rule:** Missing program row is `ship_is_no_eligible_for_srp`. Dump `user_id` first; a linked character can still be an uncovered hull.
+**Skill update:** extended the SRP warning row.
+
+## 2026-11-03 — Open technology threads (batch)
+
+**Category:** pulse.technology
+**Verdict:** mixed (clarify, note-to-self, needs-decision)
+**Discord:** no reply (test-guild bot 403s production help threads)
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Associates wiki `/en/` path and the old main-not-in-alliance banner are already explained by existing rows; Associate groups for market, subcapital production, and planetary interaction accept that affiliation. A fitting-paste request and a doctrine note on the decision owner's own ticket stay unimplemented. A two-word mining-killboard note is note-to-self.
+**Durable rule:** Do not ping the decision owner on their own ticket. Do not add unnamed doctrine hulls from a one-line note. Do not mark a help ticket closed when the thread cannot be archived.
+**Skill update:** Discord-reply note that a 403 does not close the row.
+
+## 2026-11-03 — BUILD application tickets already fulfilled
+
+**Category:** build
+**Verdict:** clarify
+**Discord:** no reply and not closed (test-guild bot 403s production threads)
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Open `build` help tickets whose named corporation already has characters in BUILD, or whose named character is already in the requested corporation. One ticket is still `on_leave` and stays open.
+**Durable rule:** Category `build` is a help thread, not the application forum. Processed means the join is already on the character or corporation row. Archive Discord before setting `HelpTicket.status`.
+**Skill update:** added the BUILD-application row.
+
 ## 2026-10-30 — Old buyback sales stay open after the contract finishes
 
 **Category:** pulse.technology (buyback forum; no HelpTicket row)

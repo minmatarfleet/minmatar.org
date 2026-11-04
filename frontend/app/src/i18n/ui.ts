@@ -1983,6 +1983,8 @@ export const ui = {
         'industry.orders.planner.meta_description': 'Plan what to buy and manufacture by type ID or from alliance industry orders, with location taxes, structure bonuses, and compressed ore shopping lists. Open with ?type_id= (optional &quantity=) or ?order_id=&item_id=.',
         'industry.orders.planner.quantity': 'How many to build',
         'industry.orders.planner.blueprint_me': 'ME',
+        'industry.orders.planner.max_runs_per_job': 'Runs per job',
+        'industry.orders.planner.max_runs_per_job_tip': 'Cap each industry job at this many runs, matching the blueprint copy. Materials and install cost are rounded on each job, then added. Leave blank for one job.',
         'industry.orders.planner.blueprint_te': 'TE',
         'industry.orders.planner.facility': 'Location',
         'industry.orders.planner.facility_tip': 'Solar system where you run industry jobs. Taxes, structure bonuses, and job install cost change with the location.',
