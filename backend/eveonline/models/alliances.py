@@ -41,7 +41,13 @@ class EveLocation(MinmatarSoftDeleteModel):
         help_text="At most one location may be the price baseline. "
         "Used as the reference for markup calculations.",
     )
-    freight_active = models.BooleanField(default=False)
+    freight_active = models.BooleanField(
+        default=False,
+        help_text=(
+            "Turning this off also disables freight routes "
+            "to and from this location."
+        ),
+    )
     fleets_active = models.BooleanField(
         default=False,
         db_default=False,

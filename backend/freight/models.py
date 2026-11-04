@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from eveonline.models import EveCorporationContract, EveLocation
@@ -37,8 +38,23 @@ class FreightContract(EveCorporationContract):
         proxy = True
 
 
+class EveFreightRouteQuerySet(models.QuerySet):
+    def available(self):
+        """Routes a pilot can book.
+
+        The route itself is on, and both ends are still freight locations.
+        """
+        return self.filter(
+            active=True,
+            origin_location__freight_active=True,
+            destination_location__freight_active=True,
+        )
+
+
 class EveFreightRoute(models.Model):
     """Model for a freight route. One direction only; set up the reverse as a separate route."""
+
+    objects = EveFreightRouteQuerySet.as_manager()
 
     class RouteType(models.TextChoices):
         RATE = "rate", "Rate (ISK/m³ + collateral %)"
@@ -106,6 +122,33 @@ class EveFreightRoute(models.Model):
         help_text="Days allowed to complete the contract after acceptance.",
     )
     active = models.BooleanField(default=True)
+
+    def clean(self):
+        super().clean()
+        if not self.active:
+            return
+        closed = [
+            str(location)
+            for location in (
+                self.origin_location,
+                self.destination_location,
+            )
+            if location is not None and not location.freight_active
+        ]
+        if not closed:
+            return
+        if len(closed) == 1:
+            message = (
+                f"This route stays off while {closed[0]} "
+                "is not a freight location."
+            )
+        else:
+            message = (
+                "This route stays off while "
+                + " and ".join(closed)
+                + " are not freight locations."
+            )
+        raise ValidationError({"active": message})
 
     def __str__(self):
         origin_name = (

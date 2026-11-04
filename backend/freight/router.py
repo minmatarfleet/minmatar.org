@@ -42,7 +42,7 @@ class EveFreightRouteCostResponse(BaseModel):
 
 @router.get("/routes", response=List[EveFreightRouteResponse])
 def get_routes(request):
-    routes = EveFreightRoute.objects.filter(active=True)
+    routes = EveFreightRoute.objects.available()
     response = []
     for route in routes:
         response.append(
@@ -78,7 +78,7 @@ def get_route_cost(request, route_id: int, m3: int, collateral: int = 0):
     Rate: isk_per_m3 * m3 + ceil(collateral_modifier * collateral).
     Fixed: flat fee; rejects if m3 or collateral exceed route maxima.
     """
-    route = EveFreightRoute.objects.filter(id=route_id, active=True).first()
+    route = EveFreightRoute.objects.available().filter(id=route_id).first()
     if not route:
         return 404, {"detail": "Route not found."}
     try:

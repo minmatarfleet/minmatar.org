@@ -101,10 +101,11 @@ def find_inbound_freight_route(
     except ValueError:
         return None
 
-    qs = EveFreightRoute.objects.filter(
-        active=True,
-        destination_location__solar_system_id=dest_system_id,
-    ).select_related("origin_location", "destination_location")
+    qs = (
+        EveFreightRoute.objects.available()
+        .filter(destination_location__solar_system_id=dest_system_id)
+        .select_related("origin_location", "destination_location")
+    )
 
     baseline = baseline_location()
     if baseline is None:
