@@ -44,7 +44,7 @@ Plexes are the capture sites in warzone systems. You warp to one, sit inside the
 | ELT site (Contested Field Research Facility) | 3–5 | 63–95M | Any destroyer (alpha) | 45,000 LP for every pilot per 10-minute capture, two or three an hour. The best rate an alpha can reach. Spawn-limited. |
 | Moderate NVY-3 | 3 | 92–110M | A navy or T1 battlecruiser (50–100M) | 52,500 LP for each of three pilots per 15-minute capture. Hostiles contest these; expect fights. |
 | FW L4 missions | 1–2 | 35–70M | Cruisers and 5.0 standing with Tribal Liberation Force | About 30,000 LP and 3M per mission. [Reworked in March 2026](https://www.eveonline.com/news/view/patch-notes-version-23-02); nobody has published new rates, so time your own. |
-| Zohar's Chosen hunting | 1 | 250–750M | A 1.5B Loki and Crystal implants | Hunting named Angel NPCs in insurgency systems for mutaplasmid crates. See [Zohar's Chosen Angel Hunting](/learning/guides/zohar-hunting/). Dangerous: corruption-5 systems allow bubbles. |
+| Zohar's Chosen hunting | 1 | 100–200M (unverified) | A 1.5B Loki and Crystal implants | Hunting named Angel NPCs in insurgency systems for mutaplasmid crates. See [Zohar's Chosen Angel Hunting](/learning/guides/zohar-hunting/). That guide's 250–750M/h assumed 80–120M crates; Gravid Vorton mutaplasmids have since fallen from ~280M to ~55M and Decayed ones are worthless, so expect a fifth of that unless an Unstable (~290M) drops. Loot is shared with every other hunter, and corruption-5 systems allow bubbles. |
 | L5 mission blitz | 1 | ~355M | A 1.5B Golem or Barghest and 7.0 faction standing | See [L5 Mission Farming](/learning/guides/level5-missions/). Low effort once the standing grind is done. |
 
 Payouts that are not hourly but matter:
