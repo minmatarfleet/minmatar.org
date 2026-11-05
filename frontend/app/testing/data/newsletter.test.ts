@@ -23,10 +23,11 @@ function local_images(issue: NewsletterIssue): string[] {
 }
 
 describe('newsletter issue registry', () => {
-    it('lists yc128-10 as the latest issue', () => {
-        expect(get_latest_issue().slug).toBe('yc128-10')
+    it('lists yc128-11 as the latest issue', () => {
+        expect(get_latest_issue().slug).toBe('yc128-11')
         expect(get_issue('yc128-10')?.permalink_path).toBe('/newsletter/yc128-10/')
-        expect(ISSUES).toHaveLength(1)
+        expect(get_issue('yc128-11')?.permalink_path).toBe('/newsletter/yc128-11/')
+        expect(ISSUES).toHaveLength(2)
     })
 
     it('returns undefined for an unknown slug', () => {

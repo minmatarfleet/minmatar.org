@@ -1,9 +1,10 @@
 import type { NewsletterIssue } from './types'
 import { YC128_10 } from './yc128-10'
+import { YC128_11 } from './yc128-11'
 
 export type { NewsletterIssue } from './types'
 
-export const ISSUES: readonly NewsletterIssue[] = [YC128_10]
+export const ISSUES: readonly NewsletterIssue[] = [YC128_11, YC128_10]
 
 /** Issues newest-first. */
 export function get_issues_sorted(): NewsletterIssue[] {

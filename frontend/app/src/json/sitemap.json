@@ -249,6 +249,13 @@
         "keywords": ["newsletter", "Fleet Newsletter", "Minmatar Fleet", "what's new", "updates", "YC128"]
     },
     {
+        "slug": "newsletter.yc128_11",
+        "path": "/newsletter/yc128-11/",
+        "publish": true,
+        "description": "page_finder.newsletter.yc128_11.description",
+        "keywords": ["newsletter", "November YC128", "training", "trial", "fleet invites", "battle report", "Minmatar Fleet"]
+    },
+    {
         "slug": "newsletter.yc128_10",
         "path": "/newsletter/yc128-10/",
         "publish": true,
