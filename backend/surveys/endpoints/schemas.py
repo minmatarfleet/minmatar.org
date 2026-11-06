@@ -86,6 +86,7 @@ class CampaignSchema(Schema):
     opens_at: Optional[str] = None
     closes_at: Optional[str] = None
     response_count: int = 0
+    spotlight_questions: List[dict] = []
 
 
 class ActiveSurveySchema(Schema):
@@ -175,7 +176,20 @@ class CreateCampaignRequest(Schema):
     open_now: bool = False
 
 
+class SpotlightQuestionInput(Schema):
+    """One one-off question merged in before the Open floor."""
+
+    key: str
+    type: str = "single"
+    label: str
+    help: str = ""
+    choices: List[str] = []
+    required: bool = False
+
+
 class UpdateCampaignRequest(Schema):
+    title: Optional[str] = None
+    spotlight_questions: Optional[List[SpotlightQuestionInput]] = None
     status: Optional[str] = None
     opens_at: Optional[str] = None
     closes_at: Optional[str] = None

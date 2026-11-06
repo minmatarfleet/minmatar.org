@@ -1,5 +1,4 @@
 ---
-import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -54,7 +53,7 @@ if (!user) return login_redirect(Astro)
 const gates = await get_gates(Astro)
 
 const can_view_campaigns = can(gates, 'campaigns.view')
-const can_edit_in_admin = can(gates, 'campaigns.manage')
+const can_manage_campaign = can(gates, 'campaigns.manage')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
@@ -129,10 +128,6 @@ const show_enlist_bar = campaign !== null && (campaign.status === 'active' || ca
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
 const page_title = campaign ? campaign.name : t('campaigns.page_title')
-const api_base = get_public_api_url()
-const admin_campaign_url = campaign
-    ? `${api_base}/admin/campaigns/campaign/${campaign.id}/change/`
-    : null
 
 const breadcrumbs = [
     { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
@@ -203,14 +198,13 @@ const breadcrumbs = [
                         />
                     </Flexblock>
                 )}
-                {can_edit_in_admin && admin_campaign_url && (
+                {can_manage_campaign && (
                     <Button
-                        href={admin_campaign_url}
+                        href={translatePath(`/campaigns/${slug}/settings/`)}
                         color="transparent"
                         narrow={true}
-                        new_tab={true}
-                        aria-label={t('campaigns.edit_in_admin')}
-                        title={t('campaigns.edit_in_admin')}
+                        aria-label={t('campaigns.settings.page_title')}
+                        title={t('campaigns.settings.page_title')}
                     >
                         <CogIcon slot="icon" />
                     </Button>

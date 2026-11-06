@@ -4,7 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import type { MixRow } from '@helpers/corporations/about'
-import { mix_rows, ranked_mix_rows } from '@helpers/corporations/about'
+import { mix_rows, percent_of, ranked_mix_rows, tenure_parts } from '@helpers/corporations/about'
 import { get_item_icon } from '@helpers/eve_image_server'
 
 interface Props {
@@ -21,8 +21,12 @@ const home = about?.home_system?.name
 interface MixCard {
     title: string
     head: string
+    // Small unit after the number ("years"), as on the intro vitals.
+    head_unit?: string
     head_label: string
     rows: (MixRow & { label: string })[]
+    // Shares of one whole draw a stacked bar; overlapping shares draw a bar per row.
+    overlapping?: boolean
     foot: string
 }
 
@@ -87,13 +91,20 @@ if (summary) {
             foot: t('corporations.about.foot_core').replace('~COUNT', String(core)),
         })
 
+    // Each role is the share of pilots who flew it, so alts covering several roles count in each.
+    const role_pilots = summary.fleet_ships.pilots ?? 0
     const roles = labelled(ranked_mix_rows(summary.fleet_ships.slices, ['dps', 'support', 'logistics', 'capital']), role_label)
-    if (roles.length > 0)
+        .map((row) => {
+            const percent = percent_of(row.count, role_pilots)
+            return { ...row, percent, width: Math.max(percent, 1) }
+        })
+    if (role_pilots > 0 && roles.length > 0)
         cards.push({
             title: t('corporations.about.ship_roles'),
             head: `${roles[0].percent}%`,
             head_label: t('corporations.about.head_role').replace('~ROLE', roles[0].label),
             rows: roles,
+            overlapping: true,
             foot: t('corporations.about.foot_roles'),
         })
 
@@ -112,14 +123,19 @@ if (summary) {
 }
 
 const tenure = about?.tenure
-if (tenure && tenure.mains > 0) {
+const average = tenure_parts(tenure?.average_days)
+if (tenure && tenure.mains > 0 && average) {
     const bands = labelled(mix_rows(tenure.bands, ['two_years', 'one_year', 'three_months', 'new']), band_label)
-    const top = [...bands].sort((left, right) => right.count - left.count)[0]
-    if (top)
+    if (bands.length > 0)
         cards.push({
             title: t('corporations.about.tenure'),
-            head: `${top.percent}%`,
-            head_label: t('corporations.about.head_tenure').replace('~BAND', top.label.toLowerCase()),
+            head: average.value,
+            head_unit: t(
+                average.unit === 'years' ? 'corporations.about.word_years'
+                : average.unit === 'months' ? 'corporations.about.word_months'
+                : 'corporations.about.word_weeks',
+            ),
+            head_label: t('corporations.about.average_tenure'),
             rows: bands,
             foot: t('corporations.about.foot_mains').replace('~COUNT', String(tenure.mains)),
         })
@@ -142,21 +158,41 @@ const hull_peak = Math.max(1, ...hulls.map((hull) => hull.pilots))
                     <article class="card">
                         <h3 class="eyebrow">{card.title}</h3>
                         <p class="head">
-                            <span class="head-value">{card.head}</span>
+                            <span class="head-value">
+                                {card.head}
+                                {card.head_unit && <span class="head-unit">{card.head_unit}</span>}
+                            </span>
                             <span>{card.head_label}</span>
                         </p>
-                        <span class="stack" aria-hidden="true">
-                            {card.rows.map((row) => <span data-shade={row.shade} style={`width: ${row.width}%`}></span>)}
-                        </span>
-                        <ul class="legend">
-                            {card.rows.map((row) => (
-                                <li>
-                                    <span class="key" data-shade={row.shade} aria-hidden="true"></span>
-                                    <span class="legend-label">{row.label}</span>
-                                    <span class="legend-value">{row.percent}%</span>
-                                </li>
-                            ))}
-                        </ul>
+                        {card.overlapping
+                            ? <ul class="legend bars">
+                                {card.rows.map((row) => (
+                                    <li>
+                                        <span class="bar-line">
+                                            <span class="legend-label">{row.label}</span>
+                                            <span class="legend-value">{row.percent}%</span>
+                                        </span>
+                                        <span class="track" aria-hidden="true">
+                                            <span style={`width: ${row.width}%`}></span>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                            : <>
+                                <span class="stack" aria-hidden="true">
+                                    {card.rows.map((row) => <span data-shade={row.shade} style={`width: ${row.width}%`}></span>)}
+                                </span>
+                                <ul class="legend">
+                                    {card.rows.map((row) => (
+                                        <li>
+                                            <span class="key" data-shade={row.shade} aria-hidden="true"></span>
+                                            <span class="legend-label">{row.label}</span>
+                                            <span class="legend-value">{row.percent}%</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        }
                         <p class="foot">{card.foot}</p>
                     </article>
                 ))}
@@ -250,7 +286,15 @@ const hull_peak = Math.max(1, ...hulls.map((hull) => hull.pilots))
         font-family: var(--heading-font);
         font-size: var(--step-4);
         line-height: 1;
+        white-space: nowrap;
         color: var(--highlight);
+    }
+
+    .head-unit {
+        margin-inline-start: var(--space-3xs);
+        font-size: 0.45em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
     }
 
     // One cream lightness ramp for every chart: colour never means two things.
@@ -289,6 +333,18 @@ const hull_peak = Math.max(1, ...hulls.map((hull) => hull.pilots))
 
     .legend-label {
         flex: 1;
+    }
+
+    // Overlapping shares: one bar per row, each out of every pilot.
+    .bars li {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3xs);
+    }
+
+    .bar-line {
+        display: flex;
+        gap: var(--space-xs);
     }
 
     .legend-value {

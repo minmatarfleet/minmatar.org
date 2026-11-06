@@ -46,4 +46,5 @@ def serialize_campaign(campaign) -> CampaignSchema:
             campaign.closes_at.isoformat() if campaign.closes_at else None
         ),
         response_count=campaign.responses.count(),
+        spotlight_questions=list(campaign.spotlight_questions or []),
     )

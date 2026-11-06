@@ -5,6 +5,14 @@ const { t, translatePath } = i18n(Astro.url)
 import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
 import type { IndustrySingleOrder } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
+import { get_request_user } from '@helpers/request_user'
+import { can, get_gates } from '@helpers/gates'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
+import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignListItem, Location } from '@dtypes/api.minmatar.org'
+
+const { auth_token } = get_request_user(Astro)
+const can_manage = can(await get_gates(Astro), 'industry.order.manage')
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 
@@ -18,6 +26,22 @@ try {
     order = await get_order_by_id(order_id)
 } catch (error) {
     fetching_error = error
+}
+
+// Only managers get the edit form, so only they pay for the pickers.
+let locations: Location[] = []
+let campaigns: CampaignListItem[] = []
+
+if (can_manage && order) {
+    try {
+        locations = await get_locations()
+        campaigns = (await get_campaigns(auth_token as string)).filter(
+            (campaign) => campaign.status === 'active' || campaign.status === 'scheduled'
+                || campaign.id === order?.campaign_id,
+        )
+    } catch (error) {
+        console.error('order manage pickers failed', error)
+    }
 }
 
 const partial_url = translatePath(
@@ -45,6 +69,14 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             location_name={order.location?.location_name}
             needed_by={order.needed_by}
             lp_stockpiles={order.lp_stockpiles ?? []}
+            manage={can_manage ? {
+                location_id: order.location?.location_id ?? null,
+                contract_to: order.contract_to,
+                campaign_id: order.campaign_id ?? null,
+                fulfilled: order.fulfilled_at !== null,
+                locations,
+                campaigns,
+            } : null}
         />
     ) : null
 }

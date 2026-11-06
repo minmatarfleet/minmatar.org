@@ -288,63 +288,75 @@ const breadcrumbs = [
                     <SectionTabPanel id="settings" id_prefix="corporation" is_default={default_tab === 'settings'}>
                         <Flexblock gap="var(--space-s)">
                             <small class="corp-loading">{t('corporations.settings.only_ceo')}</small>
-                            {/* One collapsible section per setting area; each loads its own partial when opened. */}
-                            <section class="corp-settings-section">
-                                <CollapsibleBlock id="corporation-settings-requirements" expanded={true} padding_inline="0">
+                            {/* One collapsible section per setting area; collapsed by default; each loads its own partial (and header summary) when the tab is shown. */}
+                            <section
+                                class="corp-settings-section"
+                                hx-get={requirements_partial}
+                                hx-trigger="intersect once"
+                                hx-target="find .corp-settings-section__body"
+                                hx-swap="outerHTML"
+                                hx-disinherit="*"
+                            >
+                                <CollapsibleBlock id="corporation-settings-requirements" padding_inline="0">
                                     <span slot="head" class="corp-settings-section__head">
                                         <span class="corp-settings-section__title">{t('corporations.settings.requirements_section')}</span>
                                         <span id="corporation-settings-requirements-summary" class="corp-settings-section__summary"></span>
                                     </span>
-                                    <div
-                                        hx-get={requirements_partial}
-                                        hx-trigger="intersect once"
-                                        hx-swap="outerHTML"
-                                    >
+                                    <div class="corp-settings-section__body">
                                         <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
                                     </div>
                                 </CollapsibleBlock>
                             </section>
-                            <section class="corp-settings-section">
-                                <CollapsibleBlock id="corporation-settings-reddit" expanded={true} padding_inline="0">
+                            <section
+                                class="corp-settings-section"
+                                hx-get={settings_partial}
+                                hx-trigger="intersect once"
+                                hx-target="find .corp-settings-section__body"
+                                hx-swap="outerHTML"
+                                hx-disinherit="*"
+                            >
+                                <CollapsibleBlock id="corporation-settings-reddit" padding_inline="0">
                                     <span slot="head" class="corp-settings-section__head">
                                         <span class="corp-settings-section__title">{t('corporations.settings.reddit_section')}</span>
                                         <span id="corporation-settings-reddit-summary" class="corp-settings-section__summary"></span>
                                     </span>
-                                    <div
-                                        hx-get={settings_partial}
-                                        hx-trigger="intersect once"
-                                        hx-swap="outerHTML"
-                                    >
+                                    <div class="corp-settings-section__body">
                                         <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
                                     </div>
                                 </CollapsibleBlock>
                             </section>
-                            <section class="corp-settings-section">
-                                <CollapsibleBlock id="corporation-settings-forum" expanded={true} padding_inline="0">
+                            <section
+                                class="corp-settings-section"
+                                hx-get={forum_post_partial}
+                                hx-trigger="intersect once"
+                                hx-target="find .corp-settings-section__body"
+                                hx-swap="outerHTML"
+                                hx-disinherit="*"
+                            >
+                                <CollapsibleBlock id="corporation-settings-forum" padding_inline="0">
                                     <span slot="head" class="corp-settings-section__head">
                                         <span class="corp-settings-section__title">{t('corporations.settings.forum_section')}</span>
                                         <span id="corporation-settings-forum-summary" class="corp-settings-section__summary"></span>
                                     </span>
-                                    <div
-                                        hx-get={forum_post_partial}
-                                        hx-trigger="intersect once"
-                                        hx-swap="outerHTML"
-                                    >
+                                    <div class="corp-settings-section__body">
                                         <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
                                     </div>
                                 </CollapsibleBlock>
                             </section>
-                            <section class="corp-settings-section">
-                                <CollapsibleBlock id="corporation-settings-discord" expanded={true} padding_inline="0">
+                            <section
+                                class="corp-settings-section"
+                                hx-get={discord_partial}
+                                hx-trigger="intersect once"
+                                hx-target="find .corp-settings-section__body"
+                                hx-swap="outerHTML"
+                                hx-disinherit="*"
+                            >
+                                <CollapsibleBlock id="corporation-settings-discord" padding_inline="0">
                                     <span slot="head" class="corp-settings-section__head">
                                         <span class="corp-settings-section__title">{t('corporations.settings.discord_section')}</span>
                                         <span id="corporation-settings-discord-summary" class="corp-settings-section__summary"></span>
                                     </span>
-                                    <div
-                                        hx-get={discord_partial}
-                                        hx-trigger="intersect once"
-                                        hx-swap="outerHTML"
-                                    >
+                                    <div class="corp-settings-section__body">
                                         <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
                                     </div>
                                 </CollapsibleBlock>

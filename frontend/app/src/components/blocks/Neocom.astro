@@ -17,7 +17,6 @@ const {
 const primary_character = Astro.cookies.has('primary_pilot')
 
 const can_view_fleets = can(gates, 'fleets.view')
-const can_view_campaigns = can(gates, 'campaigns.view')
 
 // CEOs and directors get a shortcut to their corporation's page (the first
 // one they're CEO of), lit on any corporation page they lead.
@@ -37,7 +36,6 @@ import UserAuth from '@components/UserAuth.astro';
 
 import ShipTreeEvEIcon from '@components/icons/ShipTreeEvEIcon.astro';
 import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
-import CampaignsEvEIcon from '@components/icons/CampaignsEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
@@ -137,22 +135,12 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                     </NeocomButton>
                     {can_view_fleets &&
                         <NeocomButton
-                            active={page.startsWith(translatePath('/fleets'))}
+                            active={page.startsWith(translatePath('/fleets')) || page.startsWith(translatePath('/campaigns'))}
                             title='neocom.fleets'
                             description='fleets.description'
                             href={translatePath('/fleets/upcoming/')}
                         >
                             <FleetEvEIcon />
-                        </NeocomButton>
-                    }
-                    {can_view_campaigns &&
-                        <NeocomButton
-                            active={page.startsWith(translatePath('/campaigns'))}
-                            title='neocom.campaigns'
-                            description='campaigns.description'
-                            href={translatePath('/campaigns/')}
-                        >
-                            <CampaignsEvEIcon />
                         </NeocomButton>
                     }
                     <NeocomButton
