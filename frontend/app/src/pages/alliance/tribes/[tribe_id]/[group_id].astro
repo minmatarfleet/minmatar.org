@@ -349,6 +349,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                             character_name={chief.character_name}
                                             size={128}
                                             icon_quality={256}
+                                            inert={Boolean(tribe_group?.can_set_chief)}
                                             tooltip={`${chief.character_name} · ${chief_label}`}
                                         />
                                     </div>
