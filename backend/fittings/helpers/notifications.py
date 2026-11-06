@@ -2,16 +2,11 @@
 
 import logging
 
-from django.conf import settings
-
+from app.links import site_url
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 
 logger = logging.getLogger(__name__)
-
-
-def _admin_site_base() -> str:
-    return settings.MINMATAR_ADMIN_BASE_URL.rstrip("/")
 
 
 def _discord_user_id_for_user(user) -> str | None:
@@ -47,12 +42,5 @@ def build_daily_reminder_message(
         parts.append(f"- Doctrines: {doctrine_count}")
     if fitting_count:
         parts.append(f"- Fittings: {fitting_count}")
-    base = _admin_site_base()
-    if base:
-        parts.append(
-            f"\nDoctrine queue: {base}/admin/fittings/evedoctrinechangerequest/"
-        )
-        parts.append(
-            f"Fitting queue: {base}/admin/fittings/evefittingchangerequest/"
-        )
+    parts.append(f"\nReview queue: {site_url('/ships/doctrines/review/')}")
     return "\n".join(parts)

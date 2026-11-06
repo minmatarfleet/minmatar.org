@@ -71,6 +71,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'posts.create': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('posts.add_evepost'),
     'srp.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement'),
     'srp.resolve': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement'),
+    'srp.programs.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.change_shipreimbursementprogram'),
     'srp.process': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement'),
     'srp.process#strict': (_is_superuser, user_permissions) => user_permissions.includes('srp.change_evefleetshipreimbursement'),
     'structures.timers.view': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('structures.view_evestructuretimer')),

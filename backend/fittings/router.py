@@ -1,3 +1,7 @@
-from fittings.endpoints import doctrines_router, fittings_router
+from fittings.endpoints import (
+    change_requests_router,
+    doctrines_router,
+    fittings_router,
+)
 
-__all__ = ["doctrines_router", "fittings_router"]
+__all__ = ["change_requests_router", "doctrines_router", "fittings_router"]

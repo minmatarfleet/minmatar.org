@@ -640,6 +640,20 @@
         }
     },
     {
+        "slug": "ships.srp.programs",
+        "path": "/ships/srp/programs/",
+        "publish": true,
+        "description": "page_finder.ships.srp.programs.description",
+        "keywords": [
+            "srp",
+            "amount",
+            "recalculate"
+        ],
+        "permissions": {
+            "gate": "srp.programs.manage"
+        }
+    },
+    {
         "slug": "fleets.upcoming",
         "alt": "icon.fleets.alt",
         "path": "/fleets/upcoming/",

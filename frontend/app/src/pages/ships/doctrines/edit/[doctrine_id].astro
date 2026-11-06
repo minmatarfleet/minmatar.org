@@ -1,0 +1,146 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates } from '@helpers/gates'
+import { can_edit_doctrines } from '@helpers/doctrine_editor'
+
+const gates = await get_gates(Astro)
+
+if (!await can_edit_doctrines(gates))
+    return HTTP_403_Forbidden()
+
+import type { Doctrine, Fitting } from '@dtypes/api.minmatar.org'
+import { get_doctrine_by_id } from '@helpers/api.minmatar.org/doctrines'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+
+const doctrine_id = parseInt(Astro.params.doctrine_id ?? '0')
+
+let doctrine:Doctrine | null = null
+let fittings:Fitting[] = []
+let fetch_error:Error | false = false
+
+try {
+    doctrine = await get_doctrine_by_id(doctrine_id)
+    fittings = (await get_fittings()).sort((a, b) => a.name.localeCompare(b.name))
+} catch (error) {
+    if ((error as Error).cause === 404)
+        return HTTP_404_Not_Found()
+    fetch_error = error
+}
+
+const FORM_PARTIAL_URL = translatePath(`/partials/doctrine_change_form_component/?doctrine_id=${doctrine_id}`)
+
+/** The stored role keys; "secondary" is shown as Academy. */
+const roles = [
+    { key: 'primary', label: t('doctrine_changes.role_primary'), fittings: doctrine?.primary_fittings ?? [] },
+    { key: 'secondary', label: t('doctrine_changes.role_academy'), fittings: doctrine?.secondary_fittings ?? [] },
+    { key: 'support', label: t('doctrine_changes.role_support'), fittings: doctrine?.support_fittings ?? [] },
+    { key: 'utility', label: t('doctrine_changes.role_utility'), fittings: doctrine?.utility_fittings ?? [] },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+
+const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doctrine.name}` : ''}`
+---
+
+<Viewport title={page_title}>
+    <PageWide
+        cover={{
+            image: '/images/doctrines-cover.jpg',
+            image_990: '/images/doctrines-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                <small>{t('doctrine_changes.doctrine_leading')}</small>
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/ships/doctrines/review/')}>
+                    {t('doctrine_changes.review_queue')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        {fetch_error || !doctrine ?
+            <ErrorRefetch
+                args={{
+                    partial: FORM_PARTIAL_URL,
+                    error: fetch_error || new Error(t('doctrine_changes.action_failed')),
+                    delay: 0,
+                }}
+            />
+            :
+            <ComponentBlock>
+                <form
+                    hx-post={FORM_PARTIAL_URL}
+                    hx-target="#doctrine-change-result"
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                >
+                    <Flexblock gap="var(--space-m)">
+                        <input type="hidden" name="type" value={doctrine.type} />
+                        <Flexblock gap="var(--space-3xs)">
+                            <label for="name">{t('doctrine_changes.name')}</label>
+                            <Input id="name" name="name" type="text" value={doctrine.name} required />
+                        </Flexblock>
+                        <Flexblock gap="var(--space-3xs)">
+                            <label for="description">{t('doctrine_changes.description')}</label>
+                            <Textarea id="description" name="description" rows="4">{doctrine.description}</Textarea>
+                        </Flexblock>
+                        <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
+                            {roles.map((role) =>
+                                <Flexblock gap="var(--space-3xs)">
+                                    <label for={`role-${role.key}`}>{role.label}</label>
+                                    <select id={`role-${role.key}`} name={role.key} multiple size="10">
+                                        {fittings.map((fitting) =>
+                                            <option value={fitting.id} selected={role.fittings.some((entry) => entry.id === fitting.id)}>
+                                                {fitting.name}
+                                            </option>
+                                        )}
+                                    </select>
+                                </Flexblock>
+                            )}
+                        </Grid>
+                        <small>{t('doctrine_changes.roles_hint')}</small>
+                        <FlexInline gap="var(--space-xs)">
+                            <Button type="submit" name="intent" value="preview" color="alliance-blue">
+                                {t('doctrine_changes.preview')}
+                            </Button>
+                            <Button type="submit" name="intent" value="submit" color="green">
+                                {t('doctrine_changes.submit')}
+                            </Button>
+                        </FlexInline>
+                    </Flexblock>
+                </form>
+            </ComponentBlock>
+        }
+
+        <div id="doctrine-change-result" aria-live="polite"></div>
+    </PageWide>
+</Viewport>

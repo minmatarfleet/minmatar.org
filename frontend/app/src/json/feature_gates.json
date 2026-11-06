@@ -41,6 +41,16 @@
             "feature": "srp.process",
             "legacy": { "perms": ["srp.change_evefleetshipreimbursement"], "superuser": true }
         },
+        "srp.programs.manage": {
+            "feature": "srp.programs.manage",
+            "legacy": { "perms": ["srp.change_shipreimbursementprogram"], "superuser": true }
+        },
+        "fittings.doctrine.edit": {
+            "feature": "fittings.doctrine.propose",
+            "legacy": { "custom": true },
+            "parity": "custom",
+            "note": "No site editor existed. The legacy check is superuser or the pilot feature (helpers/doctrine_editor.ts)."
+        },
         "srp.process#strict": {
             "feature": "srp.process",
             "legacy": { "perms": ["srp.change_evefleetshipreimbursement"], "superuser": false },

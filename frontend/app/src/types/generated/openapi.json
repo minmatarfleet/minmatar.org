@@ -4791,6 +4791,146 @@
         "title": "CertificateSchema",
         "type": "object"
       },
+      "ChangePreviewResponse": {
+        "description": "Diff of a proposed edit. `request` is set once it was submitted.",
+        "properties": {
+          "applied": {
+            "default": false,
+            "title": "Applied",
+            "type": "boolean"
+          },
+          "diffs": {
+            "items": {
+              "$ref": "#/components/schemas/FieldDiffResponse"
+            },
+            "title": "Diffs",
+            "type": "array"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeRequestResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "diffs"
+        ],
+        "title": "ChangePreviewResponse",
+        "type": "object"
+      },
+      "ChangeRequestResponse": {
+        "description": "A doctrine or fitting change request with its diff against live data.",
+        "properties": {
+          "can_cancel": {
+            "title": "Can Cancel",
+            "type": "boolean"
+          },
+          "can_review": {
+            "title": "Can Review",
+            "type": "boolean"
+          },
+          "change_kind": {
+            "title": "Change Kind",
+            "type": "string"
+          },
+          "diffs": {
+            "items": {
+              "$ref": "#/components/schemas/FieldDiffResponse"
+            },
+            "title": "Diffs",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "review_note": {
+            "title": "Review Note",
+            "type": "string"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By"
+          },
+          "target_id": {
+            "title": "Target Id",
+            "type": "integer"
+          },
+          "target_name": {
+            "title": "Target Name",
+            "type": "string"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "target_id",
+          "target_name",
+          "status",
+          "tier",
+          "change_kind",
+          "submitted_by",
+          "submitted_at",
+          "reviewed_by",
+          "reviewed_at",
+          "review_note",
+          "can_review",
+          "can_cancel",
+          "diffs"
+        ],
+        "title": "ChangeRequestResponse",
+        "type": "object"
+      },
       "ChangelogEntryInput": {
         "properties": {
           "body_markdown": {
@@ -9710,6 +9850,24 @@
         "title": "DesktopSettingsSchema",
         "type": "object"
       },
+      "DiffLineResponse": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "DiffLineResponse",
+        "type": "object"
+      },
       "DiscordAckLoyaltyMarketOrderRequest": {
         "properties": {
           "action": {
@@ -9925,6 +10083,76 @@
           "seats"
         ],
         "title": "DoctrineCellResponse",
+        "type": "object"
+      },
+      "DoctrineChangeRequestBody": {
+        "properties": {
+          "composition": {
+            "$ref": "#/components/schemas/DoctrineCompositionRequest"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "preview": {
+            "default": false,
+            "title": "Preview",
+            "type": "boolean"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "description",
+          "composition"
+        ],
+        "title": "DoctrineChangeRequestBody",
+        "type": "object"
+      },
+      "DoctrineCompositionRequest": {
+        "properties": {
+          "primary": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Primary",
+            "type": "array"
+          },
+          "secondary": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Secondary",
+            "type": "array"
+          },
+          "support": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Support",
+            "type": "array"
+          },
+          "utility": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Utility",
+            "type": "array"
+          }
+        },
+        "title": "DoctrineCompositionRequest",
         "type": "object"
       },
       "DoctrineFittingResponse": {
@@ -13876,6 +14104,32 @@
         "title": "FeedListResponse",
         "type": "object"
       },
+      "FieldDiffResponse": {
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DiffLineResponse"
+            },
+            "title": "Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "field",
+          "label",
+          "lines"
+        ],
+        "title": "FieldDiffResponse",
+        "type": "object"
+      },
       "FittingBuyAllocationSchema": {
         "properties": {
           "qty": {
@@ -15056,6 +15310,37 @@
           "substitute_type_id"
         ],
         "title": "FittingBuySwapSchema",
+        "type": "object"
+      },
+      "FittingChangeRequest": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "eft_format": {
+            "title": "Eft Format",
+            "type": "string"
+          },
+          "preview": {
+            "default": false,
+            "title": "Preview",
+            "type": "boolean"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "eft_format",
+          "description",
+          "tags"
+        ],
+        "title": "FittingChangeRequest",
         "type": "object"
       },
       "FittingResponse": {
@@ -30112,6 +30397,98 @@
         "title": "ReadinessOut",
         "type": "object"
       },
+      "RecalculationChangeResponse": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "current_amount": {
+            "title": "Current Amount",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "new_amount": {
+            "title": "New Amount",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "ship_name",
+          "character_name",
+          "status",
+          "current_amount",
+          "new_amount"
+        ],
+        "title": "RecalculationChangeResponse",
+        "type": "object"
+      },
+      "RecalculationPreviewResponse": {
+        "properties": {
+          "changed_count": {
+            "title": "Changed Count",
+            "type": "integer"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/RecalculationChangeResponse"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "current_total": {
+            "title": "Current Total",
+            "type": "integer"
+          },
+          "new_total": {
+            "title": "New Total",
+            "type": "integer"
+          },
+          "outstanding_count": {
+            "title": "Outstanding Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outstanding_count",
+          "changed_count",
+          "current_total",
+          "new_total",
+          "changes"
+        ],
+        "title": "RecalculationPreviewResponse",
+        "type": "object"
+      },
+      "RecalculationResultResponse": {
+        "properties": {
+          "errors": {
+            "title": "Errors",
+            "type": "integer"
+          },
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "updated",
+          "errors"
+        ],
+        "title": "RecalculationResultResponse",
+        "type": "object"
+      },
       "RecentItemSchema": {
         "properties": {
           "count": {
@@ -30863,6 +31240,24 @@
           "segment_key"
         ],
         "title": "ResultsSchema",
+        "type": "object"
+      },
+      "ReviewRequest": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "review_note": {
+            "default": "",
+            "title": "Review Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "ReviewRequest",
         "type": "object"
       },
       "ReviewResponse": {
@@ -31664,6 +32059,19 @@
           "selections"
         ],
         "title": "SetMyShipVolunteersRequest",
+        "type": "object"
+      },
+      "SetProgramAmountRequest": {
+        "properties": {
+          "srp_value": {
+            "title": "Srp Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "srp_value"
+        ],
+        "title": "SetProgramAmountRequest",
         "type": "object"
       },
       "ShipAsset": {
@@ -42178,6 +42586,155 @@
         ]
       }
     },
+    "/api/change-requests/": {
+      "get": {
+        "description": "status=pending lists open requests; anything else the latest 25.",
+        "operationId": "fittings_endpoints_change_requests_get_change_requests_get_change_requests",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "pending",
+              "title": "Status",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChangeRequestResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Change Requests",
+        "tags": [
+          "Ships"
+        ]
+      }
+    },
+    "/api/change-requests/{kind}/{request_id}/review": {
+      "post": {
+        "operationId": "fittings_endpoints_change_requests_post_review_change_request_post_review_change_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Review Change Request",
+        "tags": [
+          "Ships"
+        ]
+      }
+    },
     "/api/combatlog": {
       "get": {
         "operationId": "combatlog_router_query_saved_logs",
@@ -43069,6 +43626,93 @@
           }
         },
         "summary": "Get Doctrine",
+        "tags": [
+          "Ships"
+        ]
+      }
+    },
+    "/api/doctrines/{doctrine_id}/change-requests": {
+      "post": {
+        "operationId": "fittings_endpoints_doctrines_post_doctrine_change_request_post_doctrine_change_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "doctrine_id",
+            "required": true,
+            "schema": {
+              "title": "Doctrine Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctrineChangeRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePreviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Doctrine Change Request",
         "tags": [
           "Ships"
         ]
@@ -45586,6 +46230,93 @@
           }
         },
         "summary": "Get Fitting",
+        "tags": [
+          "Ships"
+        ]
+      }
+    },
+    "/api/fittings/{fitting_id}/change-requests": {
+      "post": {
+        "operationId": "fittings_endpoints_eve_fittings_post_fitting_change_request_post_fitting_change_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fitting_id",
+            "required": true,
+            "schema": {
+              "title": "Fitting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FittingChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePreviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Fitting Change Request",
         "tags": [
           "Ships"
         ]
@@ -58105,6 +58836,158 @@
           }
         ],
         "summary": "Get Srp Program History",
+        "tags": [
+          "SRP",
+          "SRP - Programs"
+        ]
+      }
+    },
+    "/api/srp/programs/recalculate": {
+      "get": {
+        "operationId": "srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecalculationPreviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Recalculation Preview",
+        "tags": [
+          "SRP",
+          "SRP - Programs"
+        ]
+      },
+      "post": {
+        "operationId": "srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecalculationResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Recalculate Outstanding",
+        "tags": [
+          "SRP",
+          "SRP - Programs"
+        ]
+      }
+    },
+    "/api/srp/programs/{program_id}/amount": {
+      "post": {
+        "operationId": "srp_endpoints_programs_post_program_amount_post_program_amount",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "program_id",
+            "required": true,
+            "schema": {
+              "title": "Program Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetProgramAmountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipReimbursementProgramAmountResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Program Amount",
         "tags": [
           "SRP",
           "SRP - Programs"

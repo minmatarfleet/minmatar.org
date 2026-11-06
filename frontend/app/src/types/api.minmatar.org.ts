@@ -2185,6 +2185,15 @@ export interface SRPCurrentAmount {
 }
 
 export type SRPProgram = ApiResponse<'ShipReimbursementProgramResponse'>
+export type SRPProgramAmount = ApiResponse<'ShipReimbursementProgramAmountResponse'>
+export type SRPRecalculationPreview = ApiResponse<'RecalculationPreviewResponse'>
+export type SRPRecalculationResult = ApiResponse<'RecalculationResultResponse'>
+
+export type DoctrineChangeRequestRow = ApiResponse<'ChangeRequestResponse'>
+export type DoctrineChangePreview = ApiResponse<'ChangePreviewResponse'>
+export type DoctrineChangeDiff = ApiResponse<'FieldDiffResponse'>
+export type FittingChangeBody = ApiRequest<'FittingChangeRequest'>
+export type DoctrineChangeBody = ApiRequest<'DoctrineChangeRequestBody'>
 
 export interface KillmailResolve {
     killmail_time:                  Date;
