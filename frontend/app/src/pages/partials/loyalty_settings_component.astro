@@ -1,5 +1,5 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, dynamic_key } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
@@ -156,7 +156,7 @@ const roles = ['seller', 'stockpile']
                         <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.name')}<Input type="text" name="name" size="sm" value={account.name} required /></label>
                         <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.role')}
                             <select name="role">
-                                {roles.map((role) => <option value={role} selected={role === account.role}>{t(`industry.loyalty.settings.role_${role}`)}</option>)}
+                                {roles.map((role) => <option value={role} selected={role === account.role}>{t(dynamic_key(`industry.loyalty.settings.role_${role}`))}</option>)}
                             </select>
                         </label>
                         <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.offer')}<Input type="number" min="0" name="isk_per_lp" size="sm" value={account.isk_per_lp ?? ''} placeholder={t('industry.loyalty.settings.offer_default')} /></label>
@@ -197,7 +197,7 @@ const roles = ['seller', 'stockpile']
                 <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.add_account')}<Input type="text" name="name" size="sm" required /></label>
                 <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.role')}
                     <select name="role">
-                        {roles.map((role) => <option value={role}>{t(`industry.loyalty.settings.role_${role}`)}</option>)}
+                        {roles.map((role) => <option value={role}>{t(dynamic_key(`industry.loyalty.settings.role_${role}`))}</option>)}
                     </select>
                 </label>
                 <Button type="submit" size="sm" color="transparent" narrow={true}>{t('industry.loyalty.settings.add')}</Button>
