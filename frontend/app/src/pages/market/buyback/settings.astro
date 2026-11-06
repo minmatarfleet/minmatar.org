@@ -23,6 +23,7 @@ import Viewport from '@layouts/Viewport.astro'
 import PageDefault from '@components/page/PageDefault.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import Button from '@components/blocks/Button.astro'
 
@@ -36,8 +37,11 @@ const breadcrumbs = [
 
 <Viewport title={page_title} meta_description={t('buyback.settings.meta_description')}>
     <PageDefault breadcrumbs={breadcrumbs}>
-        <Flexblock gap="var(--space-l)">
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <PageTitle>{page_title}</PageTitle>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)">
             <p>{t('buyback.settings.leading_text')}</p>
             <LazyPartial url={SETTINGS_PARTIAL}>
                 <p>{t('loading')}</p>

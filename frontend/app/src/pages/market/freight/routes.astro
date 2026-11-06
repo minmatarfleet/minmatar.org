@@ -36,8 +36,11 @@ const breadcrumbs = [
 
 <Viewport title={page_title} meta_description={t('freight.routes.meta_description')}>
     <PageDefault breadcrumbs={breadcrumbs}>
-        <Flexblock gap="var(--space-l)">
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <PageTitle>{page_title}</PageTitle>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)">
             <p>{t('freight.routes.leading_text')}</p>
             <FlexInline gap="var(--space-xs)">
                 <Button href={translatePath('/market/freight/contracts/')} color="transparent" size="sm" narrow={true}>
