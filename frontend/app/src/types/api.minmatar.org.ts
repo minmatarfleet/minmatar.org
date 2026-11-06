@@ -98,20 +98,9 @@ export type TribeInvitation = ApiResponse<'InvitationSchema'>
 export type TribeInvitationCandidate = ApiResponse<'InvitationCandidateSchema'>
 export type TribeInvitationsSend = ApiRequest<'SendInvitationsRequest'>
 
-export interface Tribe {
-    id:                     number;
-    name:                   string;
-    slug:                   string;
-    description:            string;
-    content:                string;
-    image_url:              string | null;
-    banner_url:             string | null;
-    discord_channel_id:     number | null;
-    chief:                  TribeCharacterRef | null;
-    is_active:              boolean;
-    group_count:            number;
-    total_member_count:     number;
-}
+export type Tribe = ApiResponse<'TribeSchema'>
+// Chief volunteers (docs/tribes/interim-chiefs.md)
+export type TribeChiefVolunteer = ApiResponse<'ChiefVolunteerSchema'>
 
 export interface TribeGroupRosterEntry {
     user_id:                    number;

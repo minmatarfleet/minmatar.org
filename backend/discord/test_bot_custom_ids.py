@@ -43,6 +43,12 @@ from notifications.discord_buttons import (
     NOTIF_ACK_CUSTOM_ID_PREFIX,
     ack_custom_id,
 )
+from tribes.helpers.chief_discord import (
+    APPOINT_CUSTOM_ID_PREFIX as CHIEF_APPOINT_PREFIX,
+    DECLINE_CUSTOM_ID_PREFIX as CHIEF_DECLINE_PREFIX,
+    appoint_custom_id as chief_appoint_custom_id,
+    decline_custom_id as chief_decline_custom_id,
+)
 from tribes.helpers.invitation_discord import (
     DECLINE_CUSTOM_ID_PREFIX,
     decline_custom_id,
@@ -86,6 +92,8 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (PREPING_CUSTOM_ID_PREFIX, self.bot.NPSI_PREPING_PREFIX),
             (TRACK_CUSTOM_ID_PREFIX, self.bot.NPSI_TRACK_PREFIX),
             (DECLINE_CUSTOM_ID_PREFIX, self.bot.TRIBE_INVITE_DECLINE_PREFIX),
+            (CHIEF_APPOINT_PREFIX, self.bot.TRIBE_CHIEF_APPOINT_PREFIX),
+            (CHIEF_DECLINE_PREFIX, self.bot.TRIBE_CHIEF_DECLINE_PREFIX),
             (SIT_OUT_CUSTOM_ID_PREFIX, self.bot.FLEET_INVITE_OUT_PREFIX),
             (
                 STOP_INVITES_CUSTOM_ID_PREFIX,
@@ -106,6 +114,8 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (preping_custom_id, self.bot.NPSI_PREPING_TEMPLATE),
             (track_custom_id, self.bot.NPSI_TRACK_TEMPLATE),
             (decline_custom_id, self.bot.TRIBE_INVITE_DECLINE_TEMPLATE),
+            (chief_appoint_custom_id, self.bot.TRIBE_CHIEF_APPOINT_TEMPLATE),
+            (chief_decline_custom_id, self.bot.TRIBE_CHIEF_DECLINE_TEMPLATE),
             (sit_out_custom_id, self.bot.FLEET_INVITE_OUT_TEMPLATE),
             (stop_invites_custom_id, self.bot.FLEET_INVITE_STOP_TEMPLATE),
         ]

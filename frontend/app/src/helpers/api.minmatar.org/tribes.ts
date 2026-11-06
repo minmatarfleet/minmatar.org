@@ -21,6 +21,7 @@ import type {
     TribeEventAnnouncementPreview,
     TribeInvitation,
     TribeInvitationCandidate,
+    TribeChiefVolunteer,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -33,8 +34,9 @@ export async function get_tribes(): Promise<Tribe[]> {
     })
 }
 
-export async function get_tribe(id: number): Promise<Tribe> {
+export async function get_tribe(id: number, access_token?: string | false | null): Promise<Tribe> {
     return await api_request<Tribe>(`${API_ENDPOINT}/${id}`, {
+        token: access_token,
         error: 'Error fetching tribe',
     })
 }
@@ -389,5 +391,31 @@ export async function decline_invitation(access_token:string, invitation_id:numb
         method: 'POST',
         token: access_token,
         error: 'Error declining the invitation',
+    })
+}
+
+// Chief volunteers: an open seat is the tribe (group_id null) or a group in it.
+export async function volunteer_for_chief(access_token:string, tribe_id:number, group_id:number | null, note:string = '') {
+    return await api_request<TribeChiefVolunteer>(`${API_ENDPOINT}/${tribe_id}/chief-volunteers`, {
+        method: 'POST',
+        token: access_token,
+        body: { tribe_group_id: group_id, note },
+        error: 'Error sending your offer',
+    })
+}
+
+export async function get_chief_volunteers(access_token:string, tribe_id:number, group_id:number | null) {
+    const query = group_id ? `?${query_string({ tribe_group_id: group_id })}` : ''
+    return await api_request<TribeChiefVolunteer[]>(`${API_ENDPOINT}/${tribe_id}/chief-volunteers${query}`, {
+        token: access_token,
+        error: 'Error fetching volunteers',
+    })
+}
+
+export async function answer_chief_volunteer(access_token:string, volunteer_id:number, action:'appoint' | 'decline') {
+    return await api_request<TribeChiefVolunteer>(`${API_ENDPOINT}/chief-volunteers/${volunteer_id}/${action}`, {
+        method: 'POST',
+        token: access_token,
+        error: action === 'appoint' ? 'Error appointing the chief' : 'Error answering the volunteer',
     })
 }

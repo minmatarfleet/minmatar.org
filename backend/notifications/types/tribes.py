@@ -178,3 +178,69 @@ TRIBE_INVITE_ANSWERED = register(
         supports_topic_subscription=False,
     )
 )
+
+
+TRIBE_CHIEF_VOLUNTEERED_KEY = "tribes.chief_volunteered"
+
+
+def render_chief_volunteered(ctx: dict) -> dict:
+    """The executor's DM: who volunteered for which open seat, with
+    Appoint / Not now bot buttons in place of Mark as read."""
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.chief_discord import volunteer_components
+
+    pilot = ctx["pilot"]
+    seat = ctx["seat_name"]
+    tribe_name = ctx["tribe_name"]
+    note = (ctx.get("note") or "").strip()
+    url = ctx.get("url") or ""
+    title = f"{pilot} volunteered to lead {seat}"
+    if ctx.get("is_tribe_seat"):
+        where = f"The {tribe_name} tribe has no chief."
+    else:
+        where = f"{seat} ({tribe_name}) has no chief."
+    if ctx.get("interim"):
+        where += f" {ctx['interim']} is interim."
+    body = where
+    description = where
+    if note:
+        description += f"\n> {note}"
+    embed = {
+        "author": {"name": "Tribes"},
+        "color": feature_color("tribes"),
+        "title": title,
+        "description": description,
+    }
+    if url:
+        embed["url"] = url
+    return {
+        "title": title,
+        "body": body,
+        "url": url,
+        "discord_message": f"**{title}**\n{description}",
+        "discord_embed": embed,
+        "discord_components": volunteer_components(ctx["volunteer_id"], url),
+    }
+
+
+TRIBE_CHIEF_VOLUNTEERED = register(
+    NotificationType(
+        key=TRIBE_CHIEF_VOLUNTEERED_KEY,
+        feature="tribes",
+        label="Chief volunteers",
+        description=(
+            "Ping me when a pilot volunteers to lead a tribe or group that "
+            "has no chief. Only the alliance executor gets these."
+        ),
+        channels=(
+            NotificationChannel.DISCORD,
+            NotificationChannel.WEB,
+        ),
+        defaults={
+            NotificationChannel.DISCORD: True,
+            NotificationChannel.WEB: True,
+        },
+        render=render_chief_volunteered,
+        supports_topic_subscription=False,
+    )
+)

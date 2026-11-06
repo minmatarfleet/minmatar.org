@@ -22,7 +22,10 @@ from app.celery import app
 from django.contrib.auth.models import User
 from discord.client import DiscordClient
 from notifications.models import NotificationChannel, NotificationDelivery
-from notifications.types.tribes import TRIBE_INVITED_KEY
+from notifications.types.tribes import (
+    TRIBE_CHIEF_VOLUNTEERED_KEY,
+    TRIBE_INVITED_KEY,
+)
 
 from tribes.helpers.chief_membership import (
     ensure_tribe_chiefs_have_group_memberships as _ensure_chief_memberships,
@@ -39,7 +42,7 @@ from tribes.helpers.external_guild import (
     reconcile_external_guilds,
 )
 from tribes.helpers.about import refresh_group_about, refresh_tribe_about
-from tribes.helpers import event_sync
+from tribes.helpers import chiefs, event_sync
 from tribes.helpers.invitation_discord import answered_embed
 from tribes.helpers.invitations import (
     answered_dm,
@@ -49,6 +52,7 @@ from tribes.helpers.invitations import (
 from tribes.helpers.showcase import refresh_group_showcase
 from tribes.models import (
     Tribe,
+    TribeChiefVolunteer,
     TribeGroup,
     TribeGroupInvitation,
     TribeGroupMembership,
@@ -85,8 +89,10 @@ def _build_reminder_message(tribe_group, memberships: list) -> str:
     lines.append("\nPlease review applications in the admin panel.")
 
     mentions = []
-    if tribe_group.chief:
-        chief_mention = _discord_mention(tribe_group.chief)
+    # The chief, else whoever stands in (tribe chief, then the executor).
+    chief = chiefs.ChiefResolver().for_group(tribe_group).user
+    if chief:
+        chief_mention = _discord_mention(chief)
         if chief_mention:
             mentions.append(chief_mention)
     if mentions:
@@ -352,5 +358,41 @@ def update_tribe_invitation_dm(invitation_id: int):
             logger.warning(
                 "Could not edit tribe invite DM %s",
                 invitation_id,
+                exc_info=True,
+            )
+
+
+@app.task(ignore_result=True)
+def update_chief_volunteer_dm(volunteer_id: int):
+    """Edit the executor's DM once an offer is answered: say what happened,
+    remove the buttons. Safe to run twice."""
+    offer = (
+        TribeChiefVolunteer.objects.select_related(
+            "tribe", "tribe_group", "user__eveplayer__primary_character"
+        )
+        .filter(pk=volunteer_id)
+        .first()
+    )
+    if offer is None or offer.status == TribeChiefVolunteer.STATUS_PENDING:
+        return
+    deliveries = NotificationDelivery.objects.filter(
+        notification_type=TRIBE_CHIEF_VOLUNTEERED_KEY,
+        channel=NotificationChannel.DISCORD,
+        idempotency_key__startswith=(
+            f"{chiefs.volunteered_delivery_key(offer)}:u"
+        ),
+    ).exclude(discord_message_id="")
+    embed = answered_embed(**chiefs.answered_dm(offer))
+    for delivery in deliveries:
+        try:
+            discord.update_message(
+                delivery.discord_channel_id,
+                delivery.discord_message_id,
+                payload={"embeds": [embed], "components": []},
+            )
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Could not edit chief volunteer DM %s",
+                volunteer_id,
                 exc_info=True,
             )

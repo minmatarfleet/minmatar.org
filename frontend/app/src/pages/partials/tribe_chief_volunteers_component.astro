@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_param = Astro.url.searchParams.get('group_id')
+const group_id = group_param ? parseInt(group_param) : null
+const seat_name = Astro.url.searchParams.get('seat_name') ?? ''
+
+if (isNaN(tribe_id) || (group_id !== null && isNaN(group_id)))
+    return HTTP_400_Bad_Request()
+
+import type { TribeChiefVolunteer } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import { answer_chief_volunteer, get_chief_volunteers } from '@helpers/api.minmatar.org/tribes'
+
+let alert: Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    const action = Astro.url.searchParams.get('action')
+    const volunteer_id = parseInt(Astro.url.searchParams.get('volunteer_id') ?? '')
+    if (isNaN(volunteer_id) || (action !== 'appoint' && action !== 'decline'))
+        return HTTP_400_Bad_Request()
+    try {
+        await answer_chief_volunteer(auth_token, volunteer_id, action)
+        // A new chief changes the header, the banner and the tabs: reload.
+        if (action === 'appoint')
+            return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
+    } catch (error) {
+        alert = {
+            title: t(action === 'appoint' ? 'tribes.chief.appointing' : 'tribes.chief.answering'),
+            content: error.message,
+        }
+    }
+}
+
+let volunteers: TribeChiefVolunteer[] = []
+let fetch_error: Error | false = false
+
+try {
+    volunteers = await get_chief_volunteers(auth_token, tribe_id, group_id)
+} catch (error) {
+    fetch_error = error
+}
+
+import { query_string } from '@helpers/string'
+const PARTIAL_URL = translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
+    tribe_id,
+    ...(group_id !== null ? { group_id } : {}),
+    seat_name,
+})}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import TribeChiefVolunteers from '@components/blocks/TribeChiefVolunteers.astro'
+---
+
+{alert && <ShowAlert alert={alert} />}
+
+{fetch_error ?
+    <div id="chief-volunteers">
+        <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_error, delay: 0 }} />
+    </div>
+    :
+    <TribeChiefVolunteers
+        tribe_id={tribe_id}
+        group_id={group_id}
+        seat_name={seat_name}
+        volunteers={volunteers}
+    />
+}

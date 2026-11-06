@@ -179,7 +179,8 @@ const breadcrumbs = [
                 <Flexblock id="members" gap='var(--space-2xl)'>
                     {pending.length > 0 || approved.length > 0 ?
                         <GroupLeadership
-                            chief={tribe_group?.chief}
+                            chief={tribe_group?.acting_chief}
+                            chief_is_interim={tribe_group?.chief_is_interim}
                             elders={[]}
                             user_characters={user_characters}
                             tribe_group={tribe_group}

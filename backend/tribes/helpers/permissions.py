@@ -1,6 +1,7 @@
 """Permission-check helpers for the tribes app."""
 
 from groups.helpers.feature_access import can_use_feature
+from tribes.helpers.executor import is_interim_executor
 from tribes.models import TribeGroup, TribeGroupMembership
 
 # Same feature the site's roster gate checks.
@@ -22,10 +23,15 @@ user_is_alliance_member = user_can_view_alliance_rosters
 
 
 def user_is_tribe_chief(user, tribe) -> bool:
-    """Return True if user is the tribe chief or has superuser/perm override."""
+    """Return True if user is the tribe chief or has superuser/perm override.
+
+    A tribe without a chief is led by the alliance executor as interim chief.
+    """
     if user.is_superuser:
         return True
     if tribe.chief_id and tribe.chief_id == user.pk:
+        return True
+    if is_interim_executor(user, tribe):
         return True
     return can_use_feature(user, "tribes.manage_memberships", tribe=tribe)
 
@@ -33,7 +39,9 @@ def user_is_tribe_chief(user, tribe) -> bool:
 def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     """
     Return True if the user can approve/deny memberships for a TribeGroup.
-    Covers: tribe chief, group chief, superuser, or explicit perm.
+    Covers: tribe chief, group chief, superuser, or explicit perm. A
+    chiefless group is run by its tribe chief; a chiefless tribe by the
+    alliance executor (docs/tribes/interim-chiefs.md).
     """
     if user.is_superuser:
         return True
@@ -46,7 +54,7 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
         return True
     if tribe_group.chief_id and tribe_group.chief_id == user.pk:
         return True
-    return False
+    return is_interim_executor(user, tribe)
 
 
 def user_can_view_group_roster(user, tribe_group: TribeGroup) -> bool:

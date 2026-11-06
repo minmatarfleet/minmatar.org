@@ -14,6 +14,11 @@ class TribeSchema(BaseModel):
     banner_url: Optional[str] = None
     discord_channel_id: Optional[int] = None
     chief: Optional[CharacterRefSchema] = None
+    # The chief, else the alliance executor as interim (Help wanted).
+    acting_chief: Optional[CharacterRefSchema] = None
+    chief_is_interim: bool = False
+    can_appoint_chief: bool = False
+    has_volunteered: bool = False
     is_active: bool
     group_count: int = 0
     total_member_count: int = 0

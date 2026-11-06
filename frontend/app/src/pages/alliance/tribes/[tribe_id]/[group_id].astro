@@ -8,9 +8,11 @@ const { auth_token, user } = get_request_user(Astro)
 const is_auth = Boolean(user)
 
 import { get_user_profile } from '@helpers/permissions'
+import { login_url } from '@helpers/http_responses'
+import { help_wanted_props } from '@helpers/tribe_chiefs'
 import { get_gates, can } from '@helpers/gates'
 import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
-import { strip_markdown } from '@helpers/string'
+import { query_string, strip_markdown } from '@helpers/string'
 import { tribe_group_cover } from '@helpers/tribe_covers'
 import { getGuidesByTribeGroupCode } from '@/data/guides'
 import { get_posts } from '@helpers/api.minmatar.org/posts'
@@ -94,7 +96,7 @@ let fetch_group_error: Error | false = false
 let my_invitations: TribeInvitation[] = []
 
 try {
-    tribe = await get_tribe(tribe_id)
+    tribe = await get_tribe(tribe_id, auth_token)
     tribe_group = await get_tribe_group(tribe_id, group_id, auth_token)
 
     showcase = tribe_group?.code && tribe_group.code in TRIBE_ACTIVITY_BY_CODE
@@ -195,7 +197,15 @@ const page_title = tribe_group?.name ?? ''
 const page_description = tribe_group?.description ?? ''
 const meta_description = await strip_markdown(page_description)
 const about_markdown = (tribe_group?.content || tribe_group?.description || '').trim()
-const chief = tribe_group?.chief ?? null
+// The chief, else who stands in (tribe chief, else the executor).
+const chief = tribe_group?.acting_chief ?? null
+const chief_is_interim = Boolean(tribe_group?.chief_is_interim)
+const chief_label = chief_is_interim ? t('tribes.chief.interim') : t('group_chief')
+const chief_volunteers_url = translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
+    tribe_id,
+    group_id,
+    seat_name: tribe_group?.name ?? '',
+})}`)
 const has_qualification_requirements = (tribe_group?.requirements?.length ?? 0) > 0
 const has_membership_requirements = Boolean(tribe_group?.require_off_trial)
     || (tribe_group?.allowed_affiliations?.length ?? 0) > 0
@@ -299,6 +309,8 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 import Button from '@components/blocks/Button.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import TribeGroupInvitationBanner from '@components/blocks/TribeGroupInvitationBanner.astro'
+import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
@@ -326,15 +338,20 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                     <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
                     <FlexInline gap="var(--space-xs)" class="[ tribe-group-title-row ]">
                         {chief &&
-                            <div class="[ tribe-group-chief-portrait ]">
-                                <CharacterPicture
-                                    character_id={chief.character_id}
-                                    character_name={chief.character_name}
-                                    size={128}
-                                    icon_quality={256}
-                                    tooltip={`${chief.character_name} · ${t('group_chief')}`}
-                                />
-                            </div>
+                            <Flexblock gap="var(--space-3xs)" class="[ tribe-group-chief ]">
+                                <div class:list={['[ tribe-group-chief-portrait ]', { 'is-interim': chief_is_interim }]}>
+                                    <CharacterPicture
+                                        character_id={chief.character_id}
+                                        character_name={chief.character_name}
+                                        size={128}
+                                        icon_quality={256}
+                                        tooltip={`${chief.character_name} · ${chief_label}`}
+                                    />
+                                </div>
+                                {chief_is_interim &&
+                                    <small class="[ tribe-chief-interim-label ]">{chief_label}</small>
+                                }
+                            </Flexblock>
                         }
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
                     </FlexInline>
@@ -384,6 +401,20 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                 user_characters={user_characters}
                                 available_characters={available_characters}
                             />
+                        }
+                        {tribe && tribe_group.chief_is_interim &&
+                            <div class="[ mb-[var(--space-l)] ]">
+                                <TribeChiefHelpWanted
+                                    {...help_wanted_props(tribe, tribe_group)}
+                                    is_auth={is_auth}
+                                    login_href={login_url(Astro)}
+                                />
+                                {tribe_group.can_appoint_chief &&
+                                    <LazyPartial url={chief_volunteers_url} class="[ mt-[var(--space-l)] ]">
+                                        <span class="[ text-muted ]">{t('tribes.chief.volunteers')}</span>
+                                    </LazyPartial>
+                                }
+                            </div>
                         }
                         <SectionTabs
                             aria_label={t('tribes.detail.tabs_label')}
@@ -611,8 +642,27 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
         }
     }
 
+    .tribe-group-chief {
+        flex: 0 0 auto;
+        align-items: center;
+    }
+
+    .tribe-chief-interim-label {
+        color: var(--attention);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: var(--step--1);
+    }
+
     .tribe-group-chief-portrait {
         flex: 0 0 auto;
+
+        &.is-interim {
+            outline: solid 2px var(--attention);
+            outline-offset: -2px;
+        }
+
         width: var(--step-5);
         height: var(--step-5);
 

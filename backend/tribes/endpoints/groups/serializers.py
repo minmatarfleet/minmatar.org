@@ -17,6 +17,11 @@ from tribes.endpoints.groups.schemas import (
 )
 from tribes.endpoints.serialization import user_to_character_ref
 from tribes.helpers import user_can_manage_group, user_can_view_group_roster
+from tribes.helpers.chiefs import (
+    ChiefResolver,
+    has_pending_offer,
+    user_is_executor,
+)
 from tribes.helpers.publishing import (
     KIND_EVENT,
     KIND_FLEET,
@@ -76,6 +81,7 @@ def serialize_tribe_group(
     request_user=None,
     member_count: int | None = None,
     member_group_ids=None,
+    resolver: ChiefResolver | None = None,
 ) -> TribeGroupSchema:
     """``member_group_ids``: the viewer's active group ids, when a list
     endpoint already loaded them."""
@@ -92,8 +98,19 @@ def serialize_tribe_group(
         if tg.chief and show_identities
         else None
     )
+    resolver = resolver or ChiefResolver()
+    acting = resolver.for_group(tg)
+    # A hidden roster hides the group's own chief; a stand-in (tribe chief
+    # or executor) is public on the tribe page anyway.
+    acting_ref = (
+        user_to_character_ref(acting.user)
+        if acting.user and (show_identities or acting.is_interim)
+        else None
+    )
     can_apply = False
     can_manage = False
+    can_appoint_chief = False
+    has_volunteered = False
     if request_user is not None and getattr(
         request_user, "is_authenticated", False
     ):
@@ -101,6 +118,9 @@ def serialize_tribe_group(
             request_user, "tribes.apply", tribe_group=tg
         )
         can_manage = user_can_manage_group(request_user, tg)
+        if acting.is_interim:
+            can_appoint_chief = user_is_executor(request_user, resolver)
+            has_volunteered = has_pending_offer(request_user, tg.tribe, tg)
 
     return TribeGroupSchema(
         id=tg.pk,
@@ -112,6 +132,10 @@ def serialize_tribe_group(
         content=tg.content or "",
         discord_channel_id=tg.discord_channel_id,
         chief=chief_ref,
+        acting_chief=acting_ref,
+        chief_is_interim=acting.is_interim,
+        can_appoint_chief=can_appoint_chief,
+        has_volunteered=has_volunteered,
         is_active=tg.is_active,
         member_count=member_count,
         requirements=[

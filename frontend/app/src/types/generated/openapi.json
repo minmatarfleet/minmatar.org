@@ -5372,6 +5372,92 @@
         "title": "CharacterTokenInfo",
         "type": "object"
       },
+      "ChiefVolunteerSchema": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "seat_name": {
+            "title": "Seat Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Id"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tribe_id",
+          "tribe_name",
+          "seat_name",
+          "user_id",
+          "status",
+          "created_at"
+        ],
+        "title": "ChiefVolunteerSchema",
+        "type": "object"
+      },
       "ClaimLoyaltyMarketOrderRequest": {
         "properties": {
           "amount": {
@@ -9671,6 +9757,19 @@
           "type"
         ],
         "title": "DiscordChannelSchema",
+        "type": "object"
+      },
+      "DiscordChiefActionRequest": {
+        "properties": {
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "DiscordChiefActionRequest",
         "type": "object"
       },
       "DiscordDeclineRequest": {
@@ -35412,6 +35511,16 @@
       },
       "TribeGroupSchema": {
         "properties": {
+          "acting_chief": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterRefSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "allow_alliance_posts": {
             "default": true,
             "title": "Allow Alliance Posts",
@@ -35433,6 +35542,11 @@
           "can_apply": {
             "default": false,
             "title": "Can Apply",
+            "type": "boolean"
+          },
+          "can_appoint_chief": {
+            "default": false,
+            "title": "Can Appoint Chief",
             "type": "boolean"
           },
           "can_create_events": {
@@ -35464,6 +35578,11 @@
                 "type": "null"
               }
             ]
+          },
+          "chief_is_interim": {
+            "default": false,
+            "title": "Chief Is Interim",
+            "type": "boolean"
           },
           "code": {
             "default": "",
@@ -35511,6 +35630,11 @@
               }
             ],
             "title": "Effective Discord Channel Id"
+          },
+          "has_volunteered": {
+            "default": false,
+            "title": "Has Volunteered",
+            "type": "boolean"
           },
           "id": {
             "title": "Id",
@@ -35804,6 +35928,16 @@
       },
       "TribeSchema": {
         "properties": {
+          "acting_chief": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterRefSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "banner_url": {
             "anyOf": [
               {
@@ -35815,6 +35949,11 @@
             ],
             "title": "Banner Url"
           },
+          "can_appoint_chief": {
+            "default": false,
+            "title": "Can Appoint Chief",
+            "type": "boolean"
+          },
           "chief": {
             "anyOf": [
               {
@@ -35824,6 +35963,11 @@
                 "type": "null"
               }
             ]
+          },
+          "chief_is_interim": {
+            "default": false,
+            "title": "Chief Is Interim",
+            "type": "boolean"
           },
           "content": {
             "title": "Content",
@@ -35848,6 +35992,11 @@
             "default": 0,
             "title": "Group Count",
             "type": "integer"
+          },
+          "has_volunteered": {
+            "default": false,
+            "title": "Has Volunteered",
+            "type": "boolean"
           },
           "id": {
             "title": "Id",
@@ -36749,6 +36898,28 @@
           }
         },
         "title": "ViewerContext",
+        "type": "object"
+      },
+      "VolunteerRequest": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Id"
+          }
+        },
+        "title": "VolunteerRequest",
         "type": "object"
       },
       "WarzoneBriefingResponse": {
@@ -61304,6 +61475,370 @@
         ]
       }
     },
+    "/api/tribes/chief-volunteers/{volunteer_id}/appoint": {
+      "post": {
+        "operationId": "tribes_endpoints_chief_volunteers_post_appoint_post_chief_volunteer_appoint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "volunteer_id",
+            "required": true,
+            "schema": {
+              "title": "Volunteer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefVolunteerSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Appoint a volunteer as chief (executor only).",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
+        ]
+      }
+    },
+    "/api/tribes/chief-volunteers/{volunteer_id}/decline": {
+      "post": {
+        "operationId": "tribes_endpoints_chief_volunteers_post_decline_post_chief_volunteer_decline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "volunteer_id",
+            "required": true,
+            "schema": {
+              "title": "Volunteer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefVolunteerSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Not now: leave the seat open (executor only).",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
+        ]
+      }
+    },
+    "/api/tribes/chief-volunteers/{volunteer_id}/discord-appoint": {
+      "post": {
+        "operationId": "tribes_endpoints_chief_volunteers_post_discord_appoint_post_chief_volunteer_discord_appoint",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "volunteer_id",
+            "required": true,
+            "schema": {
+              "title": "Volunteer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordChiefActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefVolunteerSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Appoint a volunteer from the executor's Discord DM (bot).",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
+        ]
+      }
+    },
+    "/api/tribes/chief-volunteers/{volunteer_id}/discord-decline": {
+      "post": {
+        "operationId": "tribes_endpoints_chief_volunteers_post_discord_decline_post_chief_volunteer_discord_decline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "volunteer_id",
+            "required": true,
+            "schema": {
+              "title": "Volunteer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordChiefActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefVolunteerSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Not now, from the executor's Discord DM (bot).",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
+        ]
+      }
+    },
     "/api/tribes/current": {
       "get": {
         "operationId": "tribes_endpoints_tribes_get_current_tribes_get_current_tribes",
@@ -62388,6 +62923,11 @@
             "description": "Not Found"
           }
         },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
         "summary": "Tribe detail.",
         "tags": [
           "Tribes",
@@ -62442,6 +62982,170 @@
         "tags": [
           "Tribes",
           "Tribes"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/chief-volunteers": {
+      "get": {
+        "operationId": "tribes_endpoints_chief_volunteers_seat_volunteers_get_chief_volunteers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tribe_group_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tribe Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChiefVolunteerSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pending chief volunteers for an open seat (executor only).",
+        "tags": [
+          "Tribes",
+          "Tribes - Chiefs"
+        ]
+      },
+      "post": {
+        "operationId": "tribes_endpoints_chief_volunteers_seat_volunteers_post_chief_volunteer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VolunteerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefVolunteerSchema"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Volunteer to lead a tribe or group that has no chief.",
+        "tags": [
+          "Tribes",
+          "Tribes - Chiefs"
         ]
       }
     },

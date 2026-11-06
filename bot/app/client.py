@@ -14,6 +14,7 @@ from .notifications.views import register_notification_buttons
 from .buyback.views import register_buyback_buttons
 from .lp_buyback.views import register_lp_buyback_buttons
 from .npsi.views import register_npsi_buttons
+from .tribe_chiefs.views import register_tribe_chief_buttons
 from .tribe_invites.views import register_tribe_invite_buttons
 from .fleet_invites.views import register_fleet_invite_buttons
 from .voicetracking_api import (
@@ -73,6 +74,7 @@ class MyClient(discord.Client):
         register_buyback_buttons(self)
         register_npsi_buttons(self)
         register_tribe_invite_buttons(self)
+        register_tribe_chief_buttons(self)
         register_fleet_invite_buttons(self)
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")
