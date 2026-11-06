@@ -10109,11 +10109,6 @@ export interface components {
             /** Founded */
             founded?: string | null;
             /**
-             * Founders
-             * @default 0
-             */
-            founders?: number;
-            /**
              * Heatmap
              * @default []
              */
@@ -10130,7 +10125,6 @@ export interface components {
              * @default []
              */
             prime_windows?: components["schemas"]["CorporationPrimeWindow"][];
-            records?: components["schemas"]["CorporationRecords"] | null;
             tenure?: components["schemas"]["CorporationTenure"] | null;
             /**
              * Tribe Groups
@@ -10350,15 +10344,15 @@ export interface components {
         /** CorporationFleetShipSummary */
         CorporationFleetShipSummary: {
             /**
-             * Pilot Fleets
+             * Pilots
              * @default 0
              */
-            pilot_fleets?: number;
+            pilots?: number;
             /**
              * Slices
              * @default []
              */
-            slices?: components["schemas"]["CorporationShipSlice"][];
+            slices?: components["schemas"]["CorporationSummarySlice"][];
         };
         /** CorporationForumPost */
         CorporationForumPost: {
@@ -10731,13 +10725,6 @@ export interface components {
             /** Metric */
             metric: string;
         };
-        /** CorporationMonthRecord */
-        CorporationMonthRecord: {
-            /** Fleets */
-            fleets: number;
-            /** Month */
-            month: string;
-        };
         /** CorporationOpenApplication */
         CorporationOpenApplication: {
             /** Application Id */
@@ -10912,11 +10899,6 @@ export interface components {
              */
             window_days?: number;
         };
-        /** CorporationRecords */
-        CorporationRecords: {
-            biggest_turnout?: components["schemas"]["CorporationTurnoutRecord"] | null;
-            busiest_month?: components["schemas"]["CorporationMonthRecord"] | null;
-        };
         /** CorporationRedditPost */
         CorporationRedditPost: {
             /** Approved */
@@ -11083,13 +11065,6 @@ export interface components {
             /** Character Name */
             character_name: string;
         };
-        /** CorporationShipSlice */
-        CorporationShipSlice: {
-            /** Count */
-            count: number;
-            /** Key */
-            key: string;
-        };
         /** CorporationSlugResponse */
         CorporationSlugResponse: {
             /** Corporation Id */
@@ -11132,18 +11107,6 @@ export interface components {
             members: number;
             /** Name */
             name: string;
-        };
-        /** CorporationTurnoutRecord */
-        CorporationTurnoutRecord: {
-            /** Date */
-            date?: string | null;
-            /** Pilots */
-            pilots: number;
-            /**
-             * Title
-             * @default
-             */
-            title?: string;
         };
         /**
          * CorporationType

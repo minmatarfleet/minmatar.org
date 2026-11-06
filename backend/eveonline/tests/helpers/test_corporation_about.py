@@ -67,7 +67,7 @@ class CorporationAboutTestCase(TestCase):
         )
         self.assertEqual([], prime_windows("Whenever", {}))
 
-    def test_tenure_counts_mains_only_and_founders(self):
+    def test_tenure_counts_mains_only(self):
         veteran = self._user("veteran")
         main = self._character(301, "Veteran Main", veteran, main=True)
         alt = self._character(302, "Veteran Alt", veteran)
@@ -92,7 +92,6 @@ class CorporationAboutTestCase(TestCase):
             ],
             about["tenure"]["bands"],
         )
-        self.assertEqual(1, about["founders"])
         self.assertEqual(
             self.corporation.date_founded.isoformat(), about["founded"]
         )
@@ -132,18 +131,6 @@ class CorporationAboutTestCase(TestCase):
         self.assertEqual(
             [{"type_id": battleship, "name": "Battleship", "pilots": 3}],
             about["hulls"],
-        )
-        self.assertEqual(
-            {
-                "pilots": 3,
-                "date": saturday.isoformat(),
-                "title": "Fortizar timer",
-            },
-            about["records"]["biggest_turnout"],
-        )
-        self.assertEqual(
-            {"month": "2026-09", "fleets": 1},
-            about["records"]["busiest_month"],
         )
         self.assertEqual(
             [

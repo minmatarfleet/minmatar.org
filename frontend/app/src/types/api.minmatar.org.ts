@@ -596,7 +596,8 @@ export interface CorporationPublicSummary {
         slices:             CorporationSummarySlice[];
     };
     fleet_ships: {
-        pilot_fleets:   number;
+        /** Pilots who flew any role; each role counts every pilot who flew it. */
+        pilots:         number;
         slices:         CorporationSummarySlice[];
     };
     kills: {
@@ -629,12 +630,7 @@ export interface CorporationAbout {
         average_days:   number | null;
         bands:          CorporationTenureBand[];
     } | null;
-    founders?:      number;
     hulls?:         { type_id: number; name: string; pilots: number }[];
-    records?: {
-        biggest_turnout?:   { pilots: number; date: string | null; title: string } | null;
-        busiest_month?:     { month: string; fleets: number } | null;
-    } | null;
     leaderboards?: {
         fleets:     CorporationLeaderRow[];
         kills:      CorporationLeaderRow[];

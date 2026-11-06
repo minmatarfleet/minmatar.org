@@ -1,9 +1,8 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, lang, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { CorporationInfo, CorporationLeaderRow } from '@dtypes/api.minmatar.org'
-import { month_label, month_year, short_date } from '@helpers/corporations/about'
 import { get_player_icon } from '@helpers/eve_image_server'
 
 interface Props {
@@ -14,32 +13,6 @@ interface Props {
 const { corporation } = Astro.props
 
 const about = corporation.about
-const records = about?.records
-const founded = month_year(about?.founded, lang)
-
-interface RecordCard {
-    label: string
-    value: string
-    detail: string
-}
-
-const record_cards: RecordCard[] = [
-    records?.biggest_turnout && {
-        label: t('corporations.about.biggest_turnout'),
-        value: t('corporations.about.count_pilots').replace('~COUNT', String(records.biggest_turnout.pilots)),
-        detail: [records.biggest_turnout.title, short_date(records.biggest_turnout.date, lang)].filter(Boolean).join(' · '),
-    },
-    records?.busiest_month && {
-        label: t('corporations.about.busiest_month'),
-        value: t('corporations.about.count_fleets').replace('~COUNT', String(records.busiest_month.fleets)),
-        detail: month_label(records.busiest_month.month, lang),
-    },
-    (about?.founders ?? 0) > 0 && founded && {
-        label: t('corporations.about.founders'),
-        value: t('corporations.about.count_pilots').replace('~COUNT', String(about?.founders)),
-        detail: t('corporations.about.since').replace('~DATE', founded),
-    },
-].filter(Boolean) as RecordCard[]
 
 const boards = [
     { title: t('corporations.about.most_fleets'), rows: about?.leaderboards?.fleets ?? [] },
@@ -50,24 +23,12 @@ const boards = [
 const tribe_groups = about?.tribe_groups ?? []
 ---
 
-{(record_cards.length > 0 || boards.length > 0 || tribe_groups.length > 0) &&
+{(boards.length > 0 || tribe_groups.length > 0) &&
     <section class="hall">
         <header class="section-head">
             <h2>{t('corporations.about.hall')}</h2>
             <p>{t('corporations.about.hall_caption')}</p>
         </header>
-
-        {record_cards.length > 0 &&
-            <div class="row">
-                {record_cards.map((card) => (
-                    <article class="card">
-                        <h3 class="eyebrow">{card.label}</h3>
-                        <p class="record-value">{card.value}</p>
-                        {card.detail && <p class="record-detail">{card.detail}</p>}
-                    </article>
-                ))}
-            </div>
-        }
 
         {boards.length > 0 &&
             <div class="row">
@@ -157,19 +118,6 @@ const tribe_groups = about?.tribe_groups ?? []
         font-size: var(--step--1);
         letter-spacing: 0.08em;
         color: var(--faded);
-    }
-
-    .record-value {
-        margin: 0;
-        font-family: var(--heading-font);
-        font-size: var(--step-3);
-        line-height: 1.1;
-        color: var(--highlight);
-    }
-
-    .record-detail {
-        margin: 0;
-        font-size: var(--step--1);
     }
 
     .board {

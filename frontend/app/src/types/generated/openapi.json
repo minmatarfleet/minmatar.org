@@ -5660,11 +5660,6 @@
             ],
             "title": "Founded"
           },
-          "founders": {
-            "default": 0,
-            "title": "Founders",
-            "type": "integer"
-          },
           "heatmap": {
             "default": [],
             "items": {
@@ -5711,16 +5706,6 @@
             },
             "title": "Prime Windows",
             "type": "array"
-          },
-          "records": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CorporationRecords"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "tenure": {
             "anyOf": [
@@ -6340,15 +6325,15 @@
       },
       "CorporationFleetShipSummary": {
         "properties": {
-          "pilot_fleets": {
+          "pilots": {
             "default": 0,
-            "title": "Pilot Fleets",
+            "title": "Pilots",
             "type": "integer"
           },
           "slices": {
             "default": [],
             "items": {
-              "$ref": "#/components/schemas/CorporationShipSlice"
+              "$ref": "#/components/schemas/CorporationSummarySlice"
             },
             "title": "Slices",
             "type": "array"
@@ -7332,24 +7317,6 @@
         "title": "CorporationMembersTopResponse",
         "type": "object"
       },
-      "CorporationMonthRecord": {
-        "properties": {
-          "fleets": {
-            "title": "Fleets",
-            "type": "integer"
-          },
-          "month": {
-            "title": "Month",
-            "type": "string"
-          }
-        },
-        "required": [
-          "month",
-          "fleets"
-        ],
-        "title": "CorporationMonthRecord",
-        "type": "object"
-      },
       "CorporationOpenApplication": {
         "properties": {
           "application_id": {
@@ -7766,32 +7733,6 @@
           "kills"
         ],
         "title": "CorporationPublicSummary",
-        "type": "object"
-      },
-      "CorporationRecords": {
-        "properties": {
-          "biggest_turnout": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CorporationTurnoutRecord"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "busiest_month": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CorporationMonthRecord"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "title": "CorporationRecords",
         "type": "object"
       },
       "CorporationRedditPost": {
@@ -8308,24 +8249,6 @@
         "title": "CorporationRoleCharacterResponse",
         "type": "object"
       },
-      "CorporationShipSlice": {
-        "properties": {
-          "count": {
-            "title": "Count",
-            "type": "number"
-          },
-          "key": {
-            "title": "Key",
-            "type": "string"
-          }
-        },
-        "required": [
-          "key",
-          "count"
-        ],
-        "title": "CorporationShipSlice",
-        "type": "object"
-      },
       "CorporationSlugResponse": {
         "properties": {
           "corporation_id": {
@@ -8426,35 +8349,6 @@
           "members"
         ],
         "title": "CorporationTribeGroupCount",
-        "type": "object"
-      },
-      "CorporationTurnoutRecord": {
-        "properties": {
-          "date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Date"
-          },
-          "pilots": {
-            "title": "Pilots",
-            "type": "integer"
-          },
-          "title": {
-            "default": "",
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "pilots"
-        ],
-        "title": "CorporationTurnoutRecord",
         "type": "object"
       },
       "CorporationType": {
