@@ -36,7 +36,6 @@ try {
 
 const fleets = schedule?.fleets ?? []
 const active_fleets = schedule?.live ?? []
-const fc_metrics = schedule?.fc_metrics ?? []
 
 const flash_form_error = Astro.cookies.has('flash_form_error') ? Astro.cookies.get('flash_form_error')?.value : false
 if (Astro.cookies.has('flash_form_error')) Astro.cookies.delete('flash_form_error', { path: '/' })
@@ -90,8 +89,6 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FleetSchedule from '@components/blocks/FleetSchedule.astro';
-import RankingReel from '@components/blocks/RankingReel.astro';
-import { fleet_commanders_reel } from '@helpers/ranking_reels';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
@@ -173,9 +170,5 @@ const page_title = t('fleets.upcoming.page_title');
                 />
             }
         </UpcomingFleetsUpdater>
-
-        {fc_metrics.length > 0 &&
-            <RankingReel {...fleet_commanders_reel(fc_metrics, t)} />
-        }
 	</PageWide>
 </Viewport>

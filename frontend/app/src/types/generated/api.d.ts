@@ -2730,6 +2730,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/commanders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fleet Commanders tribe members: level, timezone, recent fleets */
+        get: operations["fleets_endpoints_metrics_get_fleet_commanders_get_fleet_commanders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/current": {
         parameters: {
             query?: never;
@@ -13740,6 +13757,45 @@ export interface components {
             id: number;
             /** Image Url */
             image_url?: string | null;
+        };
+        /**
+         * EveFleetCommander
+         * @description One member of the Fleet Commanders tribe group.
+         */
+        EveFleetCommander: {
+            /** Corporation Id */
+            corporation_id?: number | null;
+            /** Corporation Name */
+            corporation_name?: string | null;
+            /**
+             * Fleets This Month
+             * @default 0
+             */
+            fleets_this_month?: number;
+            /**
+             * Fleets Total
+             * @default 0
+             */
+            fleets_total?: number;
+            /** Last Led */
+            last_led?: string | null;
+            /** Primary Character Id */
+            primary_character_id?: number | null;
+            /** Primary Character Name */
+            primary_character_name?: string | null;
+            /** Rank Name */
+            rank_name?: string | null;
+            /** Rank Order */
+            rank_order?: number | null;
+            /**
+             * @default {
+             *       "brackets": [],
+             *       "source": null
+             *     }
+             */
+            timezone?: components["schemas"]["TimezoneTag"];
+            /** User Id */
+            user_id: number;
         };
         /** EveFleetCommanderMetric */
         EveFleetCommanderMetric: {
@@ -32914,6 +32970,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetCommanderMetric"][];
+                };
+            };
+        };
+    };
+    fleets_endpoints_metrics_get_fleet_commanders_get_fleet_commanders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetCommander"][];
                 };
             };
         };

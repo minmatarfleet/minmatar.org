@@ -2153,6 +2153,7 @@ export interface FleetMetrics {
 }
 
 export type FleetCommanderMetrics = ApiResponse<'EveFleetCommanderMetric'>
+export type FleetCommander = ApiResponse<'EveFleetCommander'>
 
 export interface CandidateFleetCommander {
     character_id:           number;

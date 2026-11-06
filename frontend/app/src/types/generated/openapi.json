@@ -11413,6 +11413,119 @@
         "title": "EveFleetChannelResponse",
         "type": "object"
       },
+      "EveFleetCommander": {
+        "description": "One member of the Fleet Commanders tribe group.",
+        "properties": {
+          "corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Id"
+          },
+          "corporation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Name"
+          },
+          "fleets_this_month": {
+            "default": 0,
+            "title": "Fleets This Month",
+            "type": "integer"
+          },
+          "fleets_total": {
+            "default": 0,
+            "title": "Fleets Total",
+            "type": "integer"
+          },
+          "last_led": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Led"
+          },
+          "primary_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Character Id"
+          },
+          "primary_character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Character Name"
+          },
+          "rank_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank Name"
+          },
+          "rank_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank Order"
+          },
+          "timezone": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TimezoneTag"
+              }
+            ],
+            "default": {
+              "brackets": [],
+              "source": null
+            }
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "EveFleetCommander",
+        "type": "object"
+      },
       "EveFleetCommanderMetric": {
         "properties": {
           "corporation_id": {
@@ -52686,6 +52799,37 @@
           }
         ],
         "summary": "Fleet counts per commander for the current calendar month",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/commanders": {
+      "get": {
+        "operationId": "fleets_endpoints_metrics_get_fleet_commanders_get_fleet_commanders",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EveFleetCommander"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Fleet Commanders tribe members: level, timezone, recent fleets",
         "tags": [
           "Fleets"
         ]

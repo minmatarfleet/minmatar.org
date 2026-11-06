@@ -6,6 +6,12 @@ from fleets.endpoints.metrics.get_fleet_commander_metrics import (
     get_fleet_commander_metrics,
     METHOD as get_fleet_commander_metrics_method,
 )
+from fleets.endpoints.metrics.get_fleet_commanders import (
+    PATH as get_fleet_commanders_path,
+    ROUTE_SPEC as get_fleet_commanders_spec,
+    get_fleet_commanders,
+    METHOD as get_fleet_commanders_method,
+)
 from fleets.endpoints.metrics.get_fleet_metrics import (
     PATH as get_fleet_metrics_path,
     ROUTE_SPEC as get_fleet_metrics_spec,
@@ -38,6 +44,12 @@ _ROUTES = (
         get_fleet_commander_metrics_path,
         get_fleet_commander_metrics_spec,
         get_fleet_commander_metrics,
+    ),
+    (
+        get_fleet_commanders_method,
+        get_fleet_commanders_path,
+        get_fleet_commanders_spec,
+        get_fleet_commanders,
     ),
 )
 

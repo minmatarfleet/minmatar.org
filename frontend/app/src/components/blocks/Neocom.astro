@@ -99,14 +99,16 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                         </NeocomButton>
                         <UserAuth active={page.startsWith(translatePath('/account'))} />
                     </Flexblock>
-                    <NeocomButton
-                        active={page.startsWith(translatePath('/alliance')) && !on_led_corporation}
-                        title='neocom.alliance'
-                        description='alliance.description'
-                        href={translatePath('/alliance/')}
-                    >
-                        <AllianceEvEIcon />
-                    </NeocomButton>
+                    {can_view_fleets &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/fleets')) || page.startsWith(translatePath('/campaigns'))}
+                            title='neocom.fleets'
+                            description='fleets.description'
+                            href={translatePath('/fleets/upcoming/')}
+                        >
+                            <FleetEvEIcon />
+                        </NeocomButton>
+                    }
                     {led_corporation_path &&
                         <NeocomButton
                             active={on_led_corporation}
@@ -118,12 +120,12 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                         </NeocomButton>
                     }
                     <NeocomButton
-                        active={page.startsWith(translatePath('/learning'))}
-                        title='neocom.learning'
-                        description='learning.description'
-                        href={translatePath('/learning/')}
+                        active={page.startsWith(translatePath('/alliance')) && !on_led_corporation}
+                        title='neocom.alliance'
+                        description='alliance.description'
+                        href={translatePath('/alliance/')}
                     >
-                        <SkillsEvEIcon />
+                        <AllianceEvEIcon />
                     </NeocomButton>
                     <NeocomButton
                         active={page.startsWith(translatePath('/ships'))}
@@ -133,16 +135,14 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                     >
                         <ShipTreeEvEIcon />
                     </NeocomButton>
-                    {can_view_fleets &&
-                        <NeocomButton
-                            active={page.startsWith(translatePath('/fleets')) || page.startsWith(translatePath('/campaigns'))}
-                            title='neocom.fleets'
-                            description='fleets.description'
-                            href={translatePath('/fleets/upcoming/')}
-                        >
-                            <FleetEvEIcon />
-                        </NeocomButton>
-                    }
+                    <NeocomButton
+                        active={page.startsWith(translatePath('/learning'))}
+                        title='neocom.learning'
+                        description='learning.description'
+                        href={translatePath('/learning/')}
+                    >
+                        <SkillsEvEIcon />
+                    </NeocomButton>
                     <NeocomButton
                         active={page.startsWith(translatePath('/market')) || page.startsWith(translatePath('/industry/loyalty'))}
                         title='neocom.market'

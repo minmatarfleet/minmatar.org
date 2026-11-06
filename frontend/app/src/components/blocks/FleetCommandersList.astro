@@ -1,0 +1,162 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetCommander } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+/**
+ * The Commanders tab: the Fleet Commanders tribe group in tiers, one per rank
+ * (Strategic FC, Skirmish FC, ...), highest first. Members without a rank
+ * are the plain "FC" tier at the bottom. Inside a tier, the most recently
+ * active come first and pilots who have not led yet are dimmed.
+ */
+interface Props {
+    commanders:     FleetCommander[];
+    [propName: string]: any;
+}
+
+const { commanders, ...attributes } = Astro.props
+
+delete attributes.class
+
+const UNRANKED_ORDER = Number.MAX_SAFE_INTEGER
+
+interface Tier {
+    title:      string;
+    order:      number;
+    commanders: FleetCommander[];
+}
+
+const tiers_by_key = new Map<string, Tier>()
+
+for (const commander of commanders) {
+    const title = commander.rank_name ?? t('fleets.commanders.tier_fc')
+    const order = commander.rank_name ? (commander.rank_order ?? UNRANKED_ORDER - 1) : UNRANKED_ORDER
+    const tier = tiers_by_key.get(title) ?? { title, order, commanders: [] }
+    tier.commanders.push(commander)
+    tiers_by_key.set(title, tier)
+}
+
+const tiers = [...tiers_by_key.values()].sort((a, b) => a.order - b.order)
+
+const DAY = 24 * 60 * 60 * 1000
+
+function last_led_text(last_led:string) {
+    const days = Math.floor((Date.now() - new Date(last_led).getTime()) / DAY)
+    if (days <= 0) return t('fleets.commanders.today')
+    if (days === 1) return t('fleets.commanders.yesterday')
+    return t('fleets.commanders.days_ago').replace('{count}', String(days))
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
+---
+
+{commanders.length === 0 ?
+    <EmptyState title={t('fleets.commanders.empty')} prominent />
+    :
+    <Flexblock gap="var(--space-xl)" class:list={['[ fleet-commanders ]', Astro.props.class]} style="padding-block-start: var(--space-m)" {...attributes}>
+        {tiers.map(tier =>
+            <section class="[ fleet-commanders__tier ]" aria-labelledby={`tier-${tier.order}`}>
+                <h2 id={`tier-${tier.order}`} class="[ fleet-commanders__tier-title ]">
+                    {tier.title}
+                    <small>{tier.commanders.length}</small>
+                </h2>
+                <Grid min_item_width="18rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
+                    {tier.commanders.map(commander =>
+                        <article class:list={['[ fleet-commanders__card ]', { 'is-idle': !commander.last_led }]}>
+                            {commander.primary_character_id ?
+                                <img
+                                    src={get_player_icon(commander.primary_character_id, 128)}
+                                    alt=""
+                                    width="96"
+                                    height="96"
+                                    loading="lazy"
+                                />
+                                :
+                                <span class="[ fleet-commanders__no-portrait ]"></span>
+                            }
+                            <div class="[ fleet-commanders__details ]">
+                                <strong>{commander.primary_character_name ?? '—'}</strong>
+                                {commander.corporation_name &&
+                                    <small>{commander.corporation_name}</small>
+                                }
+                                {commander.timezone?.source === 'activity' && commander.timezone.brackets.length > 0 &&
+                                    <TimezoneTags timezone={commander.timezone} />
+                                }
+                                <small>
+                                    {t(commander.fleets_total === 1 ? 'fleets.commanders.total_one' : 'fleets.commanders.total').replace('{count}', String(commander.fleets_total ?? 0))}
+                                    {commander.last_led &&
+                                        <> · {t('fleets.commanders.last_fleet').replace('{when}', last_led_text(commander.last_led))}</>
+                                    }
+                                </small>
+                            </div>
+                        </article>
+                    )}
+                </Grid>
+            </section>
+        )}
+    </Flexblock>
+}
+
+<style lang="scss">
+    .fleet-commanders__tier-title {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-xs);
+        margin-block-end: var(--space-s);
+        padding-block-end: var(--space-3xs);
+        border-bottom: solid 1px var(--border-color);
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        text-transform: uppercase;
+        color: var(--highlight);
+
+        small {
+            font-size: var(--step-0);
+            color: var(--text-muted);
+        }
+    }
+
+    .fleet-commanders__card {
+        display: flex;
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-xs);
+        background: var(--surface-sunken);
+        border: solid 1px var(--hairline);
+
+        img,
+        .fleet-commanders__no-portrait {
+            flex: none;
+            width: 5rem;
+            aspect-ratio: 1;
+            background: var(--hairline);
+        }
+    }
+
+    .fleet-commanders__details {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        strong {
+            font-size: var(--step-0);
+            color: var(--highlight);
+            overflow-wrap: anywhere;
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .is-idle {
+        opacity: 0.55;
+    }
+</style>
