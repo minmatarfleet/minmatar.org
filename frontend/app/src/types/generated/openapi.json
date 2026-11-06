@@ -650,6 +650,47 @@
         "title": "AnswerInput",
         "type": "object"
       },
+      "ApplicationRequirements": {
+        "properties": {
+          "application_id": {
+            "title": "Application Id",
+            "type": "integer"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "preferred_met": {
+            "title": "Preferred Met",
+            "type": "integer"
+          },
+          "preferred_total": {
+            "title": "Preferred Total",
+            "type": "integer"
+          },
+          "required_met": {
+            "title": "Required Met",
+            "type": "integer"
+          },
+          "required_total": {
+            "title": "Required Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "application_id",
+          "checks",
+          "required_met",
+          "required_total",
+          "preferred_met",
+          "preferred_total"
+        ],
+        "title": "ApplicationRequirements",
+        "type": "object"
+      },
       "ApplyOrderSwapRequest": {
         "properties": {
           "notes": {
@@ -8511,6 +8552,46 @@
           "delivery_method"
         ],
         "title": "CorporationRedditPostUpdate",
+        "type": "object"
+      },
+      "CorporationRequirements": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "interview_topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Interview Topics",
+            "type": "array"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "trial_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Days"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "rules",
+          "interview_topics"
+        ],
+        "title": "CorporationRequirements",
         "type": "object"
       },
       "CorporationResponse": {
@@ -22505,6 +22586,38 @@
         "title": "InferredSalesVolumeResponse",
         "type": "object"
       },
+      "InterviewTopicsRequest": {
+        "properties": {
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "topics"
+        ],
+        "title": "InterviewTopicsRequest",
+        "type": "object"
+      },
+      "InterviewTopicsResponse": {
+        "properties": {
+          "interview_topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Interview Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "interview_topics"
+        ],
+        "title": "InterviewTopicsResponse",
+        "type": "object"
+      },
       "InvestigateResponse": {
         "properties": {
           "id": {
@@ -25846,6 +25959,104 @@
         "title": "ManageSkillsetSchema",
         "type": "object"
       },
+      "ManagedCorporationRequirements": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "interview_topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Interview Topics",
+            "type": "array"
+          },
+          "max_rules": {
+            "title": "Max Rules",
+            "type": "integer"
+          },
+          "members": {
+            "title": "Members",
+            "type": "integer"
+          },
+          "options": {
+            "$ref": "#/components/schemas/RequirementOptions"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/ManagedRequirementRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "rules",
+          "interview_topics",
+          "members",
+          "max_rules",
+          "options"
+        ],
+        "title": "ManagedCorporationRequirements",
+        "type": "object"
+      },
+      "ManagedRequirementRule": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "importance": {
+            "title": "Importance",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "members_pass": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Members Pass"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "who": {
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "params",
+          "who",
+          "importance",
+          "position",
+          "text"
+        ],
+        "title": "ManagedRequirementRule",
+        "type": "object"
+      },
       "ManualAffiliationRequest": {
         "properties": {
           "bloc_id": {
@@ -27451,6 +27662,56 @@
           "detail"
         ],
         "title": "MoonViewResponse",
+        "type": "object"
+      },
+      "MyCorporationRequirements": {
+        "properties": {
+          "accounts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accounts"
+          },
+          "can_apply": {
+            "title": "Can Apply",
+            "type": "boolean"
+          },
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "interview_topics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Interview Topics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "checks",
+          "interview_topics",
+          "can_apply",
+          "characters"
+        ],
+        "title": "MyCorporationRequirements",
         "type": "object"
       },
       "MyFleetFittingResponse": {
@@ -33739,6 +34000,160 @@
         "title": "RequestsBreakdown",
         "type": "object"
       },
+      "RequirementCapabilityOption": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "RequirementCapabilityOption",
+        "type": "object"
+      },
+      "RequirementCheck": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "importance": {
+            "title": "Importance",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "ship_type_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ship Type Ids",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "training_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Training Days"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "importance",
+          "text",
+          "status",
+          "detail",
+          "ship_type_ids"
+        ],
+        "title": "RequirementCheck",
+        "type": "object"
+      },
+      "RequirementCreateRequest": {
+        "properties": {
+          "importance": {
+            "default": "preferred",
+            "title": "Importance",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Params",
+            "type": "object"
+          },
+          "who": {
+            "default": "any",
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "RequirementCreateRequest",
+        "type": "object"
+      },
+      "RequirementDoctrineOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RequirementDoctrineOption",
+        "type": "object"
+      },
+      "RequirementOptions": {
+        "properties": {
+          "brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Brackets",
+            "type": "array"
+          },
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementCapabilityOption"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "doctrines": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementDoctrineOption"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doctrines",
+          "capabilities",
+          "brackets"
+        ],
+        "title": "RequirementOptions",
+        "type": "object"
+      },
       "RequirementQualificationSchema": {
         "description": "Per-requirement qualification result for one character.",
         "properties": {
@@ -33768,6 +34183,50 @@
         "title": "RequirementQualificationSchema",
         "type": "object"
       },
+      "RequirementRule": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "importance": {
+            "title": "Importance",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "who": {
+            "title": "Who",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "params",
+          "who",
+          "importance",
+          "position",
+          "text"
+        ],
+        "title": "RequirementRule",
+        "type": "object"
+      },
       "RequirementSchema": {
         "properties": {
           "asset_types": {
@@ -33795,6 +34254,46 @@
           "id"
         ],
         "title": "RequirementSchema",
+        "type": "object"
+      },
+      "RequirementUpdateRequest": {
+        "properties": {
+          "importance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Importance"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          },
+          "who": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Who"
+          }
+        },
+        "title": "RequirementUpdateRequest",
         "type": "object"
       },
       "ResolveKillmailRequest": {
@@ -42742,6 +43241,73 @@
         ]
       }
     },
+    "/api/applications/corporations/{corporation_id}/applications/{application_id}/requirements": {
+      "get": {
+        "operationId": "applications_requirements_router_get_application_requirements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "title": "Application Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRequirements"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "How an application's applicant meets the corporation's requirements",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      }
+    },
     "/api/applications/corporations/{corporation_id}/applications/{application_id}/transfer": {
       "post": {
         "operationId": "applications_router_transfer_corporation_application",
@@ -42824,6 +43390,444 @@
         ],
         "summary": "Transfer a corporation application to another corporation",
         "tags": [
+          "Applications"
+        ]
+      }
+    },
+    "/api/applications/corporations/{corporation_id}/interview-topics": {
+      "put": {
+        "operationId": "applications_requirements_router_put_corporation_interview_topics",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterviewTopicsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewTopicsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set the topics recruiters ask about in the interview (CEO)",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      }
+    },
+    "/api/applications/corporations/{corporation_id}/requirements": {
+      "get": {
+        "operationId": "applications_requirements_router_get_corporation_requirements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationRequirements"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "A corporation's recruitment requirements and interview topics",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      },
+      "post": {
+        "operationId": "applications_requirements_router_create_corporation_requirement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementRule"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add a recruitment requirement (CEO)",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      }
+    },
+    "/api/applications/corporations/{corporation_id}/requirements/manage": {
+      "get": {
+        "operationId": "applications_requirements_router_get_managed_corporation_requirements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedCorporationRequirements"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Requirements with member pass rates, for the corp's Settings tab",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      }
+    },
+    "/api/applications/corporations/{corporation_id}/requirements/me": {
+      "get": {
+        "operationId": "applications_requirements_router_get_my_corporation_requirements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyCorporationRequirements"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The caller's characters checked against a corporation's requirements",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      }
+    },
+    "/api/applications/corporations/{corporation_id}/requirements/{requirement_id}": {
+      "delete": {
+        "operationId": "applications_requirements_router_delete_corporation_requirement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "title": "Requirement Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove a recruitment requirement (CEO)",
+        "tags": [
+          "Applications",
+          "Applications"
+        ]
+      },
+      "patch": {
+        "operationId": "applications_requirements_router_update_corporation_requirement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "requirement_id",
+            "required": true,
+            "schema": {
+              "title": "Requirement Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequirementUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementRule"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Change a recruitment requirement (CEO)",
+        "tags": [
+          "Applications",
           "Applications"
         ]
       }

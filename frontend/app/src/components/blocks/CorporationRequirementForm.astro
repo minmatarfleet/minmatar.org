@@ -1,0 +1,315 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { RequirementOptions, RequirementRule } from '@dtypes/api.minmatar.org'
+import {
+    NO_OTHER_ACCOUNT_KINDS,
+    PERSON_KINDS,
+    REQUIREMENT_KINDS,
+    REQUIREMENT_WHO,
+    SHIP_LEVELS,
+    form_values,
+} from '@helpers/corporations/requirements'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+
+// The add / edit form for one requirement. Posts to the settings partial,
+// which swaps the whole section. Alpine only shows the fields for the
+// chosen type; it never fetches.
+interface Props {
+    options:        RequirementOptions;
+    partial_url:    string;
+    target:         string;
+    rule?:          RequirementRule | null;
+    [propName: string]: any;
+}
+
+const {
+    options,
+    partial_url,
+    target,
+    rule = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const values = form_values(rule)
+const editing = rule !== null
+const id = (name: string) => `req-${rule?.id ?? 'new'}-${name}`
+
+const kind_label = {
+    ships: t('corporations.requirements.kind_ships'),
+    kills: t('corporations.requirements.kind_kills'),
+    skill_points: t('corporations.requirements.kind_skill_points'),
+    character_age: t('corporations.requirements.kind_character_age'),
+    prime_time: t('corporations.requirements.kind_prime_time'),
+}
+const level_label = {
+    can_fly: t('corporations.requirements.level_can_fly'),
+    doctrine_ready: t('corporations.requirements.level_doctrine_ready'),
+    flown: t('corporations.requirements.level_flown'),
+}
+const who_label = {
+    main: t('corporations.requirements.who_main'),
+    any: t('corporations.requirements.who_any'),
+    other_account: t('corporations.requirements.who_other_account'),
+}
+const alpine_state = JSON.stringify({
+    kind: values.kind,
+    target: values.target,
+    who: values.who,
+    person_kinds: PERSON_KINDS,
+    no_other_account_kinds: NO_OTHER_ACCOUNT_KINDS,
+})
+---
+
+<form
+    class:list={['[ req-form ]', Astro.props.class]}
+    hx-post={partial_url}
+    hx-target={target}
+    hx-swap="outerHTML"
+    x-data={alpine_state}
+    {...attributes}
+>
+    <input type="hidden" name="action" value={editing ? 'update' : 'add'} />
+    {editing && <input type="hidden" name="rule_id" value={rule!.id} />}
+
+    <div class="[ req-form__grid ]">
+        <label class="[ req-form__label ]" for={id('kind')}>{t('corporations.requirements.field_type')}</label>
+        {editing ?
+            <span class="[ req-form__static ]">
+                <input type="hidden" name="kind" value={values.kind} />
+                {kind_label[values.kind]}
+            </span>
+            :
+            <div class="[ req-form__field ]">
+            <Select id={id('kind')} name="kind" x-model="kind">
+                {REQUIREMENT_KINDS.map((kind) => (
+                    <option value={kind} selected={kind === values.kind}>{kind_label[kind]}</option>
+                ))}
+            </Select>
+            </div>
+        }
+
+        <template x-if="kind === 'ships'">
+            <div class="[ req-form__group ]">
+                <span class="[ req-form__label ]">{t('corporations.requirements.field_target')}</span>
+                <div class="[ req-form__chips ]" role="radiogroup" aria-label={t('corporations.requirements.field_target')}>
+                    <label class="[ req-chip ]"><input type="radio" name="target" value="doctrine" x-model="target" checked={values.target !== 'capability'} /><span>{t('corporations.requirements.target_doctrine')}</span></label>
+                    <label class="[ req-chip ]"><input type="radio" name="target" value="capability" x-model="target" checked={values.target === 'capability'} /><span>{t('corporations.requirements.target_capability')}</span></label>
+                </div>
+
+                <label class="[ req-form__label ]" for={id('doctrine')} x-show="target !== 'capability'">{t('corporations.requirements.field_doctrine')}</label>
+                <div class="[ req-form__field ]" x-show="target !== 'capability'">
+                    <Select id={id('doctrine')} name="doctrine_id">
+                        {options.doctrines.map((doctrine) => (
+                            <option value={doctrine.id} selected={doctrine.id === values.doctrine_id}>{doctrine.name}</option>
+                        ))}
+                    </Select>
+                </div>
+
+                <label class="[ req-form__label ]" for={id('capability')} x-show="target === 'capability'">{t('corporations.requirements.field_capability')}</label>
+                <div class="[ req-form__field ]" x-show="target === 'capability'">
+                    <Select id={id('capability')} name="capability">
+                        {options.capabilities.map((capability) => (
+                            <option value={capability.key} selected={capability.key === values.capability}>{capability.label}</option>
+                        ))}
+                    </Select>
+                </div>
+
+                <span class="[ req-form__label ]">{t('corporations.requirements.field_level')}</span>
+                <div class="[ req-form__chips ]" role="radiogroup" aria-label={t('corporations.requirements.field_level')}>
+                    {SHIP_LEVELS.map((level) => (
+                        <label class="[ req-chip ]" x-show={level === 'flown' ? "target === 'capability'" : 'true'}>
+                            <input type="radio" name="level" value={level} checked={values.level === level} />
+                            <span>{level_label[level]}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+        </template>
+
+        <template x-if="kind === 'kills'">
+            <div class="[ req-form__group ]">
+                <label class="[ req-form__label ]" for={id('active')}>{t('corporations.requirements.field_active_months')}</label>
+                <Input id={id('active')} name="active_months" type="number" min="1" max="12" value={values.active_months} width="8rem" />
+                <label class="[ req-form__label ]" for={id('months')}>{t('corporations.requirements.field_months')}</label>
+                <Input id={id('months')} name="months" type="number" min="1" max="12" value={values.months} width="8rem" />
+            </div>
+        </template>
+
+        <template x-if="kind === 'skill_points'">
+            <div class="[ req-form__group ]">
+                <label class="[ req-form__label ]" for={id('sp')}>{t('corporations.requirements.field_sp')}</label>
+                <Input id={id('sp')} name="minimum_millions" type="number" min="1" max="500" value={values.minimum_millions} width="8rem" />
+            </div>
+        </template>
+
+        <template x-if="kind === 'character_age'">
+            <div class="[ req-form__group ]">
+                <label class="[ req-form__label ]" for={id('age')}>{t('corporations.requirements.field_age')}</label>
+                <Input id={id('age')} name="age_months" type="number" min="1" max="240" value={values.age_months} width="8rem" />
+            </div>
+        </template>
+
+        <template x-if="kind === 'prime_time'">
+            <div class="[ req-form__group ]">
+                <span class="[ req-form__label ]">{t('corporations.requirements.field_brackets')}</span>
+                <div class="[ req-form__chips ]" role="group" aria-label={t('corporations.requirements.field_brackets')}>
+                    {options.brackets.map((bracket) => (
+                        <label class="[ req-chip ]">
+                            <input type="checkbox" name="brackets" value={bracket} checked={values.brackets.includes(bracket)} />
+                            <span>{bracket}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+        </template>
+
+        <span class="[ req-form__label ]" x-show="!person_kinds.includes(kind)">{t('corporations.requirements.field_who')}</span>
+        <div class="[ req-form__chips ]" role="radiogroup" aria-label={t('corporations.requirements.field_who')} x-show="!person_kinds.includes(kind)">
+            {REQUIREMENT_WHO.map((who) => (
+                <label class="[ req-chip ]" x-show={who === 'other_account' ? '!no_other_account_kinds.includes(kind)' : 'true'}>
+                    <input type="radio" name="who" value={who} x-model="who" checked={values.who === who} />
+                    <span>{who_label[who]}</span>
+                </label>
+            ))}
+        </div>
+
+        <span class="[ req-form__label ]">{t('corporations.requirements.field_importance')}</span>
+        <div class="[ req-form__chips ]" role="radiogroup" aria-label={t('corporations.requirements.field_importance')}>
+            <label class="[ req-chip ]"><input type="radio" name="importance" value="required" checked={values.importance === 'required'} /><span>{t('corporations.requirements.importance_required')}</span></label>
+            <label class="[ req-chip ]"><input type="radio" name="importance" value="preferred" checked={values.importance !== 'required'} /><span>{t('corporations.requirements.importance_preferred')}</span></label>
+        </div>
+    </div>
+
+    <div class="[ req-form__actions ]">
+        {editing &&
+            <button
+                type="button"
+                class="[ req-form__quiet ]"
+                hx-post={partial_url}
+                hx-target={target}
+                hx-swap="outerHTML"
+                hx-vals={JSON.stringify({ action: 'remove', rule_id: String(rule!.id) })}
+            >{t('corporations.requirements.remove')}</button>
+        }
+        <button
+            type="button"
+            class="[ req-form__quiet ]"
+            hx-get={partial_url}
+            hx-target={target}
+            hx-swap="outerHTML"
+        >{t('corporations.requirements.cancel')}</button>
+        <Button type="submit" size="sm">{editing ? t('corporations.requirements.save') : t('corporations.requirements.add')}</Button>
+    </div>
+</form>
+
+<style lang="scss">
+    .req-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background: var(--surface-sunken);
+        border: solid 1px var(--border-color);
+    }
+
+    .req-form__grid,
+    .req-form__group {
+        display: grid;
+        grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
+        gap: var(--space-xs) var(--space-s);
+        align-items: center;
+
+        @media (max-width: 40rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .req-form__group {
+        grid-column: 1 / -1;
+    }
+
+    .req-form__label {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+    }
+
+    .req-form__field {
+        max-width: 22rem;
+        width: 100%;
+    }
+
+    .req-form__static {
+        color: var(--highlight);
+    }
+
+    .req-form__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .req-chip {
+        position: relative;
+        cursor: pointer;
+
+        input {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+        }
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            min-height: var(--space-l);
+            padding-inline: var(--space-xs);
+            border: solid 1px var(--hairline-strong);
+            font-size: var(--step--1);
+        }
+
+        input:checked + span {
+            border-color: var(--foreground);
+            color: var(--highlight);
+        }
+
+        input:focus-visible + span {
+            outline: solid 2px var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    .req-form__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-s);
+        padding-top: var(--space-xs);
+        border-top: solid 1px var(--hairline);
+    }
+
+    .req-form__quiet {
+        background: none;
+        border: 0;
+        padding: var(--space-3xs);
+        font: inherit;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+        text-decoration: underline;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+</style>

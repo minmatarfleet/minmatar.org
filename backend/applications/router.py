@@ -24,10 +24,13 @@ from .models import (
     open_application_for_user,
 )
 from .prime_time import apply_application_prime_time
+from .requirements.services import apply_blockers, blocked_detail
+from .requirements_router import router as requirements_router
 from .tasks import notify_application_transferred_task
 from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
+router.add_router("", requirements_router)
 logger = logging.getLogger(__name__)
 
 
@@ -125,6 +128,12 @@ def create_corporation_application(
     ).first()
     if not corporation:
         return 404, {"detail": "Corporation not found."}
+
+    # A corp with required rules only takes applicants who meet them.
+    # Rules we can't check yet never block.
+    blockers = apply_blockers(corporation, request.user.id)
+    if blockers:
+        return 400, {"detail": blocked_detail(blockers)}
 
     if is_l3arn_corporation(corporation):
         validation_error = validate_l3arn_application_description(
