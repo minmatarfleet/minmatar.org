@@ -8,6 +8,32 @@ class ShipReimbursementProgramAmountResponse(BaseModel):
     created_at: str
 
 
+class SetProgramAmountRequest(BaseModel):
+    srp_value: int
+
+
+class RecalculationChangeResponse(BaseModel):
+    id: int
+    ship_name: str
+    character_name: str
+    status: str
+    current_amount: int
+    new_amount: int
+
+
+class RecalculationPreviewResponse(BaseModel):
+    outstanding_count: int
+    changed_count: int
+    current_total: int
+    new_total: int
+    changes: list[RecalculationChangeResponse]
+
+
+class RecalculationResultResponse(BaseModel):
+    updated: int
+    errors: int
+
+
 class ShipReimbursementProgramResponse(BaseModel):
     class EveCategoryResponse(BaseModel):
         id: int
