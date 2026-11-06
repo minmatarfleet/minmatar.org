@@ -55,7 +55,7 @@ class CorporationStatsCacheTestCase(TestCase):
     def test_task_refreshes_one_corporation(self):
         self.assertEqual(1, refresh_corporation_profile_stats(98726134))
         self.assertIsNotNone(
-            cache.get("corporation_profile_stats:v3:98726134")
+            cache.get("corporation_profile_stats:v4:98726134")
         )
 
     def test_cache_outage_degrades_to_no_stats(self):

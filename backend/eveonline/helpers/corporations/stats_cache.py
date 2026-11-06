@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 STATS_TTL_SECONDS = 6 * 60 * 60
 REFRESH_LOCK_SECONDS = 10 * 60
-_STATS_KEY = "corporation_profile_stats:v3:{corporation_id}"
+_STATS_KEY = "corporation_profile_stats:v4:{corporation_id}"
 _LOCK_KEY = "corporation_profile_stats:refreshing:{corporation_id}"
 
 

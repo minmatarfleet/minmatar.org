@@ -171,7 +171,7 @@ def corporation_public_summary(
     character_ids, user_ids, char_to_user = _corp_characters(corporation)
     if kills is None:
         kills = RecentKills(character_ids)
-    fleet_instances, fleet_counts, ship_counts, pilot_fleets = _fleet_facts(
+    fleet_instances, fleet_counts, ship_counts, role_pilots = _fleet_facts(
         character_ids, user_ids, char_to_user, cutoff
     )
     killmails, kill_counts = _kill_facts(character_ids, kills)
@@ -187,12 +187,8 @@ def corporation_public_summary(
             "slices": _slices(FLEET_ORDER, fleet_counts),
         },
         "fleet_ships": {
-            "pilot_fleets": pilot_fleets,
-            "slices": [
-                {"key": key, "count": round(ship_counts[key], 2)}
-                for key in SHIP_ORDER
-                if ship_counts[key]
-            ],
+            "pilots": role_pilots,
+            "slices": _slices(SHIP_ORDER, ship_counts),
         },
         "kills": {
             "killmails": killmails,
@@ -299,12 +295,12 @@ def _fleet_facts(character_ids, user_ids, char_to_user, cutoff):
         hulls_by_pilot_fleet[(pilot, instance_id)].extend(
             _attendance_ships(ship_type_id, ships_by_member.get(member_id))
         )
-    ship_counts, pilot_fleets = _ship_roles(hulls_by_pilot_fleet)
+    ship_counts, role_pilots = _ship_roles(hulls_by_pilot_fleet)
     # No fleets in the window is the inactive tier.
     tier_counts: Counter = Counter(
         fleet_tier(len(fleet_ids)) for fleet_ids in fleets_by_user.values()
     )
-    return len(instances), tier_counts, ship_counts, pilot_fleets
+    return len(instances), tier_counts, ship_counts, role_pilots
 
 
 def _snapshot_ships(member_ids: list[int]) -> dict[int, set[int]]:
@@ -339,11 +335,12 @@ def _attendance_ships(member_ship, snapshot_ids: set[int] | None) -> list[int]:
 
 
 def _ship_roles(hulls_by_pilot_fleet: dict) -> tuple[Counter, int]:
-    """Role mix with one vote per person per fleet.
+    """Pilots who flew each role, and how many pilots flew any role.
 
-    The vote is split evenly across the roles that person fielded, so a
-    DPS main with a logistics alt adds half to each. Reshipping into the
-    same role does not count twice. Shares always sum to 100%.
+    A pilot is a person (alts folded into their owner) or an unlinked
+    character. Each role counts a pilot once however many fleets they
+    flew it on, and a pilot who covered several roles (a DPS main with a
+    logistics alt, or a pilot who reships) counts in every one of them.
     """
     counts: Counter = Counter()
     type_ids = {
@@ -357,18 +354,15 @@ def _ship_roles(hulls_by_pilot_fleet: dict) -> tuple[Counter, int]:
             id__in=type_ids
         ).values_list("id", "eve_group__name")
     }
-    pilot_fleets = 0
-    for hulls in hulls_by_pilot_fleet.values():
-        roles = {
-            ship_bucket(groups.get(type_id, ""), type_id) for type_id in hulls
-        }
-        roles.discard(None)
-        if not roles:
-            continue
-        pilot_fleets += 1
-        for role in roles:
-            counts[role] += 1 / len(roles)
-    return counts, pilot_fleets
+    roles_by_pilot: dict = defaultdict(set)
+    for (pilot, _), hulls in hulls_by_pilot_fleet.items():
+        for type_id in hulls:
+            role = ship_bucket(groups.get(type_id, ""), type_id)
+            if role:
+                roles_by_pilot[pilot].add(role)
+    for roles in roles_by_pilot.values():
+        counts.update(roles)
+    return counts, len(roles_by_pilot)
 
 
 def _kill_facts(character_ids, kills: RecentKills):
