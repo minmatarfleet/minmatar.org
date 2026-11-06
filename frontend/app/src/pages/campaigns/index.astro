@@ -1,5 +1,4 @@
 ---
-import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -30,7 +29,8 @@ if (!user) return login_redirect(Astro)
 const gates = await get_gates(Astro)
 
 const can_view_campaigns = can(gates, 'campaigns.view')
-const can_edit_in_admin = can(gates, 'campaigns.manage')
+const can_manage_campaigns = can(gates, 'campaigns.manage')
+const can_create_campaigns = can(gates, 'campaigns.create')
 
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
@@ -49,8 +49,6 @@ const retrospectives = getAllCampaigns()
 const CAMPAIGNS_PARTIAL_URL = translatePath('/partials/campaign_list_component')
 
 const page_title = t('campaigns.page_title')
-const api_base = get_public_api_url()
-const admin_campaigns_url = `${api_base}/admin/campaigns/campaign/`
 
 const breadcrumbs = [
     { page_title, accumulated_path: '/campaigns/' },
@@ -80,14 +78,18 @@ const breadcrumbs = [
                 {page_title}
             </PageTitle>
             <PageActions>
-                {can_edit_in_admin && (
+                {can_create_campaigns && (
+                    <Button href={translatePath('/campaigns/new/')} color="fleet-red" size="sm">
+                        {t('campaigns.new.page_title')}
+                    </Button>
+                )}
+                {can_manage_campaigns && (
                     <Button
-                        href={admin_campaigns_url}
+                        href={translatePath('/campaigns/event-codes/')}
                         color="transparent"
                         narrow={true}
-                        new_tab={true}
-                        aria-label={t('campaigns.manage_in_admin')}
-                        title={t('campaigns.manage_in_admin')}
+                        aria-label={t('campaigns.codes.page_title')}
+                        title={t('campaigns.codes.page_title')}
                     >
                         <CogIcon slot="icon" />
                     </Button>

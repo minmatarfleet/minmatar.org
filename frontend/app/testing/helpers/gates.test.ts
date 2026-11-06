@@ -67,6 +67,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'fleets.delete': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('fleets.delete_evefleet'),
     'fleets.manage_any': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('fleets.manage_any_fleet'),
     'campaigns.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('campaigns.view_campaign'),
+    'campaigns.create': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('campaigns.add_campaign'),
     'campaigns.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('campaigns.change_campaign'),
     'posts.create': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('posts.add_evepost'),
     'srp.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement'),
