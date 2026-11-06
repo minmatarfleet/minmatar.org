@@ -238,6 +238,17 @@ def _require_pending(offer: TribeChiefVolunteer) -> None:
         raise ChiefVolunteerError("That offer was already answered.")
 
 
+def _lock_pending(offer: TribeChiefVolunteer) -> None:
+    """Lock the offer row and check it's still waiting (inside atomic)."""
+    status = (
+        TribeChiefVolunteer.objects.select_for_update()
+        .values_list("status", flat=True)
+        .get(pk=offer.pk)
+    )
+    offer.status = status
+    _require_pending(offer)
+
+
 def _activate_membership(user, tribe_group: TribeGroup, by) -> None:
     """A new group chief is an active member, like tribe chiefs are."""
     now = timezone.now()
@@ -270,14 +281,19 @@ def appoint(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
     )
 
     _require_executor(by)
-    _require_pending(offer)
-    tribe = offer.tribe
-    tribe_group = offer.tribe_group
-    if not seat_is_open(tribe, tribe_group):
-        raise ChiefVolunteerError("This seat already has a chief.")
-
     now = timezone.now()
     with transaction.atomic():
+        # Lock the offer and the seat so a double click (the DM button and
+        # the website) can't appoint two chiefs.
+        _lock_pending(offer)
+        tribe = Tribe.objects.select_for_update().get(pk=offer.tribe_id)
+        tribe_group = (
+            TribeGroup.objects.select_for_update().get(pk=offer.tribe_group_id)
+            if offer.tribe_group_id
+            else None
+        )
+        if not seat_is_open(tribe, tribe_group):
+            raise ChiefVolunteerError("This seat already has a chief.")
         if tribe_group is not None:
             tribe_group.chief = offer.user
             tribe_group.save(update_fields=["chief"])
@@ -302,18 +318,29 @@ def appoint(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
         for changed in [offer, *others]:
             _queue_dm_update(changed)
     if tribe_group is None:
-        ensure_tribe_chiefs_have_group_memberships()
+        # The chief is saved; group memberships follow. A failed Discord
+        # role sync here is retried by the scheduled membership task.
+        try:
+            ensure_tribe_chiefs_have_group_memberships()
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Group memberships for new tribe chief %s failed",
+                offer.user_id,
+                exc_info=True,
+            )
+    offer.tribe = tribe
+    offer.tribe_group = tribe_group
     return offer
 
 
 def decline(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
     """Not now: the seat stays open."""
     _require_executor(by)
-    _require_pending(offer)
-    offer.status = TribeChiefVolunteer.STATUS_DECLINED
-    offer.decided_at = timezone.now()
-    offer.decided_by = by
     with transaction.atomic():
+        _lock_pending(offer)
+        offer.status = TribeChiefVolunteer.STATUS_DECLINED
+        offer.decided_at = timezone.now()
+        offer.decided_by = by
         offer.save(update_fields=["status", "decided_at", "decided_by"])
         _queue_dm_update(offer)
     return offer

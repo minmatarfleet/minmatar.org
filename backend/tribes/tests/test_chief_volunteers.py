@@ -469,3 +469,53 @@ class InterimChiefPowersTestCase(TestCase):
         )
         self.assertIn(self.executor.pk, chiefs)
         self.assertIn(self.tribe_chief.pk, chiefs)
+
+
+@override_settings(ALLIANCE_EXECUTOR_CHARACTER_ID=EXECUTOR_CHARACTER_ID)
+class AppointRaceTestCase(TestCase):
+    def setUp(self):
+        self.executor = _pilot("bear3", EXECUTOR_CHARACTER_ID, "BearThatCares")
+        self.first = _pilot("casper3", 94001, "Casper Sullivan")
+        self.second = _pilot("zigg3", 94002, "Zigg Omelo")
+        self.supply = Tribe.objects.create(name="Supply", slug="supply-race")
+
+    @patch("tribes.helpers.chiefs._queue_dm_update")
+    def test_stale_offer_cannot_appoint_a_second_chief(self, queue_dm):
+        # pylint: disable-next=import-outside-toplevel
+        from tribes.helpers.chiefs import ChiefVolunteerError, appoint
+
+        first = TribeChiefVolunteer.objects.create(
+            tribe=self.supply, user=self.first
+        )
+        second = TribeChiefVolunteer.objects.create(
+            tribe=self.supply, user=self.second
+        )
+        # Both loaded before either click lands.
+        stale = TribeChiefVolunteer.objects.get(pk=second.pk)
+        appoint(first, self.executor)
+        with self.assertRaises(ChiefVolunteerError):
+            appoint(stale, self.executor)
+        self.supply.refresh_from_db()
+        self.assertEqual(self.supply.chief, self.first)
+        self.assertEqual(queue_dm.call_count, 2)
+
+    @patch("tribes.helpers.chiefs._queue_dm_update")
+    @patch(
+        "tribes.helpers.chief_membership."
+        "ensure_tribe_chiefs_have_group_memberships",
+        side_effect=RuntimeError("discord down"),
+    )
+    def test_membership_sync_failure_keeps_the_appointment(
+        self, ensure, queue_dm
+    ):
+        # pylint: disable-next=import-outside-toplevel
+        from tribes.helpers.chiefs import appoint
+
+        offer = TribeChiefVolunteer.objects.create(
+            tribe=self.supply, user=self.first
+        )
+        appoint(offer, self.executor)
+        self.supply.refresh_from_db()
+        self.assertEqual(self.supply.chief, self.first)
+        ensure.assert_called_once()
+        queue_dm.assert_called_once()
