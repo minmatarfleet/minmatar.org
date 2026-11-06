@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import logging
-from datetime import datetime, timezone as dt_timezone
+import socket
+from datetime import datetime
+from datetime import timezone as dt_timezone
+from urllib.parse import urljoin, urlparse
 
 import requests
 from django.contrib.auth.models import User
@@ -14,14 +18,72 @@ from django.utils.dateparse import parse_datetime
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter
-from groups.helpers.feature_access import can_use_feature
 from fleets.helpers.npsi_description import sanitize_npsi_description
 from fleets.helpers.npsi_discord import notify_dm_payload
 from fleets.models import NpsiEventSource, NpsiExternalEvent
+from groups.helpers.feature_access import can_use_feature
 
 logger = logging.getLogger(__name__)
 
 FEED_TIMEOUT_SECONDS = 15
+_FEED_REDIRECTS = 5
+_LOCAL_FEED_HOSTS = frozenset({"localhost", "localhost.localdomain"})
+
+
+def public_feed_url(url: str) -> bool:
+    """True for an http(s) URL that is not a loopback, private, or link-local host.
+
+    A name that does not resolve yet is allowed: the poll fails on its own,
+    and tests point at names that are not in DNS. A name that resolves to a
+    non-public address is rejected.
+    """
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if parsed.scheme not in ("http", "https") or not host:
+        return False
+    if parsed.username or parsed.password:
+        return False
+    if host in _LOCAL_FEED_HOSTS or host.endswith((".local", ".internal")):
+        return False
+    try:
+        literal = ipaddress.ip_address(host)
+    except ValueError:
+        literal = None
+    if literal is not None:
+        return bool(literal.is_global)
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return True
+    addresses = []
+    for info in infos:
+        try:
+            addresses.append(ipaddress.ip_address(info[4][0]))
+        except ValueError:
+            return False
+    return bool(addresses) and all(addr.is_global for addr in addresses)
+
+
+def _fetch_feed(url: str):
+    current = url
+    for _ in range(_FEED_REDIRECTS):
+        if not public_feed_url(current):
+            raise requests.RequestException(
+                "Feed URL is not a public address."
+            )
+        response = requests.get(
+            current, timeout=FEED_TIMEOUT_SECONDS, allow_redirects=False
+        )
+        if response.is_redirect is True:
+            location = response.headers.get("Location")
+            if not location:
+                raise requests.RequestException(
+                    "Feed redirect had no location."
+                )
+            current = urljoin(current, location)
+            continue
+        return response
+    raise requests.RequestException("Feed redirected too many times.")
 
 
 def event_fingerprint(source_id: int, start: datetime, summary: str) -> str:
@@ -93,7 +155,7 @@ def poll_npsi_source(
 ) -> dict:
     stats = {"upserted": 0, "notified": 0, "skipped": 0}
     try:
-        response = requests.get(source.feed_url, timeout=FEED_TIMEOUT_SECONDS)
+        response = _fetch_feed(source.feed_url)
         response.raise_for_status()
         payload = response.json()
     except (requests.RequestException, ValueError) as exc:

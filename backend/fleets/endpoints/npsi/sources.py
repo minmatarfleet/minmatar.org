@@ -6,16 +6,15 @@ disabled, never deleted, so their imported events keep their history.
 
 from datetime import datetime
 from typing import Optional
-from urllib.parse import urlparse
 
 from django.utils import timezone
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from groups.helpers.feature_access import can_use_feature
-
+from fleets.helpers.npsi_ingest import public_feed_url
 from fleets.models import EveFleetAudience, NpsiEventSource, NpsiExternalEvent
+from groups.helpers.feature_access import can_use_feature
 
 FEATURE = "fleets.npsi_sources.manage"
 FORBIDDEN = "You can't manage NPSI event sources."
@@ -89,8 +88,7 @@ def _source_row(source: NpsiEventSource) -> dict:
 
 
 def _valid_url(url: str) -> bool:
-    parsed = urlparse(url)
-    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+    return public_feed_url(url)
 
 
 def _denied(request):
@@ -154,7 +152,7 @@ def post_npsi_source(request, payload: NpsiSourceCreate):
     if not name or not fc_name:
         return 400, ErrorResponse(detail="Name and fallback FC are required.")
     if not _valid_url(feed_url):
-        return 400, ErrorResponse(detail="Enter a full http(s) feed URL.")
+        return 400, ErrorResponse(detail="Enter a public http(s) feed URL.")
     if NpsiEventSource.objects.filter(name=name).exists():
         return 400, ErrorResponse(detail="A source with that name exists.")
     if error := _audience_error(payload.default_audience_id):
@@ -199,7 +197,7 @@ def patch_npsi_source(request, source_id: int, payload: NpsiSourcePatch):
             if not changes[field]:
                 return 400, ErrorResponse(detail=f"{field} cannot be empty.")
     if "feed_url" in changes and not _valid_url(changes["feed_url"]):
-        return 400, ErrorResponse(detail="Enter a full http(s) feed URL.")
+        return 400, ErrorResponse(detail="Enter a public http(s) feed URL.")
     if (
         "name" in changes
         and NpsiEventSource.objects.filter(name=changes["name"])

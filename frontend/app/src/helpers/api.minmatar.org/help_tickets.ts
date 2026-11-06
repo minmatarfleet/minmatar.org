@@ -36,7 +36,7 @@ export async function order_help_categories(access_token: string, ids: number[])
     })
 }
 
-export async function update_help_panel(access_token: string, channel_id: number) {
+export async function update_help_panel(access_token: string, channel_id: string) {
     return await api_request<HelpPanel>(`${API_ENDPOINT}/panel`, {
         method: 'PATCH',
         token: access_token,

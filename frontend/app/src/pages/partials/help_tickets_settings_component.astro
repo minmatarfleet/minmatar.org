@@ -62,8 +62,8 @@ try {
                 await order_help_categories(auth_token, ids)
             }
             notice = t('help_settings.moved')
-        } else if (action === 'panel' && parseInt(text('channel_id'))) {
-            await update_help_panel(auth_token, parseInt(text('channel_id')))
+        } else if (action === 'panel' && /^[1-9]\d*$/.test(text('channel_id').trim())) {
+            await update_help_panel(auth_token, text('channel_id').trim())
             notice = t('help_settings.saved')
         } else {
             return HTTP_400_Bad_Request()

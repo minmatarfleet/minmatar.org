@@ -6,7 +6,7 @@ who own tickets. Everything here needs the `help_tickets.manage` feature.
 
 from typing import Optional
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils.text import slugify
 from ninja import Router
 from pydantic import BaseModel
@@ -45,8 +45,9 @@ class HelpTribeGroupOption(BaseModel):
 
 
 class HelpPanelResponse(BaseModel):
-    channel_id: int
-    message_id: Optional[int] = None
+    # Discord snowflakes do not fit in a JavaScript number, so they travel as strings.
+    channel_id: str
+    message_id: Optional[str] = None
 
 
 class HelpSettingsResponse(BaseModel):
@@ -75,13 +76,26 @@ class HelpCategoryOrder(BaseModel):
 
 
 class HelpPanelPatch(BaseModel):
-    channel_id: int
+    channel_id: str
 
 
 def _denied(request):
     if can_use_feature(request.user, FEATURE):
         return None
     return 403, ErrorResponse(detail=FORBIDDEN)
+
+
+def _snowflake(value: int | None) -> str | None:
+    if value is None:
+        return None
+    return str(value)
+
+
+def _panel_row(panel: HelpTicketPanel) -> dict:
+    return {
+        "channel_id": str(panel.channel_id),
+        "message_id": _snowflake(panel.message_id),
+    }
 
 
 def _category_row(category: HelpRequestCategory) -> dict:
@@ -156,10 +170,7 @@ def get_settings(request):
             }
             for g in groups
         ],
-        "panel": {
-            "channel_id": panel.channel_id,
-            "message_id": panel.message_id,
-        },
+        "panel": _panel_row(panel),
     }
 
 
@@ -196,7 +207,12 @@ def create_category(request, payload: HelpCategoryCreate):
     # A tribe-linked category takes the group's code in save().
     if not category.tribe_group_id:
         category.code = _unique_code(title)
-    category.save()
+    try:
+        category.save()
+    except IntegrityError:
+        return 400, ErrorResponse(
+            detail="That code is already used by another category."
+        )
     return 200, _category_row(category)
 
 
@@ -236,7 +252,12 @@ def patch_category(request, category_id: int, payload: HelpCategoryPatch):
             changes[field] = (changes[field] or "").strip()
     for field, value in changes.items():
         setattr(category, field, value)
-    category.save()
+    try:
+        category.save()
+    except IntegrityError:
+        return 400, ErrorResponse(
+            detail="That code is already used by another category."
+        )
     category.refresh_from_db()
     return 200, _category_row(category)
 
@@ -285,12 +306,16 @@ def order_categories(request, payload: HelpCategoryOrder):
 def patch_panel(request, payload: HelpPanelPatch):
     if (denied := _denied(request)) is not None:
         return denied
-    if payload.channel_id <= 0:
+    raw = payload.channel_id.strip()
+    if not raw.isdigit() or int(raw) <= 0:
         return 400, ErrorResponse(detail="Enter a Discord channel id.")
+    channel_id = int(raw)
     panel = HelpTicketPanel.get_solo()
-    panel.channel_id = payload.channel_id
-    panel.save(update_fields=["channel_id"])
-    return 200, {
-        "channel_id": panel.channel_id,
-        "message_id": panel.message_id,
-    }
+    update_fields = ["channel_id"]
+    if panel.channel_id != channel_id:
+        # The posted panel message belongs to the previous channel.
+        panel.message_id = None
+        update_fields.append("message_id")
+    panel.channel_id = channel_id
+    panel.save(update_fields=update_fields)
+    return 200, _panel_row(panel)

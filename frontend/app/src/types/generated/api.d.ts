@@ -16104,14 +16104,14 @@ export interface components {
         /** HelpPanelPatch */
         HelpPanelPatch: {
             /** Channel Id */
-            channel_id: number;
+            channel_id: string;
         };
         /** HelpPanelResponse */
         HelpPanelResponse: {
             /** Channel Id */
-            channel_id: number;
+            channel_id: string;
             /** Message Id */
-            message_id?: number | null;
+            message_id?: string | null;
         };
         /** HelpSettingsResponse */
         HelpSettingsResponse: {

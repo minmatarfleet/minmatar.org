@@ -52,7 +52,7 @@ class HelpSettingsTestCase(TestCase):
             ("post", "/categories", {"title": "x"}),
             ("patch", f"/categories/{self.first.id}", {"title": "x"}),
             ("post", "/category-order", {"ids": []}),
-            ("patch", "/panel", {"channel_id": 1}),
+            ("patch", "/panel", {"channel_id": "1"}),
         ):
             with self.subTest(path=path):
                 response = self.send(method, path, body)
@@ -66,7 +66,7 @@ class HelpSettingsTestCase(TestCase):
             ["First", "Second"], [c["title"] for c in data["categories"]]
         )
         self.assertEqual("Technology", data["tribe_groups"][0]["name"])
-        self.assertEqual(555, data["panel"]["channel_id"])
+        self.assertEqual("555", data["panel"]["channel_id"])
 
     def test_create_makes_a_unique_code_and_goes_last(self):
         self.grant()
@@ -93,6 +93,18 @@ class HelpSettingsTestCase(TestCase):
             {"title": "Tech 2", "tribe_group_id": self.group.id},
         )
         self.assertEqual(400, again.status_code)
+
+    def test_group_code_already_used_is_a_400(self):
+        self.grant()
+        HelpRequestCategory.objects.create(
+            title="Taken", code=self.group.code, sort_order=30
+        )
+        response = self.send(
+            "post",
+            "/categories",
+            {"title": "Tech", "tribe_group_id": self.group.id},
+        )
+        self.assertEqual(400, response.status_code)
 
     def test_patch_renames_routes_and_turns_off(self):
         self.grant()
@@ -134,9 +146,21 @@ class HelpSettingsTestCase(TestCase):
 
     def test_panel_channel(self):
         self.grant()
-        response = self.send("patch", "/panel", {"channel_id": 777})
-        self.assertEqual(777, response.json()["channel_id"])
-        self.assertEqual(777, HelpTicketPanel.get_solo().channel_id)
+        snowflake = "1183401618943791186"
+        panel = HelpTicketPanel.get_solo()
+        panel.message_id = 42
+        panel.save(update_fields=["message_id"])
+        response = self.send("patch", "/panel", {"channel_id": snowflake})
+        self.assertEqual(snowflake, response.json()["channel_id"])
+        panel.refresh_from_db()
+        self.assertEqual(int(snowflake), panel.channel_id)
+        self.assertIsNone(panel.message_id)
+        same = self.send("patch", "/panel", {"channel_id": snowflake})
+        self.assertEqual(snowflake, same.json()["channel_id"])
         self.assertEqual(
-            400, self.send("patch", "/panel", {"channel_id": 0}).status_code
+            400, self.send("patch", "/panel", {"channel_id": "0"}).status_code
+        )
+        self.assertEqual(
+            400,
+            self.send("patch", "/panel", {"channel_id": "nope"}).status_code,
         )

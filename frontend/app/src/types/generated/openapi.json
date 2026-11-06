@@ -20297,7 +20297,7 @@
         "properties": {
           "channel_id": {
             "title": "Channel Id",
-            "type": "integer"
+            "type": "string"
           }
         },
         "required": [
@@ -20310,12 +20310,12 @@
         "properties": {
           "channel_id": {
             "title": "Channel Id",
-            "type": "integer"
+            "type": "string"
           },
           "message_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"

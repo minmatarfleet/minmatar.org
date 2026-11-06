@@ -87,6 +87,16 @@ class NpsiSourceApiTestCase(TestCase):
             {"name": "X", "feed_url": "not a url", "fc_character_name": "FC"},
         )
         self.assertEqual(400, bad.status_code)
+        private = self.send(
+            "post",
+            "",
+            {
+                "name": "Loop",
+                "feed_url": "http://10.1.2.3/feed.json",
+                "fc_character_name": "FC",
+            },
+        )
+        self.assertEqual(400, private.status_code)
         duplicate = self.send(
             "post",
             "",
@@ -158,6 +168,15 @@ class NpsiPollStatusTestCase(TestCase):
         self.source.refresh_from_db()
         self.assertIsNotNone(self.source.last_success_at)
         self.assertEqual("", self.source.last_error)
+
+    def test_a_private_feed_is_not_fetched(self):
+        self.source.feed_url = "http://169.254.169.254/latest"
+        self.source.save(update_fields=["feed_url"])
+        with patch("fleets.helpers.npsi_ingest.requests.get") as mock_get:
+            poll_npsi_source(self.source)
+        mock_get.assert_not_called()
+        self.source.refresh_from_db()
+        self.assertIn("public address", self.source.last_error)
 
     def test_a_failed_poll_records_the_error(self):
         with patch(
