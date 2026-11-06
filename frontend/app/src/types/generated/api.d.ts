@@ -341,7 +341,42 @@ export interface paths {
         /** Get Tags */
         get: operations["posts_router_get_tags"];
         put?: never;
+        /** Create a post tag */
+        post: operations["posts_router_create_tag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a post tag */
+        patch: operations["posts_router_rename_tag"];
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a tag into another: its posts move over and it is deleted */
+        post: operations["posts_router_merge_tag"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2364,6 +2399,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/npsi-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** NPSI event sources, with the last import time and errors */
+        get: operations["fleets_endpoints_npsi_sources_get_npsi_sources"];
+        put?: never;
+        /** Add an NPSI event source */
+        post: operations["fleets_endpoints_npsi_sources_post_npsi_source"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/npsi-sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit, enable or disable an NPSI event source */
+        patch: operations["fleets_endpoints_npsi_sources_patch_npsi_source"];
+        trace?: never;
+    };
+    "/api/fleets/npsi-sources/{source_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview a source's upcoming imported events */
+        get: operations["fleets_endpoints_npsi_sources_get_npsi_source_events"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/ping-preview": {
         parameters: {
             query?: never;
@@ -3711,6 +3798,91 @@ export interface paths {
         put?: never;
         /** Create Help Ticket */
         post: operations["help_tickets_router_create_help_ticket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/help-tickets/manage/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a help ticket category */
+        post: operations["help_tickets_settings_router_create_category"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/help-tickets/manage/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a category, change its owner or turn it off */
+        patch: operations["help_tickets_settings_router_patch_category"];
+        trace?: never;
+    };
+    "/api/help-tickets/manage/category-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the order the panel lists categories in */
+        post: operations["help_tickets_settings_router_order_categories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/help-tickets/manage/panel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set the channel the #help panel is posted in */
+        patch: operations["help_tickets_settings_router_patch_panel"];
+        trace?: never;
+    };
+    "/api/help-tickets/manage/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Help ticket categories, tribe groups to route to, and the panel */
+        get: operations["help_tickets_settings_router_get_settings"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5721,6 +5893,159 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reddit/review/changes/{change_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a requested change; it goes live in the rotation */
+        post: operations["reddit_review_router_approve_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/changes/{change_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a requested change, with a reason for the CEO */
+        post: operations["reddit_review_router_reject_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reddit post templates and changes waiting for approval */
+        get: operations["reddit_review_router_get_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/rotation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This month's and next month's Reddit rotation */
+        get: operations["reddit_review_router_get_rotation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/schedules/{schedule_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a draft month: confirm its slots */
+        post: operations["reddit_review_router_publish_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/schedules/{schedule_id}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Work out a draft month again */
+        post: operations["reddit_review_router_regenerate_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/templates/{template_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a template (or its waiting change) */
+        post: operations["reddit_review_router_approve_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/templates/{template_id}/link-discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link a template's last Reddit post to its Discord channel */
+        post: operations["reddit_review_router_link_discord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/templates/{template_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a post to Reddit now (the admin's manual submit) */
+        post: operations["reddit_review_router_submit_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/referrals": {
         parameters: {
             query?: never;
@@ -5999,6 +6324,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/structures/pings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent structure pings and whether Discord took them */
+        get: operations["structures_router_get_structure_pings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/structures/timers": {
         parameters: {
             query?: never;
@@ -6018,6 +6360,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/structures/timers/{timer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a wrong structure timer (recorded in the audit log) */
+        delete: operations["structures_router_delete_structure_timer"];
+        options?: never;
+        head?: never;
+        /** Correct a structure timer (recorded in the audit log) */
+        patch: operations["structures_router_update_structure_timer"];
         trace?: never;
     };
     "/api/structures/timers/{timer_id}/verify": {
@@ -12939,11 +13299,51 @@ export interface components {
             user_id: number;
         };
         /**
+         * EveStructurePingResponse
+         * @description A structure ping the bot sent (or failed to send) to Discord
+         */
+        EveStructurePingResponse: {
+            /** Created At */
+            created_at?: string | null;
+            /** Discord Success */
+            discord_success: boolean;
+            /** Event Time */
+            event_time?: string | null;
+            /** Id */
+            id: number;
+            /** Notification Type */
+            notification_type: string;
+            /** Structure Id */
+            structure_id?: number | null;
+            /** Summary */
+            summary: string;
+        };
+        /**
          * EveStructureState
          * @description States for Eve Structures
          * @enum {string}
          */
         EveStructureState: "anchoring" | "armor" | "hull" | "unanchoring";
+        /**
+         * EveStructureTimerPatch
+         * @description Fix a wrong timer: only the fields sent change.
+         */
+        EveStructureTimerPatch: {
+            /** Alliance Name */
+            alliance_name?: string | null;
+            /** Corporation Name */
+            corporation_name?: string | null;
+            /** Fitting */
+            fitting?: string | null;
+            /** Name */
+            name?: string | null;
+            state?: components["schemas"]["EveStructureState"] | null;
+            /** System Name */
+            system_name?: string | null;
+            /** Timer */
+            timer?: string | null;
+            type?: components["schemas"]["EveStructureType"] | null;
+        };
         /**
          * EveStructureTimerRequest
          * @description Request model for structure timer API
@@ -13027,6 +13427,16 @@ export interface components {
          * @enum {string}
          */
         EveStructureType: "astrahus" | "fortizar" | "keepstar" | "raitaru" | "azbel" | "sotiyo" | "athanor" | "tatara" | "tenebrex_cyno_jammer" | "pharolux_cyno_beacon" | "ansiblex_jump_gate" | "orbital_skyhook" | "metenox_moon_drill" | "player_owned_customs_office" | "player_owned_starbase" | "mercenary_den";
+        /** EveTagMergeRequest */
+        EveTagMergeRequest: {
+            /** Into Tag Id */
+            into_tag_id: number;
+        };
+        /** EveTagRequest */
+        EveTagRequest: {
+            /** Tag */
+            tag: string;
+        };
         /** EveTagResponse */
         EveTagResponse: {
             /** Tag */
@@ -15633,6 +16043,84 @@ export interface components {
             /** Computed At */
             computed_at: string;
         };
+        /** HelpCategoryCreate */
+        HelpCategoryCreate: {
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /**
+             * Section
+             * @default
+             */
+            section?: string;
+            /** Title */
+            title: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+        };
+        /** HelpCategoryOrder */
+        HelpCategoryOrder: {
+            /** Ids */
+            ids: number[];
+        };
+        /** HelpCategoryPatch */
+        HelpCategoryPatch: {
+            /** Description */
+            description?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Section */
+            section?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+        };
+        /** HelpCategoryResponse */
+        HelpCategoryResponse: {
+            /** Assignee Names */
+            assignee_names: string[];
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Section */
+            section: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Title */
+            title: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+            /** Tribe Group Name */
+            tribe_group_name?: string | null;
+        };
+        /** HelpPanelPatch */
+        HelpPanelPatch: {
+            /** Channel Id */
+            channel_id: number;
+        };
+        /** HelpPanelResponse */
+        HelpPanelResponse: {
+            /** Channel Id */
+            channel_id: number;
+            /** Message Id */
+            message_id?: number | null;
+        };
+        /** HelpSettingsResponse */
+        HelpSettingsResponse: {
+            /** Categories */
+            categories: components["schemas"]["HelpCategoryResponse"][];
+            panel: components["schemas"]["HelpPanelResponse"];
+            /** Tribe Groups */
+            tribe_groups: components["schemas"]["HelpTribeGroupOption"][];
+        };
         /** HelpTicketPanelCategorySchema */
         HelpTicketPanelCategorySchema: {
             /** Code */
@@ -15687,6 +16175,17 @@ export interface components {
             status: string;
             /** Thread Id */
             thread_id: number;
+        };
+        /** HelpTribeGroupOption */
+        HelpTribeGroupOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Taken */
+            taken: boolean;
+            /** Tribe Name */
+            tribe_name: string;
         };
         /**
          * HostGroupRef
@@ -17925,6 +18424,89 @@ export interface components {
              */
             topic_subscribed?: boolean;
         };
+        /** NpsiAudienceOption */
+        NpsiAudienceOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** NpsiEventPreview */
+        NpsiEventPreview: {
+            /** Character Name */
+            character_name: string;
+            /** End Time */
+            end_time?: string | null;
+            /** Id */
+            id: number;
+            /** Skip Reason */
+            skip_reason: string;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Status */
+            status: string;
+            /** Summary */
+            summary: string;
+        };
+        /** NpsiSourceCreate */
+        NpsiSourceCreate: {
+            /** Default Audience Id */
+            default_audience_id?: number | null;
+            /** Fc Character Name */
+            fc_character_name: string;
+            /** Feed Url */
+            feed_url: string;
+            /** Name */
+            name: string;
+        };
+        /** NpsiSourceList */
+        NpsiSourceList: {
+            /** Audiences */
+            audiences: components["schemas"]["NpsiAudienceOption"][];
+            /** Sources */
+            sources: components["schemas"]["NpsiSourceResponse"][];
+        };
+        /** NpsiSourcePatch */
+        NpsiSourcePatch: {
+            /** Default Audience Id */
+            default_audience_id?: number | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Fc Character Name */
+            fc_character_name?: string | null;
+            /** Feed Url */
+            feed_url?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** NpsiSourceResponse */
+        NpsiSourceResponse: {
+            /** Default Audience Id */
+            default_audience_id?: number | null;
+            /** Default Audience Name */
+            default_audience_name?: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Event Count */
+            event_count: number;
+            /** Fc Character Name */
+            fc_character_name: string;
+            /** Feed Url */
+            feed_url: string;
+            /** Id */
+            id: number;
+            /** Last Error */
+            last_error: string;
+            /** Last Polled At */
+            last_polled_at?: string | null;
+            /** Last Success At */
+            last_success_at?: string | null;
+            /** Name */
+            name: string;
+        };
         /** NudgeQueuedResponse */
         NudgeQueuedResponse: {
             /** Pilots */
@@ -19908,6 +20490,117 @@ export interface components {
             items: components["schemas"]["RecentItemSchema"][];
             /** Window Minutes */
             window_minutes: number;
+        };
+        /** RedditActionResult */
+        RedditActionResult: {
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Ok */
+            ok: boolean;
+        };
+        /** RedditRejectRequest */
+        RedditRejectRequest: {
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /** RedditReviewDecision */
+        RedditReviewDecision: {
+            /** Changed */
+            changed: boolean;
+            /** Notified */
+            notified: boolean;
+        };
+        /** RedditReviewItem */
+        RedditReviewItem: {
+            /** Change Id */
+            change_id?: number | null;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Corporation Ticker */
+            corporation_ticker: string;
+            /** Current Content */
+            current_content: string;
+            /** Current Title */
+            current_title: string;
+            /** First Approval */
+            first_approval: boolean;
+            /** Requested Content */
+            requested_content: string;
+            /** Requested Title */
+            requested_title: string;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /** Submitted By */
+            submitted_by?: string | null;
+            /** Template Id */
+            template_id: number;
+        };
+        /** RedditReviewQueue */
+        RedditReviewQueue: {
+            /** Items */
+            items: components["schemas"]["RedditReviewItem"][];
+        };
+        /** RedditRotation */
+        RedditRotation: {
+            /** Months */
+            months: components["schemas"]["RedditRotationMonth"][];
+        };
+        /** RedditRotationMonth */
+        RedditRotationMonth: {
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+            /** Posts */
+            posts: components["schemas"]["RedditRotationPost"][];
+            /** Published At */
+            published_at?: string | null;
+            /** Schedule Id */
+            schedule_id: number;
+            /** Status */
+            status: string;
+        };
+        /** RedditRotationPost */
+        RedditRotationPost: {
+            /** Can Link To Discord */
+            can_link_to_discord: boolean;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Corporation Ticker */
+            corporation_ticker: string;
+            /** Delivery Method */
+            delivery_method: string;
+            /** Has Discord Channel */
+            has_discord_channel: boolean;
+            /** Post Id */
+            post_id: number;
+            /** Reddit Url */
+            reddit_url: string;
+            /**
+             * Scheduled For
+             * Format: date-time
+             */
+            scheduled_for: string;
+            /**
+             * Slot Date
+             * Format: date
+             */
+            slot_date: string;
+            /** Status */
+            status: string;
+            /** Template Id */
+            template_id: number;
+            /** Title */
+            title: string;
         };
         /** RedditUsernameRequest */
         RedditUsernameRequest: {
@@ -24044,6 +24737,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveTagResponse"][];
+                };
+            };
+        };
+    };
+    posts_router_create_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveTagRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    posts_router_rename_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveTagRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    posts_router_merge_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveTagMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -28636,6 +29477,170 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_npsi_sources_get_npsi_sources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiSourceList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_post_npsi_source: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpsiSourceCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiSourceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_patch_npsi_source: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpsiSourcePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiSourceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_get_npsi_source_events: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiEventPreview"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_catalog_post_ping_preview_post_ping_preview: {
         parameters: {
             query?: never;
@@ -31399,6 +32404,214 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HelpTicketResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_create_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpCategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_patch_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpCategoryPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_order_categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpCategoryOrder"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpCategoryResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_patch_panel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpPanelPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpPanelResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpSettingsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -36134,6 +37347,348 @@ export interface operations {
             };
         };
     };
+    reddit_review_router_approve_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewDecision"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_reject_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedditRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewDecision"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_get_queue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewQueue"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_get_rotation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditRotation"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_publish_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schedule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_regenerate_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schedule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_approve_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewDecision"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_link_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_submit_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     referrals_router_referral_redirect: {
         parameters: {
             query: {
@@ -36769,6 +38324,39 @@ export interface operations {
             };
         };
     };
+    structures_router_get_structure_pings: {
+        parameters: {
+            query?: {
+                failed_only?: boolean;
+                notification_type?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveStructurePingResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     structures_router_get_structure_timers: {
         parameters: {
             query?: {
@@ -36831,6 +38419,97 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_router_delete_structure_timer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_router_update_structure_timer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveStructureTimerPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveStructureTimerResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

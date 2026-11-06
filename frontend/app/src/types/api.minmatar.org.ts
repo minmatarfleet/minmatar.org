@@ -946,6 +946,8 @@ export interface FleetUsers {
 }
 
 export type StructureTimer = ApiResponse<'EveStructureTimerResponse'>
+export type StructureTimerPatch = ApiRequest<'EveStructureTimerPatch'>
+export type StructurePing = ApiResponse<'EveStructurePingResponse'>
 
 export const structure_states = [ 'anchoring', 'armor', 'hull', 'unanchoring' ] as const
 export type StructureState = typeof structure_states[number]
@@ -3206,3 +3208,15 @@ export type RedditRotationPost = ApiResponse<'RedditRotationPost'>
 export type RedditRotationMonth = ApiResponse<'RedditRotationMonth'>
 export type RedditRotation = ApiResponse<'RedditRotation'>
 export type RedditActionResult = ApiResponse<'RedditActionResult'>
+
+export type NpsiSource = ApiResponse<'NpsiSourceResponse'>
+export type NpsiSourceList = ApiResponse<'NpsiSourceList'>
+export type NpsiSourceCreate = ApiRequest<'NpsiSourceCreate'>
+export type NpsiSourcePatch = ApiRequest<'NpsiSourcePatch'>
+export type NpsiEventPreview = ApiResponse<'NpsiEventPreview'>
+
+export type HelpCategory = ApiResponse<'HelpCategoryResponse'>
+export type HelpSettings = ApiResponse<'HelpSettingsResponse'>
+export type HelpPanel = ApiResponse<'HelpPanelResponse'>
+export type HelpCategoryCreate = ApiRequest<'HelpCategoryCreate'>
+export type HelpCategoryPatch = ApiRequest<'HelpCategoryPatch'>

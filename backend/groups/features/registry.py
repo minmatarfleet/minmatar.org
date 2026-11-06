@@ -141,6 +141,28 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="structures.change_evestructuretimer",
         default_tribe_group_codes=_tribe_codes("pulse.fleet-commanders"),
     ),
+    "fleets.npsi_sources.manage": FeatureDefinition(
+        code="fleets.npsi_sources.manage",
+        label="Manage NPSI event sources",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Add, edit and disable the external calendars imported into the "
+            "fleet schedule, and preview what they imported."
+        ),
+        legacy_permission="fleets.change_npsieventsource",
+        default_tribe_group_codes=_tribe_codes("pulse.fleet-commanders"),
+    ),
+    "help_tickets.manage": FeatureDefinition(
+        code="help_tickets.manage",
+        label="Manage help ticket categories",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Add and rename help ticket categories, set who owns them and "
+            "where they are routed, and order the panel options."
+        ),
+        legacy_permission="help_tickets.change_helprequestcategory",
+        default_tribe_group_codes=_tribe_codes("pulse.technology"),
+    ),
     "moons.view": FeatureDefinition(
         code="moons.view",
         label="View moons",

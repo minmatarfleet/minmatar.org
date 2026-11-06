@@ -602,6 +602,33 @@
         }
     },
     {
+        "slug": "intel.timers.manage",
+        "path": "/intel/timers/manage/",
+        "publish": true,
+        "description": "page_finder.intel.timers.manage.description",
+        "permissions": {
+            "gate": "structures.timers.correct"
+        }
+    },
+    {
+        "slug": "fleets.npsi_sources",
+        "path": "/fleets/npsi-sources/",
+        "publish": true,
+        "description": "page_finder.fleets.npsi_sources.description",
+        "permissions": {
+            "gate": "fleets.npsi_sources.manage"
+        }
+    },
+    {
+        "slug": "help_tickets",
+        "path": "/alliance/help-tickets/",
+        "publish": true,
+        "description": "page_finder.help_tickets.description",
+        "permissions": {
+            "gate": "help_tickets.manage"
+        }
+    },
+    {
         "slug": "ships",
         "alt": "icon.ships.alt",
         "path": "/ships/",
