@@ -1,6 +1,7 @@
 """Tests for the tribe group Activity queries and their showcase highlights."""
 
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from unittest.mock import MagicMock, patch
 
 import factory
@@ -15,6 +16,7 @@ from app.test import TestCase
 from applications.models import EveCorporationApplication
 from creators.models import (
     CreatorAccount,
+    CreatorAccountStatus,
     CreatorItem,
     CreatorItemKind,
     CreatorProvider,
@@ -567,6 +569,34 @@ class PublishingTestCase(ActivityTestCase):
         self.assertEqual(highlights["latest_work"][1]["title"], "Member post")
         self.assertEqual(highlights["all_time"], {"posts": 1, "videos": 1})
         self.assertEqual(highlights["best_quarter"], 2)
+
+    def test_hidden_and_suspended_videos_stay_off_the_public_report(self):
+        item = CreatorItem.objects.get(external_id="v1")
+        item.hidden = True
+        item.save(update_fields=["hidden"])
+        highlights = publishing_highlights(self.group, self.period)
+        self.assertEqual(
+            [w["kind"] for w in highlights["latest_work"]], ["post"]
+        )
+        self.assertEqual(highlights["all_time"]["videos"], 0)
+        _, totals, _ = run_publishing_report(
+            self.group, self.period, ReportScope.ROSTER, {}
+        )
+        self.assertEqual(totals["videos"], 0)
+
+        item.hidden = False
+        item.save(update_fields=["hidden"])
+        item.account.status = CreatorAccountStatus.SUSPENDED
+        item.account.save(update_fields=["status"])
+        highlights = publishing_highlights(self.group, self.period)
+        self.assertNotIn(
+            "video", [w["kind"] for w in highlights["latest_work"]]
+        )
+        _, totals, _ = run_publishing_report(
+            self.group, self.period, ReportScope.ROSTER, {}
+        )
+        self.assertEqual(totals["videos"], 0)
+        self.assertEqual(totals["creators"], 0)
 
 
 class BlopsTestCase(ActivityTestCase):

@@ -97,6 +97,12 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'industry.order.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryorder'),
     'surveys.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('surveys.change_surveycampaign'),
     'surveys.results.view': (is_superuser) => is_superuser,
+    'learning.manage': (is_superuser, user_permissions) => is_superuser
+        || user_permissions.includes('learning.change_certificate'),
+    'skillsets.manage': (is_superuser, user_permissions) => is_superuser
+        || user_permissions.includes('eveonline.change_eveskillset'),
+    'creators.moderate': (is_superuser, user_permissions) => is_superuser
+        || user_permissions.includes('creators.change_creatoraccount'),
     'learning.admin': (is_superuser, user_permissions) => is_superuser
         || user_permissions.includes('learning.change_certificate')
         || user_permissions.includes('learning.view_certificate'),

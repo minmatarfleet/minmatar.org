@@ -162,6 +162,18 @@
             "feature": "surveys.results.view",
             "legacy": { "perms": [], "superuser": true }
         },
+        "learning.manage": {
+            "feature": "learning.manage",
+            "legacy": { "perms": ["learning.change_certificate"], "superuser": true }
+        },
+        "skillsets.manage": {
+            "feature": "skillsets.manage",
+            "legacy": { "perms": ["eveonline.change_eveskillset"], "superuser": true }
+        },
+        "creators.moderate": {
+            "feature": "creators.moderate",
+            "legacy": { "perms": ["creators.change_creatoraccount"], "superuser": true }
+        },
         "learning.admin": {
             "feature": "learning.admin",
             "legacy": { "perms": ["learning.change_certificate", "learning.view_certificate"], "superuser": true }

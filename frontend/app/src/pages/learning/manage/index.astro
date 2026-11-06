@@ -1,0 +1,61 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+const can_learning = can(gates, 'learning.manage')
+const can_skillsets = can(gates, 'skillsets.manage')
+if (!can_learning && !can_skillsets) return HTTP_403_Forbidden()
+
+const page_title = t('learning_manage.page_title')
+
+// Tabs follow SectionTabs: /learning/manage/#guides opens that tab.
+const panels = [
+    ...(can_learning ? [
+        { id: 'certificates', partial: '/partials/learning_manage_certificates_component/' },
+        { id: 'guides', partial: '/partials/learning_manage_guides_component/' },
+        { id: 'onboarding', partial: '/partials/learning_manage_onboarding_component/' },
+    ] : []),
+    ...(can_skillsets ? [
+        { id: 'skillsets', partial: '/partials/learning_manage_skillsets_component/' },
+    ] : []),
+]
+const tabs = panels.map((panel) => ({ id: panel.id, label: t(t_key("learning_manage.tab_", panel.id)) }))
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import Button from '@components/blocks/Button.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<Viewport title={page_title} meta_description={t('learning_manage.description')}>
+    <PageDefault>
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <PageTitle>{page_title}</PageTitle>
+            <Button href={translatePath('/learning/')} color="transparent" size="sm" narrow={true}>
+                {t('learning_manage.back')}
+            </Button>
+        </FlexInline>
+
+        <SectionTabs aria_label={t('learning_manage.tabs_label')} id_prefix="learning-manage" tabs={tabs}>
+            {panels.map((panel, index) =>
+                <SectionTabPanel id={panel.id} id_prefix="learning-manage" is_default={index === 0}>
+                    <LazyPartial url={translatePath(panel.partial)} trigger="reveal" swap="outerHTML">
+                        <p class="[ loading ]">{t('loading')}</p>
+                    </LazyPartial>
+                </SectionTabPanel>
+            )}
+        </SectionTabs>
+    </PageDefault>
+</Viewport>

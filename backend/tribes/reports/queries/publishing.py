@@ -7,7 +7,12 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from creators.models import CreatorAccount, CreatorItem, CreatorItemKind
+from creators.models import (
+    CreatorAccount,
+    CreatorAccountStatus,
+    CreatorItem,
+    CreatorItemKind,
+)
 from posts.models import EvePost
 from tribes.reports.queries.common import (
     period_window,
@@ -37,6 +42,8 @@ def _posts(user_ids):
 def _videos(user_ids):
     return CreatorItem.objects.filter(
         account__user_id__in=user_ids,
+        account__status=CreatorAccountStatus.APPROVED,
+        hidden=False,
         kind__in=VIDEO_KINDS,
         published_at__isnull=False,
     )
@@ -71,7 +78,10 @@ def run_publishing_report(
         "posts_published": sum(r["posts"] for r in rows),
         "videos": sum(r["videos"] for r in rows),
         "writers": sum(1 for r in rows if r["posts"]),
-        "creators": CreatorAccount.objects.filter(user_id__in=roster)
+        "creators": CreatorAccount.objects.filter(
+            user_id__in=roster,
+            status=CreatorAccountStatus.APPROVED,
+        )
         .values("user_id")
         .distinct()
         .count(),
