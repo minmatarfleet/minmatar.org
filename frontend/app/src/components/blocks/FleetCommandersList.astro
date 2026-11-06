@@ -42,9 +42,7 @@ const tiers = [...tiers_by_key.values()].sort((a, b) => a.order - b.order)
 
 const DAY = 24 * 60 * 60 * 1000
 
-function last_led_text(last_led:string | null | undefined) {
-    if (!last_led) return t('fleets.commanders.never_led')
-
+function last_led_text(last_led:string) {
     const days = Math.floor((Date.now() - new Date(last_led).getTime()) / DAY)
     if (days <= 0) return t('fleets.commanders.today')
     if (days === 1) return t('fleets.commanders.yesterday')
@@ -90,9 +88,9 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
                                     <TimezoneTags timezone={commander.timezone} />
                                 }
                                 <small>
-                                    {last_led_text(commander.last_led)}
-                                    {(commander.fleets_this_month ?? 0) > 0 &&
-                                        <> · {t('fleets.commanders.this_month_count').replace('{count}', String(commander.fleets_this_month))}</>
+                                    {t(commander.fleets_total === 1 ? 'fleets.commanders.total_one' : 'fleets.commanders.total').replace('{count}', String(commander.fleets_total ?? 0))}
+                                    {commander.last_led &&
+                                        <> · {t('fleets.commanders.last_fleet').replace('{when}', last_led_text(commander.last_led))}</>
                                     }
                                 </small>
                             </div>

@@ -43,13 +43,16 @@ def get_fleet_commanders(request):
         for row in fleets_led_by_user(led_fleets(month_start, month_end))
     }
     last_led = {}
+    total_counts = {}
     for fleet in (
         led_fleets(end=now)
         .filter(created_by_id__in=user_ids)
         .order_by("-start_time")
         .values("created_by_id", "start_time")
     ):
-        last_led.setdefault(fleet["created_by_id"], fleet["start_time"])
+        uid = fleet["created_by_id"]
+        last_led.setdefault(uid, fleet["start_time"])
+        total_counts[uid] = total_counts.get(uid, 0) + 1
 
     mains = primary_characters_for_users(user_ids)
     corp_ids = {
@@ -84,6 +87,7 @@ def get_fleet_commanders(request):
                     membership.rank.sort_order if membership.rank else None
                 ),
                 timezone=tags[uid],
+                fleets_total=total_counts.get(uid, 0),
                 fleets_this_month=month_counts.get(uid, 0),
                 last_led=last_led.get(uid),
             )

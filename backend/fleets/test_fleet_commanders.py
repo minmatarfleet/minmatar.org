@@ -42,6 +42,8 @@ class FleetCommandersTests(GroupFleetTestBase):
         self.assertEqual(set(by_user), {self.fc.id, self.member.id})
         self.assertEqual(by_user[self.fc.id]["rank_name"], "Strategic FC")
         self.assertIsNotNone(by_user[self.fc.id]["last_led"])
+        self.assertEqual(by_user[self.fc.id]["fleets_total"], 1)
+        self.assertEqual(by_user[self.member.id]["fleets_total"], 0)
         self.assertIsNone(by_user[self.member.id]["rank_name"])
         self.assertIsNone(by_user[self.member.id]["last_led"])
 

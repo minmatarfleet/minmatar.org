@@ -229,6 +229,7 @@ class EveFleetCommander(BaseModel):
     rank_name: Optional[str] = None
     rank_order: Optional[int] = None
     timezone: TimezoneTag = TimezoneTag()
+    fleets_total: int = 0
     fleets_this_month: int = 0
     last_led: Optional[datetime] = None
 

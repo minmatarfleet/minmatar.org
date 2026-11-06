@@ -12033,6 +12033,11 @@ export interface components {
              * @default 0
              */
             fleets_this_month?: number;
+            /**
+             * Fleets Total
+             * @default 0
+             */
+            fleets_total?: number;
             /** Last Led */
             last_led?: string | null;
             /** Primary Character Id */

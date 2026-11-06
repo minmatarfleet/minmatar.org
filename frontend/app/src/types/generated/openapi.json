@@ -10602,6 +10602,11 @@
             "title": "Fleets This Month",
             "type": "integer"
           },
+          "fleets_total": {
+            "default": 0,
+            "title": "Fleets Total",
+            "type": "integer"
+          },
           "last_led": {
             "anyOf": [
               {
