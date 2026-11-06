@@ -107,6 +107,10 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'industry.industrialists.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.add_evecharactertag'),
     'industry.industrialists.view#strict': (_is_superuser, user_permissions) => user_permissions.includes('eveonline.add_evecharactertag'),
     'notifications.push#strict': (_is_superuser, user_permissions) => user_permissions.includes('subscriptions.add_usersubscription'),
+    'market.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.change_evelocation'),
+    'industry.loyalty.settings': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryloyaltypoint'),
+    'buyback.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('buyback.change_evebuybacksettings'),
+    'freight.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('freight.change_evefreightroute'),
     'site.debug_pages': (is_superuser) => is_superuser,
     'characters.lookup': (is_superuser) => is_superuser,
     // PageFinder / PageBreadcrumbs: `if (user && user?.is_superuser)` showed every page.

@@ -265,6 +265,46 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         default_tribe_group_codes=_tribe_codes("supply.loyalty-points"),
     ),
+    "industry.loyalty.settings": FeatureDefinition(
+        code="industry.loyalty.settings",
+        label="Configure LP buyback",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Edit the LP corps we buy, standard and express pricing, "
+            "accounts and contacts on the LP desk Settings view."
+        ),
+        legacy_permission="industry.change_industryloyaltypoint",
+        default_tribe_group_codes=_tribe_codes("supply.loyalty-points"),
+    ),
+    "market.manage": FeatureDefinition(
+        code="market.manage",
+        label="Manage market hubs",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Add or remove market hubs, switch order-book sync, and edit "
+            "stocking expectations on Market ops."
+        ),
+        legacy_permission="eveonline.change_evelocation",
+        default_tribe_group_codes=_tribe_codes("supply.market"),
+    ),
+    "buyback.manage": FeatureDefinition(
+        code="buyback.manage",
+        label="Manage buyback settings",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Edit the buyback rates, location and accepted-items list."
+        ),
+        legacy_permission="buyback.change_evebuybacksettings",
+        default_tribe_group_codes=_tribe_codes("supply.mining"),
+    ),
+    "freight.manage": FeatureDefinition(
+        code="freight.manage",
+        label="Manage freight routes",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description="Add, edit and retire freight routes and their pricing.",
+        legacy_permission="freight.change_evefreightroute",
+        default_tribe_group_codes=_tribe_codes("supply.freighters"),
+    ),
     "applications.manage": FeatureDefinition(
         code="applications.manage",
         label="Manage corp applications",
