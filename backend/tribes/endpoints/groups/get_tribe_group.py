@@ -23,7 +23,7 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
         TribeGroup.objects.filter(pk=group_id, tribe_id=tribe_id)
         .select_related(
             "chief__eveplayer__primary_character",
-            "tribe",
+            "tribe__chief__eveplayer__primary_character",
             "group__discord_group",
         )
         .prefetch_related(

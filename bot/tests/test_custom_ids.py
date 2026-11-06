@@ -23,6 +23,12 @@ HISTORICAL_TEMPLATES = {
     "TRIBE_INVITE_DECLINE_TEMPLATE": (
         r"tribe_invite:decline:(?P<invitation_id>[0-9]+)"
     ),
+    "TRIBE_CHIEF_APPOINT_TEMPLATE": (
+        r"tribe_chief:appoint:(?P<volunteer_id>[0-9]+)"
+    ),
+    "TRIBE_CHIEF_DECLINE_TEMPLATE": (
+        r"tribe_chief:decline:(?P<volunteer_id>[0-9]+)"
+    ),
     "FLEET_INVITE_OUT_TEMPLATE": r"fleet_invite:out:(?P<invite_id>[0-9]+)",
     "HELP_TICKET_CLOSE_TEMPLATE": r"help_ticket_close:(?P<ticket_id>[0-9]+)",
     "HELP_TICKET_CLOSE_REASON_TEMPLATE": (

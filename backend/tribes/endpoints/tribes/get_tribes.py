@@ -6,6 +6,7 @@ from ninja import Router
 
 from tribes.endpoints.tribes.schemas import TribeSchema
 from tribes.endpoints.tribes.serializers import serialize_tribe
+from tribes.helpers.chiefs import ChiefResolver
 from tribes.models import Tribe
 
 PATH = ""
@@ -19,8 +20,9 @@ router = Router(tags=["Tribes"])
 
 
 def get_tribes(request):
+    resolver = ChiefResolver()
     return [
-        serialize_tribe(tribe)
+        serialize_tribe(tribe, resolver=resolver)
         for tribe in (
             Tribe.objects.filter(is_active=True)
             .select_related(

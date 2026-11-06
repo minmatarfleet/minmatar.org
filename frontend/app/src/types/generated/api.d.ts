@@ -6786,6 +6786,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/chief-volunteers/{volunteer_id}/appoint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Appoint a volunteer as chief (executor only). */
+        post: operations["tribes_endpoints_chief_volunteers_post_appoint_post_chief_volunteer_appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/chief-volunteers/{volunteer_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Not now: leave the seat open (executor only). */
+        post: operations["tribes_endpoints_chief_volunteers_post_decline_post_chief_volunteer_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/chief-volunteers/{volunteer_id}/discord-appoint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Appoint a volunteer from the executor's Discord DM (bot). */
+        post: operations["tribes_endpoints_chief_volunteers_post_discord_appoint_post_chief_volunteer_discord_appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/chief-volunteers/{volunteer_id}/discord-decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Not now, from the executor's Discord DM (bot). */
+        post: operations["tribes_endpoints_chief_volunteers_post_discord_decline_post_chief_volunteer_discord_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/current": {
         parameters: {
             query?: never;
@@ -7078,6 +7146,24 @@ export interface paths {
         get: operations["tribes_endpoints_tribes_get_tribe_about_get_tribe_about"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/chief-volunteers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending chief volunteers for an open seat (executor only). */
+        get: operations["tribes_endpoints_chief_volunteers_seat_volunteers_get_chief_volunteers"];
+        put?: never;
+        /** Volunteer to lead a tribe or group that has no chief. */
+        post: operations["tribes_endpoints_chief_volunteers_seat_volunteers_post_chief_volunteer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9896,6 +9982,39 @@ export interface components {
             /** Token State */
             token_state: string;
         };
+        /** ChiefVolunteerSchema */
+        ChiefVolunteerSchema: {
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /** Created At */
+            created_at: string;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Seat Name */
+            seat_name: string;
+            /** Status */
+            status: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+            /** Tribe Id */
+            tribe_id: number;
+            /** Tribe Name */
+            tribe_name: string;
+            /** User Id */
+            user_id: number;
+        };
         /** ClaimLoyaltyMarketOrderRequest */
         ClaimLoyaltyMarketOrderRequest: {
             /** Amount */
@@ -11591,6 +11710,11 @@ export interface components {
             name: string;
             /** Type */
             type: string;
+        };
+        /** DiscordChiefActionRequest */
+        DiscordChiefActionRequest: {
+            /** Discord User Id */
+            discord_user_id: number;
         };
         /** DiscordDeclineRequest */
         DiscordDeclineRequest: {
@@ -22038,6 +22162,7 @@ export interface components {
         };
         /** TribeGroupSchema */
         TribeGroupSchema: {
+            acting_chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
              * Allow Alliance Posts
              * @default true
@@ -22058,6 +22183,11 @@ export interface components {
              * @default false
              */
             can_apply?: boolean;
+            /**
+             * Can Appoint Chief
+             * @default false
+             */
+            can_appoint_chief?: boolean;
             /**
              * Can Create Events
              * @default false
@@ -22080,6 +22210,11 @@ export interface components {
             can_schedule_fleets?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
+             * Chief Is Interim
+             * @default false
+             */
+            chief_is_interim?: boolean;
+            /**
              * Code
              * @default
              */
@@ -22097,6 +22232,11 @@ export interface components {
             discord_role_name?: string | null;
             /** Effective Discord Channel Id */
             effective_discord_channel_id?: string | null;
+            /**
+             * Has Volunteered
+             * @default false
+             */
+            has_volunteered?: boolean;
             /** Id */
             id: number;
             /** Is Active */
@@ -22273,9 +22413,20 @@ export interface components {
         };
         /** TribeSchema */
         TribeSchema: {
+            acting_chief?: components["schemas"]["CharacterRefSchema"] | null;
             /** Banner Url */
             banner_url?: string | null;
+            /**
+             * Can Appoint Chief
+             * @default false
+             */
+            can_appoint_chief?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
+            /**
+             * Chief Is Interim
+             * @default false
+             */
+            chief_is_interim?: boolean;
             /** Content */
             content: string;
             /** Description */
@@ -22287,6 +22438,11 @@ export interface components {
              * @default 0
              */
             group_count?: number;
+            /**
+             * Has Volunteered
+             * @default false
+             */
+            has_volunteered?: boolean;
             /** Id */
             id: number;
             /** Image Url */
@@ -22573,6 +22729,16 @@ export interface components {
              * @default []
              */
             officer_corp_ids?: number[];
+        };
+        /** VolunteerRequest */
+        VolunteerRequest: {
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
         };
         /** WarzoneBriefingResponse */
         WarzoneBriefingResponse: {
@@ -38423,6 +38589,278 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_chief_volunteers_post_appoint_post_chief_volunteer_appoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                volunteer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefVolunteerSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_volunteers_post_decline_post_chief_volunteer_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                volunteer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefVolunteerSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_volunteers_post_discord_appoint_post_chief_volunteer_discord_appoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                volunteer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordChiefActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefVolunteerSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_volunteers_post_discord_decline_post_chief_volunteer_discord_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                volunteer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordChiefActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefVolunteerSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     tribes_endpoints_tribes_get_current_tribes_get_current_tribes: {
         parameters: {
             query?: never;
@@ -39169,6 +39607,111 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_volunteers_seat_volunteers_get_chief_volunteers: {
+        parameters: {
+            query?: {
+                tribe_group_id?: number | null;
+            };
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefVolunteerSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_volunteers_seat_volunteers_post_chief_volunteer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VolunteerRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefVolunteerSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

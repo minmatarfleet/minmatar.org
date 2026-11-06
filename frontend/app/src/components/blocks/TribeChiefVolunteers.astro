@@ -1,0 +1,133 @@
+---
+/** The executor's list of pilots offering to lead an open seat. */
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { TribeChiefVolunteer } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    tribe_id:       number;
+    /** Null for the tribe chief seat. */
+    group_id:       number | null;
+    seat_name:      string;
+    volunteers:     TribeChiefVolunteer[];
+    [propName: string]: any;
+}
+
+const {
+    tribe_id,
+    group_id,
+    seat_name,
+    volunteers,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { eve_day_short } from '@helpers/date'
+import { query_string } from '@helpers/string'
+
+const LIST_ID = 'chief-volunteers'
+const partial_url = (volunteer_id: number, action: 'appoint' | 'decline') =>
+    translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
+        tribe_id,
+        ...(group_id !== null ? { group_id } : {}),
+        seat_name,
+        volunteer_id,
+        action,
+    })}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+---
+
+<div
+    id={LIST_ID}
+    class:list={['[ tribe-chief-volunteers ]', Astro.props.class]}
+    {...attributes}
+>
+    <Flexblock gap="var(--space-s)">
+        <h4 class="[ group-title ]">{t('tribes.chief.volunteers')}</h4>
+        {volunteers.length === 0 ?
+            <EmptyState title={t('tribes.chief.no_volunteers')} />
+            :
+            <ul class="[ tribe-chief-volunteers__list ]" role="list">
+                {volunteers.map((volunteer) =>
+                    <li class="[ tribe-chief-volunteers__row ]">
+                        {volunteer.character_id ?
+                            <PilotBadge
+                                character_id={volunteer.character_id}
+                                character_name={volunteer.character_name}
+                                size={32}
+                                centered={true}
+                            >
+                                <small class="[ text-muted ]">{eve_day_short(lang, volunteer.created_at)}</small>
+                            </PilotBadge>
+                            :
+                            <span>{volunteer.character_name}</span>
+                        }
+                        <p class="[ tribe-chief-volunteers__note ]">
+                            {volunteer.note ? `“${volunteer.note}”` : ''}
+                        </p>
+                        <FlexInline gap="var(--space-xs)">
+                            <Button
+                                size="sm"
+                                color="transparent"
+                                hx-post={partial_url(volunteer.id, 'decline')}
+                                hx-target={`#${LIST_ID}`}
+                                hx-indicator=".loader"
+                                hx-swap="outerHTML transition:true"
+                                x-on:click="$el.setAttribute('disabled','')"
+                            >
+                                {t('tribes.chief.not_now')}
+                            </Button>
+                            <ButtonConfirm label={t('tribes.chief.appoint')} size="sm" color="green">
+                                <Button
+                                    size="sm"
+                                    color="green"
+                                    title={t('tribes.chief.appoint_confirm').replace('{name}', volunteer.character_name).replace('{seat}', seat_name)}
+                                    hx-post={partial_url(volunteer.id, 'appoint')}
+                                    hx-target={`#${LIST_ID}`}
+                                    hx-indicator=".loader"
+                                    hx-swap="outerHTML transition:true"
+                                    x-on:click="$el.setAttribute('disabled','')"
+                                >
+                                    {t('confirm')}
+                                </Button>
+                            </ButtonConfirm>
+                        </FlexInline>
+                    </li>
+                )}
+            </ul>
+        }
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .tribe-chief-volunteers__list {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+    }
+
+    .tribe-chief-volunteers__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-m);
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--hairline);
+    }
+
+    .tribe-chief-volunteers__note {
+        flex: 999 1 240px;
+        min-width: 0;
+        color: var(--text-muted);
+    }
+</style>

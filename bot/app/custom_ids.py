@@ -31,6 +31,10 @@ NPSI_TRACK_PREFIX = "npsi:track:"
 # Tribe group invite DMs (backend: tribes/helpers/invitation_discord.py)
 TRIBE_INVITE_DECLINE_PREFIX = "tribe_invite:decline:"
 
+# Chief volunteer DMs to the executor (backend: tribes/helpers/chief_discord.py)
+TRIBE_CHIEF_APPOINT_PREFIX = "tribe_chief:appoint:"
+TRIBE_CHIEF_DECLINE_PREFIX = "tribe_chief:decline:"
+
 # Fleet invite DMs (backend: fleets/helpers/private_fleet_discord.py)
 FLEET_INVITE_OUT_PREFIX = "fleet_invite:out:"
 FLEET_INVITE_STOP_PREFIX = "fleet_invite:stop:"
@@ -62,6 +66,12 @@ NPSI_PREPING_TEMPLATE = template(NPSI_PREPING_PREFIX, "event_id")
 NPSI_TRACK_TEMPLATE = template(NPSI_TRACK_PREFIX, "event_id")
 TRIBE_INVITE_DECLINE_TEMPLATE = template(
     TRIBE_INVITE_DECLINE_PREFIX, "invitation_id"
+)
+TRIBE_CHIEF_APPOINT_TEMPLATE = template(
+    TRIBE_CHIEF_APPOINT_PREFIX, "volunteer_id"
+)
+TRIBE_CHIEF_DECLINE_TEMPLATE = template(
+    TRIBE_CHIEF_DECLINE_PREFIX, "volunteer_id"
 )
 FLEET_INVITE_OUT_TEMPLATE = template(FLEET_INVITE_OUT_PREFIX, "invite_id")
 FLEET_INVITE_STOP_TEMPLATE = template(FLEET_INVITE_STOP_PREFIX, "invite_id")

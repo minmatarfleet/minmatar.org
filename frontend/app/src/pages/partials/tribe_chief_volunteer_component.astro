@@ -1,0 +1,67 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+// no-error-refetch: a volunteer action; a failure shows in an alert, and a failed
+// reload of the seat drops the banner until the page is reloaded.
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect, login_url } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_param = Astro.url.searchParams.get('group_id')
+const group_id = group_param ? parseInt(group_param) : null
+
+if (isNaN(tribe_id) || (group_id !== null && isNaN(group_id)))
+    return HTTP_400_Bad_Request()
+
+import type { Tribe, TribeGroup } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import { get_tribe, get_tribe_group, volunteer_for_chief } from '@helpers/api.minmatar.org/tribes'
+import { help_wanted_props } from '@helpers/tribe_chiefs'
+
+let alert: Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    try {
+        const data = await Astro.request.formData()
+        const note = ((data.get('note') as string | null) ?? '').trim()
+        await volunteer_for_chief(auth_token, tribe_id, group_id, note)
+        alert = { title: t('tribes.chief.volunteer'), content: t('tribes.chief.sent_alert') }
+    } catch (error) {
+        alert = { title: t('tribes.chief.sending'), content: error.message }
+    }
+}
+
+let tribe: Tribe | null = null
+let group: TribeGroup | null = null
+
+try {
+    ;[tribe, group] = await Promise.all([
+        get_tribe(tribe_id, auth_token),
+        group_id !== null ? get_tribe_group(tribe_id, group_id, auth_token) : Promise.resolve(null),
+    ])
+} catch {
+    tribe = null
+}
+
+const seat = group ?? tribe
+
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
+---
+
+{alert && <ShowAlert alert={alert} />}
+
+{tribe && seat?.chief_is_interim ?
+    <TribeChiefHelpWanted
+        {...help_wanted_props(tribe, group)}
+        is_auth={true}
+        login_href={login_url(Astro)}
+    />
+    :
+    <div id="tribe-chief-help-wanted" hidden></div>
+}
