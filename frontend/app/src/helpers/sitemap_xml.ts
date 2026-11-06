@@ -60,6 +60,7 @@ export function getPublicSitemapPagePaths(): string[] {
 
     // The page finder's short campaign links and /alliance/story/ redirect here.
     for (const campaign of campaigns) {
+        if (campaign.hidden) continue
         paths.add(campaign.path)
     }
 

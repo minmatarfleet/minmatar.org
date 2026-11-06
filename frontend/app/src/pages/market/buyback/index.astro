@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_buyback_settings } from '@helpers/api.minmatar.org/buybacks'
+import { get_gates, can } from '@helpers/gates'
 import type { BuybackSettings } from '@dtypes/api.minmatar.org'
 
 let settings: BuybackSettings | null = null
@@ -12,6 +13,13 @@ try {
     settings = await get_buyback_settings()
 } catch (error) {
     fetch_error = error as Error
+}
+
+let can_manage_buyback = false
+try {
+    can_manage_buyback = can(await get_gates(Astro), 'buyback.manage')
+} catch (error) {
+    console.log(error)
 }
 
 import type { Alert } from '@dtypes/layout_components'
@@ -82,6 +90,11 @@ const leading_text = settings?.leading_text?.trim() || ''
                     <Button href={translatePath('/market/buyback/contracts/')}>
                         {t('view_buyback_contracts')}
                     </Button>
+                    {can_manage_buyback &&
+                        <Button href={translatePath('/market/buyback/settings/')} color="transparent">
+                            {t('buyback.settings.link')}
+                        </Button>
+                    }
                 </PageActions>
             </FlexInline>
         </Flexblock>

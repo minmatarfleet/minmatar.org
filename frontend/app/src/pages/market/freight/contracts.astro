@@ -3,6 +3,14 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
+import { get_gates, can } from '@helpers/gates'
+
+let can_manage_routes = false
+try {
+    can_manage_routes = can(await get_gates(Astro), 'freight.manage')
+} catch (error) {
+    console.log(error)
+}
 
 const location_name = Astro.url.searchParams.get('location_name')
 const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${location_name ? `?${query_string({
@@ -16,6 +24,7 @@ import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Button from '@components/blocks/Button.astro';
 
 import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleton.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
@@ -80,6 +89,11 @@ const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0
                     <small x-show="last_updated_text" x-text="last_updated_text"></small>
                 </Flexblock>
             </Flexblock>
+            {can_manage_routes &&
+                <Button href={translatePath('/market/freight/routes/')} color="transparent">
+                    {t('freight.routes.link')}
+                </Button>
+            }
         </FlexInline>
 
         <LazyPartial

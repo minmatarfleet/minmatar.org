@@ -172,6 +172,22 @@
             "parity": "custom",
             "note": "Legacy check is superuser or active pulse.thinkspeak membership (is_thinkspeak_member)."
         },
+        "market.manage": {
+            "feature": "market.manage",
+            "legacy": { "perms": ["eveonline.change_evelocation"], "superuser": true }
+        },
+        "industry.loyalty.settings": {
+            "feature": "industry.loyalty.settings",
+            "legacy": { "perms": ["industry.change_industryloyaltypoint"], "superuser": true }
+        },
+        "buyback.manage": {
+            "feature": "buyback.manage",
+            "legacy": { "perms": ["buyback.change_evebuybacksettings"], "superuser": true }
+        },
+        "freight.manage": {
+            "feature": "freight.manage",
+            "legacy": { "perms": ["freight.change_evefreightroute"], "superuser": true }
+        },
         "site.debug_pages": {
             "feature": "site.debug_pages",
             "legacy": { "perms": [], "superuser": true }

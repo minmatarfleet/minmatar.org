@@ -17,6 +17,53 @@
         "title": "AcceptInvitationRequest",
         "type": "object"
       },
+      "AccountCreateRequest": {
+        "properties": {
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "isk_per_lp": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isk Per Lp"
+          },
+          "loyalty_point_id": {
+            "title": "Loyalty Point Id",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
+          "role": {
+            "default": "seller",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loyalty_point_id",
+          "name"
+        ],
+        "title": "AccountCreateRequest",
+        "type": "object"
+      },
       "AccountMoveRequest": {
         "properties": {
           "account": {
@@ -116,6 +163,86 @@
           "accounts"
         ],
         "title": "AccountOptionsResponse",
+        "type": "object"
+      },
+      "AccountPatchRequest": {
+        "properties": {
+          "clear_isk_per_lp": {
+            "default": false,
+            "title": "Clear Isk Per Lp",
+            "type": "boolean"
+          },
+          "corporation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Name"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "isk_per_lp": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isk Per Lp"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "title": "AccountPatchRequest",
         "type": "object"
       },
       "AccountResponse": {
@@ -5874,6 +6001,88 @@
         "title": "CompleteLearningResponse",
         "type": "object"
       },
+      "ContactCreateRequest": {
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Character Name",
+            "type": "string"
+          },
+          "discord_username": {
+            "default": "",
+            "title": "Discord Username",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "character_name"
+        ],
+        "title": "ContactCreateRequest",
+        "type": "object"
+      },
+      "ContactPatchRequest": {
+        "properties": {
+          "character_name": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "discord_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Username"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "ContactPatchRequest",
+        "type": "object"
+      },
       "CopyEveFleetRequest": {
         "description": "The copy's start time; every other setting comes from the fleet.",
         "properties": {
@@ -9621,6 +9830,136 @@
         "title": "CreatorLiveSchema",
         "type": "object"
       },
+      "CurrencyCreateRequest": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "default_isk_per_lp": {
+            "default": 800,
+            "minimum": 0,
+            "title": "Default Isk Per Lp",
+            "type": "integer"
+          },
+          "express_isk_per_lp": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Express Isk Per Lp"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "corporation_id"
+        ],
+        "title": "CurrencyCreateRequest",
+        "type": "object"
+      },
+      "CurrencyPatchRequest": {
+        "properties": {
+          "allow_buy": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Buy"
+          },
+          "allow_sell": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allow Sell"
+          },
+          "clear_express": {
+            "default": false,
+            "title": "Clear Express",
+            "type": "boolean"
+          },
+          "default_isk_per_lp": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Isk Per Lp"
+          },
+          "express_isk_per_lp": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Express Isk Per Lp"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "CurrencyPatchRequest",
+        "type": "object"
+      },
       "CurrentFleetWindowResponse": {
         "properties": {
           "window": {
@@ -10126,6 +10465,24 @@
           "role"
         ],
         "title": "DoctrineFittingResponse",
+        "type": "object"
+      },
+      "DoctrineOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "DoctrineOption",
         "type": "object"
       },
       "DoctrineResponse": {
@@ -15259,6 +15616,40 @@
         "title": "FittingBuySwapSchema",
         "type": "object"
       },
+      "FittingExpectationRow": {
+        "properties": {
+          "current": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "fitting_name": {
+            "title": "Fitting Name",
+            "type": "string"
+          },
+          "tracked": {
+            "title": "Tracked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fitting_id",
+          "fitting_name",
+          "tracked"
+        ],
+        "title": "FittingExpectationRow",
+        "type": "object"
+      },
       "FittingResponse": {
         "description": "Fittings API Response",
         "properties": {
@@ -19212,6 +19603,37 @@
         "title": "FreightContractsStatsResponse",
         "type": "object"
       },
+      "FromDoctrineRequest": {
+        "properties": {
+          "doctrine_id": {
+            "title": "Doctrine Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doctrine_id"
+        ],
+        "title": "FromDoctrineRequest",
+        "type": "object"
+      },
+      "FromDoctrineResponse": {
+        "properties": {
+          "already_tracked": {
+            "title": "Already Tracked",
+            "type": "integer"
+          },
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "created",
+          "already_tracked"
+        ],
+        "title": "FromDoctrineResponse",
+        "type": "object"
+      },
       "GangRequest": {
         "properties": {
           "note": {
@@ -20311,6 +20733,210 @@
           "tribe_name"
         ],
         "title": "HostGroupRef",
+        "type": "object"
+      },
+      "HubCreateRequest": {
+        "properties": {
+          "is_structure": {
+            "default": true,
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
+          },
+          "region_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Id"
+          },
+          "short_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name"
+          },
+          "solar_system_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solar System Id"
+          },
+          "solar_system_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solar System Name"
+          }
+        },
+        "required": [
+          "location_id"
+        ],
+        "title": "HubCreateRequest",
+        "type": "object"
+      },
+      "HubExpectationsResponse": {
+        "properties": {
+          "contracts": {
+            "items": {
+              "$ref": "#/components/schemas/FittingExpectationRow"
+            },
+            "title": "Contracts",
+            "type": "array"
+          },
+          "doctrines": {
+            "items": {
+              "$ref": "#/components/schemas/DoctrineOption"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "fittings": {
+            "items": {
+              "$ref": "#/components/schemas/FittingExpectationRow"
+            },
+            "title": "Fittings",
+            "type": "array"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemExpectationRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "location_id",
+          "fittings",
+          "contracts",
+          "items",
+          "doctrines"
+        ],
+        "title": "HubExpectationsResponse",
+        "type": "object"
+      },
+      "HubPatchRequest": {
+        "properties": {
+          "market_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Active"
+          },
+          "prices_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices Active"
+          }
+        },
+        "title": "HubPatchRequest",
+        "type": "object"
+      },
+      "HubResponse": {
+        "properties": {
+          "contract_expectations": {
+            "title": "Contract Expectations",
+            "type": "integer"
+          },
+          "fitting_expectations": {
+            "title": "Fitting Expectations",
+            "type": "integer"
+          },
+          "item_expectations": {
+            "title": "Item Expectations",
+            "type": "integer"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "location_name": {
+            "title": "Location Name",
+            "type": "string"
+          },
+          "market_active": {
+            "title": "Market Active",
+            "type": "boolean"
+          },
+          "price_baseline": {
+            "title": "Price Baseline",
+            "type": "boolean"
+          },
+          "prices_active": {
+            "title": "Prices Active",
+            "type": "boolean"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "location_name",
+          "short_name",
+          "solar_system_name",
+          "market_active",
+          "prices_active",
+          "price_baseline",
+          "fitting_expectations",
+          "contract_expectations",
+          "item_expectations"
+        ],
+        "title": "HubResponse",
         "type": "object"
       },
       "HygieneCounts": {
@@ -21793,6 +22419,83 @@
         "title": "InviteWave",
         "type": "object"
       },
+      "ItemCreateRequest": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "category"
+        ],
+        "title": "ItemCreateRequest",
+        "type": "object"
+      },
+      "ItemExpectationRequest": {
+        "properties": {
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id"
+        ],
+        "title": "ItemExpectationRequest",
+        "type": "object"
+      },
+      "ItemExpectationRow": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name"
+        ],
+        "title": "ItemExpectationRow",
+        "type": "object"
+      },
+      "ItemPatchRequest": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          }
+        },
+        "title": "ItemPatchRequest",
+        "type": "object"
+      },
       "JitaCheckPollResponse": {
         "properties": {
           "check": {
@@ -22573,6 +23276,24 @@
           "quantity"
         ],
         "title": "LocationFittingExpectationResponse",
+        "type": "object"
+      },
+      "LocationOption": {
+        "properties": {
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "name"
+        ],
+        "title": "LocationOption",
         "type": "object"
       },
       "LocationResponse": {
@@ -23886,6 +24607,221 @@
           "lp"
         ],
         "title": "LoyaltyOrderStatsWeek",
+        "type": "object"
+      },
+      "ManageItem": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "category",
+          "active"
+        ],
+        "title": "ManageItem",
+        "type": "object"
+      },
+      "ManageRoute": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "collateral_modifier": {
+            "title": "Collateral Modifier",
+            "type": "number"
+          },
+          "days_to_complete": {
+            "title": "Days To Complete",
+            "type": "integer"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expiration_days": {
+            "title": "Expiration Days",
+            "type": "integer"
+          },
+          "fixed_fee_millions": {
+            "title": "Fixed Fee Millions",
+            "type": "number"
+          },
+          "isk_per_m3": {
+            "title": "Isk Per M3",
+            "type": "integer"
+          },
+          "max_collateral": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Collateral"
+          },
+          "max_m3": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max M3"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "route_id": {
+            "title": "Route Id",
+            "type": "integer"
+          },
+          "route_type": {
+            "title": "Route Type",
+            "type": "string"
+          },
+          "xl_fee_millions": {
+            "title": "Xl Fee Millions",
+            "type": "number"
+          }
+        },
+        "required": [
+          "route_id",
+          "origin",
+          "destination",
+          "route_type",
+          "isk_per_m3",
+          "collateral_modifier",
+          "fixed_fee_millions",
+          "xl_fee_millions",
+          "max_m3",
+          "max_collateral",
+          "expiration_days",
+          "days_to_complete",
+          "active"
+        ],
+        "title": "ManageRoute",
+        "type": "object"
+      },
+      "ManageRoutes": {
+        "properties": {
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/RouteLocation"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/ManageRoute"
+            },
+            "title": "Routes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routes",
+          "locations"
+        ],
+        "title": "ManageRoutes",
+        "type": "object"
+      },
+      "ManageSettings": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "demand_jita_buy": {
+            "title": "Demand Jita Buy",
+            "type": "number"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ManageItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationOption"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "ore_refine": {
+            "title": "Ore Refine",
+            "type": "number"
+          },
+          "surplus_jita_buy": {
+            "title": "Surplus Jita Buy",
+            "type": "number"
+          }
+        },
+        "required": [
+          "active",
+          "location_id",
+          "ore_refine",
+          "demand_jita_buy",
+          "surplus_jita_buy",
+          "locations",
+          "categories",
+          "items"
+        ],
+        "title": "ManageSettings",
         "type": "object"
       },
       "ManagedCorporationRequirements": {
@@ -31998,6 +32934,241 @@
         "title": "RosterTimezoneCount",
         "type": "object"
       },
+      "RouteCreateRequest": {
+        "properties": {
+          "active": {
+            "default": true,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "collateral_modifier": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Collateral Modifier",
+            "type": "number"
+          },
+          "days_to_complete": {
+            "default": 3,
+            "minimum": 1,
+            "title": "Days To Complete",
+            "type": "integer"
+          },
+          "destination_location_id": {
+            "title": "Destination Location Id",
+            "type": "integer"
+          },
+          "expiration_days": {
+            "default": 3,
+            "minimum": 1,
+            "title": "Expiration Days",
+            "type": "integer"
+          },
+          "fixed_fee_millions": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Fixed Fee Millions",
+            "type": "number"
+          },
+          "isk_per_m3": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Isk Per M3",
+            "type": "integer"
+          },
+          "max_collateral": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Collateral"
+          },
+          "max_m3": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max M3"
+          },
+          "origin_location_id": {
+            "title": "Origin Location Id",
+            "type": "integer"
+          },
+          "route_type": {
+            "default": "rate",
+            "title": "Route Type",
+            "type": "string"
+          },
+          "xl_fee_millions": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Xl Fee Millions",
+            "type": "number"
+          }
+        },
+        "required": [
+          "origin_location_id",
+          "destination_location_id"
+        ],
+        "title": "RouteCreateRequest",
+        "type": "object"
+      },
+      "RouteLocation": {
+        "properties": {
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "name",
+          "short_name"
+        ],
+        "title": "RouteLocation",
+        "type": "object"
+      },
+      "RoutePatchRequest": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "collateral_modifier": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collateral Modifier"
+          },
+          "days_to_complete": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days To Complete"
+          },
+          "expiration_days": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiration Days"
+          },
+          "fixed_fee_millions": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fixed Fee Millions"
+          },
+          "isk_per_m3": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isk Per M3"
+          },
+          "max_collateral": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Collateral"
+          },
+          "max_m3": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max M3"
+          },
+          "route_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route Type"
+          },
+          "xl_fee_millions": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xl Fee Millions"
+          }
+        },
+        "title": "RoutePatchRequest",
+        "type": "object"
+      },
       "ScheduleChange": {
         "properties": {
           "created_at": {
@@ -32435,6 +33606,175 @@
         "title": "SetMyShipVolunteersRequest",
         "type": "object"
       },
+      "SettingsAccount": {
+        "properties": {
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsContact"
+            },
+            "title": "Contacts",
+            "type": "array"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "isk_per_lp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isk Per Lp"
+          },
+          "loyalty_point_id": {
+            "title": "Loyalty Point Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "loyalty_point_id",
+          "name",
+          "role",
+          "isk_per_lp",
+          "corporation_name",
+          "notes",
+          "is_active",
+          "contacts"
+        ],
+        "title": "SettingsAccount",
+        "type": "object"
+      },
+      "SettingsContact": {
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "discord_username": {
+            "title": "Discord Username",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "account_id",
+          "character_name",
+          "discord_username",
+          "notes",
+          "is_active"
+        ],
+        "title": "SettingsContact",
+        "type": "object"
+      },
+      "SettingsCurrency": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsAccount"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "allow_buy": {
+            "title": "Allow Buy",
+            "type": "boolean"
+          },
+          "allow_sell": {
+            "title": "Allow Sell",
+            "type": "boolean"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "default_isk_per_lp": {
+            "title": "Default Isk Per Lp",
+            "type": "integer"
+          },
+          "express_isk_per_lp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Express Isk Per Lp"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "corporation_id",
+          "default_isk_per_lp",
+          "express_isk_per_lp",
+          "is_active",
+          "allow_buy",
+          "allow_sell",
+          "notes",
+          "accounts"
+        ],
+        "title": "SettingsCurrency",
+        "type": "object"
+      },
       "SettingsOrderOut": {
         "properties": {
           "id": {
@@ -32461,6 +33801,78 @@
           "points"
         ],
         "title": "SettingsOrderOut",
+        "type": "object"
+      },
+      "SettingsPatchRequest": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "clear_location": {
+            "default": false,
+            "title": "Clear Location",
+            "type": "boolean"
+          },
+          "demand_jita_buy": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demand Jita Buy"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "ore_refine": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ore Refine"
+          },
+          "surplus_jita_buy": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surplus Jita Buy"
+          }
+        },
+        "title": "SettingsPatchRequest",
         "type": "object"
       },
       "SettingsStructureOut": {
@@ -34390,6 +35802,19 @@
         ],
         "title": "TokenType",
         "type": "string"
+      },
+      "TrackedRequest": {
+        "properties": {
+          "tracked": {
+            "title": "Tracked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tracked"
+        ],
+        "title": "TrackedRequest",
+        "type": "object"
       },
       "TrackedVoiceChannelResponse": {
         "properties": {
@@ -37083,6 +38508,42 @@
           }
         },
         "title": "TribesMonthlyResponse",
+        "type": "object"
+      },
+      "TypeRow": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name"
+        ],
+        "title": "TypeRow",
+        "type": "object"
+      },
+      "TypeSearchRow": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name"
+        ],
+        "title": "TypeSearchRow",
         "type": "object"
       },
       "TypeStat": {
@@ -41004,6 +42465,357 @@
           }
         },
         "summary": "Get Ledger",
+        "tags": [
+          "Buyback",
+          "Buyback"
+        ]
+      }
+    },
+    "/api/buyback/manage/items": {
+      "post": {
+        "operationId": "buyback_endpoints_manage_post_manage_item_post_manage_item",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add an accepted buyback item",
+        "tags": [
+          "Buyback",
+          "Buyback"
+        ]
+      }
+    },
+    "/api/buyback/manage/items/{type_id}": {
+      "delete": {
+        "operationId": "buyback_endpoints_manage_delete_manage_item_delete_manage_item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove an accepted buyback item",
+        "tags": [
+          "Buyback",
+          "Buyback"
+        ]
+      },
+      "patch": {
+        "operationId": "buyback_endpoints_manage_patch_manage_item_patch_manage_item",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit an accepted buyback item",
+        "tags": [
+          "Buyback",
+          "Buyback"
+        ]
+      }
+    },
+    "/api/buyback/manage/settings": {
+      "get": {
+        "operationId": "buyback_endpoints_manage_get_manage_settings_get_manage_settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Buyback settings and accepted items for the editor",
+        "tags": [
+          "Buyback",
+          "Buyback"
+        ]
+      },
+      "patch": {
+        "operationId": "buyback_endpoints_manage_patch_manage_settings_patch_manage_settings",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit buyback rates and location",
+        "tags": [
+          "Buyback",
+          "Buyback"
+        ]
+      }
+    },
+    "/api/buyback/manage/types": {
+      "get": {
+        "operationId": "buyback_endpoints_manage_get_manage_types_get_manage_types",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TypeRow"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Search item types for the accepted-items editor",
         "tags": [
           "Buyback",
           "Buyback"
@@ -52259,6 +54071,188 @@
         ]
       }
     },
+    "/api/freight/manage/routes": {
+      "get": {
+        "operationId": "freight_endpoints_manage_get_manage_routes_get_manage_routes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageRoutes"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Freight routes for the editor",
+        "tags": [
+          "Freight",
+          "Freight"
+        ]
+      },
+      "post": {
+        "operationId": "freight_endpoints_manage_post_manage_route_post_manage_route",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageRoute"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add a freight route",
+        "tags": [
+          "Freight",
+          "Freight"
+        ]
+      }
+    },
+    "/api/freight/manage/routes/{route_id}": {
+      "patch": {
+        "operationId": "freight_endpoints_manage_patch_manage_route_patch_manage_route",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "title": "Route Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutePatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageRoute"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit or retire a freight route",
+        "tags": [
+          "Freight",
+          "Freight"
+        ]
+      }
+    },
     "/api/freight/routes": {
       "get": {
         "operationId": "freight_router_get_routes",
@@ -53623,6 +55617,504 @@
           }
         ],
         "summary": "Acknowledge LP/ISK settlement from a Discord button",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings": {
+      "get": {
+        "operationId": "industry_endpoints_loyalty_get_settings_get_settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SettingsCurrency"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "LP buyback configuration: corps, accounts and contacts",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/accounts": {
+      "post": {
+        "operationId": "industry_endpoints_loyalty_post_settings_account_post_settings_account",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsAccount"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add an LP account",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/accounts/{account_id}": {
+      "patch": {
+        "operationId": "industry_endpoints_loyalty_patch_settings_account_patch_settings_account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "title": "Account Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsAccount"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit an LP account",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/contacts": {
+      "post": {
+        "operationId": "industry_endpoints_loyalty_post_settings_contact_post_settings_contact",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsContact"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add an LP account contact",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/contacts/{contact_id}": {
+      "delete": {
+        "operationId": "industry_endpoints_loyalty_delete_settings_contact_delete_settings_contact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "title": "Contact Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove an LP account contact",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      },
+      "patch": {
+        "operationId": "industry_endpoints_loyalty_patch_settings_contact_patch_settings_contact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contact_id",
+            "required": true,
+            "schema": {
+              "title": "Contact Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsContact"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit an LP account contact",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/currencies": {
+      "post": {
+        "operationId": "industry_endpoints_loyalty_post_settings_currency_post_settings_currency",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrencyCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsCurrency"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add an LP corp",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/currencies/{currency_id}": {
+      "patch": {
+        "operationId": "industry_endpoints_loyalty_patch_settings_currency_patch_settings_currency",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "currency_id",
+            "required": true,
+            "schema": {
+              "title": "Currency Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrencyPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsCurrency"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit an LP corp",
         "tags": [
           "Industry",
           "Industry - Loyalty"
@@ -58300,6 +60792,699 @@
           }
         },
         "summary": "Get Market Health Endpoint",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs": {
+      "get": {
+        "operationId": "market_endpoints_hubs_list_hubs_list_hubs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HubResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List market hubs",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      },
+      "post": {
+        "operationId": "market_endpoints_hubs_add_hub_add_hub",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HubCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HubResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add a market hub (or switch an existing location on)",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs-type-search": {
+      "get": {
+        "operationId": "market_endpoints_hubs_type_search_type_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TypeSearchRow"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Search item types by name",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}": {
+      "delete": {
+        "description": "Switches the alliance market off. The location and its expectations stay, so the hub can be added back. The price baseline keeps syncing its order book.",
+        "operationId": "market_endpoints_hubs_remove_hub_remove_hub",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HubResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove a hub from the market",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      },
+      "patch": {
+        "operationId": "market_endpoints_hubs_patch_hub_patch_hub",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HubPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HubResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set a hub active or switch its order-book sync",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}/expectations": {
+      "get": {
+        "operationId": "market_endpoints_hubs_get_hub_expectations_get_hub_expectations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HubExpectationsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Stocking expectations at a hub",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}/expectations/contracts/{fitting_id}": {
+      "put": {
+        "operationId": "market_endpoints_hubs_put_contract_expectation_put_contract_expectation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "fitting_id",
+            "required": true,
+            "schema": {
+              "title": "Fitting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FittingExpectationRow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Track or untrack a doctrine fitting's contracts at a hub",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}/expectations/fittings/{fitting_id}": {
+      "put": {
+        "operationId": "market_endpoints_hubs_put_fitting_expectation_put_fitting_expectation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "fitting_id",
+            "required": true,
+            "schema": {
+              "title": "Fitting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FittingExpectationRow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Track or untrack a fitting's items at a hub",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}/expectations/from-doctrine": {
+      "post": {
+        "operationId": "market_endpoints_hubs_post_from_doctrine_post_from_doctrine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FromDoctrineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FromDoctrineResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Track contracts for every fitting of a doctrine at a hub",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}/expectations/items": {
+      "post": {
+        "operationId": "market_endpoints_hubs_post_item_expectation_post_item_expectation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemExpectationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemExpectationRow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Track an item on sell orders at a hub",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/hubs/{location_id}/expectations/items/{type_id}": {
+      "delete": {
+        "operationId": "market_endpoints_hubs_delete_item_expectation_delete_item_expectation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Stop tracking an item at a hub",
         "tags": [
           "Market",
           "Market"
