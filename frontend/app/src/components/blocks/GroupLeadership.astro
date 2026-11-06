@@ -9,6 +9,8 @@ interface Props {
     user_characters:        SummaryCharacter[];
     tribe_group:            TribeGroup;
     chief_membership:       TribeMembership | null;
+    /** The chief shown only stands in: the seat is open (Help wanted). */
+    chief_is_interim?:      boolean;
 }
 
 const {
@@ -17,6 +19,7 @@ const {
     user_characters,
     tribe_group,
     chief_membership,
+    chief_is_interim = false,
 } = Astro.props
 
 const membership_character_ids = chief_membership ? chief_membership.characters.map(character => character.character_id) : []
@@ -29,11 +32,17 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.astro';
+import Tag from '@components/blocks/Tag.astro';
 ---
 
 {chief &&
     <Flexblock gap='var(--space-l)'>
-        <h4 class="[ group-title ]">{t('group_leadership')}</h4>
+        <FlexInline justification="space-between">
+            <h4 class="[ group-title ]">{t('group_leadership')}</h4>
+            {chief_is_interim &&
+                <Tag text={t('tribes.chief.help_wanted')} color="attention" variant="outline" />
+            }
+        </FlexInline>
 
         <FlexInline>
             <PilotBadge
@@ -43,9 +52,13 @@ import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.
                 size={32}
                 centered={true}
             >
-                <small>{t('group_chief')}</small>
+                {chief_is_interim ?
+                    <small class="[ group-leadership__interim ]">{t('tribes.chief.interim')}</small>
+                    :
+                    <small>{t('group_chief')}</small>
+                }
             </PilotBadge>
-            {available_characters.length > 0 &&
+            {!chief_is_interim && available_characters.length > 0 &&
                 <ButtonAddTribeCharacter
                     id='leader-add-character'
                     title={tribe_group.name}
@@ -60,6 +73,10 @@ import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.
 }
 
 <style lang="scss">
+    .group-leadership__interim {
+        color: var(--attention);
+    }
+
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
     }

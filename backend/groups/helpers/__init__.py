@@ -334,6 +334,14 @@ def sync_tribe_chief_group_membership() -> None:
         chief_id__isnull=False,
     ).values_list("chief_id", flat=True)
     desired_ids = set(tribe_chief_ids) | set(tribe_group_chief_ids)
+    # The executor stands in as chief of any active tribe without one.
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.executor import executor_user_id
+
+    if Tribe.objects.filter(is_active=True, chief_id__isnull=True).exists():
+        executor_id = executor_user_id()
+        if executor_id is not None:
+            desired_ids.add(executor_id)
     current_ids = set(chief_group.user_set.values_list("id", flat=True))
     to_add = desired_ids - current_ids
     to_remove = current_ids - desired_ids

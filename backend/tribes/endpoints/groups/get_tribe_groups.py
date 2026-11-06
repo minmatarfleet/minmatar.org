@@ -9,6 +9,7 @@ from authentication import AuthOptional
 from tribes.endpoints.groups.schemas import TribeGroupSchema
 from tribes.endpoints.groups.serializers import serialize_tribe_group
 from tribes.helpers.publishing import active_member_group_ids
+from tribes.helpers.chiefs import ChiefResolver
 from tribes.models import Tribe, TribeGroupMembership
 
 PATH = "/{tribe_id}/groups"
@@ -31,7 +32,7 @@ def get_tribe_groups(request, tribe_id: int):
         tribe.groups.filter(is_active=True)
         .select_related(
             "chief__eveplayer__primary_character",
-            "tribe",
+            "tribe__chief__eveplayer__primary_character",
             "group__discord_group",
         )
         .prefetch_related(
@@ -51,12 +52,14 @@ def get_tribe_groups(request, tribe_id: int):
         )
     )
     member_group_ids = active_member_group_ids(request.user)
+    resolver = ChiefResolver()
     result = [
         serialize_tribe_group(
             tg,
             request_user=request.user,
             member_count=tg.active_member_count,
             member_group_ids=member_group_ids,
+            resolver=resolver,
         )
         for tg in groups
     ]

@@ -2,6 +2,7 @@
 
 from ninja import Router
 
+from tribes.endpoints.chief_volunteers import router as chief_volunteers_router
 from tribes.endpoints.events import router as events_router
 from tribes.endpoints.external_guild import router as external_guild_router
 from tribes.endpoints.groups import router as groups_router
@@ -18,6 +19,7 @@ router.add_router("", publishing_router)
 router.add_router("", events_router)
 # "/invitations/..." before "/{tribe_id}/..." routes.
 router.add_router("", invitations_router)
+router.add_router("", chief_volunteers_router)
 router.add_router("", tribes_router)
 router.add_router("", groups_router)
 router.add_router("", memberships_router)

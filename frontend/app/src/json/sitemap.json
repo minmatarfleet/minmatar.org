@@ -911,6 +911,24 @@
         ]
     },
     {
+        "slug": "dscan",
+        "alt": "icon.intel.alt",
+        "path": "/dscan/",
+        "publish": false,
+        "icon": "/images/icons/48px-Satellite.png",
+        "description": "page_finder.dscan.description",
+        "keywords": [
+            "intel",
+            "d-scan",
+            "dscan",
+            "local",
+            "scan"
+        ],
+        "permissions": {
+            "gate": "intel.view"
+        }
+    },
+    {
         "slug": "intel.timers",
         "alt": "icon.timers.alt",
         "path": "/intel/timers/active/",

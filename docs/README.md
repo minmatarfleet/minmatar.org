@@ -33,6 +33,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [fleets/private-fleets.md](fleets/private-fleets.md) | current | Private (invite-only) fleets: waves of Discord invites, the coordination thread, ship targets, declassifying |
 | [tribes/tribe-publishing.md](tribes/tribe-publishing.md) | current | Tribe groups publishing posts, fleets and Discord events: rules, data, permissions, API |
 | [tribes/tribe-invitations.md](tribes/tribe-invitations.md) | current | Chiefs inviting pilots to a tribe group: Discord DM, join without review, API |
+| [tribes/interim-chiefs.md](tribes/interim-chiefs.md) | current | Chiefless tribes and groups: interim chief fallback, Help wanted, volunteers the executor appoints |
 | [timezones.md](timezones.md) | current | Pilot timezones (declared and inferred from activity) and the USTZ/EUTZ/AUTZ Discord roles |
 | [page-progress/architecture.md](page-progress/architecture.md) | current | Page progress tracking: data model and API |
 | [page-progress/frontend.md](page-progress/frontend.md) | current | Wiring page progress into a page |

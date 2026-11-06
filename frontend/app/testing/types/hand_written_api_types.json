@@ -9,7 +9,6 @@
       "TribeRequirement": "closest backend schema RequirementSchema, no field or null drift found; alias it when its domain is next changed",
       "TribeGroupRank": "closest backend schema TribeGroupRankSchema, no field or null drift found; alias it when its domain is next changed",
       "TribeAffiliationRef": "closest backend schema AffiliationRefSchema, no field or null drift found; alias it when its domain is next changed",
-      "Tribe": "closest backend schema TribeSchema, no field or null drift found; alias it when its domain is next changed",
       "TribeGroupRosterEntry": "closest backend schema TribeGroupRosterEntrySchema, no field or null drift found; alias it when its domain is next changed",
       "TribeGroupShowcaseContributor": "closest backend schema TribeGroupShowcaseContributorSchema, no field or null drift found; alias it when its domain is next changed",
       "TribeShowcaseBestMonth": "no matching backend schema: an untyped (dict) response, a request or query shape, or a client-side type",
@@ -271,8 +270,7 @@
       "IntelOtherItem": "a row of the d-scan summary, which the API returns as an untyped dict (intel summary JSON)",
       "IntelDscanSummary": "no matching backend schema: an untyped (dict) response, a request or query shape, or a client-side type",
       "IntelLocalAlliance": "no matching backend schema: an untyped (dict) response, a request or query shape, or a client-side type",
-      "IntelLocalSummary": "no matching backend schema: an untyped (dict) response, a request or query shape, or a client-side type",
-      "IntelReport": "closest backend schema ReportResponse, no field or null drift found; alias it when its domain is next changed"
+      "IntelLocalSummary": "no matching backend schema: an untyped (dict) response, a request or query shape, or a client-side type"
     },
     "src/helpers/api.minmatar.org/fitting_buy_orders.ts": {
       "FittingBuySwap": "closest backend schema ApplyOrderSwapRequest, no field or null drift found; alias it when its domain is next changed",

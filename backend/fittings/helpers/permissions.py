@@ -3,6 +3,7 @@
 from django.contrib.auth import get_user_model
 
 from fittings.models import (
+    DOCTRINE_TYPE_CAPITAL,
     DOCTRINE_TYPE_EXPERIMENTAL,
     DOCTRINE_TYPE_NON_STRATEGIC,
     DOCTRINE_TYPE_STRATEGIC,
@@ -17,13 +18,7 @@ user_model = get_user_model()
 
 
 def protection_tier_for_doctrine(doctrine: EveDoctrine) -> str | None:
-    if doctrine.type == DOCTRINE_TYPE_EXPERIMENTAL:
-        return None
-    if doctrine.type == DOCTRINE_TYPE_NON_STRATEGIC:
-        return PROTECTION_TIER_NON_STRATEGIC
-    if doctrine.type == DOCTRINE_TYPE_STRATEGIC:
-        return PROTECTION_TIER_STRATEGIC
-    return None
+    return protection_tier_for_doctrine_type(doctrine.type)
 
 
 def effective_protection_tier(fitting) -> str | None:
@@ -33,7 +28,7 @@ def effective_protection_tier(fitting) -> str | None:
         )
     )
     types.discard(DOCTRINE_TYPE_EXPERIMENTAL)
-    if DOCTRINE_TYPE_STRATEGIC in types:
+    if types & {DOCTRINE_TYPE_STRATEGIC, DOCTRINE_TYPE_CAPITAL}:
         return PROTECTION_TIER_STRATEGIC
     if DOCTRINE_TYPE_NON_STRATEGIC in types:
         return PROTECTION_TIER_NON_STRATEGIC
@@ -102,6 +97,7 @@ def protection_tier_for_doctrine_type(doctrine_type: str) -> str | None:
         return None
     if doctrine_type == DOCTRINE_TYPE_NON_STRATEGIC:
         return PROTECTION_TIER_NON_STRATEGIC
-    if doctrine_type == DOCTRINE_TYPE_STRATEGIC:
+    if doctrine_type in (DOCTRINE_TYPE_STRATEGIC, DOCTRINE_TYPE_CAPITAL):
+        # Capital fittings are expensive to get wrong: same gate as strategic.
         return PROTECTION_TIER_STRATEGIC
     return None

@@ -47,6 +47,13 @@ class TribeGroupSchema(BaseModel):
     content: str = ""
     discord_channel_id: Optional[int] = None
     chief: Optional[CharacterRefSchema] = None
+    # Who the page shows as chief: the chief, else the tribe chief, else
+    # the alliance executor. Interim means the seat is open (Help wanted).
+    acting_chief: Optional[CharacterRefSchema] = None
+    chief_is_interim: bool = False
+    # Viewer flags: the executor appoints; anyone may volunteer once.
+    can_appoint_chief: bool = False
+    has_volunteered: bool = False
     is_active: bool
     member_count: int = 0
     requirements: List[RequirementSchema] = []

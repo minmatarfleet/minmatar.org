@@ -157,21 +157,28 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                             <Flexblock slot="subtitle" class="[ tribes-groups-catalog__meta ]" gap="var(--space-s)">
                                 <div class="[ tribes-groups-catalog__tags ]">
                                     <Tag text={tribe.name} color="fleet-yellow" text_color="var(--background)" />
+                                    {group.chief_is_interim &&
+                                        <Tag text={t('tribes.chief.help_wanted')} color="attention" variant="outline" />
+                                    }
                                 </div>
 
                                 <FlexInline
                                     gap="var(--space-s)"
                                     class="[ tribes-groups-catalog__people items-center! justify-between! w-full flex-nowrap! ]"
                                 >
-                                    {group.chief ?
+                                    {group.acting_chief ?
                                         <PilotBadge
                                             class="[ tribes-groups-catalog__chief ]"
-                                            character_id={group.chief.character_id}
-                                            character_name={group.chief.character_name}
+                                            character_id={group.acting_chief.character_id}
+                                            character_name={group.acting_chief.character_name}
                                             size={32}
                                             centered={true}
                                         >
-                                            <small>{t('group_chief')}</small>
+                                            {group.chief_is_interim ?
+                                                <small class="[ tribes-groups-catalog__interim ]">{t('tribes.chief.interim')}</small>
+                                                :
+                                                <small>{t('group_chief')}</small>
+                                            }
                                         </PilotBadge>
                                         :
                                         <span></span>
@@ -324,6 +331,10 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         flex-wrap: nowrap;
         padding-block-start: var(--space-xs);
         border-block-start: 1px solid rgb(255 255 255 / 0.14);
+    }
+
+    .tribes-groups-catalog__interim {
+        color: var(--attention);
     }
 
     .tribes-groups-catalog__chief {

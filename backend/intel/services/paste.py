@@ -33,6 +33,39 @@ class DscanLine:
     type_id: int
     name: str
     type_name: str
+    # None when the client printed "-" (out of range of a number).
+    distance_km: float | None = None
+
+
+_KM_PER_AU = 149_597_870.7
+_DISTANCE = re.compile(r"^([\d.,\s\u00a0\u202f']+)\s*(m|km|AU|au|AE)$")
+
+
+def parse_distance_km(text: str) -> float | None:
+    """``"11,204 km"`` / ``"2.4 AU"`` / ``"850 m"`` -> km; None if unreadable.
+
+    EVE prints distances in the client's locale: metres and kilometres are
+    whole numbers with a thousands separator (``,`` ``.`` space or ``'``),
+    AU have one decimal written with ``.`` or ``,``.
+    """
+    match = _DISTANCE.match((text or "").strip())
+    if not match:
+        return None
+    number, unit = match.group(1), match.group(2).lower()
+    if unit in ("au", "ae"):
+        digits = re.sub(r"[\s\u00a0\u202f']", "", number)
+        # The last separator is the decimal one; any before it group thousands.
+        head, sep, tail = digits.replace(",", ".").rpartition(".")
+        digits = f"{head.replace('.', '')}.{tail}" if sep else tail
+        try:
+            return float(digits) * _KM_PER_AU
+        except ValueError:
+            return None
+    digits = re.sub(r"[^\d]", "", number)
+    if not digits:
+        return None
+    value = float(digits)
+    return value / 1000 if unit == "m" else value
 
 
 def _lines(text: str) -> list[str]:
@@ -62,6 +95,7 @@ def parse_dscan(text: str) -> list[DscanLine]:
                 type_id=int(match.group(1)),
                 name=match.group(2).strip(),
                 type_name=match.group(3).strip(),
+                distance_km=parse_distance_km(match.group(4)),
             )
         )
         if len(entries) > MAX_DSCAN_LINES:

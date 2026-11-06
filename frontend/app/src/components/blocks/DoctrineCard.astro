@@ -28,6 +28,7 @@ import NotificationBadge from "@components/blocks/NotificationBadge.astro";
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import StratopIcon from '@components/icons/StratopIcon.astro';
+import CapitalIcon from '@components/icons/CapitalIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
 ---
@@ -69,6 +70,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                 data-tippy-content={
                     doctrine.type === 'strategic' ?
                     t('strategic') :
+                    doctrine.type === 'capital' ?
+                    t('capital_ships') :
                     doctrine.type === 'experimental' ?
                     t('experimental') :
                     t('non_strategic')
@@ -80,6 +83,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
             >
                 {doctrine.type === 'strategic' ?
                     <StratopIcon /> :
+                    doctrine.type === 'capital' ?
+                    <CapitalIcon /> :
                     doctrine.type === 'experimental' ?
                     <TrainingIcon /> :
                     <NonStrategicIcon />

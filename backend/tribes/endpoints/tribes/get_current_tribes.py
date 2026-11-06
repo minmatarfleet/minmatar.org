@@ -7,6 +7,7 @@ from ninja import Router
 from authentication import AuthBearer
 from tribes.endpoints.tribes.schemas import TribeSchema
 from tribes.endpoints.tribes.serializers import serialize_tribe
+from tribes.helpers.chiefs import ChiefResolver
 from tribes.models import Tribe, TribeGroupMembership
 
 PATH = "/current"
@@ -28,8 +29,9 @@ def get_current_tribes(request):
         .values_list("tribe_group__tribe_id", flat=True)
         .distinct()
     )
+    resolver = ChiefResolver()
     return [
-        serialize_tribe(tribe)
+        serialize_tribe(tribe, request_user=request.user, resolver=resolver)
         for tribe in Tribe.objects.filter(
             pk__in=tribe_ids, is_active=True
         ).select_related(

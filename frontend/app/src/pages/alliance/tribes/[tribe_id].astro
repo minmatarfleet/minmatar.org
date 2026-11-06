@@ -3,7 +3,9 @@ import { i18n } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 const { t, lang, translatePath } = i18n(Astro.url)
 
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_404_Not_Found, login_url } from '@helpers/http_responses'
+import { help_wanted_props } from '@helpers/tribe_chiefs'
+import { query_string } from '@helpers/string'
 import { strip_markdown } from '@helpers/string'
 import { get_tribe, get_tribe_about } from '@helpers/api.minmatar.org/tribes'
 import { TRIBES_COVER_FALLBACK } from '@helpers/tribe_covers'
@@ -12,7 +14,7 @@ import { format_isk, number_thousand_separator } from '@helpers/numbers'
 import { fill_template } from '@helpers/tribe_activity'
 import type { Tribe, TribeAbout } from '@dtypes/api.minmatar.org'
 
-const { auth_token } = get_request_user(Astro)
+const { auth_token, user } = get_request_user(Astro)
 
 const tribe_id = parseInt(Astro.params.tribe_id as string)
 if (isNaN(tribe_id))
@@ -20,10 +22,18 @@ if (isNaN(tribe_id))
 
 let tribe: Tribe
 try {
-    tribe = await get_tribe(tribe_id)
+    tribe = await get_tribe(tribe_id, auth_token)
 } catch {
     return HTTP_404_Not_Found()
 }
+
+// The chief, else the executor standing in (Help wanted).
+const chief = tribe.acting_chief ?? null
+const chief_label = tribe.chief_is_interim ? t('tribes.chief.interim') : t('tribes.about.tribe_chief')
+const volunteers_url = translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
+    tribe_id,
+    seat_name: tribe.name,
+})}`)
 
 // The About rollup is cached by Celery; until it exists the page shows the tribe without it.
 const about: TribeAbout | null = await get_tribe_about(tribe_id, auth_token).catch(() => null)
@@ -80,6 +90,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
 import TribeAboutBody from '@components/blocks/tribe_about/TribeAboutBody.astro'
 import TribeAboutIntro from '@components/blocks/tribe_about/TribeAboutIntro.astro'
 import TribeCapitalLine from '@components/blocks/tribe_about/TribeCapitalLine.astro'
@@ -107,22 +119,42 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
                 <Flexblock gap="var(--space-s)">
                     <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
                     <FlexInline gap="var(--space-xs)" class="[ tribe-title-row ]">
-                        {tribe.chief &&
-                            <div class="[ tribe-chief-portrait ]">
-                                <CharacterPicture
-                                    character_id={tribe.chief.character_id}
-                                    character_name={tribe.chief.character_name}
-                                    size={128}
-                                    icon_quality={256}
-                                    tooltip={`${tribe.chief.character_name} · ${t('tribes.about.tribe_chief')}`}
-                                />
-                            </div>
+                        {chief &&
+                            <Flexblock gap="var(--space-3xs)" class="[ tribe-chief ]">
+                                <div class:list={['[ tribe-chief-portrait ]', { 'is-interim': tribe.chief_is_interim }]}>
+                                    <CharacterPicture
+                                        character_id={chief.character_id}
+                                        character_name={chief.character_name}
+                                        size={128}
+                                        icon_quality={256}
+                                        tooltip={`${chief.character_name} · ${chief_label}`}
+                                    />
+                                </div>
+                                {tribe.chief_is_interim &&
+                                    <small class="[ tribe-chief-interim-label ]">{chief_label}</small>
+                                }
+                            </Flexblock>
                         }
                         <PageTitle is_landing={true}>{tribe.name}</PageTitle>
                     </FlexInline>
                 </Flexblock>
                 <Button href={groups_url} size="sm">{t('tribes.about.browse_groups')}</Button>
             </FlexInline>
+
+            {tribe.chief_is_interim &&
+                <Flexblock gap="var(--space-l)" class="[ w-full ]">
+                    <TribeChiefHelpWanted
+                        {...help_wanted_props(tribe)}
+                        is_auth={Boolean(user)}
+                        login_href={login_url(Astro)}
+                    />
+                    {tribe.can_appoint_chief &&
+                        <LazyPartial url={volunteers_url}>
+                            <span class="[ text-muted ]">{t('tribes.chief.volunteers')}</span>
+                        </LazyPartial>
+                    }
+                </Flexblock>
+            }
 
             <TribeAboutIntro lede={tribe.description} markdown={tribe.content} vitals={vitals} />
 
@@ -179,8 +211,27 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
         }
     }
 
+    .tribe-chief {
+        flex: 0 0 auto;
+        align-items: center;
+    }
+
+    .tribe-chief-interim-label {
+        color: var(--attention);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: var(--step--1);
+    }
+
     .tribe-chief-portrait {
         flex: 0 0 auto;
+
+        &.is-interim {
+            outline: solid 2px var(--attention);
+            outline-offset: -2px;
+        }
+
         inline-size: var(--step-5);
         block-size: var(--step-5);
 

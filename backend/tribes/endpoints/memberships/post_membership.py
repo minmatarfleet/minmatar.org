@@ -33,11 +33,17 @@ logger = logging.getLogger(__name__)
 def _notify_chief_of_new_request(membership):
     """Tell the tribe group chief a new membership application came in.
 
+    A group without a chief tells whoever stands in: the tribe chief, else
+    the alliance executor (docs/tribes/interim-chiefs.md).
+
     Goes through the notifications service: chiefs can mute it, and the
     Discord DM is sent by a worker, never inside this request.
     """
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.chiefs import ChiefResolver
+
     tg = membership.tribe_group
-    chief = tg.chief
+    chief = ChiefResolver().for_group(tg).user
     if not chief:
         return
     try:

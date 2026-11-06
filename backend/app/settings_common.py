@@ -212,6 +212,13 @@ JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"
 # Read by GET /api/users/me/gates; change it and restart the app to flip.
 FRONTEND_GATE_SOURCE = os.environ.get("FRONTEND_GATE_SOURCE", "legacy")
 
+# The alliance executor's character (BearThatCares). They stand in as
+# interim chief of any tribe without a chief, and of any group whose tribe
+# has none, and they appoint chiefs from volunteers. 0 turns it off.
+ALLIANCE_EXECUTOR_CHARACTER_ID = int(
+    os.environ.get("ALLIANCE_EXECUTOR_CHARACTER_ID", "634915984")
+)
+
 # Optional integrations, read directly as settings.X. Empty means "not
 # configured". They live here so every settings file, including local
 # copies of settings.py, defines them.

@@ -46,6 +46,8 @@ AFFILIATION_CHUNK = 1000
 NAMES_CHUNK = 1000
 MAX_ALLIANCE_ROWS = 25
 MAX_CORPORATION_ROWS = 15
+# Every corporation in Local, for the website's three-column view.
+MAX_ALL_CORPORATION_ROWS = 200
 MAX_BLOC_ROWS = 10
 
 _MISSING = 0  # cached for names ESI doesn't know, so they aren't retried
@@ -219,6 +221,10 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
     # someone's pet shows up too.
     corporation_counts: Counter = Counter()
     corporation_standing: dict[int, str] = {}
+    # Every corporation, with or without an alliance.
+    all_corporations: Counter = Counter()
+    all_corporation_standing: dict[int, str] = {}
+    corporation_alliance: dict[int, int | None] = {}
     blocs = bloc_map()
     bloc_pilots: Counter = Counter()
     bloc_entries: dict[int, dict] = {}
@@ -243,6 +249,11 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
         if alliance_standing.get(alliance_id) != HOSTILE:
             alliance_standing[alliance_id] = side
         corporation_id = affiliation.get("corporation_id")
+        if corporation_id:
+            all_corporations[corporation_id] += 1
+            corporation_alliance[corporation_id] = alliance_id
+            if all_corporation_standing.get(corporation_id) != HOSTILE:
+                all_corporation_standing[corporation_id] = side
         if not alliance_id and corporation_id:
             corporation_counts[corporation_id] += 1
             if corporation_standing.get(corporation_id) != HOSTILE:
@@ -273,9 +284,14 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
     corporation_ids = [
         cid for cid, _ in corporation_counts.most_common(MAX_CORPORATION_ROWS)
     ]
+    every_corporation_id = [
+        cid
+        for cid, _ in all_corporations.most_common(MAX_ALL_CORPORATION_ROWS)
+    ]
     alliance_names = (
         _cached_lookup(
-            alliance_ids + corporation_ids,
+            alliance_ids
+            + list(dict.fromkeys(corporation_ids + every_corporation_id)),
             "intel:entity:",
             _esi_names if use_esi else _no_esi,
             ENTITY_NAME_TTL,
@@ -335,6 +351,32 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
         }
         for bloc_id, count in bloc_pilots.most_common(MAX_BLOC_ROWS)
     ]
+    every_corporation_row = [
+        {
+            "id": corporation_id,
+            "name": alliance_names.get(corporation_id)
+            or f"Corporation {corporation_id}",
+            "count": all_corporations[corporation_id],
+            "standing": all_corporation_standing.get(corporation_id, NEUTRAL),
+            "alliance_id": corporation_alliance.get(corporation_id),
+        }
+        for corporation_id in every_corporation_id
+    ]
+    every_corporation_row.sort(key=lambda row: (-row["count"], row["name"]))
+    pilot_rows = []
+    for name in names:
+        character_id = ids_by_name.get(name.lower())
+        affiliation = affiliations.get(character_id) if character_id else None
+        pilot_rows.append(
+            {
+                "name": name,
+                "id": character_id or None,
+                "corporation_id": (affiliation or {}).get("corporation_id"),
+                "alliance_id": (affiliation or {}).get("alliance_id"),
+                "standing": standing(affiliation) if affiliation else None,
+            }
+        )
+    pilot_rows.sort(key=lambda row: row["name"].lower())
     resolved = sum(alliance_counts.values())
     summary.update(
         {
@@ -343,6 +385,10 @@ def summarize_local(names: list[str], *, use_esi: bool = True) -> dict:
             "alliances": rows[:MAX_ALLIANCE_ROWS],
             "corporations": corporation_rows,
             "blocs": bloc_rows,
+            # Newer reports: the website links pilots, corporations and
+            # alliances across its three columns.
+            "all_corporations": every_corporation_row,
+            "characters": pilot_rows,
         }
     )
     return summary

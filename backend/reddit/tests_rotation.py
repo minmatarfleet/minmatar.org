@@ -481,6 +481,8 @@ class ScheduleTestCase(TestCase):
             )
         )
         first, second = posts[0], posts[1]
+        # Slots are only editable while in the future: pin "now" to the
+        # test's October, or this breaks once the November slots pass.
         with patch("reddit.admin.timezone.now", return_value=OCT_20):
             form = SlotForm(
                 data={

@@ -692,6 +692,7 @@ export const doctrine_types = [
     'experimental',
     'non_strategic',
     'strategic',
+    'capital',
 ] as const
 
 export interface SystemCardInfo {

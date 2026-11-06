@@ -18,6 +18,7 @@ from tribes.models.tribe_group_membership_history import (
 )
 from tribes.models.tribe_event import TribeEvent
 from tribes.models.tribe_group_invitation import TribeGroupInvitation
+from tribes.models.tribe_chief_volunteer import TribeChiefVolunteer
 from tribes.models.tribe_external_guild import (
     TribeExternalGuild,
     TribeExternalGuildSeat,
@@ -38,4 +39,5 @@ __all__ = [
     "TribeExternalGuildSeat",
     "TribeEvent",
     "TribeGroupInvitation",
+    "TribeChiefVolunteer",
 ]

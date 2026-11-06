@@ -1,0 +1,159 @@
+---
+/**
+ * Help wanted: a tribe or group with no chief, and who stands in meanwhile.
+ * Volunteering DMs the alliance executor, who appoints chiefs; the executor
+ * gets a link to the volunteers instead of the button.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    tribe_id:               number;
+    /** Null for the tribe chief seat. */
+    group_id:               number | null;
+    seat_name:              string;
+    tribe_name:             string;
+    interim_name:           string | null;
+    interim_is_executor:    boolean;
+    is_auth:                boolean;
+    login_href:             string;
+    has_volunteered:        boolean;
+    can_appoint:            boolean;
+    [propName: string]:     any;
+}
+
+const {
+    tribe_id,
+    group_id,
+    seat_name,
+    tribe_name,
+    interim_name,
+    interim_is_executor,
+    is_auth,
+    login_href,
+    has_volunteered,
+    can_appoint,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { query_string } from '@helpers/string'
+
+const HELP_WANTED_ID = 'tribe-chief-help-wanted'
+
+const is_tribe_seat = group_id === null
+const title = t(is_tribe_seat ? 'tribes.chief.help_wanted_tribe' : 'tribes.chief.help_wanted_group')
+    .replace('{seat}', seat_name)
+
+let covered: string = t('tribes.chief.covered_nobody')
+if (interim_name && interim_is_executor)
+    covered = t(is_tribe_seat ? 'tribes.chief.covered_by_executor_tribe' : 'tribes.chief.covered_by_executor_group')
+        .replace('{name}', interim_name)
+else if (interim_name)
+    covered = t('tribes.chief.covered_by_tribe_chief')
+        .replace('{name}', interim_name)
+        .replace('{tribe}', tribe_name)
+
+const dialog_hint = interim_name && interim_is_executor
+    ? t('tribes.chief.volunteer_hint').replace('{name}', interim_name)
+    : t('tribes.chief.volunteer_hint_no_name')
+
+const VOLUNTEER_PARTIAL_URL = translatePath(`/partials/tribe_chief_volunteer_component?${query_string({
+    tribe_id,
+    ...(group_id !== null ? { group_id } : {}),
+})}`)
+
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<section
+    id={HELP_WANTED_ID}
+    class:list={['[ tribe-chief-help-wanted ]', Astro.props.class]}
+    aria-label={title}
+    {...attributes}
+>
+    <Flexblock gap="var(--space-3xs)" class="[ tribe-chief-help-wanted__text ]">
+        <h3>{title}</h3>
+        <p>{covered}</p>
+    </Flexblock>
+
+    {/* The executor's volunteer list sits right under the banner. */}
+    {can_appoint ? null
+        : has_volunteered ?
+            <Tag text={t('tribes.chief.volunteered')} color="attention" variant="outline" />
+            : !is_auth ?
+                <Button size="sm" color="transparent" href={login_href}>{t('tribes.chief.log_in_to_volunteer')}</Button>
+                :
+                <DialogButton
+                    size="sm"
+                    color="transparent"
+                    max_width="520px"
+                    disable_when_open={true}
+                >
+                    {t('tribes.chief.volunteer')}
+
+                    <form
+                        slot="dialog"
+                        hx-post={VOLUNTEER_PARTIAL_URL}
+                        hx-trigger="submit"
+                        hx-target={`#${HELP_WANTED_ID}`}
+                        hx-indicator=".loader"
+                        hx-swap="outerHTML transition:true"
+                        x-on:submit="close_dialog(false)"
+                    >
+                        <Flexblock gap="var(--space-m)">
+                            <Flexblock gap="var(--space-2xs)">
+                                <h3>{t('tribes.chief.volunteer_title').replace('{seat}', seat_name)}</h3>
+                                <p class="[ text-muted ]">{dialog_hint}</p>
+                            </Flexblock>
+                            <Flexblock gap="var(--space-3xs)">
+                                <label for="chief-volunteer-note">{t('tribes.chief.note_label')}</label>
+                                <Textarea
+                                    id="chief-volunteer-note"
+                                    name="note"
+                                    rows="4"
+                                    maxlength="500"
+                                    placeholder={t('tribes.chief.note_placeholder')}
+                                />
+                            </Flexblock>
+                            <FlexInline justification="flex-end">
+                                <Button size="sm" type="submit" color="fleet-red">{t('tribes.chief.send')}</Button>
+                            </FlexInline>
+                        </Flexblock>
+                    </form>
+                </DialogButton>
+    }
+</section>
+
+<style lang="scss">
+    .tribe-chief-help-wanted {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s) var(--space-l);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px color-mix(in srgb, var(--attention) 45%, transparent);
+        background-color: color-mix(in srgb, var(--attention) 8%, transparent);
+
+        h3 {
+            color: var(--attention);
+        }
+
+        p {
+            color: var(--text-muted);
+        }
+    }
+
+    .tribe-chief-help-wanted__text {
+        flex: 999 1 420px;
+    }
+</style>
