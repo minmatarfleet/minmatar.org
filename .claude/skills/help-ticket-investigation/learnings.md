@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-06 — Dread SRP refused: alt not in the strategic fleet
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** explained the refusal to the opener and tagged the decision owner
+**PR:** skill-only
+**Symptom vs cause:** A dread loss in a strategic fleet was refused with “Character not in fleet”. The opener's main was tracked in the fleet in a subcap. The dread alt never appeared in any ESI member poll. Polling was healthy through the fight, and other dreads in the same fleet were tracked and filed fine.
+**Durable rule:** Check the victim character, not the account. Rule out a polling gap from `updated_at` around the kill time before calling it a tracker bug. Covering an untracked alt is a policy exception.
+**Skill update:** added the “Character not in fleet” row.
+
 ## 2026-11-03 — Planner bill ignores blueprint copy run cap
 
 **Category:** pulse.technology
