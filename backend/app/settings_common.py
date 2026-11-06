@@ -15,7 +15,7 @@ CACHE_URL = "redis://localhost:6379/2"
 # Application definition
 INSTALLED_APPS = [
     # Django
-    "django.contrib.admin",
+    "app.admin_config.StandardAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
