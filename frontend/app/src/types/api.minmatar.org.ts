@@ -3198,3 +3198,11 @@ export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
+
+export type RedditReviewItem = ApiResponse<'RedditReviewItem'>
+export type RedditReviewQueue = ApiResponse<'RedditReviewQueue'>
+export type RedditReviewDecision = ApiResponse<'RedditReviewDecision'>
+export type RedditRotationPost = ApiResponse<'RedditRotationPost'>
+export type RedditRotationMonth = ApiResponse<'RedditRotationMonth'>
+export type RedditRotation = ApiResponse<'RedditRotation'>
+export type RedditActionResult = ApiResponse<'RedditActionResult'>

@@ -29,6 +29,14 @@
             "feature": "posts.create",
             "legacy": { "perms": ["posts.add_evepost"], "superuser": true }
         },
+        "posts.tags.manage": {
+            "feature": "posts.tags.manage",
+            "legacy": { "perms": ["posts.change_evetag"], "superuser": true }
+        },
+        "reddit.approvals.manage": {
+            "feature": "reddit.approvals.manage",
+            "legacy": { "perms": ["reddit.change_redditpostchangerequest"], "superuser": true }
+        },
         "srp.view": {
             "feature": "srp.view",
             "legacy": { "perms": ["srp.view_evefleetshipreimbursement"], "superuser": true }

@@ -575,12 +575,30 @@
         }
     },
     {
+        "slug": "propaganda.tags",
+        "path": "/alliance/propaganda/tags/",
+        "publish": true,
+        "description": "page_finder.propaganda.tags.description",
+        "permissions": {
+            "gate": "posts.tags.manage"
+        }
+    },
+    {
         "slug": "propaganda.trash",
         "path": "/alliance/propaganda/trash/",
         "publish": true,
         "description": "page_finder.propaganda.trash.description",
         "permissions": {
             "gate": "posts.create"
+        }
+    },
+    {
+        "slug": "reddit_review",
+        "path": "/alliance/reddit-review/",
+        "publish": true,
+        "description": "page_finder.reddit_review.description",
+        "permissions": {
+            "gate": "reddit.approvals.manage"
         }
     },
     {

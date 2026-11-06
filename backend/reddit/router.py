@@ -29,6 +29,7 @@ from reddit.oauth import (
     fetch_username,
     revoke_refresh_token,
 )
+from reddit.review_router import review_router
 from reddit.schemas import (
     CorporationRedditPost,
     CorporationRedditPostUpdate,
@@ -39,6 +40,7 @@ from users.redirects import oauth_redirect
 logger = logging.getLogger(__name__)
 
 router = Router(tags=["Reddit"])
+router.add_router("/review", review_router)
 
 SESSION_STATE_KEY = "reddit_oauth_state"
 SESSION_REDIRECT_KEY = "reddit_oauth_redirect_url"

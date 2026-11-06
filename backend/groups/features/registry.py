@@ -130,6 +130,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="structures.add_evestructuretimer",
         default_affiliation_names=_aff("Alliance"),
     ),
+    "structures.timers.correct": FeatureDefinition(
+        code="structures.timers.correct",
+        label="Correct structure timers",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Edit or delete a wrong structure timer and review the "
+            "structure pings sent to Discord."
+        ),
+        legacy_permission="structures.change_evestructuretimer",
+        default_tribe_group_codes=_tribe_codes("pulse.fleet-commanders"),
+    ),
     "moons.view": FeatureDefinition(
         code="moons.view",
         label="View moons",
@@ -336,6 +347,25 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         staff_permission="intel.change_intelaffiliation",
         legacy_permission="intel.change_intelaffiliation",
+    ),
+    "posts.tags.manage": FeatureDefinition(
+        code="posts.tags.manage",
+        label="Manage post tags",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description="Create, rename and merge the tags used on posts.",
+        legacy_permission="posts.change_evetag",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+    ),
+    "reddit.approvals.manage": FeatureDefinition(
+        code="reddit.approvals.manage",
+        label="Review corporation Reddit posts",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Approve or reject corporation Reddit post templates and "
+            "changes, and run the Reddit rotation."
+        ),
+        legacy_permission="reddit.change_redditpostchangerequest",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
     ),
     "campaigns.view": FeatureDefinition(
         code="campaigns.view",
