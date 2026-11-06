@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'srp.programs.manage'))
+    return HTTP_403_Forbidden()
+
+const PROGRAMS_PARTIAL_URL = translatePath('/partials/srp_programs_component/')
+const RECALCULATE_PARTIAL_URL = translatePath('/partials/srp_recalculate_component/')
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+
+const page_title = t('srp_programs.page_title')
+---
+
+<Viewport title={page_title}>
+    <PageWide
+        cover={{
+            image: '/images/srp-cover.jpg',
+            image_990: '/images/srp-cover.jpg',
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                <small>{t('srp_programs.leading_text')}</small>
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/ships/srp/')}>
+                    {t('keep_browsing')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)">
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>{t('srp_programs.recalculate_title')}</h2>
+                    <p>{t('srp_programs.recalculate_text')}</p>
+                    <div id="srp-recalculate">
+                        <LazyPartial url={RECALCULATE_PARTIAL_URL} />
+                    </div>
+                </Flexblock>
+            </ComponentBlock>
+
+            <ComponentBlock>
+                <div id="srp-programs">
+                    <LazyPartial url={PROGRAMS_PARTIAL_URL} />
+                </div>
+            </ComponentBlock>
+        </Flexblock>
+    </PageWide>
+</Viewport>

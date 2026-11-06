@@ -4,6 +4,10 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 const { fitting_id } = Astro.params;
 
+import { get_gates } from '@helpers/gates'
+import { can_edit_doctrines } from '@helpers/doctrine_editor'
+const can_edit = await can_edit_doctrines(await get_gates(Astro))
+
 import type { FittingGroup, Module, CargoItem } from '@dtypes/layout_components';
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
@@ -249,7 +253,12 @@ const ships_url = seo_input.shipsUrl
                 </Flexblock>
             </FlexInline>
             <PageActions>
-                <div 
+                {can_edit &&
+                    <Button href={translatePath(`/ships/fittings/edit/${fitting.id}/`)} color="alliance-blue">
+                        {t('doctrine_changes.edit')}
+                    </Button>
+                }
+                <div
                     x-show="window.innerWidth > 1820"
                     style="display: none"
                 >

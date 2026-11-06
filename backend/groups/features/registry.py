@@ -106,6 +106,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="srp.change_evefleetshipreimbursement",
         staff_permission="srp.change_evefleetshipreimbursement",
     ),
+    "srp.programs.manage": FeatureDefinition(
+        code="srp.programs.manage",
+        label="Manage SRP program amounts",
+        scope=FeatureScope.STAFF,
+        description=(
+            "Edit the SRP payout per hull and recalculate outstanding "
+            "requests."
+        ),
+        legacy_permission="srp.change_shipreimbursementprogram",
+        staff_permission="srp.change_shipreimbursementprogram",
+    ),
     "structures.view": FeatureDefinition(
         code="structures.view",
         label="View structures",
@@ -336,14 +347,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
     "fittings.doctrine.approve": FeatureDefinition(
         code="fittings.doctrine.approve",
         label="Approve doctrine changes",
-        scope=FeatureScope.STAFF,
+        scope=FeatureScope.TRIBE_CHIEF,
         description="Approve doctrine and fitting change requests.",
+        default_tribe_group_codes=_tribe_codes("pulse.readiness"),
     ),
     "fittings.doctrine.propose": FeatureDefinition(
         code="fittings.doctrine.propose",
         label="Propose doctrine changes",
-        scope=FeatureScope.STAFF,
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
         description="Propose doctrine and fitting changes.",
+        default_tribe_group_codes=_tribe_codes("pulse.readiness"),
     ),
     "surveys.manage": FeatureDefinition(
         code="surveys.manage",

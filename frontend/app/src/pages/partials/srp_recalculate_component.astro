@@ -1,0 +1,120 @@
+---
+// no-error-refetch: a preview/confirm partial that shows the API error inline
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'srp.programs.manage'))
+    return HTTP_403_Forbidden()
+
+import type { SRPRecalculationPreview, SRPRecalculationResult } from '@dtypes/api.minmatar.org'
+import { get_srp_recalculation_preview, recalculate_outstanding_srp } from '@helpers/api.minmatar.org/srp'
+import { number_thousand_separator } from '@helpers/numbers'
+
+const RECALCULATE_PARTIAL_URL = translatePath('/partials/srp_recalculate_component/')
+
+let preview:SRPRecalculationPreview | null = null
+let result:SRPRecalculationResult | null = null
+let error_message:string | false = false
+
+try {
+    if (Astro.request.method === 'POST')
+        result = await recalculate_outstanding_srp(auth_token as string)
+    else if (Astro.url.searchParams.get('preview') === '1')
+        preview = await get_srp_recalculation_preview(auth_token as string)
+} catch (error) {
+    error_message = error instanceof Error ? error.message : t('srp_programs.recalculate_failed')
+}
+
+const format = (value:number) => number_thousand_separator(value, lang)
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+<Flexblock gap="var(--space-s)">
+    {error_message && <p role="alert">⚠️ {error_message}</p>}
+
+    {result &&
+        <p role="status">
+            ✅ {t('srp_programs.recalculated')} {format(result.updated)}
+            {result.errors > 0 && ` · ${t('srp_programs.recalculate_errors')} ${format(result.errors)}`}
+        </p>
+    }
+
+    {preview ?
+        <>
+            <p>
+                {t('srp_programs.outstanding')} {format(preview.outstanding_count)} ·
+                {t('srp_programs.changed')} {format(preview.changed_count)} ·
+                {t('srp_programs.total_before')} {format(preview.current_total)} →
+                {t('srp_programs.total_after')} {format(preview.new_total)}
+            </p>
+            {preview.changed_count === 0 ?
+                <EmptyState title={t('srp_programs.nothing_to_change')} />
+                :
+                <>
+                    <XFadeScroll>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{t('srp_programs.ship')}</th>
+                                    <th scope="col">{t('srp_programs.pilot')}</th>
+                                    <th scope="col">{t('srp_programs.current')}</th>
+                                    <th scope="col">{t('srp_programs.new_amount')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {preview.changes.map((change) =>
+                                    <tr>
+                                        <td>{change.ship_name}</td>
+                                        <td>{change.character_name}</td>
+                                        <td>{format(change.current_amount)}</td>
+                                        <td>{format(change.new_amount)}</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </XFadeScroll>
+                    <FlexInline gap="var(--space-xs)">
+                        <Button
+                            color="green"
+                            hx-post={RECALCULATE_PARTIAL_URL}
+                            hx-target="#srp-recalculate"
+                            hx-swap="innerHTML"
+                            hx-confirm={t('srp_programs.confirm_recalculate')}
+                        >
+                            {t('srp_programs.confirm')}
+                        </Button>
+                    </FlexInline>
+                </>
+            }
+        </>
+        :
+        !result &&
+        <FlexInline>
+            <Button
+                color="alliance-blue"
+                hx-get={`${RECALCULATE_PARTIAL_URL}?preview=1`}
+                hx-target="#srp-recalculate"
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+            >
+                {t('srp_programs.recalculate')}
+            </Button>
+        </FlexInline>
+    }
+</Flexblock>

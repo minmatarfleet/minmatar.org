@@ -9,6 +9,9 @@ import type {
     SRPProgram,
     SRPStatsOverview,
     SRPStatsHistory,
+    SRPProgramAmount,
+    SRPRecalculationPreview,
+    SRPRecalculationResult,
 } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
@@ -90,5 +93,29 @@ export async function get_srp_stats_history(access_token:string) {
     return await api_request<SRPStatsHistory>(`${API_ENDPOINT}/stats/history`, {
         token: access_token,
         error: 'Error reading SRP stats history',
+    })
+}
+
+export async function set_srp_program_amount(access_token:string, program_id:number, srp_value:number) {
+    return await api_request<SRPProgramAmount>(`${API_ENDPOINT}/programs/${program_id}/amount`, {
+        method: 'POST',
+        token: access_token,
+        body: { srp_value },
+        error: 'Error saving SRP amount',
+    })
+}
+
+export async function get_srp_recalculation_preview(access_token:string) {
+    return await api_request<SRPRecalculationPreview>(`${API_ENDPOINT}/programs/recalculate`, {
+        token: access_token,
+        error: 'Error previewing SRP recalculation',
+    })
+}
+
+export async function recalculate_outstanding_srp(access_token:string) {
+    return await api_request<SRPRecalculationResult>(`${API_ENDPOINT}/programs/recalculate`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error recalculating SRP',
     })
 }

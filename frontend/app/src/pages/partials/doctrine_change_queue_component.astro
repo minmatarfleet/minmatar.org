@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_gates } from '@helpers/gates'
+import { can_edit_doctrines } from '@helpers/doctrine_editor'
+
+const gates = await get_gates(Astro)
+
+if (!await can_edit_doctrines(gates))
+    return HTTP_403_Forbidden()
+
+import type { DoctrineChangeRequestRow } from '@dtypes/api.minmatar.org'
+import { get_change_requests, review_change_request, type ChangeReviewAction } from '@helpers/api.minmatar.org/doctrine_changes'
+
+const QUEUE_PARTIAL_URL = translatePath('/partials/doctrine_change_queue_component/')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let flash:string | false = false
+
+if (Astro.request.method === 'POST') {
+    const kind = Astro.url.searchParams.get('kind') === 'doctrine' ? 'doctrine' : 'fitting'
+    const request_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '') as ChangeReviewAction
+    const review_note = String(form.get('review_note') ?? '')
+
+    try {
+        await review_change_request(auth_token as string, kind, request_id, action, review_note)
+    } catch (error) {
+        flash = error instanceof Error ? error.message : t('doctrine_changes.action_failed')
+    }
+}
+
+let fetch_error:Error | false = false
+let change_requests:DoctrineChangeRequestRow[] = []
+
+try {
+    change_requests = await get_change_requests(auth_token as string)
+} catch (error) {
+    fetch_error = error
+}
+
+import ChangeRequestCard from '@components/blocks/ChangeRequestCard.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: QUEUE_PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+            target: '#doctrine-change-queue',
+        }}
+    />
+    :
+    <Flexblock gap="var(--space-m)">
+        {flash && <p role="alert">⚠️ {flash}</p>}
+        {change_requests.length === 0 ?
+            <EmptyState title={t('doctrine_changes.queue_empty')} />
+            :
+            change_requests.map((change_request) =>
+                <ChangeRequestCard change_request={change_request} />
+            )
+        }
+    </Flexblock>
+}

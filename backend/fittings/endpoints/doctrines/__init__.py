@@ -2,6 +2,8 @@
 
 from ninja import Router
 
+from fittings.endpoints.doctrines import post_doctrine_change_request
+
 from fittings.endpoints.doctrines.get_doctrine import (
     PATH as get_doctrine_path,
     ROUTE_SPEC as get_doctrine_spec,
@@ -37,6 +39,12 @@ _ROUTES = (
         get_market_locations_with_doctrines,
     ),
     (get_doctrine_method, get_doctrine_path, get_doctrine_spec, get_doctrine),
+    (
+        post_doctrine_change_request.METHOD,
+        post_doctrine_change_request.PATH,
+        post_doctrine_change_request.ROUTE_SPEC,
+        post_doctrine_change_request.post_doctrine_change_request,
+    ),
 )
 for method, path, spec, view in _ROUTES:
     getattr(router, method)(path, **spec)(view)

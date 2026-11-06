@@ -27,6 +27,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `srp.submit` | `resource_match` | — | Alliance |
 | `srp.resolve` | `staff` | `srp.add_evefleetshipreimbursement` | staff permission |
 | `srp.process` | `staff` | `srp.change_evefleetshipreimbursement` | staff permission |
+| `srp.programs.manage` | `staff` | `srp.change_shipreimbursementprogram` | staff permission (edit SRP amounts, recalculate outstanding) |
 
 ## Structures and moons
 
@@ -88,8 +89,8 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `applications.manage` | `staff` | `applications.change_evecorporationapplication` | staff permission |
 | `characters.view_staff` | `staff` | `eveonline.view_evecharacter` | staff permission |
 | `characters.delete_staff` | `staff` | `eveonline.delete_evecharacter` | staff permission |
-| `fittings.doctrine.approve` | `staff` | — | staff permission |
-| `fittings.doctrine.propose` | `staff` | — | staff permission |
+| `fittings.doctrine.approve` | `tribe_chief` | — | Readiness tribe group (`pulse.readiness`) chiefs; the tier approve permissions still grant it in the API |
+| `fittings.doctrine.propose` | `tribe_membership` | — | Readiness tribe group (`pulse.readiness`); the tier change permissions still grant it in the API |
 | `tech.ops` | `auth_group` | — | Technology Team auth group (no `on_leave` deny) |
 | `alliance.health` | `staff` | `alliance.view_alliancehealth` | staff permission (no `on_leave` deny) |
 | `alliance.health.executor` | `auth_group` | — | People Team auth group (every corporation on the health board, change any member's community status) |

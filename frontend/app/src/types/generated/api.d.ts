@@ -1490,6 +1490,43 @@ export interface paths {
         patch: operations["campaigns_endpoints_manage_accept_week_target"];
         trace?: never;
     };
+    "/api/change-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Change Requests
+         * @description status=pending lists open requests; anything else the latest 25.
+         */
+        get: operations["fittings_endpoints_change_requests_get_change_requests_get_change_requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-requests/{kind}/{request_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Review Change Request */
+        post: operations["fittings_endpoints_change_requests_post_review_change_request_post_review_change_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/combatlog": {
         parameters: {
             query?: never;
@@ -1750,6 +1787,23 @@ export interface paths {
         get: operations["fittings_endpoints_doctrines_get_doctrine_get_doctrine"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doctrines/{doctrine_id}/change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Doctrine Change Request */
+        post: operations["fittings_endpoints_doctrines_post_doctrine_change_request_post_doctrine_change_request"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2392,6 +2446,23 @@ export interface paths {
         get: operations["fittings_endpoints_eve_fittings_get_fitting_get_fitting"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fittings/{fitting_id}/change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Fitting Change Request */
+        post: operations["fittings_endpoints_eve_fittings_post_fitting_change_request_post_fitting_change_request"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6431,6 +6502,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/srp/programs/recalculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recalculation Preview */
+        get: operations["srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview"];
+        put?: never;
+        /** Post Recalculate Outstanding */
+        post: operations["srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/srp/programs/{program_id}/amount": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Program Amount */
+        post: operations["srp_endpoints_programs_post_program_amount_post_program_amount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/srp/resolve-killmail": {
         parameters: {
             query?: never;
@@ -10383,6 +10489,56 @@ export interface components {
             /** Title */
             title: string;
         };
+        /**
+         * ChangePreviewResponse
+         * @description Diff of a proposed edit. `request` is set once it was submitted.
+         */
+        ChangePreviewResponse: {
+            /**
+             * Applied
+             * @default false
+             */
+            applied?: boolean;
+            /** Diffs */
+            diffs: components["schemas"]["FieldDiffResponse"][];
+            request?: components["schemas"]["ChangeRequestResponse"] | null;
+        };
+        /**
+         * ChangeRequestResponse
+         * @description A doctrine or fitting change request with its diff against live data.
+         */
+        ChangeRequestResponse: {
+            /** Can Cancel */
+            can_cancel: boolean;
+            /** Can Review */
+            can_review: boolean;
+            /** Change Kind */
+            change_kind: string;
+            /** Diffs */
+            diffs: components["schemas"]["FieldDiffResponse"][];
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Review Note */
+            review_note: string;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Reviewed By */
+            reviewed_by: string | null;
+            /** Status */
+            status: string;
+            /** Submitted At */
+            submitted_at: string;
+            /** Submitted By */
+            submitted_by: string | null;
+            /** Target Id */
+            target_id: number;
+            /** Target Name */
+            target_name: string;
+            /** Tier */
+            tier: string;
+        };
         /** ChangelogEntryInput */
         ChangelogEntryInput: {
             /**
@@ -12395,6 +12551,13 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** DiffLineResponse */
+        DiffLineResponse: {
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+        };
         /** DiscordAckLoyaltyMarketOrderRequest */
         DiscordAckLoyaltyMarketOrderRequest: {
             /** Action */
@@ -12473,6 +12636,44 @@ export interface components {
             ship_type_id: number;
             /** Ships */
             ships: components["schemas"]["DoctrineShipResponse"][];
+        };
+        /** DoctrineChangeRequestBody */
+        DoctrineChangeRequestBody: {
+            composition: components["schemas"]["DoctrineCompositionRequest"];
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
+            /**
+             * Preview
+             * @default false
+             */
+            preview?: boolean;
+            /** Type */
+            type: string;
+        };
+        /** DoctrineCompositionRequest */
+        DoctrineCompositionRequest: {
+            /**
+             * Primary
+             * @default []
+             */
+            primary?: number[];
+            /**
+             * Secondary
+             * @default []
+             */
+            secondary?: number[];
+            /**
+             * Support
+             * @default []
+             */
+            support?: number[];
+            /**
+             * Utility
+             * @default []
+             */
+            utility?: number[];
         };
         /**
          * DoctrineFittingResponse
@@ -13891,6 +14092,15 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /** FieldDiffResponse */
+        FieldDiffResponse: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Lines */
+            lines: components["schemas"]["DiffLineResponse"][];
+        };
         /** FittingAddRequest */
         FittingAddRequest: {
             /** Fitting Id */
@@ -14413,6 +14623,20 @@ export interface components {
             preferred_type_id: number;
             /** Substitute Type Id */
             substitute_type_id: number;
+        };
+        /** FittingChangeRequest */
+        FittingChangeRequest: {
+            /** Description */
+            description: string;
+            /** Eft Format */
+            eft_format: string;
+            /**
+             * Preview
+             * @default false
+             */
+            preview?: boolean;
+            /** Tags */
+            tags: string[];
         };
         /** FittingExpectationRow */
         FittingExpectationRow: {
@@ -20824,6 +21048,41 @@ export interface components {
              */
             tracked?: number;
         };
+        /** RecalculationChangeResponse */
+        RecalculationChangeResponse: {
+            /** Character Name */
+            character_name: string;
+            /** Current Amount */
+            current_amount: number;
+            /** Id */
+            id: number;
+            /** New Amount */
+            new_amount: number;
+            /** Ship Name */
+            ship_name: string;
+            /** Status */
+            status: string;
+        };
+        /** RecalculationPreviewResponse */
+        RecalculationPreviewResponse: {
+            /** Changed Count */
+            changed_count: number;
+            /** Changes */
+            changes: components["schemas"]["RecalculationChangeResponse"][];
+            /** Current Total */
+            current_total: number;
+            /** New Total */
+            new_total: number;
+            /** Outstanding Count */
+            outstanding_count: number;
+        };
+        /** RecalculationResultResponse */
+        RecalculationResultResponse: {
+            /** Errors */
+            errors: number;
+            /** Updated */
+            updated: number;
+        };
         /** RecentItemSchema */
         RecentItemSchema: {
             /** Count */
@@ -21145,6 +21404,16 @@ export interface components {
             campaign_id: number;
             /** Segment Key */
             segment_key: string;
+        };
+        /** ReviewRequest */
+        ReviewRequest: {
+            /** Action */
+            action: string;
+            /**
+             * Review Note
+             * @default
+             */
+            review_note?: string;
         };
         /** ReviewResponse */
         ReviewResponse: {
@@ -21625,6 +21894,11 @@ export interface components {
         SetMyShipVolunteersRequest: {
             /** Selections */
             selections: components["schemas"]["ShipSelection"][];
+        };
+        /** SetProgramAmountRequest */
+        SetProgramAmountRequest: {
+            /** Srp Value */
+            srp_value: number;
         };
         /** SettingsAccount */
         SettingsAccount: {
@@ -27894,6 +28168,100 @@ export interface operations {
             };
         };
     };
+    fittings_endpoints_change_requests_get_change_requests_get_change_requests: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fittings_endpoints_change_requests_post_review_change_request_post_review_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     combatlog_router_query_saved_logs: {
         parameters: {
             query?: {
@@ -28445,6 +28813,68 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fittings_endpoints_doctrines_post_doctrine_change_request_post_doctrine_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctrine_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoctrineChangeRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangePreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -30096,6 +30526,68 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fittings_endpoints_eve_fittings_post_fitting_change_request_post_fitting_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FittingChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangePreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -39280,6 +39772,117 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecalculationPreviewResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecalculationResultResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_post_program_amount_post_program_amount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetProgramAmountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipReimbursementProgramAmountResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
