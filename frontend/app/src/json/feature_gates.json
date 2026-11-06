@@ -33,6 +33,26 @@
             "feature": "posts.create",
             "legacy": { "perms": ["posts.add_evepost"], "superuser": true }
         },
+        "posts.tags.manage": {
+            "feature": "posts.tags.manage",
+            "legacy": { "perms": ["posts.change_evetag"], "superuser": true }
+        },
+        "reddit.approvals.manage": {
+            "feature": "reddit.approvals.manage",
+            "legacy": { "perms": ["reddit.change_redditpostchangerequest"], "superuser": true }
+        },
+        "structures.timers.correct": {
+            "feature": "structures.timers.correct",
+            "legacy": { "perms": ["structures.change_evestructuretimer"], "superuser": true }
+        },
+        "fleets.npsi_sources.manage": {
+            "feature": "fleets.npsi_sources.manage",
+            "legacy": { "perms": ["fleets.change_npsieventsource"], "superuser": true }
+        },
+        "help_tickets.manage": {
+            "feature": "help_tickets.manage",
+            "legacy": { "perms": ["help_tickets.change_helprequestcategory"], "superuser": true }
+        },
         "srp.view": {
             "feature": "srp.view",
             "legacy": { "perms": ["srp.view_evefleetshipreimbursement"], "superuser": true }
@@ -44,6 +64,16 @@
         "srp.process": {
             "feature": "srp.process",
             "legacy": { "perms": ["srp.change_evefleetshipreimbursement"], "superuser": true }
+        },
+        "srp.programs.manage": {
+            "feature": "srp.programs.manage",
+            "legacy": { "perms": ["srp.change_shipreimbursementprogram"], "superuser": true }
+        },
+        "fittings.doctrine.edit": {
+            "feature": "fittings.doctrine.propose",
+            "legacy": { "custom": true },
+            "parity": "custom",
+            "note": "No site editor existed. The legacy check is superuser or the pilot feature (helpers/doctrine_editor.ts)."
         },
         "srp.process#strict": {
             "feature": "srp.process",

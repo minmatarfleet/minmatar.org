@@ -1,0 +1,74 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { PostTag } from '@dtypes/api.minmatar.org'
+
+/** Create, rename and merge post tags. post_tags_component saves and answers with this panel again. */
+interface Props {
+    tags:               PostTag[];
+    error?:             string | null;
+    notice?:            string | null;
+    [propName: string]: any;
+}
+
+const { tags, error = null, notice = null } = Astro.props
+
+const PARTIAL_URL = translatePath('/partials/post_tags_component')
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Input from '@components/blocks/Input.astro'
+import ManagePanel from '@components/blocks/ManagePanel.astro'
+import Select from '@components/blocks/Select.astro'
+---
+
+<ManagePanel id="post-tags-manager">
+    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+
+    <form class="[ manage-panel__form ]" hx-post={PARTIAL_URL} hx-target="#post-tags-manager" hx-swap="outerHTML" hx-disabled-elt="find button">
+        <input type="hidden" name="action" value="create" />
+        <label class="[ manage-panel__field ]">
+            <span>{t('post_tags.manage.new')}</span>
+            <Input type="text" name="tag" size="sm" required maxlength="100" autocomplete="off" />
+        </label>
+        <Button type="submit" size="sm">{t('post_tags.manage.add')}</Button>
+    </form>
+
+    {tags.length === 0 ?
+        <EmptyState title={t('post_tags.manage.empty')} />
+        :
+        <ul class="[ manage-panel__rows ]" role="list">
+            {tags.map(tag =>
+                <li class="[ manage-panel__row ]">
+                    <form class="[ manage-panel__form ]" hx-post={PARTIAL_URL} hx-target="#post-tags-manager" hx-swap="outerHTML" hx-disabled-elt="find button">
+                        <input type="hidden" name="action" value="rename" />
+                        <input type="hidden" name="tag_id" value={tag.tag_id} />
+                        <label class="[ manage-panel__field ]">
+                            <span class="[ visually-hidden ]">{t('post_tags.manage.rename')}</span>
+                            <Input type="text" name="tag" size="sm" required maxlength="100" value={tag.tag} autocomplete="off" />
+                        </label>
+                        <Button type="submit" size="sm" color="transparent">{t('post_tags.manage.rename')}</Button>
+                    </form>
+                    {tags.length > 1 &&
+                        <form class="[ manage-panel__form ]" hx-post={PARTIAL_URL} hx-target="#post-tags-manager" hx-swap="outerHTML" hx-disabled-elt="find button">
+                            <input type="hidden" name="action" value="merge" />
+                            <input type="hidden" name="tag_id" value={tag.tag_id} />
+                            <label class="[ manage-panel__field ]">
+                                <span class="[ visually-hidden ]">{t('post_tags.manage.merge_into')}</span>
+                                <Select name="into_tag_id" size="sm" required>
+                                    <option value="" selected>{t('post_tags.manage.merge_into')}</option>
+                                    {tags.filter(other => other.tag_id !== tag.tag_id).map(other =>
+                                        <option value={String(other.tag_id)}>{other.tag}</option>
+                                    )}
+                                </Select>
+                            </label>
+                            <Button type="submit" size="sm" color="transparent">{t('post_tags.manage.merge')}</Button>
+                        </form>
+                    }
+                </li>
+            )}
+        </ul>
+    }
+</ManagePanel>

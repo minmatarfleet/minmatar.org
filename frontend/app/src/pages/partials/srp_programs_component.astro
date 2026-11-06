@@ -1,0 +1,120 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'srp.programs.manage'))
+    return HTTP_403_Forbidden()
+
+import type { SRPProgram } from '@dtypes/api.minmatar.org'
+import { get_srp_programs, set_srp_program_amount } from '@helpers/api.minmatar.org/srp'
+import { number_thousand_separator } from '@helpers/numbers'
+
+const PROGRAMS_PARTIAL_URL = translatePath('/partials/srp_programs_component/')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let flash:string | false = false
+let saved_program_id = 0
+
+if (Astro.request.method === 'POST') {
+    const program_id = parseInt(Astro.url.searchParams.get('program_id') ?? '0')
+    const form = await Astro.request.formData()
+    const srp_value = parseInt(String(form.get('srp_value') ?? '').replace(/[^0-9]/g, ''))
+
+    try {
+        if (isNaN(srp_value))
+            throw new Error(t('srp_programs.invalid_amount'))
+        await set_srp_program_amount(auth_token as string, program_id, srp_value)
+        saved_program_id = program_id
+        flash = t('srp_programs.saved')
+    } catch (error) {
+        flash = error instanceof Error ? error.message : t('srp_programs.save_failed')
+    }
+}
+
+let fetch_error:Error | false = false
+let programs:SRPProgram[] = []
+
+try {
+    programs = await get_srp_programs(auth_token as string)
+} catch (error) {
+    fetch_error = error
+}
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: PROGRAMS_PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+            target: '#srp-programs',
+        }}
+    />
+    :
+    <Flexblock gap="var(--space-s)">
+        {flash && <p role="status">{flash}</p>}
+        {programs.length === 0 ?
+            <EmptyState title={t('srp_programs.empty')} />
+            :
+            <XFadeScroll>
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">{t('srp_programs.ship')}</th>
+                            <th scope="col">{t('srp_programs.class')}</th>
+                            <th scope="col">{t('srp_programs.current')}</th>
+                            <th scope="col">{t('srp_programs.new_amount')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {programs.map((program) =>
+                            <tr>
+                                <td>{program.eve_type.name}</td>
+                                <td>{program.eve_group.name}</td>
+                                <td>{program.current_amount ? number_thousand_separator(program.current_amount.srp_value, lang) : '—'}</td>
+                                <td>
+                                    <form
+                                        hx-post={`${PROGRAMS_PARTIAL_URL}?program_id=${program.id}`}
+                                        hx-target="#srp-programs"
+                                        hx-swap="innerHTML"
+                                    >
+                                        <FlexInline gap="var(--space-2xs)">
+                                            <Input
+                                                width="14rem"
+                                                type="text"
+                                                inputmode="numeric"
+                                                name="srp_value"
+                                                aria-label={`${t('srp_programs.new_amount')}: ${program.eve_type.name}`}
+                                                value={saved_program_id === program.id ? '' : String(program.current_amount?.srp_value ?? '')}
+                                            />
+                                            <Button type="submit" size="sm" color="green">{t('srp_programs.save')}</Button>
+                                        </FlexInline>
+                                    </form>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </XFadeScroll>
+        }
+    </Flexblock>
+}

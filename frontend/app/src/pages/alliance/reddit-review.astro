@@ -1,0 +1,84 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'reddit.approvals.manage')) return HTTP_403_Forbidden()
+
+import type { RedditReviewItem, RedditRotationMonth } from '@dtypes/api.minmatar.org'
+import { get_reddit_review_queue, get_reddit_rotation } from '@helpers/api.minmatar.org/reddit'
+
+let items: RedditReviewItem[] = []
+let months: RedditRotationMonth[] = []
+let data_fetching_error: Error | false = false
+
+try {
+    ;[items, months] = await Promise.all([
+        get_reddit_review_queue(auth_token).then(queue => queue.items),
+        get_reddit_rotation(auth_token).then(rotation => rotation.months),
+    ])
+} catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
+    data_fetching_error = error
+}
+
+const tabs = [
+    {
+        id: 'queue',
+        label: t('reddit_review.tab.queue'),
+        meta: String(items.length),
+        ...(items.length > 0 ? { flag: 'attention' as const } : {}),
+    },
+    { id: 'rotation', label: t('reddit_review.tab.rotation') },
+]
+
+const page_title = t('reddit_review.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import RedditReviewQueue from '@components/blocks/RedditReviewQueue.astro'
+import RedditRotationPanel from '@components/blocks/RedditRotationPanel.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+---
+
+<Viewport title={page_title} meta_description={t('page_finder.reddit_review.description')}>
+    <PageWide
+        cover={{
+            image: '/images/propaganda-cover.jpg',
+            image_990: '/images/propaganda-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+    >
+        <PageTitle slot="header">{page_title}</PageTitle>
+
+        <Flexblock gap="var(--space-l)">
+            <p>{t('reddit_review.leading_text')}</p>
+            {data_fetching_error ?
+                <ErrorRefetch args={{ partial: translatePath('/partials/reddit_review_component'), error: data_fetching_error, delay: 0 }} />
+                :
+                <SectionTabs aria_label={t('reddit_review.tabs_label')} id_prefix="reddit-review" tabs={tabs}>
+                    <SectionTabPanel id="queue" id_prefix="reddit-review" is_default={true}>
+                        <RedditReviewQueue items={items} />
+                    </SectionTabPanel>
+                    <SectionTabPanel id="rotation" id_prefix="reddit-review">
+                        <RedditRotationPanel months={months} />
+                    </SectionTabPanel>
+                </SectionTabs>
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>

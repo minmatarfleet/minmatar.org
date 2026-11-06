@@ -106,6 +106,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="srp.change_evefleetshipreimbursement",
         staff_permission="srp.change_evefleetshipreimbursement",
     ),
+    "srp.programs.manage": FeatureDefinition(
+        code="srp.programs.manage",
+        label="Manage SRP program amounts",
+        scope=FeatureScope.STAFF,
+        description=(
+            "Edit the SRP payout per hull and recalculate outstanding "
+            "requests."
+        ),
+        legacy_permission="srp.change_shipreimbursementprogram",
+        staff_permission="srp.change_shipreimbursementprogram",
+    ),
     "structures.view": FeatureDefinition(
         code="structures.view",
         label="View structures",
@@ -129,6 +140,39 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         description="Create and update structure timers.",
         legacy_permission="structures.add_evestructuretimer",
         default_affiliation_names=_aff("Alliance"),
+    ),
+    "structures.timers.correct": FeatureDefinition(
+        code="structures.timers.correct",
+        label="Correct structure timers",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Edit or delete a wrong structure timer and review the "
+            "structure pings sent to Discord."
+        ),
+        legacy_permission="structures.change_evestructuretimer",
+        default_tribe_group_codes=_tribe_codes("pulse.fleet-commanders"),
+    ),
+    "fleets.npsi_sources.manage": FeatureDefinition(
+        code="fleets.npsi_sources.manage",
+        label="Manage NPSI event sources",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Add, edit and disable the external calendars imported into the "
+            "fleet schedule, and preview what they imported."
+        ),
+        legacy_permission="fleets.change_npsieventsource",
+        default_tribe_group_codes=_tribe_codes("pulse.fleet-commanders"),
+    ),
+    "help_tickets.manage": FeatureDefinition(
+        code="help_tickets.manage",
+        label="Manage help ticket categories",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Add and rename help ticket categories, set who owns them and "
+            "where they are routed, and order the panel options."
+        ),
+        legacy_permission="help_tickets.change_helprequestcategory",
+        default_tribe_group_codes=_tribe_codes("pulse.technology"),
     ),
     "moons.view": FeatureDefinition(
         code="moons.view",
@@ -336,14 +380,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
     "fittings.doctrine.approve": FeatureDefinition(
         code="fittings.doctrine.approve",
         label="Approve doctrine changes",
-        scope=FeatureScope.STAFF,
+        scope=FeatureScope.TRIBE_CHIEF,
         description="Approve doctrine and fitting change requests.",
+        default_tribe_group_codes=_tribe_codes("pulse.readiness"),
     ),
     "fittings.doctrine.propose": FeatureDefinition(
         code="fittings.doctrine.propose",
         label="Propose doctrine changes",
-        scope=FeatureScope.STAFF,
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
         description="Propose doctrine and fitting changes.",
+        default_tribe_group_codes=_tribe_codes("pulse.readiness"),
     ),
     "surveys.manage": FeatureDefinition(
         code="surveys.manage",
@@ -387,6 +433,25 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         staff_permission="intel.change_intelaffiliation",
         legacy_permission="intel.change_intelaffiliation",
+    ),
+    "posts.tags.manage": FeatureDefinition(
+        code="posts.tags.manage",
+        label="Manage post tags",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description="Create, rename and merge the tags used on posts.",
+        legacy_permission="posts.change_evetag",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+    ),
+    "reddit.approvals.manage": FeatureDefinition(
+        code="reddit.approvals.manage",
+        label="Review corporation Reddit posts",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Approve or reject corporation Reddit post templates and "
+            "changes, and run the Reddit rotation."
+        ),
+        legacy_permission="reddit.change_redditpostchangerequest",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
     ),
     "campaigns.view": FeatureDefinition(
         code="campaigns.view",

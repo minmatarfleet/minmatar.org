@@ -576,12 +576,57 @@
         }
     },
     {
+        "slug": "propaganda.tags",
+        "path": "/alliance/propaganda/tags/",
+        "publish": true,
+        "description": "page_finder.propaganda.tags.description",
+        "permissions": {
+            "gate": "posts.tags.manage"
+        }
+    },
+    {
         "slug": "propaganda.trash",
         "path": "/alliance/propaganda/trash/",
         "publish": true,
         "description": "page_finder.propaganda.trash.description",
         "permissions": {
             "gate": "posts.create"
+        }
+    },
+    {
+        "slug": "reddit_review",
+        "path": "/alliance/reddit-review/",
+        "publish": true,
+        "description": "page_finder.reddit_review.description",
+        "permissions": {
+            "gate": "reddit.approvals.manage"
+        }
+    },
+    {
+        "slug": "intel.timers.manage",
+        "path": "/intel/timers/manage/",
+        "publish": true,
+        "description": "page_finder.intel.timers.manage.description",
+        "permissions": {
+            "gate": "structures.timers.correct"
+        }
+    },
+    {
+        "slug": "fleets.npsi_sources",
+        "path": "/fleets/npsi-sources/",
+        "publish": true,
+        "description": "page_finder.fleets.npsi_sources.description",
+        "permissions": {
+            "gate": "fleets.npsi_sources.manage"
+        }
+    },
+    {
+        "slug": "help_tickets",
+        "path": "/alliance/help-tickets/",
+        "publish": true,
+        "description": "page_finder.help_tickets.description",
+        "permissions": {
+            "gate": "help_tickets.manage"
         }
     },
     {
@@ -638,6 +683,20 @@
         ],
         "permissions": {
             "gate": "srp.view"
+        }
+    },
+    {
+        "slug": "ships.srp.programs",
+        "path": "/ships/srp/programs/",
+        "publish": true,
+        "description": "page_finder.ships.srp.programs.description",
+        "keywords": [
+            "srp",
+            "amount",
+            "recalculate"
+        ],
+        "permissions": {
+            "gate": "srp.programs.manage"
         }
     },
     {

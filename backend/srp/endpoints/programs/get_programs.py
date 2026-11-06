@@ -1,6 +1,6 @@
 """GET "" — list SRP programs with current amount per ship type."""
 
-from groups.helpers.feature_access import require_feature
+from groups.helpers.feature_access import can_use_feature, require_feature
 from typing import List
 
 from app.errors import ErrorResponse
@@ -26,9 +26,16 @@ def get_srp_programs(request):
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
-    denied = require_current_srp_onboarding(request)
-    if denied:
-        return denied
+    # Program managers edit amounts on the site: no onboarding wall for
+    # them. Superusers hold every permission, so only explicit assignees
+    # skip it (same rule as bypass_srp_onboarding).
+    is_manager = not request.user.is_superuser and can_use_feature(
+        request.user, "srp.programs.manage"
+    )
+    if not is_manager:
+        denied = require_current_srp_onboarding(request)
+        if denied:
+            return denied
 
     programs = ShipReimbursementProgram.objects.select_related(
         "eve_type__eve_group__eve_category"

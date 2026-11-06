@@ -1,0 +1,87 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { DoctrineChangeRequestRow } from '@dtypes/api.minmatar.org'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ChangeDiff from '@components/blocks/ChangeDiff.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    change_request:     DoctrineChangeRequestRow;
+    [propName: string]: any;
+}
+
+const { change_request } = Astro.props
+
+const QUEUE_PARTIAL_URL = translatePath('/partials/doctrine_change_queue_component/')
+const review_url = `${QUEUE_PARTIAL_URL}?kind=${change_request.kind}&id=${change_request.id}`
+
+const target_path = change_request.kind === 'doctrine'
+    ? `/ships/doctrines/${change_request.target_id}/`
+    : `/ships/fittings/${change_request.target_id}/`
+---
+
+<ComponentBlock>
+    <Flexblock gap="var(--space-s)">
+        <FlexInline justification="space-between">
+            <Flexblock gap="var(--space-3xs)">
+                <strong>
+                    <a href={translatePath(target_path)}>{change_request.target_name}</a>
+                </strong>
+                <small>
+                    {t('doctrine_changes.submitted_by')} {change_request.submitted_by ?? '?'}
+                </small>
+            </Flexblock>
+            <FlexInline gap="var(--space-2xs)">
+                <Tag color="alliance-blue" text={t(change_request.kind === 'doctrine' ? 'doctrine_changes.doctrine' : 'doctrine_changes.fitting')} />
+                <Tag variant="outline" text={change_request.status} />
+            </FlexInline>
+        </FlexInline>
+
+        <ChangeDiff diffs={change_request.diffs} />
+
+        {change_request.review_note && <p><em>{change_request.review_note}</em></p>}
+
+        {(change_request.can_review || change_request.can_cancel) &&
+            <form
+                hx-post={review_url}
+                hx-target="#doctrine-change-queue"
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+            >
+                <FlexInline gap="var(--space-xs)">
+                    {change_request.can_review &&
+                        <Input
+                            type="text"
+                            name="review_note"
+                            maxlength="500"
+                            placeholder={t('doctrine_changes.note')}
+                            aria-label={t('doctrine_changes.note')}
+                        />
+                    }
+                    {change_request.can_review &&
+                        <Button type="submit" name="action" value="approve" color="green" size="sm">
+                            {t('doctrine_changes.approve')}
+                        </Button>
+                    }
+                    {change_request.can_review &&
+                        <Button type="submit" name="action" value="reject" size="sm">
+                            {t('doctrine_changes.reject')}
+                        </Button>
+                    }
+                    {change_request.can_cancel &&
+                        <Button type="submit" name="action" value="cancel" color="transparent" size="sm">
+                            {t('doctrine_changes.cancel')}
+                        </Button>
+                    }
+                </FlexInline>
+            </form>
+        }
+    </Flexblock>
+</ComponentBlock>
