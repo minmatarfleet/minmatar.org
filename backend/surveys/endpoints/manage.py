@@ -113,6 +113,22 @@ def _clean_spotlight(questions) -> list | str:
     return out
 
 
+def _apply_window(campaign, field: str, raw: str | None, *, stamp: bool):
+    """Set a window timestamp.
+
+    A real value is stored. A blank string from the edit form means "cleared",
+    except when this save is opening or closing a survey that has no stamp yet:
+    that blank is the empty input, and the stamp below fills it. ``None`` means
+    the client did not send the field.
+    """
+    if raw:
+        setattr(campaign, field, raw)
+    elif raw == "" and not (stamp and not getattr(campaign, field)):
+        setattr(campaign, field, None)
+    if stamp and not getattr(campaign, field):
+        setattr(campaign, field, timezone.now())
+
+
 def _apply_text_edits(campaign, payload) -> str | None:
     """Apply title and spotlight edits; return an error message or None."""
     if payload.title is not None:
@@ -147,14 +163,18 @@ def update_campaign(request, campaign_id: int, payload: UpdateCampaignRequest):
         return 400, {"detail": error}
     if payload.status:
         campaign.status = payload.status
-        if payload.status == STATUS_OPEN and not campaign.opens_at:
-            campaign.opens_at = timezone.now()
-        if payload.status == STATUS_CLOSED and not campaign.closes_at:
-            campaign.closes_at = timezone.now()
-    if payload.opens_at is not None:
-        campaign.opens_at = payload.opens_at or None
-    if payload.closes_at is not None:
-        campaign.closes_at = payload.closes_at or None
+    _apply_window(
+        campaign,
+        "opens_at",
+        payload.opens_at,
+        stamp=payload.status == STATUS_OPEN,
+    )
+    _apply_window(
+        campaign,
+        "closes_at",
+        payload.closes_at,
+        stamp=payload.status == STATUS_CLOSED,
+    )
     campaign.save()
 
     if campaign.status == STATUS_CLOSED:
