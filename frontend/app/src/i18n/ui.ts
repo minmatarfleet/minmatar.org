@@ -4333,6 +4333,8 @@ export const ui = {
         'learning_center.certificates_edit_admin': 'Manage certificates and guides',
         'learning_center.skillsets_edit_admin': 'Manage skillsets',
 
+        'learning.manage.page_title': 'Manage learning',
+        'creators.manage.page_title': 'Creator moderation',
         'learning_manage.page_title': 'Manage learning',
         'learning_manage.description': 'Author certificates, skillsets, learning guides and onboarding programs.',
         'learning_manage.back': 'Back to Learning',
