@@ -5,7 +5,9 @@ from __future__ import annotations
 from eveonline.killmail_classes import SMALL_GANG_MAX_ATTACKERS
 
 # Paths under /api/campaigns that a campaign slug would otherwise shadow.
-RESERVED_SLUGS = frozenset({"entities", "overlay"})
+RESERVED_SLUGS = frozenset(
+    {"entities", "overlay", "payout-codes", "new", "event-codes"}
+)
 
 # --- Complex LP base tiers -------------------------------------------------
 # Base LP by complex class before the system multiplier, contested factor and

@@ -579,7 +579,7 @@ class PublishingTestCase(ActivityTestCase):
             [w["kind"] for w in highlights["latest_work"]], ["post"]
         )
         self.assertEqual(highlights["all_time"]["videos"], 0)
-        rows, totals, _ = run_publishing_report(
+        _, totals, _ = run_publishing_report(
             self.group, self.period, ReportScope.ROSTER, {}
         )
         self.assertEqual(totals["videos"], 0)

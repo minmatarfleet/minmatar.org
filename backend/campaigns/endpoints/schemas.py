@@ -605,3 +605,110 @@ class CampaignOverlay(Schema):
     """The desktop app's Campaigns window."""
 
     campaign: CampaignOverlayCampaign | None = None
+
+
+# --- Settings (operator screens that used to live in Django admin) ---------
+
+
+class CampaignPatchRequest(Schema):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    tagline: str | None = Field(default=None, max_length=200)
+    description_md: str | None = None
+    status: str | None = None
+    start_at: datetime | None = None
+    end_at: datetime | None = None
+
+
+class SystemAddRequest(Schema):
+    solar_system_id: int
+    goal: str | None = None
+    role: str | None = None
+    priority: str | None = None
+
+
+class FittingAddRequest(Schema):
+    fitting_id: int
+    role_label: str = Field(default="", max_length=64)
+    srp_eligible: bool = True
+
+
+class SettingsSystemOut(Schema):
+    id: int
+    solar_system_id: int
+    name: str
+    goal: str
+    role: str
+    priority: str
+    is_fw_objective: bool
+    retired: bool
+
+
+class SettingsWeekTargetOut(Schema):
+    id: int
+    system: str
+    metric: str
+    target: float
+    progress: float
+    proposed: bool
+
+
+class SettingsStructureOut(Schema):
+    id: int
+    name: str
+    structure_type: str
+    system_name: str
+
+
+class SettingsOrderOut(Schema):
+    id: int
+    kind: str
+    points: int
+    system: str = ""
+
+
+class CampaignSettingsOut(Schema):
+    slug: str
+    name: str
+    tagline: str
+    description_md: str
+    status: str
+    kind: str
+    start_at: datetime
+    end_at: datetime
+    commander_order_text: str
+    commander_order_is_draft: bool
+    systems: list[SettingsSystemOut]
+    areas: list[CampaignAreaOut]
+    parties: list[CampaignPartyOut]
+    structures: list[SettingsStructureOut]
+    fittings: list[CampaignFittingOut]
+    week_targets: list[SettingsWeekTargetOut]
+    daily_orders: list[SettingsOrderOut]
+
+
+class PayoutCodeOut(Schema):
+    event_code: int
+    site_kind: str
+    label: str
+    confirmed: bool
+    confirmed_by: str = ""
+    seen_30d: int = 0
+
+
+class UnmappedPayoutCodeOut(Schema):
+    event_code: int
+    seen: int
+    last_seen: datetime
+    sample_amount_lp: int
+
+
+class PayoutCodesOut(Schema):
+    codes: list[PayoutCodeOut]
+    unmapped: list[UnmappedPayoutCodeOut]
+    site_kinds: list[str]
+
+
+class PayoutCodeRequest(Schema):
+    site_kind: str
+    label: str = Field(default="", max_length=64)
+    confirmed: bool = False
