@@ -90,7 +90,6 @@ GROUP_LEADER_METRIC = {
     "supply.capital-production": "delivered_units",
     "supply.market": "fits_sold",
     "supply.loyalty-points": "lp",
-    "pulse.advocates": "applications_accepted",
     "pulse.readiness": "doctrine_changes",
     "pulse.technology": "tickets_resolved",
     "pulse.thinkspeak": "pieces",

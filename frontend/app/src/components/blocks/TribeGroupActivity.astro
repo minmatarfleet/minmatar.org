@@ -25,7 +25,6 @@ import ActivityAllTime from '@components/blocks/tribe_activity/ActivityAllTime.a
 import ActivityContributors from '@components/blocks/tribe_activity/ActivityContributors.astro'
 import ActivityHullTiles from '@components/blocks/tribe_activity/ActivityHullTiles.astro'
 import ActivityWeeklyBars from '@components/blocks/tribe_activity/ActivityWeeklyBars.astro'
-import ActivityWelcomedWall from '@components/blocks/tribe_activity/ActivityWelcomedWall.astro'
 import ActivityDoctrineGrid from '@components/blocks/tribe_activity/ActivityDoctrineGrid.astro'
 import ActivityFixedTickets from '@components/blocks/tribe_activity/ActivityFixedTickets.astro'
 import ActivityLatestWork from '@components/blocks/tribe_activity/ActivityLatestWork.astro'
@@ -45,8 +44,7 @@ const all_time = has_data && activity.all_time
 const contributor_spec = activity.contributors?.(t)
 const show_lower = Boolean(activity.block || contributor_spec || activity.coming_soon)
 // Lists that name pilots or quote tickets only reach roster viewers.
-const private_block_hidden = (activity.block === 'welcomed' && !highlights.welcomed)
-    || (activity.block === 'fixed' && !highlights.fixed)
+const private_block_hidden = (activity.block === 'fixed' && !highlights.fixed)
 ---
 
 <section class="[ tribe-group-activity ]" aria-label={t('tribes.detail.activity')}>
@@ -93,7 +91,6 @@ const private_block_hidden = (activity.block === 'welcomed' && !highlights.welco
                                         record_week_lp={highlights.record_week_lp}
                                     />
                                 }
-                                {activity.block === 'welcomed' && <ActivityWelcomedWall welcomed={highlights.welcomed ?? []} />}
                                 {activity.block === 'doctrine_grid' && <ActivityDoctrineGrid />}
                                 {activity.block === 'fixed' && <ActivityFixedTickets fixed={highlights.fixed ?? []} />}
                                 {activity.block === 'latest_work' && <ActivityLatestWork work={highlights.latest_work ?? []} />}

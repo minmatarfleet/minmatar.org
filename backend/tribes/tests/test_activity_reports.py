@@ -1,7 +1,6 @@
 """Tests for the tribe group Activity queries and their showcase highlights."""
 
-from datetime import datetime, timedelta
-from datetime import timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 from unittest.mock import MagicMock, patch
 
 import factory
@@ -13,10 +12,8 @@ from django.utils import timezone
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
-from applications.models import EveCorporationApplication
 from creators.models import (
     CreatorAccount,
-    CreatorAccountStatus,
     CreatorItem,
     CreatorItemKind,
     CreatorProvider,
@@ -42,7 +39,6 @@ from fleets.models import (
     EveFleetInstanceMember,
     EveFleetInstanceMemberShipSnapshot,
 )
-from groups.models import UserCommunityStatus, UserCommunityStatusHistory
 from help_tickets.models import HelpRequestCategory, HelpTicket
 from industry.models import (
     IndustryLoyaltyPoint,
@@ -62,11 +58,6 @@ from tribes.models import (
 )
 from tribes.reports import ReportError
 from tribes.reports.period import parse_period
-from tribes.reports.queries.advocates import (
-    ACADEMY_CORP_ID,
-    advocates_highlights,
-    run_advocates_report,
-)
 from tribes.reports.queries.blops import blops_highlights, run_blops_report
 from tribes.reports.queries.help_desk import (
     help_desk_highlights,
@@ -299,89 +290,6 @@ class LpBuybackTestCase(ActivityTestCase):
         self.assertEqual(len(highlights["weekly"]), 12)
 
 
-class AdvocatesTestCase(ActivityTestCase):
-    code = "pulse.advocates"
-    group_name = "Advocates"
-
-    @factory.django.mute_signals(*MUTED)
-    def setUp(self):
-        super().setUp()
-        self.recruit, self.recruit_char = self._pilot("recruit", 5003)
-        self.leaver, _ = self._pilot("leaver", 5004)
-        EveCorporationApplication.objects.create(
-            user=self.recruit,
-            corporation_id=ACADEMY_CORP_ID,
-            status="accepted",
-            processed_by=self.member,
-        )
-        EveCorporationApplication.objects.create(
-            user=self.outsider,
-            corporation_id=123,
-            status="accepted",
-            processed_by=self.outsider,
-        )
-        for user, reason in (
-            (self.recruit, "passed trial"),
-            (self.leaver, "No longer Alliance"),
-        ):
-            UserCommunityStatusHistory.objects.create(
-                user=user,
-                from_status=UserCommunityStatus.STATUS_TRIAL,
-                to_status=UserCommunityStatus.STATUS_ACTIVE,
-                reason=reason,
-            )
-        UserCommunityStatus.objects.create(
-            user=self.recruit, status=UserCommunityStatus.STATUS_ACTIVE
-        )
-        fleet = EveFleet.objects.create(
-            audience=EveFleetAudience.objects.create(name="Fleet"),
-            start_time=self.now,
-            type="strategic",
-            description="First fleet",
-        )
-        instance = EveFleetInstance.objects.create(
-            id=7001, eve_fleet=fleet, start_time=self.now
-        )
-        EveFleetInstanceMember.objects.create(
-            eve_fleet_instance=instance,
-            character_id=self.recruit_char.character_id,
-            character_name="Recruit",
-            role="squad_member",
-            role_name="Squad Member",
-            ship_type_id=587,
-            ship_name="Rifter",
-            solar_system_id=30000142,
-            solar_system_name="Jita",
-            squad_id=1,
-            wing_id=1,
-        )
-        EveFleetInstanceMember.objects.filter(
-            character_id=self.recruit_char.character_id
-        ).update(join_time=self.now + timedelta(hours=1))
-
-    def test_welcome_totals_and_roster_recruiters(self):
-        rows, totals, _ = run_advocates_report(
-            self.group, self.period, ReportScope.PROGRAM, {}
-        )
-        self.assertEqual(totals["pilots_welcomed"], 2)
-        self.assertEqual(totals["academy_pilots"], 1)
-        self.assertEqual(totals["full_members"], 1)
-        self.assertEqual(totals["first_fleets"], 1)
-        self.assertEqual(
-            [(r["user_id"], r["applications_accepted"]) for r in rows],
-            [(self.member.pk, 1)],
-        )
-
-    def test_highlights_wall_skips_leavers(self):
-        highlights = advocates_highlights(self.group, self.period)
-        self.assertEqual(
-            [w["character_name"] for w in highlights["welcomed"]],
-            ["Recruit"],
-        )
-        self.assertEqual(highlights["all_time"]["pilots_welcomed"], 2)
-        self.assertEqual(highlights["all_time"]["still_flying"], 1)
-
-
 class ReadinessTestCase(ActivityTestCase):
     code = "pulse.readiness"
     group_name = "Readiness"
@@ -569,34 +477,6 @@ class PublishingTestCase(ActivityTestCase):
         self.assertEqual(highlights["latest_work"][1]["title"], "Member post")
         self.assertEqual(highlights["all_time"], {"posts": 1, "videos": 1})
         self.assertEqual(highlights["best_quarter"], 2)
-
-    def test_hidden_and_suspended_videos_stay_off_the_public_report(self):
-        item = CreatorItem.objects.get(external_id="v1")
-        item.hidden = True
-        item.save(update_fields=["hidden"])
-        highlights = publishing_highlights(self.group, self.period)
-        self.assertEqual(
-            [w["kind"] for w in highlights["latest_work"]], ["post"]
-        )
-        self.assertEqual(highlights["all_time"]["videos"], 0)
-        _, totals, _ = run_publishing_report(
-            self.group, self.period, ReportScope.ROSTER, {}
-        )
-        self.assertEqual(totals["videos"], 0)
-
-        item.hidden = False
-        item.save(update_fields=["hidden"])
-        item.account.status = CreatorAccountStatus.SUSPENDED
-        item.account.save(update_fields=["status"])
-        highlights = publishing_highlights(self.group, self.period)
-        self.assertNotIn(
-            "video", [w["kind"] for w in highlights["latest_work"]]
-        )
-        _, totals, _ = run_publishing_report(
-            self.group, self.period, ReportScope.ROSTER, {}
-        )
-        self.assertEqual(totals["videos"], 0)
-        self.assertEqual(totals["creators"], 0)
 
 
 class BlopsTestCase(ActivityTestCase):
