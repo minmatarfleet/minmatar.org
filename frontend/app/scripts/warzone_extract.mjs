@@ -434,6 +434,29 @@ for (const g of candidates) {
     console.error(`  ${g.kind} ${g.id}: ${g.killmails}/${exhausted ? total : '>' + Math.floor(limit)} -> ${share > FW_SHARE_THRESHOLD ? 'keep' : 'drop'}`)
 }
 
+// Pilot counts next to each group, from ESI (public, no auth). A corporation's
+// member_count is on its own record; an alliance is the sum over its member
+// corporations. A failed lookup leaves null and the report omits the count.
+async function esi_member_count(kind, id) {
+    try {
+        if (kind === 'corporation') {
+            const corp = await fetch_json(`https://esi.evetech.net/latest/corporations/${id}/`)
+            return corp.member_count ?? null
+        }
+        const corp_ids = await fetch_json(`https://esi.evetech.net/latest/alliances/${id}/corporations/`)
+        let total = 0
+        for (const corp_id of corp_ids) {
+            const corp = await fetch_json(`https://esi.evetech.net/latest/corporations/${corp_id}/`)
+            total += corp.member_count ?? 0
+        }
+        return total
+    } catch (error) {
+        console.error(`  member count for ${kind} ${id} failed: ${error.message}`)
+        return null
+    }
+}
+for (const g of qualified) g.pilots = await esi_member_count(g.kind, g.id)
+
 // Traffic rows: top systems by ships this month.
 const traffic = system_ids
     .map((sid) => {
@@ -521,7 +544,7 @@ const groups_ts = (rows) => rows.map((g, i) => {
     const prev_rank = prev_board.get(g.id)
     const rank_delta = COMPARE && prev_rank != null ? prev_rank - (i + 1) : null
     const new_to_board = COMPARE && has_prev_board && prev_rank == null
-    return `    { id: ${ti(g.id)}, kind: '${g.kind}', name: ${JSON.stringify(names.get(g.id) ?? String(g.id))}, killmails: ${ti(g.killmails)}, killmails_pct: ${pct}, rank_delta: ${rank_delta}, new_to_board: ${new_to_board}, is_new: ${COMPARE ? prev_km === 0 : false}, isk_destroyed: ${ti(g.isk)}, ships_lost: ${ti(g.losses)}, militia: ${g.militia_label ? `'${g.militia_label}'` : 'null'}, faction: ${JSON.stringify(g.faction)}, faction_id: ${g.faction_id ?? 'null'}, fw_share: ${g.share.toFixed(2)} },`
+    return `    { id: ${ti(g.id)}, kind: '${g.kind}', name: ${JSON.stringify(names.get(g.id) ?? String(g.id))}, killmails: ${ti(g.killmails)}, killmails_pct: ${pct}, rank_delta: ${rank_delta}, new_to_board: ${new_to_board}, is_new: ${COMPARE ? prev_km === 0 : false}, isk_destroyed: ${ti(g.isk)}, ships_lost: ${ti(g.losses)}, militia: ${g.militia_label ? `'${g.militia_label}'` : 'null'}, faction: ${JSON.stringify(g.faction)}, faction_id: ${g.faction_id ?? 'null'}, fw_share: ${g.share.toFixed(2)}, pilots: ${g.pilots ?? 'null'} },`
 }).join('\n')
 const traffic_ts = (rows) => rows.map((r) => `    { system: ${JSON.stringify(r.name)}, system_id: ${ti(r.sid)}, front: ${JSON.stringify(front_of(r.region, r.constellation))}, ships: ${ti(r.ships)}, vs_last_month: ${r.vs}, isk: ${ti(r.isk)}, isk_label: ${JSON.stringify(isk_label(r.isk))}, holds_today: ${JSON.stringify(r.holds ?? null)}, href: ${JSON.stringify(`https://zkillboard.com/system/${r.sid}/`)} },`).join('\n')
 

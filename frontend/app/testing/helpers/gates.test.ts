@@ -87,6 +87,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'applications.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('applications.change_evecorporationapplication'),
     'characters.view_staff': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('eveonline.view_evecharacter')),
     'corporations.members.view_all': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.view_evecorporation'),
+    'industry.order.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryorder'),
     'surveys.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('surveys.change_surveycampaign'),
     'surveys.results.view': (is_superuser) => is_superuser,
     'learning.admin': (is_superuser, user_permissions) => is_superuser

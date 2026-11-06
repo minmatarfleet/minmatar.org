@@ -1953,6 +1953,7 @@ export interface BuildPack {
 }
 
 export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
+export type OrderPatch = ApiRequest<'PatchOrderRequest'>
 
 export interface OrderLpStockpileContact {
     character_name:     string;

@@ -4082,6 +4082,15 @@
             "title": "Response Count",
             "type": "integer"
           },
+          "spotlight_questions": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Spotlight Questions",
+            "type": "array"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -25804,6 +25813,17 @@
             "title": "Blueprint Coordinators",
             "type": "array"
           },
+          "campaign_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Id"
+          },
           "campaign_slug": {
             "anyOf": [
               {
@@ -27217,6 +27237,51 @@
               }
             ],
             "title": "Campaign Id"
+          },
+          "contract_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract To"
+          },
+          "fulfilled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fulfilled"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
           }
         },
         "title": "PatchOrderRequest",
@@ -32149,6 +32214,48 @@
         "title": "SiteOut",
         "type": "object"
       },
+      "SpotlightQuestionInput": {
+        "description": "One one-off question merged in before the Open floor.",
+        "properties": {
+          "choices": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "help": {
+            "default": "",
+            "title": "Help",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "single",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "SpotlightQuestionInput",
+        "type": "object"
+      },
       "SrpCategory": {
         "enum": [
           "logistics",
@@ -36135,6 +36242,20 @@
             ],
             "title": "Opens At"
           },
+          "spotlight_questions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SpotlightQuestionInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotlight Questions"
+          },
           "status": {
             "anyOf": [
               {
@@ -36145,6 +36266,17 @@
               }
             ],
             "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "title": "UpdateCampaignRequest",
