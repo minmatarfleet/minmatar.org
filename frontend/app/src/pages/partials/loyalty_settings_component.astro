@@ -1,0 +1,220 @@
+---
+import { i18n, dynamic_key } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { LoyaltySettingsCurrency } from '@dtypes/api.minmatar.org'
+import {
+    add_loyalty_account,
+    add_loyalty_contact,
+    add_loyalty_currency,
+    delete_loyalty_contact,
+    get_loyalty_settings,
+    patch_loyalty_account,
+    patch_loyalty_contact,
+    patch_loyalty_currency,
+} from '@helpers/api.minmatar.org/loyalty_settings'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const ROOT_ID = 'loyalty-settings'
+const PARTIAL_URL = translatePath('/partials/loyalty_settings_component/')
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+if (!can(await get_gates(Astro), 'industry.loyalty.settings')) return HTTP_403_Forbidden()
+
+let flash: { error: boolean, text: string } | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    const text = (name: string) => String(form.get(name) ?? '').trim()
+    const number = (name: string) => parseInt(text(name))
+    const optional_number = (name: string) => text(name) === '' ? null : number(name)
+    const checked = (name: string) => form.get(name) === 'on'
+    try {
+        switch (action) {
+            case 'add_currency':
+                await add_loyalty_currency(auth_token, {
+                    name: text('name'),
+                    corporation_id: number('corporation_id'),
+                    default_isk_per_lp: number('default_isk_per_lp') || 800,
+                    express_isk_per_lp: optional_number('express_isk_per_lp'),
+                })
+                break
+            case 'save_currency': {
+                const express = optional_number('express_isk_per_lp')
+                await patch_loyalty_currency(auth_token, number('id'), {
+                    name: text('name'),
+                    default_isk_per_lp: number('default_isk_per_lp'),
+                    express_isk_per_lp: express,
+                    clear_express: express === null,
+                    is_active: checked('is_active'),
+                    allow_buy: checked('allow_buy'),
+                    allow_sell: checked('allow_sell'),
+                    notes: text('notes'),
+                })
+                break
+            }
+            case 'add_account':
+                await add_loyalty_account(auth_token, {
+                    loyalty_point_id: number('loyalty_point_id'),
+                    name: text('name'),
+                    role: text('role') || 'seller',
+                    isk_per_lp: optional_number('isk_per_lp'),
+                })
+                break
+            case 'save_account': {
+                const price = optional_number('isk_per_lp')
+                await patch_loyalty_account(auth_token, number('id'), {
+                    name: text('name'),
+                    role: text('role'),
+                    isk_per_lp: price,
+                    clear_isk_per_lp: price === null,
+                    is_active: checked('is_active'),
+                })
+                break
+            }
+            case 'add_contact':
+                await add_loyalty_contact(auth_token, {
+                    account_id: number('account_id'),
+                    character_name: text('character_name'),
+                    discord_username: text('discord_username'),
+                })
+                break
+            case 'save_contact':
+                await patch_loyalty_contact(auth_token, number('id'), {
+                    character_name: text('character_name'),
+                    discord_username: text('discord_username'),
+                    is_active: checked('is_active'),
+                })
+                break
+            case 'delete_contact':
+                await delete_loyalty_contact(auth_token, number('id'))
+                break
+        }
+        flash = { error: false, text: t('industry.loyalty.settings.saved') }
+    } catch (error) {
+        flash = { error: true, text: (error as Error).message }
+    }
+}
+
+let currencies: LoyaltySettingsCurrency[] = []
+let fetching_error: Error | false = false
+try {
+    currencies = (await get_loyalty_settings(auth_token)) ?? []
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const form_attrs = { 'hx-post': PARTIAL_URL, 'hx-target': `#${ROOT_ID}`, 'hx-swap': 'outerHTML' }
+const roles = ['seller', 'stockpile']
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch args={{ partial: PARTIAL_URL, target: `#${ROOT_ID}`, error: fetching_error, delay: parseInt(Astro.url.searchParams.get('delay') ?? '0') }} />
+:
+<div id={ROOT_ID} class="[ settings-editor ]">
+    {flash &&
+        <p class:list={['[ settings-editor__flash ]', { 'is-error': flash.error }]} role={flash.error ? 'alert' : 'status'}>
+            {flash.text}
+        </p>
+    }
+
+    {currencies.length === 0 && <EmptyState title={t('industry.loyalty.settings.empty')} />}
+
+    {currencies.map((currency) =>
+        <section class="[ settings-editor__panel ]" aria-label={currency.name}>
+            <h3>{currency.name}</h3>
+            <form {...form_attrs} class="[ settings-editor__inline ]">
+                <input type="hidden" name="action" value="save_currency" />
+                <input type="hidden" name="id" value={currency.id} />
+                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.name')}<Input type="text" name="name" size="sm" value={currency.name} required /></label>
+                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.standard')}<Input type="number" min="0" name="default_isk_per_lp" size="sm" value={currency.default_isk_per_lp} required /></label>
+                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.express')}<Input type="number" min="0" name="express_isk_per_lp" size="sm" value={currency.express_isk_per_lp ?? ''} placeholder={t('industry.loyalty.settings.express_off')} /></label>
+                <label class="[ settings-editor__check ]"><input type="checkbox" name="is_active" checked={currency.is_active} />{t('industry.loyalty.settings.enabled')}</label>
+                <label class="[ settings-editor__check ]"><input type="checkbox" name="allow_buy" checked={currency.allow_buy} />{t('industry.loyalty.settings.allow_buy')}</label>
+                <label class="[ settings-editor__check ]"><input type="checkbox" name="allow_sell" checked={currency.allow_sell} />{t('industry.loyalty.settings.allow_sell')}</label>
+                <input type="hidden" name="notes" value={currency.notes} />
+                <Button type="submit" size="sm" color="fleet-red" narrow={true}>{t('industry.loyalty.settings.save')}</Button>
+            </form>
+
+            <h4>{t('industry.loyalty.settings.accounts')}</h4>
+            {currency.accounts.length === 0 && <EmptyState title={t('industry.loyalty.settings.no_accounts')} />}
+            {currency.accounts.map((account) =>
+                <Flexblock gap="var(--space-2xs)">
+                    <form {...form_attrs} class:list={['[ settings-editor__row ]', { 'is-off': !account.is_active }]}>
+                        <input type="hidden" name="action" value="save_account" />
+                        <input type="hidden" name="id" value={account.id} />
+                        <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.name')}<Input type="text" name="name" size="sm" value={account.name} required /></label>
+                        <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.role')}
+                            <select name="role">
+                                {roles.map((role) => <option value={role} selected={role === account.role}>{t(dynamic_key(`industry.loyalty.settings.role_${role}`))}</option>)}
+                            </select>
+                        </label>
+                        <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.offer')}<Input type="number" min="0" name="isk_per_lp" size="sm" value={account.isk_per_lp ?? ''} placeholder={t('industry.loyalty.settings.offer_default')} /></label>
+                        <label class="[ settings-editor__check ]"><input type="checkbox" name="is_active" checked={account.is_active} />{t('industry.loyalty.settings.enabled')}</label>
+                        <Button type="submit" size="sm" color="transparent" narrow={true}>{t('industry.loyalty.settings.save')}</Button>
+                    </form>
+
+                    {account.contacts.map((contact) =>
+                        <div class:list={['[ settings-editor__row ]', { 'is-off': !contact.is_active }]}>
+                            <form {...form_attrs} class="[ settings-editor__inline ]">
+                                <input type="hidden" name="action" value="save_contact" />
+                                <input type="hidden" name="id" value={contact.id} />
+                                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.contact')}<Input type="text" name="character_name" size="sm" value={contact.character_name} required /></label>
+                                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.discord')}<Input type="text" name="discord_username" size="sm" value={contact.discord_username} /></label>
+                                <label class="[ settings-editor__check ]"><input type="checkbox" name="is_active" checked={contact.is_active} />{t('industry.loyalty.settings.enabled')}</label>
+                                <Button type="submit" size="sm" color="transparent" narrow={true}>{t('industry.loyalty.settings.save')}</Button>
+                            </form>
+                            <form {...form_attrs} hx-confirm={t('industry.loyalty.settings.confirm_delete_contact')}>
+                                <input type="hidden" name="action" value="delete_contact" />
+                                <input type="hidden" name="id" value={contact.id} />
+                                <Button type="submit" size="sm" color="transparent" narrow={true}>{t('industry.loyalty.settings.delete')}</Button>
+                            </form>
+                        </div>
+                    )}
+                    <form {...form_attrs} class="[ settings-editor__inline ]">
+                        <input type="hidden" name="action" value="add_contact" />
+                        <input type="hidden" name="account_id" value={account.id} />
+                        <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.add_contact')}<Input type="text" name="character_name" size="sm" required /></label>
+                        <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.discord')}<Input type="text" name="discord_username" size="sm" /></label>
+                        <Button type="submit" size="sm" color="transparent" narrow={true}>{t('industry.loyalty.settings.add')}</Button>
+                    </form>
+                </Flexblock>
+            )}
+
+            <form {...form_attrs} class="[ settings-editor__inline ]">
+                <input type="hidden" name="action" value="add_account" />
+                <input type="hidden" name="loyalty_point_id" value={currency.id} />
+                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.add_account')}<Input type="text" name="name" size="sm" required /></label>
+                <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.role')}
+                    <select name="role">
+                        {roles.map((role) => <option value={role}>{t(dynamic_key(`industry.loyalty.settings.role_${role}`))}</option>)}
+                    </select>
+                </label>
+                <Button type="submit" size="sm" color="transparent" narrow={true}>{t('industry.loyalty.settings.add')}</Button>
+            </form>
+        </section>
+    )}
+
+    <section class="[ settings-editor__panel ]" aria-labelledby="loyalty-settings-add-corp">
+        <h3 id="loyalty-settings-add-corp">{t('industry.loyalty.settings.add_corp')}</h3>
+        <form {...form_attrs} class="[ settings-editor__inline ]">
+            <input type="hidden" name="action" value="add_currency" />
+            <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.name')}<Input type="text" name="name" size="sm" required /></label>
+            <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.corporation_id')}<Input type="number" name="corporation_id" size="sm" required /></label>
+            <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.standard')}<Input type="number" min="0" name="default_isk_per_lp" size="sm" value="800" /></label>
+            <label class="[ settings-editor__field ]">{t('industry.loyalty.settings.express')}<Input type="number" min="0" name="express_isk_per_lp" size="sm" placeholder={t('industry.loyalty.settings.express_off')} /></label>
+            <Button type="submit" size="sm" color="fleet-red" narrow={true}>{t('industry.loyalty.settings.add')}</Button>
+        </form>
+    </section>
+</div>
+}
