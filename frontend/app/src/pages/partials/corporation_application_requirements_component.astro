@@ -1,0 +1,107 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ApplicationRequirements } from '@dtypes/api.minmatar.org'
+import { get_application_requirements } from '@helpers/api.minmatar.org/applications'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { query_string } from '@helpers/string'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CorporationRequirementChecks from '@components/blocks/CorporationRequirementChecks.astro'
+
+// The recruiter's view of an applicant against the corp's checked
+// requirements: pass or fail per rule, never which character passed.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+const application_id = parseInt(params.get('application_id') ?? '')
+if (!corporation_id || !application_id) return HTTP_403_Forbidden()
+const delay = parseInt(params.get('delay') ?? '0')
+const PARTIAL_URL = translatePath(`/partials/corporation_application_requirements_component/?${query_string({
+    corporation_id: String(corporation_id),
+    application_id: String(application_id),
+})}`)
+
+let data: ApplicationRequirements | null = null
+let fetch_error: Error | false = false
+try {
+    data = await get_application_requirements(auth_token, corporation_id, application_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const summary = data
+    ? [
+        data.required_total > 0
+            ? data.required_met === data.required_total
+                ? t('corporations.requirements.review_all_required')
+                : t('corporations.requirements.review_required')
+                    .replace('MET', String(data.required_met))
+                    .replace('TOTAL', String(data.required_total))
+            : null,
+        data.preferred_total > 0
+            ? t('corporations.requirements.review_preferred')
+                .replace('MET', String(data.preferred_met))
+                .replace('TOTAL', String(data.preferred_total))
+            : null,
+    ].filter(Boolean).join(' · ')
+    : ''
+const all_required = data !== null && data.required_total > 0 && data.required_met === data.required_total
+---
+
+{fetch_error &&
+    <ErrorRefetch
+        args={{
+            partial: PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    />
+}
+{data && data.checks.length > 0 &&
+    <ComponentBlock>
+        <section class="[ app-req ]" aria-labelledby="app-req-title">
+            <div class="[ app-req__head ]">
+                <h2 id="app-req-title">{t('corporations.requirements.review_title')}</h2>
+                <span class:list={['[ app-req__summary ]', { 'is-met': all_required }]}>{summary}</span>
+            </div>
+            <CorporationRequirementChecks checks={data.checks} mode="recruiter" />
+        </section>
+    </ComponentBlock>
+}
+
+<style lang="scss">
+    .app-req {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .app-req__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3xs) var(--space-m);
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+    }
+
+    .app-req__summary {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        &.is-met {
+            color: var(--green);
+            font-weight: 600;
+        }
+    }
+</style>

@@ -48,6 +48,10 @@ const corporation:CorporationBasic = {
     name: corporation_eve?.name ?? '',
 }
 
+const APPLICATION_REQUIREMENTS_PARTIAL_URL = `${translatePath('/partials/corporation_application_requirements_component/')}?${query_string({
+    corporation_id: String(corporation_id),
+    application_id: String(application_id),
+})}`
 const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporation_application_component')}?${query_string({
     corporation: JSON.stringify(corporation),
     application_id: application_id,
@@ -68,6 +72,7 @@ import CorporationApplication from '@components/blocks/CorporationApplication.as
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -117,6 +122,8 @@ const page_title = `${application?.character_name ?? ''} ${t('application').toLo
                     }}
                 />
                 :
+                <>
+                <LazyPartial url={APPLICATION_REQUIREMENTS_PARTIAL_URL} indicator={false} />
                 <ComponentBlock>
                     <CorporationApplication
                         application={application as ApplicationDetail }
@@ -124,6 +131,7 @@ const page_title = `${application?.character_name ?? ''} ${t('application').toLo
                         corporation_name={corporation_eve?.name as string}
                     />
                 </ComponentBlock>
+                </>
             }
         </Flexblock>
     </PageDefault>

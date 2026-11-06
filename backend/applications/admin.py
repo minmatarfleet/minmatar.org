@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from applications.models import EveCorporationApplication
+from applications.models import (
+    CorporationRequirement,
+    EveCorporationApplication,
+)
 
 
 class CorpApplicationAdmin(admin.ModelAdmin):
@@ -19,3 +22,11 @@ class CorpApplicationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EveCorporationApplication, CorpApplicationAdmin)
+
+
+@admin.register(CorporationRequirement)
+class CorporationRequirementAdmin(admin.ModelAdmin):
+    list_display = ("corporation", "kind", "who", "importance", "position")
+    list_filter = ("kind", "importance")
+    search_fields = ("corporation__name",)
+    raw_id_fields = ("corporation", "created_by")

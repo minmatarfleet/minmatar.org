@@ -260,6 +260,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/applications/corporations/{corporation_id}/applications/{application_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How an application's applicant meets the corporation's requirements */
+        get: operations["applications_requirements_router_get_application_requirements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/applications/corporations/{corporation_id}/applications/{application_id}/transfer": {
         parameters: {
             query?: never;
@@ -275,6 +292,93 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/interview-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the topics recruiters ask about in the interview (CEO) */
+        put: operations["applications_requirements_router_put_corporation_interview_topics"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A corporation's recruitment requirements and interview topics */
+        get: operations["applications_requirements_router_get_corporation_requirements"];
+        put?: never;
+        /** Add a recruitment requirement (CEO) */
+        post: operations["applications_requirements_router_create_corporation_requirement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements/manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requirements with member pass rates, for the corp's Settings tab */
+        get: operations["applications_requirements_router_get_managed_corporation_requirements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's characters checked against a corporation's requirements */
+        get: operations["applications_requirements_router_get_my_corporation_requirements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements/{requirement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a recruitment requirement (CEO) */
+        delete: operations["applications_requirements_router_delete_corporation_requirement"];
+        options?: never;
+        head?: never;
+        /** Change a recruitment requirement (CEO) */
+        patch: operations["applications_requirements_router_update_corporation_requirement"];
         trace?: never;
     };
     "/api/applications/me/open": {
@@ -7924,6 +8028,21 @@ export interface components {
             /** Value */
             value?: unknown;
         };
+        /** ApplicationRequirements */
+        ApplicationRequirements: {
+            /** Application Id */
+            application_id: number;
+            /** Checks */
+            checks: components["schemas"]["RequirementCheck"][];
+            /** Preferred Met */
+            preferred_met: number;
+            /** Preferred Total */
+            preferred_total: number;
+            /** Required Met */
+            required_met: number;
+            /** Required Total */
+            required_total: number;
+        };
         /** ApplyOrderSwapRequest */
         ApplyOrderSwapRequest: {
             /**
@@ -10994,6 +11113,17 @@ export interface components {
             paused?: boolean | null;
             /** Title */
             title: string;
+        };
+        /** CorporationRequirements */
+        CorporationRequirements: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Interview Topics */
+            interview_topics: string[];
+            /** Rules */
+            rules: components["schemas"]["RequirementRule"][];
+            /** Trial Days */
+            trial_days?: number | null;
         };
         /** CorporationResponse */
         CorporationResponse: {
@@ -16056,6 +16186,16 @@ export interface components {
             top_movers: components["schemas"]["InferredSalesTopMover"][];
             velocity: components["schemas"]["InferredSalesVelocity"];
         };
+        /** InterviewTopicsRequest */
+        InterviewTopicsRequest: {
+            /** Topics */
+            topics: string[];
+        };
+        /** InterviewTopicsResponse */
+        InterviewTopicsResponse: {
+            /** Interview Topics */
+            interview_topics: string[];
+        };
         /** InvestigateResponse */
         InvestigateResponse: {
             /** Id */
@@ -17117,6 +17257,41 @@ export interface components {
              */
             week_start: string;
         };
+        /** ManagedCorporationRequirements */
+        ManagedCorporationRequirements: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Interview Topics */
+            interview_topics: string[];
+            /** Max Rules */
+            max_rules: number;
+            /** Members */
+            members: number;
+            options: components["schemas"]["RequirementOptions"];
+            /** Rules */
+            rules: components["schemas"]["ManagedRequirementRule"][];
+        };
+        /** ManagedRequirementRule */
+        ManagedRequirementRule: {
+            /** Id */
+            id: number;
+            /** Importance */
+            importance: string;
+            /** Kind */
+            kind: string;
+            /** Members Pass */
+            members_pass?: number | null;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Position */
+            position: number;
+            /** Text */
+            text: string;
+            /** Who */
+            who: string;
+        };
         /** ManualAffiliationRequest */
         ManualAffiliationRequest: {
             /** Bloc Id */
@@ -17681,6 +17856,21 @@ export interface components {
             planet: string;
             /** System */
             system: string;
+        };
+        /** MyCorporationRequirements */
+        MyCorporationRequirements: {
+            /** Accounts */
+            accounts?: number | null;
+            /** Can Apply */
+            can_apply: boolean;
+            /** Characters */
+            characters: number;
+            /** Checks */
+            checks: components["schemas"]["RequirementCheck"][];
+            /** Corporation Id */
+            corporation_id: number;
+            /** Interview Topics */
+            interview_topics: string[];
         };
         /**
          * MyFleetFittingResponse
@@ -20074,6 +20264,70 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** RequirementCapabilityOption */
+        RequirementCapabilityOption: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
+        /** RequirementCheck */
+        RequirementCheck: {
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: number;
+            /** Importance */
+            importance: string;
+            /** Kind */
+            kind: string;
+            /** Ship Type Ids */
+            ship_type_ids: number[];
+            /** Status */
+            status: string;
+            /** Text */
+            text: string;
+            /** Training Days */
+            training_days?: number | null;
+        };
+        /** RequirementCreateRequest */
+        RequirementCreateRequest: {
+            /**
+             * Importance
+             * @default preferred
+             */
+            importance?: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Params
+             * @default {}
+             */
+            params?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Who
+             * @default any
+             */
+            who?: string;
+        };
+        /** RequirementDoctrineOption */
+        RequirementDoctrineOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** RequirementOptions */
+        RequirementOptions: {
+            /** Brackets */
+            brackets: string[];
+            /** Capabilities */
+            capabilities: components["schemas"]["RequirementCapabilityOption"][];
+            /** Doctrines */
+            doctrines: components["schemas"]["RequirementDoctrineOption"][];
+        };
         /**
          * RequirementQualificationSchema
          * @description Per-requirement qualification result for one character.
@@ -20087,6 +20341,25 @@ export interface components {
             met: boolean;
             /** Requirement Id */
             requirement_id: string;
+        };
+        /** RequirementRule */
+        RequirementRule: {
+            /** Id */
+            id: number;
+            /** Importance */
+            importance: string;
+            /** Kind */
+            kind: string;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Position */
+            position: number;
+            /** Text */
+            text: string;
+            /** Who */
+            who: string;
         };
         /** RequirementSchema */
         RequirementSchema: {
@@ -20102,6 +20375,17 @@ export interface components {
              * @default []
              */
             qualifying_skills?: components["schemas"]["QualifyingSkillSchema"][];
+        };
+        /** RequirementUpdateRequest */
+        RequirementUpdateRequest: {
+            /** Importance */
+            importance?: string | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /** Who */
+            who?: string | null;
         };
         /** ResolveKillmailRequest */
         ResolveKillmailRequest: {
@@ -23746,6 +24030,47 @@ export interface operations {
             };
         };
     };
+    applications_requirements_router_get_application_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                application_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRequirements"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     applications_router_transfer_corporation_application: {
         parameters: {
             query?: never;
@@ -23769,6 +24094,298 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationApplicationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_put_corporation_interview_topics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterviewTopicsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewTopicsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_get_corporation_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationRequirements"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_create_corporation_requirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequirementRule"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_get_managed_corporation_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedCorporationRequirements"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_get_my_corporation_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCorporationRequirements"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_delete_corporation_requirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                requirement_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_update_corporation_requirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                requirement_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequirementRule"];
                 };
             };
             /** @description Bad Request */
