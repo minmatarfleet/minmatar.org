@@ -93,3 +93,28 @@ export async function get_posts_tags() {
         error: 'Error fetching post tags',
     })
 }
+
+// Tag management answers 403 without the posts.tags.manage feature.
+export async function create_post_tag(access_token:string, tag:string) {
+    return await api_request<PostTag>(`${API_ENDPOINT}/tags`, {
+        method: 'POST',
+        token: access_token,
+        body: { tag },
+    })
+}
+
+export async function rename_post_tag(access_token:string, tag_id:number, tag:string) {
+    return await api_request<PostTag>(`${API_ENDPOINT}/tags/${tag_id}`, {
+        method: 'PATCH',
+        token: access_token,
+        body: { tag },
+    })
+}
+
+export async function merge_post_tag(access_token:string, tag_id:number, into_tag_id:number) {
+    return await api_request<PostTag>(`${API_ENDPOINT}/tags/${tag_id}/merge`, {
+        method: 'POST',
+        token: access_token,
+        body: { into_tag_id },
+    })
+}

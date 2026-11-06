@@ -1,0 +1,111 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: a settings save; a failed save shows in the panel it swaps back.
+// POST adds, edits or enables/disables a source and answers with the panel;
+// GET ?view=events&source_id= answers with that source's upcoming imported events.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'fleets.npsi_sources.manage')) return HTTP_403_Forbidden()
+
+import type { NpsiEventPreview, NpsiSourceList } from '@dtypes/api.minmatar.org'
+import { create_npsi_source, get_npsi_source_events, get_npsi_sources, update_npsi_source } from '@helpers/api.minmatar.org/npsi_sources'
+
+import NpsiSourcesManager from '@components/blocks/NpsiSourcesManager.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const is_post = Astro.request.method === 'POST'
+const events_for = !is_post && Astro.url.searchParams.get('view') === 'events' ? parseInt(Astro.url.searchParams.get('source_id') ?? '') : 0
+
+let events: NpsiEventPreview[] = []
+let events_error: Error | false = false
+if (events_for) {
+    try {
+        events = await get_npsi_source_events(auth_token, events_for)
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        events_error = failure as Error
+    }
+}
+
+let error: string | null = null
+let notice: string | null = null
+let list: NpsiSourceList = { sources: [], audiences: [] }
+
+if (!events_for) {
+    try {
+        if (is_post) {
+            const form = await Astro.request.formData()
+            const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
+            const source_id = parseInt(text('source_id'))
+            const audience = text('default_audience_id')
+            const action = text('action')
+
+            if (action === 'create') {
+                await create_npsi_source(auth_token, {
+                    name: text('name'),
+                    feed_url: text('feed_url'),
+                    fc_character_name: text('fc_character_name'),
+                    ...(audience ? { default_audience_id: parseInt(audience) } : {}),
+                })
+                notice = t('npsi_sources.added')
+            } else if (action === 'update' && source_id) {
+                await update_npsi_source(auth_token, source_id, {
+                    feed_url: text('feed_url'),
+                    fc_character_name: text('fc_character_name'),
+                    default_audience_id: audience ? parseInt(audience) : null,
+                })
+                notice = t('npsi_sources.saved')
+            } else if (action === 'toggle' && source_id) {
+                const enabled = text('enabled') === 'true'
+                await update_npsi_source(auth_token, source_id, { enabled })
+                notice = enabled ? t('npsi_sources.now_enabled') : t('npsi_sources.now_disabled')
+            } else {
+                return HTTP_400_Bad_Request()
+            }
+        }
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        error = (failure as Error).message
+    }
+
+    try {
+        list = await get_npsi_sources(auth_token)
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        error = error ?? (failure as Error).message
+    }
+}
+
+const event_time = (iso: string) => new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toISOString().slice(0, 16).replace('T', ' ')
+---
+
+{events_for ?
+    (events_error ?
+        <ErrorRefetch args={{ partial: Astro.url.pathname + Astro.url.search, error: events_error, delay: 0 }} />
+        :
+        events.length === 0 ?
+            <EmptyState title={t('npsi_sources.preview_empty')} />
+            :
+            <ul class="[ manage-panel__rows ]" role="list">
+                {events.map(event =>
+                    <li class="[ manage-panel__row ]">
+                        <span class="[ manage-panel__muted ]">{event_time(event.start_time)} EVE</span>
+                        <strong>{event.summary}</strong>
+                        {event.character_name && <span>{event.character_name}</span>}
+                        <span class="[ manage-panel__muted ]">{event.status}{event.skip_reason ? `: ${event.skip_reason}` : ''}</span>
+                    </li>
+                )}
+            </ul>
+    )
+    :
+    <NpsiSourcesManager list={list} error={error} notice={notice} />
+}

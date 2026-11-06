@@ -1,0 +1,92 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: a settings save; a failed save shows in the panel it swaps back.
+// POST adds, edits, turns off, moves a category or sets the panel channel,
+// then answers with the settings panel. GET just renders it.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'help_tickets.manage')) return HTTP_403_Forbidden()
+
+import type { HelpSettings } from '@dtypes/api.minmatar.org'
+import {
+    create_help_category,
+    get_help_settings,
+    order_help_categories,
+    update_help_category,
+    update_help_panel,
+} from '@helpers/api.minmatar.org/help_tickets'
+
+let error: string | null = null
+let notice: string | null = null
+let settings: HelpSettings | null = null
+
+try {
+    if (Astro.request.method === 'POST') {
+        const form = await Astro.request.formData()
+        const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
+        const category_id = parseInt(text('category_id'))
+        const owner = text('tribe_group_id')
+        const action = text('action')
+
+        if (action === 'create') {
+            await create_help_category(auth_token, {
+                title: text('title'),
+                ...(owner ? { tribe_group_id: parseInt(owner) } : {}),
+            })
+            notice = t('help_settings.added')
+        } else if (action === 'update' && category_id) {
+            await update_help_category(auth_token, category_id, {
+                title: text('title'),
+                section: text('section'),
+                tribe_group_id: owner ? parseInt(owner) : null,
+            })
+            notice = t('help_settings.saved')
+        } else if (action === 'toggle' && category_id) {
+            await update_help_category(auth_token, category_id, { is_active: text('is_active') === 'true' })
+            notice = t('help_settings.saved')
+        } else if (action === 'move' && category_id) {
+            const current = await get_help_settings(auth_token)
+            const ids = current.categories.map(category => category.id)
+            const from = ids.indexOf(category_id)
+            const to = from + (text('direction') === 'up' ? -1 : 1)
+            if (from >= 0 && to >= 0 && to < ids.length) {
+                ;[ids[from], ids[to]] = [ids[to], ids[from]]
+                await order_help_categories(auth_token, ids)
+            }
+            notice = t('help_settings.moved')
+        } else if (action === 'panel' && /^[1-9]\d*$/.test(text('channel_id').trim())) {
+            await update_help_panel(auth_token, text('channel_id').trim())
+            notice = t('help_settings.saved')
+        } else {
+            return HTTP_400_Bad_Request()
+        }
+    }
+} catch (failure) {
+    if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+    error = (failure as Error).message
+}
+
+try {
+    settings = await get_help_settings(auth_token)
+} catch (failure) {
+    if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+    error = error ?? (failure as Error).message
+}
+
+import HelpCategoriesManager from '@components/blocks/HelpCategoriesManager.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{settings ?
+    <HelpCategoriesManager settings={settings} error={error} notice={notice} />
+    :
+    <ErrorRefetch args={{ partial: Astro.url.pathname, error: new Error(error ?? ''), delay: 0 }} />
+}

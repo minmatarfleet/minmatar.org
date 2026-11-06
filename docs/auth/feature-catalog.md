@@ -36,6 +36,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `structures.view` | `affiliation` | `structures.view_evestructure` | Alliance, Associate |
 | `structures.timers.view` | `affiliation` | `structures.view_evestructuretimer` | Alliance, Associate |
 | `structures.timers.manage` | `affiliation` | `structures.add_evestructuretimer` | Alliance |
+| `structures.timers.correct` | `tribe_membership` | `structures.change_evestructuretimer` | Fleet Commanders (`pulse.fleet-commanders`) |
 | `moons.view` | `affiliation` | `moons.view_evemoon` | Alliance |
 | `moons.manage` | `staff` | `moons.add_evemoon` | staff permission |
 
@@ -47,6 +48,10 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `posts.edit` | `affiliation` | `posts.change_evepost` | Alliance (author check in endpoint) |
 | `posts.delete` | `affiliation` | `posts.delete_evepost` | Alliance (author check in endpoint) |
 | `creators.connect` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`) |
+| `posts.tags.manage` | `tribe_membership` | `posts.change_evetag` | Thinkspeak (`pulse.thinkspeak`) |
+| `reddit.approvals.manage` | `tribe_membership` | `reddit.change_redditpostchangerequest` | Thinkspeak (`pulse.thinkspeak`) |
+| `fleets.npsi_sources.manage` | `tribe_membership` | `fleets.change_npsieventsource` | Fleet Commanders (`pulse.fleet-commanders`) |
+| `help_tickets.manage` | `tribe_membership` | `help_tickets.change_helprequestcategory` | Technology (`pulse.technology`) |
 
 ## Industry
 

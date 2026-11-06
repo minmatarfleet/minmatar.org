@@ -1,0 +1,61 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: a form save; a failed save shows in the panel it swaps back.
+// POST creates, renames or merges a post tag; GET (a refetch) just lists. Both answer with the tag panel.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'posts.tags.manage')) return HTTP_403_Forbidden()
+
+const is_post = Astro.request.method === 'POST'
+
+import type { PostTag } from '@dtypes/api.minmatar.org'
+import { create_post_tag, get_posts_tags, merge_post_tag, rename_post_tag } from '@helpers/api.minmatar.org/posts'
+
+const form = is_post ? await Astro.request.formData() : new FormData()
+const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
+const action = text('action')
+const tag_id = parseInt(text('tag_id'))
+const into_tag_id = parseInt(text('into_tag_id'))
+
+let error: string | null = null
+let notice: string | null = null
+
+try {
+    if (!is_post) {
+        // nothing to save
+    } else if (action === 'create') {
+        const tag = await create_post_tag(auth_token, text('tag'))
+        notice = t('post_tags.manage.created').replace('{tag}', tag.tag)
+    } else if (action === 'rename' && tag_id) {
+        const tag = await rename_post_tag(auth_token, tag_id, text('tag'))
+        notice = t('post_tags.manage.renamed').replace('{tag}', tag.tag)
+    } else if (action === 'merge' && tag_id && into_tag_id) {
+        const tag = await merge_post_tag(auth_token, tag_id, into_tag_id)
+        notice = t('post_tags.manage.merged').replace('{tag}', tag.tag)
+    } else {
+        return HTTP_400_Bad_Request()
+    }
+} catch (failure) {
+    if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+    error = (failure as Error).message
+}
+
+let tags: PostTag[] = []
+try {
+    tags = await get_posts_tags()
+} catch (failure) {
+    error = error ?? (failure as Error).message
+}
+
+import PostTagsManager from '@components/blocks/PostTagsManager.astro'
+---
+
+<PostTagsManager tags={tags} error={error} notice={notice} />

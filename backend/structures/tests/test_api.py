@@ -4,7 +4,8 @@ from django.contrib.auth.models import Permission
 from django.utils import timezone
 
 from app.test import TestCase
-from structures.models import EveStructureTimer
+from audit.models import AuditEntry
+from structures.models import EveStructurePing, EveStructureTimer
 
 
 class StructureTimertests(TestCase):
@@ -121,3 +122,108 @@ class StructureTimertests(TestCase):
         self.assertEqual(response.json()["detail"], "Permission denied")
         timer.refresh_from_db()
         self.assertEqual(timer.corporation_name, "Test")
+
+
+class StructureTimerCorrectionTests(TestCase):
+    """Edit and delete wrong timers; read the ping log."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.timer = EveStructureTimer.objects.create(
+            name="WATERMELLON",
+            state="armor",
+            type="fortizar",
+            timer=timezone.now() + timezone.timedelta(days=1),
+            system_name="Sosala",
+            corporation_name="Wrong Corp",
+        )
+        self.headers = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+
+    def grant(self):
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                codename="change_evestructuretimer",
+                content_type__app_label="structures",
+            )
+        )
+
+    def patch(self, data):
+        return self.client.patch(
+            f"/api/structures/timers/{self.timer.id}",
+            data=json.dumps(data),
+            content_type="application/json",
+            **self.headers,
+        )
+
+    def test_everything_needs_the_feature(self):
+        self.assertEqual(403, self.patch({"name": "x"}).status_code)
+        deleted = self.client.delete(
+            f"/api/structures/timers/{self.timer.id}", **self.headers
+        )
+        self.assertEqual(403, deleted.status_code)
+        pings = self.client.get("/api/structures/pings", **self.headers)
+        self.assertEqual(403, pings.status_code)
+        self.assertTrue(
+            EveStructureTimer.objects.filter(id=self.timer.id).exists()
+        )
+
+    def test_edit_changes_fields_and_is_audited(self):
+        self.grant()
+        response = self.patch(
+            {"corporation_name": "Right Corp", "state": "hull"}
+        )
+        self.assertEqual(200, response.status_code)
+        self.timer.refresh_from_db()
+        self.assertEqual("Right Corp", self.timer.corporation_name)
+        self.assertEqual("hull", self.timer.state)
+        self.assertEqual(self.user, self.timer.updated_by)
+        entry = AuditEntry.objects.get()
+        self.assertEqual(self.user, entry.user)
+        self.assertIn("Right Corp", entry.summary)
+
+    def test_edit_with_no_changes_writes_no_audit(self):
+        self.grant()
+        self.assertEqual(200, self.patch({"name": "WATERMELLON"}).status_code)
+        self.assertFalse(AuditEntry.objects.exists())
+
+    def test_edit_rejects_blank_name_and_unknown_timer(self):
+        self.grant()
+        self.assertEqual(400, self.patch({"name": "  "}).status_code)
+        missing = self.client.patch(
+            "/api/structures/timers/9999",
+            data=json.dumps({"name": "x"}),
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(404, missing.status_code)
+
+    def test_delete_removes_the_timer_and_is_audited(self):
+        self.grant()
+        response = self.client.delete(
+            f"/api/structures/timers/{self.timer.id}", **self.headers
+        )
+        self.assertEqual(204, response.status_code)
+        self.assertFalse(EveStructureTimer.objects.exists())
+        self.assertIn("Deleted timer", AuditEntry.objects.get().summary)
+
+    def test_pings_can_be_filtered_to_failures(self):
+        self.grant()
+        EveStructurePing.objects.create(
+            notification_id=1,
+            notification_type="StructureUnderAttack",
+            summary="ok",
+            discord_success=True,
+        )
+        EveStructurePing.objects.create(
+            notification_id=2,
+            notification_type="StructureUnderAttack",
+            summary="bad",
+            discord_success=False,
+        )
+        both = self.client.get("/api/structures/pings", **self.headers)
+        self.assertEqual(2, len(both.json()))
+        failed = self.client.get(
+            "/api/structures/pings?failed_only=true", **self.headers
+        )
+        self.assertEqual(["bad"], [p["summary"] for p in failed.json()])

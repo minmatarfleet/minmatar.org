@@ -13887,6 +13887,70 @@
         "title": "EvePostResponse",
         "type": "object"
       },
+      "EveStructurePingResponse": {
+        "description": "A structure ping the bot sent (or failed to send) to Discord",
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "discord_success": {
+            "title": "Discord Success",
+            "type": "boolean"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "notification_type": {
+            "title": "Notification Type",
+            "type": "string"
+          },
+          "structure_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structure Id"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "notification_type",
+          "summary",
+          "discord_success"
+        ],
+        "title": "EveStructurePingResponse",
+        "type": "object"
+      },
       "EveStructureState": {
         "description": "States for Eve Structures",
         "enum": [
@@ -13897,6 +13961,100 @@
         ],
         "title": "EveStructureState",
         "type": "string"
+      },
+      "EveStructureTimerPatch": {
+        "description": "Fix a wrong timer: only the fields sent change.",
+        "properties": {
+          "alliance_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Name"
+          },
+          "corporation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Name"
+          },
+          "fitting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EveStructureState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "system_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Name"
+          },
+          "timer": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timer"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EveStructureType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "EveStructureTimerPatch",
+        "type": "object"
       },
       "EveStructureTimerRequest": {
         "description": "Request model for structure timer API",
@@ -14142,6 +14300,32 @@
         ],
         "title": "EveStructureType",
         "type": "string"
+      },
+      "EveTagMergeRequest": {
+        "properties": {
+          "into_tag_id": {
+            "title": "Into Tag Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "into_tag_id"
+        ],
+        "title": "EveTagMergeRequest",
+        "type": "object"
+      },
+      "EveTagRequest": {
+        "properties": {
+          "tag": {
+            "title": "Tag",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tag"
+        ],
+        "title": "EveTagRequest",
+        "type": "object"
       },
       "EveTagResponse": {
         "properties": {
@@ -20752,6 +20936,255 @@
         "title": "HealthUnknownsResponse",
         "type": "object"
       },
+      "HelpCategoryCreate": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "section": {
+            "default": "",
+            "title": "Section",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Id"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "HelpCategoryCreate",
+        "type": "object"
+      },
+      "HelpCategoryOrder": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "title": "HelpCategoryOrder",
+        "type": "object"
+      },
+      "HelpCategoryPatch": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "tribe_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Id"
+          }
+        },
+        "title": "HelpCategoryPatch",
+        "type": "object"
+      },
+      "HelpCategoryResponse": {
+        "properties": {
+          "assignee_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assignee Names",
+            "type": "array"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Id"
+          },
+          "tribe_group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Name"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "code",
+          "section",
+          "sort_order",
+          "is_active",
+          "assignee_names"
+        ],
+        "title": "HelpCategoryResponse",
+        "type": "object"
+      },
+      "HelpPanelPatch": {
+        "properties": {
+          "channel_id": {
+            "title": "Channel Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel_id"
+        ],
+        "title": "HelpPanelPatch",
+        "type": "object"
+      },
+      "HelpPanelResponse": {
+        "properties": {
+          "channel_id": {
+            "title": "Channel Id",
+            "type": "string"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          }
+        },
+        "required": [
+          "channel_id"
+        ],
+        "title": "HelpPanelResponse",
+        "type": "object"
+      },
+      "HelpSettingsResponse": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/HelpCategoryResponse"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "panel": {
+            "$ref": "#/components/schemas/HelpPanelResponse"
+          },
+          "tribe_groups": {
+            "items": {
+              "$ref": "#/components/schemas/HelpTribeGroupOption"
+            },
+            "title": "Tribe Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "categories",
+          "tribe_groups",
+          "panel"
+        ],
+        "title": "HelpSettingsResponse",
+        "type": "object"
+      },
       "HelpTicketPanelCategorySchema": {
         "properties": {
           "code": {
@@ -20903,6 +21336,34 @@
           "opener_discord_id"
         ],
         "title": "HelpTicketResponse",
+        "type": "object"
+      },
+      "HelpTribeGroupOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "taken": {
+            "title": "Taken",
+            "type": "boolean"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tribe_name",
+          "taken"
+        ],
+        "title": "HelpTribeGroupOption",
         "type": "object"
       },
       "HostGroupRef": {
@@ -27007,6 +27468,283 @@
         "title": "NotificationTypeSchema",
         "type": "object"
       },
+      "NpsiAudienceOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "NpsiAudienceOption",
+        "type": "object"
+      },
+      "NpsiEventPreview": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "skip_reason": {
+            "title": "Skip Reason",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "summary",
+          "start_time",
+          "character_name",
+          "status",
+          "skip_reason"
+        ],
+        "title": "NpsiEventPreview",
+        "type": "object"
+      },
+      "NpsiSourceCreate": {
+        "properties": {
+          "default_audience_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Audience Id"
+          },
+          "fc_character_name": {
+            "title": "Fc Character Name",
+            "type": "string"
+          },
+          "feed_url": {
+            "title": "Feed Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "feed_url",
+          "fc_character_name"
+        ],
+        "title": "NpsiSourceCreate",
+        "type": "object"
+      },
+      "NpsiSourceList": {
+        "properties": {
+          "audiences": {
+            "items": {
+              "$ref": "#/components/schemas/NpsiAudienceOption"
+            },
+            "title": "Audiences",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/NpsiSourceResponse"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sources",
+          "audiences"
+        ],
+        "title": "NpsiSourceList",
+        "type": "object"
+      },
+      "NpsiSourcePatch": {
+        "properties": {
+          "default_audience_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Audience Id"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "fc_character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Character Name"
+          },
+          "feed_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feed Url"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "NpsiSourcePatch",
+        "type": "object"
+      },
+      "NpsiSourceResponse": {
+        "properties": {
+          "default_audience_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Audience Id"
+          },
+          "default_audience_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Audience Name"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "event_count": {
+            "title": "Event Count",
+            "type": "integer"
+          },
+          "fc_character_name": {
+            "title": "Fc Character Name",
+            "type": "string"
+          },
+          "feed_url": {
+            "title": "Feed Url",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_error": {
+            "title": "Last Error",
+            "type": "string"
+          },
+          "last_polled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Polled At"
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "feed_url",
+          "fc_character_name",
+          "enabled",
+          "last_error",
+          "event_count"
+        ],
+        "title": "NpsiSourceResponse",
+        "type": "object"
+      },
       "NudgeQueuedResponse": {
         "properties": {
           "pilots": {
@@ -31837,6 +32575,286 @@
           "generated_at"
         ],
         "title": "RecentResponse",
+        "type": "object"
+      },
+      "RedditActionResult": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "RedditActionResult",
+        "type": "object"
+      },
+      "RedditRejectRequest": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "RedditRejectRequest",
+        "type": "object"
+      },
+      "RedditReviewDecision": {
+        "properties": {
+          "changed": {
+            "title": "Changed",
+            "type": "boolean"
+          },
+          "notified": {
+            "title": "Notified",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "changed",
+          "notified"
+        ],
+        "title": "RedditReviewDecision",
+        "type": "object"
+      },
+      "RedditReviewItem": {
+        "properties": {
+          "change_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Id"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "corporation_ticker": {
+            "title": "Corporation Ticker",
+            "type": "string"
+          },
+          "current_content": {
+            "title": "Current Content",
+            "type": "string"
+          },
+          "current_title": {
+            "title": "Current Title",
+            "type": "string"
+          },
+          "first_approval": {
+            "title": "First Approval",
+            "type": "boolean"
+          },
+          "requested_content": {
+            "title": "Requested Content",
+            "type": "string"
+          },
+          "requested_title": {
+            "title": "Requested Title",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By"
+          },
+          "template_id": {
+            "title": "Template Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "template_id",
+          "corporation_id",
+          "corporation_name",
+          "corporation_ticker",
+          "first_approval",
+          "current_title",
+          "current_content",
+          "requested_title",
+          "requested_content"
+        ],
+        "title": "RedditReviewItem",
+        "type": "object"
+      },
+      "RedditReviewQueue": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RedditReviewItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "RedditReviewQueue",
+        "type": "object"
+      },
+      "RedditRotation": {
+        "properties": {
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/RedditRotationMonth"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "months"
+        ],
+        "title": "RedditRotation",
+        "type": "object"
+      },
+      "RedditRotationMonth": {
+        "properties": {
+          "month": {
+            "format": "date",
+            "title": "Month",
+            "type": "string"
+          },
+          "posts": {
+            "items": {
+              "$ref": "#/components/schemas/RedditRotationPost"
+            },
+            "title": "Posts",
+            "type": "array"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "schedule_id": {
+            "title": "Schedule Id",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schedule_id",
+          "month",
+          "status",
+          "posts"
+        ],
+        "title": "RedditRotationMonth",
+        "type": "object"
+      },
+      "RedditRotationPost": {
+        "properties": {
+          "can_link_to_discord": {
+            "title": "Can Link To Discord",
+            "type": "boolean"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "corporation_ticker": {
+            "title": "Corporation Ticker",
+            "type": "string"
+          },
+          "delivery_method": {
+            "title": "Delivery Method",
+            "type": "string"
+          },
+          "has_discord_channel": {
+            "title": "Has Discord Channel",
+            "type": "boolean"
+          },
+          "post_id": {
+            "title": "Post Id",
+            "type": "integer"
+          },
+          "reddit_url": {
+            "title": "Reddit Url",
+            "type": "string"
+          },
+          "scheduled_for": {
+            "format": "date-time",
+            "title": "Scheduled For",
+            "type": "string"
+          },
+          "slot_date": {
+            "format": "date",
+            "title": "Slot Date",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "template_id": {
+            "title": "Template Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "post_id",
+          "template_id",
+          "corporation_name",
+          "corporation_ticker",
+          "title",
+          "scheduled_for",
+          "slot_date",
+          "status",
+          "reddit_url",
+          "delivery_method",
+          "has_discord_channel",
+          "can_link_to_discord"
+        ],
+        "title": "RedditRotationPost",
         "type": "object"
       },
       "RedditUsernameRequest": {
@@ -41695,6 +42713,215 @@
         "tags": [
           "Posts"
         ]
+      },
+      "post": {
+        "operationId": "posts_router_create_tag",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EveTagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveTagResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Create a post tag",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/api/blog/tags/{tag_id}": {
+      "patch": {
+        "operationId": "posts_router_rename_tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "title": "Tag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EveTagRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveTagResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Rename a post tag",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/api/blog/tags/{tag_id}/merge": {
+      "post": {
+        "operationId": "posts_router_merge_tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "title": "Tag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EveTagMergeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveTagResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Merge a tag into another: its posts move over and it is deleted",
+        "tags": [
+          "Posts"
+        ]
       }
     },
     "/api/buyback/appraise": {
@@ -50094,6 +51321,236 @@
         ]
       }
     },
+    "/api/fleets/npsi-sources": {
+      "get": {
+        "operationId": "fleets_endpoints_npsi_sources_get_npsi_sources",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpsiSourceList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "NPSI event sources, with the last import time and errors",
+        "tags": [
+          "Fleets"
+        ]
+      },
+      "post": {
+        "operationId": "fleets_endpoints_npsi_sources_post_npsi_source",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NpsiSourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpsiSourceResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add an NPSI event source",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/npsi-sources/{source_id}": {
+      "patch": {
+        "operationId": "fleets_endpoints_npsi_sources_patch_npsi_source",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NpsiSourcePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpsiSourceResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit, enable or disable an NPSI event source",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/npsi-sources/{source_id}/events": {
+      "get": {
+        "operationId": "fleets_endpoints_npsi_sources_get_npsi_source_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NpsiEventPreview"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Preview a source's upcoming imported events",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/ping-preview": {
       "post": {
         "description": "The Discord start ping for these fleet details, built by the same code as the real ping (a group fleet: the group's channel and role). channel_name is null when there is no channel to ping. Needs fleets.create, or, with host_group_id, the group's fleet publishing right.",
@@ -54115,6 +55572,300 @@
         ],
         "summary": "Create Help Ticket",
         "tags": [
+          "Help tickets"
+        ]
+      }
+    },
+    "/api/help-tickets/manage/categories": {
+      "post": {
+        "operationId": "help_tickets_settings_router_create_category",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HelpCategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelpCategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add a help ticket category",
+        "tags": [
+          "Help tickets",
+          "Help tickets"
+        ]
+      }
+    },
+    "/api/help-tickets/manage/categories/{category_id}": {
+      "patch": {
+        "operationId": "help_tickets_settings_router_patch_category",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HelpCategoryPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelpCategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Rename a category, change its owner or turn it off",
+        "tags": [
+          "Help tickets",
+          "Help tickets"
+        ]
+      }
+    },
+    "/api/help-tickets/manage/category-order": {
+      "post": {
+        "operationId": "help_tickets_settings_router_order_categories",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HelpCategoryOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HelpCategoryResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set the order the panel lists categories in",
+        "tags": [
+          "Help tickets",
+          "Help tickets"
+        ]
+      }
+    },
+    "/api/help-tickets/manage/panel": {
+      "patch": {
+        "operationId": "help_tickets_settings_router_patch_panel",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HelpPanelPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelpPanelResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set the channel the #help panel is posted in",
+        "tags": [
+          "Help tickets",
+          "Help tickets"
+        ]
+      }
+    },
+    "/api/help-tickets/manage/settings": {
+      "get": {
+        "operationId": "help_tickets_settings_router_get_settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HelpSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Help ticket categories, tribe groups to route to, and the panel",
+        "tags": [
+          "Help tickets",
           "Help tickets"
         ]
       }
@@ -62848,6 +64599,498 @@
         ]
       }
     },
+    "/api/reddit/review/changes/{change_id}/approve": {
+      "post": {
+        "operationId": "reddit_review_router_approve_change",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "title": "Change Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditReviewDecision"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve a requested change; it goes live in the rotation",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/changes/{change_id}/reject": {
+      "post": {
+        "operationId": "reddit_review_router_reject_change",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "change_id",
+            "required": true,
+            "schema": {
+              "title": "Change Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedditRejectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditReviewDecision"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Reject a requested change, with a reason for the CEO",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/queue": {
+      "get": {
+        "operationId": "reddit_review_router_get_queue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditReviewQueue"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Reddit post templates and changes waiting for approval",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/rotation": {
+      "get": {
+        "operationId": "reddit_review_router_get_rotation",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditRotation"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "This month's and next month's Reddit rotation",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/schedules/{schedule_id}/publish": {
+      "post": {
+        "operationId": "reddit_review_router_publish_schedule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "schedule_id",
+            "required": true,
+            "schema": {
+              "title": "Schedule Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditActionResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Publish a draft month: confirm its slots",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/schedules/{schedule_id}/regenerate": {
+      "post": {
+        "operationId": "reddit_review_router_regenerate_schedule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "schedule_id",
+            "required": true,
+            "schema": {
+              "title": "Schedule Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditActionResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Work out a draft month again",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/templates/{template_id}/approve": {
+      "post": {
+        "operationId": "reddit_review_router_approve_template",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditReviewDecision"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve a template (or its waiting change)",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/templates/{template_id}/link-discord": {
+      "post": {
+        "operationId": "reddit_review_router_link_discord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditActionResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Link a template's last Reddit post to its Discord channel",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
+    "/api/reddit/review/templates/{template_id}/submit": {
+      "post": {
+        "operationId": "reddit_review_router_submit_template",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "title": "Template Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedditActionResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Submit a post to Reddit now (the admin's manual submit)",
+        "tags": [
+          "Reddit",
+          "Reddit"
+        ]
+      }
+    },
     "/api/referrals": {
       "get": {
         "description": "Redirect referral link to final destination",
@@ -63997,6 +66240,84 @@
         ]
       }
     },
+    "/api/structures/pings": {
+      "get": {
+        "operationId": "structures_router_get_structure_pings",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "failed_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Failed Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "notification_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notification Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EveStructurePingResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Recent structure pings and whether Discord took them",
+        "tags": [
+          "Structures"
+        ]
+      }
+    },
     "/api/structures/timers": {
       "get": {
         "operationId": "structures_router_get_structure_timers",
@@ -64093,6 +66414,131 @@
           }
         ],
         "summary": "Create Structure Timer",
+        "tags": [
+          "Structures"
+        ]
+      }
+    },
+    "/api/structures/timers/{timer_id}": {
+      "delete": {
+        "operationId": "structures_router_delete_structure_timer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "timer_id",
+            "required": true,
+            "schema": {
+              "title": "Timer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Delete a wrong structure timer (recorded in the audit log)",
+        "tags": [
+          "Structures"
+        ]
+      },
+      "patch": {
+        "operationId": "structures_router_update_structure_timer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "timer_id",
+            "required": true,
+            "schema": {
+              "title": "Timer Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EveStructureTimerPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveStructureTimerResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Correct a structure timer (recorded in the audit log)",
         "tags": [
           "Structures"
         ]

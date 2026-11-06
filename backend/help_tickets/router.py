@@ -10,6 +10,7 @@ from authentication import AuthBearer, require_service_account
 from discord.client import DiscordClient
 from discord.models import DiscordUser
 from help_tickets.helpers.panel import build_help_ticket_panel_config
+from help_tickets.settings_router import settings_router
 from help_tickets.models import (
     HelpRequestCategory,
     HelpTicket,
@@ -17,6 +18,7 @@ from help_tickets.models import (
 )
 
 router = Router(tags=["Help tickets"])
+router.add_router("/manage", settings_router)
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
 
