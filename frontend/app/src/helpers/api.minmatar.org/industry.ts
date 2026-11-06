@@ -16,6 +16,7 @@ import type {
     CreateOrderRequest,
     CreateOrderResponse,
     OrderLinePricing,
+    OrderPatch,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -493,6 +494,20 @@ export async function post_planner_refine_rate(
             character_id: body.character_id ?? null,
             use_reprocessing_implants: body.use_reprocessing_implants ?? false,
         },
+    })
+}
+
+/** Edit an order. Owners may only send `campaign_id`; managers may send any field. */
+export async function patch_order(
+    access_token: string,
+    order_id: number,
+    changes: OrderPatch,
+) {
+    return await api_request<{ id: number }>(`${API_ENDPOINT}/orders/${order_id}`, {
+        method: 'PATCH',
+        token: access_token,
+        body: changes,
+        error: 'Error updating order',
     })
 }
 

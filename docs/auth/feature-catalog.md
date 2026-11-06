@@ -52,6 +52,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | Code | Scope | Legacy permission | Default wiring |
 |------|-------|-------------------|----------------|
 | `industry.order.submit` | `tribe_chief` | — | Industry tribe groups (`industry.subcapital-production`, `industry.capital-production`, `industry.mining`, `industry.planetary-interaction`) |
+| `industry.order.manage` | `tribe_chief` | `industry.change_industryorder` | Industry tribe groups (same as `industry.order.submit`); edit order deadline, location, contract recipient, campaign and fulfilled state |
 | `industry.order.submit.produced` | `tribe_membership` | — | Supply Market tribe group (`supply.market`); orders limited to produced catalog items |
 | `industry.loyalty.trade` | `affiliation` | — | Alliance, Militia, Associate (post LP sell orders on the buyback board) |
 | `industry.loyalty.manage` | `tribe_membership` | — | LP buyback tribe group (`supply.loyalty-points`): post buy orders, claim and settle |
