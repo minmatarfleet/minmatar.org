@@ -124,6 +124,28 @@ describe('sort_doctrines', () => {
         ])
     })
 
+    it('places a capital doctrine after strategic and before experimental for the same ship', () => {
+        const ship = {
+            ship_type: 'Dreadnought',
+            ship_name: 'Naglfar',
+            ship_meta: 'Tech I',
+            ship_id: 19722,
+        }
+        const sorted = sort_doctrines([
+            doctrine('Nag experimental', 'experimental', ship),
+            doctrine('Nag caps', 'capital', ship),
+            doctrine('Nag strat', 'strategic', ship),
+            doctrine('Nag', 'non_strategic', ship),
+        ])
+
+        expect(sorted.map((item) => item.name)).toEqual([
+            'Nag',
+            'Nag strat',
+            'Nag caps',
+            'Nag experimental',
+        ])
+    })
+
     it('puts a T2 frigate before a T1 destroyer, and T3 after T2 of the same size', () => {
         const sorted = sort_doctrines([
             doctrine('Thrasher', 'non_strategic', {

@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from eveonline.models import EveLocation
 
 from fittings.models import (
+    DOCTRINE_TYPE_CAPITAL,
     DOCTRINE_TYPE_EXPERIMENTAL,
     DOCTRINE_TYPE_NON_STRATEGIC,
     DOCTRINE_TYPE_STRATEGIC,
@@ -23,6 +24,7 @@ DOCTRINE_TYPE_LABELS = {
     DOCTRINE_TYPE_EXPERIMENTAL: "Experimental",
     DOCTRINE_TYPE_NON_STRATEGIC: "Non strategic",
     DOCTRINE_TYPE_STRATEGIC: "Strategic",
+    DOCTRINE_TYPE_CAPITAL: "Capital ships",
 }
 
 COMPOSITION_ROLE_LABELS = {

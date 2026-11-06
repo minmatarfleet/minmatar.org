@@ -34,8 +34,10 @@ from fittings.helpers.permissions import (
     can_approve_fitting_request,
     effective_protection_tier,
     protection_tier_for_doctrine,
+    protection_tier_for_doctrine_type,
 )
 from fittings.models import (
+    DOCTRINE_TYPE_CAPITAL,
     ChangeRequestStatus,
     DOCTRINE_TYPE_EXPERIMENTAL,
     DOCTRINE_TYPE_NON_STRATEGIC,
@@ -103,6 +105,43 @@ class ProtectionTierTestCase(TestCase):
         )
         EveDoctrineFitting.objects.create(
             doctrine=strat, fitting=fitting, role="primary"
+        )
+        self.assertEqual("strategic", effective_protection_tier(fitting))
+
+    def test_capital_doctrine_uses_strategic_tier(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Caps",
+            type=DOCTRINE_TYPE_CAPITAL,
+            description="",
+        )
+        self.assertEqual("strategic", protection_tier_for_doctrine(doctrine))
+        self.assertEqual(
+            "strategic",
+            protection_tier_for_doctrine_type(DOCTRINE_TYPE_CAPITAL),
+        )
+
+    def test_fitting_on_capital_and_non_strategic_is_strategic(self):
+        caps = EveDoctrine.objects.create(
+            name="Caps",
+            type=DOCTRINE_TYPE_CAPITAL,
+            description="",
+        )
+        skirmish = EveDoctrine.objects.create(
+            name="Skirmish",
+            type=DOCTRINE_TYPE_NON_STRATEGIC,
+            description="",
+        )
+        fitting = EveFitting.objects.create(
+            name="Naglfar",
+            eft_format="[Naglfar, Naglfar]",
+            ship_id=19722,
+            description="",
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=caps, fitting=fitting, role="primary"
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=skirmish, fitting=fitting, role="support"
         )
         self.assertEqual("strategic", effective_protection_tier(fitting))
 
