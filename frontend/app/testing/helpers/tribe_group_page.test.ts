@@ -50,6 +50,8 @@ describe('tribe group tabs', () => {
     it('shows an empty tab to a viewer who can add to it', () => {
         expect(tribe_group_tab_ids({ ...nothing, can_schedule_fleets: true })).toContain('fleets')
         expect(tribe_group_tab_ids({ ...nothing, can_create_events: true })).toContain('events')
+        expect(tribe_group_tab_ids({ ...nothing, can_create_events: true, events_enabled: false })).not.toContain('events')
+        expect(tribe_group_tab_ids({ ...nothing, fleet_count: 2, fleets_enabled: false })).not.toContain('fleets')
         expect(tribe_group_tab_ids({ ...nothing, can_post: true })).toContain('posts')
     })
 

@@ -107,6 +107,13 @@ class TribeEventTests(TestCase):
         self.assertIsNone(body["discord_event_url"])
         queued.assert_called_once_with(args=(body["id"],))
 
+    def test_switched_off_group_blocks_even_the_chief(self, channels):
+        self.group.events_enabled = False
+        self.group.save()
+        response, queued = self.create(self.chief)
+        self.assertEqual(response.status_code, 403)
+        queued.assert_not_called()
+
     def test_create_validation(self, channels):
         cases = [
             {

@@ -25077,9 +25077,13 @@ export interface components {
             event_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Event Publisher Character Ids */
             event_publisher_character_ids?: number[] | null;
+            /** Events Enabled */
+            events_enabled?: boolean | null;
             fleet_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Fleet Publisher Character Ids */
             fleet_publisher_character_ids?: number[] | null;
+            /** Fleets Enabled */
+            fleets_enabled?: boolean | null;
             post_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Post Publisher Character Ids */
             post_publisher_character_ids?: number[] | null;
@@ -25101,9 +25105,19 @@ export interface components {
             event_policy: components["schemas"]["PublishingPolicy"];
             /** Event Publishers */
             event_publishers: components["schemas"]["PublisherSchema"][];
+            /**
+             * Events Enabled
+             * @default true
+             */
+            events_enabled?: boolean;
             fleet_policy: components["schemas"]["PublishingPolicy"];
             /** Fleet Publishers */
             fleet_publishers: components["schemas"]["PublisherSchema"][];
+            /**
+             * Fleets Enabled
+             * @default true
+             */
+            fleets_enabled?: boolean;
             /** Group Id */
             group_id: number;
             post_policy: components["schemas"]["PublishingPolicy"];
@@ -25286,6 +25300,16 @@ export interface components {
             discord_role_name?: string | null;
             /** Effective Discord Channel Id */
             effective_discord_channel_id?: string | null;
+            /**
+             * Events Enabled
+             * @default true
+             */
+            events_enabled?: boolean;
+            /**
+             * Fleets Enabled
+             * @default true
+             */
+            fleets_enabled?: boolean;
             /**
              * Has Volunteered
              * @default false

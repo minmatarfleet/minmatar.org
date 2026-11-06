@@ -90,7 +90,12 @@ def _apply_settings(group: TribeGroup, payload) -> None:
         policy = getattr(payload, f"{kind}_policy")
         if policy is not None:
             setattr(group, f"{kind}_policy", policy.value)
-    for flag in ("allow_alliance_posts", "allow_open_fleets"):
+    for flag in (
+        "allow_alliance_posts",
+        "allow_open_fleets",
+        "fleets_enabled",
+        "events_enabled",
+    ):
         value = getattr(payload, flag)
         if value is not None:
             setattr(group, flag, value)
