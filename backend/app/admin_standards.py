@@ -29,9 +29,8 @@ READ_ONLY_MODELS = _labels(
     "tribes.TribeGroupMembershipCharacterHistory",
     "groups.UserCommunityStatusHistory",
     "surveys.SurveyChangelogEntry",
-    # Ledgers
+    # Ledgers (the LP ledger stays editable: staff post manual credits)
     "buyback.BuybackLedgerEntry",
-    "industry.IndustryLoyaltyPointLedgerEntry",
     "industry.IndustryLoyaltyPointPriceHistory",
     # Rollups and snapshots
     "alliance.AllianceHealthSnapshot",
