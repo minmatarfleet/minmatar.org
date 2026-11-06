@@ -5924,8 +5924,6 @@ export const ui = {
         'compact_mode': 'Compact mode',
         'card_style': 'Card style',
 
-        'neocom.campaigns': 'Campaigns',
-        'campaigns.description': 'Live faction warfare campaigns, orders and standings.',
 
         'campaigns.page_title': 'Campaigns',
         'campaigns.meta_description': 'Live faction warfare campaigns: systems, orders, standings and after-action reports.',
@@ -6722,6 +6720,7 @@ export const ui = {
         'fleets.hub.label': 'Fleets',
         'fleets.hub.upcoming': 'Upcoming',
         'fleets.hub.history': 'History',
+        'fleets.hub.campaigns': 'Campaigns',
         'fleets.missing.summary': '<b>{count} signed up but not in fleet</b>',
         'fleets.missing.summary_cynos': '<b>{count} signed up but not in fleet</b>, {cynos} of them cynos',
         'fleets.missing.nudge': 'DM them the fleet link',

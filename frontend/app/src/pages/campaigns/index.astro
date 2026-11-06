@@ -18,6 +18,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import PageActions from '@components/page/PageActions.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro'
 import CampaignList from '@components/blocks/CampaignList.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
@@ -93,6 +94,8 @@ const breadcrumbs = [
                 )}
             </PageActions>
         </FlexInline>
+
+        <FleetsHubTabs active="campaigns" />
 
         {fetch_campaigns_error ? (
             <ErrorRefetch
