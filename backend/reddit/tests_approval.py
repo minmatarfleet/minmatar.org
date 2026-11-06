@@ -155,7 +155,7 @@ class ChangeRequestTestCase(ApprovalTestCase):
 
 @override_settings(
     REDDIT_REVIEWER_DISCORD_IDS=["124039469488799746"],
-    MINMATAR_ADMIN_BASE_URL="https://api.example.org",
+    WEB_LINK_URL="https://my.example.org",
 )
 @patch("reddit.approval.queue_dm")
 class ReviewerNotificationTestCase(ApprovalTestCase):
@@ -172,8 +172,7 @@ class ReviewerNotificationTestCase(ApprovalTestCase):
         self.assertIn("Reddit post change to review: Rattini Tribe", message)
         self.assertIn("Was: Join the Rat", message)
         self.assertIn(
-            "https://api.example.org/admin/reddit/redditpostchangerequest/"
-            f"{change.pk}/change/",
+            f"https://my.example.org/alliance/reddit-review/#change-{change.pk}",
             message,
         )
         self.assertEqual(0, approval.notify_reviewers(later))

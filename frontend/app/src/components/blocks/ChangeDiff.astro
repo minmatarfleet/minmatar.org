@@ -1,0 +1,60 @@
+---
+import type { DoctrineChangeDiff } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+interface Props {
+    diffs:              DoctrineChangeDiff[];
+    [propName: string]: any;
+}
+
+const MARKS:Record<string, string> = { add: '+', del: '-', same: ' ' }
+
+const { diffs, ...attributes } = Astro.props
+
+delete attributes.class
+---
+
+<Flexblock gap="var(--space-s)" class:list={['[ change-diff ]', Astro.props.class]} {...attributes}>
+    {diffs.map((diff) =>
+        <Flexblock gap="var(--space-3xs)">
+            <strong class="[ change-diff__label ]">{diff.label}</strong>
+            <div class="[ change-diff__lines ]">
+                {diff.lines.map((line) =>
+                    <span class="[ change-diff__line ]" data-kind={line.kind}>{`${MARKS[line.kind] ?? ' '} ${line.text}`}</span>
+                )}
+            </div>
+        </Flexblock>
+    )}
+</Flexblock>
+
+<style lang="scss">
+    .change-diff__label {
+        text-transform: capitalize;
+        font-size: var(--step--1);
+    }
+
+    .change-diff__lines {
+        padding: var(--space-xs);
+        font-size: var(--step--1);
+        background-color: var(--surface-sunken);
+        border: solid 1px var(--border-color);
+    }
+
+    .change-diff__line {
+        display: block;
+        font-family: monospace;
+        white-space: pre-wrap;
+        color: var(--text-muted);
+
+        &[data-kind="add"] {
+            color: var(--green);
+            background-color: color-mix(in srgb, var(--green) 14%, transparent);
+        }
+
+        &[data-kind="del"] {
+            color: var(--fleet-red);
+            background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+        }
+    }
+</style>

@@ -24,8 +24,33 @@ from fleets.endpoints.npsi.post_discord_tracking import (
     post_npsi_discord_tracking,
     METHOD as post_discord_tracking_method,
 )
+from fleets.endpoints.npsi import sources
 
 _ROUTES = (
+    (
+        sources.LIST_METHOD,
+        sources.LIST_PATH,
+        sources.LIST_SPEC,
+        sources.get_npsi_sources,
+    ),
+    (
+        sources.CREATE_METHOD,
+        sources.CREATE_PATH,
+        sources.CREATE_SPEC,
+        sources.post_npsi_source,
+    ),
+    (
+        sources.PATCH_METHOD,
+        sources.PATCH_PATH,
+        sources.PATCH_SPEC,
+        sources.patch_npsi_source,
+    ),
+    (
+        sources.EVENTS_METHOD,
+        sources.EVENTS_PATH,
+        sources.EVENTS_SPEC,
+        sources.get_npsi_source_events,
+    ),
     (
         post_discord_create_method,
         post_discord_create_path,

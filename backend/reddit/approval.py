@@ -213,8 +213,8 @@ def approval_saved(template: RedditPostTemplate, user):
 
 
 def review_url(change: RedditPostChangeRequest) -> str:
-    base = (settings.MINMATAR_ADMIN_BASE_URL or settings.SITE_URL).rstrip("/")
-    return f"{base}/admin/reddit/redditpostchangerequest/{change.pk}/change/"
+    base = settings.WEB_LINK_URL.rstrip("/")
+    return f"{base}/alliance/reddit-review/#change-{change.pk}"
 
 
 def review_message(

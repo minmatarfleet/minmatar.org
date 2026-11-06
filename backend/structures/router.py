@@ -15,7 +15,8 @@ from structures.helpers import (
     get_structure_details,
     get_generic_details,
 )
-from .models import EveStructure, EveStructureTimer
+from audit.models import AuditEntry
+from .models import EveStructure, EveStructurePing, EveStructureTimer
 
 router = Router(tags=["Structures"])
 logger = logging.getLogger(__name__)
@@ -296,3 +297,162 @@ def verify_structure_timer(
     }
 
     return response
+
+
+CORRECT_FEATURE = "structures.timers.correct"
+
+
+class EveStructureTimerPatch(BaseModel):
+    """Fix a wrong timer: only the fields sent change."""
+
+    name: str | None = None
+    state: EveStructureState | None = None
+    type: EveStructureType | None = None
+    timer: datetime | None = None
+    system_name: str | None = None
+    corporation_name: str | None = None
+    alliance_name: str | None = None
+    fitting: str | None = None
+
+
+class EveStructurePingResponse(BaseModel):
+    """A structure ping the bot sent (or failed to send) to Discord"""
+
+    id: int
+    notification_type: str
+    summary: str
+    discord_success: bool
+    structure_id: int | None = None
+    created_at: datetime | None = None
+    event_time: datetime | None = None
+
+
+def _audit(user, summary: str) -> None:
+    AuditEntry.objects.create(
+        user=user, category="other", summary=summary[:255]
+    )
+
+
+def _timer_response(timer: EveStructureTimer) -> dict:
+    return {
+        "id": timer.id,
+        "name": timer.name,
+        "state": timer.state,
+        "type": timer.type,
+        "timer": timer.timer,
+        "created_at": timer.created_at,
+        "updated_at": timer.updated_at,
+        "created_by": timer.created_by_id,
+        "updated_by": timer.updated_by_id,
+        "system_name": timer.system_name,
+        "corporation_name": timer.corporation_name,
+        "alliance_name": timer.alliance_name,
+        "structure_id": timer.structure_id,
+        "campaign_id": timer.campaign_id,
+        "fitting": timer.fitting,
+    }
+
+
+def _timer_label(timer: EveStructureTimer) -> str:
+    return f"timer {timer.id} ({timer.system_name} - {timer.name})"
+
+
+@router.patch(
+    "/timers/{timer_id}",
+    auth=AuthBearer(),
+    response={
+        200: EveStructureTimerResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+    summary="Correct a structure timer (recorded in the audit log)",
+)
+def update_structure_timer(
+    request, timer_id: int, payload: EveStructureTimerPatch
+):
+    if not can_use_feature(request.user, CORRECT_FEATURE):
+        return 403, ErrorResponse(detail="Permission denied")
+    timer = EveStructureTimer.objects.filter(id=timer_id).first()
+    if timer is None:
+        return 404, ErrorResponse(detail="Timer does not exist")
+
+    changes = payload.dict(exclude_unset=True)
+    for field in ("name", "system_name"):
+        if field in changes and not (changes[field] or "").strip():
+            return 400, ErrorResponse(detail=f"{field} cannot be empty")
+    if "timer" in changes and changes["timer"] is None:
+        return 400, ErrorResponse(detail="timer cannot be empty")
+
+    changed = []
+    for field, value in changes.items():
+        if isinstance(value, Enum):
+            value = value.value
+        if isinstance(value, str):
+            value = value.strip()
+        if field in ("alliance_name", "corporation_name", "fitting"):
+            value = value or None
+        if getattr(timer, field) != value:
+            changed.append(f"{field} {getattr(timer, field)!r} -> {value!r}")
+            setattr(timer, field, value)
+    if changed:
+        timer.updated_by = request.user
+        timer.updated_at = datetime.now()
+        timer.save()
+        _audit(
+            request.user,
+            f"Corrected {_timer_label(timer)}: {'; '.join(changed)}",
+        )
+    return _timer_response(timer)
+
+
+@router.delete(
+    "/timers/{timer_id}",
+    auth=AuthBearer(),
+    response={204: None, 403: ErrorResponse, 404: ErrorResponse},
+    summary="Delete a wrong structure timer (recorded in the audit log)",
+)
+def delete_structure_timer(request, timer_id: int):
+    if not can_use_feature(request.user, CORRECT_FEATURE):
+        return 403, ErrorResponse(detail="Permission denied")
+    timer = EveStructureTimer.objects.filter(id=timer_id).first()
+    if timer is None:
+        return 404, ErrorResponse(detail="Timer does not exist")
+    label = _timer_label(timer)
+    when = timer.timer
+    timer.delete()
+    _audit(request.user, f"Deleted {label}, was due {when:%Y-%m-%d %H:%M}")
+    return 204, None
+
+
+@router.get(
+    "/pings",
+    auth=AuthBearer(),
+    response={200: List[EveStructurePingResponse], 403: ErrorResponse},
+    summary="Recent structure pings and whether Discord took them",
+)
+def get_structure_pings(
+    request,
+    failed_only: bool = False,
+    notification_type: str | None = None,
+    limit: int = 100,
+):
+    if not can_use_feature(request.user, CORRECT_FEATURE):
+        return 403, ErrorResponse(detail="Permission denied")
+    pings = EveStructurePing.objects.order_by("-created_at", "-id")
+    if failed_only:
+        pings = pings.filter(discord_success=False)
+    if notification_type:
+        pings = pings.filter(notification_type=notification_type)
+    return [
+        {
+            "id": ping.id,
+            "notification_type": ping.notification_type,
+            "summary": ping.summary,
+            "discord_success": ping.discord_success,
+            "structure_id": ping.structure_id,
+            "created_at": ping.created_at,
+            "event_time": ping.event_time,
+        }
+        for ping in pings[: max(1, min(limit, 500))]
+    ]

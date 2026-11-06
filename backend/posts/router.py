@@ -5,6 +5,7 @@ import re
 
 from ninja import Router
 from pydantic import BaseModel
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.core.paginator import Paginator
@@ -211,6 +212,14 @@ class EvePostResponse(BaseModel):
 class EveTagResponse(BaseModel):
     tag_id: int
     tag: str
+
+
+class EveTagRequest(BaseModel):
+    tag: str
+
+
+class EveTagMergeRequest(BaseModel):
+    into_tag_id: int
 
 
 class CreateEvePostRequest(BaseModel):
@@ -536,3 +545,97 @@ def get_tags(request):
             )
         )
     return response
+
+
+TAGS_FEATURE = "posts.tags.manage"
+TAGS_FORBIDDEN = "You do not have permission to manage tags."
+
+
+def _clean_tag(name: str) -> str:
+    return " ".join((name or "").split())
+
+
+def _tag_name_error(name: str, exclude_id: int | None = None):
+    if not name:
+        return "Enter a tag name."
+    if len(name) > 100:
+        return "Tags are at most 100 characters."
+    clash = EveTag.objects.filter(tag__iexact=name)
+    if exclude_id:
+        clash = clash.exclude(id=exclude_id)
+    if clash.exists():
+        return "A tag with that name already exists."
+    return None
+
+
+def _tag_response(tag: EveTag) -> EveTagResponse:
+    return EveTagResponse(tag_id=tag.id, tag=tag.tag)
+
+
+@router.post(
+    "/tags",
+    response={200: EveTagResponse, 400: ErrorResponse, 403: ErrorResponse},
+    auth=AuthBearer(),
+    summary="Create a post tag",
+)
+def create_tag(request, payload: EveTagRequest):
+    if not can_use_feature(request.user, TAGS_FEATURE):
+        return 403, {"detail": TAGS_FORBIDDEN}
+    name = _clean_tag(payload.tag)
+    error = _tag_name_error(name)
+    if error:
+        return 400, {"detail": error}
+    return _tag_response(EveTag.objects.create(tag=name))
+
+
+@router.patch(
+    "/tags/{tag_id}",
+    response={
+        200: EveTagResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+    auth=AuthBearer(),
+    summary="Rename a post tag",
+)
+def rename_tag(request, tag_id: int, payload: EveTagRequest):
+    if not can_use_feature(request.user, TAGS_FEATURE):
+        return 403, {"detail": TAGS_FORBIDDEN}
+    tag = EveTag.objects.filter(id=tag_id).first()
+    if tag is None:
+        return 404, {"detail": "Tag not found."}
+    name = _clean_tag(payload.tag)
+    error = _tag_name_error(name, exclude_id=tag.id)
+    if error:
+        return 400, {"detail": error}
+    tag.tag = name
+    tag.save(update_fields=["tag"])
+    return _tag_response(tag)
+
+
+@router.post(
+    "/tags/{tag_id}/merge",
+    response={
+        200: EveTagResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+    auth=AuthBearer(),
+    summary="Merge a tag into another: its posts move over and it is deleted",
+)
+def merge_tag(request, tag_id: int, payload: EveTagMergeRequest):
+    if not can_use_feature(request.user, TAGS_FEATURE):
+        return 403, {"detail": TAGS_FORBIDDEN}
+    if payload.into_tag_id == tag_id:
+        return 400, {"detail": "Pick a different tag to merge into."}
+    source = EveTag.objects.filter(id=tag_id).first()
+    target = EveTag.objects.filter(id=payload.into_tag_id).first()
+    if source is None or target is None:
+        return 404, {"detail": "Tag not found."}
+    with transaction.atomic():
+        for post in EvePost.objects.filter(tags=source):
+            post.tags.add(target)
+        source.delete()
+    return _tag_response(target)

@@ -1,0 +1,130 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates } from '@helpers/gates'
+import { can_edit_doctrines } from '@helpers/doctrine_editor'
+
+const gates = await get_gates(Astro)
+
+if (!await can_edit_doctrines(gates))
+    return HTTP_403_Forbidden()
+
+import type { Fitting } from '@dtypes/api.minmatar.org'
+import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
+import { fitting_tag_label } from '@helpers/fitting_tags'
+import { FITTING_TAG_SLUGS } from '@helpers/doctrine_editor'
+
+const fitting_id = parseInt(Astro.params.fitting_id ?? '0')
+
+let fitting:Fitting | null = null
+let fetch_error:Error | false = false
+
+try {
+    fitting = await get_fitting_by_id(fitting_id)
+} catch (error) {
+    if ((error as Error).cause === 404)
+        return HTTP_404_Not_Found()
+    fetch_error = error
+}
+
+const FORM_PARTIAL_URL = translatePath(`/partials/fitting_change_form_component/?fitting_id=${fitting_id}`)
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+
+const page_title = `${t('doctrine_changes.edit_fitting')}${fitting ? `: ${fitting.name}` : ''}`
+---
+
+<Viewport title={page_title}>
+    <PageWide
+        cover={{
+            image: '/images/doctrines-cover.jpg',
+            image_990: '/images/doctrines-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                <small>{t('doctrine_changes.fitting_leading')}</small>
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/ships/doctrines/review/')}>
+                    {t('doctrine_changes.review_queue')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        {fetch_error || !fitting ?
+            <ErrorRefetch
+                args={{
+                    partial: FORM_PARTIAL_URL,
+                    error: fetch_error || new Error(t('doctrine_changes.action_failed')),
+                    delay: 0,
+                }}
+            />
+            :
+            <ComponentBlock>
+                <form
+                    hx-post={FORM_PARTIAL_URL}
+                    hx-target="#fitting-change-result"
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                >
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <label for="eft_format">{t('doctrine_changes.eft')}</label>
+                            <Textarea id="eft_format" name="eft_format" rows="16" required>{fitting.eft_format}</Textarea>
+                        </Flexblock>
+                        <Flexblock gap="var(--space-3xs)">
+                            <label for="description">{t('doctrine_changes.description')}</label>
+                            <Textarea id="description" name="description" rows="4">{fitting.description}</Textarea>
+                        </Flexblock>
+                        <fieldset>
+                            <legend>{t('doctrine_changes.tags')}</legend>
+                            <FlexInline gap="var(--space-s)">
+                                {FITTING_TAG_SLUGS.map((slug) =>
+                                    <label>
+                                        <input type="checkbox" name="tags" value={slug} checked={fitting.tags.includes(slug)} />
+                                        {fitting_tag_label(slug, t)}
+                                    </label>
+                                )}
+                            </FlexInline>
+                        </fieldset>
+                        <FlexInline gap="var(--space-xs)">
+                            <Button type="submit" name="intent" value="preview" color="alliance-blue">
+                                {t('doctrine_changes.preview')}
+                            </Button>
+                            <Button type="submit" name="intent" value="submit" color="green">
+                                {t('doctrine_changes.submit')}
+                            </Button>
+                        </FlexInline>
+                    </Flexblock>
+                </form>
+            </ComponentBlock>
+        }
+
+        <div id="fitting-change-result" class="[ mt-[var(--space-m)] ]" aria-live="polite"></div>
+    </PageWide>
+</Viewport>

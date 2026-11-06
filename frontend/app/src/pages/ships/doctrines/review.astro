@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates } from '@helpers/gates'
+import { can_edit_doctrines } from '@helpers/doctrine_editor'
+
+const gates = await get_gates(Astro)
+
+if (!await can_edit_doctrines(gates))
+    return HTTP_403_Forbidden()
+
+const QUEUE_PARTIAL_URL = translatePath('/partials/doctrine_change_queue_component/')
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Button from '@components/blocks/Button.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+
+const page_title = t('doctrine_changes.review_title')
+---
+
+<Viewport title={page_title}>
+    <PageWide
+        cover={{
+            image: '/images/doctrines-cover.jpg',
+            image_990: '/images/doctrines-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                <small>{t('doctrine_changes.review_leading')}</small>
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/ships/doctrines/')}>
+                    {t('keep_browsing')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        <div id="doctrine-change-queue">
+            <LazyPartial url={QUEUE_PARTIAL_URL} />
+        </div>
+    </PageWide>
+</Viewport>

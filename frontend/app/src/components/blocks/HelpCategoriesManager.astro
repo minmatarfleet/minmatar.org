@@ -1,0 +1,124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { HelpSettings } from '@dtypes/api.minmatar.org'
+
+/** Add and rename help ticket categories, set the owning tribe group, order the panel options and set its channel. help_tickets_settings_component saves and answers with this panel again. */
+interface Props {
+    settings:           HelpSettings;
+    error?:             string | null;
+    notice?:            string | null;
+    [propName: string]: any;
+}
+
+const { settings, error = null, notice = null } = Astro.props
+
+const PARTIAL_URL = translatePath('/partials/help_tickets_settings_component')
+const last_index = settings.categories.length - 1
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Input from '@components/blocks/Input.astro'
+import ManagePanel from '@components/blocks/ManagePanel.astro'
+import Select from '@components/blocks/Select.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const attrs = {
+    'hx-post': PARTIAL_URL,
+    'hx-target': '#help-categories-manager',
+    'hx-swap': 'outerHTML',
+    'hx-disabled-elt': 'find button',
+}
+---
+
+<ManagePanel id="help-categories-manager">
+    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+        <Flexblock gap="var(--space-xs)">
+            <h2 class="[ manage-panel__heading ]">{t('help_settings.panel')}</h2>
+            <form class="[ manage-panel__form ]" {...attrs}>
+                <input type="hidden" name="action" value="panel" />
+                <label class="[ manage-panel__field ]">
+                    <span>{t('help_settings.panel_channel')}</span>
+                    <Input type="text" name="channel_id" size="sm" inputmode="numeric" pattern="[0-9]+" required value={settings.panel.channel_id ? String(settings.panel.channel_id) : ''} />
+                </label>
+                <Button type="submit" size="sm">{t('help_settings.save')}</Button>
+            </form>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+        <Flexblock gap="var(--space-xs)">
+            <h2 class="[ manage-panel__heading ]">{t('help_settings.add')}</h2>
+            <form class="[ manage-panel__form ]" {...attrs}>
+                <input type="hidden" name="action" value="create" />
+                <label class="[ manage-panel__field ]">
+                    <span>{t('help_settings.field.title')}</span>
+                    <Input type="text" name="title" size="sm" required maxlength="100" />
+                </label>
+                <label class="[ manage-panel__field ]">
+                    <span>{t('help_settings.field.owner')}</span>
+                    <Select name="tribe_group_id" size="sm">
+                        <option value="">{t('help_settings.no_owner')}</option>
+                        {settings.tribe_groups.filter(group => !group.taken).map(group =>
+                            <option value={String(group.id)}>{group.tribe_name}: {group.name}</option>
+                        )}
+                    </Select>
+                </label>
+                <Button type="submit" size="sm" color="green">{t('help_settings.add_button')}</Button>
+            </form>
+        </Flexblock>
+    </ComponentBlock>
+
+    {settings.categories.length === 0 ?
+        <EmptyState title={t('help_settings.empty')} />
+        :
+        <ul class="[ manage-panel__rows ]" role="list">
+            {settings.categories.map((category, index) =>
+                <li class="[ manage-panel__row ]">
+                    <form class="[ manage-panel__form ]" {...attrs}>
+                        <input type="hidden" name="action" value="update" />
+                        <input type="hidden" name="category_id" value={category.id} />
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('help_settings.field.title')}</span>
+                            <Input type="text" name="title" size="sm" required maxlength="100" value={category.title} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('help_settings.field.section')}</span>
+                            <Input type="text" name="section" size="sm" maxlength="128" value={category.section} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('help_settings.field.owner')}</span>
+                            <Select name="tribe_group_id" size="sm">
+                                <option value="" selected={category.tribe_group_id === null}>{t('help_settings.no_owner')}</option>
+                                {settings.tribe_groups.filter(group => !group.taken || group.id === category.tribe_group_id).map(group =>
+                                    <option value={String(group.id)} selected={group.id === category.tribe_group_id}>{group.tribe_name}: {group.name}</option>
+                                )}
+                            </Select>
+                        </label>
+                        <Button type="submit" size="sm">{t('help_settings.save')}</Button>
+                    </form>
+                    {!category.is_active && <Tag color="fleet-red" text={t('help_settings.off')} />}
+                    {category.assignee_names.length > 0 && <span class="[ manage-panel__muted ]">{category.assignee_names.join(', ')}</span>}
+                    <form class="[ manage-panel__form ]" {...attrs}>
+                        <input type="hidden" name="action" value="toggle" />
+                        <input type="hidden" name="category_id" value={category.id} />
+                        <input type="hidden" name="is_active" value={category.is_active ? 'false' : 'true'} />
+                        <Button type="submit" size="sm" color="transparent">{category.is_active ? t('help_settings.turn_off') : t('help_settings.turn_on')}</Button>
+                    </form>
+                    <form class="[ manage-panel__form ]" {...attrs}>
+                        <input type="hidden" name="action" value="move" />
+                        <input type="hidden" name="category_id" value={category.id} />
+                        <Button type="submit" size="sm" color="transparent" name="direction" value="up" disabled={index === 0} aria-label={t('help_settings.move_up')}>↑</Button>
+                        <Button type="submit" size="sm" color="transparent" name="direction" value="down" disabled={index === last_index} aria-label={t('help_settings.move_down')}>↓</Button>
+                    </form>
+                </li>
+            )}
+        </ul>
+    }
+</ManagePanel>

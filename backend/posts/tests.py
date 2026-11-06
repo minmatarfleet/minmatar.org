@@ -261,3 +261,66 @@ class PublicPostReadsTestCase(TestCase):
     def test_no_token_still_works(self):
         response = Client().get(f"{BASE_URL}/posts")
         self.assertEqual(200, response.status_code)
+
+
+class TagManagementTestCase(TestCase):
+    """Create, rename and merge post tags (posts.tags.manage)."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.headers = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+
+    def grant(self):
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                codename="change_evetag", content_type__app_label="posts"
+            )
+        )
+
+    def _post(self, path, body):
+        return self.client.post(
+            f"{BASE_URL}{path}",
+            body,
+            content_type="application/json",
+            **self.headers,
+        )
+
+    def test_forbidden_without_the_feature(self):
+        self.assertEqual(403, self._post("/tags", {"tag": "Lore"}).status_code)
+        self.assertFalse(EveTag.objects.exists())
+
+    def test_create_and_rename(self):
+        self.grant()
+        response = self._post("/tags", {"tag": "  Lore  "})
+        self.assertEqual(200, response.status_code)
+        tag_id = response.json()["tag_id"]
+        self.assertEqual("Lore", EveTag.objects.get(id=tag_id).tag)
+        self.assertEqual(400, self._post("/tags", {"tag": "lore"}).status_code)
+        renamed = self.client.patch(
+            f"{BASE_URL}/tags/{tag_id}",
+            {"tag": "Story"},
+            content_type="application/json",
+            **self.headers,
+        )
+        self.assertEqual(200, renamed.status_code)
+        self.assertEqual("Story", EveTag.objects.get(id=tag_id).tag)
+
+    def test_merge_moves_posts_and_deletes_source(self):
+        self.grant()
+        old = EveTag.objects.create(tag="Old")
+        new = EveTag.objects.create(tag="New")
+        post = EvePost.objects.create(
+            title="Hello",
+            seo_description="x",
+            slug="hello",
+            content="body",
+            user=self.user,
+        )
+        post.tags.add(old)
+        same = self._post(f"/tags/{old.id}/merge", {"into_tag_id": old.id})
+        self.assertEqual(400, same.status_code)
+        response = self._post(f"/tags/{old.id}/merge", {"into_tag_id": new.id})
+        self.assertEqual(200, response.status_code)
+        self.assertFalse(EveTag.objects.filter(id=old.id).exists())
+        self.assertEqual([new], list(post.tags.all()))

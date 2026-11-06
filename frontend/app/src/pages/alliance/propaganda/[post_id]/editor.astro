@@ -348,6 +348,9 @@ const page_title = post?.title ?? t('new_post')
                                 <span set:html={error_fetching_post_tags}></span> :
                                 <FlexInline>
                                     <label>{t('post_tags')}:</label>
+                                    {can(gates, 'posts.tags.manage') &&
+                                        <a href={translatePath('/alliance/propaganda/tags/')}>{t('post_tags.manage.link')}</a>
+                                    }
                                     {post_tags.map(tag =>
                                         <UnstyledRadioCheckButton
                                             type='radio'

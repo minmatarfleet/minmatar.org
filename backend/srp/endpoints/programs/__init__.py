@@ -1,34 +1,47 @@
-"""SRP programs: GET list and GET amount history under /srp/programs."""
+"""SRP programs: list, amount history, edit amounts, recalculate."""
 
 from ninja import Router
 
-from srp.endpoints.programs.get_program_history import (
-    PATH as get_program_history_path,
-    ROUTE_SPEC as get_program_history_spec,
-    get_srp_program_history,
-    METHOD as get_program_history_method,
-)
-from srp.endpoints.programs.get_programs import (
-    PATH as get_programs_path,
-    ROUTE_SPEC as get_programs_spec,
-    get_srp_programs,
-    METHOD as get_programs_method,
+from srp.endpoints.programs import (
+    get_program_history,
+    get_programs,
+    get_recalculation_preview,
+    post_program_amount,
+    post_recalculate_outstanding,
 )
 
 router = Router(tags=["SRP - Programs"])
 
 _ROUTES = (
     (
-        get_program_history_method,
-        get_program_history_path,
-        get_program_history_spec,
-        get_srp_program_history,
+        get_program_history.METHOD,
+        get_program_history.PATH,
+        get_program_history.ROUTE_SPEC,
+        get_program_history.get_srp_program_history,
     ),
     (
-        get_programs_method,
-        get_programs_path,
-        get_programs_spec,
-        get_srp_programs,
+        get_programs.METHOD,
+        get_programs.PATH,
+        get_programs.ROUTE_SPEC,
+        get_programs.get_srp_programs,
+    ),
+    (
+        post_program_amount.METHOD,
+        post_program_amount.PATH,
+        post_program_amount.ROUTE_SPEC,
+        post_program_amount.post_program_amount,
+    ),
+    (
+        get_recalculation_preview.METHOD,
+        get_recalculation_preview.PATH,
+        get_recalculation_preview.ROUTE_SPEC,
+        get_recalculation_preview.get_recalculation_preview,
+    ),
+    (
+        post_recalculate_outstanding.METHOD,
+        post_recalculate_outstanding.PATH,
+        post_recalculate_outstanding.ROUTE_SPEC,
+        post_recalculate_outstanding.post_recalculate_outstanding,
     ),
 )
 for method, path, spec, view in _ROUTES:

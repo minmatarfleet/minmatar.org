@@ -1310,6 +1310,11 @@ class NpsiEventSource(models.Model):
         blank=True,
     )
     enabled = models.BooleanField(default=True)
+    # Set by every poll: when it last ran, whether it read the feed, and why
+    # not.
+    last_polled_at = models.DateTimeField(null=True, blank=True)
+    last_success_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
