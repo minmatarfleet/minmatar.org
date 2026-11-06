@@ -34,6 +34,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'feature',
             id: 'training',
+            layout: 'split',
             toc_label: 'Training',
             kicker: 'Your account',
             title: 'What can I fly? What should I train?',
@@ -64,6 +65,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'feature',
             id: 'trial',
+            layout: 'split-reverse',
             toc_label: 'Trial',
             kicker: 'New pilots',
             title: 'Your trial, at a glance',
@@ -91,15 +93,16 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'feature',
             id: 'invites',
-            toc_label: 'Fleet invites',
+            layout: 'split',
+            toc_label: 'Invites',
             kicker: 'Fleets',
             title: 'An FC might invite you to a fleet',
             lede: 'FCs can now invite pilots to an upcoming fleet by Discord DM. Answer with one button, and pick your ships on the site.',
             figures: [
                 {
                     src: `${IMG}/invites.webp`,
-                    width: 960,
-                    height: 790,
+                    width: 640,
+                    height: 714,
                     alt: "The Invite pilots dialog: the timezones set by the fleet time, a choice of new pilots, names or a pasted list, a note, and a preview of the Discord invite with I'm in, Sitting out and Stop fleet invites buttons.",
                     caption: 'What the FC sees, and the DM you get.',
                 },
@@ -118,6 +121,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'feature',
             id: 'quiet',
+            layout: 'story',
             toc_label: 'Quiet mode',
             kicker: 'Quiet mode',
             title: 'The fleet nobody saw coming',
@@ -133,7 +137,7 @@ export const YC128_11: NewsletterIssue = {
                 {
                     src: `${IMG}/quiet-fleet.webp`,
                     width: 1170,
-                    height: 585,
+                    height: 411,
                     alt: 'The declassified quiet mode fleet: Saturday 24 October, 1 hour 10 minutes, staged in Amamake on TFIs, FC BearThatCares. Outcome: 13.6B destroyed, 16.4B lost, 45% efficiency, 120 against 180.',
                     caption: 'Declassified after the fight, like any other fleet.',
                     wide: true,
@@ -154,7 +158,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'hits',
             id: 'reports',
-            toc_label: 'Battle reports',
+            toc_label: 'Reports',
             kicker: 'After the fight',
             title: 'Battle reports for the whole fleet',
             figures: [
@@ -185,7 +189,7 @@ export const YC128_11: NewsletterIssue = {
                 {
                     src: `${IMG}/participants.webp`,
                     width: 1170,
-                    height: 980,
+                    height: 660,
                     alt: 'The Participants tab: peak in fleet, pilots, pilots on a killmail and engagements, a chart of fleet size over time, and each pilot with their ship, kills and losses on a timeline.',
                     caption: 'Who came, when, and in what.',
                 },
@@ -210,7 +214,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'hits',
             id: 'tribes',
-            toc_label: 'Corps & tribes',
+            toc_label: 'Corps',
             kicker: 'Corporations & tribes',
             title: 'Easier to join',
             items: [
@@ -229,7 +233,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'hits',
             id: 'also',
-            toc_label: 'Also new',
+            toc_label: 'More',
             kicker: 'Also new',
             title: "Smaller things you'll notice",
             items: [
@@ -245,7 +249,7 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'feature',
             id: 'help',
-            toc_label: 'Report a bug',
+            toc_label: 'Help',
             kicker: 'Tell us',
             title: 'Found a bug? Want something built?',
             lede: 'Open a ticket in #help on the alliance Discord. Several fixes this month started as your tickets. New to the game? Ask anything in #questions.',

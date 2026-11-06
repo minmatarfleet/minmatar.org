@@ -88,7 +88,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         {section.kind === 'feature' && (
             <Flexblock gap="var(--space-m)">
                 {section.lede && <p class="[ nl-lede ]">{section.lede}</p>}
-                {section.panel &&
+                {section.panel && section.layout !== 'story' &&
                     <div class="[ nl-panel ]">
                         <h3 class="[ nl-h3 ]">{section.panel.title}</h3>
                         {section.panel.paragraphs.map((paragraph) => <p set:html={paragraph} />)}
@@ -107,27 +107,88 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {section.callout &&
                     <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
                 }
-                {figure_list(section.figures).map((figure) =>
-                    <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
-                        <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
-                        <figcaption>{figure.caption}</figcaption>
-                    </figure>
-                )}
-                {section.list &&
-                    <ul class="[ nl-panel nl-list ]">
-                        {section.list.map((item) => <li><b>{item.title}</b> <span set:html={item.text} /></li>)}
-                    </ul>
-                }
-                {section.aside &&
-                    <p class="[ nl-aside ]"><b>{section.aside.tag}:</b> <span set:html={section.aside.text} /></p>
-                }
-                {section.cta &&
-                    <div class="[ nl-cta ]">
-                        {cta_links(section.cta).map((link) =>
-                            <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                {section.layout === 'story' ?
+                    <Fragment>
+                        <div class="[ nl-split ]">
+                            {section.panel &&
+                                <div class="[ nl-panel nl-split__panel ]">
+                                    <h3 class="[ nl-h3 ]">{section.panel.title}</h3>
+                                    {section.panel.paragraphs.map((paragraph) => <p set:html={paragraph} />)}
+                                </div>
+                            }
+                            {section.list &&
+                                <ul class="[ nl-split__list ]">
+                                    {section.list.map((item) => <li><b>{item.title.replace(/\.$/, '')}</b><span set:html={item.text} /></li>)}
+                                </ul>
+                            }
+                        </div>
+                        {figure_list(section.figures).map((figure) =>
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <figcaption>{figure.caption}</figcaption>
+                            </figure>
                         )}
-                        {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                        {section.cta &&
+                            <div class="[ nl-cta ]">
+                                {cta_links(section.cta).map((link) =>
+                                    <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                                )}
+                                {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                            </div>
+                        }
+                    </Fragment>
+                : section.layout ?
+                    <div class:list={['[ nl-split ]', { 'nl-split--reverse': section.layout === 'split-reverse' }]}>
+                        {figure_list(section.figures).map((figure) =>
+                            <figure class="[ nl-shot nl-split__shot ]">
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <figcaption>{figure.caption}</figcaption>
+                            </figure>
+                        )}
+                        <Flexblock gap="var(--space-m)" class="[ nl-split__text ]">
+                            {section.list &&
+                                <ul class="[ nl-split__list ]">
+                                    {section.list.map((item) => <li><b>{item.title.replace(/\.$/, '')}</b><span set:html={item.text} /></li>)}
+                                </ul>
+                            }
+                            {section.aside &&
+                                <p class="[ nl-aside ]"><b>{section.aside.tag}:</b> <span set:html={section.aside.text} /></p>
+                            }
+                            {section.cta &&
+                                <div class="[ nl-cta ]">
+                                    {cta_links(section.cta).map((link) =>
+                                        <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                                    )}
+                                    {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                                </div>
+                            }
+                        </Flexblock>
                     </div>
+                :
+                    <Fragment>
+                        {figure_list(section.figures).map((figure) =>
+                            <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <figcaption>{figure.caption}</figcaption>
+                            </figure>
+                        )}
+                        {section.list &&
+                            <ul class="[ nl-panel nl-list ]">
+                                {section.list.map((item) => <li><b>{item.title}</b> <span set:html={item.text} /></li>)}
+                            </ul>
+                        }
+                        {section.aside &&
+                            <p class="[ nl-aside ]"><b>{section.aside.tag}:</b> <span set:html={section.aside.text} /></p>
+                        }
+                        {section.cta &&
+                            <div class="[ nl-cta ]">
+                                {cta_links(section.cta).map((link) =>
+                                    <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                                )}
+                                {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                            </div>
+                        }
+                    </Fragment>
                 }
             </Flexblock>
         )}
@@ -595,6 +656,59 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         display: grid;
         gap: var(--space-m);
         align-items: start;
+    }
+
+    .nl-split {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: var(--space-l);
+        align-items: start;
+    }
+
+    .nl-split--reverse {
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+
+    .nl-split--reverse .nl-split__shot {
+        order: 2;
+    }
+
+    .nl-split .nl-split__panel {
+        max-width: none;
+    }
+
+    .nl-split .nl-split__shot {
+        max-width: none;
+    }
+
+    .nl-split__list {
+        display: grid;
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .nl-split__list li {
+        display: grid;
+        gap: var(--space-3xs);
+        padding-top: var(--space-s);
+        border-top: 1px solid var(--hairline-strong);
+    }
+
+    .nl-split__list b {
+        color: var(--highlight);
+    }
+
+    @media (max-width: 48rem) {
+        .nl-split,
+        .nl-split--reverse {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .nl-split--reverse .nl-split__shot {
+            order: 0;
+        }
     }
 
     .nl-shot--tall {

@@ -125,6 +125,11 @@ interface NewsletterSectionBase {
 
 export interface NewsletterFeatureSection extends NewsletterSectionBase {
     kind: 'feature'
+    /**
+     * split: screenshot beside the list (split-reverse puts it on the right).
+     * story: panel beside the list, then the screenshots full width.
+     */
+    layout?: 'split' | 'split-reverse' | 'story'
     lede?: string
     panel?: NewsletterPanel
     callout?: NewsletterCallout
