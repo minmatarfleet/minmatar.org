@@ -3207,6 +3207,17 @@ export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
 
+// Corporation recruitment requirements (applications app)
+export type CorporationRequirements = ApiResponse<'CorporationRequirements'>
+export type MyCorporationRequirements = ApiResponse<'MyCorporationRequirements'>
+export type ManagedCorporationRequirements = ApiResponse<'ManagedCorporationRequirements'>
+export type ManagedRequirementRule = ApiResponse<'ManagedRequirementRule'>
+export type RequirementRule = ApiResponse<'RequirementRule'>
+export type RequirementCheck = ApiResponse<'RequirementCheck'>
+export type RequirementOptions = ApiResponse<'RequirementOptions'>
+export type ApplicationRequirements = ApiResponse<'ApplicationRequirements'>
+export type RequirementCreateRequest = ApiRequest<'RequirementCreateRequest'>
+export type RequirementUpdateRequest = ApiRequest<'RequirementUpdateRequest'>
 export type RedditReviewItem = ApiResponse<'RedditReviewItem'>
 export type RedditReviewQueue = ApiResponse<'RedditReviewQueue'>
 export type RedditReviewDecision = ApiResponse<'RedditReviewDecision'>
