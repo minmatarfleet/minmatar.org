@@ -111,6 +111,11 @@ const page_title = t('intel.timers.page_title');
                     <AddIcon slot="icon" />
                     {t('add_structure_timer')}
                 </Button>
+                {can(gates, 'structures.timers.correct') &&
+                    <Button href={translatePath('/intel/timers/manage/')}>
+                        {t('structure_timers_manage.link')}
+                    </Button>
+                }
             </PageActions>
         </FlexInline>
 
