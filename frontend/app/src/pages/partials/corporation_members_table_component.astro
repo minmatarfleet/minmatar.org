@@ -759,6 +759,8 @@ const selected_template = t('corporations.members.selected')
         font-size: var(--step--1);
         font-variant-numeric: tabular-nums;
 
+        // The global table style blurs behind every cell. The panel is already
+        // opaque, so the blur shows nothing and made scrolling 250 cells lag.
         th,
         td {
             padding: var(--space-2xs) var(--space-2xs);
@@ -766,6 +768,7 @@ const selected_template = t('corporations.members.selected')
             vertical-align: middle;
             background: transparent;
             border: none;
+            backdrop-filter: none;
         }
 
         th {

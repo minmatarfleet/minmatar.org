@@ -42,6 +42,7 @@ const GUIDE_COVERS: Record<string, string> = {
     'zohar-hunting': '/images/guides/guides/level5s/wrath_of_angels.png',
     'bookmarks': '/images/assets-cover.jpg',
     'selling-loyalty-points': '/images/loyalty-points-cover.webp',
+    'isk-ladder': '/images/loyalty-points-cover.webp',
     'subcapital-basics': '/images/readiness-cover.webp',
     'subcapital-dps-guide': '/images/dps-card.jpg',
     'subcapital-logi-guide': '/images/logistics-card.jpg',

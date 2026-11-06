@@ -4041,6 +4041,83 @@
         "title": "CampaignPartyOut",
         "type": "object"
       },
+      "CampaignPatchRequest": {
+        "properties": {
+          "description_md": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Md"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "tagline": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagline"
+          }
+        },
+        "title": "CampaignPatchRequest",
+        "type": "object"
+      },
       "CampaignSchema": {
         "properties": {
           "closes_at": {
@@ -4082,6 +4159,15 @@
             "title": "Response Count",
             "type": "integer"
           },
+          "spotlight_questions": {
+            "default": [],
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Spotlight Questions",
+            "type": "array"
+          },
           "status": {
             "title": "Status",
             "type": "string"
@@ -4104,6 +4190,122 @@
           "status"
         ],
         "title": "CampaignSchema",
+        "type": "object"
+      },
+      "CampaignSettingsOut": {
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignAreaOut"
+            },
+            "title": "Areas",
+            "type": "array"
+          },
+          "commander_order_is_draft": {
+            "title": "Commander Order Is Draft",
+            "type": "boolean"
+          },
+          "commander_order_text": {
+            "title": "Commander Order Text",
+            "type": "string"
+          },
+          "daily_orders": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsOrderOut"
+            },
+            "title": "Daily Orders",
+            "type": "array"
+          },
+          "description_md": {
+            "title": "Description Md",
+            "type": "string"
+          },
+          "end_at": {
+            "format": "date-time",
+            "title": "End At",
+            "type": "string"
+          },
+          "fittings": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignFittingOut"
+            },
+            "title": "Fittings",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parties": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignPartyOut"
+            },
+            "title": "Parties",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "start_at": {
+            "format": "date-time",
+            "title": "Start At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "structures": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsStructureOut"
+            },
+            "title": "Structures",
+            "type": "array"
+          },
+          "systems": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsSystemOut"
+            },
+            "title": "Systems",
+            "type": "array"
+          },
+          "tagline": {
+            "title": "Tagline",
+            "type": "string"
+          },
+          "week_targets": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsWeekTargetOut"
+            },
+            "title": "Week Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "tagline",
+          "description_md",
+          "status",
+          "kind",
+          "start_at",
+          "end_at",
+          "commander_order_text",
+          "commander_order_is_draft",
+          "systems",
+          "areas",
+          "parties",
+          "structures",
+          "fittings",
+          "week_targets",
+          "daily_orders"
+        ],
+        "title": "CampaignSettingsOut",
         "type": "object"
       },
       "CampaignStructureOut": {
@@ -5660,11 +5862,6 @@
             ],
             "title": "Founded"
           },
-          "founders": {
-            "default": 0,
-            "title": "Founders",
-            "type": "integer"
-          },
           "heatmap": {
             "default": [],
             "items": {
@@ -5711,16 +5908,6 @@
             },
             "title": "Prime Windows",
             "type": "array"
-          },
-          "records": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CorporationRecords"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "tenure": {
             "anyOf": [
@@ -6340,15 +6527,15 @@
       },
       "CorporationFleetShipSummary": {
         "properties": {
-          "pilot_fleets": {
+          "pilots": {
             "default": 0,
-            "title": "Pilot Fleets",
+            "title": "Pilots",
             "type": "integer"
           },
           "slices": {
             "default": [],
             "items": {
-              "$ref": "#/components/schemas/CorporationShipSlice"
+              "$ref": "#/components/schemas/CorporationSummarySlice"
             },
             "title": "Slices",
             "type": "array"
@@ -7332,24 +7519,6 @@
         "title": "CorporationMembersTopResponse",
         "type": "object"
       },
-      "CorporationMonthRecord": {
-        "properties": {
-          "fleets": {
-            "title": "Fleets",
-            "type": "integer"
-          },
-          "month": {
-            "title": "Month",
-            "type": "string"
-          }
-        },
-        "required": [
-          "month",
-          "fleets"
-        ],
-        "title": "CorporationMonthRecord",
-        "type": "object"
-      },
       "CorporationOpenApplication": {
         "properties": {
           "application_id": {
@@ -7766,32 +7935,6 @@
           "kills"
         ],
         "title": "CorporationPublicSummary",
-        "type": "object"
-      },
-      "CorporationRecords": {
-        "properties": {
-          "biggest_turnout": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CorporationTurnoutRecord"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "busiest_month": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CorporationMonthRecord"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "title": "CorporationRecords",
         "type": "object"
       },
       "CorporationRedditPost": {
@@ -8308,24 +8451,6 @@
         "title": "CorporationRoleCharacterResponse",
         "type": "object"
       },
-      "CorporationShipSlice": {
-        "properties": {
-          "count": {
-            "title": "Count",
-            "type": "number"
-          },
-          "key": {
-            "title": "Key",
-            "type": "string"
-          }
-        },
-        "required": [
-          "key",
-          "count"
-        ],
-        "title": "CorporationShipSlice",
-        "type": "object"
-      },
       "CorporationSlugResponse": {
         "properties": {
           "corporation_id": {
@@ -8426,35 +8551,6 @@
           "members"
         ],
         "title": "CorporationTribeGroupCount",
-        "type": "object"
-      },
-      "CorporationTurnoutRecord": {
-        "properties": {
-          "date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Date"
-          },
-          "pilots": {
-            "title": "Pilots",
-            "type": "integer"
-          },
-          "title": {
-            "default": "",
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "pilots"
-        ],
-        "title": "CorporationTurnoutRecord",
         "type": "object"
       },
       "CorporationType": {
@@ -13874,6 +13970,30 @@
           "items"
         ],
         "title": "FeedListResponse",
+        "type": "object"
+      },
+      "FittingAddRequest": {
+        "properties": {
+          "fitting_id": {
+            "title": "Fitting Id",
+            "type": "integer"
+          },
+          "role_label": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Role Label",
+            "type": "string"
+          },
+          "srp_eligible": {
+            "default": true,
+            "title": "Srp Eligible",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fitting_id"
+        ],
+        "title": "FittingAddRequest",
         "type": "object"
       },
       "FittingBuyAllocationSchema": {
@@ -25910,6 +26030,17 @@
             "title": "Blueprint Coordinators",
             "type": "array"
           },
+          "campaign_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Id"
+          },
           "campaign_slug": {
             "anyOf": [
               {
@@ -27323,6 +27454,51 @@
               }
             ],
             "title": "Campaign Id"
+          },
+          "contract_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract To"
+          },
+          "fulfilled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fulfilled"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "needed_by": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needed By"
           }
         },
         "title": "PatchOrderRequest",
@@ -27339,6 +27515,100 @@
           "id"
         ],
         "title": "PatchOrderResponse",
+        "type": "object"
+      },
+      "PayoutCodeOut": {
+        "properties": {
+          "confirmed": {
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "confirmed_by": {
+            "default": "",
+            "title": "Confirmed By",
+            "type": "string"
+          },
+          "event_code": {
+            "title": "Event Code",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "seen_30d": {
+            "default": 0,
+            "title": "Seen 30D",
+            "type": "integer"
+          },
+          "site_kind": {
+            "title": "Site Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_code",
+          "site_kind",
+          "label",
+          "confirmed"
+        ],
+        "title": "PayoutCodeOut",
+        "type": "object"
+      },
+      "PayoutCodeRequest": {
+        "properties": {
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          },
+          "label": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Label",
+            "type": "string"
+          },
+          "site_kind": {
+            "title": "Site Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "site_kind"
+        ],
+        "title": "PayoutCodeRequest",
+        "type": "object"
+      },
+      "PayoutCodesOut": {
+        "properties": {
+          "codes": {
+            "items": {
+              "$ref": "#/components/schemas/PayoutCodeOut"
+            },
+            "title": "Codes",
+            "type": "array"
+          },
+          "site_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Site Kinds",
+            "type": "array"
+          },
+          "unmapped": {
+            "items": {
+              "$ref": "#/components/schemas/UnmappedPayoutCodeOut"
+            },
+            "title": "Unmapped",
+            "type": "array"
+          }
+        },
+        "required": [
+          "codes",
+          "unmapped",
+          "site_kinds"
+        ],
+        "title": "PayoutCodesOut",
         "type": "object"
       },
       "PersonaRecommendationSchema": {
@@ -31666,6 +31936,148 @@
         "title": "SetMyShipVolunteersRequest",
         "type": "object"
       },
+      "SettingsOrderOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "integer"
+          },
+          "system": {
+            "default": "",
+            "title": "System",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "points"
+        ],
+        "title": "SettingsOrderOut",
+        "type": "object"
+      },
+      "SettingsStructureOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "structure_type": {
+            "title": "Structure Type",
+            "type": "string"
+          },
+          "system_name": {
+            "title": "System Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "structure_type",
+          "system_name"
+        ],
+        "title": "SettingsStructureOut",
+        "type": "object"
+      },
+      "SettingsSystemOut": {
+        "properties": {
+          "goal": {
+            "title": "Goal",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_fw_objective": {
+            "title": "Is Fw Objective",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "string"
+          },
+          "retired": {
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "solar_system_id": {
+            "title": "Solar System Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "solar_system_id",
+          "name",
+          "goal",
+          "role",
+          "priority",
+          "is_fw_objective",
+          "retired"
+        ],
+        "title": "SettingsSystemOut",
+        "type": "object"
+      },
+      "SettingsWeekTargetOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "number"
+          },
+          "proposed": {
+            "title": "Proposed",
+            "type": "boolean"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "system",
+          "metric",
+          "target",
+          "progress",
+          "proposed"
+        ],
+        "title": "SettingsWeekTargetOut",
+        "type": "object"
+      },
       "ShipAsset": {
         "properties": {
           "location_name": {
@@ -32253,6 +32665,48 @@
           "system"
         ],
         "title": "SiteOut",
+        "type": "object"
+      },
+      "SpotlightQuestionInput": {
+        "description": "One one-off question merged in before the Open floor.",
+        "properties": {
+          "choices": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "help": {
+            "default": "",
+            "title": "Help",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "single",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "SpotlightQuestionInput",
         "type": "object"
       },
       "SrpCategory": {
@@ -33051,6 +33505,52 @@
           "synced"
         ],
         "title": "SyncGuildsResponse",
+        "type": "object"
+      },
+      "SystemAddRequest": {
+        "properties": {
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "solar_system_id": {
+            "title": "Solar System Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "solar_system_id"
+        ],
+        "title": "SystemAddRequest",
         "type": "object"
       },
       "SystemIndustrySchema": {
@@ -36175,6 +36675,35 @@
         "title": "UnknownCharacter",
         "type": "object"
       },
+      "UnmappedPayoutCodeOut": {
+        "properties": {
+          "event_code": {
+            "title": "Event Code",
+            "type": "integer"
+          },
+          "last_seen": {
+            "format": "date-time",
+            "title": "Last Seen",
+            "type": "string"
+          },
+          "sample_amount_lp": {
+            "title": "Sample Amount Lp",
+            "type": "integer"
+          },
+          "seen": {
+            "title": "Seen",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "event_code",
+          "seen",
+          "last_seen",
+          "sample_amount_lp"
+        ],
+        "title": "UnmappedPayoutCodeOut",
+        "type": "object"
+      },
       "UnmatchedHull": {
         "properties": {
           "characters": {
@@ -36241,6 +36770,20 @@
             ],
             "title": "Opens At"
           },
+          "spotlight_questions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SpotlightQuestionInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spotlight Questions"
+          },
           "status": {
             "anyOf": [
               {
@@ -36251,6 +36794,17 @@
               }
             ],
             "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "title": "UpdateCampaignRequest",
@@ -40165,6 +40719,112 @@
         ]
       }
     },
+    "/api/campaigns/payout-codes": {
+      "get": {
+        "description": "Mapped codes, plus codes seen in the last 30 days with no mapping.",
+        "operationId": "campaigns_endpoints_get_payout_codes_list_payout_codes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutCodesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List Payout Codes",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/payout-codes/{event_code}": {
+      "put": {
+        "description": "Add a code or change its complex type and whether it counts.\n\nCounting a code rescores the sites already recorded under it, the same\nas ``manage.py confirm_fw_event_code``.",
+        "operationId": "campaigns_endpoints_put_payout_code_set_payout_code",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_code",
+            "required": true,
+            "schema": {
+              "title": "Event Code",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayoutCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutCodeOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set Payout Code",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/readiness": {
       "get": {
         "description": "Every character on one row, with the one action each of them needs.",
@@ -40634,6 +41294,116 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/commander-order/draft": {
+      "post": {
+        "description": "Write the order from the week plan and keep it as a draft.",
+        "operationId": "campaigns_endpoints_post_order_draft_draft_commander_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Draft Commander Order",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/commander-order/publish": {
+      "post": {
+        "description": "Clear the draft flag so pilots see the order.",
+        "operationId": "campaigns_endpoints_post_order_publish_publish_commander_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Publish Commander Order",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/enlist": {
       "delete": {
         "operationId": "campaigns_endpoints_member_leave",
@@ -40734,6 +41504,131 @@
           }
         ],
         "summary": "Enlist",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/fittings": {
+      "post": {
+        "operationId": "campaigns_endpoints_post_fitting_add_fitting",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FittingAddRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignFittingOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add Fitting",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/fittings/{row_id}": {
+      "delete": {
+        "operationId": "campaigns_endpoints_delete_fitting_delete_fitting",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "row_id",
+            "required": true,
+            "schema": {
+              "title": "Row Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Delete Fitting",
         "tags": [
           "Campaigns"
         ]
@@ -41300,6 +42195,64 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/parties/{party_id}": {
+      "delete": {
+        "operationId": "campaigns_endpoints_delete_party_delete_party",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "party_id",
+            "required": true,
+            "schema": {
+              "title": "Party Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Delete Party",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/projects": {
       "get": {
         "description": "Every attached project, finished ones included, with contributors.",
@@ -41523,6 +42476,120 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/settings": {
+      "get": {
+        "description": "Everything an operator edits on one campaign, in one read.",
+        "operationId": "campaigns_endpoints_get_settings_get_settings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignSettingsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Settings",
+        "tags": [
+          "Campaigns"
+        ]
+      },
+      "patch": {
+        "description": "Rename, reschedule, or move a campaign between draft and live.",
+        "operationId": "campaigns_endpoints_patch_settings_patch_campaign",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignSettingsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Patch Campaign",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/sites": {
       "get": {
         "operationId": "campaigns_endpoints_public_get_sites",
@@ -41736,6 +42803,64 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/structures/{structure_id}": {
+      "delete": {
+        "operationId": "campaigns_endpoints_delete_structure_delete_structure",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "structure_id",
+            "required": true,
+            "schema": {
+              "title": "Structure Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Delete Structure",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/systems": {
       "get": {
         "operationId": "campaigns_endpoints_public_get_systems",
@@ -41788,9 +42913,132 @@
         "tags": [
           "Campaigns"
         ]
+      },
+      "post": {
+        "description": "Add a monitored system to the campaign, or bring a retired one back.",
+        "operationId": "campaigns_endpoints_post_system_add_system",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemAddRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsSystemOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add System",
+        "tags": [
+          "Campaigns"
+        ]
       }
     },
     "/api/campaigns/{slug}/systems/{system_id}": {
+      "delete": {
+        "description": "Retire, not delete: the history of kills and targets stays attached.",
+        "operationId": "campaigns_endpoints_delete_system_retire_system",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "system_id",
+            "required": true,
+            "schema": {
+              "title": "System Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Retire System",
+        "tags": [
+          "Campaigns"
+        ]
+      },
       "patch": {
         "description": "Mark a system as an FW objective or ops theater, and nudge goal/role.",
         "operationId": "campaigns_endpoints_manage_patch_system",

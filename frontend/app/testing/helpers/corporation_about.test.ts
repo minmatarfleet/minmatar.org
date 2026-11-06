@@ -3,7 +3,7 @@ import {
     busiest_hours,
     heatmap_cells,
     mix_rows,
-    month_label,
+    percent_of,
     percent_shares,
     prime_spans,
     ranked_mix_rows,
@@ -64,7 +64,10 @@ describe('corporation About helpers', () => {
         expect(tenure_parts(null)).toBeNull()
     })
 
-    it('labels months in the page language', () => {
-        expect(month_label('2026-08')).toBe('August 2026')
+    it('gives overlapping shares out of the whole, not summed to 100', () => {
+        // Three pilots: all flew DPS, two also flew logistics on alts.
+        expect(percent_of(3, 3)).toBe(100)
+        expect(percent_of(2, 3)).toBe(67)
+        expect(percent_of(1, 0)).toBe(0)
     })
 })

@@ -130,6 +130,8 @@ export type WarzoneGroup = {
     faction_id: number | null
     /** Share of the group's kills this month that happened in the warzone. */
     fw_share: number
+    /** Pilots in the group today (ESI member_count, summed over an alliance's corps); absent on older issues. */
+    pilots?: number | null
 }
 
 export type WarzoneInvolvementStep = {

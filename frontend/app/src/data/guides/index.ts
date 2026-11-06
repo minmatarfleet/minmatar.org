@@ -14,6 +14,7 @@ import * as abyss_trio_hawk_t5_dark from '@markdown/guides/abyss-trio-hawk-t5-da
 import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
 import * as bookmarks from '@markdown/guides/bookmarks.md'
 import * as selling_loyalty_points from '@markdown/guides/selling-loyalty-points.md'
+import * as isk_ladder from '@markdown/guides/isk-ladder.md'
 import * as capital_ship_basics from '@markdown/guides/capital-ship-basics.md'
 import * as onboarding_home_base from '@markdown/guides/onboarding-home-base.md'
 import * as onboarding_first_fleet from '@markdown/guides/onboarding-first-fleet.md'
@@ -58,6 +59,7 @@ const guideModules = ({
     'zohar-hunting': zohar_hunting,
     'bookmarks': bookmarks,
     'selling-loyalty-points': selling_loyalty_points,
+    'isk-ladder': isk_ladder,
     'capital-ship-basics': capital_ship_basics,
     'onboarding-home-base': onboarding_home_base,
     'onboarding-first-fleet': onboarding_first_fleet,
@@ -240,6 +242,18 @@ export const guides: GuideMeta[] = [
                 entity: 'character',
             },
         ],
+    },
+    {
+        slug: "isk-ladder",
+        title: "The ISK Ladder",
+        excerpt: "Every income method for a warzone pilot on one scale: ISK per hour per pilot, from day-one plexing to T6 abyssals.",
+        category: "ISK Generation",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
     },
     {
         slug: "selling-loyalty-points",

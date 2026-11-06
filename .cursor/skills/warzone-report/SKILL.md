@@ -45,6 +45,7 @@ Working dir for every command below: `frontend/app`.
 | Systems held, enlisted pilots, VP | ESI `GET /fw/stats/` |
 | Per-system ships & ISK destroyed, pilots, groups, deltas | zKillboard `kills/systemID/<id>/year/<y>/month/<m>/` |
 | Group warzone-share denominator | zKillboard `kills/<alliance|corporation>ID/<id>/…` |
+| Group pilot counts (next to each alliance/corp) | ESI `GET /alliances/<id>/corporations/` + `GET /corporations/<id>/` `member_count`, summed for an alliance |
 | Character / alliance / corp names | ESI `POST /universe/names/` |
 | System → region / constellation | local SDE sqlite `src/data/sde-*.sqlite` (no API) |
 | Faction / alliance / corp logos | `images.evetech.net` (no faction endpoint — use faction NPC-corp logo) |
@@ -117,7 +118,9 @@ Example: August YC128 → year 2026, month 8, slug `yc128-08`.
 - **Top ships**: most-destroyed hulls per engagement size (solo / small gang / fleets).
 - **Groups of the month**: alliances (or player corps w/o alliance), NPC corps
   excluded, only groups with >50% of their monthly kills in-warzone, faction emblem +
-  full faction name subtitle.
+  full faction name subtitle, and the group's current pilot count (ESI member_count,
+  summed over an alliance's corporations) beside its name. A failed ESI lookup writes
+  `pilots: null` and the count is simply omitted; re-run the extract to retry.
 - **How to get involved**: three numbered step cards, a single "Join Militia Discord"
   CTA, and three featured guide cards + "Browse all guides".
 - **About the numbers**: methodology + what public data can't show.
