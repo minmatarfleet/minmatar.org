@@ -7,6 +7,9 @@ export const COVER_IMAGE = '/images/home-vard-cover-eve.jpg'
 const IMG = `/images/newsletter/${SLUG}`
 const HELP_URL = 'https://discord.com/channels/1041384161505722368/1183401618943791186'
 const QUESTIONS_URL = 'https://discord.com/channels/1041384161505722368/1561471935462903839'
+const APICULTURE = 2442
+// TODO(town hall #38): swap in the highlights video URL and its thumbnail once the cut is published.
+const TOWN_HALL_URL = 'https://www.youtube.com/@MinmatarFleet'
 
 export const YC128_11: NewsletterIssue = {
     slug: SLUG,
@@ -16,8 +19,121 @@ export const YC128_11: NewsletterIssue = {
     share_image: `/images/newsletter/${SLUG}/share.jpg`,
     eyebrow: "What's new on my.minmatar.org",
     period_label: 'November YC 128',
-    dek: 'A Training tab that tells you what you can fly and what to train next, a Trial tab for new pilots, fleet invites in your Discord DMs, and battle reports you can drag through.',
+    dek: '1.36 trillion ISK of capitals in Amamake, a Training tab that tells you what you can fly, a Trial tab for new pilots, and fleet invites in your Discord DMs.',
+    lead_video: {
+        kicker: 'Watch first',
+        title: 'Town Hall #38 highlights',
+        text: 'The highlights cut of the November town hall will go here once it is published.',
+        url: TOWN_HALL_URL,
+        thumbnail: `${IMG}/townhall38.webp`,
+        thumbnail_alt: 'Town Hall #38, November YC 128, Highlights, coming soon',
+        play_position: 'top-right',
+        cta: { links: [{ label: 'Watch on YouTube', href: TOWN_HALL_URL }] },
+    },
     sections: [
+        {
+            kind: 'feature',
+            id: 'battles',
+            toc_label: 'Major battles',
+            kicker: 'On grid',
+            title: 'The bees came to Amamake',
+            lede: 'Goonswarm and Snuffed Out brought capitals to our home system. Most of them stayed.',
+            panel: {
+                title: 'Apiculture · Thursday 5 November',
+                paragraphs: [
+                    '298 of us undocked in Amamake against 769 hostiles, outnumbered more than two and a half to one. Three hours later we had killed <b>766 ships for 1.36 trillion ISK</b> and lost 13. The wrecks include 67 Zirnitras, 38 Thanatos, 28 Revelations and 28 Nidhoggurs.',
+                    'Counting everyone on grid, the battle report shows 4,245 pilots and 2.11T destroyed on both sides.',
+                    'It was the second round. On Monday, <q>the first of the great Goon Wars</q> took 16 Thanatos and 5 Nidhoggurs off the field for 91.6B, at 91% efficiency.',
+                ],
+                pilots: [
+                    { character_id: 365375372, character_name: 'treges', note: 'FC for both nights' },
+                ],
+            },
+            figures: [
+                {
+                    src: `${IMG}/apiculture-outcome.webp`,
+                    width: 1160,
+                    height: 250,
+                    alt: "Apiculture's outcome: 1.36T destroyed across 766 ships, 11.7B lost across 13 ships, 99% ISK efficiency, 298 of us against 769.",
+                    caption: 'The outcome card on the fleet page.',
+                    wide: true,
+                },
+                {
+                    src: `${IMG}/apiculture-aar.webp`,
+                    width: 1160,
+                    height: 710,
+                    alt: 'The after-action report: ships killed and lost per minute from 17:14 to 20:23, and one engagement in Amamake and Kourmonen with 719 kills and 11 losses.',
+                    caption: 'Two hours of capital killing, minute by minute.',
+                    wide: true,
+                },
+            ],
+            cta: {
+                links: [
+                    { label: 'Read the after-action report', href: `/fleets/history/${APICULTURE}/#fights` },
+                    { label: 'Every kill', href: `/fleets/${APICULTURE}/kills/`, secondary: true },
+                ],
+            },
+        },
+        {
+            kind: 'rollup',
+            id: 'since',
+            toc_label: 'Fleets',
+            kicker: 'Since the last issue',
+            title: '20 October to 5 November',
+            stats: [
+                { value: '22', label: 'alliance fleets flown' },
+                { value: '10', label: 'FCs took us out' },
+                { value: '770', label: 'characters on grid' },
+                { value: '1.4T', label: 'ISK destroyed, 97% efficiency' },
+            ],
+            nights_title: 'Biggest nights',
+            nights: [
+                { date_label: 'Thu 5 Nov', title: 'Apiculture', fc_name: 'treges', fc_character_id: 365375372, pilots: 298, isk_destroyed: '1.36T', isk_lost: '11.7B' },
+                { date_label: 'Wed 4 Nov', title: 'Removing bees', fc_name: 'Casper Sullivan', fc_character_id: 2120307642, pilots: 190, isk_destroyed: '0.7B', isk_lost: '0.1B' },
+                { date_label: 'Mon 2 Nov', title: 'First of the great Goon Wars', fc_name: 'treges', fc_character_id: 365375372, pilots: 171, isk_destroyed: '91.6B', isk_lost: '9.1B' },
+                { date_label: 'Tue 20 Oct', title: 'Max dudes', fc_name: 'BearThatCares', fc_character_id: 634915984, pilots: 156, isk_destroyed: '0.2B', isk_lost: '0.2B' },
+                { date_label: 'Sat 31 Oct', title: 'Nightmares in B-WPLZ', fc_name: 'BearThatCares', fc_character_id: 634915984, pilots: 147, isk_destroyed: '43.4B', isk_lost: '1.6B' },
+            ],
+            fcs_title: 'The FCs who took us out',
+            fcs: [
+                { character_id: 634915984, character_name: 'BearThatCares', fleets: 7, first_fleets: false },
+                { character_id: 2116242012, character_name: 'Sycamoria', fleets: 3, first_fleets: false },
+                { character_id: 365375372, character_name: 'treges', fleets: 3, first_fleets: false },
+                { character_id: 217145210, character_name: 'Darquies Shade', fleets: 2, first_fleets: false },
+                { character_id: 2117059479, character_name: 'MiniSpartan', fleets: 2, first_fleets: false },
+                { character_id: 92004354, character_name: 'Teysha Blackblade', fleets: 1, first_fleets: false },
+                { character_id: 2122950343, character_name: 'Mula Soldats', fleets: 1, first_fleets: false },
+                { character_id: 2123699290, character_name: 'Lilith Himmelsgaenger', fleets: 1, first_fleets: false },
+                { character_id: 154198067, character_name: 'Barret Smythe', fleets: 1, first_fleets: false },
+                { character_id: 2120307642, character_name: 'Casper Sullivan', fleets: 1, first_fleets: false },
+            ],
+            cta: {
+                links: [{ label: 'See upcoming fleets', href: '/fleets/upcoming/' }],
+            },
+        },
+        {
+            kind: 'feature',
+            id: 'aldodan',
+            toc_label: 'Aldodan',
+            kicker: 'Faction Warfare',
+            title: 'Aldodan, three weeks to go',
+            lede: 'The campaign against the Fraternity farming nest in Aldodan runs until the end of November.',
+            panel: {
+                title: 'Aldodan YC128 so far',
+                paragraphs: [
+                    '83 pilots have enlisted, up from 45 in the last issue. Together they have run <b>785 complexes</b> and killed 320 ships.',
+                    'darktal1 Kasenumi is still out in front on complexes, now with 156. Sadthumper leads the killboard with 47.',
+                ],
+                pilots: [
+                    { character_id: 91387091, character_name: 'darktal1 Kasenumi', note: '156 complexes run' },
+                    { character_id: 2124160775, character_name: 'Sadthumper', note: '47 kills, 5.6B destroyed' },
+                ],
+            },
+            cta: {
+                links: [{ label: 'Join Aldodan', href: '/campaigns/aldodan-yc128/' }],
+                note: 'Press <b>Add to campaign</b> on the You tab.',
+            },
+        },
         {
             kind: 'feature',
             id: 'training',
@@ -25,6 +141,10 @@ export const YC128_11: NewsletterIssue = {
             kicker: 'Your account',
             title: 'What can I fly? What should I train?',
             lede: 'The new Training tab checks every character against every doctrine fit, and tells you how long until the next one is ready.',
+            callout: {
+                tag: 'Across the alliance',
+                text: 'We checked <b>4,791 characters</b> against every doctrine fit. 1,242 of you can already fly at least one, and 873 can bring something to a Napoc or TFI fleet today.',
+            },
             figures: [
                 {
                     src: `${IMG}/training-plan.webp`,
@@ -106,11 +226,11 @@ export const YC128_11: NewsletterIssue = {
             title: 'Battle reports for the whole fleet',
             figures: [
                 {
-                    src: `${IMG}/battle-report-drag.webp`,
+                    src: `${IMG}/battle-report-apiculture.webp`,
                     width: 1176,
                     height: 531,
-                    alt: 'A battle report for a whole fleet with an ISK-lost-per-minute strip. Dragging across 17:22 to 17:56 narrows the report to 248 killmails and 85.8B destroyed.',
-                    caption: 'Drag across the strip to see one part of the night.',
+                    alt: "Apiculture's battle report: 1,267 killmails, 4,245 pilots and 2.11T destroyed over two hours. Dragging across 18:49 to 19:19 narrows it to 421 killmails and 624.3B.",
+                    caption: 'Apiculture, narrowed to its busiest half hour.',
                     wide: true,
                 },
             ],
