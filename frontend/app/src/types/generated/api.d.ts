@@ -681,6 +681,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/payout-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payout Codes
+         * @description Mapped codes, plus codes seen in the last 30 days with no mapping.
+         */
+        get: operations["campaigns_endpoints_get_payout_codes_list_payout_codes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/payout-codes/{event_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Payout Code
+         * @description Add a code or change its complex type and whether it counts.
+         *
+         *     Counting a code rescores the sites already recorded under it, the same
+         *     as ``manage.py confirm_fw_event_code``.
+         */
+        put: operations["campaigns_endpoints_put_payout_code_set_payout_code"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/readiness": {
         parameters: {
             query?: never;
@@ -819,6 +862,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/commander-order/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Commander Order
+         * @description Write the order from the week plan and keep it as a draft.
+         */
+        post: operations["campaigns_endpoints_post_order_draft_draft_commander_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/commander-order/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Commander Order
+         * @description Clear the draft flag so pilots see the order.
+         */
+        post: operations["campaigns_endpoints_post_order_publish_publish_commander_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/enlist": {
         parameters: {
             query?: never;
@@ -835,6 +918,40 @@ export interface paths {
         post: operations["campaigns_endpoints_member_enlist"];
         /** Leave */
         delete: operations["campaigns_endpoints_member_leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/fittings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Fitting */
+        post: operations["campaigns_endpoints_post_fitting_add_fitting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/fittings/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Fitting */
+        delete: operations["campaigns_endpoints_delete_fitting_delete_fitting"];
         options?: never;
         head?: never;
         patch?: never;
@@ -991,6 +1108,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/parties/{party_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Party */
+        delete: operations["campaigns_endpoints_delete_party_delete_party"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/projects": {
         parameters: {
             query?: never;
@@ -1047,6 +1181,30 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Settings
+         * @description Everything an operator edits on one campaign, in one read.
+         */
+        get: operations["campaigns_endpoints_get_settings_get_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Campaign
+         * @description Rename, reschedule, or move a campaign between draft and live.
+         */
+        patch: operations["campaigns_endpoints_patch_settings_patch_campaign"];
         trace?: never;
     };
     "/api/campaigns/{slug}/sites": {
@@ -1106,6 +1264,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/structures/{structure_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Structure */
+        delete: operations["campaigns_endpoints_delete_structure_delete_structure"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/systems": {
         parameters: {
             query?: never;
@@ -1116,7 +1291,11 @@ export interface paths {
         /** Get Systems */
         get: operations["campaigns_endpoints_public_get_systems"];
         put?: never;
-        post?: never;
+        /**
+         * Add System
+         * @description Add a monitored system to the campaign, or bring a retired one back.
+         */
+        post: operations["campaigns_endpoints_post_system_add_system"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1133,7 +1312,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Retire System
+         * @description Retire, not delete: the history of kills and targets stays attached.
+         */
+        delete: operations["campaigns_endpoints_delete_system_retire_system"];
         options?: never;
         head?: never;
         /**
@@ -9483,6 +9666,21 @@ export interface components {
              */
             ticker?: string;
         };
+        /** CampaignPatchRequest */
+        CampaignPatchRequest: {
+            /** Description Md */
+            description_md?: string | null;
+            /** End At */
+            end_at?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Start At */
+            start_at?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Tagline */
+            tagline?: string | null;
+        };
         /** CampaignSchema */
         CampaignSchema: {
             /** Closes At */
@@ -9500,12 +9698,62 @@ export interface components {
              * @default 0
              */
             response_count?: number;
+            /**
+             * Spotlight Questions
+             * @default []
+             */
+            spotlight_questions?: {
+                [key: string]: unknown;
+            }[];
             /** Status */
             status: string;
             /** Title */
             title: string;
             /** Year */
             year: number;
+        };
+        /** CampaignSettingsOut */
+        CampaignSettingsOut: {
+            /** Areas */
+            areas: components["schemas"]["CampaignAreaOut"][];
+            /** Commander Order Is Draft */
+            commander_order_is_draft: boolean;
+            /** Commander Order Text */
+            commander_order_text: string;
+            /** Daily Orders */
+            daily_orders: components["schemas"]["SettingsOrderOut"][];
+            /** Description Md */
+            description_md: string;
+            /**
+             * End At
+             * Format: date-time
+             */
+            end_at: string;
+            /** Fittings */
+            fittings: components["schemas"]["CampaignFittingOut"][];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Parties */
+            parties: components["schemas"]["CampaignPartyOut"][];
+            /** Slug */
+            slug: string;
+            /**
+             * Start At
+             * Format: date-time
+             */
+            start_at: string;
+            /** Status */
+            status: string;
+            /** Structures */
+            structures: components["schemas"]["SettingsStructureOut"][];
+            /** Systems */
+            systems: components["schemas"]["SettingsSystemOut"][];
+            /** Tagline */
+            tagline: string;
+            /** Week Targets */
+            week_targets: components["schemas"]["SettingsWeekTargetOut"][];
         };
         /** CampaignStructureOut */
         CampaignStructureOut: {
@@ -10265,11 +10513,6 @@ export interface components {
             /** Founded */
             founded?: string | null;
             /**
-             * Founders
-             * @default 0
-             */
-            founders?: number;
-            /**
              * Heatmap
              * @default []
              */
@@ -10286,7 +10529,6 @@ export interface components {
              * @default []
              */
             prime_windows?: components["schemas"]["CorporationPrimeWindow"][];
-            records?: components["schemas"]["CorporationRecords"] | null;
             tenure?: components["schemas"]["CorporationTenure"] | null;
             /**
              * Tribe Groups
@@ -10506,15 +10748,15 @@ export interface components {
         /** CorporationFleetShipSummary */
         CorporationFleetShipSummary: {
             /**
-             * Pilot Fleets
+             * Pilots
              * @default 0
              */
-            pilot_fleets?: number;
+            pilots?: number;
             /**
              * Slices
              * @default []
              */
-            slices?: components["schemas"]["CorporationShipSlice"][];
+            slices?: components["schemas"]["CorporationSummarySlice"][];
         };
         /** CorporationForumPost */
         CorporationForumPost: {
@@ -10887,13 +11129,6 @@ export interface components {
             /** Metric */
             metric: string;
         };
-        /** CorporationMonthRecord */
-        CorporationMonthRecord: {
-            /** Fleets */
-            fleets: number;
-            /** Month */
-            month: string;
-        };
         /** CorporationOpenApplication */
         CorporationOpenApplication: {
             /** Application Id */
@@ -11068,11 +11303,6 @@ export interface components {
              */
             window_days?: number;
         };
-        /** CorporationRecords */
-        CorporationRecords: {
-            biggest_turnout?: components["schemas"]["CorporationTurnoutRecord"] | null;
-            busiest_month?: components["schemas"]["CorporationMonthRecord"] | null;
-        };
         /** CorporationRedditPost */
         CorporationRedditPost: {
             /** Approved */
@@ -11239,13 +11469,6 @@ export interface components {
             /** Character Name */
             character_name: string;
         };
-        /** CorporationShipSlice */
-        CorporationShipSlice: {
-            /** Count */
-            count: number;
-            /** Key */
-            key: string;
-        };
         /** CorporationSlugResponse */
         CorporationSlugResponse: {
             /** Corporation Id */
@@ -11288,18 +11511,6 @@ export interface components {
             members: number;
             /** Name */
             name: string;
-        };
-        /** CorporationTurnoutRecord */
-        CorporationTurnoutRecord: {
-            /** Date */
-            date?: string | null;
-            /** Pilots */
-            pilots: number;
-            /**
-             * Title
-             * @default
-             */
-            title?: string;
         };
         /**
          * CorporationType
@@ -13391,6 +13602,21 @@ export interface components {
             label: string;
             /** Lines */
             lines: components["schemas"]["DiffLineResponse"][];
+        };
+        /** FittingAddRequest */
+        FittingAddRequest: {
+            /** Fitting Id */
+            fitting_id: number;
+            /**
+             * Role Label
+             * @default
+             */
+            role_label?: string;
+            /**
+             * Srp Eligible
+             * @default true
+             */
+            srp_eligible?: boolean;
         };
         /** FittingBuyAllocationSchema */
         FittingBuyAllocationSchema: {
@@ -18262,6 +18488,8 @@ export interface components {
              * @default []
              */
             blueprint_coordinators?: components["schemas"]["BlueprintCoordinatorResponse"][];
+            /** Campaign Id */
+            campaign_id?: number | null;
             /** Campaign Slug */
             campaign_slug?: string | null;
             /**
@@ -18781,11 +19009,64 @@ export interface components {
         PatchOrderRequest: {
             /** Campaign Id */
             campaign_id?: number | null;
+            /** Contract To */
+            contract_to?: string | null;
+            /** Fulfilled */
+            fulfilled?: boolean | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Needed By */
+            needed_by?: string | null;
         };
         /** PatchOrderResponse */
         PatchOrderResponse: {
             /** Id */
             id: number;
+        };
+        /** PayoutCodeOut */
+        PayoutCodeOut: {
+            /** Confirmed */
+            confirmed: boolean;
+            /**
+             * Confirmed By
+             * @default
+             */
+            confirmed_by?: string;
+            /** Event Code */
+            event_code: number;
+            /** Label */
+            label: string;
+            /**
+             * Seen 30D
+             * @default 0
+             */
+            seen_30d?: number;
+            /** Site Kind */
+            site_kind: string;
+        };
+        /** PayoutCodeRequest */
+        PayoutCodeRequest: {
+            /**
+             * Confirmed
+             * @default false
+             */
+            confirmed?: boolean;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /** Site Kind */
+            site_kind: string;
+        };
+        /** PayoutCodesOut */
+        PayoutCodesOut: {
+            /** Codes */
+            codes: components["schemas"]["PayoutCodeOut"][];
+            /** Site Kinds */
+            site_kinds: string[];
+            /** Unmapped */
+            unmapped: components["schemas"]["UnmappedPayoutCodeOut"][];
         };
         /** PersonaRecommendationSchema */
         PersonaRecommendationSchema: {
@@ -20855,6 +21136,65 @@ export interface components {
             /** Srp Value */
             srp_value: number;
         };
+        /** SettingsOrderOut */
+        SettingsOrderOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Points */
+            points: number;
+            /**
+             * System
+             * @default
+             */
+            system?: string;
+        };
+        /** SettingsStructureOut */
+        SettingsStructureOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Structure Type */
+            structure_type: string;
+            /** System Name */
+            system_name: string;
+        };
+        /** SettingsSystemOut */
+        SettingsSystemOut: {
+            /** Goal */
+            goal: string;
+            /** Id */
+            id: number;
+            /** Is Fw Objective */
+            is_fw_objective: boolean;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: string;
+            /** Retired */
+            retired: boolean;
+            /** Role */
+            role: string;
+            /** Solar System Id */
+            solar_system_id: number;
+        };
+        /** SettingsWeekTargetOut */
+        SettingsWeekTargetOut: {
+            /** Id */
+            id: number;
+            /** Metric */
+            metric: string;
+            /** Progress */
+            progress: number;
+            /** Proposed */
+            proposed: boolean;
+            /** System */
+            system: string;
+            /** Target */
+            target: number;
+        };
         /** ShipAsset */
         ShipAsset: {
             /** Location Name */
@@ -21096,6 +21436,36 @@ export interface components {
             site_kind: string;
             /** System */
             system: string;
+        };
+        /**
+         * SpotlightQuestionInput
+         * @description One one-off question merged in before the Open floor.
+         */
+        SpotlightQuestionInput: {
+            /**
+             * Choices
+             * @default []
+             */
+            choices?: string[];
+            /**
+             * Help
+             * @default
+             */
+            help?: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            /**
+             * Type
+             * @default single
+             */
+            type?: string;
         };
         /**
          * SrpCategory
@@ -21446,6 +21816,17 @@ export interface components {
         SyncGuildsResponse: {
             /** Synced */
             synced: number;
+        };
+        /** SystemAddRequest */
+        SystemAddRequest: {
+            /** Goal */
+            goal?: string | null;
+            /** Priority */
+            priority?: string | null;
+            /** Role */
+            role?: string | null;
+            /** Solar System Id */
+            solar_system_id: number;
         };
         /** SystemIndustrySchema */
         SystemIndustrySchema: {
@@ -22791,6 +23172,20 @@ export interface components {
             /** Corporation Id */
             corporation_id: number;
         };
+        /** UnmappedPayoutCodeOut */
+        UnmappedPayoutCodeOut: {
+            /** Event Code */
+            event_code: number;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /** Sample Amount Lp */
+            sample_amount_lp: number;
+            /** Seen */
+            seen: number;
+        };
         /** UnmatchedHull */
         UnmatchedHull: {
             /** Characters */
@@ -22816,8 +23211,12 @@ export interface components {
             closes_at?: string | null;
             /** Opens At */
             opens_at?: string | null;
+            /** Spotlight Questions */
+            spotlight_questions?: components["schemas"]["SpotlightQuestionInput"][] | null;
             /** Status */
             status?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** UpdateEveFleetRequest */
         UpdateEveFleetRequest: {
@@ -24928,6 +25327,79 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_get_payout_codes_list_payout_codes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutCodesOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_put_payout_code_set_payout_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_code: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutCodeOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_member_get_readiness: {
         parameters: {
             query?: {
@@ -25227,6 +25699,81 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_post_order_draft_draft_commander_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_post_order_publish_publish_commander_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_member_enlist: {
         parameters: {
             query?: never;
@@ -25268,6 +25815,84 @@ export interface operations {
             header?: never;
             path: {
                 slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_post_fitting_add_fitting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FittingAddRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignFittingOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_delete_fitting_delete_fitting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                row_id: number;
             };
             cookie?: never;
         };
@@ -25627,6 +26252,40 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_delete_party_delete_party: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                party_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_projects_get_campaign_projects: {
         parameters: {
             query?: never;
@@ -25796,6 +26455,81 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_get_settings_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignSettingsOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_patch_settings_patch_campaign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignSettingsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_public_get_sites: {
         parameters: {
             query?: {
@@ -25932,6 +26666,40 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_delete_structure_delete_structure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                structure_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_public_get_systems: {
         parameters: {
             query?: never;
@@ -25967,6 +26735,84 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_post_system_add_system: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemAddRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsSystemOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_delete_system_retire_system: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                system_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

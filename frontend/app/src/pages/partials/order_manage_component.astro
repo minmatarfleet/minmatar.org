@@ -1,0 +1,61 @@
+---
+// no-error-refetch: mutation partial, shows the inline form error instead.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
+import { can, get_gates } from '@helpers/gates'
+import { patch_order } from '@helpers/api.minmatar.org/industry'
+import type { OrderPatch } from '@dtypes/api.minmatar.org'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+
+if (Astro.request.method !== 'POST' || isNaN(order_id))
+    return HTTP_400_Bad_Request()
+
+let error_message: string | null = null
+
+if (!can(await get_gates(Astro), 'industry.order.manage')) {
+    error_message = t('industry.orders.manage.forbidden')
+} else {
+    try {
+        const form = await Astro.request.formData()
+        const needed_by = String(form.get('needed_by') ?? '')
+        const location_id = String(form.get('location_id') ?? '')
+        const campaign_id = String(form.get('campaign_id') ?? '')
+
+        if (!needed_by)
+            throw new Error(t('industry.orders.manage.needed_by_required'))
+
+        const changes: OrderPatch = {
+            needed_by,
+            location_id: location_id ? parseInt(location_id) : null,
+            contract_to: String(form.get('contract_to') ?? ''),
+            campaign_id: campaign_id ? parseInt(campaign_id) : null,
+            fulfilled: form.get('fulfilled') === 'on',
+        }
+
+        await patch_order(auth_token, order_id, changes)
+
+        // The header, items and profit blocks all read the order: reload.
+        return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
+    } catch (error) {
+        error_message = error.message
+    }
+}
+---
+
+<p class="[ order-manage-error ]" role="alert">{error_message}</p>
+
+<style lang="scss">
+    .order-manage-error {
+        margin: 0;
+        color: var(--fleet-red);
+        font-size: var(--step--1);
+    }
+</style>

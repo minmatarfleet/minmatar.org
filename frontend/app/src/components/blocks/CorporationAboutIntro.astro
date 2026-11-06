@@ -3,7 +3,6 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
-import { tenure_parts } from '@helpers/corporations/about'
 
 import TextBox from '@components/layout/TextBox.astro'
 import Markdown from '@components/blocks/Markdown.astro'
@@ -17,13 +16,10 @@ interface Props {
 const { corporation, biography = '' } = Astro.props
 
 const summary = corporation.public_summary
-const tenure = tenure_parts(corporation.about?.tenure?.average_days)
 const pilots = corporation.human_count ?? summary?.community?.humans ?? null
 
 interface Vital {
     value: string
-    // Small unit after the number ("years"), so long values never wrap.
-    unit?: string
     label: string
     detail: string
 }
@@ -45,16 +41,6 @@ const vitals: Vital[] = [
         value: String(summary.kills.killmails),
         label: t('corporations.about.kills'),
         detail: t('corporations.about.last_90_days'),
-    },
-    tenure && {
-        value: tenure.value,
-        unit: t(
-            tenure.unit === 'years' ? 'corporations.about.word_years'
-            : tenure.unit === 'months' ? 'corporations.about.word_months'
-            : 'corporations.about.word_weeks',
-        ),
-        label: t('corporations.about.average_tenure'),
-        detail: t('corporations.about.mains_only'),
     },
 ].filter(Boolean) as Vital[]
 ---
@@ -78,7 +64,6 @@ const vitals: Vital[] = [
                         <dt class="vital-label">{vital.label}</dt>
                         <dd class="vital-value">
                             {vital.value}
-                            {vital.unit && <span class="vital-unit">{vital.unit}</span>}
                         </dd>
                         {vital.detail && <dd class="vital-detail">{vital.detail}</dd>}
                     </div>
@@ -134,6 +119,11 @@ const vitals: Vital[] = [
         @media (max-width: 30rem) {
             padding: var(--space-s);
         }
+
+        // An odd card out leads the grid full width, so no cell sits empty.
+        &:first-child:nth-last-child(odd) {
+            grid-column: 1 / -1;
+        }
     }
 
     .vital-label {
@@ -152,13 +142,6 @@ const vitals: Vital[] = [
         white-space: nowrap;
         color: var(--highlight);
         font-variant-numeric: tabular-nums;
-    }
-
-    .vital-unit {
-        margin-inline-start: var(--space-3xs);
-        font-size: 0.45em;
-        text-transform: uppercase;
-        color: var(--fleet-yellow);
     }
 
     .vital-detail {

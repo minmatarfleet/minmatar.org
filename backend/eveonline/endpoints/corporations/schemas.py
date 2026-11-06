@@ -106,14 +106,11 @@ class CorporationFleetParticipationSummary(Schema):
     slices: List[CorporationSummarySlice] = []
 
 
-class CorporationShipSlice(Schema):
-    key: str
-    count: float
-
-
 class CorporationFleetShipSummary(Schema):
-    pilot_fleets: int = 0
-    slices: List[CorporationShipSlice] = []
+    # People (alts folded in) who flew at least one role on a fleet. A
+    # pilot who flew several roles counts in each, so slices can sum past it.
+    pilots: int = 0
+    slices: List[CorporationSummarySlice] = []
 
 
 class CorporationKillSummary(Schema):
@@ -158,22 +155,6 @@ class CorporationHull(Schema):
     pilots: int
 
 
-class CorporationTurnoutRecord(Schema):
-    pilots: int
-    date: Optional[str] = None
-    title: str = ""
-
-
-class CorporationMonthRecord(Schema):
-    month: str
-    fleets: int
-
-
-class CorporationRecords(Schema):
-    biggest_turnout: Optional[CorporationTurnoutRecord] = None
-    busiest_month: Optional[CorporationMonthRecord] = None
-
-
 class CorporationLeader(Schema):
     character_id: int
     character_name: str
@@ -200,9 +181,7 @@ class CorporationAbout(Schema):
     heatmap: List[List[int]] = []
     prime_windows: List[CorporationPrimeWindow] = []
     tenure: Optional[CorporationTenure] = None
-    founders: int = 0
     hulls: List[CorporationHull] = []
-    records: Optional[CorporationRecords] = None
     leaderboards: Optional[CorporationLeaderboards] = None
     tribe_groups: List[CorporationTribeGroupCount] = []
 

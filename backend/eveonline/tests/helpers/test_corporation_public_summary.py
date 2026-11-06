@@ -153,7 +153,8 @@ class CorporationPublicSummaryTestCase(TestCase):
 
         summary = corporation_public_summary(self.corporation)
         ships = summary["fleet_ships"]
-        self.assertEqual(4, ships["pilot_fleets"])
+        # One pilot flew four roles and counts in each.
+        self.assertEqual(1, ships["pilots"])
         self.assertEqual(
             [
                 {"key": "dps", "count": 1},
@@ -164,7 +165,7 @@ class CorporationPublicSummaryTestCase(TestCase):
             ships["slices"],
         )
 
-    def test_ship_roles_count_each_person_once_per_fleet(self):
+    def test_ship_roles_count_pilots_in_every_role_they_flew(self):
         boxer = User.objects.create_user(username="boxer")
         main = self._character(311, "Boxer Main", boxer)
         alt = self._character(312, "Boxer Logi Alt", boxer)
@@ -173,12 +174,16 @@ class CorporationPublicSummaryTestCase(TestCase):
         self._attend(alt, 1, self.groups["logistics"])
         self._attend(solo, 1, self.groups["battleship"])
 
+        # A second fleet in the same role does not count the pilot twice.
+        self._attend(solo, 2, self.groups["battleship"])
+
         ships = corporation_public_summary(self.corporation)["fleet_ships"]
-        self.assertEqual(2, ships["pilot_fleets"])
+        self.assertEqual(2, ships["pilots"])
+        # The boxer's logi alt adds a role, not a person.
         self.assertEqual(
             [
-                {"key": "dps", "count": 1.5},
-                {"key": "logistics", "count": 0.5},
+                {"key": "dps", "count": 2},
+                {"key": "logistics", "count": 1},
             ],
             ships["slices"],
         )
@@ -202,7 +207,7 @@ class CorporationPublicSummaryTestCase(TestCase):
         )
 
         ships = corporation_public_summary(self.corporation)["fleet_ships"]
-        self.assertEqual(1, ships["pilot_fleets"])
+        self.assertEqual(1, ships["pilots"])
         self.assertEqual([{"key": "dps", "count": 1}], ships["slices"])
 
     def test_t1_logistics_cruiser_counts_as_logistics(self):

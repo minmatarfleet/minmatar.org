@@ -26,8 +26,13 @@ def get_srp_programs(request):
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
-    # Program managers edit amounts on the site: no onboarding wall for them.
-    if not can_use_feature(request.user, "srp.programs.manage"):
+    # Program managers edit amounts on the site: no onboarding wall for
+    # them. Superusers hold every permission, so only explicit assignees
+    # skip it (same rule as bypass_srp_onboarding).
+    is_manager = not request.user.is_superuser and can_use_feature(
+        request.user, "srp.programs.manage"
+    )
+    if not is_manager:
         denied = require_current_srp_onboarding(request)
         if denied:
             return denied

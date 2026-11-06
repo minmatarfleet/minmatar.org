@@ -596,7 +596,8 @@ export interface CorporationPublicSummary {
         slices:             CorporationSummarySlice[];
     };
     fleet_ships: {
-        pilot_fleets:   number;
+        /** Pilots who flew any role; each role counts every pilot who flew it. */
+        pilots:         number;
         slices:         CorporationSummarySlice[];
     };
     kills: {
@@ -629,12 +630,7 @@ export interface CorporationAbout {
         average_days:   number | null;
         bands:          CorporationTenureBand[];
     } | null;
-    founders?:      number;
     hulls?:         { type_id: number; name: string; pilots: number }[];
-    records?: {
-        biggest_turnout?:   { pilots: number; date: string | null; title: string } | null;
-        busiest_month?:     { month: string; fleets: number } | null;
-    } | null;
     leaderboards?: {
         fleets:     CorporationLeaderRow[];
         kills:      CorporationLeaderRow[];
@@ -1957,6 +1953,7 @@ export interface BuildPack {
 }
 
 export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
+export type OrderPatch = ApiRequest<'PatchOrderRequest'>
 
 export interface OrderLpStockpileContact {
     character_name:     string;
@@ -3207,3 +3204,11 @@ export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
+
+export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
+export type CampaignSettingsSystem = ApiResponse<'SettingsSystemOut'>
+export type CampaignCreate = ApiRequest<'CampaignCreateRequest'>
+export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
+export type CampaignPayoutCodes = ApiResponse<'PayoutCodesOut'>
+export type CampaignPayoutCode = ApiResponse<'PayoutCodeOut'>
+export type CampaignPayoutCodePut = ApiRequest<'PayoutCodeRequest'>

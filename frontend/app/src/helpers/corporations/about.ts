@@ -48,6 +48,11 @@ export function percent_shares(counts: number[]): number[] {
     return floors
 }
 
+// A whole percent of a total that is not split between rows (shares may overlap).
+export function percent_of(count: number, total: number): number {
+    return total > 0 ? Math.round((count / total) * 100) : 0
+}
+
 // Rows in the given key order, empty ones dropped, shaded by position.
 export function mix_rows(
     slices: CorporationSummarySlice[] | undefined,
@@ -128,18 +133,6 @@ export function tenure_parts(days: number | null | undefined): { value: string, 
     if (days >= 60)
         return { value: Math.round(days / 30.44).toString(), unit: 'months' }
     return { value: Math.max(1, Math.round(days / 7)).toString(), unit: 'weeks' }
-}
-
-// "2026-08" -> "August 2026" in the page language.
-export function month_label(month: string, lang = 'en'): string {
-    const [year, number] = month.split('-').map((part) => Number.parseInt(part, 10))
-    if (!year || !number)
-        return month
-    return new Date(Date.UTC(year, number - 1, 1)).toLocaleDateString(lang, {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-    })
 }
 
 export function short_date(iso: string | null | undefined, lang = 'en'): string {

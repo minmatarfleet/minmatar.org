@@ -21,6 +21,11 @@ import type {
     CampaignStructureAttachRequest,
     UniverseEntityMatch,
     CorporationProject,
+    CampaignSettings,
+    CampaignCreate,
+    CampaignPayoutCodes,
+    CampaignPayoutCode,
+    CampaignPayoutCodePut,
 } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
 
@@ -233,6 +238,54 @@ export async function attach_campaign_project(slug:string, access_token:string, 
         token: access_token,
         body: { project_id: project_id },
         error: 'Error fetching campaign project',
+    })
+}
+
+export async function get_campaign_settings(slug:string, access_token:string) {
+    return await api_request<CampaignSettings>(`${API_ENDPOINT}/${slug}/settings`, {
+        token: access_token,
+        error: 'Error fetching campaign settings',
+    })
+}
+
+export async function create_campaign(access_token:string, campaign:CampaignCreate) {
+    return await api_request<{ slug:string }>(API_ENDPOINT, {
+        method: 'POST',
+        token: access_token,
+        body: campaign,
+        error: 'Error creating campaign',
+    })
+}
+
+/** One operator change: `path` is relative to the campaign (`/settings`, `/systems/3`, `/commander-order/draft`). */
+export async function change_campaign(
+    slug:string,
+    access_token:string,
+    method:'POST' | 'PATCH' | 'DELETE',
+    path:string,
+    body?:unknown,
+) {
+    return await api_request<unknown>(`${API_ENDPOINT}/${slug}${path}`, {
+        method,
+        token: access_token,
+        body,
+        error: 'Error changing campaign',
+    })
+}
+
+export async function get_campaign_payout_codes(access_token:string) {
+    return await api_request<CampaignPayoutCodes>(`${API_ENDPOINT}/payout-codes`, {
+        token: access_token,
+        error: 'Error fetching payout codes',
+    })
+}
+
+export async function set_campaign_payout_code(access_token:string, event_code:number, code:CampaignPayoutCodePut) {
+    return await api_request<CampaignPayoutCode>(`${API_ENDPOINT}/payout-codes/${event_code}`, {
+        method: 'PUT',
+        token: access_token,
+        body: code,
+        error: 'Error saving payout code',
     })
 }
 

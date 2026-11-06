@@ -206,6 +206,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         description="Submit industry orders as an industry tribe chief.",
         default_tribe_group_codes=_tribe_codes(*_INDUSTRY_TRIBE_CODES),
     ),
+    "industry.order.manage": FeatureDefinition(
+        code="industry.order.manage",
+        label="Manage industry orders",
+        scope=FeatureScope.TRIBE_CHIEF,
+        description=(
+            "Edit any industry order's deadline, location, contract "
+            "recipient, campaign and fulfilled state on the order page."
+        ),
+        legacy_permission="industry.change_industryorder",
+        default_tribe_group_codes=_tribe_codes(*_INDUSTRY_TRIBE_CODES),
+    ),
     "industry.order.submit.produced": FeatureDefinition(
         code="industry.order.submit.produced",
         label="Submit produced industry orders",
