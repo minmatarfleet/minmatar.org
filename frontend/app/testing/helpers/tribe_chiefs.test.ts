@@ -19,6 +19,7 @@ const tribe = (overrides: Partial<Tribe> = {}): Tribe => ({
     acting_chief: faye,
     chief_is_interim: false,
     can_appoint_chief: false,
+    can_set_chief: false,
     has_volunteered: false,
     is_active: true,
     group_count: 7,

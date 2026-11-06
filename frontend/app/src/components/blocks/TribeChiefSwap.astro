@@ -1,0 +1,135 @@
+---
+/**
+ * Superusers click the chief portrait to swap the chief. Everyone else just
+ * sees the portrait (the default slot). With no chief to click, a small
+ * button opens the same dialog.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    tribe_id:               number;
+    /** Null for the tribe chief seat. */
+    group_id:               number | null;
+    seat_name:              string;
+    /** The API's `can_set_chief`: only superusers. */
+    can_set:                boolean;
+    /** True when there is no portrait to click. */
+    empty?:                 boolean;
+    [propName: string]:     any;
+}
+
+const {
+    tribe_id,
+    group_id,
+    seat_name,
+    can_set,
+    empty = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { query_string } from '@helpers/string'
+
+const SWAP_PARTIAL_URL = translatePath(`/partials/tribe_chief_swap_component?${query_string({
+    tribe_id,
+    ...(group_id !== null ? { group_id } : {}),
+    seat_name,
+})}`)
+const seat_key = group_id !== null ? `group-${group_id}` : `tribe-${tribe_id}`
+const results_id = `chief-swap-results-${seat_key}`
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Input from '@components/blocks/Input.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+---
+
+{!can_set ?
+    <slot />
+    :
+    <DialogButton
+        styless={!empty}
+        size="sm"
+        color="transparent"
+        max_width="560px"
+        class:list={['[ tribe-chief-swap ]', { 'tribe-chief-swap--portrait': !empty }, Astro.props.class]}
+        aria-label={t('tribes.chief.swap')}
+        {...attributes}
+    >
+        {empty ? t('tribes.chief.swap_set') : <slot />}
+
+        <div slot="dialog">
+            <Flexblock gap="var(--space-l)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h3>{t('tribes.chief.swap_title').replace('{seat}', seat_name)}</h3>
+                    <small class="[ text-muted ]">{t('tribes.chief.swap_hint')}</small>
+                </Flexblock>
+
+                <Flexblock gap="var(--space-2xs)">
+                    <label for={`chief-swap-search-${seat_key}`}><b>{t('tribes.chief.swap_search')}</b></label>
+                    <Input
+                        id={`chief-swap-search-${seat_key}`}
+                        type="search"
+                        name="q"
+                        autocomplete="off"
+                        x-on:keydown.enter.prevent=""
+                        placeholder={t('tribes.chief.swap_search_placeholder')}
+                        hx-get={SWAP_PARTIAL_URL}
+                        hx-trigger="input changed delay:300ms, search"
+                        hx-target={`#${results_id}`}
+                        hx-swap="innerHTML"
+                        hx-indicator={`#${results_id}`}
+                    >
+                        <MagnifierIcon slot="icon" />
+                    </Input>
+                    <div id={results_id} aria-live="polite">
+                        <small class="[ text-muted ]">{t('tribes.chief.swap_search_hint')}</small>
+                    </div>
+                </Flexblock>
+
+                <FlexInline justification="space-between">
+                    {!empty &&
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="transparent"
+                            hx-post={`${SWAP_PARTIAL_URL}&clear=1`}
+                            hx-target={`#${results_id}`}
+                            hx-swap="innerHTML"
+                            hx-indicator=".loader"
+                            hx-confirm={t('tribes.chief.swap_clear')}
+                        >
+                            {t('tribes.chief.swap_clear')}
+                        </Button>
+                    }
+                    <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">
+                        {t('close')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </div>
+    </DialogButton>
+}
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .tribe-chief-swap--portrait {
+        cursor: pointer;
+        transition: opacity var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                opacity: 0.8;
+            }
+        }
+    }
+</style>

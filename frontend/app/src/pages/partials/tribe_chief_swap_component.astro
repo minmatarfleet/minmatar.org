@@ -1,0 +1,164 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, login_redirect } from '@helpers/http_responses'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!auth_token || !user) return login_redirect(Astro)
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+const group_param = Astro.url.searchParams.get('group_id')
+const group_id = group_param ? parseInt(group_param) : null
+const seat_name = Astro.url.searchParams.get('seat_name') ?? ''
+const q = (Astro.url.searchParams.get('q') ?? '').trim()
+
+if (isNaN(tribe_id) || (group_id !== null && isNaN(group_id)))
+    return HTTP_400_Bad_Request()
+
+import type { Alert } from '@dtypes/layout_components'
+import type { TribeChiefCandidate } from '@dtypes/api.minmatar.org'
+import { get_chief_candidates, set_chief } from '@helpers/api.minmatar.org/tribes'
+import { query_string } from '@helpers/string'
+
+let alert: Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    const user_id_param = Astro.url.searchParams.get('user_id')
+    const clear = Astro.url.searchParams.get('clear') === '1'
+    const user_id = user_id_param ? parseInt(user_id_param) : null
+    if (!clear && (user_id === null || isNaN(user_id)))
+        return HTTP_400_Bad_Request()
+    try {
+        await set_chief(auth_token, tribe_id, group_id, clear ? null : user_id)
+        // The header, banner and tabs all change with the chief: reload.
+        return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
+    } catch (error) {
+        alert = {
+            title: t('tribes.chief.swap_error'),
+            content: error.message,
+        }
+    }
+}
+
+let candidates: TribeChiefCandidate[] = []
+let fetch_error: Error | false = false
+
+if (q.length >= 2) {
+    try {
+        candidates = await get_chief_candidates(auth_token, q)
+    } catch (error) {
+        fetch_error = error
+    }
+}
+
+const SWAP_PARTIAL_URL = translatePath(`/partials/tribe_chief_swap_component?${query_string({
+    tribe_id,
+    ...(group_id !== null ? { group_id } : {}),
+    seat_name,
+    q,
+})}`)
+
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{alert && <ShowAlert alert={alert} />}
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: SWAP_PARTIAL_URL,
+            error: fetch_error,
+            delay: 0,
+        }}
+    />
+    : q.length < 2 ?
+        <small class="[ text-muted ]">{t('tribes.chief.swap_search_hint')}</small>
+    : candidates.length === 0 ?
+        <EmptyState title={t('tribes.chief.swap_no_matches')} />
+    :
+    <ul class="[ chief-candidates ]" role="list">
+        {candidates.map((candidate) => (
+            <li>
+                <button
+                    type="button"
+                    class="[ chief-candidate ]"
+                    hx-post={`${SWAP_PARTIAL_URL}&${query_string({ user_id: candidate.user_id })}`}
+                    hx-target="closest ul"
+                    hx-swap="outerHTML"
+                    hx-indicator=".loader"
+                    hx-confirm={t('tribes.chief.swap_make').replace('{name}', candidate.character_name)}
+                    aria-label={t('tribes.chief.swap_make').replace('{name}', candidate.character_name)}
+                >
+                    <CharacterPicture
+                        character_id={candidate.character_id}
+                        character_name={candidate.character_name}
+                        size={64}
+                    />
+                    <span class="[ chief-candidate__text ]">
+                        <b>{candidate.character_name}</b>
+                        {candidate.matched_character_name &&
+                            <small>{t('tribes.invite.matched_alt').replace('{name}', candidate.matched_character_name)}</small>
+                        }
+                    </span>
+                </button>
+            </li>
+        ))}
+    </ul>
+}
+
+<style lang="scss">
+    .chief-candidates {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: solid 1px var(--border-color);
+    }
+
+    .chief-candidates > li + li {
+        border-top: solid 1px var(--hairline);
+    }
+
+    .chief-candidate {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+        width: 100%;
+        padding: var(--space-2xs) var(--space-s);
+        text-align: start;
+        color: inherit;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: background-color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--surface-sunken);
+            }
+        }
+    }
+
+    .chief-candidate :global(img) {
+        width: var(--space-xl);
+        height: var(--space-xl);
+    }
+
+    .chief-candidate__text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+</style>

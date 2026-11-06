@@ -310,6 +310,7 @@ import Button from '@components/blocks/Button.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import TribeGroupInvitationBanner from '@components/blocks/TribeGroupInvitationBanner.astro'
 import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
+import TribeChiefSwap from '@components/blocks/TribeChiefSwap.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
@@ -337,21 +338,25 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                 <Flexblock gap="var(--space-s)">
                     <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
                     <FlexInline gap="var(--space-xs)" class="[ tribe-group-title-row ]">
-                        {chief &&
+                        {chief ?
                             <Flexblock gap="var(--space-3xs)" class="[ tribe-group-chief ]">
-                                <div class:list={['[ tribe-group-chief-portrait ]', { 'is-interim': chief_is_interim }]}>
-                                    <CharacterPicture
-                                        character_id={chief.character_id}
-                                        character_name={chief.character_name}
-                                        size={128}
-                                        icon_quality={256}
-                                        tooltip={`${chief.character_name} · ${chief_label}`}
-                                    />
-                                </div>
+                                <TribeChiefSwap tribe_id={tribe_group!.tribe_id} group_id={tribe_group!.id} seat_name={tribe_group!.name} can_set={Boolean(tribe_group?.can_set_chief)}>
+                                    <div class:list={['[ tribe-group-chief-portrait ]', { 'is-interim': chief_is_interim }]}>
+                                        <CharacterPicture
+                                            character_id={chief.character_id}
+                                            character_name={chief.character_name}
+                                            size={128}
+                                            icon_quality={256}
+                                            tooltip={`${chief.character_name} · ${chief_label}`}
+                                        />
+                                    </div>
+                                </TribeChiefSwap>
                                 {chief_is_interim &&
                                     <small class="[ tribe-chief-interim-label ]">{chief_label}</small>
                                 }
                             </Flexblock>
+                            : tribe_group?.can_set_chief &&
+                            <TribeChiefSwap tribe_id={tribe_group.tribe_id} group_id={tribe_group.id} seat_name={tribe_group.name} can_set={true} empty={true} />
                         }
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
                     </FlexInline>
