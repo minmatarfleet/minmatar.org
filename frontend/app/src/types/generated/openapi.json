@@ -40696,7 +40696,7 @@
     "/api/campaigns/payout-codes": {
       "get": {
         "description": "Mapped codes, plus codes seen in the last 30 days with no mapping.",
-        "operationId": "campaigns_endpoints_payout_codes_list_payout_codes",
+        "operationId": "campaigns_endpoints_get_payout_codes_list_payout_codes",
         "parameters": [],
         "responses": {
           "200": {
@@ -40734,7 +40734,7 @@
     "/api/campaigns/payout-codes/{event_code}": {
       "put": {
         "description": "Add a code or change its complex type and whether it counts.\n\nCounting a code rescores the sites already recorded under it, the same\nas ``manage.py confirm_fw_event_code``.",
-        "operationId": "campaigns_endpoints_payout_codes_set_payout_code",
+        "operationId": "campaigns_endpoints_put_payout_code_set_payout_code",
         "parameters": [
           {
             "in": "path",
@@ -41271,7 +41271,7 @@
     "/api/campaigns/{slug}/commander-order/draft": {
       "post": {
         "description": "Write the order from the week plan and keep it as a draft.",
-        "operationId": "campaigns_endpoints_settings_draft_commander_order",
+        "operationId": "campaigns_endpoints_post_order_draft_draft_commander_order",
         "parameters": [
           {
             "in": "path",
@@ -41321,7 +41321,7 @@
     "/api/campaigns/{slug}/commander-order/publish": {
       "post": {
         "description": "Clear the draft flag so pilots see the order.",
-        "operationId": "campaigns_endpoints_settings_publish_commander_order",
+        "operationId": "campaigns_endpoints_post_order_publish_publish_commander_order",
         "parameters": [
           {
             "in": "path",
@@ -41485,7 +41485,7 @@
     },
     "/api/campaigns/{slug}/fittings": {
       "post": {
-        "operationId": "campaigns_endpoints_settings_add_fitting",
+        "operationId": "campaigns_endpoints_post_fitting_add_fitting",
         "parameters": [
           {
             "in": "path",
@@ -41552,7 +41552,7 @@
     },
     "/api/campaigns/{slug}/fittings/{row_id}": {
       "delete": {
-        "operationId": "campaigns_endpoints_settings_delete_fitting",
+        "operationId": "campaigns_endpoints_delete_fitting_delete_fitting",
         "parameters": [
           {
             "in": "path",
@@ -42171,7 +42171,7 @@
     },
     "/api/campaigns/{slug}/parties/{party_id}": {
       "delete": {
-        "operationId": "campaigns_endpoints_settings_delete_party",
+        "operationId": "campaigns_endpoints_delete_party_delete_party",
         "parameters": [
           {
             "in": "path",
@@ -42453,7 +42453,7 @@
     "/api/campaigns/{slug}/settings": {
       "get": {
         "description": "Everything an operator edits on one campaign, in one read.",
-        "operationId": "campaigns_endpoints_settings_get_settings",
+        "operationId": "campaigns_endpoints_get_settings_get_settings",
         "parameters": [
           {
             "in": "path",
@@ -42499,7 +42499,7 @@
       },
       "patch": {
         "description": "Rename, reschedule, or move a campaign between draft and live.",
-        "operationId": "campaigns_endpoints_settings_patch_campaign",
+        "operationId": "campaigns_endpoints_patch_settings_patch_campaign",
         "parameters": [
           {
             "in": "path",
@@ -42779,7 +42779,7 @@
     },
     "/api/campaigns/{slug}/structures/{structure_id}": {
       "delete": {
-        "operationId": "campaigns_endpoints_settings_delete_structure",
+        "operationId": "campaigns_endpoints_delete_structure_delete_structure",
         "parameters": [
           {
             "in": "path",
@@ -42890,7 +42890,7 @@
       },
       "post": {
         "description": "Add a monitored system to the campaign, or bring a retired one back.",
-        "operationId": "campaigns_endpoints_settings_add_system",
+        "operationId": "campaigns_endpoints_post_system_add_system",
         "parameters": [
           {
             "in": "path",
@@ -42958,7 +42958,7 @@
     "/api/campaigns/{slug}/systems/{system_id}": {
       "delete": {
         "description": "Retire, not delete: the history of kills and targets stays attached.",
-        "operationId": "campaigns_endpoints_settings_retire_system",
+        "operationId": "campaigns_endpoints_delete_system_retire_system",
         "parameters": [
           {
             "in": "path",

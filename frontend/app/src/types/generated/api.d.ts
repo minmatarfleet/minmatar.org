@@ -692,7 +692,7 @@ export interface paths {
          * List Payout Codes
          * @description Mapped codes, plus codes seen in the last 30 days with no mapping.
          */
-        get: operations["campaigns_endpoints_payout_codes_list_payout_codes"];
+        get: operations["campaigns_endpoints_get_payout_codes_list_payout_codes"];
         put?: never;
         post?: never;
         delete?: never;
@@ -716,7 +716,7 @@ export interface paths {
          *     Counting a code rescores the sites already recorded under it, the same
          *     as ``manage.py confirm_fw_event_code``.
          */
-        put: operations["campaigns_endpoints_payout_codes_set_payout_code"];
+        put: operations["campaigns_endpoints_put_payout_code_set_payout_code"];
         post?: never;
         delete?: never;
         options?: never;
@@ -875,7 +875,7 @@ export interface paths {
          * Draft Commander Order
          * @description Write the order from the week plan and keep it as a draft.
          */
-        post: operations["campaigns_endpoints_settings_draft_commander_order"];
+        post: operations["campaigns_endpoints_post_order_draft_draft_commander_order"];
         delete?: never;
         options?: never;
         head?: never;
@@ -895,7 +895,7 @@ export interface paths {
          * Publish Commander Order
          * @description Clear the draft flag so pilots see the order.
          */
-        post: operations["campaigns_endpoints_settings_publish_commander_order"];
+        post: operations["campaigns_endpoints_post_order_publish_publish_commander_order"];
         delete?: never;
         options?: never;
         head?: never;
@@ -933,7 +933,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Add Fitting */
-        post: operations["campaigns_endpoints_settings_add_fitting"];
+        post: operations["campaigns_endpoints_post_fitting_add_fitting"];
         delete?: never;
         options?: never;
         head?: never;
@@ -951,7 +951,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Fitting */
-        delete: operations["campaigns_endpoints_settings_delete_fitting"];
+        delete: operations["campaigns_endpoints_delete_fitting_delete_fitting"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1119,7 +1119,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Party */
-        delete: operations["campaigns_endpoints_settings_delete_party"];
+        delete: operations["campaigns_endpoints_delete_party_delete_party"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1194,7 +1194,7 @@ export interface paths {
          * Get Settings
          * @description Everything an operator edits on one campaign, in one read.
          */
-        get: operations["campaigns_endpoints_settings_get_settings"];
+        get: operations["campaigns_endpoints_get_settings_get_settings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1204,7 +1204,7 @@ export interface paths {
          * Patch Campaign
          * @description Rename, reschedule, or move a campaign between draft and live.
          */
-        patch: operations["campaigns_endpoints_settings_patch_campaign"];
+        patch: operations["campaigns_endpoints_patch_settings_patch_campaign"];
         trace?: never;
     };
     "/api/campaigns/{slug}/sites": {
@@ -1275,7 +1275,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Structure */
-        delete: operations["campaigns_endpoints_settings_delete_structure"];
+        delete: operations["campaigns_endpoints_delete_structure_delete_structure"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1295,7 +1295,7 @@ export interface paths {
          * Add System
          * @description Add a monitored system to the campaign, or bring a retired one back.
          */
-        post: operations["campaigns_endpoints_settings_add_system"];
+        post: operations["campaigns_endpoints_post_system_add_system"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1316,7 +1316,7 @@ export interface paths {
          * Retire System
          * @description Retire, not delete: the history of kills and targets stays attached.
          */
-        delete: operations["campaigns_endpoints_settings_retire_system"];
+        delete: operations["campaigns_endpoints_delete_system_retire_system"];
         options?: never;
         head?: never;
         /**
@@ -25039,7 +25039,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_payout_codes_list_payout_codes: {
+    campaigns_endpoints_get_payout_codes_list_payout_codes: {
         parameters: {
             query?: never;
             header?: never;
@@ -25068,7 +25068,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_payout_codes_set_payout_code: {
+    campaigns_endpoints_put_payout_code_set_payout_code: {
         parameters: {
             query?: never;
             header?: never;
@@ -25411,7 +25411,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_draft_commander_order: {
+    campaigns_endpoints_post_order_draft_draft_commander_order: {
         parameters: {
             query?: never;
             header?: never;
@@ -25444,7 +25444,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_publish_commander_order: {
+    campaigns_endpoints_post_order_publish_publish_commander_order: {
         parameters: {
             query?: never;
             header?: never;
@@ -25554,7 +25554,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_add_fitting: {
+    campaigns_endpoints_post_fitting_add_fitting: {
         parameters: {
             query?: never;
             header?: never;
@@ -25598,7 +25598,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_delete_fitting: {
+    campaigns_endpoints_delete_fitting_delete_fitting: {
         parameters: {
             query?: never;
             header?: never;
@@ -25964,7 +25964,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_delete_party: {
+    campaigns_endpoints_delete_party_delete_party: {
         parameters: {
             query?: never;
             header?: never;
@@ -26167,7 +26167,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_get_settings: {
+    campaigns_endpoints_get_settings_get_settings: {
         parameters: {
             query?: never;
             header?: never;
@@ -26198,7 +26198,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_patch_campaign: {
+    campaigns_endpoints_patch_settings_patch_campaign: {
         parameters: {
             query?: never;
             header?: never;
@@ -26378,7 +26378,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_delete_structure: {
+    campaigns_endpoints_delete_structure_delete_structure: {
         parameters: {
             query?: never;
             header?: never;
@@ -26450,7 +26450,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_add_system: {
+    campaigns_endpoints_post_system_add_system: {
         parameters: {
             query?: never;
             header?: never;
@@ -26494,7 +26494,7 @@ export interface operations {
             };
         };
     };
-    campaigns_endpoints_settings_retire_system: {
+    campaigns_endpoints_delete_system_retire_system: {
         parameters: {
             query?: never;
             header?: never;
