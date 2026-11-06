@@ -56,6 +56,7 @@ export const ui = {
         'doctrine_changes.applied': 'Change applied.',
 
         'srp_programs.page_title': 'SRP program amounts',
+        'ships.srp.programs.page_title': 'SRP program amounts',
         'srp_programs.leading_text': 'Set what SRP pays per hull and refresh outstanding requests.',
         'srp_programs.manage': 'Manage amounts',
         'srp_programs.ship': 'Ship',

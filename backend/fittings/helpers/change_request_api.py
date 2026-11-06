@@ -98,7 +98,7 @@ def fitting_diffs(fitting: EveFitting, payload: dict) -> list[dict]:
             proposed = sorted(proposed or [])
         row = _field_diff(
             field,
-            field.replace("_", " "),
+            "EFT" if field == "eft_format" else field.replace("_", " "),
             _as_text(current),
             _as_text(proposed),
         )
