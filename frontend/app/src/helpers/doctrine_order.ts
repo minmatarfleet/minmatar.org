@@ -6,11 +6,12 @@ const SHIP_META_ORDER = ['Tech I', 'Storyline', 'Faction', 'Tech II', 'Tech III'
 
 /**
  * Same ship stays together: the non-strategic doctrine, then its strategic
- * counterpart, then experimental. Type is not a top-level group.
+ * counterpart, then capital, then experimental. Type is not a top-level group.
  */
 const DOCTRINE_VARIANT_ORDER: readonly DoctrineTypes[] = [
     'non_strategic',
     'strategic',
+    'capital',
     'experimental',
 ]
 

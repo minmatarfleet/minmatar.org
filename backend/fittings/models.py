@@ -28,6 +28,7 @@ class FittingTag(models.TextChoices):
 DOCTRINE_TYPE_EXPERIMENTAL = "experimental"
 DOCTRINE_TYPE_NON_STRATEGIC = "non_strategic"
 DOCTRINE_TYPE_STRATEGIC = "strategic"
+DOCTRINE_TYPE_CAPITAL = "capital"
 
 PROTECTION_TIER_NON_STRATEGIC = "non_strategic"
 PROTECTION_TIER_STRATEGIC = "strategic"
@@ -682,6 +683,7 @@ class EveDoctrine(models.Model):
         (DOCTRINE_TYPE_EXPERIMENTAL, "Experimental"),
         (DOCTRINE_TYPE_NON_STRATEGIC, "Non strategic"),
         (DOCTRINE_TYPE_STRATEGIC, "Strategic"),
+        (DOCTRINE_TYPE_CAPITAL, "Capital ships"),
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=255, choices=type_choices)

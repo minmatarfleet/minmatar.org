@@ -4557,6 +4557,7 @@ export const ui = {
         'fetching_assets': 'Fetching assets',
         'experimental': 'Experimental',
         'non_strategic': 'Non strategic',
+        'capital_ships': 'Capital ships',
         'casual': 'Casual',
         'training': 'Training',
         'create_fleet_error': 'An error occurred creating the fleet',
