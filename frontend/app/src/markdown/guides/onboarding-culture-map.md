@@ -29,7 +29,7 @@ Tribes are the alliance's interest groups, grouped under **Capitals**, **Supply*
 
 | Access | Tribes |
 | --- | --- |
-| **Off trial only** | Capitals, Advocates, Readiness, Loyalty Points, Fishermen |
+| **Off trial only** | Capitals, Readiness, Loyalty Points, Fishermen |
 | **Often open earlier** | Mining, PI, freighters, market, technology, thinkspeak |
 
 Each tribe's page lists its own requirements. If one you want is off-trial only, that is a reason to keep flying, not a closed door. See [Trial, SRP, and Getting Help](/learning/guides/onboarding-trial-srp-help/).

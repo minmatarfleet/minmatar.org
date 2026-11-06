@@ -18,7 +18,7 @@ What counts:
 
 Directors track participation, and they move pilots off trial when they have been around and active. There is nothing to apply for.
 
-Some tribes only accept members who are off trial: **Capitals, Advocates, Readiness, Loyalty Points,** and **Fishermen**. Many others accept trial members, including mining, PI, freighters, market, technology, and thinkspeak. See [The Culture Map](/learning/guides/onboarding-culture-map/).
+Some tribes only accept members who are off trial: **Capitals, Readiness, Loyalty Points,** and **Fishermen**. Many others accept trial members, including mining, PI, freighters, market, technology, and thinkspeak. See [The Culture Map](/learning/guides/onboarding-culture-map/).
 
 ## Ship replacement (SRP)
 

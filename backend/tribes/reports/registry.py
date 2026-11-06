@@ -1,9 +1,5 @@
 """Report bindings keyed by TribeGroup.code."""
 
-from tribes.reports.queries.advocates import (
-    advocates_highlights,
-    run_advocates_report,
-)
 from tribes.reports.queries.blops import blops_highlights, run_blops_report
 from tribes.reports.queries.capitals import run_capitals_report
 from tribes.reports.queries.fleet_commanders import run_fleet_commanders_report
@@ -45,7 +41,6 @@ QUERY_RUNNERS = {
     "capitals_activity": run_capitals_report,
     "market_sales": run_market_sales_report,
     "lp_buyback": run_lp_buyback_report,
-    "advocates": run_advocates_report,
     "readiness": run_readiness_report,
     "help_desk": run_help_desk_report,
     "publishing": run_publishing_report,
@@ -57,7 +52,6 @@ QUERY_RUNNERS = {
 HIGHLIGHT_RUNNERS = {
     "market_sales": market_sales_highlights,
     "lp_buyback": lp_buyback_highlights,
-    "advocates": advocates_highlights,
     "help_desk": help_desk_highlights,
     "publishing": publishing_highlights,
     "blops": blops_highlights,
@@ -173,12 +167,6 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
     ),
     "supply.loyalty-points": _activity_binding(
         "supply.loyalty-points", "lp_buyback", ReportScope.PROGRAM, "lp"
-    ),
-    "pulse.advocates": _activity_binding(
-        "pulse.advocates",
-        "advocates",
-        ReportScope.PROGRAM,
-        "applications_accepted",
     ),
     "pulse.readiness": _activity_binding(
         "pulse.readiness",

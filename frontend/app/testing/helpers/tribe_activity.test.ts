@@ -12,7 +12,6 @@ const t = (key: keyof typeof ui['en']) => ui.en[key]
 const NEW_GROUPS = [
     'supply.market',
     'supply.loyalty-points',
-    'pulse.advocates',
     'pulse.readiness',
     'pulse.technology',
     'pulse.thinkspeak',

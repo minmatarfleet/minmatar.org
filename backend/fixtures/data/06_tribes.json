@@ -241,20 +241,6 @@
   },
   {
     "model": "tribes.tribegroup",
-    "pk": 15,
-    "fields": {
-      "tribe": 4,
-      "name": "Advocates",
-      "description": "Every great pilot started somewhere. Advocates make the new player experience welcoming, approachable, and worth sticking around for.",
-      "group": null,
-      "chief": null,
-      "discord_channel_id": null,
-      "is_active": true,
-      "code": "pulse.advocates"
-    }
-  },
-  {
-    "model": "tribes.tribegroup",
     "pk": 16,
     "fields": {
       "tribe": 2,

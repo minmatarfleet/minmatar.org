@@ -23,7 +23,6 @@ export type TribeActivityMetric = {
 export type TribeActivityBlock =
     | 'hulls'
     | 'weekly'
-    | 'welcomed'
     | 'doctrine_grid'
     | 'fixed'
     | 'latest_work'
@@ -251,45 +250,6 @@ export const TRIBE_ACTIVITY_BY_CODE: Record<string, TribeActivitySpec> = {
             metric_label: t('tribes.activity.lp.lp_completed'),
             value: (values) => `${format_number(values.lp ?? 0)} LP`,
             detail: (values) => plural(t, values.orders, 'tribes.activity.lp.contributor_detail'),
-        }),
-    },
-    'pulse.advocates': {
-        metrics: (t, totals, highlights) => [
-            {
-                label: t('tribes.activity.advocates.pilots_welcomed'),
-                value: count(total_number(totals, 'pilots_welcomed')),
-                hint: best_month(t, highlights),
-            },
-            {
-                label: t('tribes.activity.advocates.full_members'),
-                value: count(total_number(totals, 'full_members')),
-                hint: t('tribes.activity.advocates.full_members_hint'),
-            },
-            {
-                label: t('tribes.activity.advocates.academy_pilots'),
-                value: count(total_number(totals, 'academy_pilots')),
-                hint: t('tribes.activity.advocates.academy_pilots_hint'),
-            },
-            {
-                label: t('tribes.activity.advocates.first_fleets'),
-                value: count(total_number(totals, 'first_fleets')),
-                hint: t('tribes.activity.advocates.first_fleets_hint'),
-            },
-        ],
-        block: 'welcomed',
-        all_time: (t, highlights) => highlights.all_time
-            ? {
-                headline: fill_template(t('tribes.activity.advocates.all_time'), {
-                    n: count(all_time_number(highlights, 'pilots_welcomed')),
-                }),
-                detail: fill_template(t('tribes.activity.advocates.all_time_detail'), {
-                    n: count(all_time_number(highlights, 'still_flying')),
-                }),
-            }
-            : null,
-        contributors: (t) => ({
-            metric_label: t('tribes.activity.advocates.contributor_metric'),
-            value: (values) => count(values.applications_accepted),
         }),
     },
     'pulse.readiness': {

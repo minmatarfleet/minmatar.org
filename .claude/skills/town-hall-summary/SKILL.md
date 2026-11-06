@@ -73,7 +73,7 @@ pipenv run python manage.py town_hall_report \
 **Manual (narrative only — no query data):**
 
 - Supply: `supply.market`, `supply.loyalty-points`
-- Pulse: `pulse.technology`, `pulse.thinkspeak`, `pulse.readiness`, `pulse.advocates`, `pulse.tournaments`
+- Pulse: `pulse.technology`, `pulse.thinkspeak`, `pulse.readiness`, `pulse.tournaments`
 
 Manual groups return `manual: true` and a message; note them in **Slide readiness**, do not invent numbers.
 
@@ -128,7 +128,7 @@ Top 5: …
 
 ## Pulse
 ### Fleet Commanders — [total fleets]; top FCs: …
-### Manual: Technology, Thinkspeak, Readiness, Advocates, Tournaments
+### Manual: Technology, Thinkspeak, Readiness, Tournaments
 
 ## Slide readiness
 | Ready | Empty / needs data | Manual |

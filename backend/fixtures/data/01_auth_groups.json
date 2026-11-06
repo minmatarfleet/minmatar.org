@@ -156,14 +156,6 @@
   },
   {
     "model": "auth.group",
-    "pk": 157,
-    "fields": {
-      "name": "Tribe Group - Advocates",
-      "permissions": []
-    }
-  },
-  {
-    "model": "auth.group",
     "pk": 158,
     "fields": {
       "name": "Tribe Group - Readiness",

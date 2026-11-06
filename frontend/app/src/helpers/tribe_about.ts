@@ -144,17 +144,6 @@ export const TRIBE_ABOUT_STAGES: Record<string, TribeAboutStage> = {
         pilot_metric: 'tribes.about.metric.lp',
         pilot_value: format_number,
     },
-    'pulse.advocates': {
-        verb: 'tribes.about.verb.welcomed',
-        value: (totals) => short(n(totals, 'pilots_welcomed')),
-        unit: 'tribes.about.unit.pilots',
-        detail: (t, totals) => fill_template(t('tribes.about.detail.advocates'), {
-            members: count(n(totals, 'full_members')),
-            fleets: count(n(totals, 'first_fleets')),
-        }),
-        pilot_metric: 'tribes.about.metric.applications',
-        pilot_value: count,
-    },
     'pulse.fleet-commanders': {
         verb: 'tribes.about.verb.led',
         value: (totals) => short(n(totals, 'total_fleets')),
@@ -234,7 +223,6 @@ export const SUPPLY_FLOW = [
 
 /** Pulse reads as a pilot's path: welcomed, led, readied, then the rest. */
 export const PULSE_ORDER = [
-    'pulse.advocates',
     'pulse.fleet-commanders',
     'pulse.readiness',
     'pulse.technology',
