@@ -75,6 +75,8 @@ export interface NewsletterVideo {
     cta: NewsletterCta
     /** Discord username to copy, shown under the text. */
     copy_username?: { label: string; username: string }
+    /** Not published yet: no link, play badge or buttons, and a Placeholder tag. */
+    placeholder?: boolean
 }
 
 export interface NewsletterStat {

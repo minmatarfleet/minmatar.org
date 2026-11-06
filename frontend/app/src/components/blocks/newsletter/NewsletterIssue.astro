@@ -46,19 +46,28 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
 {lead_video &&
     <section class="[ nl-watch ]" aria-labelledby="nl-watch-title">
-        <a class="[ nl-watch__thumb ]" href={lead_video.url} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${lead_video.title} on YouTube`}>
-            <img src={lead_video.thumbnail} width="1280" height="720" alt={lead_video.thumbnail_alt} loading="eager" />
-            <span class:list={['[ nl-watch__play ]', `nl-watch__play--${lead_video.play_position ?? 'center'}`]} aria-hidden="true"></span>
-        </a>
+        {lead_video.placeholder ?
+            <div class="[ nl-watch__thumb nl-watch__thumb--placeholder ]">
+                <img src={lead_video.thumbnail} width="1280" height="720" alt={lead_video.thumbnail_alt} loading="eager" />
+            </div>
+        :
+            <a class="[ nl-watch__thumb ]" href={lead_video.url} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${lead_video.title} on YouTube`}>
+                <img src={lead_video.thumbnail} width="1280" height="720" alt={lead_video.thumbnail_alt} loading="eager" />
+                <span class:list={['[ nl-watch__play ]', `nl-watch__play--${lead_video.play_position ?? 'center'}`]} aria-hidden="true"></span>
+            </a>
+        }
         <Flexblock gap="var(--space-s)" class="[ nl-watch__text ]">
             <span class="[ nl-kicker ]">{lead_video.kicker}</span>
+            {lead_video.placeholder && <span class="[ nl-watch__placeholder-tag ]">Placeholder</span>}
             <h2 id="nl-watch-title" class="[ nl-h2 ]">{lead_video.title}</h2>
             <p>{lead_video.text}</p>
-            <div class="[ nl-cta ]">
-                {cta_links(lead_video.cta).map((link) =>
-                    <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
-                )}
-            </div>
+            {!lead_video.placeholder &&
+                <div class="[ nl-cta ]">
+                    {cta_links(lead_video.cta).map((link) =>
+                        <Button href={link.href} new_tab={true} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                    )}
+                </div>
+            }
         </Flexblock>
     </section>
 }
@@ -346,6 +355,24 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         display: block;
         overflow: hidden;
         border: 1px solid var(--hairline-strong);
+    }
+
+    .nl-watch__thumb--placeholder {
+        border: 2px dashed var(--fleet-yellow);
+    }
+
+    .nl-watch__thumb--placeholder img {
+        opacity: 0.55;
+    }
+
+    .nl-watch__placeholder-tag {
+        align-self: flex-start;
+        padding: var(--space-3xs) var(--space-2xs);
+        border: 1px dashed var(--fleet-yellow);
+        color: var(--fleet-yellow);
+        font-size: var(--step--2);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
     }
 
     .nl-watch__thumb img {

@@ -23,7 +23,8 @@ export const YC128_11: NewsletterIssue = {
     lead_video: {
         kicker: 'Watch first',
         title: 'Town Hall #38 highlights',
-        text: 'The highlights cut of the November town hall will go here once it is published.',
+        text: 'The highlights cut of the November town hall goes here once it is published.',
+        placeholder: true,
         url: TOWN_HALL_URL,
         thumbnail: `${IMG}/townhall38.webp`,
         thumbnail_alt: 'Town Hall #38, November YC 128, Highlights, coming soon',
