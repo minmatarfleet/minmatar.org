@@ -34,15 +34,11 @@ export const YC128_11: NewsletterIssue = {
         {
             kind: 'feature',
             id: 'training',
-            layout: 'split',
+            layout: 'wide',
             toc_label: 'Training',
             kicker: 'Your account',
             title: 'What can I fly? What should I train?',
             lede: 'The new Training tab checks every character against every doctrine fit, and tells you how long until the next one is ready.',
-            callout: {
-                tag: 'Across the alliance',
-                text: 'We checked <b>4,791 characters</b> against every doctrine fit. 1,242 of you can already fly at least one, and 873 can bring something to a Napoc or TFI fleet today.',
-            },
             figures: [
                 {
                     src: `${IMG}/training-plan.webp`,
@@ -59,7 +55,6 @@ export const YC128_11: NewsletterIssue = {
             ],
             cta: {
                 links: [{ label: 'Open your Training tab', href: '/account/#training' }],
-                note: 'Your account page is now in tabs, too: Characters, Training, Notifications and more.',
             },
         },
         {
@@ -83,11 +78,8 @@ export const YC128_11: NewsletterIssue = {
                 { title: 'Day of your trial.', text: 'When review opens, and when most trials in your corp finish.' },
                 { title: 'How you compare.', text: 'Fleets, kills and time on comms over the last month, from well below to well above average.' },
                 { title: 'What you bring.', text: 'Every fleet you flew, and whether your ship was on the doctrine.' },
+                { title: 'For CEOs.', text: 'Promote a trial pilot straight from your corp’s Members tab. Applications also close by themselves once the pilot joins your corp in game.' },
             ],
-            aside: {
-                tag: 'For CEOs',
-                text: 'Promote a trial pilot straight from your corp’s Members tab. Applications also close by themselves once the pilot joins your corp in game.',
-            },
             cta: { links: [{ label: 'See your Trial tab', href: '/account/#trial' }] },
         },
         {
@@ -111,11 +103,8 @@ export const YC128_11: NewsletterIssue = {
                 { title: 'One a week, at most.', text: 'However many fleets are going, you get one invite a week.' },
                 { title: 'Only when you’re on.', text: 'Invites follow the fleet time, so you only hear about fleets in your timezone.' },
                 { title: 'Not interested?', text: 'Stop fleet invites is on every DM. Turn them back on under Account › Notifications.' },
+                { title: 'New pilots.', text: 'FCs can invite pilots who are in their first week, so your first fleet can come to you.' },
             ],
-            aside: {
-                tag: 'New pilots',
-                text: 'FCs can invite pilots who are in their first week, so your first fleet can come to you.',
-            },
             cta: { links: [{ label: 'See upcoming fleets', href: '/fleets/upcoming/' }] },
         },
         {
@@ -184,7 +173,7 @@ export const YC128_11: NewsletterIssue = {
             id: 'fcs',
             toc_label: 'For FCs',
             kicker: 'For FCs',
-            title: 'Run it again, on any character',
+            title: 'More tools for fleet commanders',
             figures: [
                 {
                     src: `${IMG}/participants.webp`,

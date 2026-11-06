@@ -107,7 +107,29 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                 {section.callout &&
                     <p class="[ nl-callout ]"><span class="[ nl-callout__tag ]">{section.callout.tag}</span><span set:html={section.callout.text} /></p>
                 }
-                {section.layout === 'story' ?
+                {section.layout === 'wide' ?
+                    <Fragment>
+                        {figure_list(section.figures).map((figure) =>
+                            <figure class="[ nl-shot nl-shot--wide ]">
+                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <figcaption>{figure.caption}</figcaption>
+                            </figure>
+                        )}
+                        {section.list &&
+                            <ul class="[ nl-split__list nl-split__list--row ]">
+                                {section.list.map((item) => <li><b>{item.title.replace(/\.$/, '')}</b><span set:html={item.text} /></li>)}
+                            </ul>
+                        }
+                        {section.cta &&
+                            <div class="[ nl-cta ]">
+                                {cta_links(section.cta).map((link) =>
+                                    <Button href={resolve_href(link.href)} new_tab={is_external(link.href)} size="sm" color={link.secondary ? 'transparent' : 'fleet-red'} class={link.secondary ? 'nl-btn--secondary' : undefined}>{link.label}</Button>
+                                )}
+                                {section.cta.note && <span class="[ nl-cta__note ]" set:html={section.cta.note} />}
+                            </div>
+                        }
+                    </Fragment>
+                : section.layout === 'story' ?
                     <Fragment>
                         <div class="[ nl-split ]">
                             {section.panel &&
@@ -692,6 +714,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     .nl-split__list li {
         display: grid;
         gap: var(--space-3xs);
+        align-content: start;
         padding-top: var(--space-s);
         border-top: 1px solid var(--hairline-strong);
     }
@@ -700,7 +723,17 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         color: var(--highlight);
     }
 
+    .nl-split__list--row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-l);
+    }
+
     @media (max-width: 48rem) {
+        .nl-split__list--row {
+            grid-template-columns: minmax(0, 1fr);
+            gap: var(--space-s);
+        }
+
         .nl-split,
         .nl-split--reverse {
             grid-template-columns: minmax(0, 1fr);
