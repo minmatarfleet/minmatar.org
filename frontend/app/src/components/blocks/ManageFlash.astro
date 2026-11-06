@@ -1,0 +1,35 @@
+---
+import type { ManageFlashState } from '@helpers/manage_forms'
+
+interface Props {
+    flash: ManageFlashState | null
+    [propName: string]: any
+}
+
+const { flash, ...attributes } = Astro.props
+
+delete attributes.class
+---
+
+{flash &&
+    <p
+        {...attributes}
+        class:list={['[ manage-flash ]', { 'is-error': flash.kind === 'error' }, Astro.props.class]}
+        role={flash.kind === 'error' ? 'alert' : 'status'}
+    >
+        {flash.message}
+    </p>
+}
+
+<style lang="scss">
+    .manage-flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+</style>

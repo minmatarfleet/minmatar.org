@@ -3198,3 +3198,14 @@ export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
+
+export type LearningManageGuide = ApiResponse<'ManageLearningSchema'>
+export type LearningManageGuideWrite = ApiRequest<'ManageLearningRequest'>
+export type LearningManageCertificate = ApiResponse<'ManageCertificateSchema'>
+export type LearningManageCertificateWrite = ApiRequest<'ManageCertificateRequest'>
+export type LearningManageAward = ApiRequest<'ManageAwardRequest'>
+export type LearningManageOnboarding = ApiResponse<'ManageOnboardingSchema'>
+export type LearningManageSkillset = ApiResponse<'ManageSkillsetSchema'>
+export type LearningManageSkillsetWrite = ApiRequest<'ManageSkillsetRequest'>
+export type CreatorModerationAccount = ApiResponse<'ModerationAccountSchema'>
+export type CreatorModerationItem = ApiResponse<'ModerationItemSchema'>

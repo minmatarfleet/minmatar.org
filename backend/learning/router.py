@@ -1,5 +1,7 @@
 from ninja import Router
 
+from learning.manage import router as manage_router
+
 from learning.endpoints import (
     get_certificate,
     get_certificate_method,
@@ -65,5 +67,7 @@ _ROUTES = (
 )
 for method, path, spec, view in _ROUTES:
     getattr(router, method)(path, **spec)(view)
+
+router.add_router("manage", manage_router)
 
 __all__ = ["router"]

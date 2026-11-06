@@ -444,6 +444,35 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="eveonline.change_eveskillset",
         staff_permission="eveonline.view_eveskillset",
     ),
+    "learning.manage": FeatureDefinition(
+        code="learning.manage",
+        label="Author learning content",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Edit certificates, learning guides and onboarding programs, "
+            "and award or revoke certificates by hand."
+        ),
+        legacy_permission="learning.change_certificate",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+    ),
+    "skillsets.manage": FeatureDefinition(
+        code="skillsets.manage",
+        label="Author skillsets",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description="Create and edit skillsets on the Learning page.",
+        legacy_permission="eveonline.change_eveskillset",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+    ),
+    "creators.moderate": FeatureDefinition(
+        code="creators.moderate",
+        label="Moderate creators",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Approve or suspend creator accounts and feature or hide items."
+        ),
+        legacy_permission="creators.change_creatoraccount",
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+    ),
     "content.manage": FeatureDefinition(
         code="content.manage",
         label="Manage site content",

@@ -71,6 +71,42 @@
         ]
     },
     {
+        "slug": "learning.manage",
+        "alt": "icon.skills.alt",
+        "path": "/learning/manage/",
+        "publish": false,
+        "icon": "/images/icons/48px-Skills.png",
+        "description": "page_finder.learning_manage.description",
+        "keywords": [
+            "learning",
+            "certificates",
+            "skillsets",
+            "onboarding",
+            "guides",
+            "manage"
+        ],
+        "permissions": {
+            "gate": "learning.manage"
+        }
+    },
+    {
+        "slug": "creators.manage",
+        "alt": "icon.intel.alt",
+        "path": "/creators/manage/",
+        "publish": false,
+        "icon": "/images/icons/48px-Satellite.png",
+        "description": "page_finder.creators_manage.description",
+        "keywords": [
+            "creators",
+            "moderation",
+            "content",
+            "manage"
+        ],
+        "permissions": {
+            "gate": "creators.moderate"
+        }
+    },
+    {
         "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,
