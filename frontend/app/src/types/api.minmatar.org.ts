@@ -3198,3 +3198,11 @@ export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
+
+export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
+export type CampaignSettingsSystem = ApiResponse<'SettingsSystemOut'>
+export type CampaignCreate = ApiRequest<'CampaignCreateRequest'>
+export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
+export type CampaignPayoutCodes = ApiResponse<'PayoutCodesOut'>
+export type CampaignPayoutCode = ApiResponse<'PayoutCodeOut'>
+export type CampaignPayoutCodePut = ApiRequest<'PayoutCodeRequest'>
