@@ -51,6 +51,9 @@ export interface TribeGroupTabInput {
     can_create_events:  boolean;
     can_post:           boolean;
     can_manage:         boolean;
+    /** Groups can switch fleets and events off; absent means on. */
+    fleets_enabled?:    boolean;
+    events_enabled?:    boolean;
 }
 
 /**
@@ -65,8 +68,8 @@ export function tribe_group_tab_ids(input: TribeGroupTabInput): TribeGroupTab[] 
         guides: input.has_guides,
         activity: input.has_activity,
         members: true,
-        fleets: input.fleet_count > 0 || input.can_schedule_fleets,
-        events: input.event_count > 0 || input.can_create_events,
+        fleets: (input.fleets_enabled ?? true) && (input.fleet_count > 0 || input.can_schedule_fleets),
+        events: (input.events_enabled ?? true) && (input.event_count > 0 || input.can_create_events),
         posts: input.post_count > 0 || input.can_post,
         settings: input.can_manage,
     }

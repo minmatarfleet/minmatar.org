@@ -52,6 +52,8 @@ export function publishing_settings_patch(form: FormValues): TribeGroupPublishin
     const patch: TribeGroupPublishingPatch = {
         allow_alliance_posts: form.get('allow_alliance_posts') === 'on',
         allow_open_fleets: form.get('allow_open_fleets') === 'on',
+        fleets_enabled: form.get('fleets_enabled') === 'on',
+        events_enabled: form.get('events_enabled') === 'on',
     }
     for (const kind of PUBLISHING_KINDS) {
         const chosen = policy(form.get(`${kind}_policy`))

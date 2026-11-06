@@ -127,6 +127,12 @@ class GroupFleetCreateTests(GroupFleetTestBase):
         self.assertEqual(response.json()["host_group"]["id"], self.group.id)
         queue.assert_not_called()
 
+    def test_switched_off_group_blocks_even_the_chief(self, queue):
+        self.group.fleets_enabled = False
+        self.group.save()
+        response = self.call("post", "", self.chief, self.create_payload())
+        self.assertEqual(response.status_code, 403)
+
     def test_chief_creates_group_fleet_without_pre_ping(self, queue):
         with patch(
             "fleets.helpers.schedule_fleet.send_discord_pre_ping"

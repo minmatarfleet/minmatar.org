@@ -263,6 +263,8 @@ const tribe_tab_ids = tribe_group_tab_ids({
     can_create_events: Boolean(tribe_group?.can_create_events),
     can_post: Boolean(tribe_group?.can_post),
     can_manage: show_settings,
+    fleets_enabled: tribe_group?.fleets_enabled ?? true,
+    events_enabled: tribe_group?.events_enabled ?? true,
 })
 const tribe_tabs = tribe_tab_ids.map((id) => ({
     id,

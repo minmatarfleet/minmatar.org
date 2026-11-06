@@ -39642,6 +39642,17 @@
             ],
             "title": "Event Publisher Character Ids"
           },
+          "events_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Enabled"
+          },
           "fleet_policy": {
             "anyOf": [
               {
@@ -39665,6 +39676,17 @@
               }
             ],
             "title": "Fleet Publisher Character Ids"
+          },
+          "fleets_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Enabled"
           },
           "post_policy": {
             "anyOf": [
@@ -39758,6 +39780,11 @@
             "title": "Event Publishers",
             "type": "array"
           },
+          "events_enabled": {
+            "default": true,
+            "title": "Events Enabled",
+            "type": "boolean"
+          },
           "fleet_policy": {
             "$ref": "#/components/schemas/PublishingPolicy"
           },
@@ -39767,6 +39794,11 @@
             },
             "title": "Fleet Publishers",
             "type": "array"
+          },
+          "fleets_enabled": {
+            "default": true,
+            "title": "Fleets Enabled",
+            "type": "boolean"
           },
           "group_id": {
             "title": "Group Id",
@@ -40145,6 +40177,16 @@
               }
             ],
             "title": "Effective Discord Channel Id"
+          },
+          "events_enabled": {
+            "default": true,
+            "title": "Events Enabled",
+            "type": "boolean"
+          },
+          "fleets_enabled": {
+            "default": true,
+            "title": "Fleets Enabled",
+            "type": "boolean"
           },
           "has_volunteered": {
             "default": false,

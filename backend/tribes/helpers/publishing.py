@@ -58,6 +58,15 @@ def can_manage(user, group: TribeGroup) -> bool:
     return user_can_manage_group(user, group)
 
 
+def group_feature_enabled(group: TribeGroup, kind: str) -> bool:
+    """Fleets and events can be switched off per group; posts always work."""
+    if kind == KIND_FLEET:
+        return group.fleets_enabled
+    if kind == KIND_EVENT:
+        return group.events_enabled
+    return True
+
+
 def can_publish(
     user,
     group: TribeGroup,
@@ -77,6 +86,8 @@ def can_publish(
     if kind not in KINDS:
         raise ValueError(f"Unknown publishing kind {kind!r}")
     if not _authenticated(user) or not group.is_active:
+        return False
+    if not group_feature_enabled(group, kind):
         return False
     if manages is None:
         manages = can_manage(user, group)

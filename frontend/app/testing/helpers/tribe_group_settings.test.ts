@@ -50,6 +50,8 @@ describe('Publishing settings patch', () => {
         ]))).toEqual({
             allow_alliance_posts: true,
             allow_open_fleets: false,
+            fleets_enabled: false,
+            events_enabled: false,
             post_policy: 'chosen',
             post_publisher_character_ids: [9001, 9002],
             fleet_policy: 'members',

@@ -162,6 +162,18 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
 
     <div class="[ tribe-publishing-settings__switches ]">
         <SwitchSquare
+            name="fleets_enabled"
+            checked={settings.fleets_enabled}
+            label={t('tribes.settings.fleets_enabled')}
+            description={t('tribes.settings.fleets_enabled_help')}
+        />
+        <SwitchSquare
+            name="events_enabled"
+            checked={settings.events_enabled}
+            label={t('tribes.settings.events_enabled')}
+            description={t('tribes.settings.events_enabled_help')}
+        />
+        <SwitchSquare
             name="allow_alliance_posts"
             checked={settings.allow_alliance_posts}
             label={t('tribes.settings.allow_posts')}

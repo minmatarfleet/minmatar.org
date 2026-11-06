@@ -74,6 +74,8 @@ class TribeGroupSchema(BaseModel):
     can_create_events: bool = False
     allow_alliance_posts: bool = True
     allow_open_fleets: bool = False
+    fleets_enabled: bool = True
+    events_enabled: bool = True
     # A string: Discord ids don't fit a JavaScript number.
     effective_discord_channel_id: Optional[str] = None
     discord_role_name: Optional[str] = None
