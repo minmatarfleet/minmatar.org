@@ -1,0 +1,90 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+// no-error-refetch: an approver's action; a failure shows in the panel it swaps back.
+// POST runs one approval or rotation action, then answers with the queue or
+// rotation panel for that action. GET ?view=queue|rotation just renders it.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'reddit.approvals.manage')) return HTTP_403_Forbidden()
+
+import type { RedditReviewItem, RedditRotationMonth } from '@dtypes/api.minmatar.org'
+import {
+    approve_reddit_change,
+    approve_reddit_template,
+    get_reddit_review_queue,
+    get_reddit_rotation,
+    reddit_rotation_action,
+    reject_reddit_change,
+} from '@helpers/api.minmatar.org/reddit'
+
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : new FormData()
+const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
+const action = text('action')
+const id = parseInt(text('id'))
+
+let error: string | null = null
+let notice: string | null = null
+let view = Astro.url.searchParams.get('view') === 'rotation' ? 'rotation' : 'queue'
+
+const decision_notice = (decision: { changed: boolean, notified: boolean }, done: string) => {
+    if (!decision.changed) return t('reddit_review.nothing_changed')
+    return decision.notified ? `${done} ${t('reddit_review.ceo_notified')}` : `${done} ${t('reddit_review.ceo_not_notified')}`
+}
+
+try {
+    if (is_post && !id) {
+        return HTTP_400_Bad_Request()
+    } else if (is_post) {
+        if (action === 'approve_change') {
+            notice = decision_notice(await approve_reddit_change(auth_token, id), t('reddit_review.approved'))
+        } else if (action === 'approve_template') {
+            notice = decision_notice(await approve_reddit_template(auth_token, id), t('reddit_review.approved'))
+        } else if (action === 'reject_change') {
+            notice = decision_notice(await reject_reddit_change(auth_token, id, text('note')), t('reddit_review.rejected'))
+        } else if (['schedule_publish', 'schedule_regenerate', 'template_submit', 'template_link_discord'].includes(action)) {
+            view = 'rotation'
+            const [kind, verb] = action.split(/_(.*)/s) as ['schedule' | 'template', string]
+            const result = await reddit_rotation_action(
+                auth_token,
+                kind === 'schedule' ? 'schedules' : 'templates',
+                id,
+                verb.replace('_', '-') as 'publish' | 'regenerate' | 'submit' | 'link-discord',
+            )
+            if (result.ok) notice = result.detail || t('reddit_review.done')
+            else error = result.detail
+        } else {
+            return HTTP_400_Bad_Request()
+        }
+    }
+} catch (failure) {
+    if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+    error = (failure as Error).message
+}
+
+let items: RedditReviewItem[] = []
+let months: RedditRotationMonth[] = []
+try {
+    if (view === 'rotation') months = (await get_reddit_rotation(auth_token)).months
+    else items = (await get_reddit_review_queue(auth_token)).items
+} catch (failure) {
+    error = error ?? (failure as Error).message
+}
+
+import RedditReviewQueue from '@components/blocks/RedditReviewQueue.astro'
+import RedditRotationPanel from '@components/blocks/RedditRotationPanel.astro'
+---
+
+{view === 'rotation' ?
+    <RedditRotationPanel months={months} error={error} notice={notice} />
+    :
+    <RedditReviewQueue items={items} error={error} notice={notice} />
+}

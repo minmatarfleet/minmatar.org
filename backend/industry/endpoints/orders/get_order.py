@@ -66,6 +66,7 @@ def get_order(request, order_id: int):
             order.character.character_name if order.character else ""
         ),
         campaign_slug=order.campaign.slug if order.campaign_id else None,
+        campaign_id=order.campaign_id,
         location=(
             OrderLocationResponse(
                 location_id=order.location.location_id,

@@ -1,0 +1,60 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'help_tickets.manage')) return HTTP_403_Forbidden()
+
+import type { HelpSettings } from '@dtypes/api.minmatar.org'
+import { get_help_settings } from '@helpers/api.minmatar.org/help_tickets'
+
+let settings: HelpSettings | null = null
+let data_fetching_error: Error | false = false
+
+try {
+    settings = await get_help_settings(auth_token)
+} catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
+    data_fetching_error = error
+}
+
+const page_title = t('help_settings.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import HelpCategoriesManager from '@components/blocks/HelpCategoriesManager.astro'
+---
+
+<Viewport title={page_title} meta_description={t('page_finder.help_tickets.description')}>
+    <PageWide
+        cover={{
+            image: '/images/account-cover.jpg',
+            image_990: '/images/account-cover-990.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+    >
+        <PageTitle slot="header">{page_title}</PageTitle>
+
+        <Flexblock gap="var(--space-l)">
+            <p>{t('help_settings.leading_text')}</p>
+            {settings ?
+                <HelpCategoriesManager settings={settings} />
+                :
+                <ErrorRefetch args={{ partial: translatePath('/partials/help_tickets_settings_component'), error: data_fetching_error || new Error(), delay: 0 }} />
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>

@@ -1,0 +1,502 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+import type { ui } from '@i18n/ui'
+type UiKey = keyof typeof ui['en']
+
+import type {
+    CorporationInfo,
+    CorporationRequirements,
+    MyCorporationRequirements,
+    OpenCorporationApplication,
+    RequirementCheck,
+} from '@dtypes/api.minmatar.org'
+import { get_corporation_info } from '@helpers/api.minmatar.org/corporations'
+import {
+    get_corporation_requirements,
+    get_my_corporation_requirements,
+    get_my_open_application,
+} from '@helpers/api.minmatar.org/applications'
+import { CORPORATION_APPLY_ID } from '@helpers/corporations/detail'
+import {
+    apply_state,
+    blocking_checks,
+    parse_prime_time,
+    prime_time_lines,
+    rules_as_checks,
+} from '@helpers/corporations/requirements'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { HTTP_404_Not_Found, login_url } from '@helpers/http_responses'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CorporationRequirementChecks from '@components/blocks/CorporationRequirementChecks.astro'
+
+// The corporation page's Apply tab: can I get in, what happens after I
+// apply, who I'll talk to and when they fly. Personal when signed in.
+const { auth_token } = get_request_user(Astro)
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_404_Not_Found()
+const is_member = params.get('member') === '1'
+const delay = parseInt(params.get('delay') ?? '0')
+const PARTIAL_URL = translatePath(`/partials/corporation_apply_component/?${query_string({
+    corporation_id: String(corporation_id),
+    ...(is_member ? { member: '1' } : {}),
+})}`)
+
+let corporation: CorporationInfo | null = null
+let requirements: CorporationRequirements | null = null
+let mine: MyCorporationRequirements | null = null
+let open_application: OpenCorporationApplication | null = null
+let fetch_error: Error | false = false
+try {
+    [corporation, requirements, mine, open_application] = await Promise.all([
+        get_corporation_info(corporation_id),
+        get_corporation_requirements(corporation_id),
+        auth_token ? get_my_corporation_requirements(auth_token, corporation_id) : Promise.resolve(null),
+        auth_token ? get_my_open_application(auth_token) : Promise.resolve(null),
+    ])
+} catch (error) {
+    fetch_error = error as Error
+}
+if (!fetch_error && !corporation) return HTTP_404_Not_Found()
+
+const signed_in = Boolean(auth_token && mine)
+const checks: RequirementCheck[] = mine?.checks ?? rules_as_checks(requirements?.rules ?? [])
+const topics = mine?.interview_topics ?? requirements?.interview_topics ?? []
+const blockers = blocking_checks(checks)
+const state = apply_state(signed_in, mine?.can_apply ?? true)
+const open_here = open_application?.corporation_id === corporation_id
+const open_elsewhere = Boolean(open_application) && !open_here
+
+const acceptance_days = corporation?.application_process?.acceptance_days ?? null
+const trial_days = requirements?.trial_days ?? null
+
+const heading = checks.length === 0
+    ? topics.length > 0
+        ? t('corporations.requirements.heading_topics_only')
+        : t('corporations.requirements.heading_ready')
+    : state === 'signed_out' || is_member
+        ? t('corporations.requirements.heading_signed_out')
+        : state === 'blocked'
+            ? blockers.length === 1
+                ? t('corporations.requirements.heading_blocked_one')
+                : t('corporations.requirements.heading_blocked_many').replace('COUNT', String(blockers.length))
+            : t('corporations.requirements.heading_ready')
+
+const checked_line = mine && checks.length > 0
+    ? mine.accounts
+        ? t('corporations.requirements.checked_accounts')
+            .replace('COUNT', String(mine.characters))
+            .replace('ACCOUNTS', String(mine.accounts))
+        : t('corporations.requirements.checked_characters').replace('COUNT', String(mine.characters))
+    : null
+
+const ask_recruiter_href = corporation?.discord_invite_url || '#leadership'
+const open_header_apply = `const target = document.querySelector('#${CORPORATION_APPLY_ID} button:not([disabled])'); if (target) { $event.preventDefault(); target.click() }`
+
+const days_text = (key_known: UiKey, key_unknown: UiKey, days: number | null) => days
+    ? t(key_known).replace('COUNT', String(Math.max(1, Math.round(days))))
+    : t(key_unknown)
+
+const step_defs = [
+    { title: t('corporations.requirements.step_apply_title'), body: t('corporations.requirements.step_apply_body'), time: t('corporations.requirements.step_apply_time') },
+    { title: t('corporations.requirements.step_chat_title'), body: t('corporations.requirements.step_chat_body'), time: days_text('corporations.requirements.step_chat_time', 'corporations.requirements.step_chat_time_unknown', acceptance_days) },
+    { title: t('corporations.requirements.step_join_title'), body: t('corporations.requirements.step_join_body').replace('NAME', corporation?.ticker ? `[${corporation.ticker}]` : corporation?.corporation_name ?? ''), time: t('corporations.requirements.step_join_time') },
+    { title: t('corporations.requirements.step_trial_title'), body: t('corporations.requirements.step_trial_body'), time: days_text('corporations.requirements.step_trial_time', 'corporations.requirements.step_trial_time_unknown', trial_days) },
+]
+const current_step = open_here ? 1 : -1
+const steps = step_defs.map((step, index) => ({
+    ...step,
+    state: index < current_step ? 'done' : index === current_step ? 'now' : 'todo',
+}))
+
+const RECRUITERS_SHOWN = 3
+const recruiters = (corporation?.leadership ?? []).filter((leader) => leader.role === 'recruiter')
+const prime_times = prime_time_lines(corporation?.timezones ?? []).map(parse_prime_time)
+const open_note = acceptance_days
+    ? t('corporations.requirements.open_note').replace('DAYS', String(Math.max(1, Math.round(acceptance_days))))
+    : t('corporations.requirements.open_note_no_days')
+---
+
+{fetch_error &&
+    <ErrorRefetch
+        args={{
+            partial: PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    />
+}
+{corporation &&
+    <Flexblock gap="var(--space-xl)" class="[ corp-apply ]">
+        {open_here ?
+            <section class="[ corp-apply__card corp-apply__status ]" aria-labelledby="corp-apply-status">
+                <div class="[ corp-apply__status-text ]">
+                    <h2 id="corp-apply-status">{t('corporations.requirements.heading_open')}</h2>
+                    <p>{open_note}</p>
+                </div>
+            </section>
+            :
+            <section class="[ corp-apply__card ]" aria-labelledby="corp-apply-heading">
+                <div class="[ corp-apply__head ]">
+                    <h2 id="corp-apply-heading">{heading}</h2>
+                    {checked_line && !is_member && <small>{checked_line}</small>}
+                </div>
+
+                {checks.length > 0 &&
+                    <CorporationRequirementChecks checks={checks} mode="applicant" />
+                }
+
+                {topics.length > 0 &&
+                    <section class="[ corp-apply__topics ]" aria-labelledby="corp-apply-topics">
+                        <h3 id="corp-apply-topics">{t('corporations.requirements.group_interview')}</h3>
+                        <ul role="list">
+                            {topics.map((topic) => <li>{topic}</li>)}
+                        </ul>
+                    </section>
+                }
+
+                {is_member ?
+                    <p class="[ corp-apply__note ]">{t('corporations.requirements.member_note')}</p>
+                : open_elsewhere ?
+                    <div class="[ corp-apply__cta ]">
+                        <p class="[ corp-apply__note ]">
+                            {t('corporations.requirements.heading_open_elsewhere').replace('NAME', open_application?.corporation_name ?? '')}.
+                            {' '}{t('corporations.requirements.open_elsewhere_note')}
+                        </p>
+                    </div>
+                : state === 'signed_out' ?
+                    <div class="[ corp-apply__cta ]">
+                        <Button href={login_url(Astro, Astro.request.headers.get('HX-Current-URL') ?? Astro.url.href)}>
+                            {t('corporations.requirements.sign_in')}
+                        </Button>
+                        {checks.length > 0 && <small>{t('corporations.requirements.sign_in_note')}</small>}
+                    </div>
+                : state === 'blocked' ?
+                    <div class="[ corp-apply__cta ]">
+                        <Button disabled={true}>
+                            {t('corporations.requirements.start_application')}
+                        </Button>
+                        <a href={ask_recruiter_href} {...(corporation.discord_invite_url ? { target: '_blank', rel: 'noopener' } : {})}>
+                            {t('corporations.requirements.ask_recruiter')}
+                        </a>
+                    </div>
+                :
+                    <div class="[ corp-apply__cta ]">
+                        <Button href={`#${CORPORATION_APPLY_ID}`} x-data x-on:click={open_header_apply}>
+                            {t('corporations.requirements.start_application')}
+                        </Button>
+                        {checks.length > 0 && <small>{t('corporations.requirements.ready_note')}</small>}
+                    </div>
+                }
+            </section>
+        }
+
+        <section class="[ corp-apply__steps-block ]" aria-labelledby="corp-apply-steps">
+            <h2 id="corp-apply-steps">{t('corporations.requirements.steps_title')}</h2>
+            <ol class="[ corp-apply__steps ]" role="list">
+                {steps.map((step, index) => (
+                    <li class="[ corp-apply__step ]" data-state={step.state} aria-current={step.state === 'now' ? 'step' : undefined}>
+                        <div class="[ corp-apply__step-top ]">
+                            <span class="[ corp-apply__step-mark ]" aria-hidden="true">{step.state === 'done' ? '✓' : index + 1}</span>
+                            <span class="[ corp-apply__step-time ]">
+                                {step.state === 'done'
+                                    ? t('corporations.requirements.step_done')
+                                    : step.state === 'now'
+                                        ? t('corporations.requirements.step_now')
+                                        : step.time}
+                            </span>
+                        </div>
+                        <h3>{step.title}</h3>
+                        <p>{step.body}</p>
+                    </li>
+                ))}
+            </ol>
+        </section>
+
+        {(recruiters.length > 0 || prime_times.length > 0) &&
+            <div class="[ corp-apply__pair ]">
+                {recruiters.length > 0 &&
+                    <section class="[ corp-apply__card ]" aria-labelledby="corp-apply-who">
+                        <h2 id="corp-apply-who">{t('corporations.requirements.who_title')}</h2>
+                        <ul class="[ corp-apply__rows ]" role="list">
+                            {recruiters.slice(0, RECRUITERS_SHOWN).map((recruiter) => (
+                                <li>
+                                    <img src={get_player_icon(recruiter.character_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                                    <span class="[ corp-apply__row-main ]">{recruiter.character_name}</span>
+                                    <span class="[ corp-apply__row-tag ]">{recruiter.timezone?.brackets?.[0] ?? ''}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        {recruiters.length > RECRUITERS_SHOWN &&
+                            <a href="#leadership" class="[ corp-apply__more ]">
+                                {t('corporations.requirements.all_recruiters').replace('COUNT', String(recruiters.length))}
+                            </a>
+                        }
+                    </section>
+                }
+                {prime_times.length > 0 &&
+                    <section class="[ corp-apply__card ]" aria-labelledby="corp-apply-when">
+                        <h2 id="corp-apply-when">{t('corporations.requirements.when_title')}</h2>
+                        <ul class="[ corp-apply__rows ]" role="list">
+                            {prime_times.map((prime) => (
+                                <li>
+                                    <span class="[ corp-apply__row-tag ]">{prime.label}</span>
+                                    {prime.start_minutes !== null ?
+                                        <>
+                                            <span
+                                                class="[ corp-apply__row-main ]"
+                                                x-data={`{ s: ${prime.start_minutes}, e: ${prime.end_minutes} }`}
+                                                x-text="[s, e].map((m) => new Date(Date.UTC(2000, 0, 1, 0, m)).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })).join('–')"
+                                            >{prime.eve_range}</span>
+                                            <span class="[ corp-apply__row-aside ]">{`${prime.eve_range} ${t('corporations.requirements.eve_time')}`}</span>
+                                        </>
+                                        :
+                                        <span class="[ corp-apply__row-main ]">{prime.label}</span>
+                                    }
+                                </li>
+                            ))}
+                        </ul>
+                        <small class="[ corp-apply__more ]">{t('corporations.requirements.when_note')}</small>
+                    </section>
+                }
+            </div>
+        }
+    </Flexblock>
+}
+
+<style lang="scss">
+    .corp-apply h2 {
+        margin: 0;
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .corp-apply h3 {
+        margin: 0;
+    }
+
+    .corp-apply__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-m);
+        background: var(--component-background);
+        border: solid 1px var(--border-color);
+    }
+
+    .corp-apply__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3xs) var(--space-m);
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .corp-apply__status {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .corp-apply__status-text {
+        flex: 1 1 20rem;
+
+        p {
+            margin: var(--space-3xs) 0 0;
+            color: var(--text-muted);
+        }
+    }
+
+    .corp-apply__topics {
+        h3 {
+            padding-bottom: var(--space-3xs);
+            font-family: var(--default-font);
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: solid 1px var(--hairline);
+        }
+
+        ul {
+            margin: var(--space-2xs) 0 0;
+            padding-inline-start: var(--space-m);
+            color: var(--highlight);
+        }
+    }
+
+    .corp-apply__cta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-m);
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .corp-apply__note {
+        margin: 0;
+        color: var(--text-muted);
+    }
+
+    .corp-apply__steps-block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .corp-apply__steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .corp-apply__step {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        background: var(--component-background);
+        border: solid 1px var(--border-color);
+
+        h3 {
+            font-family: var(--default-font);
+            font-size: var(--step-0);
+            font-weight: 600;
+            text-transform: none;
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        &[data-state='now'] {
+            border-color: var(--fleet-red);
+        }
+    }
+
+    .corp-apply__step-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+    }
+
+    .corp-apply__step-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--space-l);
+        height: var(--space-l);
+        border-radius: 50%;
+        border: solid 1px var(--hairline-strong);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--highlight);
+
+        [data-state='done'] & {
+            border-color: transparent;
+            background: color-mix(in srgb, var(--green) 25%, transparent);
+            color: var(--green);
+        }
+
+        [data-state='now'] & {
+            border-color: transparent;
+            background: var(--fleet-red);
+        }
+    }
+
+    .corp-apply__step-time {
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+
+        [data-state='done'] & {
+            color: var(--green);
+        }
+
+        [data-state='now'] & {
+            color: var(--highlight);
+        }
+    }
+
+    .corp-apply__pair {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+        gap: var(--space-s);
+    }
+
+    .corp-apply__rows {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            min-height: var(--space-xl);
+            border-top: solid 1px var(--hairline);
+        }
+
+        img {
+            display: block;
+            flex: none;
+        }
+    }
+
+    .corp-apply__row-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .corp-apply__row-tag {
+        flex: none;
+        min-width: 4rem;
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+    }
+
+    .corp-apply__row-aside {
+        flex: none;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .corp-apply__more {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    a.corp-apply__more {
+        color: var(--foreground);
+    }
+</style>

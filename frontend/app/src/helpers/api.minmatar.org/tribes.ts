@@ -21,6 +21,8 @@ import type {
     TribeEventAnnouncementPreview,
     TribeInvitation,
     TribeInvitationCandidate,
+    TribeChiefCandidate,
+    TribeChiefSeat,
     TribeChiefVolunteer,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
@@ -417,5 +419,23 @@ export async function answer_chief_volunteer(access_token:string, volunteer_id:n
         method: 'POST',
         token: access_token,
         error: action === 'appoint' ? 'Error appointing the chief' : 'Error answering the volunteer',
+    })
+}
+
+// Superusers swap a chief: a seat is the tribe (group_id null) or a group in it.
+export async function get_chief_candidates(access_token:string, q:string) {
+    return await api_request<TribeChiefCandidate[]>(`${API_ENDPOINT}/chief-candidates?${query_string({ q })}`, {
+        token: access_token,
+        error: 'Error searching pilots',
+    })
+}
+
+export async function set_chief(access_token:string, tribe_id:number, group_id:number | null, user_id:number | null) {
+    const path = group_id ? `${tribe_id}/groups/${group_id}/chief` : `${tribe_id}/chief`
+    return await api_request<TribeChiefSeat>(`${API_ENDPOINT}/${path}`, {
+        method: 'PUT',
+        token: access_token,
+        body: { user_id },
+        error: 'Error changing the chief',
     })
 }

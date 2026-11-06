@@ -1,0 +1,127 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { NpsiSourceList } from '@dtypes/api.minmatar.org'
+
+/** List, add and disable NPSI sources, with the last import and a preview of what it imported. npsi_sources_component saves and answers with this panel again. */
+interface Props {
+    list:               NpsiSourceList;
+    error?:             string | null;
+    notice?:            string | null;
+    [propName: string]: any;
+}
+
+const { list, error = null, notice = null } = Astro.props
+
+const PARTIAL_URL = translatePath('/partials/npsi_sources_component')
+
+const when = (iso: string | null) => iso ? new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toISOString().slice(0, 16).replace('T', ' ') : ''
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Input from '@components/blocks/Input.astro'
+import ManagePanel from '@components/blocks/ManagePanel.astro'
+import Select from '@components/blocks/Select.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const attrs = {
+    'hx-post': PARTIAL_URL,
+    'hx-target': '#npsi-sources-manager',
+    'hx-swap': 'outerHTML',
+    'hx-disabled-elt': 'find button',
+}
+---
+
+<ManagePanel id="npsi-sources-manager">
+    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+        <Flexblock gap="var(--space-xs)">
+            <h2 class="[ manage-panel__heading ]">{t('npsi_sources.add')}</h2>
+            <form class="[ manage-panel__form ]" {...attrs}>
+                <input type="hidden" name="action" value="create" />
+                <label class="[ manage-panel__field ]">
+                    <span>{t('npsi_sources.field.name')}</span>
+                    <Input type="text" name="name" size="sm" required maxlength="100" />
+                </label>
+                <label class="[ manage-panel__field ]">
+                    <span>{t('npsi_sources.field.feed_url')}</span>
+                    <Input type="url" name="feed_url" size="sm" required maxlength="500" />
+                </label>
+                <label class="[ manage-panel__field ]">
+                    <span>{t('npsi_sources.field.fc')}</span>
+                    <Input type="text" name="fc_character_name" size="sm" required maxlength="255" />
+                </label>
+                <label class="[ manage-panel__field ]">
+                    <span>{t('npsi_sources.field.audience')}</span>
+                    <Select name="default_audience_id" size="sm">
+                        <option value="">{t('npsi_sources.no_audience')}</option>
+                        {list.audiences.map(audience => <option value={String(audience.id)}>{audience.name}</option>)}
+                    </Select>
+                </label>
+                <Button type="submit" size="sm" color="green">{t('npsi_sources.add_button')}</Button>
+            </form>
+        </Flexblock>
+    </ComponentBlock>
+
+    {list.sources.length === 0 ?
+        <EmptyState title={t('npsi_sources.empty')} />
+        :
+        list.sources.map(source =>
+            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
+                <Flexblock gap="var(--space-xs)">
+                    <div class="[ manage-panel__row ]">
+                        <h2 class="[ manage-panel__heading ]">{source.name}</h2>
+                        <Tag color={source.enabled ? 'green' : 'fleet-red'} text={source.enabled ? t('npsi_sources.enabled') : t('npsi_sources.disabled')} />
+                        <span class="[ manage-panel__muted ]">
+                            {source.last_polled_at ?
+                                `${t('npsi_sources.last_import')}: ${when(source.last_success_at) || t('npsi_sources.never')} EVE` :
+                                t('npsi_sources.not_polled')
+                            }
+                            {' · '}{source.event_count} {t('npsi_sources.events')}
+                        </span>
+                        <form class="[ manage-panel__form ]" {...attrs}>
+                            <input type="hidden" name="action" value="toggle" />
+                            <input type="hidden" name="source_id" value={source.id} />
+                            <input type="hidden" name="enabled" value={source.enabled ? 'false' : 'true'} />
+                            <Button type="submit" size="sm" color="transparent">{source.enabled ? t('npsi_sources.disable') : t('npsi_sources.enable')}</Button>
+                        </form>
+                    </div>
+                    {source.last_error && <p class="[ manage-panel__error ]">{t('npsi_sources.last_error')}: {source.last_error}</p>}
+
+                    <form class="[ manage-panel__form ]" {...attrs}>
+                        <input type="hidden" name="action" value="update" />
+                        <input type="hidden" name="source_id" value={source.id} />
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('npsi_sources.field.feed_url')}</span>
+                            <Input type="url" name="feed_url" size="sm" required maxlength="500" value={source.feed_url} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('npsi_sources.field.fc')}</span>
+                            <Input type="text" name="fc_character_name" size="sm" required maxlength="255" value={source.fc_character_name} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('npsi_sources.field.audience')}</span>
+                            <Select name="default_audience_id" size="sm">
+                                <option value="" selected={source.default_audience_id === null}>{t('npsi_sources.no_audience')}</option>
+                                {list.audiences.map(audience =>
+                                    <option value={String(audience.id)} selected={audience.id === source.default_audience_id}>{audience.name}</option>
+                                )}
+                            </Select>
+                        </label>
+                        <Button type="submit" size="sm">{t('npsi_sources.save')}</Button>
+                    </form>
+
+                    <details hx-get={`${PARTIAL_URL}?view=events&source_id=${source.id}`} hx-trigger="toggle once" hx-target="find .npsi-sources__events" hx-swap="innerHTML">
+                        <summary>{t('npsi_sources.preview')}</summary>
+                        <div class="[ npsi-sources__events ]"></div>
+                    </details>
+                </Flexblock>
+            </ComponentBlock>
+        )
+    }
+</ManagePanel>

@@ -48,6 +48,7 @@ def serialize_tribe(
         ),
         chief_is_interim=acting.is_interim,
         can_appoint_chief=can_appoint_chief,
+        can_set_chief=bool(getattr(request_user, "is_superuser", False)),
         has_volunteered=has_volunteered,
         is_active=tribe.is_active,
         group_count=active_groups.count(),

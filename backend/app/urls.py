@@ -32,7 +32,11 @@ from combatlog.router import router as combatlog_router
 from discord.router import router as discord_router
 from discord.views import discord_login
 from eveonline.routers import router
-from fittings.router import doctrines_router, fittings_router
+from fittings.router import (
+    change_requests_router,
+    doctrines_router,
+    fittings_router,
+)
 from fleets.router import router as fleets_router
 from freight.router import router as freight_router
 from buyback.router import router as buyback_router
@@ -70,6 +74,7 @@ api.add_router("tribes/", tribes_router)
 api.add_router("applications/", applications_router)
 api.add_router("fittings/", fittings_router)
 api.add_router("doctrines/", doctrines_router)
+api.add_router("change-requests/", change_requests_router)
 api.add_router("structures/", structures_router)
 api.add_router("fleets", fleets_router)
 api.add_router("freight", freight_router)

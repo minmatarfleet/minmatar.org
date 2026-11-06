@@ -101,6 +101,8 @@ export type TribeInvitationsSend = ApiRequest<'SendInvitationsRequest'>
 export type Tribe = ApiResponse<'TribeSchema'>
 // Chief volunteers (docs/tribes/interim-chiefs.md)
 export type TribeChiefVolunteer = ApiResponse<'ChiefVolunteerSchema'>
+export type TribeChiefCandidate = ApiResponse<'ChiefCandidateSchema'>
+export type TribeChiefSeat = ApiResponse<'ChiefSeatSchema'>
 
 export interface TribeGroupRosterEntry {
     user_id:                    number;
@@ -596,7 +598,8 @@ export interface CorporationPublicSummary {
         slices:             CorporationSummarySlice[];
     };
     fleet_ships: {
-        pilot_fleets:   number;
+        /** Pilots who flew any role; each role counts every pilot who flew it. */
+        pilots:         number;
         slices:         CorporationSummarySlice[];
     };
     kills: {
@@ -629,12 +632,7 @@ export interface CorporationAbout {
         average_days:   number | null;
         bands:          CorporationTenureBand[];
     } | null;
-    founders?:      number;
     hulls?:         { type_id: number; name: string; pilots: number }[];
-    records?: {
-        biggest_turnout?:   { pilots: number; date: string | null; title: string } | null;
-        busiest_month?:     { month: string; fleets: number } | null;
-    } | null;
     leaderboards?: {
         fleets:     CorporationLeaderRow[];
         kills:      CorporationLeaderRow[];
@@ -946,6 +944,8 @@ export interface FleetUsers {
 }
 
 export type StructureTimer = ApiResponse<'EveStructureTimerResponse'>
+export type StructureTimerPatch = ApiRequest<'EveStructureTimerPatch'>
+export type StructurePing = ApiResponse<'EveStructurePingResponse'>
 
 export const structure_states = [ 'anchoring', 'armor', 'hull', 'unanchoring' ] as const
 export type StructureState = typeof structure_states[number]
@@ -1957,6 +1957,7 @@ export interface BuildPack {
 }
 
 export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
+export type OrderPatch = ApiRequest<'PatchOrderRequest'>
 
 export interface OrderLpStockpileContact {
     character_name:     string;
@@ -2186,6 +2187,15 @@ export interface SRPCurrentAmount {
 }
 
 export type SRPProgram = ApiResponse<'ShipReimbursementProgramResponse'>
+export type SRPProgramAmount = ApiResponse<'ShipReimbursementProgramAmountResponse'>
+export type SRPRecalculationPreview = ApiResponse<'RecalculationPreviewResponse'>
+export type SRPRecalculationResult = ApiResponse<'RecalculationResultResponse'>
+
+export type DoctrineChangeRequestRow = ApiResponse<'ChangeRequestResponse'>
+export type DoctrineChangePreview = ApiResponse<'ChangePreviewResponse'>
+export type DoctrineChangeDiff = ApiResponse<'FieldDiffResponse'>
+export type FittingChangeBody = ApiRequest<'FittingChangeRequest'>
+export type DoctrineChangeBody = ApiRequest<'DoctrineChangeRequestBody'>
 
 export interface KillmailResolve {
     killmail_time:                  Date;
@@ -3199,3 +3209,75 @@ export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
+
+export type LearningManageGuide = ApiResponse<'ManageLearningSchema'>
+export type LearningManageGuideWrite = ApiRequest<'ManageLearningRequest'>
+export type LearningManageCertificate = ApiResponse<'ManageCertificateSchema'>
+export type LearningManageCertificateWrite = ApiRequest<'ManageCertificateRequest'>
+export type LearningManageAward = ApiRequest<'ManageAwardRequest'>
+export type LearningManageOnboarding = ApiResponse<'ManageOnboardingSchema'>
+export type LearningManageSkillset = ApiResponse<'ManageSkillsetSchema'>
+export type LearningManageSkillsetWrite = ApiRequest<'ManageSkillsetRequest'>
+export type CreatorModerationAccount = ApiResponse<'ModerationAccountSchema'>
+export type CreatorModerationItem = ApiResponse<'ModerationItemSchema'>
+// Corporation recruitment requirements (applications app)
+export type CorporationRequirements = ApiResponse<'CorporationRequirements'>
+export type MyCorporationRequirements = ApiResponse<'MyCorporationRequirements'>
+export type ManagedCorporationRequirements = ApiResponse<'ManagedCorporationRequirements'>
+export type ManagedRequirementRule = ApiResponse<'ManagedRequirementRule'>
+export type RequirementRule = ApiResponse<'RequirementRule'>
+export type RequirementCheck = ApiResponse<'RequirementCheck'>
+export type RequirementOptions = ApiResponse<'RequirementOptions'>
+export type ApplicationRequirements = ApiResponse<'ApplicationRequirements'>
+export type RequirementCreateRequest = ApiRequest<'RequirementCreateRequest'>
+export type RequirementUpdateRequest = ApiRequest<'RequirementUpdateRequest'>
+export type RedditReviewItem = ApiResponse<'RedditReviewItem'>
+export type RedditReviewQueue = ApiResponse<'RedditReviewQueue'>
+export type RedditReviewDecision = ApiResponse<'RedditReviewDecision'>
+export type RedditRotationPost = ApiResponse<'RedditRotationPost'>
+export type RedditRotationMonth = ApiResponse<'RedditRotationMonth'>
+export type RedditRotation = ApiResponse<'RedditRotation'>
+export type RedditActionResult = ApiResponse<'RedditActionResult'>
+
+export type NpsiSource = ApiResponse<'NpsiSourceResponse'>
+export type NpsiSourceList = ApiResponse<'NpsiSourceList'>
+export type NpsiSourceCreate = ApiRequest<'NpsiSourceCreate'>
+export type NpsiSourcePatch = ApiRequest<'NpsiSourcePatch'>
+export type NpsiEventPreview = ApiResponse<'NpsiEventPreview'>
+
+export type HelpCategory = ApiResponse<'HelpCategoryResponse'>
+export type HelpSettings = ApiResponse<'HelpSettingsResponse'>
+export type HelpPanel = ApiResponse<'HelpPanelResponse'>
+export type HelpCategoryCreate = ApiRequest<'HelpCategoryCreate'>
+export type HelpCategoryPatch = ApiRequest<'HelpCategoryPatch'>
+// Settings editors (admin -> app migration)
+export type MarketHub = ApiResponse<'HubResponse'>
+export type MarketHubCreate = ApiRequest<'HubCreateRequest'>
+export type MarketHubPatch = ApiRequest<'HubPatchRequest'>
+export type MarketHubExpectations = ApiResponse<'HubExpectationsResponse'>
+
+export type LoyaltySettingsCurrency = ApiResponse<'SettingsCurrency'>
+export type LoyaltySettingsAccount = ApiResponse<'SettingsAccount'>
+export type LoyaltySettingsContact = ApiResponse<'SettingsContact'>
+export type LoyaltyCurrencyCreate = ApiRequest<'CurrencyCreateRequest'>
+export type LoyaltyCurrencyPatch = ApiRequest<'CurrencyPatchRequest'>
+export type LoyaltyAccountCreate = ApiRequest<'AccountCreateRequest'>
+export type LoyaltyAccountPatch = ApiRequest<'AccountPatchRequest'>
+export type LoyaltyContactCreate = ApiRequest<'ContactCreateRequest'>
+export type LoyaltyContactPatch = ApiRequest<'ContactPatchRequest'>
+
+export type BuybackManageSettings = ApiResponse<'ManageSettings'>
+export type BuybackManageItem = ApiResponse<'ManageItem'>
+export type BuybackSettingsPatch = ApiRequest<'SettingsPatchRequest'>
+
+export type FreightManageRoutes = ApiResponse<'ManageRoutes'>
+export type FreightManageRoute = ApiResponse<'ManageRoute'>
+export type FreightRouteCreate = ApiRequest<'RouteCreateRequest'>
+export type FreightRoutePatch = ApiRequest<'RoutePatchRequest'>
+export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
+export type CampaignSettingsSystem = ApiResponse<'SettingsSystemOut'>
+export type CampaignCreate = ApiRequest<'CampaignCreateRequest'>
+export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
+export type CampaignPayoutCodes = ApiResponse<'PayoutCodesOut'>
+export type CampaignPayoutCode = ApiResponse<'PayoutCodeOut'>
+export type CampaignPayoutCodePut = ApiRequest<'PayoutCodeRequest'>

@@ -260,6 +260,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/applications/corporations/{corporation_id}/applications/{application_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How an application's applicant meets the corporation's requirements */
+        get: operations["applications_requirements_router_get_application_requirements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/applications/corporations/{corporation_id}/applications/{application_id}/transfer": {
         parameters: {
             query?: never;
@@ -275,6 +292,93 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/interview-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the topics recruiters ask about in the interview (CEO) */
+        put: operations["applications_requirements_router_put_corporation_interview_topics"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A corporation's recruitment requirements and interview topics */
+        get: operations["applications_requirements_router_get_corporation_requirements"];
+        put?: never;
+        /** Add a recruitment requirement (CEO) */
+        post: operations["applications_requirements_router_create_corporation_requirement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements/manage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requirements with member pass rates, for the corp's Settings tab */
+        get: operations["applications_requirements_router_get_managed_corporation_requirements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's characters checked against a corporation's requirements */
+        get: operations["applications_requirements_router_get_my_corporation_requirements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/corporations/{corporation_id}/requirements/{requirement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a recruitment requirement (CEO) */
+        delete: operations["applications_requirements_router_delete_corporation_requirement"];
+        options?: never;
+        head?: never;
+        /** Change a recruitment requirement (CEO) */
+        patch: operations["applications_requirements_router_update_corporation_requirement"];
         trace?: never;
     };
     "/api/applications/me/open": {
@@ -341,7 +445,42 @@ export interface paths {
         /** Get Tags */
         get: operations["posts_router_get_tags"];
         put?: never;
+        /** Create a post tag */
+        post: operations["posts_router_create_tag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a post tag */
+        patch: operations["posts_router_rename_tag"];
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a tag into another: its posts move over and it is deleted */
+        post: operations["posts_router_merge_tag"];
         delete?: never;
         options?: never;
         head?: never;
@@ -440,6 +579,76 @@ export interface paths {
          * @description Buyback stock ledger movements (in / sold / unknown).
          */
         get: operations["buyback_endpoints_get_ledger_get_ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/buyback/manage/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an accepted buyback item */
+        post: operations["buyback_endpoints_manage_post_manage_item_post_manage_item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/buyback/manage/items/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an accepted buyback item */
+        delete: operations["buyback_endpoints_manage_delete_manage_item_delete_manage_item"];
+        options?: never;
+        head?: never;
+        /** Edit an accepted buyback item */
+        patch: operations["buyback_endpoints_manage_patch_manage_item_patch_manage_item"];
+        trace?: never;
+    };
+    "/api/buyback/manage/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Buyback settings and accepted items for the editor */
+        get: operations["buyback_endpoints_manage_get_manage_settings_get_manage_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit buyback rates and location */
+        patch: operations["buyback_endpoints_manage_patch_manage_settings_patch_manage_settings"];
+        trace?: never;
+    };
+    "/api/buyback/manage/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search item types for the accepted-items editor */
+        get: operations["buyback_endpoints_manage_get_manage_types_get_manage_types"];
         put?: never;
         post?: never;
         delete?: never;
@@ -681,6 +890,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/payout-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payout Codes
+         * @description Mapped codes, plus codes seen in the last 30 days with no mapping.
+         */
+        get: operations["campaigns_endpoints_get_payout_codes_list_payout_codes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/payout-codes/{event_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Payout Code
+         * @description Add a code or change its complex type and whether it counts.
+         *
+         *     Counting a code rescores the sites already recorded under it, the same
+         *     as ``manage.py confirm_fw_event_code``.
+         */
+        put: operations["campaigns_endpoints_put_payout_code_set_payout_code"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/readiness": {
         parameters: {
             query?: never;
@@ -819,6 +1071,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/commander-order/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Commander Order
+         * @description Write the order from the week plan and keep it as a draft.
+         */
+        post: operations["campaigns_endpoints_post_order_draft_draft_commander_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/commander-order/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Commander Order
+         * @description Clear the draft flag so pilots see the order.
+         */
+        post: operations["campaigns_endpoints_post_order_publish_publish_commander_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/enlist": {
         parameters: {
             query?: never;
@@ -835,6 +1127,40 @@ export interface paths {
         post: operations["campaigns_endpoints_member_enlist"];
         /** Leave */
         delete: operations["campaigns_endpoints_member_leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/fittings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Fitting */
+        post: operations["campaigns_endpoints_post_fitting_add_fitting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/fittings/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Fitting */
+        delete: operations["campaigns_endpoints_delete_fitting_delete_fitting"];
         options?: never;
         head?: never;
         patch?: never;
@@ -991,6 +1317,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/parties/{party_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Party */
+        delete: operations["campaigns_endpoints_delete_party_delete_party"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/projects": {
         parameters: {
             query?: never;
@@ -1047,6 +1390,30 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Settings
+         * @description Everything an operator edits on one campaign, in one read.
+         */
+        get: operations["campaigns_endpoints_get_settings_get_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Campaign
+         * @description Rename, reschedule, or move a campaign between draft and live.
+         */
+        patch: operations["campaigns_endpoints_patch_settings_patch_campaign"];
         trace?: never;
     };
     "/api/campaigns/{slug}/sites": {
@@ -1106,6 +1473,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/structures/{structure_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Structure */
+        delete: operations["campaigns_endpoints_delete_structure_delete_structure"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/systems": {
         parameters: {
             query?: never;
@@ -1116,7 +1500,11 @@ export interface paths {
         /** Get Systems */
         get: operations["campaigns_endpoints_public_get_systems"];
         put?: never;
-        post?: never;
+        /**
+         * Add System
+         * @description Add a monitored system to the campaign, or bring a retired one back.
+         */
+        post: operations["campaigns_endpoints_post_system_add_system"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1133,7 +1521,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Retire System
+         * @description Retire, not delete: the history of kills and targets stays attached.
+         */
+        delete: operations["campaigns_endpoints_delete_system_retire_system"];
         options?: never;
         head?: never;
         /**
@@ -1237,6 +1629,43 @@ export interface paths {
         patch: operations["campaigns_endpoints_manage_accept_week_target"];
         trace?: never;
     };
+    "/api/change-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Change Requests
+         * @description status=pending lists open requests; anything else the latest 25.
+         */
+        get: operations["fittings_endpoints_change_requests_get_change_requests_get_change_requests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/change-requests/{kind}/{request_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Review Change Request */
+        post: operations["fittings_endpoints_change_requests_post_review_change_request_post_review_change_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/combatlog": {
         parameters: {
             query?: never;
@@ -1323,6 +1752,74 @@ export interface paths {
         /** Public list of live Thinkspeak Twitch streams */
         get: operations["creators_router_list_live"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/creators/moderation/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every creator account with its moderation status. */
+        get: operations["creators_moderation_list_accounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/creators/moderation/accounts/{account_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a creator account's items, hidden ones included. */
+        get: operations["creators_moderation_list_items"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/creators/moderation/accounts/{account_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Approve or suspend a creator account. */
+        put: operations["creators_moderation_set_account_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/creators/moderation/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Feature or hide a creator item. */
+        put: operations["creators_moderation_update_item"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1497,6 +1994,23 @@ export interface paths {
         get: operations["fittings_endpoints_doctrines_get_doctrine_get_doctrine"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/doctrines/{doctrine_id}/change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Doctrine Change Request */
+        post: operations["fittings_endpoints_doctrines_post_doctrine_change_request_post_doctrine_change_request"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2145,6 +2659,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fittings/{fitting_id}/change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Fitting Change Request */
+        post: operations["fittings_endpoints_eve_fittings_post_fitting_change_request_post_fitting_change_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets": {
         parameters: {
             query?: never;
@@ -2375,6 +2906,58 @@ export interface paths {
         put?: never;
         /** Start in-game tracking from an NPSI Discord button */
         post: operations["fleets_endpoints_npsi_post_discord_tracking_post_npsi_discord_tracking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/npsi-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** NPSI event sources, with the last import time and errors */
+        get: operations["fleets_endpoints_npsi_sources_get_npsi_sources"];
+        put?: never;
+        /** Add an NPSI event source */
+        post: operations["fleets_endpoints_npsi_sources_post_npsi_source"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/npsi-sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit, enable or disable an NPSI event source */
+        patch: operations["fleets_endpoints_npsi_sources_patch_npsi_source"];
+        trace?: never;
+    };
+    "/api/fleets/npsi-sources/{source_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview a source's upcoming imported events */
+        get: operations["fleets_endpoints_npsi_sources_get_npsi_source_events"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3679,6 +4262,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/freight/manage/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Freight routes for the editor */
+        get: operations["freight_endpoints_manage_get_manage_routes_get_manage_routes"];
+        put?: never;
+        /** Add a freight route */
+        post: operations["freight_endpoints_manage_post_manage_route_post_manage_route"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/freight/manage/routes/{route_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit or retire a freight route */
+        patch: operations["freight_endpoints_manage_patch_manage_route_patch_manage_route"];
+        trace?: never;
+    };
     "/api/freight/routes": {
         parameters: {
             query?: never;
@@ -3728,6 +4346,91 @@ export interface paths {
         put?: never;
         /** Create Help Ticket */
         post: operations["help_tickets_router_create_help_ticket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/help-tickets/manage/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a help ticket category */
+        post: operations["help_tickets_settings_router_create_category"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/help-tickets/manage/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename a category, change its owner or turn it off */
+        patch: operations["help_tickets_settings_router_patch_category"];
+        trace?: never;
+    };
+    "/api/help-tickets/manage/category-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the order the panel lists categories in */
+        post: operations["help_tickets_settings_router_order_categories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/help-tickets/manage/panel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set the channel the #help panel is posted in */
+        patch: operations["help_tickets_settings_router_patch_panel"];
+        trace?: never;
+    };
+    "/api/help-tickets/manage/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Help ticket categories, tribe groups to route to, and the panel */
+        get: operations["help_tickets_settings_router_get_settings"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4016,6 +4719,126 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** LP buyback configuration: corps, accounts and contacts */
+        get: operations["industry_endpoints_loyalty_get_settings_get_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an LP account */
+        post: operations["industry_endpoints_loyalty_post_settings_account_post_settings_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit an LP account */
+        patch: operations["industry_endpoints_loyalty_patch_settings_account_patch_settings_account"];
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an LP account contact */
+        post: operations["industry_endpoints_loyalty_post_settings_contact_post_settings_contact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/contacts/{contact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an LP account contact */
+        delete: operations["industry_endpoints_loyalty_delete_settings_contact_delete_settings_contact"];
+        options?: never;
+        head?: never;
+        /** Edit an LP account contact */
+        patch: operations["industry_endpoints_loyalty_patch_settings_contact_patch_settings_contact"];
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/currencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an LP corp */
+        post: operations["industry_endpoints_loyalty_post_settings_currency_post_settings_currency"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/currencies/{currency_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit an LP corp */
+        patch: operations["industry_endpoints_loyalty_patch_settings_currency_patch_settings_currency"];
         trace?: never;
     };
     "/api/industry/loyalty/stats": {
@@ -4996,6 +5819,196 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning/manage/awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Award a certificate by hand, with a reason. */
+        post: operations["learning_manage_award_certificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/awards/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a certificate by hand, with a reason. */
+        post: operations["learning_manage_revoke_certificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every certificate, published or not. */
+        get: operations["learning_manage_list_certificates"];
+        put?: never;
+        /** Create a certificate. */
+        post: operations["learning_manage_create_certificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/certificates/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a certificate and its ordered guides. */
+        put: operations["learning_manage_update_certificate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/guides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every learning guide, published or not. */
+        get: operations["learning_manage_list_guides"];
+        put?: never;
+        /** Create a learning guide. */
+        post: operations["learning_manage_create_guide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/guides/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a learning guide. */
+        put: operations["learning_manage_update_guide"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List onboarding programs with their current version. */
+        get: operations["learning_manage_list_onboarding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/onboarding/{program_type}/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bump a program's version so every pilot acknowledges it again. */
+        post: operations["learning_manage_bump_onboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/skillsets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List skillsets with their skills and levels. */
+        get: operations["learning_manage_list_skillsets"];
+        put?: never;
+        /** Create a skillset. */
+        post: operations["learning_manage_create_skillset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/skillsets/skill-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Typeahead over skill names. */
+        get: operations["learning_manage_search_skills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/skillsets/{skillset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a skillset. */
+        put: operations["learning_manage_update_skillset"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning/me": {
         parameters: {
             query?: never;
@@ -5315,6 +6328,164 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List market hubs */
+        get: operations["market_endpoints_hubs_list_hubs_list_hubs"];
+        put?: never;
+        /** Add a market hub (or switch an existing location on) */
+        post: operations["market_endpoints_hubs_add_hub_add_hub"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs-type-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search item types by name */
+        get: operations["market_endpoints_hubs_type_search_type_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a hub from the market
+         * @description Switches the alliance market off. The location and its expectations stay, so the hub can be added back. The price baseline keeps syncing its order book.
+         */
+        delete: operations["market_endpoints_hubs_remove_hub_remove_hub"];
+        options?: never;
+        head?: never;
+        /** Set a hub active or switch its order-book sync */
+        patch: operations["market_endpoints_hubs_patch_hub_patch_hub"];
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stocking expectations at a hub */
+        get: operations["market_endpoints_hubs_get_hub_expectations_get_hub_expectations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/contracts/{fitting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Track or untrack a doctrine fitting's contracts at a hub */
+        put: operations["market_endpoints_hubs_put_contract_expectation_put_contract_expectation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/fittings/{fitting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Track or untrack a fitting's items at a hub */
+        put: operations["market_endpoints_hubs_put_fitting_expectation_put_fitting_expectation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/from-doctrine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Track contracts for every fitting of a doctrine at a hub */
+        post: operations["market_endpoints_hubs_post_from_doctrine_post_from_doctrine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Track an item on sell orders at a hub */
+        post: operations["market_endpoints_hubs_post_item_expectation_post_item_expectation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/items/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop tracking an item at a hub */
+        delete: operations["market_endpoints_hubs_delete_item_expectation_delete_item_expectation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5738,6 +6909,159 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reddit/review/changes/{change_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a requested change; it goes live in the rotation */
+        post: operations["reddit_review_router_approve_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/changes/{change_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a requested change, with a reason for the CEO */
+        post: operations["reddit_review_router_reject_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reddit post templates and changes waiting for approval */
+        get: operations["reddit_review_router_get_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/rotation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This month's and next month's Reddit rotation */
+        get: operations["reddit_review_router_get_rotation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/schedules/{schedule_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a draft month: confirm its slots */
+        post: operations["reddit_review_router_publish_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/schedules/{schedule_id}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Work out a draft month again */
+        post: operations["reddit_review_router_regenerate_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/templates/{template_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a template (or its waiting change) */
+        post: operations["reddit_review_router_approve_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/templates/{template_id}/link-discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link a template's last Reddit post to its Discord channel */
+        post: operations["reddit_review_router_link_discord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reddit/review/templates/{template_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a post to Reddit now (the admin's manual submit) */
+        post: operations["reddit_review_router_submit_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/referrals": {
         parameters: {
             query?: never;
@@ -5882,6 +7206,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/srp/programs/recalculate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recalculation Preview */
+        get: operations["srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview"];
+        put?: never;
+        /** Post Recalculate Outstanding */
+        post: operations["srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/srp/programs/{program_id}/amount": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Program Amount */
+        post: operations["srp_endpoints_programs_post_program_amount_post_program_amount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/srp/resolve-killmail": {
         parameters: {
             query?: never;
@@ -6016,6 +7375,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/structures/pings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent structure pings and whether Discord took them */
+        get: operations["structures_router_get_structure_pings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/structures/timers": {
         parameters: {
             query?: never;
@@ -6035,6 +7411,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/structures/timers/{timer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a wrong structure timer (recorded in the audit log) */
+        delete: operations["structures_router_delete_structure_timer"];
+        options?: never;
+        head?: never;
+        /** Correct a structure timer (recorded in the audit log) */
+        patch: operations["structures_router_update_structure_timer"];
         trace?: never;
     };
     "/api/structures/timers/{timer_id}/verify": {
@@ -6803,6 +8197,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/chief-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find pilots to make chief, by any of their characters' names. */
+        get: operations["tribes_endpoints_chief_assign_get_candidates_get_chief_candidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/chief-volunteers/{volunteer_id}/appoint": {
         parameters: {
             query?: never;
@@ -7169,6 +8580,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/{tribe_id}/chief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Swap the chief of a seat, or empty it (superuser only). */
+        put: operations["tribes_endpoints_chief_assign_put_chief_put_tribe_chief"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/{tribe_id}/chief-volunteers": {
         parameters: {
             query?: never;
@@ -7231,6 +8659,23 @@ export interface paths {
         /** Group About tab: a year of totals and records; named pilots for roster viewers. */
         get: operations["tribes_endpoints_groups_get_tribe_group_about_get_tribe_group_about"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/groups/{group_id}/chief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Swap the chief of a seat, or empty it (superuser only). */
+        put: operations["tribes_endpoints_chief_assign_put_chief_put_group_chief"];
         post?: never;
         delete?: never;
         options?: never;
@@ -7763,6 +9208,30 @@ export interface components {
             /** Character Ids */
             character_ids: number[];
         };
+        /** AccountCreateRequest */
+        AccountCreateRequest: {
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /** Isk Per Lp */
+            isk_per_lp?: number | null;
+            /** Loyalty Point Id */
+            loyalty_point_id: number;
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes?: string;
+            /**
+             * Role
+             * @default seller
+             */
+            role?: string;
+        };
         /** AccountMoveRequest */
         AccountMoveRequest: {
             /** Account */
@@ -7798,6 +9267,26 @@ export interface components {
             current: number | null;
             /** Name */
             name: string;
+        };
+        /** AccountPatchRequest */
+        AccountPatchRequest: {
+            /**
+             * Clear Isk Per Lp
+             * @default false
+             */
+            clear_isk_per_lp?: boolean;
+            /** Corporation Name */
+            corporation_name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Isk Per Lp */
+            isk_per_lp?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Role */
+            role?: string | null;
         };
         /** AccountResponse */
         AccountResponse: {
@@ -7940,6 +9429,21 @@ export interface components {
             question_key: string;
             /** Value */
             value?: unknown;
+        };
+        /** ApplicationRequirements */
+        ApplicationRequirements: {
+            /** Application Id */
+            application_id: number;
+            /** Checks */
+            checks: components["schemas"]["RequirementCheck"][];
+            /** Preferred Met */
+            preferred_met: number;
+            /** Preferred Total */
+            preferred_total: number;
+            /** Required Met */
+            required_met: number;
+            /** Required Total */
+            required_total: number;
         };
         /** ApplyOrderSwapRequest */
         ApplyOrderSwapRequest: {
@@ -9394,6 +10898,21 @@ export interface components {
              */
             ticker?: string;
         };
+        /** CampaignPatchRequest */
+        CampaignPatchRequest: {
+            /** Description Md */
+            description_md?: string | null;
+            /** End At */
+            end_at?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Start At */
+            start_at?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Tagline */
+            tagline?: string | null;
+        };
         /** CampaignSchema */
         CampaignSchema: {
             /** Closes At */
@@ -9411,12 +10930,62 @@ export interface components {
              * @default 0
              */
             response_count?: number;
+            /**
+             * Spotlight Questions
+             * @default []
+             */
+            spotlight_questions?: {
+                [key: string]: unknown;
+            }[];
             /** Status */
             status: string;
             /** Title */
             title: string;
             /** Year */
             year: number;
+        };
+        /** CampaignSettingsOut */
+        CampaignSettingsOut: {
+            /** Areas */
+            areas: components["schemas"]["CampaignAreaOut"][];
+            /** Commander Order Is Draft */
+            commander_order_is_draft: boolean;
+            /** Commander Order Text */
+            commander_order_text: string;
+            /** Daily Orders */
+            daily_orders: components["schemas"]["SettingsOrderOut"][];
+            /** Description Md */
+            description_md: string;
+            /**
+             * End At
+             * Format: date-time
+             */
+            end_at: string;
+            /** Fittings */
+            fittings: components["schemas"]["CampaignFittingOut"][];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Parties */
+            parties: components["schemas"]["CampaignPartyOut"][];
+            /** Slug */
+            slug: string;
+            /**
+             * Start At
+             * Format: date-time
+             */
+            start_at: string;
+            /** Status */
+            status: string;
+            /** Structures */
+            structures: components["schemas"]["SettingsStructureOut"][];
+            /** Systems */
+            systems: components["schemas"]["SettingsSystemOut"][];
+            /** Tagline */
+            tagline: string;
+            /** Week Targets */
+            week_targets: components["schemas"]["SettingsWeekTargetOut"][];
         };
         /** CampaignStructureOut */
         CampaignStructureOut: {
@@ -9725,6 +11294,56 @@ export interface components {
             /** Title */
             title: string;
         };
+        /**
+         * ChangePreviewResponse
+         * @description Diff of a proposed edit. `request` is set once it was submitted.
+         */
+        ChangePreviewResponse: {
+            /**
+             * Applied
+             * @default false
+             */
+            applied?: boolean;
+            /** Diffs */
+            diffs: components["schemas"]["FieldDiffResponse"][];
+            request?: components["schemas"]["ChangeRequestResponse"] | null;
+        };
+        /**
+         * ChangeRequestResponse
+         * @description A doctrine or fitting change request with its diff against live data.
+         */
+        ChangeRequestResponse: {
+            /** Can Cancel */
+            can_cancel: boolean;
+            /** Can Review */
+            can_review: boolean;
+            /** Change Kind */
+            change_kind: string;
+            /** Diffs */
+            diffs: components["schemas"]["FieldDiffResponse"][];
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Review Note */
+            review_note: string;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Reviewed By */
+            reviewed_by: string | null;
+            /** Status */
+            status: string;
+            /** Submitted At */
+            submitted_at: string;
+            /** Submitted By */
+            submitted_by: string | null;
+            /** Target Id */
+            target_id: number;
+            /** Target Name */
+            target_name: string;
+            /** Tier */
+            tier: string;
+        };
         /** ChangelogEntryInput */
         ChangelogEntryInput: {
             /**
@@ -9999,6 +11618,36 @@ export interface components {
             /** Token State */
             token_state: string;
         };
+        /** ChiefCandidateSchema */
+        ChiefCandidateSchema: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Matched Character Name
+             * @default
+             */
+            matched_character_name?: string;
+            /** User Id */
+            user_id: number;
+        };
+        /** ChiefSeatSchema */
+        ChiefSeatSchema: {
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+            /** Tribe Id */
+            tribe_id: number;
+            /** User Id */
+            user_id?: number | null;
+        };
         /** ChiefVolunteerSchema */
         ChiefVolunteerSchema: {
             /** Character Id */
@@ -10107,6 +11756,34 @@ export interface components {
             /** Newly Awarded */
             newly_awarded: components["schemas"]["CertificateAwardSchema"][];
         };
+        /** ContactCreateRequest */
+        ContactCreateRequest: {
+            /** Account Id */
+            account_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Discord Username
+             * @default
+             */
+            discord_username?: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes?: string;
+        };
+        /** ContactPatchRequest */
+        ContactPatchRequest: {
+            /** Character Name */
+            character_name?: string | null;
+            /** Discord Username */
+            discord_username?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /**
          * CopyEveFleetRequest
          * @description The copy's start time; every other setting comes from the fleet.
@@ -10126,11 +11803,6 @@ export interface components {
             /** Founded */
             founded?: string | null;
             /**
-             * Founders
-             * @default 0
-             */
-            founders?: number;
-            /**
              * Heatmap
              * @default []
              */
@@ -10147,7 +11819,6 @@ export interface components {
              * @default []
              */
             prime_windows?: components["schemas"]["CorporationPrimeWindow"][];
-            records?: components["schemas"]["CorporationRecords"] | null;
             tenure?: components["schemas"]["CorporationTenure"] | null;
             /**
              * Tribe Groups
@@ -10367,15 +12038,15 @@ export interface components {
         /** CorporationFleetShipSummary */
         CorporationFleetShipSummary: {
             /**
-             * Pilot Fleets
+             * Pilots
              * @default 0
              */
-            pilot_fleets?: number;
+            pilots?: number;
             /**
              * Slices
              * @default []
              */
-            slices?: components["schemas"]["CorporationShipSlice"][];
+            slices?: components["schemas"]["CorporationSummarySlice"][];
         };
         /** CorporationForumPost */
         CorporationForumPost: {
@@ -10748,13 +12419,6 @@ export interface components {
             /** Metric */
             metric: string;
         };
-        /** CorporationMonthRecord */
-        CorporationMonthRecord: {
-            /** Fleets */
-            fleets: number;
-            /** Month */
-            month: string;
-        };
         /** CorporationOpenApplication */
         CorporationOpenApplication: {
             /** Application Id */
@@ -10929,11 +12593,6 @@ export interface components {
              */
             window_days?: number;
         };
-        /** CorporationRecords */
-        CorporationRecords: {
-            biggest_turnout?: components["schemas"]["CorporationTurnoutRecord"] | null;
-            busiest_month?: components["schemas"]["CorporationMonthRecord"] | null;
-        };
         /** CorporationRedditPost */
         CorporationRedditPost: {
             /** Approved */
@@ -11011,6 +12670,17 @@ export interface components {
             paused?: boolean | null;
             /** Title */
             title: string;
+        };
+        /** CorporationRequirements */
+        CorporationRequirements: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Interview Topics */
+            interview_topics: string[];
+            /** Rules */
+            rules: components["schemas"]["RequirementRule"][];
+            /** Trial Days */
+            trial_days?: number | null;
         };
         /** CorporationResponse */
         CorporationResponse: {
@@ -11100,13 +12770,6 @@ export interface components {
             /** Character Name */
             character_name: string;
         };
-        /** CorporationShipSlice */
-        CorporationShipSlice: {
-            /** Count */
-            count: number;
-            /** Key */
-            key: string;
-        };
         /** CorporationSlugResponse */
         CorporationSlugResponse: {
             /** Corporation Id */
@@ -11149,18 +12812,6 @@ export interface components {
             members: number;
             /** Name */
             name: string;
-        };
-        /** CorporationTurnoutRecord */
-        CorporationTurnoutRecord: {
-            /** Date */
-            date?: string | null;
-            /** Pilots */
-            pilots: number;
-            /**
-             * Title
-             * @default
-             */
-            title?: string;
         };
         /**
          * CorporationType
@@ -11543,6 +13194,42 @@ export interface components {
             /** User Id */
             user_id: number;
         };
+        /** CurrencyCreateRequest */
+        CurrencyCreateRequest: {
+            /** Corporation Id */
+            corporation_id: number;
+            /**
+             * Default Isk Per Lp
+             * @default 800
+             */
+            default_isk_per_lp?: number;
+            /** Express Isk Per Lp */
+            express_isk_per_lp?: number | null;
+            /** Name */
+            name: string;
+        };
+        /** CurrencyPatchRequest */
+        CurrencyPatchRequest: {
+            /** Allow Buy */
+            allow_buy?: boolean | null;
+            /** Allow Sell */
+            allow_sell?: boolean | null;
+            /**
+             * Clear Express
+             * @default false
+             */
+            clear_express?: boolean;
+            /** Default Isk Per Lp */
+            default_isk_per_lp?: number | null;
+            /** Express Isk Per Lp */
+            express_isk_per_lp?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** CurrentFleetWindowResponse */
         CurrentFleetWindowResponse: {
             window?: components["schemas"]["FleetWindowResponse"] | null;
@@ -11710,6 +13397,13 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** DiffLineResponse */
+        DiffLineResponse: {
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+        };
         /** DiscordAckLoyaltyMarketOrderRequest */
         DiscordAckLoyaltyMarketOrderRequest: {
             /** Action */
@@ -11789,6 +13483,44 @@ export interface components {
             /** Ships */
             ships: components["schemas"]["DoctrineShipResponse"][];
         };
+        /** DoctrineChangeRequestBody */
+        DoctrineChangeRequestBody: {
+            composition: components["schemas"]["DoctrineCompositionRequest"];
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
+            /**
+             * Preview
+             * @default false
+             */
+            preview?: boolean;
+            /** Type */
+            type: string;
+        };
+        /** DoctrineCompositionRequest */
+        DoctrineCompositionRequest: {
+            /**
+             * Primary
+             * @default []
+             */
+            primary?: number[];
+            /**
+             * Secondary
+             * @default []
+             */
+            secondary?: number[];
+            /**
+             * Support
+             * @default []
+             */
+            support?: number[];
+            /**
+             * Utility
+             * @default []
+             */
+            utility?: number[];
+        };
         /**
          * DoctrineFittingResponse
          * @description Fitting in a doctrine
@@ -11800,6 +13532,13 @@ export interface components {
             fitting_name: string;
             /** Role */
             role: string;
+        };
+        /** DoctrineOption */
+        DoctrineOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /**
          * DoctrineResponse
@@ -12995,11 +14734,51 @@ export interface components {
             user_id: number;
         };
         /**
+         * EveStructurePingResponse
+         * @description A structure ping the bot sent (or failed to send) to Discord
+         */
+        EveStructurePingResponse: {
+            /** Created At */
+            created_at?: string | null;
+            /** Discord Success */
+            discord_success: boolean;
+            /** Event Time */
+            event_time?: string | null;
+            /** Id */
+            id: number;
+            /** Notification Type */
+            notification_type: string;
+            /** Structure Id */
+            structure_id?: number | null;
+            /** Summary */
+            summary: string;
+        };
+        /**
          * EveStructureState
          * @description States for Eve Structures
          * @enum {string}
          */
         EveStructureState: "anchoring" | "armor" | "hull" | "unanchoring";
+        /**
+         * EveStructureTimerPatch
+         * @description Fix a wrong timer: only the fields sent change.
+         */
+        EveStructureTimerPatch: {
+            /** Alliance Name */
+            alliance_name?: string | null;
+            /** Corporation Name */
+            corporation_name?: string | null;
+            /** Fitting */
+            fitting?: string | null;
+            /** Name */
+            name?: string | null;
+            state?: components["schemas"]["EveStructureState"] | null;
+            /** System Name */
+            system_name?: string | null;
+            /** Timer */
+            timer?: string | null;
+            type?: components["schemas"]["EveStructureType"] | null;
+        };
         /**
          * EveStructureTimerRequest
          * @description Request model for structure timer API
@@ -13083,6 +14862,16 @@ export interface components {
          * @enum {string}
          */
         EveStructureType: "astrahus" | "fortizar" | "keepstar" | "raitaru" | "azbel" | "sotiyo" | "athanor" | "tatara" | "tenebrex_cyno_jammer" | "pharolux_cyno_beacon" | "ansiblex_jump_gate" | "orbital_skyhook" | "metenox_moon_drill" | "player_owned_customs_office" | "player_owned_starbase" | "mercenary_den";
+        /** EveTagMergeRequest */
+        EveTagMergeRequest: {
+            /** Into Tag Id */
+            into_tag_id: number;
+        };
+        /** EveTagRequest */
+        EveTagRequest: {
+            /** Tag */
+            tag: string;
+        };
         /** EveTagResponse */
         EveTagResponse: {
             /** Tag */
@@ -13237,6 +15026,30 @@ export interface components {
             items: components["schemas"]["FeedEventItemSchema"][];
             /** Next Cursor */
             next_cursor?: string | null;
+        };
+        /** FieldDiffResponse */
+        FieldDiffResponse: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Lines */
+            lines: components["schemas"]["DiffLineResponse"][];
+        };
+        /** FittingAddRequest */
+        FittingAddRequest: {
+            /** Fitting Id */
+            fitting_id: number;
+            /**
+             * Role Label
+             * @default
+             */
+            role_label?: string;
+            /**
+             * Srp Eligible
+             * @default true
+             */
+            srp_eligible?: boolean;
         };
         /** FittingBuyAllocationSchema */
         FittingBuyAllocationSchema: {
@@ -13745,6 +15558,31 @@ export interface components {
             preferred_type_id: number;
             /** Substitute Type Id */
             substitute_type_id: number;
+        };
+        /** FittingChangeRequest */
+        FittingChangeRequest: {
+            /** Description */
+            description: string;
+            /** Eft Format */
+            eft_format: string;
+            /**
+             * Preview
+             * @default false
+             */
+            preview?: boolean;
+            /** Tags */
+            tags: string[];
+        };
+        /** FittingExpectationRow */
+        FittingExpectationRow: {
+            /** Current */
+            current?: number | null;
+            /** Fitting Id */
+            fitting_id: number;
+            /** Fitting Name */
+            fitting_name: string;
+            /** Tracked */
+            tracked: boolean;
         };
         /**
          * FittingResponse
@@ -15282,6 +17120,18 @@ export interface components {
              */
             window_days?: number;
         };
+        /** FromDoctrineRequest */
+        FromDoctrineRequest: {
+            /** Doctrine Id */
+            doctrine_id: number;
+        };
+        /** FromDoctrineResponse */
+        FromDoctrineResponse: {
+            /** Already Tracked */
+            already_tracked: number;
+            /** Created */
+            created: number;
+        };
         /** GangRequest */
         GangRequest: {
             /**
@@ -15689,6 +17539,84 @@ export interface components {
             /** Computed At */
             computed_at: string;
         };
+        /** HelpCategoryCreate */
+        HelpCategoryCreate: {
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /**
+             * Section
+             * @default
+             */
+            section?: string;
+            /** Title */
+            title: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+        };
+        /** HelpCategoryOrder */
+        HelpCategoryOrder: {
+            /** Ids */
+            ids: number[];
+        };
+        /** HelpCategoryPatch */
+        HelpCategoryPatch: {
+            /** Description */
+            description?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Section */
+            section?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+        };
+        /** HelpCategoryResponse */
+        HelpCategoryResponse: {
+            /** Assignee Names */
+            assignee_names: string[];
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Section */
+            section: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Title */
+            title: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+            /** Tribe Group Name */
+            tribe_group_name?: string | null;
+        };
+        /** HelpPanelPatch */
+        HelpPanelPatch: {
+            /** Channel Id */
+            channel_id: string;
+        };
+        /** HelpPanelResponse */
+        HelpPanelResponse: {
+            /** Channel Id */
+            channel_id: string;
+            /** Message Id */
+            message_id?: string | null;
+        };
+        /** HelpSettingsResponse */
+        HelpSettingsResponse: {
+            /** Categories */
+            categories: components["schemas"]["HelpCategoryResponse"][];
+            panel: components["schemas"]["HelpPanelResponse"];
+            /** Tribe Groups */
+            tribe_groups: components["schemas"]["HelpTribeGroupOption"][];
+        };
         /** HelpTicketPanelCategorySchema */
         HelpTicketPanelCategorySchema: {
             /** Code */
@@ -15744,6 +17672,17 @@ export interface components {
             /** Thread Id */
             thread_id: number;
         };
+        /** HelpTribeGroupOption */
+        HelpTribeGroupOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Taken */
+            taken: boolean;
+            /** Tribe Name */
+            tribe_name: string;
+        };
         /**
          * HostGroupRef
          * @description The tribe group a fleet, post or event is published as.
@@ -15759,6 +17698,69 @@ export interface components {
             tribe_id: number;
             /** Tribe Name */
             tribe_name: string;
+        };
+        /** HubCreateRequest */
+        HubCreateRequest: {
+            /**
+             * Is Structure
+             * @default true
+             */
+            is_structure?: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name?: string | null;
+            /** Region Id */
+            region_id?: number | null;
+            /** Short Name */
+            short_name?: string | null;
+            /** Solar System Id */
+            solar_system_id?: number | null;
+            /** Solar System Name */
+            solar_system_name?: string | null;
+        };
+        /** HubExpectationsResponse */
+        HubExpectationsResponse: {
+            /** Contracts */
+            contracts: components["schemas"]["FittingExpectationRow"][];
+            /** Doctrines */
+            doctrines: components["schemas"]["DoctrineOption"][];
+            /** Fittings */
+            fittings: components["schemas"]["FittingExpectationRow"][];
+            /** Items */
+            items: components["schemas"]["ItemExpectationRow"][];
+            /** Location Id */
+            location_id: number;
+        };
+        /** HubPatchRequest */
+        HubPatchRequest: {
+            /** Market Active */
+            market_active?: boolean | null;
+            /** Prices Active */
+            prices_active?: boolean | null;
+        };
+        /** HubResponse */
+        HubResponse: {
+            /** Contract Expectations */
+            contract_expectations: number;
+            /** Fitting Expectations */
+            fitting_expectations: number;
+            /** Item Expectations */
+            item_expectations: number;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name: string;
+            /** Market Active */
+            market_active: boolean;
+            /** Price Baseline */
+            price_baseline: boolean;
+            /** Prices Active */
+            prices_active: boolean;
+            /** Short Name */
+            short_name: string;
+            /** Solar System Name */
+            solar_system_name: string;
         };
         /** HygieneCounts */
         HygieneCounts: {
@@ -16112,6 +18114,16 @@ export interface components {
             top_movers: components["schemas"]["InferredSalesTopMover"][];
             velocity: components["schemas"]["InferredSalesVelocity"];
         };
+        /** InterviewTopicsRequest */
+        InterviewTopicsRequest: {
+            /** Topics */
+            topics: string[];
+        };
+        /** InterviewTopicsResponse */
+        InterviewTopicsResponse: {
+            /** Interview Topics */
+            interview_topics: string[];
+        };
         /** InvestigateResponse */
         InvestigateResponse: {
             /** Id */
@@ -16294,6 +18306,32 @@ export interface components {
             sent: number;
             /** Sent By */
             sent_by?: string | null;
+        };
+        /** ItemCreateRequest */
+        ItemCreateRequest: {
+            /** Category */
+            category: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** ItemExpectationRequest */
+        ItemExpectationRequest: {
+            /** Type Id */
+            type_id: number;
+        };
+        /** ItemExpectationRow */
+        ItemExpectationRow: {
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** ItemPatchRequest */
+        ItemPatchRequest: {
+            /** Active */
+            active?: boolean | null;
+            /** Category */
+            category?: string | null;
         };
         /** JitaCheckPollResponse */
         JitaCheckPollResponse: {
@@ -16649,6 +18687,13 @@ export interface components {
             fitting_name: string;
             /** Quantity */
             quantity: number;
+        };
+        /** LocationOption */
+        LocationOption: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
         };
         /** LocationResponse */
         LocationResponse: {
@@ -17173,6 +19218,271 @@ export interface components {
              */
             week_start: string;
         };
+        /** ManageAwardRequest */
+        ManageAwardRequest: {
+            /** Certificate Slug */
+            certificate_slug: string;
+            /** Reason */
+            reason: string;
+            /** Username */
+            username: string;
+        };
+        /** ManageAwardResponse */
+        ManageAwardResponse: {
+            /** Awarded */
+            awarded: boolean;
+            /** Certificate Slug */
+            certificate_slug: string;
+            /** Username */
+            username: string;
+        };
+        /** ManageCertificateRequest */
+        ManageCertificateRequest: {
+            /**
+             * Learning Slugs
+             * @default []
+             */
+            learning_slugs?: string[];
+            /**
+             * Personas
+             * @default []
+             */
+            personas?: string[];
+            /**
+             * Published
+             * @default true
+             */
+            published?: boolean;
+            /** Slug */
+            slug: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order?: number;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /** Title */
+            title: string;
+        };
+        /** ManageCertificateSchema */
+        ManageCertificateSchema: {
+            /** Award Count */
+            award_count: number;
+            /** Id */
+            id: number;
+            /** Learning Slugs */
+            learning_slugs: string[];
+            /** Personas */
+            personas: string[];
+            /** Published */
+            published: boolean;
+            /** Slug */
+            slug: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+        };
+        /** ManageItem */
+        ManageItem: {
+            /** Active */
+            active: boolean;
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** ManageLearningRequest */
+        ManageLearningRequest: {
+            /**
+             * Content Kind
+             * @default guide
+             */
+            content_kind?: string;
+            /** Estimated Minutes */
+            estimated_minutes?: number | null;
+            /**
+             * Published
+             * @default true
+             */
+            published?: boolean;
+            /** Slug */
+            slug: string;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /**
+             * Thumbnail Url
+             * @default
+             */
+            thumbnail_url?: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+        };
+        /** ManageLearningSchema */
+        ManageLearningSchema: {
+            /** Content Kind */
+            content_kind: string;
+            /** Estimated Minutes */
+            estimated_minutes?: number | null;
+            /** Id */
+            id: number;
+            /** Published */
+            published: boolean;
+            /** Slug */
+            slug: string;
+            /** Summary */
+            summary: string;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+        };
+        /** ManageOnboardingSchema */
+        ManageOnboardingSchema: {
+            /** Acknowledgments */
+            acknowledgments: number;
+            /** Label */
+            label: string;
+            /** Program Type */
+            program_type: string;
+            /** Version */
+            version: string;
+        };
+        /** ManageRoute */
+        ManageRoute: {
+            /** Active */
+            active: boolean;
+            /** Collateral Modifier */
+            collateral_modifier: number;
+            /** Days To Complete */
+            days_to_complete: number;
+            destination: components["schemas"]["RouteLocation"] | null;
+            /** Expiration Days */
+            expiration_days: number;
+            /** Fixed Fee Millions */
+            fixed_fee_millions: number;
+            /** Isk Per M3 */
+            isk_per_m3: number;
+            /** Max Collateral */
+            max_collateral: number | null;
+            /** Max M3 */
+            max_m3: number | null;
+            origin: components["schemas"]["RouteLocation"] | null;
+            /** Route Id */
+            route_id: number;
+            /** Route Type */
+            route_type: string;
+            /** Xl Fee Millions */
+            xl_fee_millions: number;
+        };
+        /** ManageRoutes */
+        ManageRoutes: {
+            /** Locations */
+            locations: components["schemas"]["RouteLocation"][];
+            /** Routes */
+            routes: components["schemas"]["ManageRoute"][];
+        };
+        /** ManageSettings */
+        ManageSettings: {
+            /** Active */
+            active: boolean;
+            /** Categories */
+            categories: string[];
+            /** Demand Jita Buy */
+            demand_jita_buy: number;
+            /** Items */
+            items: components["schemas"]["ManageItem"][];
+            /** Location Id */
+            location_id: number | null;
+            /** Locations */
+            locations: components["schemas"]["LocationOption"][];
+            /** Ore Refine */
+            ore_refine: number;
+            /** Surplus Jita Buy */
+            surplus_jita_buy: number;
+        };
+        /** ManageSkillLine */
+        ManageSkillLine: {
+            /** Level */
+            level: number;
+            /** Name */
+            name: string;
+        };
+        /** ManageSkillSearchResult */
+        ManageSkillSearchResult: {
+            /** Name */
+            name: string;
+        };
+        /** ManageSkillsetRequest */
+        ManageSkillsetRequest: {
+            /** Name */
+            name: string;
+            /** Skills */
+            skills: components["schemas"]["ManageSkillLine"][];
+            /** Total Skill Points */
+            total_skill_points?: number | null;
+        };
+        /** ManageSkillsetSchema */
+        ManageSkillsetSchema: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Skills */
+            skills: components["schemas"]["ManageSkillLine"][];
+            /** Total Skill Points */
+            total_skill_points: number;
+        };
+        /** ManagedCorporationRequirements */
+        ManagedCorporationRequirements: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Interview Topics */
+            interview_topics: string[];
+            /** Max Rules */
+            max_rules: number;
+            /** Members */
+            members: number;
+            options: components["schemas"]["RequirementOptions"];
+            /** Rules */
+            rules: components["schemas"]["ManagedRequirementRule"][];
+        };
+        /** ManagedRequirementRule */
+        ManagedRequirementRule: {
+            /** Id */
+            id: number;
+            /** Importance */
+            importance: string;
+            /** Kind */
+            kind: string;
+            /** Members Pass */
+            members_pass?: number | null;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Position */
+            position: number;
+            /** Text */
+            text: string;
+            /** Who */
+            who: string;
+        };
         /** ManualAffiliationRequest */
         ManualAffiliationRequest: {
             /** Bloc Id */
@@ -17656,6 +19966,60 @@ export interface components {
             /** Pilots */
             pilots: components["schemas"]["MissingSignupPilot"][];
         };
+        /** ModerationAccountSchema */
+        ModerationAccountSchema: {
+            /** Featured Count */
+            featured_count: number;
+            /** Hidden Count */
+            hidden_count: number;
+            /** Id */
+            id: number;
+            /** Item Count */
+            item_count: number;
+            /** Platform Username */
+            platform_username: string;
+            /** Provider */
+            provider: string;
+            /** Status */
+            status: string;
+            /** User Id */
+            user_id: number;
+            /** Username */
+            username: string;
+        };
+        /** ModerationItemRequest */
+        ModerationItemRequest: {
+            /** Featured */
+            featured?: boolean | null;
+            /** Hidden */
+            hidden?: boolean | null;
+        };
+        /** ModerationItemSchema */
+        ModerationItemSchema: {
+            /** Account Id */
+            account_id: number;
+            /** Featured */
+            featured: boolean;
+            /** Hidden */
+            hidden: boolean;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Provider */
+            provider: string;
+            /** Published At */
+            published_at?: string | null;
+            /** Title */
+            title: string;
+            /** Url */
+            url: string;
+        };
+        /** ModerationStatusRequest */
+        ModerationStatusRequest: {
+            /** Status */
+            status: string;
+        };
         /** MonthlyPoint */
         MonthlyPoint: {
             /** Active */
@@ -17737,6 +20101,21 @@ export interface components {
             planet: string;
             /** System */
             system: string;
+        };
+        /** MyCorporationRequirements */
+        MyCorporationRequirements: {
+            /** Accounts */
+            accounts?: number | null;
+            /** Can Apply */
+            can_apply: boolean;
+            /** Characters */
+            characters: number;
+            /** Checks */
+            checks: components["schemas"]["RequirementCheck"][];
+            /** Corporation Id */
+            corporation_id: number;
+            /** Interview Topics */
+            interview_topics: string[];
         };
         /**
          * MyFleetFittingResponse
@@ -17981,6 +20360,89 @@ export interface components {
              */
             topic_subscribed?: boolean;
         };
+        /** NpsiAudienceOption */
+        NpsiAudienceOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** NpsiEventPreview */
+        NpsiEventPreview: {
+            /** Character Name */
+            character_name: string;
+            /** End Time */
+            end_time?: string | null;
+            /** Id */
+            id: number;
+            /** Skip Reason */
+            skip_reason: string;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Status */
+            status: string;
+            /** Summary */
+            summary: string;
+        };
+        /** NpsiSourceCreate */
+        NpsiSourceCreate: {
+            /** Default Audience Id */
+            default_audience_id?: number | null;
+            /** Fc Character Name */
+            fc_character_name: string;
+            /** Feed Url */
+            feed_url: string;
+            /** Name */
+            name: string;
+        };
+        /** NpsiSourceList */
+        NpsiSourceList: {
+            /** Audiences */
+            audiences: components["schemas"]["NpsiAudienceOption"][];
+            /** Sources */
+            sources: components["schemas"]["NpsiSourceResponse"][];
+        };
+        /** NpsiSourcePatch */
+        NpsiSourcePatch: {
+            /** Default Audience Id */
+            default_audience_id?: number | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Fc Character Name */
+            fc_character_name?: string | null;
+            /** Feed Url */
+            feed_url?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** NpsiSourceResponse */
+        NpsiSourceResponse: {
+            /** Default Audience Id */
+            default_audience_id?: number | null;
+            /** Default Audience Name */
+            default_audience_name?: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Event Count */
+            event_count: number;
+            /** Fc Character Name */
+            fc_character_name: string;
+            /** Feed Url */
+            feed_url: string;
+            /** Id */
+            id: number;
+            /** Last Error */
+            last_error: string;
+            /** Last Polled At */
+            last_polled_at?: string | null;
+            /** Last Success At */
+            last_success_at?: string | null;
+            /** Name */
+            name: string;
+        };
         /** NudgeQueuedResponse */
         NudgeQueuedResponse: {
             /** Pilots */
@@ -18094,6 +20556,8 @@ export interface components {
              * @default []
              */
             blueprint_coordinators?: components["schemas"]["BlueprintCoordinatorResponse"][];
+            /** Campaign Id */
+            campaign_id?: number | null;
             /** Campaign Slug */
             campaign_slug?: string | null;
             /**
@@ -18613,11 +21077,64 @@ export interface components {
         PatchOrderRequest: {
             /** Campaign Id */
             campaign_id?: number | null;
+            /** Contract To */
+            contract_to?: string | null;
+            /** Fulfilled */
+            fulfilled?: boolean | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Needed By */
+            needed_by?: string | null;
         };
         /** PatchOrderResponse */
         PatchOrderResponse: {
             /** Id */
             id: number;
+        };
+        /** PayoutCodeOut */
+        PayoutCodeOut: {
+            /** Confirmed */
+            confirmed: boolean;
+            /**
+             * Confirmed By
+             * @default
+             */
+            confirmed_by?: string;
+            /** Event Code */
+            event_code: number;
+            /** Label */
+            label: string;
+            /**
+             * Seen 30D
+             * @default 0
+             */
+            seen_30d?: number;
+            /** Site Kind */
+            site_kind: string;
+        };
+        /** PayoutCodeRequest */
+        PayoutCodeRequest: {
+            /**
+             * Confirmed
+             * @default false
+             */
+            confirmed?: boolean;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /** Site Kind */
+            site_kind: string;
+        };
+        /** PayoutCodesOut */
+        PayoutCodesOut: {
+            /** Codes */
+            codes: components["schemas"]["PayoutCodeOut"][];
+            /** Site Kinds */
+            site_kinds: string[];
+            /** Unmapped */
+            unmapped: components["schemas"]["UnmappedPayoutCodeOut"][];
         };
         /** PersonaRecommendationSchema */
         PersonaRecommendationSchema: {
@@ -19918,6 +22435,41 @@ export interface components {
              */
             tracked?: number;
         };
+        /** RecalculationChangeResponse */
+        RecalculationChangeResponse: {
+            /** Character Name */
+            character_name: string;
+            /** Current Amount */
+            current_amount: number;
+            /** Id */
+            id: number;
+            /** New Amount */
+            new_amount: number;
+            /** Ship Name */
+            ship_name: string;
+            /** Status */
+            status: string;
+        };
+        /** RecalculationPreviewResponse */
+        RecalculationPreviewResponse: {
+            /** Changed Count */
+            changed_count: number;
+            /** Changes */
+            changes: components["schemas"]["RecalculationChangeResponse"][];
+            /** Current Total */
+            current_total: number;
+            /** New Total */
+            new_total: number;
+            /** Outstanding Count */
+            outstanding_count: number;
+        };
+        /** RecalculationResultResponse */
+        RecalculationResultResponse: {
+            /** Errors */
+            errors: number;
+            /** Updated */
+            updated: number;
+        };
         /** RecentItemSchema */
         RecentItemSchema: {
             /** Count */
@@ -19964,6 +22516,117 @@ export interface components {
             items: components["schemas"]["RecentItemSchema"][];
             /** Window Minutes */
             window_minutes: number;
+        };
+        /** RedditActionResult */
+        RedditActionResult: {
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Ok */
+            ok: boolean;
+        };
+        /** RedditRejectRequest */
+        RedditRejectRequest: {
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /** RedditReviewDecision */
+        RedditReviewDecision: {
+            /** Changed */
+            changed: boolean;
+            /** Notified */
+            notified: boolean;
+        };
+        /** RedditReviewItem */
+        RedditReviewItem: {
+            /** Change Id */
+            change_id?: number | null;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Corporation Ticker */
+            corporation_ticker: string;
+            /** Current Content */
+            current_content: string;
+            /** Current Title */
+            current_title: string;
+            /** First Approval */
+            first_approval: boolean;
+            /** Requested Content */
+            requested_content: string;
+            /** Requested Title */
+            requested_title: string;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /** Submitted By */
+            submitted_by?: string | null;
+            /** Template Id */
+            template_id: number;
+        };
+        /** RedditReviewQueue */
+        RedditReviewQueue: {
+            /** Items */
+            items: components["schemas"]["RedditReviewItem"][];
+        };
+        /** RedditRotation */
+        RedditRotation: {
+            /** Months */
+            months: components["schemas"]["RedditRotationMonth"][];
+        };
+        /** RedditRotationMonth */
+        RedditRotationMonth: {
+            /**
+             * Month
+             * Format: date
+             */
+            month: string;
+            /** Posts */
+            posts: components["schemas"]["RedditRotationPost"][];
+            /** Published At */
+            published_at?: string | null;
+            /** Schedule Id */
+            schedule_id: number;
+            /** Status */
+            status: string;
+        };
+        /** RedditRotationPost */
+        RedditRotationPost: {
+            /** Can Link To Discord */
+            can_link_to_discord: boolean;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Corporation Ticker */
+            corporation_ticker: string;
+            /** Delivery Method */
+            delivery_method: string;
+            /** Has Discord Channel */
+            has_discord_channel: boolean;
+            /** Post Id */
+            post_id: number;
+            /** Reddit Url */
+            reddit_url: string;
+            /**
+             * Scheduled For
+             * Format: date-time
+             */
+            scheduled_for: string;
+            /**
+             * Slot Date
+             * Format: date
+             */
+            slot_date: string;
+            /** Status */
+            status: string;
+            /** Template Id */
+            template_id: number;
+            /** Title */
+            title: string;
         };
         /** RedditUsernameRequest */
         RedditUsernameRequest: {
@@ -20130,6 +22793,70 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** RequirementCapabilityOption */
+        RequirementCapabilityOption: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
+        /** RequirementCheck */
+        RequirementCheck: {
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: number;
+            /** Importance */
+            importance: string;
+            /** Kind */
+            kind: string;
+            /** Ship Type Ids */
+            ship_type_ids: number[];
+            /** Status */
+            status: string;
+            /** Text */
+            text: string;
+            /** Training Days */
+            training_days?: number | null;
+        };
+        /** RequirementCreateRequest */
+        RequirementCreateRequest: {
+            /**
+             * Importance
+             * @default preferred
+             */
+            importance?: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Params
+             * @default {}
+             */
+            params?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Who
+             * @default any
+             */
+            who?: string;
+        };
+        /** RequirementDoctrineOption */
+        RequirementDoctrineOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** RequirementOptions */
+        RequirementOptions: {
+            /** Brackets */
+            brackets: string[];
+            /** Capabilities */
+            capabilities: components["schemas"]["RequirementCapabilityOption"][];
+            /** Doctrines */
+            doctrines: components["schemas"]["RequirementDoctrineOption"][];
+        };
         /**
          * RequirementQualificationSchema
          * @description Per-requirement qualification result for one character.
@@ -20143,6 +22870,25 @@ export interface components {
             met: boolean;
             /** Requirement Id */
             requirement_id: string;
+        };
+        /** RequirementRule */
+        RequirementRule: {
+            /** Id */
+            id: number;
+            /** Importance */
+            importance: string;
+            /** Kind */
+            kind: string;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Position */
+            position: number;
+            /** Text */
+            text: string;
+            /** Who */
+            who: string;
         };
         /** RequirementSchema */
         RequirementSchema: {
@@ -20158,6 +22904,17 @@ export interface components {
              * @default []
              */
             qualifying_skills?: components["schemas"]["QualifyingSkillSchema"][];
+        };
+        /** RequirementUpdateRequest */
+        RequirementUpdateRequest: {
+            /** Importance */
+            importance?: string | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /** Who */
+            who?: string | null;
         };
         /** ResolveKillmailRequest */
         ResolveKillmailRequest: {
@@ -20239,6 +22996,16 @@ export interface components {
             campaign_id: number;
             /** Segment Key */
             segment_key: string;
+        };
+        /** ReviewRequest */
+        ReviewRequest: {
+            /** Action */
+            action: string;
+            /**
+             * Review Note
+             * @default
+             */
+            review_note?: string;
         };
         /** ReviewResponse */
         ReviewResponse: {
@@ -20465,6 +23232,89 @@ export interface components {
              */
             pilots?: number;
         };
+        /** RouteCreateRequest */
+        RouteCreateRequest: {
+            /**
+             * Active
+             * @default true
+             */
+            active?: boolean;
+            /**
+             * Collateral Modifier
+             * @default 0
+             */
+            collateral_modifier?: number;
+            /**
+             * Days To Complete
+             * @default 3
+             */
+            days_to_complete?: number;
+            /** Destination Location Id */
+            destination_location_id: number;
+            /**
+             * Expiration Days
+             * @default 3
+             */
+            expiration_days?: number;
+            /**
+             * Fixed Fee Millions
+             * @default 0
+             */
+            fixed_fee_millions?: number;
+            /**
+             * Isk Per M3
+             * @default 0
+             */
+            isk_per_m3?: number;
+            /** Max Collateral */
+            max_collateral?: number | null;
+            /** Max M3 */
+            max_m3?: number | null;
+            /** Origin Location Id */
+            origin_location_id: number;
+            /**
+             * Route Type
+             * @default rate
+             */
+            route_type?: string;
+            /**
+             * Xl Fee Millions
+             * @default 0
+             */
+            xl_fee_millions?: number;
+        };
+        /** RouteLocation */
+        RouteLocation: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
+            /** Short Name */
+            short_name: string;
+        };
+        /** RoutePatchRequest */
+        RoutePatchRequest: {
+            /** Active */
+            active?: boolean | null;
+            /** Collateral Modifier */
+            collateral_modifier?: number | null;
+            /** Days To Complete */
+            days_to_complete?: number | null;
+            /** Expiration Days */
+            expiration_days?: number | null;
+            /** Fixed Fee Millions */
+            fixed_fee_millions?: number | null;
+            /** Isk Per M3 */
+            isk_per_m3?: number | null;
+            /** Max Collateral */
+            max_collateral?: number | null;
+            /** Max M3 */
+            max_m3?: number | null;
+            /** Route Type */
+            route_type?: string | null;
+            /** Xl Fee Millions */
+            xl_fee_millions?: number | null;
+        };
         /** ScheduleChange */
         ScheduleChange: {
             /**
@@ -20632,10 +23482,156 @@ export interface components {
             /** Username */
             username?: string | null;
         };
+        /** SetChiefRequest */
+        SetChiefRequest: {
+            /** User Id */
+            user_id?: number | null;
+        };
         /** SetMyShipVolunteersRequest */
         SetMyShipVolunteersRequest: {
             /** Selections */
             selections: components["schemas"]["ShipSelection"][];
+        };
+        /** SetProgramAmountRequest */
+        SetProgramAmountRequest: {
+            /** Srp Value */
+            srp_value: number;
+        };
+        /** SettingsAccount */
+        SettingsAccount: {
+            /** Contacts */
+            contacts: components["schemas"]["SettingsContact"][];
+            /** Corporation Name */
+            corporation_name: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Isk Per Lp */
+            isk_per_lp: number | null;
+            /** Loyalty Point Id */
+            loyalty_point_id: number;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Role */
+            role: string;
+        };
+        /** SettingsContact */
+        SettingsContact: {
+            /** Account Id */
+            account_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Discord Username */
+            discord_username: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Notes */
+            notes: string;
+        };
+        /** SettingsCurrency */
+        SettingsCurrency: {
+            /** Accounts */
+            accounts: components["schemas"]["SettingsAccount"][];
+            /** Allow Buy */
+            allow_buy: boolean;
+            /** Allow Sell */
+            allow_sell: boolean;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Default Isk Per Lp */
+            default_isk_per_lp: number;
+            /** Express Isk Per Lp */
+            express_isk_per_lp: number | null;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+        };
+        /** SettingsOrderOut */
+        SettingsOrderOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Points */
+            points: number;
+            /**
+             * System
+             * @default
+             */
+            system?: string;
+        };
+        /** SettingsPatchRequest */
+        SettingsPatchRequest: {
+            /** Active */
+            active?: boolean | null;
+            /**
+             * Clear Location
+             * @default false
+             */
+            clear_location?: boolean;
+            /** Demand Jita Buy */
+            demand_jita_buy?: number | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Ore Refine */
+            ore_refine?: number | null;
+            /** Surplus Jita Buy */
+            surplus_jita_buy?: number | null;
+        };
+        /** SettingsStructureOut */
+        SettingsStructureOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Structure Type */
+            structure_type: string;
+            /** System Name */
+            system_name: string;
+        };
+        /** SettingsSystemOut */
+        SettingsSystemOut: {
+            /** Goal */
+            goal: string;
+            /** Id */
+            id: number;
+            /** Is Fw Objective */
+            is_fw_objective: boolean;
+            /** Name */
+            name: string;
+            /** Priority */
+            priority: string;
+            /** Retired */
+            retired: boolean;
+            /** Role */
+            role: string;
+            /** Solar System Id */
+            solar_system_id: number;
+        };
+        /** SettingsWeekTargetOut */
+        SettingsWeekTargetOut: {
+            /** Id */
+            id: number;
+            /** Metric */
+            metric: string;
+            /** Progress */
+            progress: number;
+            /** Proposed */
+            proposed: boolean;
+            /** System */
+            system: string;
+            /** Target */
+            target: number;
         };
         /** ShipAsset */
         ShipAsset: {
@@ -20878,6 +23874,36 @@ export interface components {
             site_kind: string;
             /** System */
             system: string;
+        };
+        /**
+         * SpotlightQuestionInput
+         * @description One one-off question merged in before the Open floor.
+         */
+        SpotlightQuestionInput: {
+            /**
+             * Choices
+             * @default []
+             */
+            choices?: string[];
+            /**
+             * Help
+             * @default
+             */
+            help?: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            /**
+             * Type
+             * @default single
+             */
+            type?: string;
         };
         /**
          * SrpCategory
@@ -21229,6 +24255,17 @@ export interface components {
             /** Synced */
             synced: number;
         };
+        /** SystemAddRequest */
+        SystemAddRequest: {
+            /** Goal */
+            goal?: string | null;
+            /** Priority */
+            priority?: string | null;
+            /** Role */
+            role?: string | null;
+            /** Solar System Id */
+            solar_system_id: number;
+        };
         /** SystemIndustrySchema */
         SystemIndustrySchema: {
             cost_indices: components["schemas"]["CostIndicesSchema"];
@@ -21375,6 +24412,11 @@ export interface components {
          * @enum {string}
          */
         TokenType: "Director" | "Public" | "Basic" | "Industry" | "Market" | "Executor" | "FleetCommander" | "FactionWarfare" | "Desktop" | "Campaign";
+        /** TrackedRequest */
+        TrackedRequest: {
+            /** Tracked */
+            tracked: boolean;
+        };
         /** TrackedVoiceChannelResponse */
         TrackedVoiceChannelResponse: {
             /** Channel Id */
@@ -22091,9 +25133,13 @@ export interface components {
             event_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Event Publisher Character Ids */
             event_publisher_character_ids?: number[] | null;
+            /** Events Enabled */
+            events_enabled?: boolean | null;
             fleet_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Fleet Publisher Character Ids */
             fleet_publisher_character_ids?: number[] | null;
+            /** Fleets Enabled */
+            fleets_enabled?: boolean | null;
             post_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Post Publisher Character Ids */
             post_publisher_character_ids?: number[] | null;
@@ -22115,9 +25161,19 @@ export interface components {
             event_policy: components["schemas"]["PublishingPolicy"];
             /** Event Publishers */
             event_publishers: components["schemas"]["PublisherSchema"][];
+            /**
+             * Events Enabled
+             * @default true
+             */
+            events_enabled?: boolean;
             fleet_policy: components["schemas"]["PublishingPolicy"];
             /** Fleet Publishers */
             fleet_publishers: components["schemas"]["PublisherSchema"][];
+            /**
+             * Fleets Enabled
+             * @default true
+             */
+            fleets_enabled?: boolean;
             /** Group Id */
             group_id: number;
             post_policy: components["schemas"]["PublishingPolicy"];
@@ -22271,6 +25327,11 @@ export interface components {
              * @default false
              */
             can_schedule_fleets?: boolean;
+            /**
+             * Can Set Chief
+             * @default false
+             */
+            can_set_chief?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
              * Chief Is Interim
@@ -22295,6 +25356,16 @@ export interface components {
             discord_role_name?: string | null;
             /** Effective Discord Channel Id */
             effective_discord_channel_id?: string | null;
+            /**
+             * Events Enabled
+             * @default true
+             */
+            events_enabled?: boolean;
+            /**
+             * Fleets Enabled
+             * @default true
+             */
+            fleets_enabled?: boolean;
             /**
              * Has Volunteered
              * @default false
@@ -22484,6 +25555,11 @@ export interface components {
              * @default false
              */
             can_appoint_chief?: boolean;
+            /**
+             * Can Set Chief
+             * @default false
+             */
+            can_set_chief?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
              * Chief Is Interim
@@ -22535,6 +25611,20 @@ export interface components {
              */
             series?: components["schemas"]["TribeMonthlySeries"][];
         };
+        /** TypeRow */
+        TypeRow: {
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** TypeSearchRow */
+        TypeSearchRow: {
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
         /** TypeStat */
         TypeStat: {
             /** Approved */
@@ -22573,6 +25663,20 @@ export interface components {
             /** Corporation Id */
             corporation_id: number;
         };
+        /** UnmappedPayoutCodeOut */
+        UnmappedPayoutCodeOut: {
+            /** Event Code */
+            event_code: number;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
+            /** Sample Amount Lp */
+            sample_amount_lp: number;
+            /** Seen */
+            seen: number;
+        };
         /** UnmatchedHull */
         UnmatchedHull: {
             /** Characters */
@@ -22598,8 +25702,12 @@ export interface components {
             closes_at?: string | null;
             /** Opens At */
             opens_at?: string | null;
+            /** Spotlight Questions */
+            spotlight_questions?: components["schemas"]["SpotlightQuestionInput"][] | null;
             /** Status */
             status?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** UpdateEveFleetRequest */
         UpdateEveFleetRequest: {
@@ -23802,6 +26910,47 @@ export interface operations {
             };
         };
     };
+    applications_requirements_router_get_application_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                application_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationRequirements"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     applications_router_transfer_corporation_application: {
         parameters: {
             query?: never;
@@ -23825,6 +26974,298 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationApplicationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_put_corporation_interview_topics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterviewTopicsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewTopicsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_get_corporation_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationRequirements"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_create_corporation_requirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequirementRule"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_get_managed_corporation_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedCorporationRequirements"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_get_my_corporation_requirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCorporationRequirements"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_delete_corporation_requirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                requirement_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    applications_requirements_router_update_corporation_requirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                requirement_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequirementRule"];
                 };
             };
             /** @description Bad Request */
@@ -24104,6 +27545,154 @@ export interface operations {
             };
         };
     };
+    posts_router_create_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveTagRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    posts_router_rename_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveTagRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    posts_router_merge_tag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveTagMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     buyback_endpoints_post_appraise_post_appraise: {
         parameters: {
             query?: never;
@@ -24208,6 +27797,254 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BuybackLedgerResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_post_manage_item_post_manage_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_delete_manage_item_delete_manage_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_patch_manage_item_patch_manage_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_get_manage_settings_get_manage_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_patch_manage_settings_patch_manage_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_get_manage_types_get_manage_types: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeRow"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -24710,6 +28547,79 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_get_payout_codes_list_payout_codes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutCodesOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_put_payout_code_set_payout_code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_code: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutCodeOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_member_get_readiness: {
         parameters: {
             query?: {
@@ -25009,6 +28919,81 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_post_order_draft_draft_commander_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_post_order_publish_publish_commander_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_member_enlist: {
         parameters: {
             query?: never;
@@ -25050,6 +29035,84 @@ export interface operations {
             header?: never;
             path: {
                 slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_post_fitting_add_fitting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FittingAddRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignFittingOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_delete_fitting_delete_fitting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                row_id: number;
             };
             cookie?: never;
         };
@@ -25409,6 +29472,40 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_delete_party_delete_party: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                party_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_projects_get_campaign_projects: {
         parameters: {
             query?: never;
@@ -25578,6 +29675,81 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_get_settings_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignSettingsOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_patch_settings_patch_campaign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignSettingsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_public_get_sites: {
         parameters: {
             query?: {
@@ -25714,6 +29886,40 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_delete_structure_delete_structure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                structure_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     campaigns_endpoints_public_get_systems: {
         parameters: {
             query?: never;
@@ -25749,6 +29955,84 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_post_system_add_system: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemAddRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsSystemOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_delete_system_retire_system: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                system_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };
@@ -25987,6 +30271,100 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fittings_endpoints_change_requests_get_change_requests_get_change_requests: {
+        parameters: {
+            query?: {
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fittings_endpoints_change_requests_post_review_change_request_post_review_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeRequestResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26235,6 +30613,180 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CreatorLiveSchema"][];
+                };
+            };
+        };
+    };
+    creators_moderation_list_accounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationAccountSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    creators_moderation_list_items: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationItemSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    creators_moderation_set_account_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationAccountSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    creators_moderation_update_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationItemRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationItemSchema"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -26547,6 +31099,68 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fittings_endpoints_doctrines_post_doctrine_change_request_post_doctrine_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doctrine_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoctrineChangeRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangePreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28207,6 +32821,68 @@ export interface operations {
             };
         };
     };
+    fittings_endpoints_eve_fittings_post_fitting_change_request_post_fitting_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FittingChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangePreviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_catalog_post_create_fleet_create_fleet: {
         parameters: {
             query?: never;
@@ -28690,6 +33366,170 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_get_npsi_sources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiSourceList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_post_npsi_source: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpsiSourceCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiSourceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_patch_npsi_source: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NpsiSourcePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiSourceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_npsi_sources_get_npsi_source_events: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiEventPreview"][];
                 };
             };
             /** @description Forbidden */
@@ -31388,6 +36228,139 @@ export interface operations {
             };
         };
     };
+    freight_endpoints_manage_get_manage_routes_get_manage_routes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageRoutes"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    freight_endpoints_manage_post_manage_route_post_manage_route: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RouteCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageRoute"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    freight_endpoints_manage_patch_manage_route_patch_manage_route: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                route_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutePatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageRoute"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     freight_router_get_routes: {
         parameters: {
             query?: never;
@@ -31475,6 +36448,214 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HelpTicketResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_create_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpCategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_patch_category: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpCategoryPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_order_categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpCategoryOrder"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpCategoryResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_patch_panel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HelpPanelPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpPanelResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    help_tickets_settings_router_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpSettingsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -32090,6 +37271,353 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_get_settings_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCurrency"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_post_settings_account_post_settings_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsAccount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_patch_settings_account_patch_settings_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsAccount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_post_settings_contact_post_settings_contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsContact"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_delete_settings_contact_delete_settings_contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_patch_settings_contact_patch_settings_contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsContact"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_post_settings_currency_post_settings_currency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CurrencyCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCurrency"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_patch_settings_currency_patch_settings_currency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                currency_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CurrencyPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCurrency"];
                 };
             };
             /** @description Forbidden */
@@ -34423,6 +39951,608 @@ export interface operations {
             };
         };
     };
+    learning_manage_award_certificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageAwardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageAwardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    learning_manage_revoke_certificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageAwardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageAwardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    learning_manage_list_certificates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageCertificateSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_create_certificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageCertificateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageCertificateSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_update_certificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageCertificateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageCertificateSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    learning_manage_list_guides: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageLearningSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_create_guide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageLearningRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageLearningSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_update_guide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageLearningRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageLearningSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    learning_manage_list_onboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageOnboardingSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_bump_onboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_type: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageOnboardingSchema"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    learning_manage_list_skillsets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSkillsetSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_create_skillset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageSkillsetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSkillsetSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_search_skills: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSkillSearchResult"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_update_skillset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skillset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageSkillsetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSkillsetSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     learning_endpoints_get_me_get_me: {
         parameters: {
             query?: never;
@@ -35197,6 +41327,453 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarketHealthResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_list_hubs_list_hubs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_add_hub_add_hub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_type_search_type_search: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeSearchRow"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_remove_hub_remove_hub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_patch_hub_patch_hub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_get_hub_expectations_get_hub_expectations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubExpectationsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_put_contract_expectation_put_contract_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackedRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FittingExpectationRow"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_put_fitting_expectation_put_fitting_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackedRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FittingExpectationRow"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_post_from_doctrine_post_from_doctrine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FromDoctrineRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FromDoctrineResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_post_item_expectation_post_item_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemExpectationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemExpectationRow"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_delete_item_expectation_delete_item_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -36210,6 +42787,348 @@ export interface operations {
             };
         };
     };
+    reddit_review_router_approve_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewDecision"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_reject_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                change_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedditRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewDecision"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_get_queue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewQueue"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_get_rotation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditRotation"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_publish_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schedule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_regenerate_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schedule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_approve_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditReviewDecision"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_link_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    reddit_review_router_submit_template: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedditActionResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     referrals_router_referral_redirect: {
         parameters: {
             query: {
@@ -36475,6 +43394,117 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecalculationPreviewResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecalculationResultResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_post_program_amount_post_program_amount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                program_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetProgramAmountRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipReimbursementProgramAmountResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36845,6 +43875,39 @@ export interface operations {
             };
         };
     };
+    structures_router_get_structure_pings: {
+        parameters: {
+            query?: {
+                failed_only?: boolean;
+                notification_type?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveStructurePingResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     structures_router_get_structure_timers: {
         parameters: {
             query?: {
@@ -36907,6 +43970,97 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_router_delete_structure_timer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_router_update_structure_timer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                timer_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EveStructureTimerPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveStructureTimerResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -38672,6 +45826,39 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_chief_assign_get_candidates_get_chief_candidates: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefCandidateSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     tribes_endpoints_chief_volunteers_post_appoint_post_chief_volunteer_appoint: {
         parameters: {
             query?: never;
@@ -39701,6 +46888,76 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_chief_assign_put_chief_put_tribe_chief: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetChiefRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefSeatSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     tribes_endpoints_chief_volunteers_seat_volunteers_get_chief_volunteers: {
         parameters: {
             query?: {
@@ -39896,6 +47153,77 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_assign_put_chief_put_group_chief: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetChiefRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefSeatSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

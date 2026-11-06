@@ -131,6 +131,7 @@ class OrderDetailResponse(BaseModel):
     character_id: int | None = None
     character_name: str = ""
     campaign_slug: str | None = None
+    campaign_id: int | None = None
     location: OrderLocationResponse | None
     items: List[OrderItemResponse]
     lp_stockpiles: List[OrderLpStockpileResponse] = []

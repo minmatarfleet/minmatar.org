@@ -1,0 +1,97 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { structure_states, structure_types } from '@dtypes/api.minmatar.org'
+import type { StructureTimer } from '@dtypes/api.minmatar.org'
+
+/** Correct or delete structure timers. structure_timers_manage_component saves and answers with this panel again. */
+interface Props {
+    timers:             StructureTimer[];
+    error?:             string | null;
+    notice?:            string | null;
+    [propName: string]: any;
+}
+
+const { timers, error = null, notice = null } = Astro.props
+
+const PARTIAL_URL = translatePath('/partials/structure_timers_manage_component')
+
+// <input type="datetime-local"> wants "YYYY-MM-DDTHH:mm" in EVE time (UTC).
+const local_value = (iso: string) => new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toISOString().slice(0, 16)
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Input from '@components/blocks/Input.astro'
+import ManagePanel from '@components/blocks/ManagePanel.astro'
+import Select from '@components/blocks/Select.astro'
+
+const attrs = {
+    'hx-post': PARTIAL_URL,
+    'hx-target': '#structure-timers-manager',
+    'hx-swap': 'outerHTML',
+    'hx-disabled-elt': 'find button',
+}
+---
+
+<ManagePanel id="structure-timers-manager">
+    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+
+    {timers.length === 0 ?
+        <EmptyState title={t('structure_timers_manage.empty')} />
+        :
+        <ul class="[ manage-panel__rows ]" role="list">
+            {timers.map(timer =>
+                <li class="[ manage-panel__row ]" id={`manage-timer-${timer.id}`}>
+                    <form class="[ manage-panel__form ]" {...attrs}>
+                        <input type="hidden" name="action" value="update" />
+                        <input type="hidden" name="timer_id" value={timer.id} />
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.system')}</span>
+                            <Input type="text" name="system_name" size="sm" required maxlength="255" value={timer.system_name} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.name')}</span>
+                            <Input type="text" name="name" size="sm" required maxlength="255" value={timer.name} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.corporation')}</span>
+                            <Input type="text" name="corporation_name" size="sm" maxlength="255" value={timer.corporation_name ?? ''} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.alliance')}</span>
+                            <Input type="text" name="alliance_name" size="sm" maxlength="255" value={timer.alliance_name ?? ''} />
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.state')}</span>
+                            <Select name="state" size="sm">
+                                {structure_states.map(state =>
+                                    <option value={state} selected={state === timer.state}>{t(t_key('structure_timers_manage.state.', state))}</option>
+                                )}
+                            </Select>
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.type')}</span>
+                            <Select name="type" size="sm">
+                                {structure_types.map(type =>
+                                    <option value={type} selected={type === timer.type}>{type.replaceAll('_', ' ')}</option>
+                                )}
+                            </Select>
+                        </label>
+                        <label class="[ manage-panel__field ]">
+                            <span>{t('structure_timers_manage.field.timer')}</span>
+                            <Input type="datetime-local" name="timer" size="sm" required value={local_value(timer.timer)} />
+                        </label>
+                        <Button type="submit" size="sm">{t('structure_timers_manage.save')}</Button>
+                    </form>
+                    <form class="[ manage-panel__form ]" {...attrs} hx-confirm={t('structure_timers_manage.confirm_delete')}>
+                        <input type="hidden" name="action" value="delete" />
+                        <input type="hidden" name="timer_id" value={timer.id} />
+                        <Button type="submit" size="sm" color="transparent">{t('structure_timers_manage.delete')}</Button>
+                    </form>
+                </li>
+            )}
+        </ul>
+    }
+</ManagePanel>

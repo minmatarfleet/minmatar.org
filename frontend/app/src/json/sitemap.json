@@ -71,6 +71,42 @@
         ]
     },
     {
+        "slug": "learning.manage",
+        "alt": "icon.skills.alt",
+        "path": "/learning/manage/",
+        "publish": false,
+        "icon": "/images/icons/48px-Skills.png",
+        "description": "page_finder.learning_manage.description",
+        "keywords": [
+            "learning",
+            "certificates",
+            "skillsets",
+            "onboarding",
+            "guides",
+            "manage"
+        ],
+        "permissions": {
+            "gate": "learning.manage"
+        }
+    },
+    {
+        "slug": "creators.manage",
+        "alt": "icon.intel.alt",
+        "path": "/creators/manage/",
+        "publish": false,
+        "icon": "/images/icons/48px-Satellite.png",
+        "description": "page_finder.creators_manage.description",
+        "keywords": [
+            "creators",
+            "moderation",
+            "content",
+            "manage"
+        ],
+        "permissions": {
+            "gate": "creators.moderate"
+        }
+    },
+    {
         "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,
@@ -236,7 +272,8 @@
     {
         "slug": "warzone.gallente_caldari_yc128_10",
         "path": "/warzone/gallente-caldari-yc128-10/",
-        "publish": true,
+        "publish": false,
+        "sitemap": false,
         "description": "page_finder.warzone.gallente_caldari_yc128_10.description",
         "keywords": ["warzone", "frontline report", "October YC128", "Gallente", "Caldari", "Tama", "Aldranette", "faction warfare"]
     },
@@ -575,12 +612,57 @@
         }
     },
     {
+        "slug": "propaganda.tags",
+        "path": "/alliance/propaganda/tags/",
+        "publish": true,
+        "description": "page_finder.propaganda.tags.description",
+        "permissions": {
+            "gate": "posts.tags.manage"
+        }
+    },
+    {
         "slug": "propaganda.trash",
         "path": "/alliance/propaganda/trash/",
         "publish": true,
         "description": "page_finder.propaganda.trash.description",
         "permissions": {
             "gate": "posts.create"
+        }
+    },
+    {
+        "slug": "reddit_review",
+        "path": "/alliance/reddit-review/",
+        "publish": true,
+        "description": "page_finder.reddit_review.description",
+        "permissions": {
+            "gate": "reddit.approvals.manage"
+        }
+    },
+    {
+        "slug": "intel.timers.manage",
+        "path": "/intel/timers/manage/",
+        "publish": true,
+        "description": "page_finder.intel.timers.manage.description",
+        "permissions": {
+            "gate": "structures.timers.correct"
+        }
+    },
+    {
+        "slug": "fleets.npsi_sources",
+        "path": "/fleets/npsi-sources/",
+        "publish": true,
+        "description": "page_finder.fleets.npsi_sources.description",
+        "permissions": {
+            "gate": "fleets.npsi_sources.manage"
+        }
+    },
+    {
+        "slug": "help_tickets",
+        "path": "/alliance/help-tickets/",
+        "publish": true,
+        "description": "page_finder.help_tickets.description",
+        "permissions": {
+            "gate": "help_tickets.manage"
         }
     },
     {
@@ -637,6 +719,20 @@
         ],
         "permissions": {
             "gate": "srp.view"
+        }
+    },
+    {
+        "slug": "ships.srp.programs",
+        "path": "/ships/srp/programs/",
+        "publish": true,
+        "description": "page_finder.ships.srp.programs.description",
+        "keywords": [
+            "srp",
+            "amount",
+            "recalculate"
+        ],
+        "permissions": {
+            "gate": "srp.programs.manage"
         }
     },
     {

@@ -17,6 +17,7 @@ const can_view_srp = can(gates, 'srp.view')
 const can_add_srp = can(gates, 'srp.resolve')
 const can_process_srp = can(gates, 'srp.process')
 const has_explicit_srp_change = can(gates, 'srp.process#strict')
+const can_manage_programs = can(gates, 'srp.programs.manage')
 
 if (!can_view_srp)
     return HTTP_403_Forbidden()
@@ -93,6 +94,11 @@ const leading_text = t('ships.srp.leading_text');
                 </TextBox>
                 <FlexInline class="[ !items-start ]" gap='var(--space-s)'>
                     <ButtonSRPLearnMore size='lg' />
+                    {can_manage_programs &&
+                        <Button href={translatePath('/ships/srp/programs/')}>
+                            {t('srp_programs.manage')}
+                        </Button>
+                    }
                     {can_view_srp &&
                         <Button href={translatePath('/ships/srp/killmails/')}>
                             {t('view_killmails')}

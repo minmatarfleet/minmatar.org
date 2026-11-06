@@ -12,6 +12,9 @@ import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 const can_view_fleets = can(gates, 'fleets.view')
 
+import { can_edit_doctrines } from '@helpers/doctrine_editor'
+const can_edit = await can_edit_doctrines(gates)
+
 const doctrine_id = Astro.params.doctrine_id ?? '0';
 
 import type { DoctrineType } from '@dtypes/layout_components'
@@ -94,6 +97,11 @@ const page_description = doctrine?.description
                 </PageTitle>
             </Flexblock>
             <PageActions>
+                {can_edit && doctrine &&
+                    <Button href={translatePath(`/ships/doctrines/edit/${doctrine.id}/`)} color="alliance-blue">
+                        {t('doctrine_changes.edit')}
+                    </Button>
+                }
                 <Button
                     href={translatePath(`/ships/doctrines${active_location_id ? `?location_id=${active_location_id}` : '/'}`)}
                 >

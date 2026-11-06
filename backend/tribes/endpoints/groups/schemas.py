@@ -53,6 +53,8 @@ class TribeGroupSchema(BaseModel):
     chief_is_interim: bool = False
     # Viewer flags: the executor appoints; anyone may volunteer once.
     can_appoint_chief: bool = False
+    # The viewer is a superuser and can swap the chief.
+    can_set_chief: bool = False
     has_volunteered: bool = False
     is_active: bool
     member_count: int = 0
@@ -72,6 +74,8 @@ class TribeGroupSchema(BaseModel):
     can_create_events: bool = False
     allow_alliance_posts: bool = True
     allow_open_fleets: bool = False
+    fleets_enabled: bool = True
+    events_enabled: bool = True
     # A string: Discord ids don't fit a JavaScript number.
     effective_discord_channel_id: Optional[str] = None
     discord_role_name: Optional[str] = None

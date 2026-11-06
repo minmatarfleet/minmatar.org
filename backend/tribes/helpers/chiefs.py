@@ -333,6 +333,77 @@ def appoint(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
     return offer
 
 
+def set_chief(
+    by, tribe: Tribe, tribe_group: TribeGroup | None, user
+) -> object | None:
+    """Superuser override: put ``user`` in the seat, or empty it (None).
+
+    Unlike ``appoint`` this works on a filled seat and needs no volunteer.
+    The old chief keeps their group memberships. Waiting offers are closed
+    when the seat is filled, as an appointment does.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from audit.helpers import record_audit
+
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.chief_membership import (
+        ensure_tribe_chiefs_have_group_memberships,
+    )
+
+    if by is None or not getattr(by, "is_superuser", False):
+        raise ChiefVolunteerError(
+            "Only superusers can swap a chief.", status_code=403
+        )
+    now = timezone.now()
+    with transaction.atomic():
+        tribe = Tribe.objects.select_for_update().get(pk=tribe.pk)
+        if tribe_group is not None:
+            tribe_group = TribeGroup.objects.select_for_update().get(
+                pk=tribe_group.pk
+            )
+        seat = tribe_group if tribe_group is not None else tribe
+        old = seat.chief
+        if (old.pk if old else None) == (user.pk if user else None):
+            return user
+        seat.chief = user
+        if tribe_group is not None:
+            seat.save(update_fields=["chief"])
+            if user is not None:
+                _activate_membership(user, tribe_group, by)
+        else:
+            seat.save(update_fields=["chief", "updated_at"])
+        others = []
+        if user is not None:
+            others = list(pending_volunteers(tribe, tribe_group))
+            TribeChiefVolunteer.objects.filter(
+                pk__in=[o.pk for o in others]
+            ).update(
+                status=TribeChiefVolunteer.STATUS_CLOSED,
+                decided_at=now,
+                decided_by=by,
+            )
+            for changed in others:
+                changed.status = TribeChiefVolunteer.STATUS_CLOSED
+                _queue_dm_update(changed)
+        seat_label = tribe_group.name if tribe_group else tribe.name
+        record_audit(
+            by,
+            f"Chief of {seat_label}: {display_name(old) if old else 'nobody'}"
+            f" -> {display_name(user) if user else 'nobody'}",
+            "other",
+        )
+    if tribe_group is None and user is not None:
+        try:
+            ensure_tribe_chiefs_have_group_memberships()
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Group memberships for new tribe chief %s failed",
+                user.pk,
+                exc_info=True,
+            )
+    return user
+
+
 def decline(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
     """Not now: the seat stays open."""
     _require_executor(by)

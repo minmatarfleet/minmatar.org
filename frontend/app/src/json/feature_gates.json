@@ -21,6 +21,10 @@
             "feature": "campaigns.view",
             "legacy": { "perms": ["campaigns.view_campaign"], "superuser": true }
         },
+        "campaigns.create": {
+            "feature": "campaigns.create",
+            "legacy": { "perms": ["campaigns.add_campaign"], "superuser": true }
+        },
         "campaigns.manage": {
             "feature": "campaigns.manage",
             "legacy": { "perms": ["campaigns.change_campaign"], "superuser": true }
@@ -28,6 +32,26 @@
         "posts.create": {
             "feature": "posts.create",
             "legacy": { "perms": ["posts.add_evepost"], "superuser": true }
+        },
+        "posts.tags.manage": {
+            "feature": "posts.tags.manage",
+            "legacy": { "perms": ["posts.change_evetag"], "superuser": true }
+        },
+        "reddit.approvals.manage": {
+            "feature": "reddit.approvals.manage",
+            "legacy": { "perms": ["reddit.change_redditpostchangerequest"], "superuser": true }
+        },
+        "structures.timers.correct": {
+            "feature": "structures.timers.correct",
+            "legacy": { "perms": ["structures.change_evestructuretimer"], "superuser": true }
+        },
+        "fleets.npsi_sources.manage": {
+            "feature": "fleets.npsi_sources.manage",
+            "legacy": { "perms": ["fleets.change_npsieventsource"], "superuser": true }
+        },
+        "help_tickets.manage": {
+            "feature": "help_tickets.manage",
+            "legacy": { "perms": ["help_tickets.change_helprequestcategory"], "superuser": true }
         },
         "srp.view": {
             "feature": "srp.view",
@@ -40,6 +64,16 @@
         "srp.process": {
             "feature": "srp.process",
             "legacy": { "perms": ["srp.change_evefleetshipreimbursement"], "superuser": true }
+        },
+        "srp.programs.manage": {
+            "feature": "srp.programs.manage",
+            "legacy": { "perms": ["srp.change_shipreimbursementprogram"], "superuser": true }
+        },
+        "fittings.doctrine.edit": {
+            "feature": "fittings.doctrine.propose",
+            "legacy": { "custom": true },
+            "parity": "custom",
+            "note": "No site editor existed. The legacy check is superuser or the pilot feature (helpers/doctrine_editor.ts)."
         },
         "srp.process#strict": {
             "feature": "srp.process",
@@ -116,6 +150,10 @@
             "feature": "corporations.members.view_all",
             "legacy": { "perms": ["eveonline.view_evecorporation"], "superuser": true }
         },
+        "industry.order.manage": {
+            "feature": "industry.order.manage",
+            "legacy": { "perms": ["industry.change_industryorder"], "superuser": true }
+        },
         "surveys.manage": {
             "feature": "surveys.manage",
             "legacy": { "perms": ["surveys.change_surveycampaign"], "superuser": true }
@@ -123,6 +161,18 @@
         "surveys.results.view": {
             "feature": "surveys.results.view",
             "legacy": { "perms": [], "superuser": true }
+        },
+        "learning.manage": {
+            "feature": "learning.manage",
+            "legacy": { "perms": ["learning.change_certificate"], "superuser": true }
+        },
+        "skillsets.manage": {
+            "feature": "skillsets.manage",
+            "legacy": { "perms": ["eveonline.change_eveskillset"], "superuser": true }
+        },
+        "creators.moderate": {
+            "feature": "creators.moderate",
+            "legacy": { "perms": ["creators.change_creatoraccount"], "superuser": true }
         },
         "learning.admin": {
             "feature": "learning.admin",
@@ -163,6 +213,22 @@
             "legacy": { "custom": true },
             "parity": "custom",
             "note": "Legacy check is superuser or active pulse.thinkspeak membership (is_thinkspeak_member)."
+        },
+        "market.manage": {
+            "feature": "market.manage",
+            "legacy": { "perms": ["eveonline.change_evelocation"], "superuser": true }
+        },
+        "industry.loyalty.settings": {
+            "feature": "industry.loyalty.settings",
+            "legacy": { "perms": ["industry.change_industryloyaltypoint"], "superuser": true }
+        },
+        "buyback.manage": {
+            "feature": "buyback.manage",
+            "legacy": { "perms": ["buyback.change_evebuybacksettings"], "superuser": true }
+        },
+        "freight.manage": {
+            "feature": "freight.manage",
+            "legacy": { "perms": ["freight.change_evefreightroute"], "superuser": true }
         },
         "site.debug_pages": {
             "feature": "site.debug_pages",

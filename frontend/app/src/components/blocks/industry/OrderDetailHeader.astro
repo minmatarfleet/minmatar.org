@@ -1,9 +1,8 @@
 ---
-import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { OrderLpStockpile } from '@dtypes/api.minmatar.org'
+import type { CampaignListItem, Location, OrderLpStockpile } from '@dtypes/api.minmatar.org'
 import { format_date_short } from '@helpers/date'
 import { query_string } from '@helpers/string'
 
@@ -18,6 +17,15 @@ interface Props {
      * loads; coordinators load their own content inside the modal.
      */
     lp_stockpiles?: OrderLpStockpile[] | null
+    /** Edit form for order managers; null hides it. */
+    manage?: {
+        location_id: number | null
+        contract_to: string
+        campaign_id: number | null
+        fulfilled: boolean
+        locations: Location[]
+        campaigns: CampaignListItem[]
+    } | null
 }
 
 const {
@@ -27,6 +35,7 @@ const {
     location_name = null,
     needed_by = null,
     lp_stockpiles = null,
+    manage = null,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -35,7 +44,8 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Button from '@components/blocks/Button.astro'
 import OrderLpStockpiles from '@components/blocks/OrderLpStockpiles.astro'
-import CogIcon from '@components/icons/buttons/CogIcon.astro'
+import Select from '@components/blocks/Select.astro'
+import Input from '@components/blocks/Input.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const COORDINATORS_PARTIAL = translatePath(
@@ -43,8 +53,13 @@ const COORDINATORS_PARTIAL = translatePath(
         order_id: String(order_id),
     })}`,
 )
-const api_base = get_public_api_url()
-const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/change/`
+const MANAGE_PARTIAL = translatePath(
+    `/partials/order_manage_component?${query_string({
+        order_id: String(order_id),
+    })}`,
+)
+const manage_form_id = `order-manage-form-${order_id}`
+const needed_by_value = needed_by ? String(needed_by).slice(0, 10) : ''
 ---
 
 <FlexInline
@@ -153,17 +168,99 @@ const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/ch
         </FlexInline>
     </Flexblock>
     <Flexblock gap="var(--space-3xs)" class="[ order-detail-meta__aside ]">
-        <Button
-            href={admin_order_url}
-            size="sm"
-            color="transparent"
-            narrow={true}
-            new_tab={true}
-            aria-label={t('industry.orders.detail.edit_in_admin')}
-            title={t('industry.orders.detail.edit_in_admin')}
-        >
-            <CogIcon slot="icon" />
-        </Button>
+        {manage && (
+            <div class="[ order-detail-meta__manage ]">
+                <DialogButton
+                    size="sm"
+                    color="fleet-red"
+                    narrow={false}
+                    max_width="560px"
+                >
+                    {t('industry.orders.manage.view')}
+                    <Flexblock slot="header" gap="var(--space-3xs)">
+                        <h3>{t('industry.orders.manage.title')}</h3>
+                        <small>{t('industry.orders.manage.description')}</small>
+                    </Flexblock>
+                    <form
+                        slot="dialog"
+                        id={manage_form_id}
+                        class="[ order-manage-form ]"
+                        hx-post={MANAGE_PARTIAL}
+                        hx-target="find .order-manage-form__status"
+                        hx-swap="innerHTML"
+                    >
+                        <Flexblock gap="var(--space-s)">
+                            <label for={`${manage_form_id}-needed_by`}>{t('needed_by')}</label>
+                            <Input
+                                id={`${manage_form_id}-needed_by`}
+                                type="date"
+                                name="needed_by"
+                                value={needed_by_value}
+                                required
+                            />
+                            <label for={`${manage_form_id}-location`}>{t('location')}</label>
+                            <Select id={`${manage_form_id}-location`} name="location_id">
+                                <option value="" selected={manage.location_id === null}>
+                                    {t('industry.orders.manage.no_location')}
+                                </option>
+                                {manage.locations.map((location) => (
+                                    <option
+                                        value={location.location_id}
+                                        selected={location.location_id === manage.location_id}
+                                    >
+                                        {location.location_name}
+                                    </option>
+                                ))}
+                            </Select>
+                            <label for={`${manage_form_id}-contract_to`}>{t('contract_to')}</label>
+                            <Input
+                                id={`${manage_form_id}-contract_to`}
+                                type="text"
+                                name="contract_to"
+                                value={manage.contract_to}
+                                maxlength="255"
+                            />
+                            <label for={`${manage_form_id}-campaign`}>{t('campaign')}</label>
+                            <Select id={`${manage_form_id}-campaign`} name="campaign_id">
+                                <option value="" selected={manage.campaign_id === null}>
+                                    {t('no_campaign')}
+                                </option>
+                                {manage.campaigns.map((campaign) => (
+                                    <option
+                                        value={campaign.id}
+                                        selected={campaign.id === manage.campaign_id}
+                                    >
+                                        {campaign.name}
+                                    </option>
+                                ))}
+                            </Select>
+                            <label class="[ order-manage-form__check ]">
+                                <input type="checkbox" name="fulfilled" checked={manage.fulfilled} />
+                                {t('industry.orders.manage.fulfilled')}
+                            </label>
+                            <div class="[ order-manage-form__status ]" aria-live="polite"></div>
+                        </Flexblock>
+                    </form>
+                    <FlexInline
+                        slot="footer"
+                        justification="flex-start"
+                        gap="var(--space-xs)"
+                    >
+                        <Button type="submit" form={manage_form_id} size="sm" color="fleet-red">
+                            {t('save')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="transparent"
+                            x-on:click="close_dialog()"
+                        >
+                            {t('cancel')}
+                        </Button>
+                    </FlexInline>
+                </DialogButton>
+            </div>
+        )}
         {
             location_name && (
                 <small class="[ text-highlight ]">{location_name}</small>
@@ -222,7 +319,13 @@ const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/ch
         text-align: right;
     }
 
-    /* Phones: location / needed-by read left-aligned with the admin cog beside them. */
+    .order-manage-form__check {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    /* Phones: location / needed-by read left-aligned with the manage button beside them. */
     @media (max-width: 48rem) {
         .order-detail-meta__aside {
             display: grid;
@@ -232,7 +335,7 @@ const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/ch
             width: 100%;
             text-align: left;
 
-            > :global(:first-child) {
+            > :global(.order-detail-meta__manage) {
                 grid-column: 2;
                 grid-row: 1 / span 2;
             }

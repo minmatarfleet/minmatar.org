@@ -1,0 +1,188 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { RequirementCheck } from '@dtypes/api.minmatar.org'
+import { check_status, check_tone, group_by_importance } from '@helpers/corporations/requirements'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+// Required / Nice to have groups of checked requirements. The applicant sees
+// ship icons and a training link; recruiters see the same rows without them.
+interface Props {
+    checks: RequirementCheck[];
+    /** applicant: ship icons + training link; recruiter: pass or fail only. */
+    mode?: 'applicant' | 'recruiter';
+    [propName: string]: any;
+}
+
+const {
+    checks,
+    mode = 'applicant',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const groups = group_by_importance(checks)
+const sections = [
+    { key: 'required', label: t('corporations.requirements.group_required'), rows: groups.required },
+    { key: 'preferred', label: t('corporations.requirements.group_preferred'), rows: groups.preferred },
+].filter((section) => section.rows.length > 0)
+
+const TRAINING_URL = translatePath('/account/#training')
+
+function detail(check: RequirementCheck) {
+    const status = check_status(check)
+    if (check.detail) return check.detail
+    if (status === 'met') return t('corporations.requirements.status_ready')
+    if (status === 'unmet') return t('corporations.requirements.status_not_yet')
+    return mode === 'recruiter' ? t('corporations.requirements.status_unknown') : ''
+}
+---
+
+<div class:list={['[ requirement-checks ]', Astro.props.class]} {...attributes}>
+    {sections.map((section) => (
+        <section class="[ requirement-checks__group ]" aria-label={section.label}>
+            <h3 class="[ requirement-checks__label ]">{section.label}</h3>
+            <ul class="[ requirement-checks__list ]" role="list">
+                {section.rows.map((check) => {
+                    const status = check_tone(check)
+                    const show_ships = mode === 'applicant' && check.ship_type_ids.length > 0
+                    const show_plan = mode === 'applicant' && status === 'training'
+                    return (
+                        <li class="[ requirement-check ]" data-status={status}>
+                            <span class="[ requirement-check__icon ]" aria-hidden="true">
+                                {status === 'met' &&
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M7.5 12.5l3 3 6-6.5" /></svg>
+                                }
+                                {status === 'training' &&
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 7v5l3 2" /></svg>
+                                }
+                                {(status === 'unmet' || status === 'unknown') &&
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="3 3" /></svg>
+                                }
+                            </span>
+                            <span class="[ requirement-check__text ]">{check.text}</span>
+                            <span class="[ requirement-check__evidence ]">
+                                {show_ships &&
+                                    <span class="[ requirement-check__ships ]">
+                                        {check.ship_type_ids.map((type_id) => (
+                                            <img
+                                                src={get_item_icon(type_id, 32)}
+                                                alt=""
+                                                width="28"
+                                                height="28"
+                                                loading="lazy"
+                                                class:list={[{ 'is-dim': status !== 'met' }]}
+                                            />
+                                        ))}
+                                    </span>
+                                }
+                                <span class="[ requirement-check__detail ]">{detail(check)}</span>
+                                {show_plan &&
+                                    <a href={TRAINING_URL} class="[ requirement-check__plan ]">{t('corporations.requirements.training_plan')}</a>
+                                }
+                            </span>
+                        </li>
+                    )
+                })}
+            </ul>
+        </section>
+    ))}
+</div>
+
+<style lang="scss">
+    .requirement-checks {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .requirement-checks__label {
+        margin: 0;
+        padding-bottom: var(--space-3xs);
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        border-bottom: solid 1px var(--hairline);
+    }
+
+    .requirement-checks__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .requirement-check {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        min-height: var(--space-xl);
+        padding-block: var(--space-3xs);
+        border-bottom: solid 1px var(--hairline);
+    }
+
+    .requirement-check__icon {
+        flex: none;
+        display: inline-flex;
+        width: var(--space-m);
+        height: var(--space-m);
+        color: var(--text-muted);
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .requirement-check[data-status='met'] .requirement-check__icon,
+    .requirement-check[data-status='met'] .requirement-check__detail {
+        color: var(--green);
+    }
+
+    .requirement-check[data-status='training'] .requirement-check__icon,
+    .requirement-check[data-status='training'] .requirement-check__detail {
+        color: var(--attention);
+    }
+
+    .requirement-check__text {
+        flex: 1 1 16rem;
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .requirement-check__evidence {
+        flex: 0 1 auto;
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .requirement-check__ships {
+        display: inline-flex;
+        gap: var(--space-3xs);
+
+        img {
+            display: block;
+        }
+
+        .is-dim {
+            opacity: 0.35;
+        }
+    }
+
+    .requirement-check__detail {
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .requirement-check__plan {
+        font-size: var(--step--1);
+    }
+</style>

@@ -1,0 +1,441 @@
+---
+// no-error-refetch: a section save; a failed save shows in the section it swaps back.
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ManagedCorporationRequirements } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    RequirementError,
+    create_corporation_requirement,
+    delete_corporation_requirement,
+    get_managed_corporation_requirements,
+    put_corporation_interview_topics,
+    update_corporation_requirement,
+} from '@helpers/api.minmatar.org/applications'
+import { over_asks, requirement_from_form } from '@helpers/corporations/requirements'
+import { query_string } from '@helpers/string'
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Input from '@components/blocks/Input.astro'
+import CorporationRequirementForm from '@components/blocks/CorporationRequirementForm.astro'
+
+const ROOT_ID = 'corporation-requirements'
+const TARGET = `#${ROOT_ID}`
+// Lives in the accordion header on the corporation page; refreshed out of band.
+const SUMMARY_ID = 'corporation-settings-requirements-summary'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const partial_url = (extra: Record<string, string> = {}) => translatePath(`/partials/corporation_requirements_settings_component/?${query_string({
+    corporation_id: String(corporation_id),
+    ...extra,
+})}`)
+const PARTIAL_URL = partial_url()
+
+// Which row is open for editing: a rule id, or "new" for the add form.
+let editing = Astro.url.searchParams.get('edit') ?? ''
+let error: string | null = null
+
+const token: string = auth_token
+async function current_topics() {
+    const data = await get_managed_corporation_requirements(token, corporation_id)
+    return data?.interview_topics ?? []
+}
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    const rule_id = parseInt(String(form.get('rule_id') ?? ''))
+    try {
+        if (action === 'add') {
+            await create_corporation_requirement(auth_token, corporation_id, requirement_from_form(form))
+            editing = ''
+        } else if (action === 'update' && rule_id) {
+            const rule = requirement_from_form(form)
+            await update_corporation_requirement(auth_token, corporation_id, rule_id, {
+                params: rule.params,
+                who: rule.who,
+                importance: rule.importance,
+            })
+            editing = ''
+        } else if (action === 'importance' && rule_id) {
+            const importance = form.get('importance') === 'required' ? 'required' : 'preferred'
+            await update_corporation_requirement(auth_token, corporation_id, rule_id, { importance })
+        } else if (action === 'remove' && rule_id) {
+            await delete_corporation_requirement(auth_token, corporation_id, rule_id)
+            editing = ''
+        } else if (action === 'add_topic') {
+            const topic = String(form.get('topic') ?? '').trim()
+            if (topic)
+                await put_corporation_interview_topics(auth_token, corporation_id, [...await current_topics(), topic])
+        } else if (action === 'remove_topic') {
+            const index = parseInt(String(form.get('index') ?? ''))
+            const topics = await current_topics()
+            await put_corporation_interview_topics(auth_token, corporation_id, topics.filter((_, i) => i !== index))
+        }
+    } catch (failure) {
+        error = failure instanceof RequirementError && failure.message !== 'not_allowed'
+            ? failure.message
+            : t('corporations.settings.error_save')
+        if (action === 'add') editing = 'new'
+        if (action === 'update' && rule_id) editing = String(rule_id)
+    }
+}
+
+const data = await get_managed_corporation_requirements(auth_token, corporation_id) as ManagedCorporationRequirements | null
+if (!data) return HTTP_403_Forbidden()
+
+const rules = data.rules
+const at_max = rules.length >= data.max_rules
+const summary = rules.length
+    ? t('corporations.requirements.summary_count').replace('COUNT', String(rules.length))
+    : t('corporations.requirements.summary_none')
+const tag = (kind: string) => ({
+    ships: t('corporations.requirements.tag_ships'),
+    kills: t('corporations.requirements.tag_kills'),
+    skill_points: t('corporations.requirements.tag_skill_points'),
+    character_age: t('corporations.requirements.tag_character_age'),
+    prime_time: t('corporations.requirements.tag_prime_time'),
+} as Record<string, string>)[kind] ?? kind
+const who = (value: string, kind: string) => kind === 'prime_time'
+    ? '—'
+    : ({
+        main: t('corporations.requirements.who_main'),
+        any: t('corporations.requirements.who_any'),
+        other_account: t('corporations.requirements.who_other_account'),
+    } as Record<string, string>)[value] ?? value
+---
+
+<span id={SUMMARY_ID} hx-swap-oob="innerHTML">{summary}</span>
+
+<div id={ROOT_ID} class="[ corp-req ]">
+    {error && <p class="[ corp-req__error ]" role="alert">{error}</p>}
+
+    <section class="[ corp-req__card ]" aria-labelledby="corp-req-checked">
+        <div class="[ corp-req__head ]">
+            <h3 id="corp-req-checked">{t('corporations.requirements.settings_checked')}</h3>
+            <a href="#apply">{t('corporations.requirements.preview')}</a>
+        </div>
+
+        {rules.length === 0 && editing !== 'new' &&
+            <EmptyState
+                title={t('corporations.requirements.empty')}
+                hint={t('corporations.requirements.empty_hint')}
+            />
+        }
+
+        {rules.length > 0 &&
+            <div class="[ corp-req__table ]" role="table" aria-labelledby="corp-req-checked">
+                <div class="[ corp-req__row corp-req__row--head ]" role="row">
+                    <span role="columnheader">{t('corporations.requirements.col_rule')}</span>
+                    <span role="columnheader">{t('corporations.requirements.col_who')}</span>
+                    <span role="columnheader" class="[ corp-req__num ]">{t('corporations.requirements.col_members')}</span>
+                    <span role="columnheader">{t('corporations.requirements.col_importance')}</span>
+                    <span role="columnheader"><span class="[ visually-hidden ]">{t('corporations.requirements.edit')}</span></span>
+                </div>
+                {rules.map((rule) => {
+                    const warn = over_asks(rule)
+                    const open = editing === String(rule.id)
+                    return (
+                        <div class="[ corp-req__item ]" role="rowgroup">
+                            <div class="[ corp-req__row ]" role="row">
+                                <span role="cell" class="[ corp-req__rule ]">
+                                    <span class="[ corp-req__tag ]">{tag(rule.kind)}</span>
+                                    <span class="[ corp-req__text ]">{rule.text}</span>
+                                </span>
+                                <span role="cell" class="[ corp-req__who ]">{who(rule.who, rule.kind)}</span>
+                                <span role="cell" class:list={['[ corp-req__num ]', { 'is-attention': warn }]}>
+                                    {rule.members_pass === null ? '—' : `${rule.members_pass}%`}
+                                </span>
+                                <span role="cell">
+                                    <span class="[ corp-req__toggle ]" role="group" aria-label={t('corporations.requirements.col_importance')}>
+                                        {(['required', 'preferred'] as const).map((value) => (
+                                            <button
+                                                type="button"
+                                                aria-pressed={rule.importance === value ? 'true' : 'false'}
+                                                hx-post={PARTIAL_URL}
+                                                hx-target={TARGET}
+                                                hx-swap="outerHTML"
+                                                hx-vals={JSON.stringify({ action: 'importance', rule_id: String(rule.id), importance: value })}
+                                            >{t(value === 'required' ? 'corporations.requirements.importance_required' : 'corporations.requirements.importance_preferred')}</button>
+                                        ))}
+                                    </span>
+                                </span>
+                                <span role="cell">
+                                    <button
+                                        type="button"
+                                        class="[ corp-req__icon-button ]"
+                                        aria-label={t('corporations.requirements.edit')}
+                                        aria-expanded={open ? 'true' : 'false'}
+                                        hx-get={open ? PARTIAL_URL : partial_url({ edit: String(rule.id) })}
+                                        hx-target={TARGET}
+                                        hx-swap="outerHTML"
+                                    >
+                                        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg>
+                                    </button>
+                                </span>
+                            </div>
+                            {warn && <p class="[ corp-req__nudge ]">{t('corporations.requirements.over_ask')}</p>}
+                            {open &&
+                                <CorporationRequirementForm
+                                    options={data.options}
+                                    partial_url={PARTIAL_URL}
+                                    target={TARGET}
+                                    rule={rule}
+                                    class="[ corp-req__editor ]"
+                                />
+                            }
+                        </div>
+                    )
+                })}
+            </div>
+        }
+
+        {editing === 'new' && !at_max &&
+            <CorporationRequirementForm
+                options={data.options}
+                partial_url={PARTIAL_URL}
+                target={TARGET}
+            />
+        }
+
+        {editing !== 'new' && (at_max
+            ? <small class="[ corp-req__muted ]">{t('corporations.requirements.max_reached').replace('COUNT', String(data.max_rules))}</small>
+            : <div>
+                <Button
+                    size="sm"
+                    color="transparent"
+                    hx-get={partial_url({ edit: 'new' })}
+                    hx-target={TARGET}
+                    hx-swap="outerHTML"
+                >{t('corporations.requirements.add')}</Button>
+            </div>
+        )}
+    </section>
+
+    <section class="[ corp-req__card ]" aria-labelledby="corp-req-interview">
+        <h3 id="corp-req-interview">{t('corporations.requirements.settings_interview')}</h3>
+        {data.interview_topics.length === 0
+            ? <EmptyState title={t('corporations.requirements.topics_empty')} />
+            : <ul class="[ corp-req__topics ]" role="list">
+                {data.interview_topics.map((topic, index) => (
+                    <li>
+                        <span>{topic}</span>
+                        <button
+                            type="button"
+                            class="[ corp-req__icon-button ]"
+                            aria-label={`${t('corporations.requirements.remove_topic')}: ${topic}`}
+                            hx-post={PARTIAL_URL}
+                            hx-target={TARGET}
+                            hx-swap="outerHTML"
+                            hx-vals={JSON.stringify({ action: 'remove_topic', index: String(index) })}
+                        >
+                            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        }
+        <form class="[ corp-req__topic-form ]" hx-post={PARTIAL_URL} hx-target={TARGET} hx-swap="outerHTML">
+            <input type="hidden" name="action" value="add_topic" />
+            <label class="[ visually-hidden ]" for="corp-req-topic">{t('corporations.requirements.topic_label')}</label>
+            <Input id="corp-req-topic" name="topic" maxlength="200" placeholder={t('corporations.requirements.topic_placeholder')} />
+            <Button type="submit" size="sm" color="transparent">{t('corporations.requirements.add_topic')}</Button>
+        </form>
+    </section>
+</div>
+
+<style lang="scss">
+    .corp-req {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding-block: var(--space-s);
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .corp-req__error {
+        margin: 0;
+        color: var(--fleet-red);
+    }
+
+    .corp-req__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .corp-req__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3xs) var(--space-m);
+
+        a {
+            font-size: var(--step--1);
+        }
+    }
+
+    .corp-req__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 10rem 7rem 13rem var(--space-xl);
+        gap: var(--space-s);
+        align-items: center;
+        min-height: var(--space-xl);
+        border-top: solid 1px var(--hairline);
+
+        @media (max-width: 56rem) {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+
+            > :nth-child(2) {
+                display: none;
+            }
+
+            > :nth-child(3) {
+                display: none;
+            }
+        }
+    }
+
+    .corp-req__row--head {
+        min-height: auto;
+        padding-block: var(--space-2xs);
+        border-top: 0;
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+    }
+
+    .corp-req__rule {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .corp-req__tag {
+        flex: none;
+        width: 6rem;
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .corp-req__text {
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .corp-req__who {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .corp-req__num {
+        text-align: end;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+
+        &.is-attention {
+            color: var(--attention);
+        }
+    }
+
+    .corp-req__row--head .corp-req__num {
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .corp-req__toggle {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border: solid 1px var(--hairline-strong);
+
+        button {
+            min-height: var(--space-l);
+            padding-inline: var(--space-2xs);
+            background: transparent;
+            border: 0;
+            font: inherit;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        button[aria-pressed='true'] {
+            background: var(--foreground);
+            color: var(--background);
+            font-weight: 600;
+        }
+    }
+
+    .corp-req__icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--space-xl);
+        height: var(--space-xl);
+        background: none;
+        border: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .corp-req__nudge {
+        margin: 0 0 var(--space-xs);
+        padding-inline-start: calc(6rem + var(--space-s));
+        font-size: var(--step--1);
+        color: var(--attention);
+    }
+
+    .corp-req__editor {
+        margin: 0 0 var(--space-s);
+    }
+
+    .corp-req__muted {
+        color: var(--text-muted);
+    }
+
+    .corp-req__topics {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-s);
+            min-height: var(--space-xl);
+            border-top: solid 1px var(--hairline);
+            color: var(--highlight);
+        }
+    }
+
+    .corp-req__topic-form {
+        display: flex;
+        gap: var(--space-xs);
+        align-items: center;
+    }
+</style>

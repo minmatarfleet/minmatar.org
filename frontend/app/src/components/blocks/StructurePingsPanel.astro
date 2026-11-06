@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StructurePing } from '@dtypes/api.minmatar.org'
+
+/** Recent structure pings and whether Discord took them. Filtering swaps this panel through structure_timers_manage_component. */
+interface Props {
+    pings:              StructurePing[];
+    failed_only?:       boolean;
+    error?:             string | null;
+    [propName: string]: any;
+}
+
+const { pings, failed_only = false, error = null } = Astro.props
+
+const PARTIAL_URL = `${translatePath('/partials/structure_timers_manage_component')}?view=pings`
+
+const when = (iso: string | null) => iso ? new Date(iso.endsWith('Z') ? iso : `${iso}Z`).toISOString().slice(0, 16).replace('T', ' ') : ''
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ManagePanel from '@components/blocks/ManagePanel.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<ManagePanel id="structure-pings-panel">
+    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
+
+    <form hx-get={PARTIAL_URL} hx-target="#structure-pings-panel" hx-swap="outerHTML" hx-trigger="change">
+        <label class="[ manage-panel__field ]">
+            <span>
+                <input type="checkbox" name="failed_only" value="true" checked={failed_only} />
+                {' '}{t('structure_timers_manage.pings.failed_only')}
+            </span>
+        </label>
+    </form>
+
+    {pings.length === 0 ?
+        <EmptyState title={t('structure_timers_manage.pings.empty')} />
+        :
+        <ul class="[ manage-panel__rows ]" role="list">
+            {pings.map(ping =>
+                <li class="[ manage-panel__row ]">
+                    <span class="[ manage-panel__muted ]">{when(ping.created_at)} EVE</span>
+                    <Tag color={ping.discord_success ? 'green' : 'fleet-red'} text={ping.discord_success ? t('structure_timers_manage.pings.sent') : t('structure_timers_manage.pings.failed')} />
+                    <span>{ping.notification_type}</span>
+                    <span>{ping.summary}</span>
+                </li>
+            )}
+        </ul>
+    }
+</ManagePanel>

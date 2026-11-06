@@ -1,0 +1,158 @@
+---
+// no-error-refetch: an author form; a failed save shows inline above the form.
+import { i18n, t_key } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import {
+    get_moderation_accounts,
+    get_moderation_items,
+    set_moderation_account_status,
+    update_moderation_item,
+} from '@helpers/api.minmatar.org/creators_moderation'
+import { error_text, form_int, form_text } from '@helpers/manage_forms'
+import type { ManageFlashState } from '@helpers/manage_forms'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ManageFlash from '@components/blocks/ManageFlash.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+const ROOT_ID = 'creators-moderation'
+const PARTIAL_URL = translatePath('/partials/creators_moderation_component/')
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+if (!can(await get_gates(Astro), 'creators.moderate')) return HTTP_403_Forbidden()
+
+let flash: ManageFlashState | null = null
+// The account whose items are open; a POST keeps it open.
+let open_account_id = form_int_from_query(Astro.url.searchParams.get('account'))
+
+function form_int_from_query(value: string | null): number | null {
+    const parsed = parseInt(value ?? '')
+    return Number.isNaN(parsed) ? null : parsed
+}
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = form_text(form, 'action')
+    try {
+        if (action === 'status') {
+            await set_moderation_account_status(auth_token, form_int(form, 'account_id') ?? 0, form_text(form, 'status'))
+        } else {
+            await update_moderation_item(auth_token, form_int(form, 'item_id') ?? 0, {
+                [action === 'feature' ? 'featured' : 'hidden']: form_text(form, 'value') === 'true',
+            })
+            open_account_id = form_int(form, 'account_id')
+        }
+        flash = { kind: 'success', message: t('creators_moderation.saved') }
+    } catch (error) {
+        flash = { kind: 'error', message: error_text(error, t('creators_moderation.error_save')) }
+    }
+}
+
+const accounts = await get_moderation_accounts(auth_token)
+const items = open_account_id ? await get_moderation_items(auth_token, open_account_id) : []
+const open_url = (account_id: number) => `${PARTIAL_URL}?account=${account_id}`
+---
+
+<div id={ROOT_ID}>
+    <Flexblock gap="var(--space-l)">
+        <ManageFlash flash={flash} />
+
+        <p>{t('creators_moderation.lead')}</p>
+
+        {accounts.length === 0 && <p>{t('creators_moderation.none')}</p>}
+
+        {accounts.map((account) =>
+            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+                <Flexblock gap="var(--space-s)">
+                    <FlexInline gap="var(--space-s)" justification="space-between" class="[ items-center ]">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h3>{account.platform_username || account.username}</h3>
+                            <small>
+                                {account.provider} · {account.username} ·
+                                {t('creators_moderation.items_count').replace('{count}', String(account.item_count))}
+                            </small>
+                        </Flexblock>
+                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                            <strong>{t(t_key("creators_moderation.status_", account.status))}</strong>
+                            <form
+                                method="post"
+                                action={PARTIAL_URL}
+                                hx-post={PARTIAL_URL}
+                                hx-target={`#${ROOT_ID}`}
+                                hx-swap="outerHTML"
+                            >
+                                <input type="hidden" name="action" value="status" />
+                                <input type="hidden" name="account_id" value={account.id} />
+                                <input type="hidden" name="status" value={account.status === 'approved' ? 'suspended' : 'approved'} />
+                                <Button type="submit" size="sm" color={account.status === 'approved' ? 'transparent' : 'fleet-red'} narrow={true} off_disable={true}>
+                                    {account.status === 'approved' ? t('creators_moderation.suspend') : t('creators_moderation.approve')}
+                                </Button>
+                            </form>
+                            <Button
+                                size="sm"
+                                color="transparent"
+                                narrow={true}
+                                hx-get={open_url(account.id)}
+                                hx-target={`#${ROOT_ID}`}
+                                hx-swap="outerHTML"
+                            >{t('creators_moderation.items')}</Button>
+                        </FlexInline>
+                    </FlexInline>
+
+                    {open_account_id === account.id &&
+                        <Flexblock gap="var(--space-xs)">
+                            {items.length === 0 && <p>{t('creators_moderation.no_items')}</p>}
+                            {items.map((item) =>
+                                <FlexInline gap="var(--space-s)" justification="space-between" class="[ items-center ]">
+                                    <a href={item.url} target="_blank" rel="noreferrer noopener" class:list={{ 'is-hidden': item.hidden }}>
+                                        {item.title || item.url}
+                                    </a>
+                                    <FlexInline gap="var(--space-xs)">
+                                        {[
+                                            { action: 'feature', on: item.featured, label: item.featured ? t('creators_moderation.unfeature') : t('creators_moderation.feature') },
+                                            { action: 'hide', on: item.hidden, label: item.hidden ? t('creators_moderation.unhide') : t('creators_moderation.hide') },
+                                        ].map((toggle) =>
+                                            <form
+                                                method="post"
+                                                action={`${PARTIAL_URL}?account=${account.id}`}
+                                                hx-post={`${PARTIAL_URL}?account=${account.id}`}
+                                                hx-target={`#${ROOT_ID}`}
+                                                hx-swap="outerHTML"
+                                            >
+                                                <input type="hidden" name="action" value={toggle.action} />
+                                                <input type="hidden" name="account_id" value={account.id} />
+                                                <input type="hidden" name="item_id" value={item.id} />
+                                                <input type="hidden" name="value" value={String(!toggle.on)} />
+                                                <Button type="submit" size="sm" color="transparent" narrow={true} off_disable={true}>
+                                                    {toggle.label}
+                                                </Button>
+                                            </form>
+                                        )}
+                                    </FlexInline>
+                                </FlexInline>
+                            )}
+                        </Flexblock>
+                    }
+                </Flexblock>
+            </ComponentBlock>
+        )}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-0);
+        margin-block-end: 0;
+    }
+
+    .is-hidden {
+        color: var(--faded);
+        text-decoration: line-through;
+    }
+</style>

@@ -25,7 +25,6 @@ import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 import { buildLandingCollectionJsonLd, getLearningHubSeo } from '@/data/guides/seo'
 import { LEARNING_HUB_PATH } from '@/data/guides/urls'
 import { get_site_origin } from '@helpers/seo'
-import { get_public_api_url } from '@helpers/env'
 import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -68,12 +67,11 @@ if (auth_token) {
             readiness_character_id = character_summary.characters?.[0]?.character_id ?? 0
         }
 
-        const api_base = get_public_api_url()
-        if (can(gates, 'learning.admin')) {
-            certificates_admin_href = `${api_base}/admin/learning/certificate/`
+        if (can(gates, 'learning.manage')) {
+            certificates_admin_href = translatePath('/learning/manage/')
         }
-        if (can(gates, 'skillsets.admin')) {
-            skillsets_admin_href = `${api_base}/admin/eveonline/eveskillset/`
+        if (can(gates, 'skillsets.manage')) {
+            skillsets_admin_href = translatePath('/learning/manage/#skillsets')
         }
 
         try {

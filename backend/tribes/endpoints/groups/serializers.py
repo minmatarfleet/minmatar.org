@@ -135,6 +135,7 @@ def serialize_tribe_group(
         acting_chief=acting_ref,
         chief_is_interim=acting.is_interim,
         can_appoint_chief=can_appoint_chief,
+        can_set_chief=bool(getattr(request_user, "is_superuser", False)),
         has_volunteered=has_volunteered,
         is_active=tg.is_active,
         member_count=member_count,
@@ -173,6 +174,8 @@ def serialize_tribe_group(
         roster_hidden=bool(tg.roster_hidden),
         allow_alliance_posts=bool(tg.allow_alliance_posts),
         allow_open_fleets=bool(tg.allow_open_fleets),
+        fleets_enabled=bool(tg.fleets_enabled),
+        events_enabled=bool(tg.events_enabled),
         effective_discord_channel_id=(
             str(tg.effective_discord_channel_id)
             if tg.effective_discord_channel_id

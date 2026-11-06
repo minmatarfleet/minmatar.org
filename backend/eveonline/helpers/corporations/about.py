@@ -17,7 +17,7 @@ from django.db.models import Count, Max
 from django.utils import timezone
 from eveuniverse.models import EveType
 
-from app.eve_time import as_eve_time, month_key
+from app.eve_time import as_eve_time
 from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_refs_for_users,
@@ -33,7 +33,7 @@ from eveonline.models import (
 
 from fleets.helpers.metrics import fleets_led_by_user, led_fleets
 from fleets.helpers.private_visibility import private_hidden_q
-from fleets.models import EveFleetInstance, EveFleetInstanceMember
+from fleets.models import EveFleetInstanceMember
 from timezones.brackets import BRACKETS_BY_CODE
 from tribes.models import TribeGroupMembership
 
@@ -41,12 +41,9 @@ from tribes.models import TribeGroupMembership
 _FLEET = "eve_fleet_instance__eve_fleet__"
 
 WEEKS = 13
-RECORD_DAYS = 365
-FOUNDER_DAYS = 30
 TOP_HULLS = 6
 TOP_PILOTS = 5
 TOP_TRIBE_GROUPS = 8
-TITLE_MAX = 60
 
 TENURE_BANDS = (
     ("two_years", 730),
@@ -75,11 +72,10 @@ def corporation_about(
     stints = _stint_starts([c.character_id for c in characters], corporation)
     founded = corporation.date_founded or _earliest(stints.values())
     cutoff = now - timedelta(days=ACTIVITY_DAYS)
-    record_cutoff = now - timedelta(days=RECORD_DAYS)
-    attendance = list(
+    recent = list(
         EveFleetInstanceMember.objects.filter(
             character_id__in=list(owners),
-            join_time__gte=record_cutoff,
+            join_time__gte=cutoff,
         )
         .exclude(private_hidden_q(_FLEET))
         .values_list(
@@ -91,16 +87,13 @@ def corporation_about(
             "solar_system_name",
         )
     )
-    recent = [row for row in attendance if row[1] and row[1] >= cutoff]
     return {
         "founded": founded.isoformat() if founded else None,
         "home_system": _home_system(recent),
         "heatmap": _heatmap(recent, owners),
         "prime_windows": prime_windows(corporation.timezones, brackets),
         "tenure": _tenure(mains, stints, now),
-        "founders": _founders(mains, stints, founded),
         "hulls": _top_hulls(recent, owners),
-        "records": _records(attendance, owners),
         "leaderboards": _leaderboards(characters, owners, mains, now),
         "tribe_groups": _tribe_groups({o for o in owners.values() if o > 0}),
     }
@@ -284,17 +277,6 @@ def _tenure(mains, stints, now) -> dict:
     }
 
 
-def _founders(mains, stints, founded) -> int:
-    if founded is None:
-        return 0
-    limit = founded + timedelta(days=FOUNDER_DAYS)
-    return sum(
-        1
-        for character_id, _ in mains.values()
-        if character_id in stints and stints[character_id] <= limit
-    )
-
-
 def _home_system(recent) -> dict | None:
     systems = Counter(row[5] for row in recent if row[5])
     if not systems:
@@ -340,37 +322,6 @@ def _top_hulls(recent, owners) -> list[dict]:
         {"type_id": type_id, "name": names.get(type_id, ""), "pilots": count}
         for count, type_id in ranked
     ]
-
-
-def _records(attendance, owners) -> dict:
-    turnout: dict[int, set] = defaultdict(set)
-    fleets_by_month: dict[str, set] = defaultdict(set)
-    for character_id, join_time, instance_id, fleet_id, *_ in attendance:
-        turnout[instance_id].add(owners.get(character_id))
-        if join_time and fleet_id:
-            fleets_by_month[month_key(join_time)].add(fleet_id)
-    biggest = None
-    if turnout:
-        instance_id, people = max(
-            turnout.items(), key=lambda item: (len(item[1]), item[0])
-        )
-        fleet = (
-            EveFleetInstance.objects.filter(id=instance_id)
-            .values("eve_fleet__start_time", "eve_fleet__description")
-            .first()
-        )
-        biggest = {
-            "pilots": len(people),
-            "date": _iso(fleet["eve_fleet__start_time"]) if fleet else None,
-            "title": _title(fleet["eve_fleet__description"]) if fleet else "",
-        }
-    busiest = None
-    if fleets_by_month:
-        month, fleets = max(
-            fleets_by_month.items(), key=lambda item: (len(item[1]), item[0])
-        )
-        busiest = {"month": month, "fleets": len(fleets)}
-    return {"biggest_turnout": biggest, "busiest_month": busiest}
 
 
 def _leaderboards(characters, owners, mains, now) -> dict:
@@ -448,14 +399,6 @@ def _type_names(type_ids) -> dict[int, str]:
     return dict(
         EveType.objects.filter(id__in=list(type_ids)).values_list("id", "name")
     )
-
-
-def _title(description: str | None) -> str:
-    first = (description or "").strip().splitlines()
-    text = first[0].strip() if first else ""
-    if len(text) > TITLE_MAX:
-        text = text[: TITLE_MAX - 1].rstrip() + "…"
-    return text
 
 
 def _earliest(values) -> datetime | None:

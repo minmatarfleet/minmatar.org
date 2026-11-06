@@ -27,6 +27,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `srp.submit` | `resource_match` | — | Alliance |
 | `srp.resolve` | `staff` | `srp.add_evefleetshipreimbursement` | staff permission |
 | `srp.process` | `staff` | `srp.change_evefleetshipreimbursement` | staff permission |
+| `srp.programs.manage` | `staff` | `srp.change_shipreimbursementprogram` | staff permission (edit SRP amounts, recalculate outstanding) |
 
 ## Structures and moons
 
@@ -35,6 +36,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `structures.view` | `affiliation` | `structures.view_evestructure` | Alliance, Associate |
 | `structures.timers.view` | `affiliation` | `structures.view_evestructuretimer` | Alliance, Associate |
 | `structures.timers.manage` | `affiliation` | `structures.add_evestructuretimer` | Alliance |
+| `structures.timers.correct` | `tribe_membership` | `structures.change_evestructuretimer` | Fleet Commanders (`pulse.fleet-commanders`) |
 | `moons.view` | `affiliation` | `moons.view_evemoon` | Alliance |
 | `moons.manage` | `staff` | `moons.add_evemoon` | staff permission |
 
@@ -46,15 +48,24 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `posts.edit` | `affiliation` | `posts.change_evepost` | Alliance (author check in endpoint) |
 | `posts.delete` | `affiliation` | `posts.delete_evepost` | Alliance (author check in endpoint) |
 | `creators.connect` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`) |
+| `posts.tags.manage` | `tribe_membership` | `posts.change_evetag` | Thinkspeak (`pulse.thinkspeak`) |
+| `reddit.approvals.manage` | `tribe_membership` | `reddit.change_redditpostchangerequest` | Thinkspeak (`pulse.thinkspeak`) |
+| `fleets.npsi_sources.manage` | `tribe_membership` | `fleets.change_npsieventsource` | Fleet Commanders (`pulse.fleet-commanders`) |
+| `help_tickets.manage` | `tribe_membership` | `help_tickets.change_helprequestcategory` | Technology (`pulse.technology`) |
 
 ## Industry
 
 | Code | Scope | Legacy permission | Default wiring |
 |------|-------|-------------------|----------------|
 | `industry.order.submit` | `tribe_chief` | — | Industry tribe groups (`industry.subcapital-production`, `industry.capital-production`, `industry.mining`, `industry.planetary-interaction`) |
+| `industry.order.manage` | `tribe_chief` | `industry.change_industryorder` | Industry tribe groups (same as `industry.order.submit`); edit order deadline, location, contract recipient, campaign and fulfilled state |
 | `industry.order.submit.produced` | `tribe_membership` | — | Supply Market tribe group (`supply.market`); orders limited to produced catalog items |
 | `industry.loyalty.trade` | `affiliation` | — | Alliance, Militia, Associate (post LP sell orders on the buyback board) |
 | `industry.loyalty.manage` | `tribe_membership` | — | LP buyback tribe group (`supply.loyalty-points`): post buy orders, claim and settle |
+| `industry.loyalty.settings` | `tribe_membership` | `industry.change_industryloyaltypoint` | LP buyback tribe group (`supply.loyalty-points`): LP corps, pricing, accounts, contacts |
+| `market.manage` | `tribe_membership` | `eveonline.change_evelocation` | Market tribe group (`supply.market`): hubs and stocking expectations |
+| `buyback.manage` | `tribe_membership` | `buyback.change_evebuybacksettings` | Mining tribe group (`supply.mining`): buyback rates, location, accepted items |
+| `freight.manage` | `tribe_membership` | `freight.change_evefreightroute` | Freighters tribe group (`supply.freighters`): freight routes and pricing |
 
 ## Campaigns
 
@@ -83,8 +94,8 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `applications.manage` | `staff` | `applications.change_evecorporationapplication` | staff permission |
 | `characters.view_staff` | `staff` | `eveonline.view_evecharacter` | staff permission |
 | `characters.delete_staff` | `staff` | `eveonline.delete_evecharacter` | staff permission |
-| `fittings.doctrine.approve` | `staff` | — | staff permission |
-| `fittings.doctrine.propose` | `staff` | — | staff permission |
+| `fittings.doctrine.approve` | `tribe_chief` | — | Readiness tribe group (`pulse.readiness`) chiefs; the tier approve permissions still grant it in the API |
+| `fittings.doctrine.propose` | `tribe_membership` | — | Readiness tribe group (`pulse.readiness`); the tier change permissions still grant it in the API |
 | `tech.ops` | `auth_group` | — | Technology Team auth group (no `on_leave` deny) |
 | `alliance.health` | `staff` | `alliance.view_alliancehealth` | staff permission (no `on_leave` deny) |
 | `alliance.health.executor` | `auth_group` | — | People Team auth group (every corporation on the health board, change any member's community status) |
@@ -104,6 +115,9 @@ Added to move frontend gating off Django permission strings ([frontend-feature-g
 | `notifications.push` | `affiliation` | `subscriptions.add_usersubscription` | — |
 | `learning.admin` | `staff` | `learning.change_certificate` (staff: `learning.view_certificate`) | staff permission |
 | `skillsets.admin` | `staff` | `eveonline.change_eveskillset` (staff: `eveonline.view_eveskillset`) | staff permission |
+| `learning.manage` | `tribe_membership` | `learning.change_certificate` | Thinkspeak (`pulse.thinkspeak`) |
+| `skillsets.manage` | `tribe_membership` | `eveonline.change_eveskillset` | Thinkspeak (`pulse.thinkspeak`) |
+| `creators.moderate` | `tribe_membership` | `creators.change_creatoraccount` | Thinkspeak (`pulse.thinkspeak`) |
 | `content.manage` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`), no `on_leave` deny |
 | `surveys.results.view` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
 | `site.debug_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny) |

@@ -1,0 +1,87 @@
+// Settings editors (market hubs, LP desk, buyback, freight routes). Global so
+// the htmx partials that render them are styled too. Rows are forms: one
+// change per row, saved by an htmx post to the partial that rendered it.
+
+.settings-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-l);
+}
+
+.settings-editor .settings-editor__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    padding: var(--space-s);
+    border: solid 1px var(--border-color);
+}
+
+.settings-editor .settings-editor__panel > h3,
+.settings-editor .settings-editor__panel > h4 {
+    margin: 0;
+    color: var(--highlight);
+}
+
+.settings-editor .settings-editor__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs) var(--space-s);
+    align-items: center;
+    padding-block: var(--space-2xs);
+    border-bottom: solid 1px var(--hairline);
+}
+
+.settings-editor .settings-editor__row.is-off {
+    color: var(--faded);
+}
+
+.settings-editor .settings-editor__grow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3xs) var(--space-xs);
+    align-items: baseline;
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.settings-editor .settings-editor__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    font-size: var(--step--1);
+    color: var(--faded);
+}
+
+.settings-editor .settings-editor__field input,
+.settings-editor .settings-editor__field select {
+    max-width: 14rem;
+}
+
+.settings-editor .settings-editor__check {
+    display: inline-flex;
+    gap: var(--space-2xs);
+    align-items: center;
+}
+
+.settings-editor .settings-editor__muted {
+    font-size: var(--step--1);
+    color: var(--faded);
+}
+
+.settings-editor .settings-editor__flash {
+    margin: 0;
+    padding: var(--space-xs) var(--space-s);
+    border: solid 1px var(--border-color);
+    color: var(--highlight);
+}
+
+.settings-editor .settings-editor__flash.is-error {
+    border-color: var(--fleet-red);
+}
+
+.settings-editor .settings-editor__inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    align-items: flex-end;
+}

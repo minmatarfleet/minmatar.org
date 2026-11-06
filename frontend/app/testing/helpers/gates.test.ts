@@ -67,10 +67,17 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'fleets.delete': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('fleets.delete_evefleet'),
     'fleets.manage_any': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('fleets.manage_any_fleet'),
     'campaigns.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('campaigns.view_campaign'),
+    'campaigns.create': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('campaigns.add_campaign'),
     'campaigns.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('campaigns.change_campaign'),
     'posts.create': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('posts.add_evepost'),
+    'posts.tags.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('posts.change_evetag'),
+    'reddit.approvals.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('reddit.change_redditpostchangerequest'),
+    'structures.timers.correct': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('structures.change_evestructuretimer'),
+    'fleets.npsi_sources.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('fleets.change_npsieventsource'),
+    'help_tickets.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('help_tickets.change_helprequestcategory'),
     'srp.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement'),
     'srp.resolve': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement'),
+    'srp.programs.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.change_shipreimbursementprogram'),
     'srp.process': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement'),
     'srp.process#strict': (_is_superuser, user_permissions) => user_permissions.includes('srp.change_evefleetshipreimbursement'),
     'structures.timers.view': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('structures.view_evestructuretimer')),
@@ -87,8 +94,15 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'applications.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('applications.change_evecorporationapplication'),
     'characters.view_staff': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('eveonline.view_evecharacter')),
     'corporations.members.view_all': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.view_evecorporation'),
+    'industry.order.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryorder'),
     'surveys.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('surveys.change_surveycampaign'),
     'surveys.results.view': (is_superuser) => is_superuser,
+    'learning.manage': (is_superuser, user_permissions) => is_superuser
+        || user_permissions.includes('learning.change_certificate'),
+    'skillsets.manage': (is_superuser, user_permissions) => is_superuser
+        || user_permissions.includes('eveonline.change_eveskillset'),
+    'creators.moderate': (is_superuser, user_permissions) => is_superuser
+        || user_permissions.includes('creators.change_creatoraccount'),
     'learning.admin': (is_superuser, user_permissions) => is_superuser
         || user_permissions.includes('learning.change_certificate')
         || user_permissions.includes('learning.view_certificate'),
@@ -100,6 +114,10 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'industry.industrialists.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.add_evecharactertag'),
     'industry.industrialists.view#strict': (_is_superuser, user_permissions) => user_permissions.includes('eveonline.add_evecharactertag'),
     'notifications.push#strict': (_is_superuser, user_permissions) => user_permissions.includes('subscriptions.add_usersubscription'),
+    'market.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.change_evelocation'),
+    'industry.loyalty.settings': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryloyaltypoint'),
+    'buyback.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('buyback.change_evebuybacksettings'),
+    'freight.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('freight.change_evefreightroute'),
     'site.debug_pages': (is_superuser) => is_superuser,
     'characters.lookup': (is_superuser) => is_superuser,
     // PageFinder / PageBreadcrumbs: `if (user && user?.is_superuser)` showed every page.

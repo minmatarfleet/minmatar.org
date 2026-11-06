@@ -125,6 +125,20 @@ class TribeGroup(models.Model):
         default=True,
         help_text="Off: every post published as the group is members only.",
     )
+    fleets_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            "Off: the group has no Fleets tab and nobody can schedule fleets "
+            "as the group."
+        ),
+    )
+    events_enabled = models.BooleanField(
+        default=True,
+        help_text=(
+            "Off: the group has no Events tab and nobody can create events "
+            "as the group."
+        ),
+    )
     allow_open_fleets = models.BooleanField(
         default=False,
         help_text="Publishers may open group fleets to the whole alliance.",

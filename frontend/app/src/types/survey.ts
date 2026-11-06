@@ -106,6 +106,17 @@ export interface SurveyCampaign {
     opens_at: string | null
     closes_at: string | null
     response_count: number
+    /** One-off questions added to this survey; absent from older API versions. */
+    spotlight_questions?: SpotlightQuestion[]
+}
+
+export interface SpotlightQuestion {
+    key: string
+    type: 'scale5' | 'enps' | 'agree' | 'single' | 'multi' | 'text'
+    label: string
+    help?: string
+    choices?: string[]
+    required?: boolean
 }
 
 export interface ActiveSurvey {

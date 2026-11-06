@@ -1,0 +1,290 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MarketHub, MarketHubExpectations } from '@dtypes/api.minmatar.org'
+import {
+    add_market_hub,
+    add_market_item_expectation,
+    get_market_hub_expectations,
+    get_market_hubs,
+    patch_market_hub,
+    remove_market_hub,
+    remove_market_item_expectation,
+    search_market_types,
+    set_expectations_from_doctrine,
+    set_market_expectation_tracked,
+} from '@helpers/api.minmatar.org/market_hubs'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const ROOT_ID = 'market-hubs'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+if (!can(await get_gates(Astro), 'market.manage')) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+let location_id = parseInt(params.get('location_id') ?? '0') || 0
+let flash: { error: boolean, text: string } | null = null
+let search_query = ''
+let search_results: { type_id: number, name: string }[] = []
+
+const PARTIAL_URL = (id: number) => translatePath(`/partials/market_hubs_component/${id ? `?${query_string({ location_id: String(id) })}` : ''}`)
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    const hub_id = parseInt(String(form.get('hub_id') ?? '0')) || 0
+    const number_field = (name: string) => parseInt(String(form.get(name) ?? '0')) || 0
+    try {
+        switch (action) {
+            case 'add_hub': {
+                const new_id = number_field('existing_location_id') || number_field('location_id')
+                const name = String(form.get('location_name') ?? '').trim()
+                await add_market_hub(auth_token, {
+                    location_id: new_id,
+                    location_name: name || null,
+                    solar_system_id: number_field('solar_system_id') || null,
+                    solar_system_name: String(form.get('solar_system_name') ?? '').trim() || null,
+                    is_structure: true,
+                })
+                flash = { error: false, text: t('market.hubs.added') }
+                break
+            }
+            case 'toggle_hub':
+                await patch_market_hub(auth_token, hub_id, {
+                    [String(form.get('field'))]: form.get('value') === 'true',
+                })
+                flash = { error: false, text: t('market.hubs.saved') }
+                break
+            case 'remove_hub':
+                await remove_market_hub(auth_token, hub_id)
+                flash = { error: false, text: t('market.hubs.removed') }
+                break
+            case 'track':
+                await set_market_expectation_tracked(
+                    auth_token,
+                    hub_id,
+                    form.get('kind') === 'contracts' ? 'contracts' : 'fittings',
+                    number_field('fitting_id'),
+                    form.get('tracked') === 'true',
+                )
+                break
+            case 'add_item':
+                await add_market_item_expectation(auth_token, hub_id, number_field('type_id'))
+                break
+            case 'remove_item':
+                await remove_market_item_expectation(auth_token, hub_id, number_field('type_id'))
+                break
+            case 'search_item':
+                search_query = String(form.get('q') ?? '').trim()
+                search_results = (await search_market_types(auth_token, search_query)) ?? []
+                break
+            case 'from_doctrine': {
+                const result = await set_expectations_from_doctrine(auth_token, hub_id, number_field('doctrine_id'))
+                flash = {
+                    error: false,
+                    text: t('market.hubs.from_doctrine_done').replace('{created}', String(result.created)),
+                }
+                break
+            }
+        }
+        if (hub_id) location_id = hub_id
+    } catch (error) {
+        flash = { error: true, text: (error as Error).message }
+        if (hub_id) location_id = hub_id
+    }
+}
+
+let hubs: MarketHub[] = []
+let expectations: MarketHubExpectations | null = null
+let fetching_error: Error | false = false
+
+try {
+    hubs = (await get_market_hubs(auth_token)) ?? []
+    if (location_id)
+        expectations = await get_market_hub_expectations(auth_token, location_id)
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const active_hubs = hubs.filter((hub) => hub.market_active)
+const other_locations = hubs.filter((hub) => !hub.market_active)
+const selected = hubs.find((hub) => hub.location_id === location_id)
+const own_url = PARTIAL_URL(location_id)
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch args={{ partial: own_url, target: `#${ROOT_ID}`, error: fetching_error, delay: parseInt(params.get('delay') ?? '0') }} />
+:
+<div id={ROOT_ID} class="[ settings-editor ]">
+    {flash &&
+        <p class:list={['[ settings-editor__flash ]', { 'is-error': flash.error }]} role={flash.error ? 'alert' : 'status'}>
+            {flash.text}
+        </p>
+    }
+
+    <section class="[ settings-editor__panel ]" aria-labelledby="market-hubs-list">
+        <h3 id="market-hubs-list">{t('market.hubs.hubs')}</h3>
+        {active_hubs.length === 0 && <EmptyState title={t('market.hubs.empty')} />}
+        {active_hubs.map((hub) =>
+            <div class="[ settings-editor__row ]">
+                <span class="[ settings-editor__grow ]">
+                    <strong>{hub.short_name}</strong> {hub.location_name}
+                    <span class="[ settings-editor__muted ]">
+                        {t('market.hubs.counts')
+                            .replace('{fittings}', String(hub.fitting_expectations))
+                            .replace('{contracts}', String(hub.contract_expectations))
+                            .replace('{items}', String(hub.item_expectations))}
+                    </span>
+                </span>
+                <form hx-post={PARTIAL_URL(hub.location_id)} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                    <input type="hidden" name="action" value="toggle_hub" />
+                    <input type="hidden" name="hub_id" value={hub.location_id} />
+                    <input type="hidden" name="field" value="prices_active" />
+                    <input type="hidden" name="value" value={hub.prices_active ? 'false' : 'true'} />
+                    <label class="[ settings-editor__check ]">
+                        <input type="checkbox" checked={hub.prices_active} hx-trigger="change" hx-post={PARTIAL_URL(hub.location_id)} hx-include="closest form" hx-target={`#${ROOT_ID}`} hx-swap="outerHTML" />
+                        {t('market.hubs.order_book_sync')}
+                    </label>
+                </form>
+                <FlexInline gap="var(--space-xs)">
+                    <Button
+                        type="button"
+                        size="sm"
+                        color={hub.location_id === location_id ? 'green' : 'transparent'}
+                        narrow={true}
+                        hx-get={PARTIAL_URL(hub.location_id)}
+                        hx-target={`#${ROOT_ID}`}
+                        hx-swap="outerHTML"
+                    >{t('market.hubs.edit_expectations')}</Button>
+                    <form hx-post={PARTIAL_URL(hub.location_id)} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML" hx-confirm={t('market.hubs.confirm_remove')}>
+                        <input type="hidden" name="action" value="remove_hub" />
+                        <input type="hidden" name="hub_id" value={hub.location_id} />
+                        <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.remove')}</Button>
+                    </form>
+                </FlexInline>
+            </div>
+        )}
+
+        <h4>{t('market.hubs.add')}</h4>
+        <form class="[ settings-editor__inline ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+            <input type="hidden" name="action" value="add_hub" />
+            {other_locations.length > 0 &&
+                <label class="[ settings-editor__field ]">
+                    {t('market.hubs.existing_location')}
+                    <select name="existing_location_id">
+                        <option value="">—</option>
+                        {other_locations.map((hub) => <option value={hub.location_id}>{hub.location_name}</option>)}
+                    </select>
+                </label>
+            }
+            <label class="[ settings-editor__field ]">
+                {t('market.hubs.new_location_id')}
+                <Input type="number" name="location_id" size="sm" />
+            </label>
+            <label class="[ settings-editor__field ]">
+                {t('market.hubs.new_location_name')}
+                <Input type="text" name="location_name" size="sm" />
+            </label>
+            <label class="[ settings-editor__field ]">
+                {t('market.hubs.new_system_id')}
+                <Input type="number" name="solar_system_id" size="sm" />
+            </label>
+            <label class="[ settings-editor__field ]">
+                {t('market.hubs.new_system_name')}
+                <Input type="text" name="solar_system_name" size="sm" />
+            </label>
+            <Button type="submit" size="sm" color="fleet-red" narrow={true}>{t('market.hubs.add_button')}</Button>
+        </form>
+    </section>
+
+    {selected && expectations &&
+        <section class="[ settings-editor__panel ]" aria-labelledby="market-hubs-expectations">
+            <h3 id="market-hubs-expectations">{t('market.hubs.expectations_for').replace('{hub}', selected.short_name)}</h3>
+
+            <h4>{t('market.hubs.from_doctrine')}</h4>
+            <form class="[ settings-editor__inline ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                <input type="hidden" name="action" value="from_doctrine" />
+                <input type="hidden" name="hub_id" value={selected.location_id} />
+                <label class="[ settings-editor__field ]">
+                    {t('market.hubs.doctrine')}
+                    <select name="doctrine_id" required>
+                        {expectations.doctrines.map((doctrine) => <option value={doctrine.id}>{doctrine.name}</option>)}
+                    </select>
+                </label>
+                <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.from_doctrine_button')}</Button>
+            </form>
+
+            {[
+                { kind: 'contracts', heading: t('market.hubs.contract_targets'), rows: expectations.contracts },
+                { kind: 'fittings', heading: t('market.hubs.fitting_targets'), rows: expectations.fittings },
+            ].map((group) =>
+                <Flexblock gap="var(--space-2xs)">
+                    <h4>{group.heading}</h4>
+                    {group.rows.length === 0 && <EmptyState title={t('market.hubs.no_fittings')} />}
+                    {group.rows.map((row) =>
+                        <form class:list={['[ settings-editor__row ]', { 'is-off': !row.tracked }]} hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                            <input type="hidden" name="action" value="track" />
+                            <input type="hidden" name="hub_id" value={selected.location_id} />
+                            <input type="hidden" name="kind" value={group.kind} />
+                            <input type="hidden" name="fitting_id" value={row.fitting_id} />
+                            <input type="hidden" name="tracked" value={row.tracked ? 'false' : 'true'} />
+                            <span class="[ settings-editor__grow ]">{row.fitting_name}</span>
+                            {group.kind === 'contracts' && row.tracked &&
+                                <span class="[ settings-editor__muted ]">{t('market.hubs.current').replace('{count}', String(row.current ?? 0))}</span>
+                            }
+                            <Button type="submit" size="sm" color={row.tracked ? 'transparent' : 'green'} narrow={true}>
+                                {row.tracked ? t('market.hubs.untrack') : t('market.hubs.track')}
+                            </Button>
+                        </form>
+                    )}
+                </Flexblock>
+            )}
+
+            <Flexblock gap="var(--space-2xs)">
+                <h4>{t('market.hubs.item_targets')}</h4>
+                {expectations.items.length === 0 && <EmptyState title={t('market.hubs.no_items')} />}
+                {expectations.items.map((item) =>
+                    <form class="[ settings-editor__row ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                        <input type="hidden" name="action" value="remove_item" />
+                        <input type="hidden" name="hub_id" value={selected.location_id} />
+                        <input type="hidden" name="type_id" value={item.type_id} />
+                        <span class="[ settings-editor__grow ]">{item.name}</span>
+                        <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.untrack')}</Button>
+                    </form>
+                )}
+                <form class="[ settings-editor__inline ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                    <input type="hidden" name="action" value="search_item" />
+                    <input type="hidden" name="hub_id" value={selected.location_id} />
+                    <label class="[ settings-editor__field ]">
+                        {t('market.hubs.search_item')}
+                        <Input type="search" name="q" size="sm" value={search_query} minlength="2" required />
+                    </label>
+                    <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.search')}</Button>
+                </form>
+                {search_query && search_results.length === 0 && <EmptyState title={t('market.hubs.no_results')} />}
+                {search_results.map((result) =>
+                    <form class="[ settings-editor__row ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                        <input type="hidden" name="action" value="add_item" />
+                        <input type="hidden" name="hub_id" value={selected.location_id} />
+                        <input type="hidden" name="type_id" value={result.type_id} />
+                        <span class="[ settings-editor__grow ]">{result.name}</span>
+                        <Button type="submit" size="sm" color="green" narrow={true}>{t('market.hubs.track')}</Button>
+                    </form>
+                )}
+            </Flexblock>
+        </section>
+    }
+</div>
+}

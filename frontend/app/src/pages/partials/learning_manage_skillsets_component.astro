@@ -1,0 +1,137 @@
+---
+// no-error-refetch: an author form; a failed save shows inline above the form.
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import {
+    get_manage_skillsets,
+    save_manage_skillset,
+    search_manage_skills,
+} from '@helpers/api.minmatar.org/learning_manage'
+import type { LearningManageSkillset } from '@dtypes/api.minmatar.org'
+import { error_text, form_int, form_lines, form_text, parse_skill_lines } from '@helpers/manage_forms'
+import type { ManageFlashState } from '@helpers/manage_forms'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ManageFlash from '@components/blocks/ManageFlash.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+const ROOT_ID = 'learning-manage-skillsets'
+const OPTIONS_ID = 'learning-manage-skill-options'
+const PARTIAL_URL = translatePath('/partials/learning_manage_skillsets_component/')
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+if (!can(await get_gates(Astro), 'skillsets.manage')) return HTTP_403_Forbidden()
+
+// Typeahead: the picker's input asks this same partial for matching skill names.
+const query = Astro.url.searchParams.get('q')
+if (query !== null) {
+    const matches = query.trim().length >= 2 ? await search_manage_skills(auth_token, query.trim()) : []
+    return new Response(matches.map((skill) => `<option value="${skill.name.replace(/"/g, '&quot;')}"></option>`).join(''), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+}
+
+let flash: ManageFlashState | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const { skills, invalid } = parse_skill_lines(form_lines(form, 'skills'))
+    try {
+        if (invalid.length > 0) throw new Error(`${t('learning_manage.skills_invalid')} ${invalid[0]}`)
+        await save_manage_skillset(auth_token, form_int(form, 'skillset_id'), {
+            name: form_text(form, 'name'),
+            skills,
+        })
+        flash = { kind: 'success', message: t('learning_manage.saved') }
+    } catch (error) {
+        flash = { kind: 'error', message: error_text(error, t('learning_manage.error_save')) }
+    }
+}
+
+const skillsets = await get_manage_skillsets(auth_token)
+const rows: (LearningManageSkillset | null)[] = [...skillsets, null]
+const lines_of = (skillset: LearningManageSkillset | null) =>
+    skillset ? skillset.skills.map((skill) => `${skill.name} ${skill.level}`).join('\n') : ''
+---
+
+<div id={ROOT_ID}>
+    <Flexblock gap="var(--space-l)">
+        <ManageFlash flash={flash} />
+
+        <p>{t('learning_manage.skillsets_lead')}</p>
+
+        <datalist id={OPTIONS_ID}></datalist>
+
+        {rows.map((skillset) =>
+            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+                <form
+                    method="post"
+                    action={PARTIAL_URL}
+                    hx-post={PARTIAL_URL}
+                    hx-target={`#${ROOT_ID}`}
+                    hx-swap="outerHTML"
+                >
+                    <Flexblock gap="var(--space-s)">
+                        <h3>{skillset ? skillset.name : t('learning_manage.skillsets_new')}</h3>
+                        <input type="hidden" name="skillset_id" value={skillset?.id ?? ''} />
+                        <Input name="name" placeholder={t('learning_manage.name')} aria-label={t('learning_manage.name')} value={skillset?.name ?? ''} required />
+
+                        <FlexInline gap="var(--space-xs)" x-data="{ level: '5' }">
+                            <Input
+                                name="q"
+                                width="22rem"
+                                list={OPTIONS_ID}
+                                autocomplete="off"
+                                placeholder={t('learning_manage.skill_search')}
+                                aria-label={t('learning_manage.skill_search')}
+                                hx-get={PARTIAL_URL}
+                                hx-trigger="input changed delay:300ms"
+                                hx-target={`#${OPTIONS_ID}`}
+                                hx-swap="innerHTML"
+                                x-ref="skill"
+                            />
+                            <Select x-model="level" aria-label={t('learning_manage.skill_level')} width="6rem">
+                                {[1, 2, 3, 4, 5].map((level) => <option value={String(level)}>{level}</option>)}
+                            </Select>
+                            <Button
+                                type="button"
+                                size="sm"
+                                color="transparent"
+                                narrow={true}
+                                x-on:click={`
+                                    const name = $refs.skill.value.trim()
+                                    if (!name) return
+                                    const box = $el.closest('form').querySelector('textarea')
+                                    box.value = (box.value.trim() ? box.value.trim() + '\\n' : '') + name + ' ' + level
+                                    $refs.skill.value = ''
+                                `}
+                            >{t('learning_manage.skill_add')}</Button>
+                        </FlexInline>
+
+                        <Textarea name="skills" rows="6" aria-label={t('learning_manage.skills')}>{lines_of(skillset)}</Textarea>
+                        <FlexInline gap="var(--space-s)" class="[ items-center ]">
+                            <Button type="submit" color="fleet-red" size="sm" off_disable={true}>{t('learning_manage.save')}</Button>
+                            {skillset && <small>{skillset.total_skill_points.toLocaleString('en-US')} SP</small>}
+                        </FlexInline>
+                    </Flexblock>
+                </form>
+            </ComponentBlock>
+        )}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-0);
+        margin-block-end: 0;
+    }
+</style>

@@ -373,7 +373,63 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         SyncPilotFeaturesCommand().handle()
         feature = PilotFeature.objects.get(code="industry.order.submit")
         feature.tribe_groups.set([tribe_group])
+        PilotFeature.objects.get(
+            code="industry.order.manage"
+        ).tribe_groups.set([tribe_group])
         clear_feature_cache()
+
+    def _patch_order(self, order, body, token=None):
+        return self.client.patch(
+            f"/api/industry/orders/{order.pk}",
+            data=json.dumps(body),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {token or self.token}",
+        )
+
+    def test_patch_order_manager_edits_any_order(self):
+        other = User.objects.create_user(username="other_owner")
+        other_char = EveCharacter.objects.create(
+            character_id=999777, character_name="Other", user=other
+        )
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=other_char,
+        )
+        new_day = (timezone.now() + timedelta(days=20)).date()
+        r = self._patch_order(
+            order,
+            {
+                "needed_by": new_day.isoformat(),
+                "location_id": self.location.pk,
+                "contract_to": " Corp X ",
+                "fulfilled": True,
+            },
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        order.refresh_from_db()
+        self.assertEqual(order.needed_by, new_day)
+        self.assertEqual(order.location_id, self.location.pk)
+        self.assertEqual(order.contract_to, "Corp X")
+        self.assertIsNotNone(order.fulfilled_at)
+        r = self._patch_order(order, {"fulfilled": False})
+        order.refresh_from_db()
+        self.assertIsNone(order.fulfilled_at)
+        r = self._patch_order(order, {"location_id": 1})
+        self.assertEqual(r.status_code, 400)
+
+    def test_patch_order_owner_without_feature_limited_to_campaign(self):
+        PilotFeature.objects.get(
+            code="industry.order.manage"
+        ).tribe_groups.set([])
+        clear_feature_cache()
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        r = self._patch_order(order, {"contract_to": "x"})
+        self.assertEqual(r.status_code, 403)
+        r = self._patch_order(order, {"campaign_id": None})
+        self.assertEqual(r.status_code, 200)
 
     def test_post_assignment_requires_orders_onboarding(self):
         UserOnboardingAcknowledgment.objects.filter(

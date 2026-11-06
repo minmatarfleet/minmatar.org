@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { user } = get_request_user(Astro)
+if (!user) return login_redirect(Astro)
+
+let can_manage = false
+try {
+    can_manage = can(await get_gates(Astro), 'freight.manage')
+} catch (error) {
+    console.log(error)
+}
+if (!can_manage) return HTTP_404_Not_Found()
+
+const ROUTES_PARTIAL = translatePath('/partials/freight_routes_component/')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import Button from '@components/blocks/Button.astro'
+
+const page_title = t('freight.routes.page_title')
+const breadcrumbs = [
+    { page_title: t('freight.calculator.page_title'), accumulated_path: '/market/freight/calculator/' },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+---
+
+<Viewport title={page_title} meta_description={t('freight.routes.meta_description')}>
+    <PageDefault breadcrumbs={breadcrumbs}>
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <PageTitle>{page_title}</PageTitle>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)">
+            <p>{t('freight.routes.leading_text')}</p>
+            <FlexInline gap="var(--space-xs)">
+                <Button href={translatePath('/market/freight/contracts/')} color="transparent" size="sm" narrow={true}>
+                    {t('freight.routes.contract_stats')}
+                </Button>
+            </FlexInline>
+            <LazyPartial url={ROUTES_PARTIAL}>
+                <p>{t('loading')}</p>
+            </LazyPartial>
+        </Flexblock>
+    </PageDefault>
+</Viewport>

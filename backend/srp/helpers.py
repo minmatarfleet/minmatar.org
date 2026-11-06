@@ -290,3 +290,93 @@ def make_reimbursement_evemail(reimbursement):
     }
 
     return evemail
+
+
+OUTSTANDING_STATUSES = ("pending", "approved")
+
+
+def outstanding_recalculation_preview(limit: int = 50) -> dict:
+    """
+    What recalculating every outstanding (pending/approved) request would
+    change, without saving anything. Amounts follow the latest program amount
+    per hull; a hull with no program or amount history pays 0, as in
+    recalculate_reimbursement_amount.
+    """
+    outstanding = list(
+        EveFleetShipReimbursement.objects.filter(
+            status__in=OUTSTANDING_STATUSES
+        ).order_by("id")
+    )
+    latest = {}
+    for program in ShipReimbursementProgram.objects.prefetch_related(
+        "amounts"
+    ):
+        row = max(
+            program.amounts.all(),
+            key=lambda amount: (amount.created_at, amount.id),
+            default=None,
+        )
+        if row:
+            latest[program.eve_type_id] = row
+    changes = []
+    current_total = 0
+    new_total = 0
+    for reimbursement in outstanding:
+        row = latest.get(reimbursement.ship_type_id)
+        new_amount = row.srp_value if row else 0
+        current_total += reimbursement.amount
+        new_total += new_amount
+        if new_amount != reimbursement.amount:
+            changes.append(
+                {
+                    "id": reimbursement.id,
+                    "ship_name": reimbursement.ship_name,
+                    "character_name": reimbursement.character_name,
+                    "status": reimbursement.status,
+                    "current_amount": reimbursement.amount,
+                    "new_amount": new_amount,
+                }
+            )
+    changes.sort(
+        key=lambda change: abs(
+            change["new_amount"] - change["current_amount"]
+        ),
+        reverse=True,
+    )
+    return {
+        "outstanding_count": len(outstanding),
+        "changed_count": len(changes),
+        "current_total": current_total,
+        "new_total": new_total,
+        "changes": changes[:limit],
+    }
+
+
+def recalculate_outstanding() -> dict:
+    """Apply the preview: rewrite every outstanding request's amount."""
+    updated = 0
+    errors = 0
+    for reimbursement in EveFleetShipReimbursement.objects.filter(
+        status__in=OUTSTANDING_STATUSES
+    ):
+        try:
+            program = ShipReimbursementProgram.objects.filter(
+                eve_type_id=reimbursement.ship_type_id
+            ).first()
+            row = (
+                program.amounts.order_by("-created_at", "-id").first()
+                if program
+                else None
+            )
+            reimbursement.reimbursement_program_amount = row
+            reimbursement.amount = row.srp_value if row else 0
+            reimbursement.save()
+            updated += 1
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "Failed to recalculate SRP request %d: %s",
+                reimbursement.pk,
+                exc,
+            )
+            errors += 1
+    return {"updated": updated, "errors": errors}

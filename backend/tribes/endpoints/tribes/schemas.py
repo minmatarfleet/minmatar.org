@@ -18,6 +18,8 @@ class TribeSchema(BaseModel):
     acting_chief: Optional[CharacterRefSchema] = None
     chief_is_interim: bool = False
     can_appoint_chief: bool = False
+    # The viewer is a superuser and can swap the chief.
+    can_set_chief: bool = False
     has_volunteered: bool = False
     is_active: bool
     group_count: int = 0

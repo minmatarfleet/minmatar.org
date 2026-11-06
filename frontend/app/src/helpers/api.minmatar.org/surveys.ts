@@ -9,6 +9,7 @@ import type {
     SurveyAnswerInput,
     SurveyCampaign,
     SurveyQuestions,
+    SpotlightQuestion,
 } from '@dtypes/survey'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/surveys`
@@ -75,9 +76,27 @@ export async function get_corp_progress(access_token: string, id: number) {
 export async function update_campaign(
     access_token: string,
     id: number,
-    payload: { status?: string; opens_at?: string; closes_at?: string },
+    payload: {
+        title?: string
+        status?: string
+        opens_at?: string
+        closes_at?: string
+        spotlight_questions?: SpotlightQuestion[]
+    },
 ) {
     return api_request<SurveyCampaign>(`${API_ENDPOINT}/${id}`, { method: 'PATCH', token: access_token, body: payload })
+}
+
+export async function post_changelog_entry(
+    access_token: string,
+    id: number,
+    payload: { heading: string; body_markdown: string; published: boolean; sort_order?: number },
+) {
+    return api_request<{ ok: boolean; id: number }>(`${API_ENDPOINT}/${id}/changelog`, {
+        method: 'POST',
+        token: access_token,
+        body: payload,
+    })
 }
 
 export async function get_corp_report(access_token: string, id: number) {

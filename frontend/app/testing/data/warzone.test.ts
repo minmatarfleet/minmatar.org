@@ -31,7 +31,6 @@ describe('warzone content-hub registration', () => {
     it('nests frontline and economic reports in one Warzone Reports list', () => {
         expect(getWarzoneReports().map((report) => report.slug)).toEqual([
             'yc128-10',
-            'gallente-caldari-yc128-10',
             'amamake-market-yc128-10',
             'yc128-09',
             'amamake-market-yc128-09',
@@ -42,6 +41,7 @@ describe('warzone content-hub registration', () => {
         expect(getWarzoneReports().find((report) => report.slug === 'yc128-10')).toMatchObject({
             warzone_type: 'frontline',
         })
+        expect(getWarzoneReports().some((report) => report.slug === 'gallente-caldari-yc128-10')).toBe(false)
         expect(getWarzoneReports().every((report) => report.kind === 'warzone')).toBe(true)
         expect(getWarzoneReports().find((report) => report.slug === 'yc128-08')).toMatchObject({
             warzone_type: 'frontline',
