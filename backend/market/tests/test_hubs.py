@@ -107,6 +107,16 @@ class HubEditorTestCase(TestCase):
         self.assertFalse(self.hub.market_active)
         self.assertFalse(self.hub.prices_active)
 
+    def test_remove_hub_keeps_the_price_baseline_syncing(self):
+        self.hub.price_baseline = True
+        self.hub.prices_active = True
+        self.hub.save(update_fields=["price_baseline", "prices_active"])
+        response = self._call("delete", "/1234", self._manager())
+        self.assertEqual(response.status_code, 200)
+        self.hub.refresh_from_db()
+        self.assertFalse(self.hub.market_active)
+        self.assertTrue(self.hub.prices_active)
+
     def test_item_expectation_add_and_remove(self):
         manager = self._manager()
         ensure_type(

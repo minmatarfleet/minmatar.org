@@ -14,6 +14,9 @@ from groups.helpers.feature_access import can_use_feature
 
 FEATURE = "freight.manage"
 
+# An empty editor box sends null. These are the only fields that should clear.
+NULLABLE_FIELDS = frozenset({"max_m3", "max_collateral"})
+
 FIELDS = (
     "route_type",
     "isk_per_m3",

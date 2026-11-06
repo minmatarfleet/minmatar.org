@@ -18,8 +18,9 @@ METHOD = "delete"
 ROUTE_SPEC = {
     "summary": "Remove a hub from the market",
     "description": (
-        "Switches market and order-book sync off. The location and its "
-        "expectations stay, so the hub can be added back."
+        "Switches the alliance market off. The location and its "
+        "expectations stay, so the hub can be added back. The price "
+        "baseline keeps syncing its order book."
     ),
     "auth": AuthBearer(),
     "response": {200: HubResponse, 403: ErrorResponse, 404: ErrorResponse},
@@ -33,7 +34,10 @@ def remove_hub(request, location_id: int):
     if location is None:
         return 404, ErrorResponse.new("Hub not found")
     location.market_active = False
-    location.prices_active = False
+    # Jita is often the price baseline and not an alliance market hub.
+    # Removing it from the hub list must not stop live baseline prices.
+    if not location.price_baseline:
+        location.prices_active = False
     location.save()
     record_change(
         request.user,

@@ -2,11 +2,12 @@
 
 from django.core.exceptions import ValidationError
 
+from app.errors import ErrorResponse
 from audit.helpers import record_change
 from authentication import AuthBearer
-from app.errors import ErrorResponse
 from freight.endpoints.manage.common import (
     FIELDS,
+    NULLABLE_FIELDS,
     ManageRoute,
     RoutePatchRequest,
     can_manage,
@@ -47,9 +48,15 @@ def patch_manage_route(request, route_id: int, payload: RoutePatchRequest):
     ):
         return 400, ErrorResponse.new("Unknown route type")
     changes = []
+    sent = payload.model_fields_set
     for field in FIELDS:
+        if field not in sent:
+            continue
         value = getattr(payload, field)
-        if value is not None and value != getattr(route, field):
+        # Null means "leave it" except for the caps, which an empty box clears.
+        if value is None and field not in NULLABLE_FIELDS:
+            continue
+        if value != getattr(route, field):
             changes.append(f"{field} {getattr(route, field)} -> {value}")
             setattr(route, field, value)
     if not changes:

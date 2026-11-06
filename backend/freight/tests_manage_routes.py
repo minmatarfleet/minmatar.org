@@ -87,6 +87,30 @@ class FreightManageTestCase(TestCase):
         self.assertEqual(len(listing["locations"]), 2)
         self.assertEqual(AuditEntry.objects.count(), 3)
 
+    def test_empty_cap_clears_the_limit(self):
+        created = self._call(
+            "post",
+            "",
+            self.manager,
+            {
+                "origin_location_id": 1,
+                "destination_location_id": 2,
+                "max_m3": 1000,
+                "max_collateral": 500,
+            },
+        )
+        route_id = created.json()["route_id"]
+        cleared = self._call(
+            "patch",
+            f"/{route_id}",
+            self.manager,
+            {"max_m3": None, "max_collateral": None},
+        )
+        self.assertEqual(cleared.status_code, 200, cleared.content)
+        body = cleared.json()
+        self.assertIsNone(body["max_m3"])
+        self.assertIsNone(body["max_collateral"])
+
     def test_same_origin_and_destination_is_rejected(self):
         response = self._call(
             "post",
