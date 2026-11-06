@@ -17,7 +17,7 @@ from eveonline.client import EsiResponse
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import set_primary_character
 from combatlog.models import CombatLog
-from fleets.models import EveFleet, EveFleetInstance
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,
@@ -178,6 +178,107 @@ class SrpRouterTestCase(TestCase):
         data = response.json()
         self.assertEqual("dps", data["category"])
         self.assertEqual("Testing FTW", data["comments"])
+
+    def _fleet_kill_setup(self, esi_mock, tracked_character_ids):
+        """
+        A Jaguar killmail for an alt during a tracked fleet instance. The
+        main is the primary character; tracked_character_ids are fleet
+        members.
+        """
+        self._ensure_srp_program_for_jaguar_killmails()
+        esi = esi_mock.return_value
+        main = EveCharacter.objects.create(
+            character_id=KM_CHAR + 1,
+            character_name="Main",
+            user=self.user,
+        )
+        set_primary_character(self.user, main)
+        alt = EveCharacter.objects.create(
+            character_id=KM_CHAR,
+            character_name="Boxed alt",
+            user=self.user,
+        )
+        kill_time = timezone.datetime(
+            2025, 4, 2, 11, 47, 15, tzinfo=dt_timezone.utc
+        )
+        instance = EveFleetInstance.objects.create(
+            id=987654321, eve_fleet=self.fleet
+        )
+        EveFleetInstance.objects.filter(id=instance.id).update(
+            start_time=kill_time - timedelta(hours=1),
+            end_time=kill_time + timedelta(hours=1),
+        )
+        for character_id in tracked_character_ids:
+            EveFleetInstanceMember.objects.create(
+                eve_fleet_instance=instance,
+                character_id=character_id,
+                character_name=str(character_id),
+                join_time=kill_time - timedelta(minutes=30),
+                role="squad_member",
+                role_name="Squad Member",
+                ship_type_id=11400,
+                ship_name="Jaguar",
+                solar_system_id=30002537,
+                solar_system_name="Amamake",
+                squad_id=1,
+                wing_id=1,
+            )
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": alt.character_id,
+                    "ship_type_id": 11400,
+                },
+                "killmail_time": "2025-04-02T11:47:15Z",
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=11400, description="Jaguar", eve_group=EveGroup()
+        )
+        return main, alt
+
+    def _post_fleet_srp(self):
+        return self.client.post(
+            f"{BASE_URL}",
+            {
+                "external_killmail_link": KM_LINK,
+                "fleet_id": self.fleet.id,
+                "is_corp_ship": False,
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    @patch("srp.helpers.EsiClient")
+    def test_untracked_alt_is_accepted_with_warning(self, esi_mock):
+        self._fleet_kill_setup(esi_mock, [KM_CHAR + 1])
+
+        response = self._post_fleet_srp()
+
+        self.assertEqual(200, response.status_code, response.content)
+        self.assertTrue(response.json()["not_tracked_in_fleet"])
+        reimbursement = EveFleetShipReimbursement.objects.get()
+        self.assertTrue(reimbursement.not_tracked_in_fleet)
+
+    @patch("srp.helpers.EsiClient")
+    def test_tracked_victim_has_no_warning(self, esi_mock):
+        self._fleet_kill_setup(esi_mock, [KM_CHAR])
+
+        response = self._post_fleet_srp()
+
+        self.assertEqual(200, response.status_code, response.content)
+        self.assertFalse(response.json()["not_tracked_in_fleet"])
+
+    @patch("srp.helpers.EsiClient")
+    def test_account_not_in_fleet_is_refused(self, esi_mock):
+        self._fleet_kill_setup(esi_mock, [KM_CHAR + 99])
+
+        response = self._post_fleet_srp()
+
+        self.assertEqual(403, response.status_code)
+        self.assertIn("Character not in fleet", response.json()["detail"])
+        self.assertFalse(EveFleetShipReimbursement.objects.exists())
 
     @patch("srp.helpers.EsiClient")
     def test_non_fleet_srp(self, esi_mock):

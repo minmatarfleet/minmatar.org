@@ -23956,6 +23956,11 @@ export interface components {
             is_corp_ship: boolean;
             /** Killmail Id */
             killmail_id: number;
+            /**
+             * Not Tracked In Fleet
+             * @default false
+             */
+            not_tracked_in_fleet?: boolean;
             /** Primary Character Id */
             primary_character_id: number;
             /** Primary Character Name */

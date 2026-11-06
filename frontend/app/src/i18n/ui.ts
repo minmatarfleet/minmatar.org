@@ -5502,6 +5502,7 @@ export const ui = {
         'srp_submit_dialog_text': 'Add the killmail link to submit your fleet SRP.',
         'srp_no_fleet_submit_dialog_text': 'Add the killmail link to submit your non-fleet SRP.\n\n⚠️ Non-fleet SRP requests are rarely approved and will only be considered under exceptional circumstances. Additional details may be included in the **comment** and **combatlog** field to support your request.',
         'non_fleet_srp_warning': '⚠️ Non-fleet SRP request. Please review carefully.',
+        'srp_not_tracked_in_fleet_warning': '⚠️ This character was not tracked in the fleet. Another character on the same account was. Please review carefully.',
         'external_killmail_link': 'External Killmail Link',
         'submit_srp_error': 'An error occurred while submitting the SRP.',
         'add_killmail': 'Add killmail',

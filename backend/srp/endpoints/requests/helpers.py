@@ -69,4 +69,5 @@ def reimbursement_to_response(r: EveFleetShipReimbursement) -> dict:
         "category": r.category,
         "comments": r.comments,
         "combat_log_id": (r.combat_log.id if r.combat_log else None),
+        "not_tracked_in_fleet": r.not_tracked_in_fleet,
     }

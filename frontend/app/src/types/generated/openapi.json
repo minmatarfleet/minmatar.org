@@ -36941,6 +36941,11 @@
             "title": "Killmail Id",
             "type": "integer"
           },
+          "not_tracked_in_fleet": {
+            "default": false,
+            "title": "Not Tracked In Fleet",
+            "type": "boolean"
+          },
           "primary_character_id": {
             "title": "Primary Character Id",
             "type": "integer"
