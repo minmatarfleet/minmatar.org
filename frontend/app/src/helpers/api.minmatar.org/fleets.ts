@@ -12,6 +12,7 @@ import type {
     FleetPatchRequest,
     FleetMetrics,
     FleetCommanderMetrics,
+    FleetCommander,
     FleetPingPreview,
     FleetPingPreviewRequest,
     RestrictedResponse,
@@ -245,6 +246,13 @@ export async function get_fleet_commander_metrics(access_token:string) {
         error: 'Error fetching fleet commander metrics',
     })
 }
+export async function get_fleet_commanders(access_token:string) {
+    return await api_request<FleetCommander[]>(`${API_ENDPOINT}/commanders`, {
+        token: access_token,
+        error: 'Error fetching fleet commanders',
+    })
+}
+
 // --- Cyno system assignment (on a pilot volunteered in a cyno fit) ----------
 
 export async function assign_fleet_ship_volunteer_system(

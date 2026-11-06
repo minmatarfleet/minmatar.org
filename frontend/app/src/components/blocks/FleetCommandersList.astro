@@ -1,0 +1,136 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetCommander } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+/**
+ * The Commanders tab: every member of the Fleet Commanders tribe group, most
+ * recently active first. Level is the member's rank in that group. Pilots who
+ * have not led yet are dimmed at the bottom.
+ */
+interface Props {
+    commanders:     FleetCommander[];
+    [propName: string]: any;
+}
+
+const { commanders, ...attributes } = Astro.props
+
+delete attributes.class
+
+const DAY = 24 * 60 * 60 * 1000
+
+function last_led_text(last_led:string | null | undefined) {
+    if (!last_led) return t('fleets.commanders.never_led')
+
+    const days = Math.floor((Date.now() - new Date(last_led).getTime()) / DAY)
+    if (days <= 0) return t('fleets.commanders.today')
+    if (days === 1) return t('fleets.commanders.yesterday')
+    return t('fleets.commanders.days_ago').replace('{count}', String(days))
+}
+
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
+---
+
+{commanders.length === 0 ?
+    <EmptyState title={t('fleets.commanders.empty')} prominent />
+    :
+    <XFadeScroll class:list={['[ fleet-commanders ]', Astro.props.class]} {...attributes}>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{t('fleets.commanders.page_title')}</th>
+                    <th scope="col">{t('fleets.commanders.level')}</th>
+                    <th scope="col">{t('fleets.commanders.timezone')}</th>
+                    <th scope="col" class="[ fleet-commanders__number ]">{t('fleets.commanders.this_month')}</th>
+                    <th scope="col">{t('fleets.commanders.last_led')}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {commanders.map(commander =>
+                    <tr class:list={{ 'is-idle': !commander.last_led }}>
+                        <th scope="row">
+                            <span class="[ fleet-commanders__pilot ]">
+                                {commander.primary_character_id &&
+                                    <img
+                                        src={get_player_icon(commander.primary_character_id, 64)}
+                                        alt=""
+                                        width="40"
+                                        height="40"
+                                        loading="lazy"
+                                    />
+                                }
+                                <span>
+                                    <strong>{commander.primary_character_name ?? '—'}</strong>
+                                    {commander.corporation_name &&
+                                        <small>{commander.corporation_name}</small>
+                                    }
+                                </span>
+                            </span>
+                        </th>
+                        <td>{commander.rank_name ?? t('fleets.commanders.no_level')}</td>
+                        <td><TimezoneTags timezone={commander.timezone} /></td>
+                        <td class="[ fleet-commanders__number ]">{commander.fleets_this_month ?? 0}</td>
+                        <td>{last_led_text(commander.last_led)}</td>
+                    </tr>
+                )}
+            </tbody>
+        </table>
+    </XFadeScroll>
+}
+
+<style lang="scss">
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: var(--space-xs) var(--space-s);
+        text-align: start;
+        border-bottom: solid 1px var(--hairline);
+        white-space: nowrap;
+    }
+
+    thead th {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    tbody th {
+        font-weight: inherit;
+    }
+
+    .fleet-commanders__number {
+        text-align: end;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .fleet-commanders__pilot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        img {
+            border-radius: 50%;
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .is-idle {
+        opacity: 0.55;
+    }
+</style>

@@ -1,0 +1,103 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user) return login_redirect(Astro)
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'fleets.view'))
+    return HTTP_403_Forbidden()
+
+const can_add_fleets = can(gates, 'fleets.create')
+
+import { get_fleet_commanders } from '@helpers/api.minmatar.org/fleets'
+import type { FleetCommander } from '@dtypes/api.minmatar.org'
+
+let fetch_commanders_error: Error | false = false
+let commanders: FleetCommander[] = []
+
+try {
+    commanders = await get_fleet_commanders(auth_token as string) ?? []
+} catch (error) {
+    fetch_commanders_error = error
+}
+
+const page_title = t('fleets.commanders.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
+import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import FleetCommandersList from '@components/blocks/FleetCommandersList.astro'
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('fleets.commanders.meta_description')}
+>
+    <PageWide
+        cover={{
+            image: "/images/fleets-cover.jpg",
+            image_990: "/images/fleets-cover.jpg",
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        breadcrumbs={[{
+            accumulated_path: '/fleets/commanders/',
+            page_title: page_title
+        }]}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+                {!fetch_commanders_error &&
+                    <small>{t('fleets.commanders.count').replace('{count}', String(commanders.length))}</small>
+                }
+            </Flexblock>
+            <PageActions>
+                {can_add_fleets &&
+                    <Button color={'green'} href={translatePath('/fleets/add/')}>
+                        <AddIcon slot="icon" />
+                        {t('schedule_fleet')}
+                    </Button>
+                }
+            </PageActions>
+        </FlexInline>
+
+        <FleetsHubTabs active="commanders" />
+
+        <Flexblock gap='var(--space-xl)'>
+            {fetch_commanders_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: translatePath('/fleets/commanders/'),
+                        error: fetch_commanders_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <FleetCommandersList commanders={commanders} />
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>

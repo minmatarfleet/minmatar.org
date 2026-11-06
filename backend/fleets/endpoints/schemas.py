@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from timezones.schemas import TimezoneTag
 from tribes.schemas import HostGroupRef
 
 
@@ -215,6 +216,21 @@ class EveFleetCommanderMetric(BaseModel):
     corporation_id: Optional[int] = None
     corporation_name: Optional[str] = None
     fleet_count: int
+
+
+class EveFleetCommander(BaseModel):
+    """One member of the Fleet Commanders tribe group."""
+
+    user_id: int
+    primary_character_id: Optional[int] = None
+    primary_character_name: Optional[str] = None
+    corporation_id: Optional[int] = None
+    corporation_name: Optional[str] = None
+    rank_name: Optional[str] = None
+    rank_order: Optional[int] = None
+    timezone: TimezoneTag = TimezoneTag()
+    fleets_this_month: int = 0
+    last_led: Optional[datetime] = None
 
 
 class UserActiveFleetResponse(BaseModel):

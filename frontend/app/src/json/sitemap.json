@@ -664,6 +664,20 @@
         }
     },
     {
+        "slug": "fleets.commanders",
+        "path": "/fleets/commanders/",
+        "publish": true,
+        "description": "page_finder.fleets.commanders.description",
+        "keywords": [
+            "commanders",
+            "fcs",
+            "fleet commanders"
+        ],
+        "permissions": {
+            "gate": "fleets.view"
+        }
+    },
+    {
         "slug": "fleets.add",
         "path": "/fleets/add/",
         "publish": true,

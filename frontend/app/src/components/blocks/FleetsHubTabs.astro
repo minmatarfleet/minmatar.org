@@ -6,11 +6,11 @@ import { get_gates, can } from '@helpers/gates'
 
 /**
  * The Fleets hub tabs. Each is its own URL (/fleets/upcoming/,
- * /fleets/history/, /campaigns/), so the tabs are links and old links keep
+ * /fleets/history/, /fleets/commanders/, /campaigns/), so the tabs are links and old links keep
  * working. Campaigns only shows to pilots with the campaigns.view gate.
  */
 interface Props {
-    active:     'upcoming' | 'history' | 'campaigns';
+    active:     'upcoming' | 'history' | 'commanders' | 'campaigns';
 }
 
 const { active } = Astro.props
@@ -20,6 +20,7 @@ const can_view_campaigns = can(await get_gates(Astro), 'campaigns.view')
 const tabs = [
     { id: 'upcoming', label: t('fleets.hub.upcoming'), href: translatePath('/fleets/upcoming/') },
     { id: 'history', label: t('fleets.hub.history'), href: translatePath('/fleets/history/') },
+    { id: 'commanders', label: t('fleets.hub.commanders'), href: translatePath('/fleets/commanders/') },
     ...(can_view_campaigns ?
         [{ id: 'campaigns', label: t('fleets.hub.campaigns'), href: translatePath('/campaigns/') }] :
         []),
