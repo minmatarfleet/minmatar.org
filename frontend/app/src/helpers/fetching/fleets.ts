@@ -37,10 +37,18 @@ export async function fetch_fleets_auth(
     access_token:string,
     upcoming:boolean = true,
     simplified:boolean = false,
-    fc_metrics:FleetCommanderMetrics[] | null = null,
+    fc_metrics:FleetCommanderMetrics[] | Promise<FleetCommanderMetrics[]> | null = null,
     host_group_id:number | null = null,
 ) {
     let api_fleets:Fleet[]
+
+    // The fleets, their metrics and the FC metrics don't depend on each
+    // other, so they are requested together. A fleets failure is still the
+    // error thrown, as when the metrics were only asked for afterwards.
+    const fleets_metrics_promise = simplified ? null : get_fleets_metrics(access_token)
+    const fc_metrics_promise = simplified ? null : Promise.resolve(fc_metrics ?? get_fleet_commander_metrics(access_token))
+    fleets_metrics_promise?.catch(() => null)
+    fc_metrics_promise?.catch(() => null)
 
     api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent', host_group_id)
     api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
@@ -50,9 +58,9 @@ export async function fetch_fleets_auth(
     const fleet_ids = api_fleets.map(api_fleet =>  api_fleet.id)
 
     if (!simplified) {
-        const fleets_metrics = await get_fleets_metrics(access_token)
+        const fleets_metrics = await (fleets_metrics_promise as Promise<FleetMetrics[]>)
         const fleets_metrics_filtered = fleets_metrics.filter(metric => fleet_ids.includes(metric.fleet_id))
-        const fleet_commander_metrics = fc_metrics ? fc_metrics : await get_fleet_commander_metrics(access_token)
+        const fleet_commander_metrics = await (fc_metrics_promise as Promise<FleetCommanderMetrics[]>)
 
         return api_fleets.map( fleet => add_fleet_info(
             fleet,

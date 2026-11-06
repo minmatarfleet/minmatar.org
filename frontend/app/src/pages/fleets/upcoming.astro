@@ -25,6 +25,14 @@ import { parse_host_filter } from '@helpers/fleet_hosts'
 
 const host_filter = parse_host_filter(Astro.url.searchParams.get('host'))
 
+import { get_audiences } from '@helpers/api.minmatar.org/fleets'
+import type { Audience } from '@dtypes/api.minmatar.org'
+
+// Audiences are only used by the flash-form button, which only fleet creators
+// see, so nobody else waits for them; they load alongside the schedule.
+const audiences_promise = can_add_fleets ? get_audiences(auth_token as string) : null
+audiences_promise?.catch(() => null)
+
 let fetch_fleets_error: Error | false = false
 let schedule: FleetScheduleData | null = null
 
@@ -45,13 +53,11 @@ const alert = !flash_form_error ? false : {
     content: flash_form_error
 } as Alert
 
-import { get_audiences } from '@helpers/api.minmatar.org/fleets'
-import type { Audience } from '@dtypes/api.minmatar.org'
 let audiences:Audience[] = []
 let fetch_audiences_error: Error | false = false
 
 try {
-    audiences = await get_audiences(auth_token as string)
+    audiences = audiences_promise ? await audiences_promise : []
 } catch (error) {
     fetch_audiences_error = error
 }

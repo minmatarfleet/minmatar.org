@@ -65,9 +65,19 @@ export async function get_skillsets(access_token:string, character_id: number) {
     let character_skillsets:CharacterSkillset[]
     let character:Character
 
-    character = await get_character_by_id(access_token, character_id)
+    // Both calls start together. The character's failure is still the error
+    // thrown first, as when they ran one after the other.
+    const [character_result, skillsets_result] = await Promise.allSettled([
+        get_character_by_id(access_token, character_id),
+        get_character_skillsets(access_token, character_id),
+    ])
+    if (character_result.status === 'rejected')
+        throw character_result.reason
+    if (skillsets_result.status === 'rejected')
+        throw skillsets_result.reason
 
-    character_skillsets = await get_character_skillsets(access_token, character_id)
+    character = character_result.value
+    character_skillsets = skillsets_result.value
     skillsets = character_skillsets.map( (i):Skillset => {
         return {
             name: i.name,
