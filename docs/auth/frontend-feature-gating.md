@@ -52,6 +52,16 @@ flowchart LR
 
 If the gates fetch fails, the user has no permissions and no features. Legacy expressions still honour the JWT superuser claim, the same as when the old profile fetch failed.
 
+#### Caching
+
+The frontend caches the `/api/users/me/gates` response for each token for `GATES_CACHE_TTL_SECONDS`, which defaults to 60 (`src/helpers/memo_cache.ts`).
+
+- A page and the htmx partials it loads share one call, as do the pilot's clicks within the TTL.
+- Failed fetches are never cached.
+- A permission change can take up to the TTL to show on the site. The backend still checks permissions on every API call, so a stale entry only changes what the site shows, not what a pilot can do.
+- Set `GATES_CACHE_TTL_SECONDS=0` to turn the cache off.
+- Tests default to no caching. Use `set_gates_cache_ttl` and `clear_gates_cache` to test it.
+
 ### Adding a gate
 
 1. Pick or add a feature in `backend/groups/features/registry.py`.
