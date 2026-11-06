@@ -53,6 +53,8 @@ class TribeGroupSchema(BaseModel):
     chief_is_interim: bool = False
     # Viewer flags: the executor appoints; anyone may volunteer once.
     can_appoint_chief: bool = False
+    # The viewer is a superuser and can swap the chief.
+    can_set_chief: bool = False
     has_volunteered: bool = False
     is_active: bool
     member_count: int = 0

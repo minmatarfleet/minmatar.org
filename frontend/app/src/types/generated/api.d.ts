@@ -8180,6 +8180,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/chief-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find pilots to make chief, by any of their characters' names. */
+        get: operations["tribes_endpoints_chief_assign_get_candidates_get_chief_candidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/chief-volunteers/{volunteer_id}/appoint": {
         parameters: {
             query?: never;
@@ -8546,6 +8563,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/{tribe_id}/chief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Swap the chief of a seat, or empty it (superuser only). */
+        put: operations["tribes_endpoints_chief_assign_put_chief_put_tribe_chief"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/{tribe_id}/chief-volunteers": {
         parameters: {
             query?: never;
@@ -8608,6 +8642,23 @@ export interface paths {
         /** Group About tab: a year of totals and records; named pilots for roster viewers. */
         get: operations["tribes_endpoints_groups_get_tribe_group_about_get_tribe_group_about"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/groups/{group_id}/chief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Swap the chief of a seat, or empty it (superuser only). */
+        put: operations["tribes_endpoints_chief_assign_put_chief_put_group_chief"];
         post?: never;
         delete?: never;
         options?: never;
@@ -11549,6 +11600,36 @@ export interface components {
             scopes: string[];
             /** Token State */
             token_state: string;
+        };
+        /** ChiefCandidateSchema */
+        ChiefCandidateSchema: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Matched Character Name
+             * @default
+             */
+            matched_character_name?: string;
+            /** User Id */
+            user_id: number;
+        };
+        /** ChiefSeatSchema */
+        ChiefSeatSchema: {
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /** Tribe Group Id */
+            tribe_group_id?: number | null;
+            /** Tribe Id */
+            tribe_id: number;
+            /** User Id */
+            user_id?: number | null;
         };
         /** ChiefVolunteerSchema */
         ChiefVolunteerSchema: {
@@ -23345,6 +23426,11 @@ export interface components {
             /** Username */
             username?: string | null;
         };
+        /** SetChiefRequest */
+        SetChiefRequest: {
+            /** User Id */
+            user_id?: number | null;
+        };
         /** SetMyShipVolunteersRequest */
         SetMyShipVolunteersRequest: {
             /** Selections */
@@ -25171,6 +25257,11 @@ export interface components {
              * @default false
              */
             can_schedule_fleets?: boolean;
+            /**
+             * Can Set Chief
+             * @default false
+             */
+            can_set_chief?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
              * Chief Is Interim
@@ -25384,6 +25475,11 @@ export interface components {
              * @default false
              */
             can_appoint_chief?: boolean;
+            /**
+             * Can Set Chief
+             * @default false
+             */
+            can_set_chief?: boolean;
             chief?: components["schemas"]["CharacterRefSchema"] | null;
             /**
              * Chief Is Interim
@@ -45630,6 +45726,39 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_chief_assign_get_candidates_get_chief_candidates: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefCandidateSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     tribes_endpoints_chief_volunteers_post_appoint_post_chief_volunteer_appoint: {
         parameters: {
             query?: never;
@@ -46659,6 +46788,76 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_chief_assign_put_chief_put_tribe_chief: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetChiefRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefSeatSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     tribes_endpoints_chief_volunteers_seat_volunteers_get_chief_volunteers: {
         parameters: {
             query?: {
@@ -46854,6 +47053,77 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    tribes_endpoints_chief_assign_put_chief_put_group_chief: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetChiefRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChiefSeatSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

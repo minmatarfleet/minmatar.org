@@ -5882,6 +5882,85 @@
         "title": "CharacterTokenInfo",
         "type": "object"
       },
+      "ChiefCandidateSchema": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "matched_character_name": {
+            "default": "",
+            "title": "Matched Character Name",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "character_id",
+          "character_name"
+        ],
+        "title": "ChiefCandidateSchema",
+        "type": "object"
+      },
+      "ChiefSeatSchema": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tribe Group Id"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "tribe_id"
+        ],
+        "title": "ChiefSeatSchema",
+        "type": "object"
+      },
       "ChiefVolunteerSchema": {
         "properties": {
           "character_id": {
@@ -35545,6 +35624,23 @@
         "title": "SessionSchema",
         "type": "object"
       },
+      "SetChiefRequest": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "title": "SetChiefRequest",
+        "type": "object"
+      },
       "SetMyShipVolunteersRequest": {
         "properties": {
           "selections": {
@@ -39983,6 +40079,11 @@
             "title": "Can Schedule Fleets",
             "type": "boolean"
           },
+          "can_set_chief": {
+            "default": false,
+            "title": "Can Set Chief",
+            "type": "boolean"
+          },
           "chief": {
             "anyOf": [
               {
@@ -40366,6 +40467,11 @@
           "can_appoint_chief": {
             "default": false,
             "title": "Can Appoint Chief",
+            "type": "boolean"
+          },
+          "can_set_chief": {
+            "default": false,
+            "title": "Can Set Chief",
             "type": "boolean"
           },
           "chief": {
@@ -71908,6 +72014,61 @@
         ]
       }
     },
+    "/api/tribes/chief-candidates": {
+      "get": {
+        "operationId": "tribes_endpoints_chief_assign_get_candidates_get_chief_candidates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChiefCandidateSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Find pilots to make chief, by any of their characters' names.",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
+        ]
+      }
+    },
     "/api/tribes/chief-volunteers/{volunteer_id}/appoint": {
       "post": {
         "operationId": "tribes_endpoints_chief_volunteers_post_appoint_post_chief_volunteer_appoint",
@@ -73418,6 +73579,102 @@
         ]
       }
     },
+    "/api/tribes/{tribe_id}/chief": {
+      "put": {
+        "operationId": "tribes_endpoints_chief_assign_put_chief_put_tribe_chief",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChiefRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefSeatSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Swap the chief of a seat, or empty it (superuser only).",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
+        ]
+      }
+    },
     "/api/tribes/{tribe_id}/chief-volunteers": {
       "get": {
         "operationId": "tribes_endpoints_chief_volunteers_seat_volunteers_get_chief_volunteers",
@@ -73751,6 +74008,111 @@
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/groups/{group_id}/chief": {
+      "put": {
+        "operationId": "tribes_endpoints_chief_assign_put_chief_put_group_chief",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetChiefRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChiefSeatSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Swap the chief of a seat, or empty it (superuser only).",
+        "tags": [
+          "Tribes - Chiefs",
+          "Tribes - Chiefs"
         ]
       }
     },

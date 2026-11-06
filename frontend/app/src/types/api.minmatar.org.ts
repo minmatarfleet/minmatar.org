@@ -101,6 +101,8 @@ export type TribeInvitationsSend = ApiRequest<'SendInvitationsRequest'>
 export type Tribe = ApiResponse<'TribeSchema'>
 // Chief volunteers (docs/tribes/interim-chiefs.md)
 export type TribeChiefVolunteer = ApiResponse<'ChiefVolunteerSchema'>
+export type TribeChiefCandidate = ApiResponse<'ChiefCandidateSchema'>
+export type TribeChiefSeat = ApiResponse<'ChiefSeatSchema'>
 
 export interface TribeGroupRosterEntry {
     user_id:                    number;
