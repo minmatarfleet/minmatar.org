@@ -75,6 +75,42 @@ export const YC128_11: NewsletterIssue = {
             },
         },
         {
+            kind: 'feature',
+            id: 'quiet',
+            toc_label: 'Quiet mode',
+            kicker: 'Quiet mode',
+            title: 'The fleet nobody saw coming',
+            lede: 'Strategic FCs can now run invite-only fleets. They never go on the schedule or in pings: the FC invites pilots by Discord DM, and everyone who says yes gets a private thread.',
+            panel: {
+                title: 'Quiet mode fleet · Saturday 24 October',
+                paragraphs: [
+                    'Word was that something big might kick off near Amamake, so BearThatCares kept the fleet off the schedule. Seven waves of DMs went out, 38 pilots said they were in, and the fleet asked for <b>40 dreads, 30 TFIs and 20 logi</b>.',
+                    'We waited at the login screen, then took the fight in Dudreda against Cryonic Origin and Ahbazon-Prime, outnumbered 1.5 to 1. The ISK went their way, 13.6B to 16.4B, but nobody saw us coming. Once it was over the fleet was declassified, so its reports are public now.',
+                ],
+            },
+            figures: [
+                {
+                    src: `${IMG}/quiet-fleet.webp`,
+                    width: 1170,
+                    height: 585,
+                    alt: 'The declassified quiet mode fleet: Saturday 24 October, 1 hour 10 minutes, staged in Amamake on TFIs, FC BearThatCares. Outcome: 13.6B destroyed, 16.4B lost, 45% efficiency, 120 against 180.',
+                    caption: 'Declassified after the fight, like any other fleet.',
+                    wide: true,
+                },
+            ],
+            list: [
+                { title: 'Invites in waves.', text: 'Pick pilots, groups or corps, or paste a list. Each wave is paced so Discord doesn’t throttle it.' },
+                { title: 'Ship targets.', text: 'The FC asks for 40 dreads or 20 logi, and pilots see what is still needed when they pick a ship.' },
+                { title: 'A private thread.', text: 'Everyone who is in gets a thread for updates, and the start ping goes there.' },
+                { title: 'Declassify after.', text: 'When it’s over, one button puts the fleet in history with its reports. Who was invited stays private.' },
+            ],
+            cta: {
+                links: [
+                    { label: 'Read the after-action report', href: '/fleets/history/2421/#fights' },
+                ],
+            },
+        },
+        {
             kind: 'rollup',
             id: 'since',
             toc_label: 'Fleets',
@@ -269,7 +305,7 @@ export const YC128_11: NewsletterIssue = {
                 { title: 'Copy this fleet', text: 'Same doctrine, briefing and staging on a new date. Pick the day and you’re done.' },
                 { title: 'Fleet on an alt', text: 'Boss on another character? Tracking finds it, and the site still shows you as the FC.' },
                 { title: 'Bring what you have', text: 'Pilots can sign up in a hull that isn’t on the doctrine, so the FC knows what’s coming.' },
-                { title: 'Private fleets', text: 'Strategic FCs can run invite-only fleets with ship targets and their own Discord thread.' },
+                { title: 'Hidden rosters', text: 'New fleets hide pilot names from other pilots. The FC still sees everyone who signed up.' },
                 { title: 'Academy fits', text: 'Secondary fits are now called Academy, and only Academy pilots can bring them.' },
             ],
             cta: { links: [{ label: 'Schedule a fleet', href: '/fleets/upcoming/' }] },
