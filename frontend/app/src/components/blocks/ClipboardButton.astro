@@ -16,6 +16,7 @@ interface Props {
     copied_text?:       string;
     iconed?:            boolean;
     x_value?:           string;
+    source?:            string;
     [propName: string]: any;
 }
 
@@ -28,17 +29,24 @@ const {
     copied_text = t('copied'),
     iconed = true,
     x_value,
+    source,
     ...attributes
 } = Astro.props
 
 const COPIED_LABEL_TIME_MS = 2000
+
+// `source` tags the copy for analytics (fitting_copied). Untagged buttons keep
+// the exact call they always had.
+const copy_args = [`'${id}'`]
+if (alert_prefix || source) copy_args.push(alert_prefix ? `'${alert_prefix}'` : 'null')
+if (source) copy_args.push(`'${source}'`)
 
 const Textarea = 'textarea';
 ---
 
 <Button
     narrow={narrow}
-    x-on:click.stop.prevent={`copyFitToClipboard(${ alert_prefix ? `'${id}', '${alert_prefix}'` : `'${id}'` })`}
+    x-on:click.stop.prevent={`copyFitToClipboard(${copy_args.join(', ')})`}
     size={size}
     {...attributes}
     x-data={`{

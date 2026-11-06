@@ -8,6 +8,11 @@
  *
  * ClientRouter re-runs head scripts on soft navigations, so init is guarded.
  * `capture_pageview: 'history_change'` records those navigations.
+ *
+ * Named events go through `window.capture_event` (public/js/analytics.js),
+ * which is a no-op when PostHog isn't loaded: fitting_copied,
+ * fleet_signed_up, login_continued, login_cancelled. They carry ids and
+ * sources only, never fit text or character names.
  * https://posthog.com/docs/libraries/astro
  */
 import { is_prod_mode } from '@helpers/env'

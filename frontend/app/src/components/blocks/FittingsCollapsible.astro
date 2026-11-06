@@ -66,7 +66,7 @@ import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
                         </FittingLink>
                         <FlexInline>
                             <FittingShareButton fitting_id={fitting.id} fitting_name={fitting.fitting_name} narrow={true} iconed={false} />
-                            <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
+                            <ClipboardButton narrow={true} id={fitting.id.toString()} source="fitting">{fitting.eft_format}</ClipboardButton>
                         </FlexInline>
                     </FlexInlineSiblings>
                 )}
