@@ -860,6 +860,7 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
     utility_fittings?:  Fitting[];
+    capitals_fittings?: Fitting[];
     sig_ids:            number[];
     location_ids:       number[];
 }

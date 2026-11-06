@@ -58,7 +58,13 @@ HTTP_TIMEOUT = 60
 # overlap can be an account swap. Longer than this means two accounts.
 ACCOUNT_OVERLAP = timedelta(minutes=10)
 CHARACTERS_PER_ACCOUNT = 3
-ROLE_ORDER = {"primary": 0, "secondary": 1, "support": 2, "utility": 3}
+ROLE_ORDER = {
+    "primary": 0,
+    "secondary": 1,
+    "support": 2,
+    "utility": 3,
+    "capitals": 4,
+}
 
 # Hulls outside every doctrine map to a capability by group.
 GROUP_CAPABILITY = {

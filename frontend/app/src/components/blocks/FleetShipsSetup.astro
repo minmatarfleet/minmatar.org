@@ -25,7 +25,8 @@ const {
 
 const fits = (doctrine:Doctrine) =>
     doctrine.primary_fittings.length + doctrine.secondary_fittings.length +
-    doctrine.support_fittings.length + (doctrine.utility_fittings?.length ?? 0)
+    doctrine.support_fittings.length + (doctrine.utility_fittings?.length ?? 0) +
+    (doctrine.capitals_fittings?.length ?? 0)
 
 const sorted = [...doctrines].sort((a, b) => a.name.localeCompare(b.name))
 

@@ -46,6 +46,7 @@ function DoctrineSection({ doctrine }: { doctrine: ApiDoctrine }) {
     ...doctrine.secondary_fittings.map((f) => f.fitting_name),
     ...doctrine.support_fittings.map((f) => f.fitting_name),
     ...(doctrine.utility_fittings ?? []).map((f) => f.fitting_name),
+    ...(doctrine.capitals_fittings ?? []).map((f) => f.fitting_name),
   ];
 
   return (

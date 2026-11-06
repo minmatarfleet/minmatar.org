@@ -5,26 +5,38 @@ const { t, translatePath } = i18n(Astro.url)
 import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
-const { user } = get_request_user(Astro)
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user) return login_redirect(Astro)
 
 import { get_gates } from '@helpers/gates'
-import { can_edit_doctrines } from '@helpers/doctrine_editor'
+import {
+    can_edit_doctrines,
+    DOCTRINE_ROLES,
+    HULL_FILTERS,
+    hull_filters_for,
+    type DoctrineComposition,
+    type DoctrineRole,
+} from '@helpers/doctrine_editor'
 
 const gates = await get_gates(Astro)
 
 if (!await can_edit_doctrines(gates))
     return HTTP_403_Forbidden()
 
-import type { Doctrine, Fitting } from '@dtypes/api.minmatar.org'
+import type { Doctrine, DoctrineChangeRequestRow, Fitting } from '@dtypes/api.minmatar.org'
 import { get_doctrine_by_id } from '@helpers/api.minmatar.org/doctrines'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import { get_change_requests } from '@helpers/api.minmatar.org/doctrine_changes'
+import { get_ships_type } from '@helpers/sde/ships'
+import { get_type_names } from '@helpers/sde/items'
+import { is_capital_group } from '@helpers/ship_groups'
 
 const doctrine_id = parseInt(Astro.params.doctrine_id ?? '0')
 
 let doctrine:Doctrine | null = null
 let fittings:Fitting[] = []
+let pending:DoctrineChangeRequestRow | null = null
 let fetch_error:Error | false = false
 
 try {
@@ -33,18 +45,169 @@ try {
 } catch (error) {
     if ((error as Error).cause === 404)
         return HTTP_404_Not_Found()
-    fetch_error = error
+    fetch_error = error as Error
 }
 
-const FORM_PARTIAL_URL = translatePath(`/partials/doctrine_change_form_component/?doctrine_id=${doctrine_id}`)
+try {
+    pending = (await get_change_requests(auth_token as string))
+        .find((row) => row.kind === 'doctrine' && row.target_id === doctrine_id) ?? null
+} catch {
+    // The editor still works; submitting reports a pending request itself.
+    pending = null
+}
 
-/** The stored role keys; "secondary" is shown as Academy. */
-const roles = [
-    { key: 'primary', label: t('doctrine_changes.role_primary'), fittings: doctrine?.primary_fittings ?? [] },
-    { key: 'secondary', label: t('doctrine_changes.role_academy'), fittings: doctrine?.secondary_fittings ?? [] },
-    { key: 'support', label: t('doctrine_changes.role_support'), fittings: doctrine?.support_fittings ?? [] },
-    { key: 'utility', label: t('doctrine_changes.role_utility'), fittings: doctrine?.utility_fittings ?? [] },
-]
+const ship_ids = [...new Set(fittings.map((fitting) => fitting.ship_id))]
+const [ship_types, hull_names] = ship_ids.length
+    ? await Promise.all([get_ships_type(ship_ids), get_type_names(ship_ids)])
+    : [[], new Map<number, string>()]
+const hull_group = new Map(ship_types.map((ship) => [ship.ship_id, ship.type]))
+
+interface EditorFitting {
+    id:      number
+    name:    string
+    ship_id: number
+    hull:    string
+    search:  string
+    filters: string
+}
+
+const editor_fittings:EditorFitting[] = fittings.map((fitting) => {
+    const group = hull_group.get(fitting.ship_id) ?? ''
+    const hull = [hull_names.get(fitting.ship_id), group].filter(Boolean).join(' · ')
+    return {
+        id: fitting.id,
+        name: fitting.name,
+        ship_id: fitting.ship_id,
+        hull,
+        search: `${fitting.name} ${hull}`.toLowerCase(),
+        filters: hull_filters_for(group, is_capital_group).join(' '),
+    }
+})
+
+const ROLE_FIELDS:Record<DoctrineRole, keyof Doctrine> = {
+    primary: 'primary_fittings',
+    secondary: 'secondary_fittings',
+    support: 'support_fittings',
+    utility: 'utility_fittings',
+    capitals: 'capitals_fittings',
+}
+const ROLE_LABELS:Record<DoctrineRole, string> = {
+    primary: t('doctrine_changes.role_primary'),
+    secondary: t('doctrine_changes.role_academy'),
+    support: t('doctrine_changes.role_support'),
+    utility: t('doctrine_changes.role_utility'),
+    capitals: t('doctrine_changes.role_capitals'),
+}
+const ROLE_EMPTY:Record<DoctrineRole, string> = {
+    primary: t('doctrine_changes.empty_primary'),
+    secondary: t('doctrine_changes.empty_academy'),
+    support: t('doctrine_changes.empty_support'),
+    utility: t('doctrine_changes.empty_utility'),
+    capitals: t('doctrine_changes.empty_capitals'),
+}
+const ROLE_HINTS:Partial<Record<DoctrineRole, string>> = {
+    secondary: t('doctrine_changes.academy_hint'),
+}
+const FILTER_LABELS:Record<string, string> = {
+    all: t('doctrine_changes.filter_all'),
+    capitals: t('doctrine_changes.filter_capitals'),
+    logistics: t('doctrine_changes.filter_logistics'),
+    recon: t('doctrine_changes.filter_recon'),
+}
+
+const role_ids = (role:DoctrineRole) =>
+    ((doctrine?.[ROLE_FIELDS[role]] as Fitting[] | undefined) ?? []).map((fitting) => fitting.id)
+const initial = Object.fromEntries(DOCTRINE_ROLES.map((role) => [role, role_ids(role)])) as DoctrineComposition
+const fitting_by_id = new Map(editor_fittings.map((fitting) => [fitting.id, fitting]))
+// Live fittings in each role, for the read-only view while a request waits.
+const live_rows = (role:DoctrineRole) => initial[role]
+    .map((id) => fitting_by_id.get(id))
+    .filter((fitting):fitting is EditorFitting => !!fitting)
+
+const FORM_PARTIAL_URL = translatePath(`/partials/doctrine_change_form_component/?doctrine_id=${doctrine_id}`)
+const REVIEW_QUEUE_URL = translatePath('/ships/doctrines/review/')
+const DOCTRINE_URL = translatePath(`/ships/doctrines/${doctrine_id}/`)
+
+const editor_state = {
+    roles: DOCTRINE_ROLES,
+    labels: ROLE_LABELS,
+    initial,
+    picks: structuredClone(initial),
+    name0: doctrine?.name ?? '',
+    description0: doctrine?.description ?? '',
+    name: doctrine?.name ?? '',
+    description: doctrine?.description ?? '',
+    query: '',
+    add_as: 'primary',
+    filter: 'all',
+    open: false,
+    review_open: false,
+}
+
+// Local form state only: which role each fitting is in before the editor
+// sends the form. The review step and saving go through the htmx partial.
+const editor_methods = `
+    has(role, id) { return this.picks[role].includes(id) },
+    was(role, id) { return this.initial[role].includes(id) },
+    anywhere(id) { return this.roles.some((role) => this.picks[role].includes(id)) },
+    removed(role, id) { return this.was(role, id) && !this.anywhere(id) },
+    shown(role, id) { return this.has(role, id) || this.removed(role, id) },
+    is_new(role, id) { return this.has(role, id) && !this.roles.some((other) => this.was(other, id)) },
+    moved_from(role, id) {
+        if (!this.has(role, id) || this.was(role, id)) return ''
+        const from = this.roles.find((other) => this.was(other, id) && !this.has(other, id))
+        return from ? this.labels[from] : ''
+    },
+    in_role(id) {
+        const role = this.roles.find((other) => this.has(other, id))
+        return role ? this.labels[role] : ''
+    },
+    is_empty(role) {
+        return this.picks[role].length === 0 && !this.initial[role].some((id) => this.removed(role, id))
+    },
+    set_role(role, id, to) {
+        this.picks[role] = this.picks[role].filter((other) => other !== id)
+        if (!this.picks[to].includes(id)) this.picks[to].push(id)
+    },
+    remove(role, id) { this.picks[role] = this.picks[role].filter((other) => other !== id) },
+    undo(role, id) { if (!this.picks[role].includes(id)) this.picks[role].push(id) },
+    add(id) {
+        if (!this.anywhere(id)) this.picks[this.add_as].push(id)
+        this.query = ''
+    },
+    add_first() {
+        const button = this.$refs.results.querySelector('li:not([style*="display: none"]) button:not([disabled])')
+        if (button) button.click()
+    },
+    matches(el) {
+        const query = this.query.trim().toLowerCase()
+        if (query && !el.dataset.search.includes(query)) return false
+        return this.filter === 'all' || el.dataset.filters.split(' ').includes(this.filter)
+    },
+    ship_count() { return new Set(this.roles.flatMap((role) => this.picks[role])).size },
+    change_count() {
+        const ids = new Set(this.roles.flatMap((role) => [...this.picks[role], ...this.initial[role]]))
+        let count = 0
+        for (const id of ids)
+            if (this.roles.some((role) => this.has(role, id) !== this.was(role, id))) count += 1
+        if (this.name.trim() !== this.name0) count += 1
+        if (this.description !== this.description0) count += 1
+        return count
+    },
+    discard() {
+        this.picks = JSON.parse(JSON.stringify(this.initial))
+        this.name = this.name0
+        this.description = this.description0
+    },
+    open_review() {
+        this.review_open = true
+        this.$dispatch('doctrine-review')
+    },
+    close_dialog() { this.review_open = false },
+`
+const x_data = `{ ...${JSON.stringify(editor_state)}, ${editor_methods} }`
+// Alpine expressions put these inside single quotes.
+const js = (text:string) => text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -54,15 +217,18 @@ import PageTitle from '@components/page/PageTitle.astro'
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import Grid from '@components/compositions/Grid.astro'
 
 import Button from '@components/blocks/Button.astro'
+import ChangeDiff from '@components/blocks/ChangeDiff.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Dialog from '@components/blocks/Dialog.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 
 const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doctrine.name}` : ''}`
+const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/icon?size=64`
 ---
 
 <Viewport title={page_title}>
@@ -81,7 +247,8 @@ const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doct
                 <small>{t('doctrine_changes.doctrine_leading')}</small>
             </Flexblock>
             <PageActions>
-                <Button href={translatePath('/ships/doctrines/review/')}>
+                <a href={DOCTRINE_URL}>{t('doctrine_changes.view_doctrine')}</a>
+                <Button href={REVIEW_QUEUE_URL}>
                     {t('doctrine_changes.review_queue')}
                 </Button>
             </PageActions>
@@ -95,52 +262,567 @@ const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doct
                     delay: 0,
                 }}
             />
-            :
-            <ComponentBlock>
-                <form
-                    hx-post={FORM_PARTIAL_URL}
-                    hx-target="#doctrine-change-result"
-                    hx-swap="innerHTML"
-                    hx-indicator=".loader"
-                >
-                    <Flexblock gap="var(--space-m)">
-                        <input type="hidden" name="type" value={doctrine.type} />
-                        <Flexblock gap="var(--space-3xs)">
-                            <label for="name">{t('doctrine_changes.name')}</label>
-                            <Input id="name" name="name" type="text" value={doctrine.name} required />
-                        </Flexblock>
-                        <Flexblock gap="var(--space-3xs)">
-                            <label for="description">{t('doctrine_changes.description')}</label>
-                            <Textarea id="description" name="description" rows="4">{doctrine.description}</Textarea>
-                        </Flexblock>
-                        <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
-                            {roles.map((role) =>
-                                <Flexblock gap="var(--space-3xs)">
-                                    <label for={`role-${role.key}`}>{role.label}</label>
-                                    <select id={`role-${role.key}`} name={role.key} multiple size="10">
-                                        {fittings.map((fitting) =>
-                                            <option value={fitting.id} selected={role.fittings.some((entry) => entry.id === fitting.id)}>
-                                                {fitting.name}
-                                            </option>
+            : pending ?
+            <Flexblock gap="var(--space-m)">
+                <ComponentBlock class="[ doctrine-pending ]">
+                    <Flexblock gap="var(--space-s)">
+                        <FlexInline justification="space-between" class="[ items-start ]">
+                            <Flexblock gap="var(--space-3xs)">
+                                <h2 class="[ doctrine-pending__title ]">{t('doctrine_changes.pending_title')}</h2>
+                                <small class="[ doctrine-muted ]">
+                                    {t('doctrine_changes.pending_by').replace('{name}', pending.submitted_by ?? '?')}
+                                </small>
+                            </Flexblock>
+                            <FlexInline gap="var(--space-s)">
+                                <a href={REVIEW_QUEUE_URL}>{t('doctrine_changes.open_request')}</a>
+                                {pending.can_cancel &&
+                                    <button
+                                        type="button"
+                                        class="[ doctrine-link-button ]"
+                                        hx-post={`${FORM_PARTIAL_URL}&intent=withdraw&request_id=${pending.id}`}
+                                        hx-target="#doctrine-pending-result"
+                                        hx-swap="innerHTML"
+                                    >
+                                        {t('doctrine_changes.withdraw_to_edit')}
+                                    </button>
+                                }
+                            </FlexInline>
+                        </FlexInline>
+                        {pending.submit_note && <blockquote class="[ doctrine-note ]">{pending.submit_note}</blockquote>}
+                        <ChangeDiff diffs={pending.diffs} />
+                        <div id="doctrine-pending-result" aria-live="polite"></div>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-xs)">
+                        <h2>{t('doctrine_changes.ships_live')}</h2>
+                        {DOCTRINE_ROLES.map((role) =>
+                            <Flexblock gap="0">
+                                <h3 class="[ doctrine-role ]">{ROLE_LABELS[role]} <span>{live_rows(role).length}</span></h3>
+                                {live_rows(role).length === 0 ?
+                                    <EmptyState title={ROLE_EMPTY[role]} />
+                                    :
+                                    <ul class="[ doctrine-rows ]">
+                                        {live_rows(role).map((fitting) =>
+                                            <li class="[ doctrine-row ]">
+                                                <img src={icon(fitting.ship_id)} alt="" width="36" height="36" loading="lazy" />
+                                                <span class="[ doctrine-row__text ]">
+                                                    <span>{fitting.name}</span>
+                                                    <small>{fitting.hull}</small>
+                                                </span>
+                                            </li>
                                         )}
-                                    </select>
+                                    </ul>
+                                }
+                            </Flexblock>
+                        )}
+                    </Flexblock>
+                </ComponentBlock>
+            </Flexblock>
+            :
+            <form id="doctrine-form" x-data={x_data} x-on:submit.prevent>
+                <Flexblock gap="var(--space-m)">
+                    <input type="hidden" name="type" value={doctrine.type} />
+
+                    <ComponentBlock>
+                        <Flexblock gap="var(--space-s)">
+                            <h2>{t('doctrine_changes.details')}</h2>
+                            <Flexblock gap="var(--space-3xs)">
+                                <label for="name">{t('doctrine_changes.name')}</label>
+                                <Input id="name" name="name" type="text" x-model="name" required />
+                            </Flexblock>
+                            <Flexblock gap="var(--space-3xs)">
+                                <label for="description">{t('doctrine_changes.description')}</label>
+                                <Textarea id="description" name="description" rows="3" x-model="description"></Textarea>
+                            </Flexblock>
+                        </Flexblock>
+                    </ComponentBlock>
+
+                    <ComponentBlock>
+                        <Flexblock gap="var(--space-xs)">
+                            <FlexInline justification="space-between" class="[ doctrine-ships-head ]">
+                                <h2>{t('doctrine_changes.ships')} <span class="[ doctrine-muted ]" x-text="ship_count()"></span></h2>
+
+                                <div
+                                    class="[ doctrine-search ]"
+                                    x-on:click.outside="open = false"
+                                    x-on:keydown.escape.window="open = false"
+                                >
+                                    <label for="doctrine-add-fit" class="[ visually-hidden ]">{t('doctrine_changes.search_fittings')}</label>
+                                    <Input
+                                        id="doctrine-add-fit"
+                                        type="search"
+                                        autocomplete="off"
+                                        placeholder={t('doctrine_changes.search_fittings')}
+                                        x-model="query"
+                                        x-on:focus="open = true"
+                                        x-on:input="open = true"
+                                        x-on:keydown.enter.prevent="add_first()"
+                                        role="combobox"
+                                        aria-controls="doctrine-add-results"
+                                        x-bind:aria-expanded="open"
+                                    />
+                                    <div class="[ doctrine-popover ]" x-show="open" x-cloak>
+                                        <div class="[ doctrine-popover__bar ]">
+                                            <span class="[ doctrine-muted ]">{t('doctrine_changes.add_as')}</span>
+                                            <div class="[ doctrine-segments ]" role="group" aria-label={t('doctrine_changes.add_as')}>
+                                                {DOCTRINE_ROLES.map((role) =>
+                                                    <button
+                                                        type="button"
+                                                        x-on:click={`add_as = '${role}'`}
+                                                        x-bind:aria-pressed={`add_as === '${role}'`}
+                                                    >{ROLE_LABELS[role]}</button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div class="[ doctrine-popover__filters ]" role="group" aria-label={t('doctrine_changes.hull_filter')}>
+                                            {['all', ...HULL_FILTERS].map((filter) =>
+                                                <button
+                                                    type="button"
+                                                    class="[ doctrine-chip ]"
+                                                    x-on:click={`filter = '${filter}'`}
+                                                    x-bind:aria-pressed={`filter === '${filter}'`}
+                                                >{FILTER_LABELS[filter]}</button>
+                                            )}
+                                        </div>
+                                        <ul id="doctrine-add-results" class="[ doctrine-results ]" x-ref="results" role="listbox">
+                                            {editor_fittings.map((fitting) =>
+                                                <li
+                                                    data-search={fitting.search}
+                                                    data-filters={fitting.filters}
+                                                    x-show="matches($el)"
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        role="option"
+                                                        x-on:click={`add(${fitting.id})`}
+                                                        x-bind:disabled={`anywhere(${fitting.id})`}
+                                                    >
+                                                        <img src={icon(fitting.ship_id)} alt="" width="32" height="32" loading="lazy" />
+                                                        <span class="[ doctrine-row__text ]">
+                                                            <span>{fitting.name}</span>
+                                                            <small>{fitting.hull}</small>
+                                                        </span>
+                                                        <small
+                                                            class="[ doctrine-result__end ]"
+                                                            x-text={`anywhere(${fitting.id}) ? '${js(t('doctrine_changes.in_role'))}'.replace('{role}', in_role(${fitting.id})) : '${js(t('doctrine_changes.add'))}'`}
+                                                        ></small>
+                                                    </button>
+                                                </li>
+                                            )}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </FlexInline>
+
+                            {DOCTRINE_ROLES.map((role) =>
+                                <Flexblock gap="0">
+                                    <h3 class="[ doctrine-role ]">
+                                        {ROLE_LABELS[role]} <span x-text={`picks.${role}.length`}>{initial[role].length}</span>
+                                        {ROLE_HINTS[role] && <small>{ROLE_HINTS[role]}</small>}
+                                    </h3>
+                                    <ul class="[ doctrine-rows ]">
+                                        {editor_fittings.map((fitting) =>
+                                            <template x-if={`shown('${role}', ${fitting.id})`}>
+                                                <li class="[ doctrine-row ]" x-bind:class={`{ 'doctrine-row--removed': removed('${role}', ${fitting.id}) }`}>
+                                                    <input type="hidden" name={role} value={fitting.id} x-bind:disabled={`!has('${role}', ${fitting.id})`} />
+                                                    <img src={icon(fitting.ship_id)} alt="" width="36" height="36" loading="lazy" />
+                                                    <span class="[ doctrine-row__text ]">
+                                                        <span>{fitting.name}</span>
+                                                        <small>{fitting.hull}</small>
+                                                    </span>
+                                                    <small class="[ doctrine-tag doctrine-tag--new ]" x-show={`is_new('${role}', ${fitting.id})`}>{t('doctrine_changes.tag_new')}</small>
+                                                    <small
+                                                        class="[ doctrine-tag doctrine-tag--moved ]"
+                                                        x-show={`moved_from('${role}', ${fitting.id})`}
+                                                        x-text={`'${js(t('doctrine_changes.tag_from'))}'.replace('{role}', moved_from('${role}', ${fitting.id}))`}
+                                                    ></small>
+                                                    <template x-if={`removed('${role}', ${fitting.id})`}>
+                                                        <span class="[ doctrine-row__actions ]">
+                                                            <small class="[ doctrine-tag ]">{t('doctrine_changes.tag_removed')}</small>
+                                                            <button type="button" class="[ doctrine-link-button ]" x-on:click={`undo('${role}', ${fitting.id})`}>{t('doctrine_changes.undo')}</button>
+                                                        </span>
+                                                    </template>
+                                                    <template x-if={`!removed('${role}', ${fitting.id})`}>
+                                                        <span class="[ doctrine-row__actions ]">
+                                                            <label class="[ visually-hidden ]" for={`role-${role}-${fitting.id}`}>{t('doctrine_changes.role_for').replace('{name}', fitting.name)}</label>
+                                                            <select
+                                                                id={`role-${role}-${fitting.id}`}
+                                                                class="[ doctrine-role-select ]"
+                                                                x-on:change={`set_role('${role}', ${fitting.id}, $event.target.value)`}
+                                                            >
+                                                                {DOCTRINE_ROLES.map((option) =>
+                                                                    <option value={option} selected={option === role}>{ROLE_LABELS[option]}</option>
+                                                                )}
+                                                            </select>
+                                                            <button
+                                                                type="button"
+                                                                class="[ doctrine-icon-button ]"
+                                                                aria-label={t('doctrine_changes.remove_named').replace('{name}', fitting.name)}
+                                                                x-on:click={`remove('${role}', ${fitting.id})`}
+                                                            >
+                                                                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                                                            </button>
+                                                        </span>
+                                                    </template>
+                                                </li>
+                                            </template>
+                                        )}
+                                    </ul>
+                                    <div x-show={`is_empty('${role}')`}>
+                                        <EmptyState title={ROLE_EMPTY[role]} />
+                                    </div>
                                 </Flexblock>
                             )}
-                        </Grid>
-                        <small>{t('doctrine_changes.roles_hint')}</small>
-                        <FlexInline gap="var(--space-xs)">
-                            <Button type="submit" name="intent" value="preview" color="alliance-blue">
-                                {t('doctrine_changes.preview')}
-                            </Button>
-                            <Button type="submit" name="intent" value="submit" color="green">
-                                {t('doctrine_changes.submit')}
-                            </Button>
-                        </FlexInline>
-                    </Flexblock>
-                </form>
-            </ComponentBlock>
-        }
+                        </Flexblock>
+                    </ComponentBlock>
 
-        <div id="doctrine-change-result" class="[ mt-[var(--space-m)] ]" aria-live="polite"></div>
+                    <div class="[ doctrine-bar ]" x-show="change_count() > 0" x-cloak>
+                        <strong x-text={`'${js(t('doctrine_changes.change_count'))}'.replace('{count}', change_count())`}></strong>
+                        <FlexInline gap="var(--space-s)">
+                            <button type="button" class="[ doctrine-link-button ]" x-on:click="discard()">{t('doctrine_changes.discard')}</button>
+                            <Button type="button" color="fleet-red" x-on:click="open_review()">{t('doctrine_changes.review_and_send')}</Button>
+                        </FlexInline>
+                    </div>
+                </Flexblock>
+
+                <template x-teleport="body">
+                    <Dialog
+                        breakout={true}
+                        non_centered={true}
+                        class:list={['flex button-dialog w-full component overflow-y-auto']}
+                        x-bind:class="(review_open ? 'open' : '')"
+                        x-bind:aria-hidden="review_open == false"
+                        x-trap="review_open"
+                        x-bind:inert="!review_open"
+                        x-on:keyup.escape.window="close_dialog()"
+                        x-on:mousedown.outside="review_open && close_dialog()"
+                        style="--dialog-max-width: 640px"
+                        x-init="htmx.process($el)"
+                        tabindex="-1"
+                    >
+                        <div
+                            id="doctrine-review"
+                            hx-post={`${FORM_PARTIAL_URL}&intent=review`}
+                            hx-trigger="doctrine-review from:window"
+                            hx-include="#doctrine-form"
+                            hx-target="this"
+                            hx-swap="innerHTML"
+                            aria-live="polite"
+                        >
+                            <p class="[ doctrine-muted ]">{t('doctrine_changes.loading')}</p>
+                        </div>
+                    </Dialog>
+                </template>
+            </form>
+        }
     </PageWide>
 </Viewport>
+
+<style lang="scss">
+    [x-cloak] {
+        display: none;
+    }
+
+    .doctrine-muted {
+        color: var(--text-muted);
+    }
+
+    .doctrine-ships-head {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .doctrine-search {
+        position: relative;
+        flex: 0 1 26rem;
+        min-width: 0;
+    }
+
+    .doctrine-popover {
+        position: absolute;
+        inset-inline-end: 0;
+        top: calc(100% + var(--space-3xs));
+        // Above the sticky changes bar.
+        z-index: var(--header-z-index);
+        width: min(36rem, 90vw);
+        background: var(--background);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) 80%, transparent);
+    }
+
+    .doctrine-popover__bar,
+    .doctrine-popover__filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-xs) var(--space-s);
+    }
+
+    .doctrine-popover__bar {
+        border-bottom: 1px solid var(--hairline);
+    }
+
+    .doctrine-segments {
+        display: flex;
+        flex-wrap: wrap;
+
+        button {
+            min-height: 2.25rem;
+            padding: 0 var(--space-xs);
+            background: transparent;
+            border: 1px solid var(--hairline-medium);
+            color: var(--text-muted);
+            font-size: var(--step--1);
+            cursor: pointer;
+
+            & + button {
+                margin-inline-start: -1px;
+            }
+        }
+    }
+
+    .doctrine-chip {
+        min-height: 2rem;
+        padding: 0 var(--space-xs);
+        border-radius: var(--space-s);
+        background: transparent;
+        border: 1px solid var(--hairline-medium);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        cursor: pointer;
+    }
+
+    .doctrine-segments button[aria-pressed="true"],
+    .doctrine-chip[aria-pressed="true"] {
+        position: relative;
+        border-color: var(--highlight);
+        color: var(--foreground);
+        background: color-mix(in srgb, var(--highlight) 10%, transparent);
+    }
+
+    .doctrine-results {
+        max-height: 26rem;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0 0 var(--space-2xs);
+        list-style: none;
+
+        button {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            width: 100%;
+            min-height: 3rem;
+            padding: var(--space-3xs) var(--space-s);
+            background: none;
+            border: 0;
+            color: inherit;
+            text-align: start;
+            cursor: pointer;
+
+            &:hover:not(:disabled),
+            &:focus-visible {
+                background: var(--hairline);
+            }
+
+            &:disabled {
+                cursor: default;
+                color: var(--text-muted);
+
+                img {
+                    opacity: 0.45;
+                }
+            }
+        }
+    }
+
+    .doctrine-result__end {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    button:disabled .doctrine-result__end {
+        color: var(--text-muted);
+    }
+
+    .doctrine-role {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        padding-block: var(--space-s) var(--space-3xs);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+
+        span,
+        small {
+            color: var(--text-muted);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+    }
+
+    .doctrine-rows {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .doctrine-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: 3.5rem;
+        padding-block: var(--space-3xs);
+        border-top: 1px solid var(--hairline);
+
+        img {
+            flex: none;
+            width: 2.25rem;
+            height: 2.25rem;
+        }
+    }
+
+    .doctrine-row__text {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .doctrine-row--removed {
+        .doctrine-row__text > span {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        img {
+            opacity: 0.4;
+        }
+    }
+
+    .doctrine-row__actions {
+        display: flex;
+        flex: none;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    // Phones: the role picker and remove button get their own line under the name.
+    @media (max-width: 48rem) {
+        .doctrine-row {
+            flex-wrap: wrap;
+        }
+
+        .doctrine-row__text {
+            flex-basis: calc(100% - 2.25rem - var(--space-xs));
+        }
+
+        .doctrine-row__actions {
+            flex: 1 1 100%;
+            justify-content: flex-end;
+        }
+
+        .doctrine-role-select {
+            flex: 1 1 auto;
+        }
+
+        .doctrine-search {
+            flex: 1 1 100%;
+        }
+
+        .doctrine-popover {
+            width: 100%;
+        }
+    }
+
+    .doctrine-tag {
+        flex: none;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .doctrine-tag--new {
+        color: var(--green);
+    }
+
+    .doctrine-tag--moved {
+        color: var(--fleet-yellow);
+    }
+
+    .doctrine-role-select {
+        width: 9rem;
+        min-height: 2.75rem;
+        padding: 0 var(--space-2xs);
+        background: var(--hairline);
+        border: 1px solid transparent;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .doctrine-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        background: transparent;
+        border: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--fleet-red);
+        }
+    }
+
+    .doctrine-link-button {
+        min-height: 2.75rem;
+        padding: 0 var(--space-3xs);
+        background: none;
+        border: 0;
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .doctrine-bar {
+        position: sticky;
+        // Above the page actions PageHeader pins to the bottom on phones.
+        bottom: var(--subheader-bar-height, 0px);
+        z-index: var(--sticky-z-index);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+        background: var(--background);
+        border-top: 1px solid var(--hairline-strong);
+    }
+
+    .doctrine-pending {
+        border-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+    }
+
+    .doctrine-pending__title {
+        font-size: var(--step-0);
+    }
+
+    .doctrine-note {
+        margin: 0;
+        padding-inline-start: var(--space-xs);
+        border-inline-start: 2px solid var(--hairline-strong);
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+</style>

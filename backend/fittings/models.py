@@ -76,7 +76,14 @@ def _eve_doctrine_scalar_equal(field: str, old_val, new_val) -> bool:
 
 # Doctrine fitting roles in display order. Utility holds ships a fleet
 # brings a few of regardless of doctrine size: cynos, boosters, scouts.
-DOCTRINE_FITTING_ROLES = ("primary", "secondary", "support", "utility")
+# Capitals holds the dreadnoughts, carriers and FAX a doctrine brings.
+DOCTRINE_FITTING_ROLES = (
+    "primary",
+    "secondary",
+    "support",
+    "utility",
+    "capitals",
+)
 # The "secondary" role is shown as Academy: only Minmatar Fleet Academy pilots
 # fly these fits. The stored key stays "secondary" (API field names and
 # released desktop apps read it).
@@ -86,6 +93,7 @@ DOCTRINE_FITTING_ROLE_LABELS = {
     ACADEMY_ROLE: "Academy",
     "support": "Support",
     "utility": "Utility",
+    "capitals": "Capitals",
 }
 
 
@@ -856,6 +864,8 @@ class EveDoctrineChangeRequest(models.Model):
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     review_note = models.TextField(blank=True)
+    # Why the submitter proposed the change, shown to reviewers.
+    submit_note = models.TextField(blank=True, default="")
 
     class Meta:
         ordering = ["-submitted_at"]

@@ -49,6 +49,7 @@
         <th>{% translate "Academy" %}</th>
         <th>{% translate "Support" %}</th>
         <th>{% translate "Utility" %}</th>
+        <th>{% translate "Capitals" %}</th>
         <th>{% translate "Status" %}</th>
         <th></th>
       </tr>
@@ -62,6 +63,7 @@
         <td>{{ row.composition.secondary }}</td>
         <td>{{ row.composition.support }}</td>
         <td>{{ row.composition.utility }}</td>
+        <td>{{ row.composition.capitals }}</td>
         <td>
           {% if row.has_pending %}
           <span class="fittings-pending-badge">{% translate "Pending change" %}</span>
