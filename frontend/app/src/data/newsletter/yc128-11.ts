@@ -7,7 +7,6 @@ export const COVER_IMAGE = '/images/home-vard-cover-eve.jpg'
 const IMG = `/images/newsletter/${SLUG}`
 const HELP_URL = 'https://discord.com/channels/1041384161505722368/1183401618943791186'
 const QUESTIONS_URL = 'https://discord.com/channels/1041384161505722368/1561471935462903839'
-const APICULTURE = 2442
 // TODO(town hall #38): swap in the highlights video URL and its thumbnail once the cut is published.
 const TOWN_HALL_URL = 'https://www.youtube.com/@MinmatarFleet'
 
@@ -19,7 +18,7 @@ export const YC128_11: NewsletterIssue = {
     share_image: `/images/newsletter/${SLUG}/share.jpg`,
     eyebrow: "What's new on my.minmatar.org",
     period_label: 'November YC 128',
-    dek: '1.36 trillion ISK of capitals in Amamake, a Training tab that tells you what you can fly, a Trial tab for new pilots, and fleet invites in your Discord DMs.',
+    dek: 'A Training tab that tells you what you can fly and what to train next, a Trial tab for new pilots, fleet invites in your Discord DMs, and quiet mode fleets nobody sees coming.',
     lead_video: {
         kicker: 'Watch first',
         title: 'Town Hall #38 highlights',
@@ -32,145 +31,6 @@ export const YC128_11: NewsletterIssue = {
         cta: { links: [{ label: 'Watch on YouTube', href: TOWN_HALL_URL }] },
     },
     sections: [
-        {
-            kind: 'feature',
-            id: 'battles',
-            toc_label: 'Major battles',
-            kicker: 'On grid',
-            title: 'The bees came to Amamake',
-            lede: 'Goonswarm and Snuffed Out brought capitals to our home system. Most of them stayed.',
-            panel: {
-                title: 'Apiculture · Thursday 5 November',
-                paragraphs: [
-                    '298 of us undocked in Amamake against 769 hostiles, outnumbered more than two and a half to one. Three hours later we had killed <b>766 ships for 1.36 trillion ISK</b> and lost 13. The wrecks include 67 Zirnitras, 38 Thanatos, 28 Revelations and 28 Nidhoggurs.',
-                    'Counting everyone on grid, the battle report shows 4,245 pilots and 2.11T destroyed on both sides.',
-                    'It was the second round. On Monday, <q>the first of the great Goon Wars</q> took 16 Thanatos and 5 Nidhoggurs off the field for 91.6B, at 91% efficiency.',
-                ],
-                pilots: [
-                    { character_id: 365375372, character_name: 'treges', note: 'FC for both nights' },
-                ],
-            },
-            figures: [
-                {
-                    src: `${IMG}/apiculture-outcome.webp`,
-                    width: 1160,
-                    height: 250,
-                    alt: "Apiculture's outcome: 1.36T destroyed across 766 ships, 11.7B lost across 13 ships, 99% ISK efficiency, 298 of us against 769.",
-                    caption: 'The outcome card on the fleet page.',
-                    wide: true,
-                },
-                {
-                    src: `${IMG}/apiculture-aar.webp`,
-                    width: 1160,
-                    height: 710,
-                    alt: 'The after-action report: ships killed and lost per minute from 17:14 to 20:23, and one engagement in Amamake and Kourmonen with 719 kills and 11 losses.',
-                    caption: 'Two hours of capital killing, minute by minute.',
-                    wide: true,
-                },
-            ],
-            cta: {
-                links: [
-                    { label: 'Read the after-action report', href: `/fleets/history/${APICULTURE}/#fights` },
-                    { label: 'Every kill', href: `/fleets/${APICULTURE}/kills/`, secondary: true },
-                ],
-            },
-        },
-        {
-            kind: 'feature',
-            id: 'quiet',
-            toc_label: 'Quiet mode',
-            kicker: 'Quiet mode',
-            title: 'The fleet nobody saw coming',
-            lede: 'Strategic FCs can now run invite-only fleets. They never go on the schedule or in pings: the FC invites pilots by Discord DM, and everyone who says yes gets a private thread.',
-            panel: {
-                title: 'Quiet mode fleet · Saturday 24 October',
-                paragraphs: [
-                    'Word was that something big might kick off near Amamake, so BearThatCares kept the fleet off the schedule. Seven waves of DMs went out, 38 pilots said they were in, and the fleet asked for <b>40 dreads, 30 TFIs and 20 logi</b>.',
-                    'We waited at the login screen, then took the fight in Dudreda against Cryonic Origin and Ahbazon-Prime, outnumbered 1.5 to 1. The ISK went their way, 13.6B to 16.4B, but nobody saw us coming. Once it was over the fleet was declassified, so its reports are public now.',
-                ],
-            },
-            figures: [
-                {
-                    src: `${IMG}/quiet-fleet.webp`,
-                    width: 1170,
-                    height: 585,
-                    alt: 'The declassified quiet mode fleet: Saturday 24 October, 1 hour 10 minutes, staged in Amamake on TFIs, FC BearThatCares. Outcome: 13.6B destroyed, 16.4B lost, 45% efficiency, 120 against 180.',
-                    caption: 'Declassified after the fight, like any other fleet.',
-                    wide: true,
-                },
-            ],
-            list: [
-                { title: 'Invites in waves.', text: 'Pick pilots, groups or corps, or paste a list. Each wave is paced so Discord doesn’t throttle it.' },
-                { title: 'Ship targets.', text: 'The FC asks for 40 dreads or 20 logi, and pilots see what is still needed when they pick a ship.' },
-                { title: 'A private thread.', text: 'Everyone who is in gets a thread for updates, and the start ping goes there.' },
-                { title: 'Declassify after.', text: 'When it’s over, one button puts the fleet in history with its reports. Who was invited stays private.' },
-            ],
-            cta: {
-                links: [
-                    { label: 'Read the after-action report', href: '/fleets/history/2421/#fights' },
-                ],
-            },
-        },
-        {
-            kind: 'rollup',
-            id: 'since',
-            toc_label: 'Fleets',
-            kicker: 'Since the last issue',
-            title: '20 October to 5 November',
-            stats: [
-                { value: '22', label: 'alliance fleets flown' },
-                { value: '10', label: 'FCs took us out' },
-                { value: '770', label: 'characters on grid' },
-                { value: '1.4T', label: 'ISK destroyed, 97% efficiency' },
-            ],
-            nights_title: 'Biggest nights',
-            nights: [
-                { date_label: 'Thu 5 Nov', title: 'Apiculture', fc_name: 'treges', fc_character_id: 365375372, pilots: 298, isk_destroyed: '1.36T', isk_lost: '11.7B' },
-                { date_label: 'Wed 4 Nov', title: 'Removing bees', fc_name: 'Casper Sullivan', fc_character_id: 2120307642, pilots: 190, isk_destroyed: '0.7B', isk_lost: '0.1B' },
-                { date_label: 'Mon 2 Nov', title: 'First of the great Goon Wars', fc_name: 'treges', fc_character_id: 365375372, pilots: 171, isk_destroyed: '91.6B', isk_lost: '9.1B' },
-                { date_label: 'Tue 20 Oct', title: 'Max dudes', fc_name: 'BearThatCares', fc_character_id: 634915984, pilots: 156, isk_destroyed: '0.2B', isk_lost: '0.2B' },
-                { date_label: 'Sat 31 Oct', title: 'Nightmares in B-WPLZ', fc_name: 'BearThatCares', fc_character_id: 634915984, pilots: 147, isk_destroyed: '43.4B', isk_lost: '1.6B' },
-            ],
-            fcs_title: 'The FCs who took us out',
-            fcs: [
-                { character_id: 634915984, character_name: 'BearThatCares', fleets: 7, first_fleets: false },
-                { character_id: 2116242012, character_name: 'Sycamoria', fleets: 3, first_fleets: false },
-                { character_id: 365375372, character_name: 'treges', fleets: 3, first_fleets: false },
-                { character_id: 217145210, character_name: 'Darquies Shade', fleets: 2, first_fleets: false },
-                { character_id: 2117059479, character_name: 'MiniSpartan', fleets: 2, first_fleets: false },
-                { character_id: 92004354, character_name: 'Teysha Blackblade', fleets: 1, first_fleets: false },
-                { character_id: 2122950343, character_name: 'Mula Soldats', fleets: 1, first_fleets: false },
-                { character_id: 2123699290, character_name: 'Lilith Himmelsgaenger', fleets: 1, first_fleets: false },
-                { character_id: 154198067, character_name: 'Barret Smythe', fleets: 1, first_fleets: false },
-                { character_id: 2120307642, character_name: 'Casper Sullivan', fleets: 1, first_fleets: false },
-            ],
-            cta: {
-                links: [{ label: 'See upcoming fleets', href: '/fleets/upcoming/' }],
-            },
-        },
-        {
-            kind: 'feature',
-            id: 'aldodan',
-            toc_label: 'Aldodan',
-            kicker: 'Faction Warfare',
-            title: 'Aldodan, three weeks to go',
-            lede: 'The campaign against the Fraternity farming nest in Aldodan runs until the end of November.',
-            panel: {
-                title: 'Aldodan YC128 so far',
-                paragraphs: [
-                    '83 pilots have enlisted, up from 45 in the last issue. Together they have run <b>785 complexes</b> and killed 320 ships.',
-                    'darktal1 Kasenumi is still out in front on complexes, now with 156. Sadthumper leads the killboard with 47.',
-                ],
-                pilots: [
-                    { character_id: 91387091, character_name: 'darktal1 Kasenumi', note: '156 complexes run' },
-                    { character_id: 2124160775, character_name: 'Sadthumper', note: '47 kills, 5.6B destroyed' },
-                ],
-            },
-            cta: {
-                links: [{ label: 'Join Aldodan', href: '/campaigns/aldodan-yc128/' }],
-                note: 'Press <b>Add to campaign</b> on the You tab.',
-            },
-        },
         {
             kind: 'feature',
             id: 'training',
@@ -256,6 +116,42 @@ export const YC128_11: NewsletterIssue = {
             cta: { links: [{ label: 'See upcoming fleets', href: '/fleets/upcoming/' }] },
         },
         {
+            kind: 'feature',
+            id: 'quiet',
+            toc_label: 'Quiet mode',
+            kicker: 'Quiet mode',
+            title: 'The fleet nobody saw coming',
+            lede: 'Strategic FCs can now run invite-only fleets. They never go on the schedule or in pings: the FC invites pilots by Discord DM, and everyone who says yes gets a private thread.',
+            panel: {
+                title: 'Quiet mode fleet · Saturday 24 October',
+                paragraphs: [
+                    'Word was that something big might kick off near Amamake, so BearThatCares kept the fleet off the schedule. Seven waves of DMs went out, 38 pilots said they were in, and the fleet asked for <b>40 dreads, 30 TFIs and 20 logi</b>.',
+                    'We waited at the login screen, then took the fight in Dudreda against Cryonic Origin and Ahbazon-Prime, outnumbered 1.5 to 1. The ISK went their way, 13.6B to 16.4B, but nobody saw us coming. Once it was over the fleet was declassified, so its reports are public now.',
+                ],
+            },
+            figures: [
+                {
+                    src: `${IMG}/quiet-fleet.webp`,
+                    width: 1170,
+                    height: 585,
+                    alt: 'The declassified quiet mode fleet: Saturday 24 October, 1 hour 10 minutes, staged in Amamake on TFIs, FC BearThatCares. Outcome: 13.6B destroyed, 16.4B lost, 45% efficiency, 120 against 180.',
+                    caption: 'Declassified after the fight, like any other fleet.',
+                    wide: true,
+                },
+            ],
+            list: [
+                { title: 'Invites in waves.', text: 'Pick pilots, groups or corps, or paste a list. Each wave is paced so Discord doesn’t throttle it.' },
+                { title: 'Ship targets.', text: 'The FC asks for 40 dreads or 20 logi, and pilots see what is still needed when they pick a ship.' },
+                { title: 'A private thread.', text: 'Everyone who is in gets a thread for updates, and the start ping goes there.' },
+                { title: 'Declassify after.', text: 'When it’s over, one button puts the fleet in history with its reports. Who was invited stays private.' },
+            ],
+            cta: {
+                links: [
+                    { label: 'Read the after-action report', href: '/fleets/history/2421/#fights' },
+                ],
+            },
+        },
+        {
             kind: 'hits',
             id: 'reports',
             toc_label: 'Battle reports',
@@ -267,7 +163,7 @@ export const YC128_11: NewsletterIssue = {
                     width: 1176,
                     height: 531,
                     alt: "Apiculture's battle report: 1,267 killmails, 4,245 pilots and 2.11T destroyed over two hours. Dragging across 18:49 to 19:19 narrows it to 421 killmails and 624.3B.",
-                    caption: 'Apiculture, narrowed to its busiest half hour.',
+                    caption: 'A 4,245-pilot fight in Amamake, narrowed to its busiest half hour.',
                     wide: true,
                 },
             ],
