@@ -1,5 +1,4 @@
 ---
-import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
@@ -35,8 +34,6 @@ import {
     list_campaigns,
     update_campaign,
 } from '@helpers/api.minmatar.org/surveys'
-
-const admin_base = get_public_api_url()
 
 let action_error: string | null = null
 
@@ -210,11 +207,9 @@ const page_title = 'Community Survey'
                                     </ActionMenu>
                                     <a
                                         class="[ icon-btn ]"
-                                        href={admin_base + '/admin/surveys/surveycampaign/' + c.id + '/change/'}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title="Edit survey settings (admin)"
-                                        aria-label="Edit survey settings"
+                                        href={translatePath(`/surveys/${c.id}/edit`)}
+                                        title="Edit survey"
+                                        aria-label="Edit survey"
                                     >⚙</a>
                                 </div>
                             )}

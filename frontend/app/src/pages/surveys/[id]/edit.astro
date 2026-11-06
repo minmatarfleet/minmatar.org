@@ -1,0 +1,259 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { can, get_gates } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return login_redirect(Astro)
+
+if (!can(await get_gates(Astro), 'surveys.manage'))
+    return HTTP_403_Forbidden()
+
+const campaign_id = parseInt(Astro.params.id as string)
+
+import type { ChangelogEntry, SpotlightQuestion, SurveyCampaign } from '@dtypes/survey'
+import {
+    get_changelog,
+    list_campaigns,
+    post_changelog_entry,
+    update_campaign,
+} from '@helpers/api.minmatar.org/surveys'
+
+const QUESTION_TYPES: Record<SpotlightQuestion['type'], string> = {
+    single: 'Pick one',
+    multi: 'Pick several',
+    agree: 'Agree scale',
+    scale5: '1 to 5 scale',
+    enps: '0 to 10 recommend score',
+    text: 'Free text',
+}
+const BLANK_ROWS = 2
+
+// <input type="datetime-local"> has no zone: read and write it as UTC.
+const to_input = (iso: string | null) => (iso ? iso.slice(0, 16) : '')
+const from_input = (value: string) => (value ? `${value}:00+00:00` : '')
+
+let notice: string | null = null
+let action_error: string | null = null
+
+if (Astro.request.method === 'POST') {
+    try {
+        const data = await Astro.request.formData()
+        const action = data.get('action')
+
+        if (action === 'save') {
+            const questions: SpotlightQuestion[] = []
+            const row_count = parseInt(String(data.get('question_rows') ?? '0'))
+            for (let i = 0; i < row_count; i++) {
+                const label = String(data.get(`q${i}_label`) ?? '').trim()
+                if (!label) continue
+                questions.push({
+                    key: String(data.get(`q${i}_key`) ?? ''),
+                    type: String(data.get(`q${i}_type`) ?? 'single') as SpotlightQuestion['type'],
+                    label,
+                    help: String(data.get(`q${i}_help`) ?? ''),
+                    choices: String(data.get(`q${i}_choices`) ?? '')
+                        .split('\n')
+                        .map((choice) => choice.trim())
+                        .filter(Boolean),
+                    required: data.get(`q${i}_required`) === 'on',
+                })
+            }
+            await update_campaign(auth_token as string, campaign_id, {
+                title: String(data.get('title') ?? ''),
+                status: String(data.get('status') ?? ''),
+                opens_at: from_input(String(data.get('opens_at') ?? '')),
+                closes_at: from_input(String(data.get('closes_at') ?? '')),
+                spotlight_questions: questions,
+            })
+            notice = 'Survey saved.'
+        } else if (action === 'changelog') {
+            await post_changelog_entry(auth_token as string, campaign_id, {
+                heading: String(data.get('heading') ?? '').trim(),
+                body_markdown: String(data.get('body_markdown') ?? ''),
+                published: data.get('published') === 'on',
+            })
+            notice = 'Changelog entry added.'
+        }
+    } catch (error: any) {
+        action_error = error?.message || 'Action failed.'
+    }
+}
+
+let campaign: SurveyCampaign | undefined
+let changelog: ChangelogEntry[] = []
+let data_fetching_error: any
+
+try {
+    campaign = (await list_campaigns(auth_token as string)).find((c) => c.id === campaign_id)
+    if (campaign) {
+        try {
+            changelog = await get_changelog(auth_token as string, campaign_id)
+        } catch (error) {
+            console.error('survey changelog fetch failed', error)
+        }
+    }
+} catch (error) {
+    data_fetching_error = error
+}
+
+if (!campaign && !data_fetching_error)
+    return HTTP_404_Not_Found()
+
+const spotlight = campaign?.spotlight_questions ?? []
+const rows: (SpotlightQuestion | null)[] = [
+    ...spotlight,
+    ...Array.from({ length: BLANK_ROWS }, () => null),
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+
+const page_title = campaign ? `Edit ${campaign.title}` : 'Edit survey'
+---
+
+<Viewport title={page_title}>
+    <PageDefault
+        cover={{
+            image: '/images/alliance-cover.jpg',
+            image_990: '/images/alliance-cover-990.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{page_title}</PageTitle>
+            <small><a href={translatePath('/surveys')}>Back to surveys</a></small>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-xl)">
+            {notice && <ComponentBlock><p>{notice}</p></ComponentBlock>}
+            {action_error && <ComponentBlock><p class="[ err ]" role="alert">{action_error}</p></ComponentBlock>}
+            {data_fetching_error && (
+                <ComponentBlock><p>Could not load this survey right now.</p></ComponentBlock>
+            )}
+
+            {campaign && (
+                <ComponentBlock>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="save" />
+                        <input type="hidden" name="question_rows" value={rows.length} />
+                        <Flexblock gap="var(--space-s)">
+                            <h2>Settings</h2>
+                            <label for="title">Title</label>
+                            <Input id="title" name="title" value={campaign.title} maxlength="128" required />
+
+                            <label for="status">State</label>
+                            <Select id="status" name="status">
+                                <option value="draft" selected={campaign.status === 'draft'}>Draft</option>
+                                <option value="open" selected={campaign.status === 'open'}>Open</option>
+                                <option value="closed" selected={campaign.status === 'closed'}>Closed</option>
+                            </Select>
+
+                            <label for="opens_at">Opens (UTC)</label>
+                            <Input id="opens_at" type="datetime-local" name="opens_at" value={to_input(campaign.opens_at)} />
+
+                            <label for="closes_at">Closes (UTC)</label>
+                            <Input id="closes_at" type="datetime-local" name="closes_at" value={to_input(campaign.closes_at)} />
+
+                            <h2>Extra questions</h2>
+                            <small>
+                                One-off questions shown just before the open floor. Leave a label empty to remove a
+                                question. Choices are one per line and only used for pick-one and pick-several.
+                            </small>
+                            {rows.map((question, i) => (
+                                <fieldset class="[ question-row ]">
+                                    <legend>Question {i + 1}</legend>
+                                    <Flexblock gap="var(--space-2xs)">
+                                        <input type="hidden" name={`q${i}_key`} value={question?.key ?? ''} />
+                                        <label for={`q${i}_label`}>Label</label>
+                                        <Input id={`q${i}_label`} name={`q${i}_label`} value={question?.label ?? ''} />
+                                        <label for={`q${i}_type`}>Type</label>
+                                        <Select id={`q${i}_type`} name={`q${i}_type`}>
+                                            {Object.entries(QUESTION_TYPES).map(([value, label]) => (
+                                                <option value={value} selected={(question?.type ?? 'single') === value}>{label}</option>
+                                            ))}
+                                        </Select>
+                                        <label for={`q${i}_help`}>Help text</label>
+                                        <Input id={`q${i}_help`} name={`q${i}_help`} value={question?.help ?? ''} />
+                                        <label for={`q${i}_choices`}>Choices</label>
+                                        <textarea id={`q${i}_choices`} name={`q${i}_choices`} rows="3">{(question?.choices ?? []).join('\n')}</textarea>
+                                        <label class="[ check ]">
+                                            <input type="checkbox" name={`q${i}_required`} checked={question?.required ?? false} />
+                                            Required
+                                        </label>
+                                    </Flexblock>
+                                </fieldset>
+                            ))}
+
+                            <FlexInline justification="flex-start" gap="var(--space-xs)">
+                                <Button type="submit" size="sm" color="fleet-red">Save survey</Button>
+                            </FlexInline>
+                        </Flexblock>
+                    </form>
+                </ComponentBlock>
+            )}
+
+            {campaign && (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <h2>Changelog</h2>
+                        {changelog.length > 0 ? (
+                            <ul>
+                                {changelog.map((entry) => <li>{entry.heading}</li>)}
+                            </ul>
+                        ) : (
+                            <small>No entries yet.</small>
+                        )}
+                        <form method="POST">
+                            <input type="hidden" name="action" value="changelog" />
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="heading">Heading</label>
+                                <Input id="heading" name="heading" required />
+                                <label for="body_markdown">Body (Markdown)</label>
+                                <textarea id="body_markdown" name="body_markdown" rows="4"></textarea>
+                                <label class="[ check ]">
+                                    <input type="checkbox" name="published" checked />
+                                    Published
+                                </label>
+                                <FlexInline justification="flex-start" gap="var(--space-xs)">
+                                    <Button type="submit" size="sm" color="fleet-red">Add entry</Button>
+                                </FlexInline>
+                            </Flexblock>
+                        </form>
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+        </Flexblock>
+    </PageDefault>
+</Viewport>
+
+<style lang="scss">
+    .err {
+        color: var(--fleet-red);
+    }
+
+    .question-row {
+        border: 1px solid var(--border-color);
+        padding: var(--space-s);
+    }
+
+    .check {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+</style>
