@@ -9394,6 +9394,13 @@ export interface components {
              * @default 0
              */
             response_count?: number;
+            /**
+             * Spotlight Questions
+             * @default []
+             */
+            spotlight_questions?: {
+                [key: string]: unknown;
+            }[];
             /** Status */
             status: string;
             /** Title */
@@ -18038,6 +18045,8 @@ export interface components {
              * @default []
              */
             blueprint_coordinators?: components["schemas"]["BlueprintCoordinatorResponse"][];
+            /** Campaign Id */
+            campaign_id?: number | null;
             /** Campaign Slug */
             campaign_slug?: string | null;
             /**
@@ -18557,6 +18566,14 @@ export interface components {
         PatchOrderRequest: {
             /** Campaign Id */
             campaign_id?: number | null;
+            /** Contract To */
+            contract_to?: string | null;
+            /** Fulfilled */
+            fulfilled?: boolean | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Needed By */
+            needed_by?: string | null;
         };
         /** PatchOrderResponse */
         PatchOrderResponse: {
@@ -20824,6 +20841,36 @@ export interface components {
             system: string;
         };
         /**
+         * SpotlightQuestionInput
+         * @description One one-off question merged in before the Open floor.
+         */
+        SpotlightQuestionInput: {
+            /**
+             * Choices
+             * @default []
+             */
+            choices?: string[];
+            /**
+             * Help
+             * @default
+             */
+            help?: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            /**
+             * Type
+             * @default single
+             */
+            type?: string;
+        };
+        /**
          * SrpCategory
          * @enum {string}
          */
@@ -22542,8 +22589,12 @@ export interface components {
             closes_at?: string | null;
             /** Opens At */
             opens_at?: string | null;
+            /** Spotlight Questions */
+            spotlight_questions?: components["schemas"]["SpotlightQuestionInput"][] | null;
             /** Status */
             status?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** UpdateEveFleetRequest */
         UpdateEveFleetRequest: {

@@ -1518,7 +1518,14 @@ export const ui = {
             'Assignment breakdown for Minmatar Fleet industry order {code}: producers, claim status, and delivery progress.',
         'industry.orders.detail.profit_chart_description':
             'Profit for each product on this order, sorted from highest to lowest (shown in millions of ISK).',
-        'industry.orders.detail.edit_in_admin': 'Edit order in admin',
+        'industry.orders.manage.view': 'Manage order',
+        'industry.orders.manage.title': 'Manage order',
+        'industry.orders.manage.description':
+            'Change the deadline, delivery location, contract recipient, campaign or fulfilled state.',
+        'industry.orders.manage.no_location': 'No location',
+        'industry.orders.manage.fulfilled': 'Order is fulfilled',
+        'industry.orders.manage.needed_by_required': 'Needed by is required.',
+        'industry.orders.manage.forbidden': 'You cannot manage industry orders.',
         'industry.orders.lp_stockpiles.title': 'LP stockpiles',
         'industry.orders.lp_stockpiles.view': 'View loyalty point stockpiles',
         'industry.orders.lp_stockpiles.description':

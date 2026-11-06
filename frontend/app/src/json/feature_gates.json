@@ -116,6 +116,10 @@
             "feature": "corporations.members.view_all",
             "legacy": { "perms": ["eveonline.view_evecorporation"], "superuser": true }
         },
+        "industry.order.manage": {
+            "feature": "industry.order.manage",
+            "legacy": { "perms": ["industry.change_industryorder"], "superuser": true }
+        },
         "surveys.manage": {
             "feature": "surveys.manage",
             "legacy": { "perms": ["surveys.change_surveycampaign"], "superuser": true }

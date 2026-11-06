@@ -177,6 +177,46 @@ class SurveyRouterTests(TestCase):
         r = self.client.get(f"{BASE}/", **_auth(self.manager))
         self.assertEqual(r.status_code, 200)
 
+    def test_patch_edits_title_and_spotlight_questions(self):
+        body = {
+            "title": "Renamed",
+            "spotlight_questions": [
+                {
+                    "key": "",
+                    "label": "Desktop app?",
+                    "type": "single",
+                    "choices": ["Yes", "No"],
+                }
+            ],
+        }
+        r = self.client.patch(
+            f"{BASE}/{self.campaign.pk}",
+            data=json.dumps(body),
+            content_type="application/json",
+            **_auth(self.manager),
+        )
+        self.assertEqual(r.status_code, 200, r.content)
+        self.campaign.refresh_from_db()
+        self.assertEqual(self.campaign.title, "Renamed")
+        self.assertEqual(
+            self.campaign.spotlight_questions[0]["key"], "desktop_app"
+        )
+        body["spotlight_questions"][0]["choices"] = ["Yes"]
+        r = self.client.patch(
+            f"{BASE}/{self.campaign.pk}",
+            data=json.dumps(body),
+            content_type="application/json",
+            **_auth(self.manager),
+        )
+        self.assertEqual(r.status_code, 400)
+        r = self.client.patch(
+            f"{BASE}/{self.campaign.pk}",
+            data=json.dumps({"status": "bogus"}),
+            content_type="application/json",
+            **_auth(self.manager),
+        )
+        self.assertEqual(r.status_code, 400)
+
     def test_close_triggers_aggregates(self):
         self.client.post(
             f"{BASE}/{self.campaign.pk}/responses",

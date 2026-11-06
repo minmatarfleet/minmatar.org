@@ -849,6 +849,9 @@ const featured_guides = issue.get_involved.featured_guides
                                                     {group.name}
                                                 </a>
                                                 {group.new_to_board && <span class="[ wz-badge ]">NEW</span>}
+                                                {group.pilots != null && (
+                                                    <small class="[ wz-group-pilots ]">{number_thousand_separator(group.pilots)} pilots</small>
+                                                )}
                                             </span>
                                             <span class:list={['wz-group-faction', group.militia && `wz-group-faction--${group.militia}`]}>
                                                 {group.faction_id === 500002 || group.faction_id === 500003 || group.faction_id === 500004 || group.faction_id === 500001 ? (
@@ -1361,6 +1364,12 @@ const featured_guides = issue.get_involved.featured_guides
         margin-inline: 0.4em;
         font-size: var(--step--2);
         font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .wz-group-pilots {
+        margin-inline-start: var(--space-xs);
+        color: var(--text-muted);
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }

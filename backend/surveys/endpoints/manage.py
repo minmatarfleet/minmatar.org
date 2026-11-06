@@ -4,12 +4,14 @@ import logging
 from collections import defaultdict
 
 from django.utils import timezone
+from django.utils.text import slugify
 from ninja import Router
 
 from authentication import AuthBearer
 from surveys.constants import (
     SEGMENT_ALL,
     STATUS_CLOSED,
+    STATUS_DRAFT,
     STATUS_OPEN,
     TYPE_TEXT,
 )
@@ -78,6 +80,54 @@ def create_campaign(request, payload: CreateCampaignRequest):
     return 200, serialize_campaign(campaign)
 
 
+VALID_STATUSES = {STATUS_DRAFT, STATUS_OPEN, STATUS_CLOSED}
+SPOTLIGHT_TYPES = {"scale5", "enps", "agree", "single", "multi", "text"}
+
+
+def _clean_spotlight(questions) -> list | str:
+    """Normalise spotlight questions; return an error string when invalid."""
+    out, seen = [], set()
+    for q in questions:
+        key = slugify(q.key or q.label).replace("-", "_")[:40]
+        label = q.label.strip()
+        if not key or not label:
+            return "Every question needs a label."
+        if key in seen:
+            return f"Duplicate question key: {key}."
+        if q.type not in SPOTLIGHT_TYPES:
+            return f"Unsupported question type: {q.type}."
+        choices = [c.strip() for c in q.choices if c.strip()]
+        if q.type in ("single", "multi") and len(choices) < 2:
+            return f"'{label}' needs at least two choices."
+        seen.add(key)
+        out.append(
+            {
+                "key": key,
+                "type": q.type,
+                "label": label,
+                "help": q.help.strip(),
+                "choices": choices if q.type in ("single", "multi") else [],
+                "required": q.required,
+            }
+        )
+    return out
+
+
+def _apply_text_edits(campaign, payload) -> str | None:
+    """Apply title and spotlight edits; return an error message or None."""
+    if payload.title is not None:
+        title = payload.title.strip()
+        if not title:
+            return "Title cannot be empty."
+        campaign.title = title[:128]
+    if payload.spotlight_questions is not None:
+        cleaned = _clean_spotlight(payload.spotlight_questions)
+        if isinstance(cleaned, str):
+            return cleaned
+        campaign.spotlight_questions = cleaned
+    return None
+
+
 @router.patch(
     "/{campaign_id}",
     response={200: CampaignSchema, 400: dict, 403: dict, 404: dict},
@@ -90,6 +140,11 @@ def update_campaign(request, campaign_id: int, payload: UpdateCampaignRequest):
     campaign = SurveyCampaign.objects.filter(pk=campaign_id).first()
     if not campaign:
         return 404, {"detail": "Campaign not found."}
+    if payload.status and payload.status not in VALID_STATUSES:
+        return 400, {"detail": "Unknown status."}
+    error = _apply_text_edits(campaign, payload)
+    if error:
+        return 400, {"detail": error}
     if payload.status:
         campaign.status = payload.status
         if payload.status == STATUS_OPEN and not campaign.opens_at:
