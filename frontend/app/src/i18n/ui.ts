@@ -248,7 +248,7 @@ export const ui = {
         'newsletter.yc128_10.meta_description': "Minmatar Fleet's monthly roundup: live Faction Warfare campaigns, a desktop overlay for EVE, after-action reports for every fleet, and October's FCs and biggest fights. Plus the Town Hall #37 highlights.",
         'newsletter.yc128_11.page_title': 'Fleet Newsletter · November YC 128',
         'newsletter.yc128_11.meta_title': 'Fleet Newsletter · November YC 128 | {site}',
-        'newsletter.yc128_11.meta_description': "Minmatar Fleet's monthly roundup: a Training tab that tells you what you can fly, a Trial tab for new pilots, fleet invites by Discord DM, quiet mode fleets and whole-fleet battle reports.",
+        'newsletter.yc128_11.meta_description': "Minmatar Fleet's monthly roundup: a Training tab that tells you what you can fly and what to train next, fleet invites by Discord DM, a Trial tab for new pilots, quiet fleets and whole-fleet battle reports.",
         'warzone.latest.page_title': 'Frontline Report',
         'warzone.page_title': 'Frontline Report',
         'amamake_market.yc128_08.name': 'Amamake Economic Report · August YC128',
