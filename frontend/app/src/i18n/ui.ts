@@ -3190,7 +3190,7 @@ export const ui = {
         'corporations.detail.role_ceo': 'CEO',
         'corporations.detail.role_director': 'Director',
         'corporations.detail.role_recruiter': 'Recruiter',
-        'corporations.detail.role_steward': 'Gunner',
+        'corporations.detail.role_steward': 'Station Manager',
         'corporations.detail.observed': 'Active in fleets',
         'corporations.detail.admin': 'Admin',
         'corporations.detail.tabs_label': 'Corporation sections',
