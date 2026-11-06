@@ -5,6 +5,7 @@ chief shows the alliance executor. Pilots volunteer for an open seat and the
 executor appoints from the DM or the site.
 """
 
+import importlib
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group, User
@@ -364,3 +365,107 @@ class ChiefVolunteerTestCase(TestCase):
         self.assertEqual(offer.status, "pending")
         self.fishermen.refresh_from_db()
         self.assertIsNone(self.fishermen.chief)
+
+
+@override_settings(ALLIANCE_EXECUTOR_CHARACTER_ID=EXECUTOR_CHARACTER_ID)
+class InterimChiefPowersTestCase(TestCase):
+    """An interim chief acts as chief: manages, gets applications."""
+
+    def setUp(self):
+        self.executor = _pilot("bear2", EXECUTOR_CHARACTER_ID, "BearThatCares")
+        self.tribe_chief = _pilot("faye2", 93001, "Faye Vaelent")
+        self.pilot = _pilot("casper2", 93002, "Casper Sullivan")
+        self.pulse = Tribe.objects.create(
+            name="Pulse", slug="pulse-powers", chief=self.tribe_chief
+        )
+        self.fishermen = TribeGroup.objects.create(
+            tribe=self.pulse, name="Fishermen", code="pulse.fish-powers"
+        )
+        self.supply = Tribe.objects.create(name="Supply", slug="supply-pw")
+        self.freighters = TribeGroup.objects.create(
+            tribe=self.supply, name="Freighters", code="supply.frt-powers"
+        )
+        self.market = TribeGroup.objects.create(
+            tribe=self.supply,
+            name="Market",
+            code="supply.mkt-powers",
+            chief=self.pilot,
+        )
+
+    def test_executor_manages_a_chiefless_tribe(self):
+        # pylint: disable-next=import-outside-toplevel
+        from tribes.helpers.permissions import (
+            user_can_manage_group,
+            user_is_tribe_chief,
+        )
+
+        self.assertTrue(user_is_tribe_chief(self.executor, self.supply))
+        self.assertTrue(user_can_manage_group(self.executor, self.freighters))
+        # Like a tribe chief, every group in the tribe, chief or not.
+        self.assertTrue(user_can_manage_group(self.executor, self.market))
+        # Not a tribe that has its own chief.
+        self.assertFalse(user_is_tribe_chief(self.executor, self.pulse))
+        self.assertFalse(user_can_manage_group(self.executor, self.fishermen))
+        self.assertFalse(user_can_manage_group(self.pilot, self.freighters))
+
+    def test_executor_passes_tribe_chief_feature_gates(self):
+        # pylint: disable-next=import-outside-toplevel
+        from groups.helpers.feature_access import (
+            _chief_tribe_group_ids,
+            feature_batch,
+        )
+
+        with feature_batch(self.executor):
+            led = _chief_tribe_group_ids(self.executor)
+        self.assertIn(self.freighters.pk, led)
+        self.assertIn(self.market.pk, led)
+        self.assertNotIn(self.fishermen.pk, led)
+
+    @override_settings(ALLIANCE_EXECUTOR_CHARACTER_ID=0)
+    def test_no_executor_no_powers(self):
+        # pylint: disable-next=import-outside-toplevel
+        from tribes.helpers.permissions import user_can_manage_group
+
+        self.assertFalse(user_can_manage_group(self.executor, self.freighters))
+
+    def test_applications_notify_the_interim_chief(self):
+        # pylint: disable-next=import-outside-toplevel
+        from tribes.endpoints.memberships.post_membership import (
+            _notify_chief_of_new_request,
+        )
+
+        cases = [
+            (self.fishermen, self.tribe_chief),
+            (self.freighters, self.executor),
+            (self.market, self.pilot),
+        ]
+        for group, expected in cases:
+            membership = TribeGroupMembership.objects.create(
+                user=(
+                    self.tribe_chief if expected is self.pilot else self.pilot
+                ),
+                tribe_group=group,
+                status=TribeGroupMembership.STATUS_PENDING,
+            )
+            module = importlib.import_module(
+                "tribes.endpoints.memberships.post_membership"
+            )
+            with patch.object(module, "notify_user") as notify:
+                _notify_chief_of_new_request(membership)
+            self.assertEqual(notify.call_args.args[0], expected, group.name)
+
+    def test_executor_joins_the_tribe_chief_auth_group(self):
+        # pylint: disable-next=import-outside-toplevel
+        from groups.helpers import (
+            TRIBE_CHIEF_GROUP_NAME,
+            sync_tribe_chief_group_membership,
+        )
+
+        sync_tribe_chief_group_membership()
+        chiefs = set(
+            Group.objects.get(
+                name=TRIBE_CHIEF_GROUP_NAME
+            ).user_set.values_list("pk", flat=True)
+        )
+        self.assertIn(self.executor.pk, chiefs)
+        self.assertIn(self.tribe_chief.pk, chiefs)

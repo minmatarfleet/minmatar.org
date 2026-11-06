@@ -750,7 +750,11 @@ def _alert_cleanup_failed(seat: TribeExternalGuildSeat) -> None:
             logger.warning(
                 "Failed alert channel post for seat %s: %s", seat.pk, exc
             )
-    chief = binding.tribe_group.chief or binding.tribe_group.tribe.chief
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.chiefs import ChiefResolver
+
+    # The chief, else the tribe chief, else the executor standing in.
+    chief = ChiefResolver().for_group(binding.tribe_group).user
     if chief is not None:
         chief_discord = DiscordUser.objects.filter(user_id=chief.id).first()
         if chief_discord is not None:

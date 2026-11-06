@@ -14,9 +14,13 @@ def _discord_user_id(user) -> int | None:
 def _mention_discord_ids(category: HelpRequestCategory) -> list[int]:
     ids: list[int] = []
     if category.tribe_group_id:
-        tribe_group = category.tribe_group
-        if tribe_group.chief_id is not None:
-            chief_id = _discord_user_id(tribe_group.chief)
+        # pylint: disable-next=import-outside-toplevel
+        from tribes.helpers.chiefs import ChiefResolver
+
+        # The group chief, else whoever stands in for them.
+        chief = ChiefResolver().for_group(category.tribe_group).user
+        if chief is not None:
+            chief_id = _discord_user_id(chief)
             if chief_id is not None:
                 ids.append(chief_id)
     for user in category.assignees.all():

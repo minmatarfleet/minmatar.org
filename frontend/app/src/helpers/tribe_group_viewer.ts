@@ -5,7 +5,9 @@ export function tribe_group_is_leader(args: {
     membership: TribeMembership | null
     user_characters?: Pick<SummaryCharacter, 'character_id'>[]
 }): boolean {
+    // An interim chief (the tribe chief, else the executor) leads a chiefless group.
     const chief_id = args.group?.chief?.character_id
+        ?? (args.group?.chief_is_interim ? args.group?.acting_chief?.character_id : undefined)
     if (!chief_id) return false
     if (args.membership?.primary_character_id === chief_id) return true
     if (args.membership?.characters?.some((character) => character.character_id === chief_id))

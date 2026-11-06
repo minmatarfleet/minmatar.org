@@ -5,7 +5,9 @@ without a chief, and any chiefless group in it, is led by the alliance
 executor (settings.ALLIANCE_EXECUTOR_CHARACTER_ID), also as interim. Pages
 show Help wanted whenever the chief shown is interim.
 
-Interim is display only: it grants no chief permissions.
+An interim chief acts as chief: applications notify them, they manage
+membership, and help tickets and reminders ping them
+(tribes.helpers.permissions, groups.helpers.feature_access).
 
 Pilots volunteer for an open seat; the executor gets a DM and appoints one
 (or says not now), from the DM or the website.

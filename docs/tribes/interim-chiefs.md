@@ -18,9 +18,24 @@ The executor is the owner of the character in
 turns the fallback off. `tribes.helpers.chiefs.ChiefResolver` resolves all of
 it and looks the executor up once per request.
 
-**Interim is display only.** It grants no chief permissions: approving
-applications still follows `user_can_manage_group` (group chief, tribe chief,
-admins).
+**An interim chief acts as chief.** A chiefless group's tribe chief already
+managed it; the executor now also leads a chiefless tribe and every group in
+it:
+
+- **Manages membership:** `user_can_manage_group` and `user_is_tribe_chief`
+  (`tribes.helpers.permissions`) and the tribe-chief feature gates
+  (`groups.helpers.feature_access._evaluate_tribe_chief`) count the
+  executor for tribes without a chief (`tribes.helpers.executor`).
+- **Gets the pings:** new applications (`tribes.membership_requested`), the
+  pending-application reminder mention, help-ticket mentions for the group's
+  category and external-guild alerts go to the acting chief.
+- **Tribe - Chief auth group:** the executor is in it while any active tribe
+  has no chief.
+- The website treats the acting chief as the group's leader
+  (`tribe_group_is_leader`).
+
+The executor is not added as a member of the tribe's groups (tribe chiefs
+are, by `ensure_tribe_chiefs_have_group_memberships`).
 
 ## Volunteering
 

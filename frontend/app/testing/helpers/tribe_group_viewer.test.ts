@@ -62,6 +62,26 @@ describe('tribe_group_is_leader', () => {
     })
 })
 
+describe('tribe_group_is_leader for an interim chief', () => {
+    const bear = { character_id: 634915984, character_name: 'BearThatCares' }
+
+    it('treats the stand-in as leader of a chiefless group', () => {
+        expect(tribe_group_is_leader({
+            group: group({ chief: null, acting_chief: bear, chief_is_interim: true }),
+            membership: null,
+            user_characters: [{ character_id: 634915984 }],
+        })).toBe(true)
+    })
+
+    it('ignores acting_chief when the group has its own chief', () => {
+        expect(tribe_group_is_leader({
+            group: group({ acting_chief: bear, chief_is_interim: false }),
+            membership: null,
+            user_characters: [{ character_id: 634915984 }],
+        })).toBe(false)
+    })
+})
+
 describe('tribe_group_can_manage', () => {
     it('follows the API can_manage flag for tribe chiefs who are not the group chief toon', () => {
         expect(tribe_group_can_manage({
