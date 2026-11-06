@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { user } = get_request_user(Astro)
+if (!user) return login_redirect(Astro)
+
+let can_manage = false
+try {
+    can_manage = can(await get_gates(Astro), 'buyback.manage')
+} catch (error) {
+    console.log(error)
+}
+if (!can_manage) return HTTP_404_Not_Found()
+
+const SETTINGS_PARTIAL = translatePath('/partials/buyback_settings_component/')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import Button from '@components/blocks/Button.astro'
+
+const page_title = t('buyback.settings.page_title')
+const breadcrumbs = [
+    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('buyback.page_title'), accumulated_path: translatePath('/market/buyback/') },
+    { page_title: page_title, accumulated_path: Astro.url.pathname },
+]
+---
+
+<Viewport title={page_title} meta_description={t('buyback.settings.meta_description')}>
+    <PageDefault breadcrumbs={breadcrumbs}>
+        <Flexblock gap="var(--space-l)">
+            <PageTitle>{page_title}</PageTitle>
+            <p>{t('buyback.settings.leading_text')}</p>
+            <LazyPartial url={SETTINGS_PARTIAL}>
+                <p>{t('loading')}</p>
+            </LazyPartial>
+            <div>
+                <Button href={translatePath('/market/buyback/')} color="transparent" size="sm" narrow={true}>
+                    {t('buyback.settings.back')}
+                </Button>
+            </div>
+        </Flexblock>
+    </PageDefault>
+</Viewport>
