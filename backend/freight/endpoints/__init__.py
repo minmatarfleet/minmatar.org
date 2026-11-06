@@ -10,6 +10,7 @@ from freight.endpoints.get_contracts_history_csv import (
 from freight.endpoints.get_contracts_stats import (
     router as get_contracts_stats_router,
 )
+from freight.endpoints.manage import router as manage_router
 from freight.endpoints.get_character_statistics import (
     router as get_character_statistics_router,
 )
@@ -20,5 +21,6 @@ router.add_router("contracts", get_contracts_history_router)
 router.add_router("contracts", get_contracts_history_csv_router)
 router.add_router("contracts", get_contracts_stats_router)
 router.add_router("", get_character_statistics_router)
+router.add_router("", manage_router)
 
 __all__ = ["router"]

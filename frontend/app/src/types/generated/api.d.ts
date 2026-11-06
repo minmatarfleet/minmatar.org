@@ -448,6 +448,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/buyback/manage/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an accepted buyback item */
+        post: operations["buyback_endpoints_manage_post_manage_item_post_manage_item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/buyback/manage/items/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an accepted buyback item */
+        delete: operations["buyback_endpoints_manage_delete_manage_item_delete_manage_item"];
+        options?: never;
+        head?: never;
+        /** Edit an accepted buyback item */
+        patch: operations["buyback_endpoints_manage_patch_manage_item_patch_manage_item"];
+        trace?: never;
+    };
+    "/api/buyback/manage/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Buyback settings and accepted items for the editor */
+        get: operations["buyback_endpoints_manage_get_manage_settings_get_manage_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit buyback rates and location */
+        patch: operations["buyback_endpoints_manage_patch_manage_settings_patch_manage_settings"];
+        trace?: never;
+    };
+    "/api/buyback/manage/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search item types for the accepted-items editor */
+        get: operations["buyback_endpoints_manage_get_manage_types_get_manage_types"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/buyback/settings": {
         parameters: {
             query?: never;
@@ -3916,6 +3986,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/freight/manage/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Freight routes for the editor */
+        get: operations["freight_endpoints_manage_get_manage_routes_get_manage_routes"];
+        put?: never;
+        /** Add a freight route */
+        post: operations["freight_endpoints_manage_post_manage_route_post_manage_route"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/freight/manage/routes/{route_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit or retire a freight route */
+        patch: operations["freight_endpoints_manage_patch_manage_route_patch_manage_route"];
+        trace?: never;
+    };
     "/api/freight/routes": {
         parameters: {
             query?: never;
@@ -4253,6 +4358,126 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** LP buyback configuration: corps, accounts and contacts */
+        get: operations["industry_endpoints_loyalty_get_settings_get_settings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an LP account */
+        post: operations["industry_endpoints_loyalty_post_settings_account_post_settings_account"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit an LP account */
+        patch: operations["industry_endpoints_loyalty_patch_settings_account_patch_settings_account"];
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an LP account contact */
+        post: operations["industry_endpoints_loyalty_post_settings_contact_post_settings_contact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/contacts/{contact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an LP account contact */
+        delete: operations["industry_endpoints_loyalty_delete_settings_contact_delete_settings_contact"];
+        options?: never;
+        head?: never;
+        /** Edit an LP account contact */
+        patch: operations["industry_endpoints_loyalty_patch_settings_contact_patch_settings_contact"];
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/currencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an LP corp */
+        post: operations["industry_endpoints_loyalty_post_settings_currency_post_settings_currency"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/currencies/{currency_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit an LP corp */
+        patch: operations["industry_endpoints_loyalty_patch_settings_currency_patch_settings_currency"];
         trace?: never;
     };
     "/api/industry/loyalty/stats": {
@@ -5552,6 +5777,164 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List market hubs */
+        get: operations["market_endpoints_hubs_list_hubs_list_hubs"];
+        put?: never;
+        /** Add a market hub (or switch an existing location on) */
+        post: operations["market_endpoints_hubs_add_hub_add_hub"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs-type-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search item types by name */
+        get: operations["market_endpoints_hubs_type_search_type_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a hub from the market
+         * @description Switches the alliance market off. The location and its expectations stay, so the hub can be added back. The price baseline keeps syncing its order book.
+         */
+        delete: operations["market_endpoints_hubs_remove_hub_remove_hub"];
+        options?: never;
+        head?: never;
+        /** Set a hub active or switch its order-book sync */
+        patch: operations["market_endpoints_hubs_patch_hub_patch_hub"];
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stocking expectations at a hub */
+        get: operations["market_endpoints_hubs_get_hub_expectations_get_hub_expectations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/contracts/{fitting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Track or untrack a doctrine fitting's contracts at a hub */
+        put: operations["market_endpoints_hubs_put_contract_expectation_put_contract_expectation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/fittings/{fitting_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Track or untrack a fitting's items at a hub */
+        put: operations["market_endpoints_hubs_put_fitting_expectation_put_fitting_expectation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/from-doctrine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Track contracts for every fitting of a doctrine at a hub */
+        post: operations["market_endpoints_hubs_post_from_doctrine_post_from_doctrine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Track an item on sell orders at a hub */
+        post: operations["market_endpoints_hubs_post_item_expectation_post_item_expectation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/hubs/{location_id}/expectations/items/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Stop tracking an item at a hub */
+        delete: operations["market_endpoints_hubs_delete_item_expectation_delete_item_expectation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -8035,6 +8418,30 @@ export interface components {
             /** Character Ids */
             character_ids: number[];
         };
+        /** AccountCreateRequest */
+        AccountCreateRequest: {
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /** Isk Per Lp */
+            isk_per_lp?: number | null;
+            /** Loyalty Point Id */
+            loyalty_point_id: number;
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes?: string;
+            /**
+             * Role
+             * @default seller
+             */
+            role?: string;
+        };
         /** AccountMoveRequest */
         AccountMoveRequest: {
             /** Account */
@@ -8070,6 +8477,26 @@ export interface components {
             current: number | null;
             /** Name */
             name: string;
+        };
+        /** AccountPatchRequest */
+        AccountPatchRequest: {
+            /**
+             * Clear Isk Per Lp
+             * @default false
+             */
+            clear_isk_per_lp?: boolean;
+            /** Corporation Name */
+            corporation_name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Isk Per Lp */
+            isk_per_lp?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Role */
+            role?: string | null;
         };
         /** AccountResponse */
         AccountResponse: {
@@ -10494,6 +10921,34 @@ export interface components {
             /** Newly Awarded */
             newly_awarded: components["schemas"]["CertificateAwardSchema"][];
         };
+        /** ContactCreateRequest */
+        ContactCreateRequest: {
+            /** Account Id */
+            account_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Discord Username
+             * @default
+             */
+            discord_username?: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes?: string;
+        };
+        /** ContactPatchRequest */
+        ContactPatchRequest: {
+            /** Character Name */
+            character_name?: string | null;
+            /** Discord Username */
+            discord_username?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /**
          * CopyEveFleetRequest
          * @description The copy's start time; every other setting comes from the fleet.
@@ -11893,6 +12348,42 @@ export interface components {
             /** User Id */
             user_id: number;
         };
+        /** CurrencyCreateRequest */
+        CurrencyCreateRequest: {
+            /** Corporation Id */
+            corporation_id: number;
+            /**
+             * Default Isk Per Lp
+             * @default 800
+             */
+            default_isk_per_lp?: number;
+            /** Express Isk Per Lp */
+            express_isk_per_lp?: number | null;
+            /** Name */
+            name: string;
+        };
+        /** CurrencyPatchRequest */
+        CurrencyPatchRequest: {
+            /** Allow Buy */
+            allow_buy?: boolean | null;
+            /** Allow Sell */
+            allow_sell?: boolean | null;
+            /**
+             * Clear Express
+             * @default false
+             */
+            clear_express?: boolean;
+            /** Default Isk Per Lp */
+            default_isk_per_lp?: number | null;
+            /** Express Isk Per Lp */
+            express_isk_per_lp?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** CurrentFleetWindowResponse */
         CurrentFleetWindowResponse: {
             window?: components["schemas"]["FleetWindowResponse"] | null;
@@ -12195,6 +12686,13 @@ export interface components {
             fitting_name: string;
             /** Role */
             role: string;
+        };
+        /** DoctrineOption */
+        DoctrineOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /**
          * DoctrineResponse
@@ -14140,6 +14638,17 @@ export interface components {
             /** Tags */
             tags: string[];
         };
+        /** FittingExpectationRow */
+        FittingExpectationRow: {
+            /** Current */
+            current?: number | null;
+            /** Fitting Id */
+            fitting_id: number;
+            /** Fitting Name */
+            fitting_name: string;
+            /** Tracked */
+            tracked: boolean;
+        };
         /**
          * FittingResponse
          * @description Fittings API Response
@@ -15676,6 +16185,18 @@ export interface components {
              */
             window_days?: number;
         };
+        /** FromDoctrineRequest */
+        FromDoctrineRequest: {
+            /** Doctrine Id */
+            doctrine_id: number;
+        };
+        /** FromDoctrineResponse */
+        FromDoctrineResponse: {
+            /** Already Tracked */
+            already_tracked: number;
+            /** Created */
+            created: number;
+        };
         /** GangRequest */
         GangRequest: {
             /**
@@ -16153,6 +16674,69 @@ export interface components {
             tribe_id: number;
             /** Tribe Name */
             tribe_name: string;
+        };
+        /** HubCreateRequest */
+        HubCreateRequest: {
+            /**
+             * Is Structure
+             * @default true
+             */
+            is_structure?: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name?: string | null;
+            /** Region Id */
+            region_id?: number | null;
+            /** Short Name */
+            short_name?: string | null;
+            /** Solar System Id */
+            solar_system_id?: number | null;
+            /** Solar System Name */
+            solar_system_name?: string | null;
+        };
+        /** HubExpectationsResponse */
+        HubExpectationsResponse: {
+            /** Contracts */
+            contracts: components["schemas"]["FittingExpectationRow"][];
+            /** Doctrines */
+            doctrines: components["schemas"]["DoctrineOption"][];
+            /** Fittings */
+            fittings: components["schemas"]["FittingExpectationRow"][];
+            /** Items */
+            items: components["schemas"]["ItemExpectationRow"][];
+            /** Location Id */
+            location_id: number;
+        };
+        /** HubPatchRequest */
+        HubPatchRequest: {
+            /** Market Active */
+            market_active?: boolean | null;
+            /** Prices Active */
+            prices_active?: boolean | null;
+        };
+        /** HubResponse */
+        HubResponse: {
+            /** Contract Expectations */
+            contract_expectations: number;
+            /** Fitting Expectations */
+            fitting_expectations: number;
+            /** Item Expectations */
+            item_expectations: number;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name: string;
+            /** Market Active */
+            market_active: boolean;
+            /** Price Baseline */
+            price_baseline: boolean;
+            /** Prices Active */
+            prices_active: boolean;
+            /** Short Name */
+            short_name: string;
+            /** Solar System Name */
+            solar_system_name: string;
         };
         /** HygieneCounts */
         HygieneCounts: {
@@ -16689,6 +17273,32 @@ export interface components {
             /** Sent By */
             sent_by?: string | null;
         };
+        /** ItemCreateRequest */
+        ItemCreateRequest: {
+            /** Category */
+            category: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** ItemExpectationRequest */
+        ItemExpectationRequest: {
+            /** Type Id */
+            type_id: number;
+        };
+        /** ItemExpectationRow */
+        ItemExpectationRow: {
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** ItemPatchRequest */
+        ItemPatchRequest: {
+            /** Active */
+            active?: boolean | null;
+            /** Category */
+            category?: string | null;
+        };
         /** JitaCheckPollResponse */
         JitaCheckPollResponse: {
             check: components["schemas"]["FittingBuyJitaCheckSchema"];
@@ -17043,6 +17653,13 @@ export interface components {
             fitting_name: string;
             /** Quantity */
             quantity: number;
+        };
+        /** LocationOption */
+        LocationOption: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
         };
         /** LocationResponse */
         LocationResponse: {
@@ -17566,6 +18183,70 @@ export interface components {
              * Format: date
              */
             week_start: string;
+        };
+        /** ManageItem */
+        ManageItem: {
+            /** Active */
+            active: boolean;
+            /** Category */
+            category: string;
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** ManageRoute */
+        ManageRoute: {
+            /** Active */
+            active: boolean;
+            /** Collateral Modifier */
+            collateral_modifier: number;
+            /** Days To Complete */
+            days_to_complete: number;
+            destination: components["schemas"]["RouteLocation"] | null;
+            /** Expiration Days */
+            expiration_days: number;
+            /** Fixed Fee Millions */
+            fixed_fee_millions: number;
+            /** Isk Per M3 */
+            isk_per_m3: number;
+            /** Max Collateral */
+            max_collateral: number | null;
+            /** Max M3 */
+            max_m3: number | null;
+            origin: components["schemas"]["RouteLocation"] | null;
+            /** Route Id */
+            route_id: number;
+            /** Route Type */
+            route_type: string;
+            /** Xl Fee Millions */
+            xl_fee_millions: number;
+        };
+        /** ManageRoutes */
+        ManageRoutes: {
+            /** Locations */
+            locations: components["schemas"]["RouteLocation"][];
+            /** Routes */
+            routes: components["schemas"]["ManageRoute"][];
+        };
+        /** ManageSettings */
+        ManageSettings: {
+            /** Active */
+            active: boolean;
+            /** Categories */
+            categories: string[];
+            /** Demand Jita Buy */
+            demand_jita_buy: number;
+            /** Items */
+            items: components["schemas"]["ManageItem"][];
+            /** Location Id */
+            location_id: number | null;
+            /** Locations */
+            locations: components["schemas"]["LocationOption"][];
+            /** Ore Refine */
+            ore_refine: number;
+            /** Surplus Jita Buy */
+            surplus_jita_buy: number;
         };
         /** ManualAffiliationRequest */
         ManualAffiliationRequest: {
@@ -20959,6 +21640,89 @@ export interface components {
              */
             pilots?: number;
         };
+        /** RouteCreateRequest */
+        RouteCreateRequest: {
+            /**
+             * Active
+             * @default true
+             */
+            active?: boolean;
+            /**
+             * Collateral Modifier
+             * @default 0
+             */
+            collateral_modifier?: number;
+            /**
+             * Days To Complete
+             * @default 3
+             */
+            days_to_complete?: number;
+            /** Destination Location Id */
+            destination_location_id: number;
+            /**
+             * Expiration Days
+             * @default 3
+             */
+            expiration_days?: number;
+            /**
+             * Fixed Fee Millions
+             * @default 0
+             */
+            fixed_fee_millions?: number;
+            /**
+             * Isk Per M3
+             * @default 0
+             */
+            isk_per_m3?: number;
+            /** Max Collateral */
+            max_collateral?: number | null;
+            /** Max M3 */
+            max_m3?: number | null;
+            /** Origin Location Id */
+            origin_location_id: number;
+            /**
+             * Route Type
+             * @default rate
+             */
+            route_type?: string;
+            /**
+             * Xl Fee Millions
+             * @default 0
+             */
+            xl_fee_millions?: number;
+        };
+        /** RouteLocation */
+        RouteLocation: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
+            /** Short Name */
+            short_name: string;
+        };
+        /** RoutePatchRequest */
+        RoutePatchRequest: {
+            /** Active */
+            active?: boolean | null;
+            /** Collateral Modifier */
+            collateral_modifier?: number | null;
+            /** Days To Complete */
+            days_to_complete?: number | null;
+            /** Expiration Days */
+            expiration_days?: number | null;
+            /** Fixed Fee Millions */
+            fixed_fee_millions?: number | null;
+            /** Isk Per M3 */
+            isk_per_m3?: number | null;
+            /** Max Collateral */
+            max_collateral?: number | null;
+            /** Max M3 */
+            max_m3?: number | null;
+            /** Route Type */
+            route_type?: string | null;
+            /** Xl Fee Millions */
+            xl_fee_millions?: number | null;
+        };
         /** ScheduleChange */
         ScheduleChange: {
             /**
@@ -21136,6 +21900,65 @@ export interface components {
             /** Srp Value */
             srp_value: number;
         };
+        /** SettingsAccount */
+        SettingsAccount: {
+            /** Contacts */
+            contacts: components["schemas"]["SettingsContact"][];
+            /** Corporation Name */
+            corporation_name: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Isk Per Lp */
+            isk_per_lp: number | null;
+            /** Loyalty Point Id */
+            loyalty_point_id: number;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Role */
+            role: string;
+        };
+        /** SettingsContact */
+        SettingsContact: {
+            /** Account Id */
+            account_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Discord Username */
+            discord_username: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Notes */
+            notes: string;
+        };
+        /** SettingsCurrency */
+        SettingsCurrency: {
+            /** Accounts */
+            accounts: components["schemas"]["SettingsAccount"][];
+            /** Allow Buy */
+            allow_buy: boolean;
+            /** Allow Sell */
+            allow_sell: boolean;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Default Isk Per Lp */
+            default_isk_per_lp: number;
+            /** Express Isk Per Lp */
+            express_isk_per_lp: number | null;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+        };
         /** SettingsOrderOut */
         SettingsOrderOut: {
             /** Id */
@@ -21149,6 +21972,24 @@ export interface components {
              * @default
              */
             system?: string;
+        };
+        /** SettingsPatchRequest */
+        SettingsPatchRequest: {
+            /** Active */
+            active?: boolean | null;
+            /**
+             * Clear Location
+             * @default false
+             */
+            clear_location?: boolean;
+            /** Demand Jita Buy */
+            demand_jita_buy?: number | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Ore Refine */
+            ore_refine?: number | null;
+            /** Surplus Jita Buy */
+            surplus_jita_buy?: number | null;
         };
         /** SettingsStructureOut */
         SettingsStructureOut: {
@@ -21974,6 +22815,11 @@ export interface components {
          * @enum {string}
          */
         TokenType: "Director" | "Public" | "Basic" | "Industry" | "Market" | "Executor" | "FleetCommander" | "FactionWarfare" | "Desktop" | "Campaign";
+        /** TrackedRequest */
+        TrackedRequest: {
+            /** Tracked */
+            tracked: boolean;
+        };
         /** TrackedVoiceChannelResponse */
         TrackedVoiceChannelResponse: {
             /** Channel Id */
@@ -23133,6 +23979,20 @@ export interface components {
              * @default []
              */
             series?: components["schemas"]["TribeMonthlySeries"][];
+        };
+        /** TypeRow */
+        TypeRow: {
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** TypeSearchRow */
+        TypeSearchRow: {
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number;
         };
         /** TypeStat */
         TypeStat: {
@@ -24825,6 +25685,254 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BuybackLedgerResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_post_manage_item_post_manage_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_delete_manage_item_delete_manage_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_patch_manage_item_patch_manage_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_get_manage_settings_get_manage_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_patch_manage_settings_patch_manage_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    buyback_endpoints_manage_get_manage_types_get_manage_types: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeRow"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -32650,6 +33758,139 @@ export interface operations {
             };
         };
     };
+    freight_endpoints_manage_get_manage_routes_get_manage_routes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageRoutes"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    freight_endpoints_manage_post_manage_route_post_manage_route: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RouteCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageRoute"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    freight_endpoints_manage_patch_manage_route_patch_manage_route: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                route_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutePatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageRoute"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     freight_router_get_routes: {
         parameters: {
             query?: never;
@@ -33352,6 +34593,353 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_get_settings_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCurrency"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_post_settings_account_post_settings_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsAccount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_patch_settings_account_patch_settings_account: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsAccount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_post_settings_contact_post_settings_contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsContact"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_delete_settings_contact_delete_settings_contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_patch_settings_contact_patch_settings_contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsContact"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_post_settings_currency_post_settings_currency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CurrencyCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCurrency"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_patch_settings_currency_patch_settings_currency: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                currency_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CurrencyPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsCurrency"];
                 };
             };
             /** @description Forbidden */
@@ -36459,6 +38047,453 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarketHealthResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_list_hubs_list_hubs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_add_hub_add_hub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_type_search_type_search: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TypeSearchRow"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_remove_hub_remove_hub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_patch_hub_patch_hub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_get_hub_expectations_get_hub_expectations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubExpectationsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_put_contract_expectation_put_contract_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackedRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FittingExpectationRow"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_put_fitting_expectation_put_fitting_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+                fitting_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackedRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FittingExpectationRow"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_post_from_doctrine_post_from_doctrine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FromDoctrineRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FromDoctrineResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_post_item_expectation_post_item_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemExpectationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemExpectationRow"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_hubs_delete_item_expectation_delete_item_expectation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

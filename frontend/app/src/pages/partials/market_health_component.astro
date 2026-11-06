@@ -1,5 +1,5 @@
 ---
-import { get_public_api_url } from '@helpers/env'
+import { get_gates, can } from '@helpers/gates'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -78,10 +78,13 @@ import {
 
 const page_title = t('staging_supply.ops.page_title')
 
-const api_base = get_public_api_url()
-const admin_hub = active_location_id != null
-    ? `${api_base}/admin/market/location/${active_location_id}/`
-    : `${api_base}/admin/market/locations/`
+let can_manage_hubs = false
+try {
+    can_manage_hubs = can(await get_gates(Astro), 'market.manage')
+} catch (error) {
+    console.log(error)
+}
+const hubs_url = translatePath(`/market/ops/hubs/${active_location_id != null ? `?${query_string({ location_id: active_location_id })}` : ''}`)
 ---
 
 {fetching_error !== false ?
@@ -102,13 +105,12 @@ const admin_hub = active_location_id != null
         >
             <PageTitle path={`/market/ops?location_id=${active_location_id}/`}>{page_title}</PageTitle>
             <PageActions>
-                <Button
-                    href={admin_hub}
-                    external={true}
-                >
-                    <CogIcon slot="icon" />
-                    {locations[0]?.short_name ? t('edit_targets_template').replace('{market}', locations[0].short_name) : t('edit_targets')}
-                </Button>
+                {can_manage_hubs &&
+                    <Button href={hubs_url}>
+                        <CogIcon slot="icon" />
+                        {locations[0]?.short_name ? t('edit_targets_template').replace('{market}', locations[0].short_name) : t('edit_targets')}
+                    </Button>
+                }
             </PageActions>
         </FlexInline>
 

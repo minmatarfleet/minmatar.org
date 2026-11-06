@@ -1,5 +1,5 @@
 ---
-import { get_public_api_url } from '@helpers/env'
+import { get_gates, can } from '@helpers/gates'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -117,8 +117,13 @@ const breadcrumbs = [
     { page_title: t('industry.loyalty.page_title'), accumulated_path: translatePath('/industry/loyalty/') },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
-const api_base = get_public_api_url()
-const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
+let can_edit_settings = false
+try {
+    can_edit_settings = can(await get_gates(Astro), 'industry.loyalty.settings')
+} catch (error) {
+    console.log(error)
+}
+const settings_url = translatePath('/industry/loyalty/settings/')
 const rates_label = currency
     ? t('industry.loyalty.desk.rates')
         .replace('{standard}', number_thousand_separator(currency.default_isk_per_lp))
@@ -154,8 +159,8 @@ const rates_label = currency
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
             <PageActions>
-                {currency && (
-                    <Button href={admin_loyalty_url} color="transparent" new_tab={true}>
+                {currency && can_edit_settings && (
+                    <Button href={settings_url} color="transparent">
                         {rates_label}
                     </Button>
                 )}

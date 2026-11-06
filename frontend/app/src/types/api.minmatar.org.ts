@@ -3205,6 +3205,30 @@ export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
 
+// Settings editors (admin -> app migration)
+export type MarketHub = ApiResponse<'HubResponse'>
+export type MarketHubCreate = ApiRequest<'HubCreateRequest'>
+export type MarketHubPatch = ApiRequest<'HubPatchRequest'>
+export type MarketHubExpectations = ApiResponse<'HubExpectationsResponse'>
+
+export type LoyaltySettingsCurrency = ApiResponse<'SettingsCurrency'>
+export type LoyaltySettingsAccount = ApiResponse<'SettingsAccount'>
+export type LoyaltySettingsContact = ApiResponse<'SettingsContact'>
+export type LoyaltyCurrencyCreate = ApiRequest<'CurrencyCreateRequest'>
+export type LoyaltyCurrencyPatch = ApiRequest<'CurrencyPatchRequest'>
+export type LoyaltyAccountCreate = ApiRequest<'AccountCreateRequest'>
+export type LoyaltyAccountPatch = ApiRequest<'AccountPatchRequest'>
+export type LoyaltyContactCreate = ApiRequest<'ContactCreateRequest'>
+export type LoyaltyContactPatch = ApiRequest<'ContactPatchRequest'>
+
+export type BuybackManageSettings = ApiResponse<'ManageSettings'>
+export type BuybackManageItem = ApiResponse<'ManageItem'>
+export type BuybackSettingsPatch = ApiRequest<'SettingsPatchRequest'>
+
+export type FreightManageRoutes = ApiResponse<'ManageRoutes'>
+export type FreightManageRoute = ApiResponse<'ManageRoute'>
+export type FreightRouteCreate = ApiRequest<'RouteCreateRequest'>
+export type FreightRoutePatch = ApiRequest<'RoutePatchRequest'>
 export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
 export type CampaignSettingsSystem = ApiResponse<'SettingsSystemOut'>
 export type CampaignCreate = ApiRequest<'CampaignCreateRequest'>
