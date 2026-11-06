@@ -6,9 +6,10 @@ import type { FleetCommander } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 
 /**
- * The Commanders tab: every member of the Fleet Commanders tribe group, most
- * recently active first. Level is the member's rank in that group. Pilots who
- * have not led yet are dimmed at the bottom.
+ * The Commanders tab: the Fleet Commanders tribe group in tiers, one per rank
+ * (Strategic FC, Skirmish FC, ...), highest first. Members without a rank
+ * are the plain "FC" tier at the bottom. Inside a tier, the most recently
+ * active come first and pilots who have not led yet are dimmed.
  */
 interface Props {
     commanders:     FleetCommander[];
@@ -18,6 +19,26 @@ interface Props {
 const { commanders, ...attributes } = Astro.props
 
 delete attributes.class
+
+const UNRANKED_ORDER = Number.MAX_SAFE_INTEGER
+
+interface Tier {
+    title:      string;
+    order:      number;
+    commanders: FleetCommander[];
+}
+
+const tiers_by_key = new Map<string, Tier>()
+
+for (const commander of commanders) {
+    const title = commander.rank_name ?? t('fleets.commanders.tier_fc')
+    const order = commander.rank_name ? (commander.rank_order ?? UNRANKED_ORDER - 1) : UNRANKED_ORDER
+    const tier = tiers_by_key.get(title) ?? { title, order, commanders: [] }
+    tier.commanders.push(commander)
+    tiers_by_key.set(title, tier)
+}
+
+const tiers = [...tiers_by_key.values()].sort((a, b) => a.order - b.order)
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -30,7 +51,8 @@ function last_led_text(last_led:string | null | undefined) {
     return t('fleets.commanders.days_ago').replace('{count}', String(days))
 }
 
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 ---
@@ -38,91 +60,95 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 {commanders.length === 0 ?
     <EmptyState title={t('fleets.commanders.empty')} prominent />
     :
-    <XFadeScroll class:list={['[ fleet-commanders ]', Astro.props.class]} {...attributes}>
-        <table>
-            <thead>
-                <tr>
-                    <th scope="col">{t('fleets.commanders.page_title')}</th>
-                    <th scope="col">{t('fleets.commanders.level')}</th>
-                    <th scope="col">{t('fleets.commanders.timezone')}</th>
-                    <th scope="col" class="[ fleet-commanders__number ]">{t('fleets.commanders.this_month')}</th>
-                    <th scope="col">{t('fleets.commanders.last_led')}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {commanders.map(commander =>
-                    <tr class:list={{ 'is-idle': !commander.last_led }}>
-                        <th scope="row">
-                            <span class="[ fleet-commanders__pilot ]">
-                                {commander.primary_character_id &&
-                                    <img
-                                        src={get_player_icon(commander.primary_character_id, 64)}
-                                        alt=""
-                                        width="40"
-                                        height="40"
-                                        loading="lazy"
-                                    />
+    <Flexblock gap="var(--space-xl)" class:list={['[ fleet-commanders ]', Astro.props.class]} style="padding-block-start: var(--space-m)" {...attributes}>
+        {tiers.map(tier =>
+            <section class="[ fleet-commanders__tier ]" aria-labelledby={`tier-${tier.order}`}>
+                <h2 id={`tier-${tier.order}`} class="[ fleet-commanders__tier-title ]">
+                    {tier.title}
+                    <small>{tier.commanders.length}</small>
+                </h2>
+                <Grid min_item_width="18rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
+                    {tier.commanders.map(commander =>
+                        <article class:list={['[ fleet-commanders__card ]', { 'is-idle': !commander.last_led }]}>
+                            {commander.primary_character_id ?
+                                <img
+                                    src={get_player_icon(commander.primary_character_id, 128)}
+                                    alt=""
+                                    width="96"
+                                    height="96"
+                                    loading="lazy"
+                                />
+                                :
+                                <span class="[ fleet-commanders__no-portrait ]"></span>
+                            }
+                            <div class="[ fleet-commanders__details ]">
+                                <strong>{commander.primary_character_name ?? '—'}</strong>
+                                {commander.corporation_name &&
+                                    <small>{commander.corporation_name}</small>
                                 }
-                                <span>
-                                    <strong>{commander.primary_character_name ?? '—'}</strong>
-                                    {commander.corporation_name &&
-                                        <small>{commander.corporation_name}</small>
+                                <TimezoneTags timezone={commander.timezone} />
+                                <small>
+                                    {last_led_text(commander.last_led)}
+                                    {(commander.fleets_this_month ?? 0) > 0 &&
+                                        <> · {t('fleets.commanders.this_month_count').replace('{count}', String(commander.fleets_this_month))}</>
                                     }
-                                </span>
-                            </span>
-                        </th>
-                        <td>{commander.rank_name ?? t('fleets.commanders.no_level')}</td>
-                        <td><TimezoneTags timezone={commander.timezone} /></td>
-                        <td class="[ fleet-commanders__number ]">{commander.fleets_this_month ?? 0}</td>
-                        <td>{last_led_text(commander.last_led)}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>
-    </XFadeScroll>
+                                </small>
+                            </div>
+                        </article>
+                    )}
+                </Grid>
+            </section>
+        )}
+    </Flexblock>
 }
 
 <style lang="scss">
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th, td {
-        padding: var(--space-xs) var(--space-s);
-        text-align: start;
-        border-bottom: solid 1px var(--hairline);
-        white-space: nowrap;
-    }
-
-    thead th {
-        font-family: var(--heading-font);
-        font-size: var(--step--1);
-        text-transform: uppercase;
-        color: var(--text-muted);
-    }
-
-    tbody th {
-        font-weight: inherit;
-    }
-
-    .fleet-commanders__number {
-        text-align: end;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .fleet-commanders__pilot {
+    .fleet-commanders__tier-title {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         gap: var(--space-xs);
+        margin-block-end: var(--space-s);
+        padding-block-end: var(--space-3xs);
+        border-bottom: solid 1px var(--border-color);
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        text-transform: uppercase;
+        color: var(--highlight);
 
-        img {
-            border-radius: 50%;
+        small {
+            font-size: var(--step-0);
+            color: var(--text-muted);
         }
+    }
 
-        span {
-            display: flex;
-            flex-direction: column;
+    .fleet-commanders__card {
+        display: flex;
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-xs);
+        background: var(--surface-sunken);
+        border: solid 1px var(--hairline);
+
+        img,
+        .fleet-commanders__no-portrait {
+            flex: none;
+            width: 5rem;
+            aspect-ratio: 1;
+            background: var(--hairline);
+        }
+    }
+
+    .fleet-commanders__details {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        strong {
+            font-size: var(--step-0);
+            color: var(--highlight);
+            overflow-wrap: anywhere;
         }
 
         small {
