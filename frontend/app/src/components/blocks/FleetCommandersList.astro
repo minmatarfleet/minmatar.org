@@ -86,7 +86,9 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
                                 {commander.corporation_name &&
                                     <small>{commander.corporation_name}</small>
                                 }
-                                <TimezoneTags timezone={commander.timezone} />
+                                {commander.timezone?.source === 'activity' && commander.timezone.brackets.length > 0 &&
+                                    <TimezoneTags timezone={commander.timezone} />
+                                }
                                 <small>
                                     {last_led_text(commander.last_led)}
                                     {(commander.fleets_this_month ?? 0) > 0 &&
