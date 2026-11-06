@@ -94,6 +94,16 @@
             "legacy": { "perms": ["intel.change_intelaffiliation"], "superuser": true },
             "note": "Intel affiliation database: review, blocs, members, profiles."
         },
+        "intel.view": {
+            "feature": "intel.view",
+            "legacy": { "perms": ["intel.view_intelreport"], "superuser": true },
+            "note": "Shared d-scans and Local reports: /dscan/ and its report pages."
+        },
+        "intel.report": {
+            "feature": "intel.report",
+            "legacy": { "perms": ["intel.add_intelreport"], "superuser": true },
+            "note": "Paste a d-scan or Local on /dscan/."
+        },
         "applications.manage": {
             "feature": "applications.manage",
             "legacy": { "perms": ["applications.change_evecorporationapplication"], "superuser": true }

@@ -1,0 +1,109 @@
+---
+import { i18n } from '@helpers/i18n'
+import { eve_clock } from '@helpers/date'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.view')) return HTTP_403_Forbidden()
+const link_blocs = can(gates, 'intel.affiliations')
+
+import type { IntelReport } from '@dtypes/api.minmatar.org'
+import { get_intel_report } from '@helpers/api.minmatar.org/intel'
+
+const report_id = Astro.params.report_id ?? ''
+
+let report: IntelReport | null = null
+let error_message: string | null = null
+try {
+    report = await get_intel_report(auth_token, report_id)
+} catch (error) {
+    if (error.cause === 404) return HTTP_404_Not_Found()
+    error_message = error.cause === 403 ? t('dscan.forbidden_error') : error.message
+}
+
+const page_title = report ? report.system_name : t('dscan.page_title')
+const kind_label = report ? t(report.kind === 'dscan' ? 'dscan.kind.dscan' : 'dscan.kind.local') : ''
+const breadcrumbs = [
+    { page_title: t('dscan.page_title'), accumulated_path: '/dscan/' },
+    { page_title: report_id, accumulated_path: `/dscan/${report_id}/` },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import IntelScanReport from '@components/blocks/IntelScanReport.astro'
+---
+
+<Viewport title={report ? `${kind_label} · ${page_title}` : page_title} meta_description={t('page_finder.dscan.description')}>
+    <PageWide
+        cover={{
+            image: '/images/intel-cover.jpg',
+            image_990: '/images/intel-cover-990.jpg',
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={breadcrumbs}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                {report &&
+                    <p class="[ scan-page__lead ]">
+                        {kind_label} {t('dscan.by')} <span>{report.reporter_name}</span> · {eve_clock(report.created_at)} EVE
+                    </p>
+                }
+                {report?.note && <q class="[ scan-page__note ]">{report.note}</q>}
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/dscan/')} color="transparent">{t('dscan.new_scan')}</Button>
+                <Button
+                    type="button"
+                    x-data="{ copied: false }"
+                    x-on:click="navigator.clipboard.writeText(window.location.href).then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
+                >
+                    <span x-text={`copied ? ${JSON.stringify(t('dscan.copied'))} : ${JSON.stringify(t('dscan.copy_link'))}`}>{t('dscan.copy_link')}</span>
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        {error_message ?
+            <p class="[ scan-page__error ]" role="alert">{error_message}</p>
+            :
+            <IntelScanReport report={report as IntelReport} link_blocs={link_blocs} />
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .scan-page__lead {
+        margin: 0;
+        font-size: var(--step-1);
+
+        span {
+            color: var(--highlight);
+        }
+    }
+
+    .scan-page__note {
+        color: var(--highlight);
+    }
+
+    .scan-page__error {
+        color: var(--fleet-red-blind);
+    }
+</style>

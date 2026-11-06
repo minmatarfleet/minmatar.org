@@ -1,0 +1,178 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelPreview } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    /** The parsed paste; null before anything is pasted or when it isn't intel. */
+    preview?:           IntelPreview | null;
+    /** Why the paste couldn't be read. */
+    error?:             string | null;
+    /** What the pilot typed in System; empty uses what the scan names. */
+    system?:            string;
+    note?:              string;
+    [propName: string]: any;
+}
+
+const {
+    preview = null,
+    error = null,
+    system = '',
+    note = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const PREVIEW_URL = translatePath('/partials/dscan_preview_component/')
+
+const system_from_scan = !system && !!preview?.system_name
+const system_value = system || preview?.system_name || ''
+const kinds = ['dscan', 'local'] as const
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+---
+
+<Flexblock gap="var(--space-s)" class:list={['[ dscan-controls ]', Astro.props.class]} {...attributes}>
+    {preview &&
+        <FlexInline gap="var(--space-s)" class="[ dscan-controls__status ]">
+            <strong>{t(preview.kind === 'dscan' ? 'dscan.detected.dscan' : 'dscan.detected.local')}</strong>
+            <span class="[ dscan-controls__faded ]">{preview.lines} {t('dscan.lines')}</span>
+            <fieldset class="[ dscan-controls__kinds ]">
+                <legend class="[ visually-hidden ]">{t('dscan.paste_kind')}</legend>
+                {kinds.map(kind =>
+                    <label class:list={['[ dscan-controls__kind ]', { 'is-on': preview.kind === kind }]}>
+                        <input
+                            class="[ visually-hidden ]"
+                            type="radio"
+                            name="kind"
+                            value={kind}
+                            checked={preview.kind === kind}
+                            hx-post={PREVIEW_URL}
+                            hx-trigger="change"
+                            hx-include="closest form"
+                            hx-target="#dscan-controls"
+                        />
+                        {t(kind === 'dscan' ? 'dscan.kind.dscan' : 'dscan.kind.local')}
+                    </label>
+                )}
+            </fieldset>
+            <button type="button" class="[ dscan-controls__clear ]" x-on:click="clear_paste()">{t('dscan.clear')}</button>
+        </FlexInline>
+    }
+
+    {error &&
+        <div class="[ dscan-controls__error ]" role="alert">
+            <strong>{t('dscan.not_recognised')}</strong>
+            <p>{t('dscan.not_recognised_hint')}</p>
+        </div>
+    }
+
+    <div class="[ dscan-controls__fields ]">
+        <label class="[ dscan-controls__field ]">
+            <span>{t(system_from_scan ? 'dscan.system_from_scan' : 'dscan.system')}</span>
+            <Input
+                name="system"
+                value={system_value}
+                placeholder={t('dscan.system_placeholder')}
+                autocomplete="off"
+                maxlength="64"
+            />
+            {system_from_scan && <input type="hidden" name="system_from_scan" value={system_value} />}
+        </label>
+        <label class="[ dscan-controls__field ]">
+            <span>{t('dscan.note')}</span>
+            <Input name="note" value={note} placeholder={t('dscan.note_placeholder')} maxlength="200" autocomplete="off" />
+        </label>
+        <Button type="submit" disabled={!preview}>{t('dscan.share')}</Button>
+    </div>
+
+    <div id="dscan-share-error" aria-live="polite"></div>
+</Flexblock>
+
+<style lang="scss">
+    .dscan-controls__status {
+        align-items: center;
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+
+    .dscan-controls__faded {
+        color: var(--text-muted);
+    }
+
+    .dscan-controls__kinds {
+        display: flex;
+        gap: var(--space-3xs);
+        margin: 0 0 0 auto;
+        padding: 0;
+        border: 0;
+    }
+
+    .dscan-controls__kind {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid var(--hairline-strong);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        cursor: pointer;
+
+        &.is-on {
+            background-color: var(--fleet-red);
+            border-color: var(--fleet-red);
+            color: var(--fleet-yellow);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    .dscan-controls__clear {
+        border: 0;
+        background: none;
+        padding: 0;
+        color: var(--highlight);
+        text-decoration: underline;
+        font-size: var(--step--1);
+        cursor: pointer;
+    }
+
+    .dscan-controls__error {
+        strong {
+            color: var(--fleet-red-blind);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+        }
+    }
+
+    .dscan-controls__fields {
+        display: grid;
+        grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) auto;
+        align-items: end;
+        gap: var(--space-s);
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .dscan-controls__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+    }
+</style>

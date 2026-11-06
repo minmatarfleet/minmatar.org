@@ -1,0 +1,615 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+import { eve_clock } from '@helpers/date'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    IntelDscanSummary,
+    IntelLocalSummary,
+    IntelReport,
+    IntelStanding,
+} from '@dtypes/api.minmatar.org'
+import { intel_bloc_path, intel_entity_image } from '@helpers/intel_affiliations'
+
+interface Props {
+    report:             IntelReport;
+    /** Link bloc rows to the affiliation pages (intel.affiliations gate). */
+    link_blocs?:        boolean;
+    [propName: string]: any;
+}
+
+const {
+    report,
+    link_blocs = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const AMARR_FACTION_ID = 500003
+const MINMATAR_FACTION_ID = 500002
+const RAW_LINES = 60
+
+const type_icon = (type_id: number) => `https://images.evetech.net/types/${type_id}/icon?size=64`
+const faction_logo = (id: number) => `https://images.evetech.net/corporations/${id}/logo?size=64`
+const alliance_logo = (id: number) => `https://images.evetech.net/alliances/${id}/logo?size=64`
+const corporation_logo = (id: number) => `https://images.evetech.net/corporations/${id}/logo?size=64`
+// Alpine calls take names from the paste; JSON keeps their quotes safe.
+const js = (value: unknown) => JSON.stringify(value)
+
+const dscan = report.kind === 'dscan' ? report.summary as IntelDscanSummary : null
+const local = report.kind === 'local' ? report.summary as IntelLocalSummary : null
+
+const raw_lines = report.raw.split('\n').filter(line => line.trim())
+const raw_preview = raw_lines.slice(0, RAW_LINES).join('\n')
+
+// D-scan: one row per hull and one per ship class, both biggest count first.
+const has_distances = !!dscan?.has_distances
+const on = (value: { count: number; on_grid?: number }) => (has_distances ? value.on_grid ?? 0 : value.count)
+// The middle column groups hulls by EVE ship group (Heavy Assault Cruiser, Logistics);
+// reports shared before hulls carried their group fall back to the size class.
+const hull_rows = (dscan?.classes ?? [])
+    .flatMap(ship_class => ship_class.hulls.map(hull => ({ ...hull, group: hull.group ?? ship_class.name })))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+const group_totals = new Map<string, { name: string; count: number; on_grid: number }>()
+for (const hull of hull_rows) {
+    const total = group_totals.get(hull.group) ?? { name: hull.group, count: 0, on_grid: 0 }
+    total.count += hull.count
+    total.on_grid += hull.on_grid ?? 0
+    group_totals.set(hull.group, total)
+}
+const class_rows = [...group_totals.values()]
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+const ships_on_grid = dscan ? (has_distances ? dscan.on_grid_ships ?? 0 : dscan.ships) : 0
+const grid_tabs = dscan ? [
+    { id: 'all', label: t('dscan.grid.all'), count: dscan.ships },
+    { id: 'on', label: t('dscan.grid.on'), count: ships_on_grid },
+    { id: 'off', label: t('dscan.grid.off'), count: dscan.ships - ships_on_grid },
+] : []
+
+// Local: alliances (plus blocs), corporations and pilots, linked by key.
+const ally_key = (id: number | null | undefined) => (id ? String(id) : 'none')
+const standings: IntelStanding[] = ['hostile', 'neutral', 'friendly']
+const standing_total = local?.standings ? standings.reduce((sum, side) => sum + (local.standings?.[side] ?? 0), 0) : 0
+const pilots = local?.characters ?? null
+const corporations = local?.all_corporations ?? null
+const linked = !!pilots && !!corporations
+const blocs = (local?.blocs ?? []).map(bloc => ({
+    ...bloc,
+    allies: bloc.groups.filter(group => group.kind === 'alliance').map(group => ally_key(group.id)),
+    corps: bloc.groups.filter(group => group.kind === 'corporation').map(group => group.id),
+}))
+const delta = report.previous?.hostile_delta ?? 0
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ scan-report ]', Astro.props.class]} {...attributes}>
+    {dscan &&
+        <div
+            class="[ scan-report__body ]"
+            x-data={`{
+                grid: 'all',
+                sel: null,
+                n(all, on) { return this.grid === 'all' ? all : this.grid === 'on' ? on : all - on },
+                pick(kind, key, group) {
+                    this.sel = this.sel && this.sel.kind === kind && this.sel.key === key ? null : { kind, key, group }
+                },
+                hull_hl(name, group) {
+                    return !!this.sel && (this.sel.kind === 'class' ? group === this.sel.key : name === this.sel.key)
+                },
+                class_hl(name) { return !!this.sel && this.sel.group === name },
+            }`}
+        >
+            {has_distances &&
+                <div class="[ scan-report__tabs ]" role="group" aria-label={t('dscan.distance')}>
+                    {grid_tabs.map(tab =>
+                        <button
+                            type="button"
+                            x-on:click={`grid = '${tab.id}'`}
+                            x-bind:class={`{ 'is-on': grid === '${tab.id}' }`}
+                            x-bind:aria-pressed={`grid === '${tab.id}'`}
+                            class:list={[{ 'is-on': tab.id === 'all' }]}
+                            aria-pressed={tab.id === 'all' ? 'true' : 'false'}
+                        >{tab.label} <span>{tab.count}</span></button>
+                    )}
+                </div>
+            }
+
+            {hull_rows.length === 0 ?
+                <EmptyState title={t('dscan.no_ships')} />
+                :
+                <div class="[ scan-report__columns scan-report__columns--two ]">
+                    <ComponentBlock padding_inline="0" padding_block="0">
+                        <div class="[ scan-report__head ]">
+                            <h2>{t('dscan.ship_types')}</h2>
+                            <span x-text={`n(${dscan.ships}, ${ships_on_grid})`}>{dscan.ships}</span>
+                        </div>
+                        <div class="[ scan-report__rows ]">
+                            {hull_rows.map(hull =>
+                                <button
+                                    type="button"
+                                    class="[ scan-report__row ]"
+                                    x-show={`n(${hull.count}, ${on(hull)}) > 0`}
+                                    x-bind:class={`{ 'is-hl': hull_hl(${js(hull.name)}, ${js(hull.group)}), 'is-dim': sel && !hull_hl(${js(hull.name)}, ${js(hull.group)}) }`}
+                                    x-on:click={`pick('hull', ${js(hull.name)}, ${js(hull.group)})`}
+                                >
+                                    <img src={type_icon(hull.type_id)} alt="" width="28" height="28" loading="lazy" />
+                                    <span class="[ scan-report__name ]">{hull.name}</span>
+                                    <b x-text={`n(${hull.count}, ${on(hull)})`}>{hull.count}</b>
+                                </button>
+                            )}
+                        </div>
+                    </ComponentBlock>
+
+                    <ComponentBlock padding_inline="0" padding_block="0">
+                        <div class="[ scan-report__head ]">
+                            <h2>{t('dscan.ship_classes')}</h2>
+                            <span x-text={`n(${dscan.ships}, ${ships_on_grid})`}>{dscan.ships}</span>
+                        </div>
+                        <div class="[ scan-report__rows ]">
+                            {class_rows.map(ship_class =>
+                                <button
+                                    type="button"
+                                    class="[ scan-report__row scan-report__row--plain ]"
+                                    x-show={`n(${ship_class.count}, ${on(ship_class)}) > 0`}
+                                    x-bind:class={`{ 'is-hl': class_hl(${js(ship_class.name)}), 'is-dim': sel && !class_hl(${js(ship_class.name)}) }`}
+                                    x-on:click={`pick('class', ${js(ship_class.name)}, ${js(ship_class.name)})`}
+                                >
+                                    <span class="[ scan-report__name ]">{ship_class.name}</span>
+                                    <b x-text={`n(${ship_class.count}, ${on(ship_class)})`}>{ship_class.count}</b>
+                                </button>
+                            )}
+                        </div>
+                    </ComponentBlock>
+                </div>
+            }
+        </div>
+    }
+
+    {local &&
+        <Fragment>
+            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+                <Flexblock gap="var(--space-xs)">
+                    <FlexInline justification="space-between" class="[ scan-report__summary-head ]">
+                        <h2 class="[ scan-report__summary-title ]">{local.pilots} {t('dscan.pilots')}</h2>
+                        {report.previous && delta !== 0 &&
+                            <span class="[ scan-report__delta ]">
+                                {delta > 0 ? '+' : ''}{delta} {t('dscan.hostile_since')} {eve_clock(report.previous.created_at)}
+                            </span>
+                        }
+                    </FlexInline>
+                    {!local.resolved && <p class="[ scan-report__note ]">{t('dscan.unresolved')}</p>}
+                    {local.resolved && local.standings && standing_total > 0 &&
+                        <Fragment>
+                            <div class="[ scan-report__bar ]" role="img" aria-label={standings.map(side => `${local.standings?.[side] ?? 0} ${t(t_key('dscan.', side))}`).join(', ')}>
+                                {standings.map(side =>
+                                    <span class={`[ standing-${side} ]`} style={`flex: ${local.standings?.[side] ?? 0}`}></span>
+                                )}
+                            </div>
+                            <FlexInline gap="var(--space-m)" class="[ scan-report__legend ]">
+                                {standings.map(side =>
+                                    <span><i class={`[ scan-report__square standing-${side} ]`}></i>{t(t_key('dscan.', side))} <b>{local.standings?.[side] ?? 0}</b></span>
+                                )}
+                                {local.militia &&
+                                    <Fragment>
+                                        <span class="[ scan-report__militia ]"><img src={faction_logo(AMARR_FACTION_ID)} alt="" width="24" height="24" />{t('dscan.amarr_militia')} <b>{local.militia.amarr}</b></span>
+                                        <span><img src={faction_logo(MINMATAR_FACTION_ID)} alt="" width="24" height="24" />{t('dscan.minmatar_militia')} <b>{local.militia.minmatar}</b></span>
+                                    </Fragment>
+                                }
+                            </FlexInline>
+                        </Fragment>
+                    }
+                </Flexblock>
+            </ComponentBlock>
+
+            {local.resolved &&
+                <div
+                    class:list={['[ scan-report__columns ]', linked ? 'scan-report__columns--three' : 'scan-report__columns--one']}
+                    x-data={`{
+                        sel: null, allies: [], corps: [], corp: null, pilot: null, bloc: null,
+                        set(next) {
+                            const same = this.sel === next.sel
+                            Object.assign(this, { sel: null, allies: [], corps: [], corp: null, pilot: null, bloc: null })
+                            if (!same) Object.assign(this, next)
+                        },
+                        ally_hl(a) { return this.allies.includes(a) },
+                        corp_hl(c, a) { return this.corp ? this.corp === c : this.allies.includes(a) || this.corps.includes(c) },
+                        pilot_hl(p, c, a) {
+                            if (this.pilot) return this.pilot === p
+                            if (this.corp) return this.corp === c
+                            return this.allies.includes(a) || this.corps.includes(c)
+                        },
+                        bloc_hl(b, allies, corps) {
+                            if (this.bloc) return this.bloc === b
+                            return allies.some(a => this.allies.includes(a)) || corps.includes(this.corp)
+                        },
+                    }`}
+                >
+                    <ComponentBlock padding_inline="0" padding_block="0">
+                        <div class="[ scan-report__head ]">
+                            <h2>{t('dscan.alliances')}</h2>
+                            <span>{(local.alliances ?? []).length}</span>
+                        </div>
+                        <div class="[ scan-report__rows ]">
+                            {(local.alliances ?? []).map(alliance => {
+                                const key = ally_key(alliance.id)
+                                return (
+                                    <button
+                                        type="button"
+                                        class="[ scan-report__row ]"
+                                        x-bind:class={`{ 'is-hl': sel && ally_hl(${js(key)}), 'is-dim': sel && !ally_hl(${js(key)}) }`}
+                                        x-on:click={`set({ sel: ${js('a:' + key)}, allies: [${js(key)}] })`}
+                                    >
+                                        {alliance.id ? <img src={alliance_logo(alliance.id)} alt="" width="28" height="28" loading="lazy" /> : <span class="[ scan-report__blank ]"></span>}
+                                        <span class="[ scan-report__name ]">{alliance.name}</span>
+                                        <span class="[ scan-report__count ]"><i class={`[ scan-report__square standing-${alliance.standing} ]`}></i><b>{alliance.count}</b></span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                        {blocs.length > 0 &&
+                            <Fragment>
+                                <div class="[ scan-report__head scan-report__head--sub ]">
+                                    <h2>{t('dscan.blocs')}</h2>
+                                    <span>{blocs.length}</span>
+                                </div>
+                                <div class="[ scan-report__rows ]">
+                                    {blocs.map(bloc => {
+                                        const first = bloc.groups[0]
+                                        const hl = `bloc_hl(${bloc.id}, ${js(bloc.allies)}, ${js(bloc.corps)})`
+                                        return (
+                                            <div class="[ scan-report__bloc ]">
+                                                <button
+                                                    type="button"
+                                                    class="[ scan-report__row ]"
+                                                    x-bind:class={`{ 'is-hl': sel && ${hl}, 'is-dim': sel && !${hl} }`}
+                                                    x-on:click={`set({ sel: ${js('b:' + bloc.id)}, bloc: ${bloc.id}, allies: ${js(bloc.allies)}, corps: ${js(bloc.corps)} })`}
+                                                >
+                                                    {first ? <img src={intel_entity_image(first.kind, first.id, 64)} alt="" width="28" height="28" loading="lazy" /> : <span class="[ scan-report__blank ]"></span>}
+                                                    <span class="[ scan-report__name ]">{bloc.name}{bloc.likely && <small> · {t('dscan.likely')}</small>}</span>
+                                                    <span class="[ scan-report__count ]"><b>{bloc.count}</b></span>
+                                                </button>
+                                                {link_blocs && <a class="[ scan-report__bloc-link ]" href={translatePath(intel_bloc_path(bloc.id))} aria-label={bloc.name}>↗</a>}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </Fragment>
+                        }
+                    </ComponentBlock>
+
+                    {linked && corporations && pilots &&
+                        <Fragment>
+                            <ComponentBlock padding_inline="0" padding_block="0">
+                                <div class="[ scan-report__head ]">
+                                    <h2>{t('dscan.corporations')}</h2>
+                                    <span>{corporations.length}</span>
+                                </div>
+                                <div class="[ scan-report__rows scan-report__rows--scroll ]">
+                                    {corporations.map(corporation => {
+                                        const key = ally_key(corporation.alliance_id)
+                                        const hl = `corp_hl(${corporation.id}, ${js(key)})`
+                                        return (
+                                            <button
+                                                type="button"
+                                                class="[ scan-report__row ]"
+                                                x-bind:class={`{ 'is-hl': sel && ${hl}, 'is-dim': sel && !${hl} }`}
+                                                x-bind:style={`sel && ${hl} ? 'order: -1' : ''`}
+                                                x-on:click={`set({ sel: ${js('c:' + corporation.id)}, corp: ${corporation.id}, allies: [${js(key)}] })`}
+                                            >
+                                                <img src={corporation_logo(corporation.id)} alt="" width="28" height="28" loading="lazy" />
+                                                <span class="[ scan-report__name ]">{corporation.name}</span>
+                                                <span class="[ scan-report__count ]"><i class={`[ scan-report__square standing-${corporation.standing} ]`}></i><b>{corporation.count}</b></span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </ComponentBlock>
+
+                            <ComponentBlock padding_inline="0" padding_block="0">
+                                <div class="[ scan-report__head ]">
+                                    <h2>{t('dscan.pilot_list')}</h2>
+                                    <span>{pilots.length}</span>
+                                </div>
+                                <div class="[ scan-report__rows scan-report__rows--scroll ]">
+                                    {pilots.map(pilot => {
+                                        const key = pilot.corporation_id ? ally_key(pilot.alliance_id) : 'unknown'
+                                        const corp = pilot.corporation_id ?? 0
+                                        const hl = `pilot_hl(${js(pilot.name)}, ${corp}, ${js(key)})`
+                                        return (
+                                            <button
+                                                type="button"
+                                                class="[ scan-report__row scan-report__row--plain ]"
+                                                x-bind:class={`{ 'is-hl': sel && ${hl}, 'is-dim': sel && !${hl} }`}
+                                                x-bind:style={`sel && ${hl} ? 'order: -1' : ''`}
+                                                x-on:click={`set({ sel: ${js('p:' + pilot.name)}, pilot: ${js(pilot.name)}, corp: ${corp || null}, allies: [${js(key)}] })`}
+                                            >
+                                                <span class="[ scan-report__name ]">{pilot.name}</span>
+                                                {pilot.standing ? <i class={`[ scan-report__square standing-${pilot.standing} ]`}></i> : <span></span>}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </ComponentBlock>
+                        </Fragment>
+                    }
+                </div>
+            }
+            {local.resolved && !linked && <p class="[ scan-report__note ]">{t('dscan.older_report')}</p>}
+        </Fragment>
+    }
+
+    <details class="[ scan-report__raw ]">
+        <summary>{t('dscan.raw')} · {raw_lines.length}</summary>
+        <pre>{raw_preview}{raw_lines.length > RAW_LINES ? `\n… ${raw_lines.length - RAW_LINES}` : ''}</pre>
+    </details>
+</Flexblock>
+
+<style lang="scss">
+    .scan-report__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .scan-report__tabs {
+        display: flex;
+        gap: var(--space-3xs);
+
+        button {
+            padding: var(--space-3xs) var(--space-s);
+            border: 1px solid var(--hairline-strong);
+            background: none;
+            color: var(--highlight);
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            font-weight: 600;
+            cursor: pointer;
+
+            span {
+                margin-left: var(--space-3xs);
+                font-weight: 400;
+                font-variant-numeric: tabular-nums;
+            }
+
+            &.is-on {
+                background-color: var(--fleet-red);
+                border-color: var(--fleet-red);
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .scan-report__columns {
+        display: grid;
+        gap: var(--space-m);
+        align-items: stretch;
+
+        &--two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        &--three {
+            grid-template-columns: minmax(0, 4fr) minmax(0, 4fr) minmax(0, 3fr);
+        }
+
+        &--one {
+            grid-template-columns: minmax(0, 1fr);
+            max-width: 40rem;
+        }
+
+        @media (max-width: 64rem) {
+            &--two,
+            &--three {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+    }
+
+    .scan-report__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: var(--space-s) var(--space-s) var(--space-xs);
+
+        h2 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-weight: normal;
+            font-size: var(--step-1);
+            color: var(--highlight);
+            text-transform: uppercase;
+        }
+
+        span {
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+
+        &--sub {
+            margin-top: var(--space-s);
+            border-top: 1px solid var(--hairline);
+        }
+    }
+
+    .scan-report__rows {
+        display: flex;
+        flex-direction: column;
+
+        &--scroll {
+            max-height: 25rem;
+            overflow-y: auto;
+        }
+    }
+
+    .scan-report__row {
+        display: grid;
+        grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-xs);
+        width: 100%;
+        min-height: 2.5rem;
+        padding: 0 var(--space-s);
+        border: 0;
+        border-top: 1px solid var(--hairline);
+        background: none;
+        color: var(--foreground);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+
+        &--plain {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        b {
+            color: var(--highlight);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        &.is-hl {
+            background-color: color-mix(in srgb, var(--fleet-red) 30%, transparent);
+
+            .scan-report__name {
+                color: var(--highlight);
+            }
+        }
+
+        &.is-dim {
+            opacity: 0.35;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: -2px;
+        }
+
+        @media (hover: hover) {
+            &:hover:not(.is-hl) {
+                background-color: var(--hairline);
+            }
+        }
+    }
+
+    .scan-report__name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .scan-report__blank {
+        width: 1.75rem;
+        height: 1.75rem;
+        background-color: var(--hairline-medium);
+    }
+
+    .scan-report__count {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 3rem;
+        justify-content: flex-end;
+    }
+
+    .scan-report__square {
+        display: inline-block;
+        width: 0.625rem;
+        height: 0.625rem;
+    }
+
+    .scan-report__bloc {
+        position: relative;
+    }
+
+    .scan-report__bloc-link {
+        position: absolute;
+        top: 50%;
+        right: calc(var(--space-s) + 3.5rem);
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        text-decoration: none;
+    }
+
+    .standing-hostile {
+        background-color: var(--fleet-red);
+    }
+
+    .standing-neutral {
+        background-color: var(--text-muted);
+    }
+
+    .standing-friendly {
+        background-color: var(--alliance-blue);
+    }
+
+    .scan-report__summary-title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-weight: normal;
+        font-size: var(--step-2);
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+
+    .scan-report__delta {
+        color: var(--fleet-red-blind);
+        font-size: var(--step--1);
+    }
+
+    .scan-report__bar {
+        display: flex;
+        gap: calc(var(--space-3xs) / 2);
+        height: var(--space-3xs);
+    }
+
+    .scan-report__legend {
+        flex-wrap: wrap;
+        font-size: var(--step--1);
+
+        span {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+        }
+
+        b {
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .scan-report__militia {
+        margin-left: auto;
+    }
+
+    .scan-report__note {
+        margin: 0;
+        color: var(--text-muted);
+    }
+
+    .scan-report__raw {
+        summary {
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        pre {
+            margin-top: var(--space-xs);
+            padding: var(--space-s);
+            overflow-x: auto;
+            font-size: var(--step--1);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--hairline);
+        }
+    }
+</style>

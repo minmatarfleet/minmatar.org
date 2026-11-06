@@ -56,7 +56,7 @@ Readers:
 
 | Where | What | Shows suggested? |
 | --- | --- | --- |
-| Local summary (`intel/services/local.py`): desktop Intel window and `/intel/scans/<id>` | `blocs` (pilots per bloc and per group in it), `bloc` on each alliance row, `corporations` (pilots outside an alliance, by corp) | yes, marked likely |
+| Local summary (`intel/services/local.py`): desktop Intel window and `/dscan/<id>` | `blocs` (pilots per bloc and per group in it), `bloc` on each alliance row, `corporations` (pilots outside an alliance, by corp); `/dscan/<id>` also links `all_corporations` and `characters` to their alliance | yes, marked likely |
 | Capital pings (`feed/helpers/capital_pings.py`) | `**Bloc:** <name> · N of M attackers` | no: pings are never edited |
 | Battle reports (`GET /api/fleets/{id}/fights/{n}/report`) | `bloc` on each group, for viewers with `intel.view` | yes, marked likely |
 | Members check (`GET /api/intel/affiliations/members`) | our pilots who keep turning up on another bloc's kills (militia kills excluded) | n/a |

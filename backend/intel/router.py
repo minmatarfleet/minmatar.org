@@ -35,6 +35,7 @@ from intel.services.recent import (
     report_summary_line,
 )
 from intel.services.ships import summarize_dscan
+from intel.services.system_from_scan import system_from_scan
 
 router = Router(tags=["Intel"])
 router.add_router("affiliations", affiliations_router)
@@ -56,7 +57,8 @@ class PasteRequest(Schema):
 
 
 class CreateReportRequest(PasteRequest):
-    system: str
+    # Blank: a d-scan's own celestials and gates name the system.
+    system: str = ""
     note: str = ""
     # Which of your characters is reporting (the one whose client is in
     # front); anything else falls back to your primary character.
@@ -67,6 +69,10 @@ class PreviewResponse(Schema):
     kind: str
     lines: int
     summary: dict
+    # The system a d-scan was taken in, read from its celestials or
+    # gates; None for Local or when the scan doesn't say.
+    system_id: int | None = None
+    system_name: str | None = None
 
 
 class ShipSchema(Schema):
@@ -234,10 +240,13 @@ def preview_report(request, payload: PasteRequest):
     use_esi = kind != LOCAL or not _rate_limited(
         request.user, "previews", PREVIEWS_PER_WINDOW
     )
+    system = system_from_scan(entries) if kind == DSCAN else None
     return PreviewResponse(
         kind=kind,
         lines=len(entries),
         summary=_summarize(kind, entries, use_esi=use_esi),
+        system_id=system[0] if system else None,
+        system_name=system[1] if system else None,
     )
 
 
@@ -260,6 +269,8 @@ def create_report(request, payload: CreateReportRequest):
     except PasteError as err:
         return 400, ErrorResponse(detail=str(err))
     system = _resolve_system(payload.system)
+    if system is None and not payload.system.strip() and kind == DSCAN:
+        system = system_from_scan(entries)
     if system is None:
         return 400, ErrorResponse(detail="Pick the system this is from.")
     if _rate_limited(request.user):

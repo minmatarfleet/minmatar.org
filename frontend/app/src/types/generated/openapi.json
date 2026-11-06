@@ -9176,6 +9176,7 @@
             "type": "string"
           },
           "system": {
+            "default": "",
             "title": "System",
             "type": "string"
           },
@@ -9185,8 +9186,7 @@
           }
         },
         "required": [
-          "text",
-          "system"
+          "text"
         ],
         "title": "CreateReportRequest",
         "type": "object"
@@ -28543,6 +28543,28 @@
             "additionalProperties": true,
             "title": "Summary",
             "type": "object"
+          },
+          "system_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          },
+          "system_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Name"
           }
         },
         "required": [
