@@ -11433,8 +11433,11 @@ export interface components {
              * @default
              */
             note?: string;
-            /** System */
-            system: string;
+            /**
+             * System
+             * @default
+             */
+            system?: string;
             /** Text */
             text: string;
         };
@@ -19078,6 +19081,10 @@ export interface components {
             summary: {
                 [key: string]: unknown;
             };
+            /** System Id */
+            system_id?: number | null;
+            /** System Name */
+            system_name?: string | null;
         };
         /** PreviousLocalSchema */
         PreviousLocalSchema: {

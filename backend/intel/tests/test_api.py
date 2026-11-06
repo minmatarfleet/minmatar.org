@@ -129,6 +129,28 @@ class IntelApiTests(TestCase):
         self.assertEqual(response.json()["summary"]["ships"], 5)
         self.assertEqual(IntelReport.objects.count(), 0)
 
+    def test_preview_and_share_read_the_system_from_the_scan(self):
+        paste = DSCAN_PASTE + "\n14\tAmamake VII - Moon 3\tMoon\t4.8 AU"
+        preview = self.post("/reports/preview", {"text": paste}).json()
+        self.assertEqual(preview["system_id"], AMAMAKE)
+        self.assertEqual(preview["system_name"], "Amamake")
+
+        response = self.post("/reports", {"text": paste})
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["system_name"], "Amamake")
+
+        # A typed system still wins, and a scan with no celestials or
+        # gates still needs one.
+        typed = self.post("/reports", {"text": paste, "system": "Vard"})
+        self.assertEqual(typed.json()["system_name"], "Vard")
+        bare = self.post("/reports", {"text": DSCAN_PASTE})
+        self.assertEqual(bare.status_code, 400)
+        self.assertIsNone(
+            self.post("/reports/preview", {"text": DSCAN_PASTE}).json()[
+                "system_id"
+            ]
+        )
+
     def test_permissions(self):
         outsider = User.objects.create(username="outsider")
         headers = auth_headers(outsider)
@@ -235,6 +257,17 @@ class LocalReportTests(TestCase):
         self.assertEqual(alliances["Hostile Alliance"]["count"], 2)
         self.assertEqual(alliances["Hostile Alliance"]["standing"], HOSTILE)
         self.assertEqual(alliances["No alliance"]["count"], 1)
+        corporations = {row["id"]: row for row in summary["all_corporations"]}
+        self.assertEqual(set(corporations), {10, 11, 12, 13})
+        self.assertEqual(corporations[10]["alliance_id"], 500)
+        self.assertIsNone(corporations[13]["alliance_id"])
+        self.assertEqual(corporations[10]["standing"], HOSTILE)
+        pilots = {row["name"]: row for row in summary["characters"]}
+        self.assertEqual(list(pilots)[0], "Amarr One")
+        self.assertEqual(pilots["Amarr Two"]["corporation_id"], 11)
+        self.assertEqual(pilots["Fleet Pilot"]["standing"], FRIENDLY)
+        self.assertIsNone(pilots["Ghost"]["corporation_id"])
+        self.assertIsNone(pilots["Ghost"]["standing"])
 
         # A second paste of the same pilots is served from the cache,
         # including the name ESI didn't know.

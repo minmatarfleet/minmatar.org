@@ -3057,12 +3057,16 @@ export interface IntelHull {
     name:               string;
     count:              number;
     rank?:              number;
+    /** Within on_grid_km; reports shared before distances were kept have none. */
+    on_grid?:           number;    /** EVE ship group, e.g. Heavy Assault Cruiser (newer reports only). */
+    group?:             string;
 }
 
 export interface IntelShipClass {
     name:               string;
     count:              number;
     rank:               number;
+    on_grid?:           number;
     hulls:              IntelHull[];
 }
 
@@ -3081,6 +3085,10 @@ export interface IntelDscanSummary {
     classes:            IntelShipClass[];
     hulls:              IntelHull[];
     other_items:        IntelOtherItem[];
+    /** Newer reports: false when the paste had no readable distances. */
+    has_distances?:     boolean;
+    on_grid_ships?:     number;
+    on_grid_km?:        number;
 }
 
 export type IntelStanding = 'hostile' | 'neutral' | 'friendly';
@@ -3105,6 +3113,28 @@ export interface IntelLocalSummary {
     corporations?:      (IntelLocalAlliance & { id: number })[];
     /** Pilots by bloc (newer reports only). */
     blocs?:             IntelLocalBloc[];
+    /** Every corporation, with its alliance (newer reports only). */
+    all_corporations?:  IntelLocalCorporation[];
+    /** Every pilot pasted, with their corporation and alliance (newer reports only). */
+    characters?:        IntelLocalPilot[];
+}
+
+/** A corporation row of a Local report summary (an untyped dict from the API). */
+export type IntelLocalCorporation = {
+    id:                 number;
+    name:               string;
+    count:              number;
+    standing:           IntelStanding;
+    alliance_id:        number | null;
+}
+
+/** A pilot row of a Local report summary; ids are null when ESI didn't know the name. */
+export type IntelLocalPilot = {
+    name:               string;
+    id:                 number | null;
+    corporation_id:     number | null;
+    alliance_id:        number | null;
+    standing:           IntelStanding | null;
 }
 
 // Intel affiliation database: blocs, pets, alts, allies and associates.
@@ -3131,19 +3161,17 @@ export type IntelLocalBloc = IntelBlocRef & {
     groups:             (IntelEntityRef & { count: number; likely: boolean })[];
 }
 
-export interface IntelReport {
-    report_id:          string;
+// A shared d-scan or Local; the API types its summary as a plain dict.
+export type IntelReport = Omit<ApiResponse<'ReportResponse'>, 'kind' | 'summary'> & {
     kind:               'dscan' | 'local';
-    system_id:          number | null;
-    system_name:        string;
-    reporter_name:      string;
-    note:               string;
-    created_at:         string;
-    summary_line:       string;
     summary:            IntelDscanSummary | IntelLocalSummary;
-    raw:                string;
-    previous?:          { report_id: string; created_at: string; hostile: number; hostile_delta: number } | null;
 }
+export type IntelPreview = Omit<ApiResponse<'PreviewResponse'>, 'kind' | 'summary'> & {
+    kind:               'dscan' | 'local';
+    summary:            IntelDscanSummary | IntelLocalSummary;
+}
+export type IntelRecent = ApiResponse<'RecentResponse'>
+export type IntelRecentItem = ApiResponse<'RecentItemSchema'>
 
 // Training tab: ships each character trains for, skill plans, accounts.
 export type TrainingOverview = ApiResponse<'TrainingOverviewResponse'>

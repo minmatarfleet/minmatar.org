@@ -205,12 +205,27 @@ def ship_list(raw_counts: dict | None) -> list:
     return hull_list(counts, type_info(counts))
 
 
+# Anything this close counts as on grid. Grids vary in size; 10,000 km
+# matches what pilots mean by "on grid" on a gate or a plex.
+ON_GRID_KM = 10_000
+
+
 def summarize_dscan(entries: list[DscanLine]) -> dict:
     counts = Counter(entry.type_id for entry in entries)
+    on_grid_counts = Counter(
+        entry.type_id
+        for entry in entries
+        if entry.distance_km is not None and entry.distance_km <= ON_GRID_KM
+    )
     names = {entry.type_id: entry.type_name for entry in entries}
     info = type_info(counts, names)
 
     hulls = hull_list(counts, info)
+    for hull in hulls:
+        hull["on_grid"] = on_grid_counts.get(hull["type_id"], 0)
+        # The EVE ship group (Heavy Assault Cruiser, Logistics, ...), finer
+        # than the size class it is filed under.
+        hull["group"] = info[hull["type_id"]].group or "Ship"
     classes: dict[str, dict] = {}
     for hull in hulls:
         name = info[hull["type_id"]].ship_class
@@ -219,11 +234,13 @@ def summarize_dscan(entries: list[DscanLine]) -> dict:
             {
                 "name": name,
                 "count": 0,
+                "on_grid": 0,
                 "rank": _CLASS_RANK.get(name, len(_CLASSES)),
                 "hulls": [],
             },
         )
         bucket["count"] += hull["count"]
+        bucket["on_grid"] += hull["on_grid"]
         bucket["hulls"].append(hull)
 
     capsules = sum(
@@ -251,4 +268,9 @@ def summarize_dscan(entries: list[DscanLine]) -> dict:
         "classes": sorted(classes.values(), key=lambda c: c["rank"]),
         "hulls": hulls,
         "other_items": other[:50],
+        # Pastes from before distances were kept, or with every distance
+        # unreadable, have no on-grid split.
+        "has_distances": any(e.distance_km is not None for e in entries),
+        "on_grid_ships": sum(hull["on_grid"] for hull in hulls),
+        "on_grid_km": ON_GRID_KM,
     }

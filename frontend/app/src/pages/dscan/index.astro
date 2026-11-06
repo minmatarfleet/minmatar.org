@@ -1,0 +1,144 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'intel.view')) return HTTP_403_Forbidden()
+const can_report = can(gates, 'intel.report')
+
+import type { IntelRecent } from '@dtypes/api.minmatar.org'
+import { get_recent_intel } from '@helpers/api.minmatar.org/intel'
+
+let recent: IntelRecent | null = null
+let recent_error: string | null = null
+try {
+    recent = await get_recent_intel(auth_token)
+} catch (error) {
+    recent_error = error.message
+}
+
+const PREVIEW_URL = translatePath('/partials/dscan_preview_component/')
+const SHARE_URL = translatePath('/partials/dscan_share_component/')
+
+const page_title = t('dscan.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import DscanPasteControls from '@components/blocks/DscanPasteControls.astro'
+import DscanRecentList from '@components/blocks/DscanRecentList.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<Viewport title={page_title} meta_description={t('page_finder.dscan.description')}>
+    <PageWide
+        cover={{
+            image: '/images/intel-cover.jpg',
+            image_990: '/images/intel-cover-990.jpg',
+            alt: t('intel.cover_alt'),
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <PageTitle>{page_title}</PageTitle>
+                <p class="[ dscan-page__lead ]">{t('dscan.leading_text')}</p>
+            </Flexblock>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)" class="[ dscan-page ]">
+            {can_report ?
+                <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
+                    <form
+                        class="[ dscan-page__form ]"
+                        hx-post={SHARE_URL}
+                        hx-target="#dscan-share-error"
+                        hx-swap="innerHTML"
+                        x-data={`{
+                            paste_anywhere(event) {
+                                if (event.target.closest('input, textarea, [contenteditable]')) return
+                                const text = event.clipboardData?.getData('text') ?? ''
+                                if (!text.trim()) return
+                                event.preventDefault()
+                                this.$refs.text.value = text
+                                this.$refs.text.dispatchEvent(new Event('input', { bubbles: true }))
+                                this.$refs.text.focus()
+                            },
+                            clear_paste() {
+                                this.$refs.text.value = ''
+                                this.$refs.text.dispatchEvent(new Event('input', { bubbles: true }))
+                                this.$refs.text.focus()
+                            },
+                        }`}
+                        x-on:paste.window="paste_anywhere($event)"
+                    >
+                        <Flexblock gap="var(--space-s)">
+                            <label class="[ visually-hidden ]" for="dscan-text">{t('dscan.paste_label')}</label>
+                            <Textarea
+                                id="dscan-text"
+                                name="text"
+                                rows="10"
+                                spellcheck="false"
+                                autocomplete="off"
+                                class="[ dscan-page__paste ]"
+                                placeholder={`${t('dscan.paste_label')}\n${t('dscan.paste_hint')}`}
+                                x-ref="text"
+                                hx-post={PREVIEW_URL}
+                                hx-trigger="input changed delay:300ms"
+                                hx-include="closest form"
+                                hx-vals='{"auto": "1"}'
+                                hx-target="#dscan-controls"
+                                hx-sync="this:replace"
+                            />
+                            <div id="dscan-controls">
+                                <DscanPasteControls />
+                            </div>
+                        </Flexblock>
+                    </form>
+                </ComponentBlock>
+                :
+                <p class="[ dscan-page__lead ]">{t('dscan.no_report_access')}</p>
+            }
+
+            {recent_error ?
+                <p class="[ dscan-page__error ]" role="alert">{recent_error}</p>
+                :
+                <DscanRecentList items={recent?.items ?? []} />
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .dscan-page__lead {
+        margin: 0;
+        font-size: var(--step-1);
+        color: var(--foreground);
+    }
+
+    .dscan-page__error {
+        margin: 0;
+        color: var(--fleet-red-blind);
+    }
+
+    .dscan-page__form :global(.dscan-page__paste) {
+        min-height: 16rem;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: var(--step--1);
+        white-space: pre;
+    }
+</style>

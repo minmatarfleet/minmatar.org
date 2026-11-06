@@ -14,18 +14,23 @@
         "hulls": [
           {
             "count": 1,
+            "group": "Heavy Assault Cruiser",
             "name": "Zealot",
+            "on_grid": 0,
             "rank": 302,
             "type_id": 12003
           },
           {
             "count": 1,
+            "group": "Cruiser",
             "name": "Omen",
+            "on_grid": 0,
             "rank": 307,
             "type_id": 2006
           }
         ],
         "name": "Cruiser",
+        "on_grid": 0,
         "rank": 3
       },
       {
@@ -33,12 +38,15 @@
         "hulls": [
           {
             "count": 1,
+            "group": "Destroyer",
             "name": "Coercer",
+            "on_grid": 0,
             "rank": 503,
             "type_id": 16236
           }
         ],
         "name": "Destroyer",
+        "on_grid": 0,
         "rank": 5
       },
       {
@@ -46,42 +54,56 @@
         "hulls": [
           {
             "count": 2,
+            "group": "Frigate",
             "name": "Punisher",
+            "on_grid": 0,
             "rank": 608,
             "type_id": 597
           }
         ],
         "name": "Frigate",
+        "on_grid": 0,
         "rank": 6
       }
     ],
+    "has_distances": true,
     "hulls": [
       {
         "count": 1,
+        "group": "Heavy Assault Cruiser",
         "name": "Zealot",
+        "on_grid": 0,
         "rank": 302,
         "type_id": 12003
       },
       {
         "count": 1,
+        "group": "Cruiser",
         "name": "Omen",
+        "on_grid": 0,
         "rank": 307,
         "type_id": 2006
       },
       {
         "count": 1,
+        "group": "Destroyer",
         "name": "Coercer",
+        "on_grid": 0,
         "rank": 503,
         "type_id": 16236
       },
       {
         "count": 2,
+        "group": "Frigate",
         "name": "Punisher",
+        "on_grid": 0,
         "rank": 608,
         "type_id": 597
       }
     ],
     "objects": 8,
+    "on_grid_km": 10000,
+    "on_grid_ships": 0,
     "other": 2,
     "other_items": [
       {

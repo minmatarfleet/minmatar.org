@@ -1,0 +1,219 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IntelRecentItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    items:              IntelRecentItem[];
+    [propName: string]: any;
+}
+
+const {
+    items,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const MAX_THUMBS = 4
+
+const image_url = (image: { kind: string; id: number }) => image.kind === 'type'
+    ? `https://images.evetech.net/types/${image.id}/icon?size=64`
+    : `https://images.evetech.net/corporations/${image.id}/logo?size=64`
+
+const age = (iso: string) => {
+    const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
+    return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+}
+
+const rows = items.map(item => {
+    const group = item.is_ping ? 'pings' : item.kind
+    const hostile = item.standings ? Number((item.standings as Record<string, number>).hostile ?? 0) : null
+    const headline = item.kind === 'dscan' && item.count !== null ? `${item.count} ${t('dscan.count.ships')}`
+        : item.kind === 'local' && hostile !== null ? `${hostile} ${t('dscan.count.hostile')}`
+        : item.summary
+    const thumbs = item.ships.length > 0
+        ? item.ships.slice(0, MAX_THUMBS).map(ship => image_url({ kind: 'type', id: ship.type_id }))
+        : item.image ? [image_url(item.image)] : []
+    const more = item.ships.length > MAX_THUMBS ? `+${item.ships.length - MAX_THUMBS}`
+        : item.kind === 'local' && hostile !== null && item.count !== null ? `/ ${item.count}`
+        : ''
+    return {
+        id: item.id,
+        group,
+        kind_label: t(t_key('dscan.kind.', item.kind)) ?? item.kind,
+        href: item.report_id ? translatePath(`/dscan/${encodeURIComponent(item.report_id)}/`) : null,
+        system: item.system_name,
+        headline,
+        hostile: item.kind === 'local' && (hostile ?? 0) > 0,
+        thumbs,
+        more,
+        source: item.source,
+        age: age(item.occurred_at),
+        ping: item.is_ping,
+    }
+})
+
+const filters = ['all', 'dscan', 'local', 'pings'] as const
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+<ComponentBlock
+    padding_inline="0"
+    padding_block="0"
+    class:list={['[ dscan-recent ]', Astro.props.class]}
+    x-data="{ filter: 'all' }"
+    {...attributes}
+>
+    <FlexInline justification="space-between" class="[ dscan-recent__head ]">
+        <h2 class="[ dscan-recent__title ]">{t('dscan.recent')}</h2>
+        <div class="[ dscan-recent__filters ]" role="group" aria-label={t('dscan.filter')}>
+            {filters.map(filter =>
+                <button
+                    type="button"
+                    x-on:click={`filter = '${filter}'`}
+                    x-bind:class={`{ 'is-on': filter === '${filter}' }`}
+                    x-bind:aria-pressed={`filter === '${filter}'`}
+                    class:list={[{ 'is-on': filter === 'all' }]}
+                    aria-pressed={filter === 'all' ? 'true' : 'false'}
+                >{t(t_key('dscan.filter.', filter))}</button>
+            )}
+        </div>
+    </FlexInline>
+
+    {rows.length === 0 ?
+        <div class="[ dscan-recent__inset ]"><EmptyState title={t('dscan.recent_empty')} /></div>
+        :
+        <XFadeScroll>
+            <ul class="[ dscan-recent__list ]">
+                {rows.map(row => {
+                    const Tag = row.href ? 'a' : 'div'
+                    return (
+                        <li x-show={`filter === 'all' || filter === '${row.group}'`}>
+                            <Tag class="[ dscan-recent__row ]" href={row.href ?? undefined}>
+                                <span class:list={['[ dscan-recent__kind ]', { 'is-ping': row.ping }]}>{row.kind_label}</span>
+                                <span class="[ dscan-recent__system ]">{row.system}</span>
+                                <span class:list={['[ dscan-recent__headline ]', { 'is-hostile': row.hostile }]}>{row.headline}</span>
+                                <span class="[ dscan-recent__thumbs ]">
+                                    {row.thumbs.map(src => <img src={src} alt="" width="28" height="28" loading="lazy" />)}
+                                    {row.more && <span class="[ dscan-recent__more ]">{row.more}</span>}
+                                </span>
+                                <span class="[ dscan-recent__source ]">{row.source}</span>
+                                <span class="[ dscan-recent__age ]">{row.age}</span>
+                            </Tag>
+                        </li>
+                    )
+                })}
+            </ul>
+        </XFadeScroll>
+    }
+</ComponentBlock>
+
+<style lang="scss">
+    .dscan-recent__head {
+        padding: var(--space-s) var(--space-s) var(--space-xs);
+        flex-wrap: wrap;
+        gap: var(--space-s);
+    }
+
+    .dscan-recent__title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-weight: normal;
+        font-size: var(--step-2);
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+
+    .dscan-recent__filters {
+        display: flex;
+        gap: var(--space-3xs);
+
+        button {
+            padding: var(--space-3xs) var(--space-xs);
+            border: 1px solid var(--hairline-strong);
+            background: none;
+            color: var(--highlight);
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            font-weight: 600;
+            cursor: pointer;
+
+            &.is-on {
+                background-color: var(--fleet-red);
+                border-color: var(--fleet-red);
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .dscan-recent__inset {
+        padding: var(--space-s);
+    }
+
+    .dscan-recent__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        min-width: 48rem;
+    }
+
+    .dscan-recent__row {
+        display: grid;
+        grid-template-columns: 5rem 9rem 9rem minmax(0, 1fr) 10rem 4.5rem;
+        align-items: center;
+        gap: var(--space-s);
+        min-height: 3.25rem;
+        padding: 0 var(--space-s);
+        border-top: 1px solid var(--hairline);
+        color: var(--foreground);
+        text-decoration: none;
+    }
+
+    a.dscan-recent__row:hover {
+        background-color: var(--hairline);
+        color: var(--foreground);
+    }
+
+    .dscan-recent__kind {
+        font-family: var(--heading-font);
+        color: var(--text-muted);
+        text-transform: uppercase;
+
+        &.is-ping {
+            color: var(--fleet-red-blind);
+        }
+    }
+
+    .dscan-recent__system {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .dscan-recent__headline.is-hostile {
+        color: var(--fleet-red-blind);
+    }
+
+    .dscan-recent__thumbs {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+    }
+
+    .dscan-recent__more,
+    .dscan-recent__source,
+    .dscan-recent__age {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .dscan-recent__age {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+</style>
