@@ -79,6 +79,15 @@ def poll_npsi_sources(*, force_renotify: bool = False) -> dict:
     return stats
 
 
+def _record_poll(source: NpsiEventSource, error: str = "") -> None:
+    now = timezone.now()
+    NpsiEventSource.objects.filter(pk=source.pk).update(
+        last_polled_at=now,
+        last_error=error[:255],
+        **({} if error else {"last_success_at": now}),
+    )
+
+
 def poll_npsi_source(
     source: NpsiEventSource, *, force_renotify: bool = False
 ) -> dict:
@@ -87,13 +96,15 @@ def poll_npsi_source(
         response = requests.get(source.feed_url, timeout=FEED_TIMEOUT_SECONDS)
         response.raise_for_status()
         payload = response.json()
-    except requests.RequestException:
+    except (requests.RequestException, ValueError) as exc:
         logger.warning(
             "NPSI feed %s request failed", source.name, exc_info=True
         )
+        _record_poll(source, f"Feed request failed: {exc}")
         return stats
     if not isinstance(payload, list):
         logger.warning("NPSI feed %s did not return a list", source.name)
+        _record_poll(source, "The feed did not return a list of events.")
         return stats
 
     now = timezone.now()
@@ -106,6 +117,7 @@ def poll_npsi_source(
         stats["upserted"] += handled["upserted"]
         stats["notified"] += handled["notified"]
         stats["skipped"] += handled["skipped"]
+    _record_poll(source)
     return stats
 
 
