@@ -81,7 +81,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
                                     {data.site_kinds.map((kind) => <option value={kind}>{kind}</option>)}
                                 </Select>
-                                <Input name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
+                                <Input width="14rem" name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
                                 <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" />{t('campaigns.codes.counts')}</label>
                                 <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
                             </FlexInline>
@@ -102,7 +102,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
                                     {data.site_kinds.map((kind) => <option value={kind} selected={kind === row.site_kind}>{kind}</option>)}
                                 </Select>
-                                <Input name="label" value={row.label} aria-label={t('campaigns.codes.label')} maxlength="64" />
+                                <Input width="14rem" name="label" value={row.label} aria-label={t('campaigns.codes.label')} maxlength="64" />
                                 <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" checked={row.confirmed} />{t('campaigns.codes.counts')}</label>
                                 <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.save')}</Button>
                             </FlexInline>
@@ -110,11 +110,11 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     )}
                     <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
                         <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input type="number" name="event_code" placeholder={t('campaigns.codes.event_code')} aria-label={t('campaigns.codes.event_code')} required />
+                            <Input width="12rem" type="number" name="event_code" placeholder={t('campaigns.codes.event_code')} aria-label={t('campaigns.codes.event_code')} required />
                             <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
                                 {data.site_kinds.map((kind) => <option value={kind}>{kind}</option>)}
                             </Select>
-                            <Input name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
+                            <Input width="14rem" name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
                             <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" />{t('campaigns.codes.counts')}</label>
                             <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
                         </FlexInline>

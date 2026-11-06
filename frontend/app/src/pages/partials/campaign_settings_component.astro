@@ -203,7 +203,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
                         <input type="hidden" name="action" value="system_add" />
                         <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input type="number" name="solar_system_id" placeholder={t('campaigns.settings.solar_system_id')} aria-label={t('campaigns.settings.solar_system_id')} required />
+                            <Input width="12rem" type="number" name="solar_system_id" placeholder={t('campaigns.settings.solar_system_id')} aria-label={t('campaigns.settings.solar_system_id')} required />
                             <Select name="goal" size="sm" width="auto" aria-label={t('campaigns.settings.goal')}>
                                 {GOALS.map((value) => <option value={value}>{value}</option>)}
                             </Select>
@@ -229,15 +229,15 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
                         <input type="hidden" name="action" value="party_add" />
                         <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input name="name" placeholder={t('campaigns.settings.name')} aria-label={t('campaigns.settings.name')} required />
-                            <Input name="ticker" placeholder={t('campaigns.settings.ticker')} aria-label={t('campaigns.settings.ticker')} maxlength="16" />
+                            <Input width="14rem" name="name" placeholder={t('campaigns.settings.name')} aria-label={t('campaigns.settings.name')} required />
+                            <Input width="8rem" name="ticker" placeholder={t('campaigns.settings.ticker')} aria-label={t('campaigns.settings.ticker')} maxlength="16" />
                             <Select name="kind" size="sm" width="auto" aria-label={t('campaigns.settings.kind')}>
                                 {PARTY_KINDS.map((value) => <option value={value}>{value}</option>)}
                             </Select>
                             <Select name="side" size="sm" width="auto" aria-label={t('campaigns.settings.side')}>
                                 {PARTY_SIDES.map((value) => <option value={value}>{value}</option>)}
                             </Select>
-                            <Input type="number" name="entity_id" placeholder={t('campaigns.settings.entity_id')} aria-label={t('campaigns.settings.entity_id')} required />
+                            <Input width="12rem" type="number" name="entity_id" placeholder={t('campaigns.settings.entity_id')} aria-label={t('campaigns.settings.entity_id')} required />
                             <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
                         </FlexInline>
                     </form>
@@ -277,8 +277,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
                         <input type="hidden" name="action" value="fitting_add" />
                         <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input type="number" name="fitting_id" placeholder={t('campaigns.settings.fitting_id')} aria-label={t('campaigns.settings.fitting_id')} required />
-                            <Input name="role_label" placeholder={t('campaigns.settings.role_label')} aria-label={t('campaigns.settings.role_label')} maxlength="64" />
+                            <Input width="12rem" type="number" name="fitting_id" placeholder={t('campaigns.settings.fitting_id')} aria-label={t('campaigns.settings.fitting_id')} required />
+                            <Input width="12rem" name="role_label" placeholder={t('campaigns.settings.role_label')} aria-label={t('campaigns.settings.role_label')} maxlength="64" />
                             <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
                         </FlexInline>
                     </form>
@@ -299,7 +299,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                             <input type="hidden" name="id" value={row.id} />
                             <FlexInline gap="var(--space-xs)" class="[ items-center ]">
                                 <span>{row.system}: {row.metric}</span>
-                                <Input type="number" step="any" name="target" value={row.target} aria-label={t('campaigns.settings.target')} />
+                                <Input width="12rem" type="number" step="any" name="target" value={row.target} aria-label={t('campaigns.settings.target')} />
                                 <Button type="submit" name="action" value="week_accept" size="sm" off_disable={true}>
                                     {row.proposed ? t('campaigns.settings.accept') : t('campaigns.settings.accepted')}
                                 </Button>
