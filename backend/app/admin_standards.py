@@ -141,7 +141,11 @@ class ReadOnlyAdminMixin:
 
 
 class SuperuserOnlyAdminMixin:
-    """Hide the model (and its app block) from non-superusers."""
+    """Hide the model (and its app block) from non-superusers.
+
+    ``has_view_or_change_permission`` is view OR change, so denying view alone
+    still lets a staff user with the model permission open the change form.
+    """
 
     def has_module_permission(self, request):
         return request.user.is_superuser and super().has_module_permission(
@@ -150,6 +154,21 @@ class SuperuserOnlyAdminMixin:
 
     def has_view_permission(self, request, obj=None):
         return request.user.is_superuser and super().has_view_permission(
+            request, obj
+        )
+
+    def has_add_permission(self, request, *args, **kwargs):
+        return request.user.is_superuser and super().has_add_permission(
+            request, *args, **kwargs
+        )
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_change_permission(
+            request, obj
+        )
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser and super().has_delete_permission(
             request, obj
         )
 
