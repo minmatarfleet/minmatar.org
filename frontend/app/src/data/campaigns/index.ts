@@ -39,6 +39,8 @@ type CampaignMetaShared = {
     isk_label_key?: string
     /** Campaign/siege end date for content-stream sorting. */
     published_at: Date
+    /** Reachable by its URL only: left out of the content strips and the sitemap. */
+    hidden?: boolean
 }
 
 export type CampaignMeta =
@@ -169,6 +171,7 @@ export const campaigns: CampaignMeta[] = [
         sortOrder: 0,
         kind: 'warzone',
         warzone_type: 'frontline',
+        hidden: true,
         published_at: new Date('2026-10-31T00:00:00Z'),
     },
     {
@@ -245,10 +248,11 @@ function is_warzone_report(
     return campaign.kind === 'warzone'
 }
 
-/** Frontline and Economic reports, newest month first; Frontline before Economic in the same month. */
+/** Listed Frontline and Economic reports (hidden ones, like Gallente–Caldari, are reached from the report's switch), newest month first; Frontline before Economic in the same month. */
 export function getWarzoneReports(): CampaignMeta[] {
     return campaigns
         .filter(is_warzone_report)
+        .filter((c) => !c.hidden)
         .sort((a, b) => {
             const by_date = b.published_at.getTime() - a.published_at.getTime()
             if (by_date !== 0) return by_date

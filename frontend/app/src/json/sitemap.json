@@ -236,7 +236,8 @@
     {
         "slug": "warzone.gallente_caldari_yc128_10",
         "path": "/warzone/gallente-caldari-yc128-10/",
-        "publish": true,
+        "publish": false,
+        "sitemap": false,
         "description": "page_finder.warzone.gallente_caldari_yc128_10.description",
         "keywords": ["warzone", "frontline report", "October YC128", "Gallente", "Caldari", "Tama", "Aldranette", "faction warfare"]
     },
