@@ -1,0 +1,148 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { get_campaign_payout_codes, set_campaign_payout_code } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignPayoutCodes } from '@dtypes/api.minmatar.org'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user || !auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'campaigns.manage')) return HTTP_403_Forbidden()
+
+const ROOT_ID = 'campaign-payout-codes'
+const PARTIAL_URL = translatePath('/partials/campaign_payout_codes_component')
+
+let flash: { kind: 'success' | 'error', message: string } | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const event_code = parseInt(String(form.get('event_code') ?? ''))
+    try {
+        if (!Number.isFinite(event_code)) throw new Error(t('campaigns.codes.bad_code'))
+        await set_campaign_payout_code(auth_token, event_code, {
+            site_kind: String(form.get('site_kind') ?? 'unknown'),
+            label: String(form.get('label') ?? ''),
+            confirmed: form.get('confirmed') === 'on',
+        })
+        flash = { kind: 'success', message: t('campaigns.settings.saved') }
+    } catch (error) {
+        flash = { kind: 'error', message: error.message }
+    }
+}
+
+let data: CampaignPayoutCodes | null = null
+let fetch_error: Error | false = false
+try {
+    data = await get_campaign_payout_codes(auth_token)
+} catch (error) {
+    fetch_error = error
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+<div id={ROOT_ID}>
+    {fetch_error || !data ?
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: fetch_error || new Error(t('campaigns.action_failed')),
+                delay: 0,
+                target: `#${ROOT_ID}`,
+            }}
+        />
+        :
+        <Flexblock gap="var(--space-l)">
+            {flash && <p class:list={['[ campaign-codes__flash ]', `is-${flash.kind}`]} role="status">{flash.message}</p>}
+
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>{t('campaigns.codes.unmapped')}</h2>
+                    <small>{t('campaigns.codes.unmapped_hint')}</small>
+                    {data.unmapped.length === 0 && <EmptyState title={t('campaigns.codes.no_unmapped')} />}
+                    {data.unmapped.map((row) =>
+                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                            <input type="hidden" name="event_code" value={row.event_code} />
+                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                <strong>{row.event_code}</strong>
+                                <span>{row.seen}x · {row.sample_amount_lp} LP · {new Date(row.last_seen).toLocaleDateString(lang)}</span>
+                                <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
+                                    {data.site_kinds.map((kind) => <option value={kind}>{kind}</option>)}
+                                </Select>
+                                <Input name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
+                                <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" />{t('campaigns.codes.counts')}</label>
+                                <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
+                            </FlexInline>
+                        </form>
+                    )}
+                </Flexblock>
+            </ComponentBlock>
+
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>{t('campaigns.codes.mapped')}</h2>
+                    {data.codes.map((row) =>
+                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                            <input type="hidden" name="event_code" value={row.event_code} />
+                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                <strong>{row.event_code}</strong>
+                                <span>{row.seen_30d}x</span>
+                                <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
+                                    {data.site_kinds.map((kind) => <option value={kind} selected={kind === row.site_kind}>{kind}</option>)}
+                                </Select>
+                                <Input name="label" value={row.label} aria-label={t('campaigns.codes.label')} maxlength="64" />
+                                <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" checked={row.confirmed} />{t('campaigns.codes.counts')}</label>
+                                <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.save')}</Button>
+                            </FlexInline>
+                        </form>
+                    )}
+                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                            <Input type="number" name="event_code" placeholder={t('campaigns.codes.event_code')} aria-label={t('campaigns.codes.event_code')} required />
+                            <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
+                                {data.site_kinds.map((kind) => <option value={kind}>{kind}</option>)}
+                            </Select>
+                            <Input name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
+                            <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" />{t('campaigns.codes.counts')}</label>
+                            <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
+                        </FlexInline>
+                    </form>
+                </Flexblock>
+            </ComponentBlock>
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    h2 {
+        margin-block: 0;
+        font-size: var(--step-1);
+    }
+
+    .campaign-codes__counts {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+    }
+
+    .campaign-codes__flash {
+        margin: 0;
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--border-color);
+
+        &.is-success { border-color: var(--green); }
+        &.is-error { border-color: var(--fleet-red); }
+    }
+</style>

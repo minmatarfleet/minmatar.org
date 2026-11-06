@@ -5,8 +5,10 @@ Import order is route order: ``/readiness`` has to be registered before
 """
 
 from campaigns.endpoints.base import router
+from campaigns.endpoints import payout_codes  # noqa: F401  (before /{slug})
 from campaigns.endpoints import member  # noqa: F401  (registers routes)
 from campaigns.endpoints import manage  # noqa: F401
+from campaigns.endpoints import settings  # noqa: F401
 from campaigns.endpoints import public  # noqa: F401
 from campaigns.endpoints import projects  # noqa: F401
 
