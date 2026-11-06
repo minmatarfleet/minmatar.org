@@ -15,10 +15,12 @@ from app.errors import create_error_id
 from authentication import AuthBearer, AuthOptional
 from creators.models import (
     CreatorAccount,
+    CreatorAccountStatus,
     CreatorItem,
     CreatorItemKind,
     CreatorProvider,
 )
+from creators.moderation import router as moderation_router
 from creators.oauth import OAuthError, authorize_url
 from creators.schemas import (
     CreatorAccountSchema,
@@ -42,6 +44,7 @@ from users.redirects import oauth_redirect
 logger = logging.getLogger(__name__)
 
 router = Router(tags=["Creators"])
+router.add_router("moderation", moderation_router)
 
 OAUTH_PROVIDERS = {
     CreatorProvider.TWITCH,
@@ -130,7 +133,9 @@ def list_my_accounts(request):
 def list_live(request):
     accounts = (
         CreatorAccount.objects.filter(
-            provider=CreatorProvider.TWITCH, is_live=True
+            provider=CreatorProvider.TWITCH,
+            is_live=True,
+            status=CreatorAccountStatus.APPROVED,
         )
         .select_related("user")
         .order_by("-live_started_at")
@@ -165,14 +170,16 @@ def list_feed(
     limit = max(1, min(limit, 100))
     qs = (
         CreatorItem.objects.filter(
+            hidden=False,
+            account__status=CreatorAccountStatus.APPROVED,
             kind__in=[
                 CreatorItemKind.VIDEO,
                 CreatorItemKind.VOD,
                 CreatorItemKind.REDDIT_POST,
-            ]
+            ],
         )
         .select_related("account")
-        .order_by("-published_at", "-id")
+        .order_by("-featured", "-published_at", "-id")
     )
     if provider:
         if provider not in ALL_PROVIDERS:

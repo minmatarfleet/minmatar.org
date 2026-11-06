@@ -15,6 +15,11 @@ class CreatorItemKind(models.TextChoices):
     REDDIT_POST = "reddit_post", "Reddit post"
 
 
+class CreatorAccountStatus(models.TextChoices):
+    APPROVED = "approved", "Approved"
+    SUSPENDED = "suspended", "Suspended"
+
+
 class CreatorAccount(models.Model):
     """OAuth-linked Twitch / YouTube / Reddit account for a Thinkspeak creator."""
 
@@ -33,6 +38,13 @@ class CreatorAccount(models.Model):
     scopes = models.JSONField(default=list, blank=True)
     extra = models.JSONField(default=dict, blank=True)
     token_invalid = models.BooleanField(default=False)
+    # Moderation: a suspended account drops out of the public feed and live list.
+    status = models.CharField(
+        max_length=16,
+        choices=CreatorAccountStatus.choices,
+        default=CreatorAccountStatus.APPROVED,
+        db_index=True,
+    )
 
     is_live = models.BooleanField(default=False)
     live_started_at = models.DateTimeField(null=True, blank=True)
@@ -72,6 +84,9 @@ class CreatorItem(models.Model):
     title = models.CharField(max_length=512, blank=True)
     url = models.URLField(max_length=1024, blank=True)
     thumbnail_url = models.URLField(max_length=1024, blank=True)
+    # Moderation: hidden items leave the public feed; featured ones lead it.
+    hidden = models.BooleanField(default=False)
+    featured = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
