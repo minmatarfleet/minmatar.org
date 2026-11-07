@@ -1,0 +1,85 @@
+---
+/**
+ * A manage list's table, as the corp Members table draws it: a
+ * ComponentBlock, Norwester small-caps headers, rows in the default slot.
+ * Rows are ExpandRow components (one <tbody> each) that open in place.
+ * It scrolls sideways inside XFadeScroll; at phone width it drops to the
+ * columns marked `phone: true` (default) and fits the screen.
+ *
+ * The chevron column is added for you (`expandable`, default true), so an
+ * ExpandRow's `colspan` is `columns.length + 1`.
+ *
+ *   <ManageTable caption={t('...timers')} columns={[
+ *       { label: t('...structure') },
+ *       { label: t('...owner'), phone: false },
+ *       { label: t('...timer'), align: 'num', sort: 'ascending' },
+ *   ]}>
+ *       {rows.map((row) => <ExpandRow ... />)}
+ *   </ManageTable>
+ *
+ * Cells with `phone: false` need class "is-wide" so they hide too. Shared
+ * cell classes: "num" (right-aligned), "act", and "manage-who" for an
+ * image + name + sub line (see ExpandRow).
+ */
+import type { ManageColumn } from '@dtypes/layout_components'
+
+interface Props {
+    columns:        ManageColumn[];
+    /** Screen-reader caption naming the table. */
+    caption:        string;
+    expandable?:    boolean;
+    /** Width under which the table scrolls sideways (above phone width). */
+    min_width?:     string;
+    [propName: string]: any;
+}
+
+const {
+    columns,
+    caption,
+    expandable = true,
+    min_width = '40rem',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+function header_class(column: ManageColumn) {
+    return [
+        column.align === 'num' ? 'num' : column.align === 'act' ? 'act' : '',
+        column.phone === false ? 'is-wide' : '',
+    ].filter(Boolean).join(' ') || undefined
+}
+---
+
+<ComponentBlock
+    class:list={['[ manage-table-block ]', Astro.props.class]}
+    padding_block="0"
+    padding_inline="0"
+    {...attributes}
+>
+    <XFadeScroll>
+        <table class="[ manage-table ]" style={`--manage_table_min_width: ${min_width}`}>
+            <caption class="[ visually-hidden ]">{caption}</caption>
+            <thead>
+                <tr>
+                    {columns.map((column) => (
+                        <th scope="col" class={header_class(column)} aria-sort={column.sort}>
+                            {column.hidden
+                                ? <span class="[ visually-hidden ]">{column.label}</span>
+                                : column.label}
+                            {column.sort && <span aria-hidden="true">{column.sort === 'ascending' ? ' ▴' : ' ▾'}</span>}
+                        </th>
+                    ))}
+                    {expandable && <th scope="col" class="[ manage-row__chevron ]"><span class="[ visually-hidden ]">{t('manage.kit.open_column')}</span></th>}
+                </tr>
+            </thead>
+            <slot />
+        </table>
+    </XFadeScroll>
+</ComponentBlock>

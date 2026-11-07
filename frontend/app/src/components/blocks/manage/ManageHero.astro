@@ -1,0 +1,65 @@
+---
+/**
+ * The masthead of a manage screen, as CorporationDetailHero draws the corp
+ * page: the managed thing's image, its name as the landing title, a badge
+ * row (a blue role badge naming who manages it, then a short fact), and
+ * actions on the right. No intro paragraph under the title.
+ *
+ * Actions: at most one red `Button` (the primary action) plus quiet
+ * `color="transparent"` links, passed in the `actions` slot. The `fact` slot
+ * replaces the `fact` prop when the fact needs markup.
+ *
+ *   <ManageHero title="LP desk" image={get_corporation_logo(id, 128)} role={t('...lp_managers')} fact="4 corporations">
+ *       <Fragment slot="actions">
+ *           <Button color="transparent" href="...">Settings</Button>
+ *           <Button href="...">Add order</Button>
+ *       </Fragment>
+ *   </ManageHero>
+ */
+interface Props {
+    title:          string;
+    /** Corp logo, type icon...; omitted when the screen manages no one thing. */
+    image?:         string;
+    /** Blue badge: who manages this ("LP managers", "Superuser"). */
+    role?:          string;
+    /** A short fact beside the badge ("4 corporations"). */
+    fact?:          string;
+    /** Title link target; defaults to the current page. */
+    path?:          string;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    image,
+    role,
+    fact,
+    path,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import PageTitle from '@components/page/PageTitle.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<div class:list={['[ manage-hero ]', Astro.props.class]} {...attributes}>
+    {image &&
+        <img class="[ manage-hero__image ]" src={image} width="128" height="128" alt="" />
+    }
+    <div class="[ manage-hero__copy ]">
+        <PageTitle is_landing={true} path={path}>{title}</PageTitle>
+        {(role || fact || Astro.slots.has('fact')) &&
+            <div class="[ manage-hero__meta ]">
+                {role && <Tag color="alliance-blue" text={role} />}
+                <slot name="fact">{fact && <span>{fact}</span>}</slot>
+            </div>
+        }
+    </div>
+    {Astro.slots.has('actions') &&
+        <div class="[ manage-hero__actions ]">
+            <slot name="actions" />
+        </div>
+    }
+</div>

@@ -3281,3 +3281,9 @@ export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
 export type CampaignPayoutCodes = ApiResponse<'PayoutCodesOut'>
 export type CampaignPayoutCode = ApiResponse<'PayoutCodeOut'>
 export type CampaignPayoutCodePut = ApiRequest<'PayoutCodeRequest'>
+
+// Manage hub (/api/manage)
+export type ManageSummary = ApiResponse<'ManageSummaryResponse'>
+export type ManageQueue = ApiResponse<'ManageQueueResponse'>
+export type ManageScreen = ApiResponse<'ManageScreenResponse'>
+export type ManageEntityMatch = ApiResponse<'ManageEntityMatchResponse'>

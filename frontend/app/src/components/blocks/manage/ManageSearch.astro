@@ -1,0 +1,47 @@
+---
+/**
+ * The search box of a manage list's toolbar (inside ViewChips, which runs
+ * it while typing when given its `id` as `search_id`). Searches server-side.
+ *
+ *   <ManageSearch id="timers-search" value={params.q} label={t('...search')} placeholder={t('...search_placeholder')} />
+ */
+interface Props {
+    id:             string;
+    label:          string;
+    name?:          string;
+    value?:         string;
+    placeholder?:   string;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    label,
+    name = 'q',
+    value = '',
+    placeholder,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Input from '@components/blocks/Input.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+---
+
+<label class:list={['[ manage-search ]', Astro.props.class]}>
+    <span class="[ visually-hidden ]">{label}</span>
+    <Input
+        type="search"
+        id={id}
+        name={name}
+        value={value}
+        placeholder={placeholder ?? label}
+        size="sm"
+        width="100%"
+        autocomplete="off"
+        {...attributes}
+    >
+        <MagnifierIcon slot="icon" />
+    </Input>
+</label>

@@ -1,0 +1,51 @@
+---
+/**
+ * EntityPicker's result list: matches for `q` of one `kind` as buttons the
+ * picker's menu picks from (data-pick-id / -name / -icon).
+ */
+// no-error-refetch: a typeahead; a failed search shows "No matches" and the next keystroke retries.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ManageEntityMatch } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { is_manage_entity_kind, search_manage_entities } from '@helpers/api.minmatar.org/manage'
+
+const MIN_QUERY = 2
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const kind = Astro.url.searchParams.get('kind')
+const query = (Astro.url.searchParams.get('q') ?? '').trim()
+
+let matches: ManageEntityMatch[] = []
+if (is_manage_entity_kind(kind) && query.length >= MIN_QUERY) {
+    try {
+        matches = await search_manage_entities(auth_token, kind, query)
+    } catch (error) {
+        console.log(error)
+    }
+}
+---
+
+{query.length < MIN_QUERY
+    ? (query.length > 0 && <p class="[ manage-picker__note ]">{t('manage.kit.picker_min_chars')}</p>)
+    : matches.length === 0
+        ? <p class="[ manage-picker__note ]">{t('manage.kit.picker_no_matches')}</p>
+        : matches.map((match) => (
+            <button
+                type="button"
+                class="[ manage-picker__option ]"
+                role="option"
+                data-pick-id={match.id}
+                data-pick-name={match.name}
+                data-pick-icon={match.icon_url ?? ''}
+            >
+                {match.icon_url && <img src={match.icon_url} alt="" width="32" height="32" loading="lazy" />}
+                <span>{match.name}</span>
+                {match.detail && <span class="[ manage-picker__detail ]">{match.detail}</span>}
+            </button>
+        ))
+}

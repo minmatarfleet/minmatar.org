@@ -1,0 +1,73 @@
+---
+/**
+ * Demo only (/manage/kit/): a grid of numbers saved by one SaveBar, the
+ * SRP amounts pattern. The form posts to the kit partial, which renders
+ * this grid again with the posted values as the new saved ones.
+ */
+interface Props {
+    /** Rifter, Slasher, Scythe amounts. */
+    values?:    string[];
+    saved?:     boolean;
+}
+
+const {
+    values = ['1500000', '800000', '18000000'],
+    saved = false,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_item_icon } from '@helpers/eve_image_server'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import SaveBar from '@components/blocks/manage/SaveBar.astro'
+
+const HULLS = [
+    { type_id: 587, name: 'Rifter', group: 'Frigate', field: 'rifter' },
+    { type_id: 585, name: 'Slasher', group: 'Frigate', field: 'slasher' },
+    { type_id: 631, name: 'Scythe', group: 'Cruiser', field: 'scythe' },
+]
+---
+
+<form
+    id="kit-grid"
+    hx-post={translatePath('/partials/manage_kit_component/?part=grid')}
+    hx-target="#kit-grid"
+    hx-select="#kit-grid"
+    hx-swap="outerHTML"
+>
+    <ManageTable
+        caption={t('manage.kit.demo_grid')}
+        expandable={false}
+        min_width="24rem"
+        columns={[{ label: t('manage.kit.demo_hull') }, { label: t('manage.kit.demo_pays'), align: 'num' }]}
+    >
+        <tbody>
+            {HULLS.map((hull, index) => (
+                <tr class="[ manage-row ]">
+                    <td>
+                        <span class="[ manage-who ]">
+                            <img src={get_item_icon(hull.type_id)} alt="" width="40" height="40" loading="lazy" />
+                            <span class="[ manage-who__text ]">
+                                <span class="[ manage-who__name ]">{hull.name}</span>
+                                <span class="[ manage-who__sub ]">{hull.group}</span>
+                            </span>
+                        </span>
+                    </td>
+                    <td class="num">
+                        <label class="[ visually-hidden ]" for={`kit-grid-${hull.field}`}>{hull.name}</label>
+                        <input
+                            id={`kit-grid-${hull.field}`}
+                            class="[ manage-amount ]"
+                            name={hull.field}
+                            inputmode="numeric"
+                            value={values[index] || ''}
+                        />
+                    </td>
+                </tr>
+            ))}
+        </tbody>
+    </ManageTable>
+    {saved && <p class="[ manage-saved ]">{t('manage.kit.saved')}</p>}
+    <SaveBar label_one={t('manage.kit.demo_hull_changed')} label_many={t('manage.kit.demo_hulls_changed')} />
+</form>

@@ -1,0 +1,41 @@
+---
+/**
+ * A tile in a set of things, as the product page's "Made from" chips: an
+ * optional icon, a name, and an optional count in the warn colour (things
+ * waiting). With `href` it links. Put tiles in <ul class="manage-tiles">
+ * (it renders the <li>).
+ *
+ *   <ul class="manage-tiles">
+ *       <ManageTile label="Tritanium" image={get_item_icon(34)} />
+ *       <ManageTile label={t('manage.screen.reddit')} href="/alliance/reddit-review/" count={2} />
+ *   </ul>
+ */
+interface Props {
+    label:      string;
+    href?:      string;
+    image?:     string;
+    /** Shown only when above zero. */
+    count?:     number;
+    [propName: string]: any;
+}
+
+const {
+    label,
+    href,
+    image,
+    count,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const Element = href ? 'a' : 'span'
+---
+
+<li>
+    <Element href={href} class:list={['[ manage-tile ]', Astro.props.class]} {...attributes}>
+        {image && <img src={image} alt="" width="32" height="32" loading="lazy" />}
+        <span>{label}</span>
+        {count !== undefined && count > 0 && <span class="[ manage-tile__count ]">{count}</span>}
+    </Element>
+</li>
