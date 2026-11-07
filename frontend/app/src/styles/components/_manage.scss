@@ -753,24 +753,11 @@ button.manage-who {
     position: relative;
 }
 
-// The unit sits left of the browser's calendar button.
-.manage-time .manage-time__field input {
-    padding-inline-end: var(--space-xs);
-}
-
-.manage-time .manage-time__unit {
-    inset-inline-end: calc(var(--space-xl) - var(--space-3xs));
-}
-
 .manage-time__unit {
-    position: absolute;
-    inset-inline-end: var(--space-xs);
-    inset-block-start: 50%;
-    transform: translateY(-50%);
     font-size: var(--step--1);
     color: var(--text-muted);
-    pointer-events: none;
 }
+
 
 // ConfirmAction's dialog body.
 .manage-confirm {

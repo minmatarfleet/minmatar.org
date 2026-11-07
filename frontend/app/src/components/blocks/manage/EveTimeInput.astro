@@ -1,6 +1,7 @@
 ---
 /**
- * A date and time entered in EVE time, with the pilot's local time and a
+ * A date and time entered in EVE time (the label carries the EVE unit, so
+ * a 12-hour locale's AM/PM never runs under it), with the pilot's local time and a
  * countdown under it ("Your time Mon 17:26 · in 2 d 3 h"). The local line
  * is Alpine display only.
  *
@@ -91,7 +92,7 @@ const HOUR_BANDS = local_hour_bands(t)
     }`}
     {...attributes}
 >
-    <label for={id}>{label}</label>
+    <label for={id}>{label} <span class="[ manage-time__unit ]">{t('manage.kit.eve')}</span></label>
     <div class="[ manage-time__field ]">
         <Input
             id={id}
@@ -103,7 +104,6 @@ const HOUR_BANDS = local_hour_bands(t)
             required={required}
             style="color-scheme: dark"
         />
-        <span class="[ manage-time__unit ]" aria-hidden="true">{t('manage.kit.eve')}</span>
     </div>
     <input type="hidden" name={name} value={iso_value} x-bind:value="iso" />
     <span class="[ manage-field__hint ]" aria-live="polite" x-show="start" style={eve_value ? undefined : 'display: none'}>
