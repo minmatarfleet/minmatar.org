@@ -7939,6 +7939,7 @@ export const ui = {
         'campaigns.manage.order_draft': 'Draft from the week plan',
         'campaigns.manage.order_publish_draft': 'Publish the draft',
         'campaigns.manage.new': 'New campaign',
+        'campaigns.manage.loading_form': 'Loading the form…',
         'campaigns.manage.new_intro': 'Starts as a draft. Nobody sees it until you set it active.',
         'campaigns.manage.page_path': 'Page: ~PATH',
         'campaigns.manage.change': 'Change',

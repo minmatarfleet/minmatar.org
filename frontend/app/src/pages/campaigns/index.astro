@@ -7,7 +7,6 @@ import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
 import { get_gates, can } from '@helpers/gates'
-import { get_campaign_choices, type CampaignChoice } from '@helpers/api.minmatar.org/campaigns'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
@@ -17,11 +16,10 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
-import CampaignNewForm from '@components/blocks/CampaignNewForm.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import CampaignListSkeleton from '@components/blocks/CampaignListSkeleton.astro'
 
-const { auth_token, user } = get_request_user(Astro)
+const { user } = get_request_user(Astro)
 
 if (!user) return login_redirect(Astro)
 
@@ -34,19 +32,11 @@ const can_create_campaigns = can(gates, 'campaigns.create')
 if (!can_view_campaigns)
     return HTTP_403_Forbidden()
 
-// The "New campaign" dialog's kind chips carry the backend labels.
-let campaign_kinds:CampaignChoice[] = []
-if (can_create_campaigns) {
-    try {
-        campaign_kinds = (await get_campaign_choices(auth_token as string)).kind
-    } catch (error) {
-        console.log(`Could not load campaign kinds: ${error.message}`)
-    }
-}
-
 // The list loads after the page: the shell answers without waiting for the
 // campaigns call, and the partial renders the list (or ErrorRefetch).
 const CAMPAIGNS_PARTIAL_URL = translatePath('/partials/campaign_list_component')
+// The New campaign form (and its backend kind labels) loads when the dialog opens.
+const NEW_CAMPAIGN_PARTIAL_URL = `${translatePath('/partials/campaign_new_component')}?dialog=1`
 
 const page_title = t('campaigns.page_title')
 
@@ -82,7 +72,9 @@ const breadcrumbs = [
                     <DialogButton color="fleet-red" size="sm" max_width="40rem">
                         {t('campaigns.manage.new')}
                         <div slot="dialog" class="[ campaign-new-dialog ]">
-                            <CampaignNewForm kinds={campaign_kinds} in_dialog={true} />
+                            <LazyPartial url={NEW_CAMPAIGN_PARTIAL_URL} trigger="reveal" swap="outerHTML">
+                                <p>{t('campaigns.manage.loading_form')}</p>
+                            </LazyPartial>
                         </div>
                     </DialogButton>
                 )}
