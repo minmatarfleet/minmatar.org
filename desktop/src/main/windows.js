@@ -3,8 +3,8 @@
 const OVERLAY_WINDOWS = [
     {
         id: 'fleets',
-        title: 'Upcoming Fleets',
-        description: 'Upcoming and live fleets with EVE-time starts and countdowns.',
+        title: 'Fleets',
+        description: 'The fleet you are in, upcoming fleets with countdowns, and your recent fleets and SRP.',
         page: 'fleets.html',
         size: { width: 380, height: 520 },
         min_size: { width: 320, height: 220 },

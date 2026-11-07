@@ -153,9 +153,10 @@ class IntelController {
         try {
             const preview = await this.api.intel_preview(text, kind)
             if (this.draft_text !== text) return   // pasted again meanwhile
-            this.draft = { ...this.draft, status: 'ready', kind: preview.kind, lines: preview.lines, summary: preview.summary }
+            this.draft = { ...this.draft, status: 'ready', error: null, kind: preview.kind, lines: preview.lines, summary: preview.summary }
         } catch (err) {
             if (is_unauthorized(err)) return this.on_unauthorized()
+            if (this.draft_text !== text) return   // discarded or pasted again meanwhile
             this.draft = { ...this.draft, status: 'error', error: err.detail || 'Could not read that paste.' }
         }
         this.changed()
@@ -181,7 +182,7 @@ class IntelController {
     async share() {
         const draft = this.draft
         if (!draft || draft.status !== 'ready' || !this.draft_text) return null
-        this.draft = { ...draft, status: 'sharing' }
+        this.draft = { ...draft, status: 'sharing', error: null }
         this.changed()
         try {
             const report = await this.api.intel_share({
@@ -192,12 +193,13 @@ class IntelController {
                 character_name: draft.character,
             })
             const url = this.report_url(report.report_id)
-            this.draft = { ...draft, status: 'shared', report_id: report.report_id, url }
+            this.draft = { ...draft, status: 'shared', error: null, report_id: report.report_id, url }
             this.draft_text = null
             this.refresh()
             return url
         } catch (err) {
             if (is_unauthorized(err)) { this.on_unauthorized(); return null }
+            if (!this.draft || this.draft.status !== 'sharing') return null   // discarded meanwhile
             this.draft = { ...draft, status: 'ready', error: err.detail || 'Could not share. Try again.' }
             this.changed()
             return null
@@ -234,6 +236,7 @@ class IntelController {
             }
         } catch (err) {
             if (is_unauthorized(err)) return this.on_unauthorized()
+            if (!this.detail || this.detail.report_id !== report_id) return   // closed or another opened meanwhile
             this.detail = { status: 'error', report_id, error: err.status === 404 ? 'That report is gone.' : 'Could not load the report.' }
         }
         this.changed()

@@ -41,6 +41,7 @@ class Poller {
         this.last_run = -Infinity
         this.failures = 0
         this.running = null
+        this.rerun = false
     }
 
     // Re-check wanted(). Call it whenever something it depends on may have changed.
@@ -71,10 +72,13 @@ class Poller {
         this.timer = this.timers.setTimeout(() => this.poll(), ms)
     }
 
-    // Run now (or join the run in flight). Resolves when it is done.
+    // Run now. A run already in flight has decided what it fetches, so a poll that arrives meanwhile (a
+    // fleet just opened, the schedule changed) runs again as soon as it ends. Resolves when the run in
+    // flight is done.
     poll() {
         this.cancel()
-        if (!this.running) {
+        if (this.running) this.rerun = true
+        else {
             const running = this.tick().finally(() => { if (this.running === running) this.running = null })
             this.running = running
         }
@@ -102,7 +106,10 @@ class Poller {
         }
         if (generation !== this.generation) return
         this.failures = ok ? 0 : this.failures + 1
-        if (this.active) this.schedule(this.delay())
+        if (this.rerun) {
+            this.rerun = false
+            this.schedule(0)
+        } else if (this.active) this.schedule(this.delay())
     }
 }
 

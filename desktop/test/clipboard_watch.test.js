@@ -82,3 +82,23 @@ test('a busy clipboard is skipped, not thrown', () => {
     const watch = new ClipboardWatch({ read: () => { throw new Error('busy') }, on_copy: () => {}, timers: { setInterval: () => 1, clearInterval: () => {} } })
     assert.doesNotThrow(() => { watch.set_active(true); watch.check() })
 })
+
+test('a copy made while a report is sharing opens once the share is done', () => {
+    let busy = true
+    const copies = []
+    let text = '', tick = null
+    const watch = new ClipboardWatch({
+        read: () => text,
+        on_copy: copied => { if (busy) return false; copies.push(copied) },
+        timers: { setInterval: fn => { tick = fn; return 1 }, clearInterval: () => { tick = null } },
+    })
+    watch.set_active(true)
+    text = DSCAN
+    tick()
+    assert.equal(copies.length, 0)
+    busy = false
+    tick()
+    assert.deepEqual(copies, [DSCAN])
+    tick()
+    assert.equal(copies.length, 1)
+})

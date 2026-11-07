@@ -47,8 +47,21 @@ test('portable exe: only reports the new version, never downloads', () => {
     delete process.env.PORTABLE_EXECUTABLE_DIR
 })
 
-test('errors (offline, no release yet) are silent', () => {
+test('a check says it is checking, and errors (offline, no release yet) show only as a status', () => {
     const { updater, auto } = make(false)
+    assert.equal(updater.state.status, 'checking')
     auto.emit('error', new Error('net::ERR_INTERNET_DISCONNECTED'))
-    assert.equal(updater.state.status, 'idle')
+    assert.equal(updater.state.status, 'error')
+    updater.check()
+    assert.equal(updater.state.status, 'checking')
+    auto.emit('update-not-available', {})
+    assert.equal(updater.state.status, 'current')
+})
+
+test('a portable build keeps its download link when a later check fails', () => {
+    const { updater, auto } = make(true)
+    auto.emit('update-available', { version: '0.4.0' })
+    auto.emit('error', new Error('rate limited'))
+    assert.equal(updater.state.status, 'available')
+    delete process.env.PORTABLE_EXECUTABLE_DIR
 })

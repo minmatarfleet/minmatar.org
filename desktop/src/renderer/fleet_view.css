@@ -94,6 +94,8 @@
 .fw-you__who { grid-row: span 2; grid-column: 3; color: var(--eve-text-dim); font-size: 11px; text-align: right; }
 .fw-where { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 0 12px; border-top: 1px solid var(--eve-line); }
 .fw-where:first-child { border-top: 0; }
+.fw-where__text { display: flex; flex-direction: column; min-width: 0; padding: 6px 0; }
+.fw-where__text .fw-meta { margin-top: 1px; }
 .fw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .fw-chip { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; background: rgba(232, 163, 58, 0.10); font-size: 12px; color: var(--eve-text-strong); }
 .fw-chip--text { min-height: 22px; padding-left: 10px; }

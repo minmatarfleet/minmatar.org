@@ -14,6 +14,7 @@
 
     function ago(iso, now = Date.now()) {
         const minutes = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60_000))
+        if (minutes < 1) return 'now'
         if (minutes < 60) return `${minutes}m`
         return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
     }
