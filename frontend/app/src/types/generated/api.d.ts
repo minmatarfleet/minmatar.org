@@ -453,6 +453,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blog/tags/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Post tags with how many posts carry each, most used first */
+        get: operations["posts_router_get_tag_counts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/blog/tags/{tag_id}": {
         parameters: {
             query?: never;
@@ -481,6 +498,23 @@ export interface paths {
         put?: never;
         /** Merge a tag into another: its posts move over and it is deleted */
         post: operations["posts_router_merge_tag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/blog/tags/{tag_id}/merge-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What merging a tag into another would do, in post counts */
+        get: operations["posts_router_preview_tag_merge"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -841,6 +875,26 @@ export interface paths {
          * @description Create a draft. Systems are named from the feed's monitored list.
          */
         post: operations["campaigns_endpoints_manage_create_campaign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Choices
+         * @description The labels of every stored choice, so forms never show raw values.
+         */
+        get: operations["campaigns_endpoints_get_choices_list_choices"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1776,6 +1830,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/creators/moderation/accounts/{account_id}/item-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count a creator account's shown, featured and hidden items. */
+        get: operations["creators_moderation_item_counts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/creators/moderation/accounts/{account_id}/items": {
         parameters: {
             query?: never;
@@ -1783,7 +1854,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List a creator account's items, hidden ones included. */
+        /**
+         * List a creator account's items, hidden ones included.
+         * @description One page of items, newest first. `view` is all, shown (not hidden),
+         *     featured or hidden; `q` matches the title.
+         */
         get: operations["creators_moderation_list_items"];
         put?: never;
         post?: never;
@@ -2958,6 +3033,29 @@ export interface paths {
         get: operations["fleets_endpoints_npsi_sources_get_npsi_source_events"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/npsi-sources/{source_id}/try": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read a source's feed now, without importing or posting
+         * @description A dry run: fetch and parse the saved feed address, store nothing.
+         *
+         *     The source's last import columns stay as the scheduled poll left them,
+         *     and no event is created or sent to Discord.
+         */
+        post: operations["fleets_endpoints_npsi_sources_post_npsi_source_try"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4280,6 +4378,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/freight/manage/routes/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sample quote and warnings for unsaved route pricing */
+        post: operations["freight_endpoints_manage_post_manage_route_quote_post_manage_route_quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/freight/manage/routes/{route_id}": {
         parameters: {
             query?: never;
@@ -4839,6 +4954,23 @@ export interface paths {
         head?: never;
         /** Edit an LP corp */
         patch: operations["industry_endpoints_loyalty_patch_settings_currency_patch_settings_currency"];
+        trace?: never;
+    };
+    "/api/industry/loyalty/settings/currencies/{currency_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent ISK/LP changes of an LP corp, newest first */
+        get: operations["industry_endpoints_loyalty_get_settings_history_get_settings_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/industry/loyalty/stats": {
@@ -5865,6 +5997,23 @@ export interface paths {
         put?: never;
         /** Create a certificate. */
         post: operations["learning_manage_create_certificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/manage/certificates/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put certificates in this order (the slugs, first to last). */
+        post: operations["learning_manage_order_certificates"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7216,7 +7365,8 @@ export interface paths {
         /** Get Srp Programs */
         get: operations["srp_endpoints_programs_get_programs_get_srp_programs"];
         put?: never;
-        post?: never;
+        /** Post Program */
+        post: operations["srp_endpoints_programs_post_program_post_program"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7247,11 +7397,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Recalculation Preview */
+        /**
+         * Get Recalculation Preview
+         * @description With ship_type_id: that hull's requests filed at an old amount.
+         */
         get: operations["srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview"];
         put?: never;
-        /** Post Recalculate Outstanding */
+        /**
+         * Post Recalculate Outstanding
+         * @description With ship_type_id: only that hull's requests filed at an old amount.
+         */
         post: operations["srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/srp/programs/recalculate/keep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Keep Filed Amounts
+         * @description The hull's requests stop showing as filed at an old amount.
+         */
+        post: operations["srp_endpoints_programs_post_keep_filed_amounts_post_keep_filed_amounts"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10468,6 +10644,27 @@ export interface components {
             /** Scope */
             scope: string;
         };
+        /** CampaignChoicesOut */
+        CampaignChoicesOut: {
+            /** Goal */
+            goal: components["schemas"]["ChoiceOut"][];
+            /** Kind */
+            kind: components["schemas"]["ChoiceOut"][];
+            /** Metric */
+            metric: components["schemas"]["ChoiceOut"][];
+            /** Party Kind */
+            party_kind: components["schemas"]["ChoiceOut"][];
+            /** Party Side */
+            party_side: components["schemas"]["ChoiceOut"][];
+            /** Priority */
+            priority: components["schemas"]["ChoiceOut"][];
+            /** Role */
+            role: components["schemas"]["ChoiceOut"][];
+            /** Site Kind */
+            site_kind: components["schemas"]["ChoiceOut"][];
+            /** Status */
+            status: components["schemas"]["ChoiceOut"][];
+        };
         /** CampaignCreateRequest */
         CampaignCreateRequest: {
             /**
@@ -10488,8 +10685,11 @@ export interface components {
             kind?: "faction_warfare" | "strategic";
             /** Name */
             name: string;
-            /** Short Code */
-            short_code: string;
+            /**
+             * Short Code
+             * @default
+             */
+            short_code?: string;
             /** Slug */
             slug: string;
             /**
@@ -11714,6 +11914,13 @@ export interface components {
             tribe_name: string;
             /** User Id */
             user_id: number;
+        };
+        /** ChoiceOut */
+        ChoiceOut: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** ClaimLoyaltyMarketOrderRequest */
         ClaimLoyaltyMarketOrderRequest: {
@@ -13123,6 +13330,13 @@ export interface components {
             order_id: number;
             /** Public Short Code */
             public_short_code: string;
+        };
+        /** CreateProgramRequest */
+        CreateProgramRequest: {
+            /** Eve Type Id */
+            eve_type_id: number;
+            /** Srp Value */
+            srp_value: number;
         };
         /** CreateReportRequest */
         CreateReportRequest: {
@@ -14806,6 +15020,8 @@ export interface components {
             fitting?: string | null;
             /** Name */
             name?: string | null;
+            /** Reason */
+            reason?: string | null;
             state?: components["schemas"]["EveStructureState"] | null;
             /** System Name */
             system_name?: string | null;
@@ -14896,6 +15112,30 @@ export interface components {
          * @enum {string}
          */
         EveStructureType: "astrahus" | "fortizar" | "keepstar" | "raitaru" | "azbel" | "sotiyo" | "athanor" | "tatara" | "tenebrex_cyno_jammer" | "pharolux_cyno_beacon" | "ansiblex_jump_gate" | "orbital_skyhook" | "metenox_moon_drill" | "player_owned_customs_office" | "player_owned_starbase" | "mercenary_den";
+        /** EveTagCountResponse */
+        EveTagCountResponse: {
+            /** Post Count */
+            post_count: number;
+            /** Tag */
+            tag: string;
+            /** Tag Id */
+            tag_id: number;
+        };
+        /** EveTagMergePreview */
+        EveTagMergePreview: {
+            /** Into Tag */
+            into_tag: string;
+            /** Into Tag Id */
+            into_tag_id: number;
+            /** Into Total */
+            into_total: number;
+            /** Moving */
+            moving: number;
+            /** Tag */
+            tag: string;
+            /** Tag Id */
+            tag_id: number;
+        };
         /** EveTagMergeRequest */
         EveTagMergeRequest: {
             /** Into Tag Id */
@@ -15611,10 +15851,17 @@ export interface components {
         FittingExpectationRow: {
             /** Current */
             current?: number | null;
+            /**
+             * Doctrine Ids
+             * @default []
+             */
+            doctrine_ids?: number[];
             /** Fitting Id */
             fitting_id: number;
             /** Fitting Name */
             fitting_name: string;
+            /** Ship Id */
+            ship_id?: number | null;
             /** Tracked */
             tracked: boolean;
         };
@@ -17640,6 +17887,8 @@ export interface components {
         HelpPanelResponse: {
             /** Channel Id */
             channel_id: string;
+            /** Channel Name */
+            channel_name?: string | null;
             /** Message Id */
             message_id?: string | null;
         };
@@ -18343,8 +18592,11 @@ export interface components {
         };
         /** ItemCreateRequest */
         ItemCreateRequest: {
-            /** Category */
-            category: string;
+            /**
+             * Category
+             * @default
+             */
+            category?: string;
             /** Type Id */
             type_id: number;
         };
@@ -19270,6 +19522,11 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** ManageCertificateOrderRequest */
+        ManageCertificateOrderRequest: {
+            /** Slugs */
+            slugs: string[];
+        };
         /** ManageCertificateRequest */
         ManageCertificateRequest: {
             /**
@@ -19343,8 +19600,25 @@ export interface components {
             active: boolean;
             /** Category */
             category: string;
+            /**
+             * Category Label
+             * @default
+             */
+            category_label?: string;
+            /**
+             * Demand Label
+             * @default
+             */
+            demand_label?: string;
+            /**
+             * Demand Status
+             * @default
+             */
+            demand_status?: string;
             /** Name */
             name: string;
+            /** Pays Rate */
+            pays_rate?: number | null;
             /** Type Id */
             type_id: number;
         };
@@ -19381,6 +19655,23 @@ export interface components {
         };
         /** ManageLearningSchema */
         ManageLearningSchema: {
+            /**
+             * Certificate Count
+             * @default 0
+             */
+            certificate_count?: number;
+            /**
+             * Certificate Slug
+             * @default
+             */
+            certificate_slug?: string;
+            /** Certificate Step */
+            certificate_step?: number | null;
+            /**
+             * Certificate Title
+             * @default
+             */
+            certificate_title?: string;
             /** Content Kind */
             content_kind: string;
             /** Estimated Minutes */
@@ -19443,6 +19734,11 @@ export interface components {
             destination: components["schemas"]["RouteLocation"] | null;
             /** Expiration Days */
             expiration_days: number;
+            /**
+             * Fee Never Applies
+             * @default false
+             */
+            fee_never_applies?: boolean;
             /** Fixed Fee Millions */
             fixed_fee_millions: number;
             /** Isk Per M3 */
@@ -19452,6 +19748,7 @@ export interface components {
             /** Max M3 */
             max_m3: number | null;
             origin: components["schemas"]["RouteLocation"] | null;
+            quote?: components["schemas"]["RouteQuote"] | null;
             /** Route Id */
             route_id: number;
             /** Route Type */
@@ -19485,6 +19782,8 @@ export interface components {
             items: components["schemas"]["ManageItem"][];
             /** Location Id */
             location_id: number | null;
+            /** Location Name */
+            location_name?: string | null;
             /** Locations */
             locations: components["schemas"]["LocationOption"][];
             /** Ore Refine */
@@ -20055,6 +20354,13 @@ export interface components {
         };
         /** ModerationAccountSchema */
         ModerationAccountSchema: {
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
             /** Featured Count */
             featured_count: number;
             /** Hidden Count */
@@ -20073,6 +20379,15 @@ export interface components {
             user_id: number;
             /** Username */
             username: string;
+        };
+        /** ModerationItemCountsSchema */
+        ModerationItemCountsSchema: {
+            /** Featured */
+            featured: number;
+            /** Hidden */
+            hidden: number;
+            /** Shown */
+            shown: number;
         };
         /** ModerationItemRequest */
         ModerationItemRequest: {
@@ -20489,6 +20804,11 @@ export interface components {
         NpsiSourceList: {
             /** Audiences */
             audiences: components["schemas"]["NpsiAudienceOption"][];
+            /**
+             * Feed Timeout Seconds
+             * @default 15
+             */
+            feed_timeout_seconds?: number;
             /** Sources */
             sources: components["schemas"]["NpsiSourceResponse"][];
         };
@@ -20515,6 +20835,8 @@ export interface components {
             enabled: boolean;
             /** Event Count */
             event_count: number;
+            /** Fc Character Id */
+            fc_character_id?: number | null;
             /** Fc Character Name */
             fc_character_name: string;
             /** Feed Url */
@@ -20523,12 +20845,57 @@ export interface components {
             id: number;
             /** Last Error */
             last_error: string;
+            /**
+             * Last Error Kind
+             * @default
+             */
+            last_error_kind?: string;
             /** Last Polled At */
             last_polled_at?: string | null;
             /** Last Success At */
             last_success_at?: string | null;
             /** Name */
             name: string;
+            /**
+             * Upcoming Count
+             * @default 0
+             */
+            upcoming_count?: number;
+        };
+        /** NpsiTryEvent */
+        NpsiTryEvent: {
+            /** Character Name */
+            character_name: string;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Summary */
+            summary: string;
+        };
+        /**
+         * NpsiTryResult
+         * @description A dry-run read of a feed: nothing stored, nothing sent.
+         */
+        NpsiTryResult: {
+            /** Error */
+            error: string;
+            /** Error Kind */
+            error_kind: string;
+            /**
+             * Feed Timeout Seconds
+             * @default 15
+             */
+            feed_timeout_seconds?: number;
+            /** Item Count */
+            item_count: number;
+            /** Ok */
+            ok: boolean;
+            /** Upcoming */
+            upcoming: components["schemas"]["NpsiTryEvent"][];
+            /** Upcoming Count */
+            upcoming_count: number;
         };
         /** NudgeQueuedResponse */
         NudgeQueuedResponse: {
@@ -22524,8 +22891,15 @@ export interface components {
         };
         /** RecalculationChangeResponse */
         RecalculationChangeResponse: {
+            /**
+             * Character Id
+             * @default 0
+             */
+            character_id?: number;
             /** Character Name */
             character_name: string;
+            /** Created At */
+            created_at?: string | null;
             /** Current Amount */
             current_amount: number;
             /** Id */
@@ -22686,6 +23060,8 @@ export interface components {
         RedditRotationPost: {
             /** Can Link To Discord */
             can_link_to_discord: boolean;
+            /** Corporation Id */
+            corporation_id?: number | null;
             /** Corporation Name */
             corporation_name: string;
             /** Corporation Ticker */
@@ -23402,6 +23778,55 @@ export interface components {
             /** Xl Fee Millions */
             xl_fee_millions?: number | null;
         };
+        /**
+         * RouteQuote
+         * @description What a sample haul costs on a route, and whether its XL fee is dead.
+         */
+        RouteQuote: {
+            /** Collateral */
+            collateral: number;
+            /** Cost */
+            cost: number;
+            /** Fee Never Applies */
+            fee_never_applies: boolean;
+            /** M3 */
+            m3: number;
+        };
+        /**
+         * RouteQuoteRequest
+         * @description Unsaved editor values, priced as the route would price them.
+         */
+        RouteQuoteRequest: {
+            /**
+             * Collateral Modifier
+             * @default 0
+             */
+            collateral_modifier?: number;
+            /**
+             * Fixed Fee Millions
+             * @default 0
+             */
+            fixed_fee_millions?: number;
+            /**
+             * Isk Per M3
+             * @default 0
+             */
+            isk_per_m3?: number;
+            /** Max Collateral */
+            max_collateral?: number | null;
+            /** Max M3 */
+            max_m3?: number | null;
+            /**
+             * Route Type
+             * @default rate
+             */
+            route_type?: string;
+            /**
+             * Xl Fee Millions
+             * @default 0
+             */
+            xl_fee_millions?: number;
+        };
         /** ScheduleChange */
         ScheduleChange: {
             /**
@@ -23624,6 +24049,11 @@ export interface components {
         SettingsCurrency: {
             /** Accounts */
             accounts: components["schemas"]["SettingsAccount"][];
+            /**
+             * Active Account Count
+             * @default 0
+             */
+            active_account_count?: number;
             /** Allow Buy */
             allow_buy: boolean;
             /** Allow Sell */
@@ -23638,6 +24068,7 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            last_change?: components["schemas"]["SettingsPriceChange"] | null;
             /** Name */
             name: string;
             /** Notes */
@@ -23674,6 +24105,27 @@ export interface components {
             ore_refine?: number | null;
             /** Surplus Jita Buy */
             surplus_jita_buy?: number | null;
+        };
+        /**
+         * SettingsPriceChange
+         * @description One ISK/LP change: the corp's standard or express rate, or an account offer.
+         */
+        SettingsPriceChange: {
+            /** Account Name */
+            account_name: string | null;
+            /**
+             * Changed At
+             * Format: date-time
+             */
+            changed_at: string;
+            /** Changed By */
+            changed_by: string | null;
+            /** New Isk Per Lp */
+            new_isk_per_lp: number | null;
+            /** Old Isk Per Lp */
+            old_isk_per_lp: number | null;
+            /** Tier */
+            tier: string;
         };
         /** SettingsStructureOut */
         SettingsStructureOut: {
@@ -23785,6 +24237,16 @@ export interface components {
             eve_type: components["schemas"]["EveTypeResponse"];
             /** Id */
             id: number;
+            /**
+             * Open Requests
+             * @default 0
+             */
+            open_requests?: number;
+            /**
+             * Stale Requests
+             * @default 0
+             */
+            stale_requests?: number;
         };
         /** ShipResponse */
         ShipResponse: {
@@ -27674,6 +28136,35 @@ export interface operations {
             };
         };
     };
+    posts_router_get_tag_counts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagCountResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     posts_router_rename_tag: {
         parameters: {
             query?: never;
@@ -27749,6 +28240,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveTagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    posts_router_preview_tag_merge: {
+        parameters: {
+            query: {
+                into_tag_id: number;
+            };
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveTagMergePreview"];
                 };
             };
             /** @description Bad Request */
@@ -28569,6 +29111,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_get_choices_list_choices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignChoicesOut"];
                 };
             };
         };
@@ -30735,9 +31297,58 @@ export interface operations {
             };
         };
     };
+    creators_moderation_item_counts: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                account_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationItemCountsSchema"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     creators_moderation_list_items: {
         parameters: {
-            query?: never;
+            query?: {
+                view?: string;
+                q?: string;
+                offset?: number;
+                limit?: number;
+            };
             header?: never;
             path: {
                 account_id: number;
@@ -30753,6 +31364,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModerationItemSchema"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */
@@ -33639,6 +34259,46 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_npsi_sources_post_npsi_source_try: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NpsiTryResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_catalog_post_ping_preview_post_ping_preview: {
         parameters: {
             query?: never;
@@ -36395,6 +37055,48 @@ export interface operations {
             };
         };
     };
+    freight_endpoints_manage_post_manage_route_quote_post_manage_route_quote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RouteQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteQuote"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     freight_endpoints_manage_patch_manage_route_patch_manage_route: {
         parameters: {
             query?: never;
@@ -37705,6 +38407,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SettingsCurrency"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_loyalty_get_settings_history_get_settings_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                currency_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsPriceChange"][];
                 };
             };
             /** @description Forbidden */
@@ -40195,6 +40937,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ManageCertificateSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_manage_order_certificates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManageCertificateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageCertificateSchema"][];
                 };
             };
             /** @description Bad Request */
@@ -42999,6 +43785,15 @@ export interface operations {
                     "application/json": components["schemas"]["RedditReviewDecision"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Forbidden */
             403: {
                 headers: {
@@ -43522,6 +44317,48 @@ export interface operations {
             };
         };
     };
+    srp_endpoints_programs_post_program_post_program: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProgramRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShipReimbursementProgramAmountResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     srp_endpoints_programs_get_program_history_get_srp_program_history: {
         parameters: {
             query?: never;
@@ -43553,7 +44390,9 @@ export interface operations {
     };
     srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview: {
         parameters: {
-            query?: never;
+            query?: {
+                ship_type_id?: number | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -43582,7 +44421,40 @@ export interface operations {
     };
     srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding: {
         parameters: {
-            query?: never;
+            query?: {
+                ship_type_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecalculationResultResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    srp_endpoints_programs_post_keep_filed_amounts_post_keep_filed_amounts: {
+        parameters: {
+            query: {
+                ship_type_id: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -44129,7 +45001,9 @@ export interface operations {
     };
     structures_router_delete_structure_timer: {
         parameters: {
-            query?: never;
+            query?: {
+                reason?: string | null;
+            };
             header?: never;
             path: {
                 timer_id: number;

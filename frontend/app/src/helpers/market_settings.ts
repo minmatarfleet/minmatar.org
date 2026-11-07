@@ -10,9 +10,8 @@ import type {
     LoyaltySettingsCurrency,
 } from '@dtypes/api.minmatar.org'
 
-// Fields the backend added for these screens. The generated schema gains them
-// when openapi.json and api.d.ts are regenerated; until then they are optional
-// here. After the regeneration these intersections are no-ops.
+// Fields the backend added for these screens. They are in the generated schema;
+// the intersections keep them optional so an older backend still renders.
 export type LoyaltyPriceChange = {
     tier: string
     account_name: string | null

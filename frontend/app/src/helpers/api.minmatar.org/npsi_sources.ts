@@ -35,9 +35,8 @@ export async function get_npsi_source_events(access_token: string, source_id: nu
     })
 }
 
-// Fields the manage redesign added to the backend schema. The generated
-// NpsiSource/NpsiSourceList gain them at the next openapi regen; until then
-// they are optional here, so an older backend still renders.
+// Fields the manage redesign added to the backend schema, kept optional so an
+// older backend still renders.
 export type NpsiSourceRow = NpsiSource & {
     last_error_kind?:   string;
     upcoming_count?:    number;

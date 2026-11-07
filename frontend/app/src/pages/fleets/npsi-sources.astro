@@ -16,7 +16,7 @@ import type { NpsiSourceListing } from '@helpers/api.minmatar.org/npsi_sources'
 import { get_npsi_source_listing } from '@helpers/api.minmatar.org/npsi_sources'
 import { query_string } from '@helpers/string'
 
-let list: NpsiSourceListing = { sources: [], audiences: [] }
+let list: NpsiSourceListing = { sources: [], audiences: [], feed_timeout_seconds: 15 }
 let data_fetching_error: Error | false = false
 
 try {

@@ -12,8 +12,8 @@ import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/learning/manage`
 
-// admin-redesign: the API names each guide's certificate and step; drop
-// this once openapi.json and api.d.ts are regenerated and carry the fields.
+// The API names each guide's certificate and step; optional so an older
+// backend still renders.
 export type LearningManageGuideRow = LearningManageGuide & {
     certificate_slug?: string
     certificate_title?: string

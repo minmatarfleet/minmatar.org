@@ -3289,3 +3289,8 @@ export type ManageSummary = ApiResponse<'ManageSummaryResponse'>
 export type ManageQueue = ApiResponse<'ManageQueueResponse'>
 export type ManageScreen = ApiResponse<'ManageScreenResponse'>
 export type ManageEntityMatch = ApiResponse<'ManageEntityMatchResponse'>
+
+/** GET /api/campaigns/choices: each choice list with its backend `TextChoices` labels. */
+export type CampaignChoices = ApiResponse<'CampaignChoicesOut'>
+/** One stored campaign choice and its label. */
+export type CampaignChoice = CampaignChoices['status'][number]

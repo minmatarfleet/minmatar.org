@@ -131,7 +131,7 @@ const category_label = (category: string) => items.find((item) => item.category 
 const item = items.find((candidate) => candidate.type_id === type_id) ?? null
 // A removed item is gone from the settings: keep its row (dimmed) until the next load.
 const removed_item: BuybackEditorItem | null = removed
-    ? { type_id, name: form_text(form, 'name') || t('manage.buyback.removed'), category: '', category_label: form_text(form, 'category_label'), active: false, pays_rate: null }
+    ? { type_id, name: form_text(form, 'name') || t('manage.buyback.removed'), category: '', category_label: form_text(form, 'category_label'), demand_status: '', demand_label: '', active: false, pays_rate: null }
     : null
 
 const columns = [

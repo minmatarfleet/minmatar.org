@@ -4,9 +4,8 @@ import { query_string } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/creators/moderation`
 
-// admin-redesign: the API sends the owner's main (character_id,
-// character_name) and serves item counts; drop this once openapi.json and
-// api.d.ts are regenerated and the generated schema carries them.
+// The API sends the owner's main (character_id, character_name); optional so
+// an older backend still renders.
 export type CreatorModerationAccountRow = CreatorModerationAccount & {
     character_id?: number | null
     character_name?: string

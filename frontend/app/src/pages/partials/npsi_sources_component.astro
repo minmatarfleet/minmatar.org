@@ -101,7 +101,7 @@ try {
     else row_error = failure_of(failure).message
 }
 
-let list: NpsiSourceListing = { sources: [], audiences: [] }
+let list: NpsiSourceListing = { sources: [], audiences: [], feed_timeout_seconds: 15 }
 let events: NpsiEventPreview[] = []
 let fetch_error: Error | false = false
 if (part !== 'try') {
