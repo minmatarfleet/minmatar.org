@@ -1,6 +1,6 @@
 # Faster nav clicks: one-session runbook
 
-Status: ready to run, Nov 2026, against `origin/main` at `5a5b433d7` (#3032).
+Status: steps 1–6 built (Nov 2026, against `origin/main` at `5a5b433d7`, #3032); step 7 dropped, see below. The measured results are at the end.
 Output: one branch and one PR, with **one commit per step**. Each commit stands on its own and can be reverted with `git revert` without touching the others.
 
 ## Why a click feels slow
@@ -18,7 +18,7 @@ Every page also calls `get_gates` (`Viewport.astro`), which hits `GET /api/users
 | Home `/` | `fetch_posts` (3 posts) | 60 s cache (step 6) |
 | Fleets `/fleets/upcoming/` | fleet schedule: about 6 serial rounds; audiences fetched for everyone | parallel calls (step 3) + skeleton (step 5) |
 | Corporation (leaders only) | slug, then info, then 3 independent calls in series | parallel calls (step 3) |
-| Alliance, Ships, Market, Industry | gates only | gates cache (step 2) + hover prefetch (step 7) |
+| Alliance, Ships, Market, Industry | gates only | gates cache (step 2); hover prefetch (step 7) was dropped |
 | Learning `/learning/` | 6 serial rounds | parallel calls (step 3) |
 | Fleets hub tab → Campaigns | `get_campaigns` | skeleton (step 4) |
 | Fleets hub tab → History | `fetch_fleet_history`, which uses the same helper as the schedule | parallel calls come free with step 3 |
@@ -170,21 +170,24 @@ Tests, using `testing/pages/*` with `AstroContainer` and `vi.mock` as in `corpor
 - `pages/fleets/upcoming.astro`:
   - Remove the schedule fetch. The shell keeps login, the `fleets.view` 403, `can_add_fleets`, audiences, and reading and deleting the `flash_form_error` cookie.
   - The cover becomes the static default (`/images/fleets-cover.jpg`, left-aligned).
-  - `x-data` gets `fleets_count: 0`. The partial already sets it in `init()`.
+  - `x-data` gets `fleets_count: 0`. No markup on the page reads it, and the 240 s refresh sets it.
   - Inside the unchanged `UpcomingFleetsUpdater`, render
-    `<LazyPartial url={upcoming_fleets_component?host=<current>&initial=1}><FleetScheduleSkeleton /></LazyPartial>`.
+    `<LazyPartial url="/partials/upcoming_fleets_initial_component/?host=<current>" swap="outerHTML"><FleetScheduleSkeleton /></LazyPartial>`.
   - The updater's 240 s poll replaces the slot's contents as before. Its timer starts at page load, also as before.
-- `pages/partials/upcoming_fleets_component.astro`:
-  - With `initial=1`, omit the "updated just now" label, which today's first render doesn't show.
-  - When `schedule.live[0]` exists, add a hidden trigger:
+- New `pages/partials/upcoming_fleets_initial_component.astro`, the first load:
+  - Renders `<FleetSchedule>` exactly as the page used to render it inline, without the refresh partial's "updated just now" label.
+  - When `schedule.live[0]` has a location cover, adds a hidden trigger:
     `<div hx-get="/partials/fleet_cover?location_name=…" hx-trigger="load" hx-target="#viewport-cover-oob" hx-swap="outerHTML transition:true">`.
   - `fleet_cover` returns 400 (no swap) when the cover is unchanged, and makes no backend API call. This is decision D1.
-  - On error with `initial=1`, render `ErrorRefetch`, with the retry URL keeping `host` and `initial`, instead of a bare 500. The poll path keeps its 500.
-- Fix the existing bug in `fleet_list_component.astro`: its `ErrorRefetch` URL drops `?host=`. Pass it through.
-- New `components/blocks/FleetScheduleSkeleton.astro`: hero block plus four rows at `FleetSchedule`'s sizes, using `skeleton.shimmer`.
-- Tests:
-  - the partial with `initial=1`: no label; a live fleet gives a `fleet_cover` trigger with the right location; no live fleet gives no trigger; an error gives `ErrorRefetch` with `host` kept
-  - `fleet_list_component`: the retry URL keeps `host`
+  - On failure, renders `ErrorRefetch` with the retry URL keeping `host`.
+  - This started as an `initial=1` mode inside `upcoming_fleets_component`. Wrapping that partial's template in one top-level expression moved Astro's injected `<style>` tags inside the refresh markup, so the first load got its own file. The refresh partial is byte-for-byte unchanged.
+- Fix the existing bug in `fleet_list_component.astro`: the upcoming list ignored `?host=` and its `ErrorRefetch` URL dropped it. Pass it through.
+- New `components/blocks/FleetScheduleSkeleton.astro`: a spotlight card, the type chips and two day rows at `FleetSchedule`'s sizes, stacked on phones, using `skeleton.shimmer`.
+- Tests (`testing/pages/fleets_lazy_schedule.test.ts`):
+  - the shell makes no schedule calls and passes `host` to the partial
+  - the first load: no refresh label; a live fleet gives a `fleet_cover` trigger with the right location; no live fleet gives no trigger; an error gives `ErrorRefetch`
+  - the refresh partial is unchanged
+  - `fleet_list_component` filters by `host`
 
 **Gate:**
 - `settled_dom_diff` matches apart from D1, checked with no live fleet, one live fleet (temporarily set a dev fleet live, then restore it) and each `?host=` value.
@@ -200,20 +203,25 @@ Tests, using `testing/pages/*` with `AstroContainer` and `vi.mock` as in `corpor
 
 **Gate:** `ssr_diff` shows identical HTML for anonymous visitors and members. A failure renders the existing error state.
 
-### Step 7: hover prefetch for side-effect-free landing pages
+### Step 7: hover prefetch for side-effect-free landing pages (dropped)
 
-- `astro.config.mjs`: change `prefetch: false` to `prefetch: { prefetchAll: false, defaultStrategy: 'hover' }`. With `prefetch: false` the prefetch script never loads, so a per-link attribute would do nothing. No link has `data-astro-prefetch` today, so nothing else starts prefetching.
-- `Neocom.astro`: add `data-astro-prefetch` to Home, Alliance, Ships, Market and Industry only. `NeocomButton` already passes attributes through.
-  - Their GETs have no side effects. `check_referral_url` only acts on `?ref=`, and the middleware's cookie work runs on every page load anyway.
-  - **Never prefetch:**
-    - Fleets: its GET deletes the `flash_form_error` cookie.
-    - Learning, Campaigns and Corporation: each hover would cost a full backend round.
-- Test: a new rule in `testing/conventions/rules.ts` fails on `data-astro-prefetch` outside an allowlist, which is those five Neocom buttons.
+The plan was to turn on Astro's `prefetch` (`prefetchAll: false, defaultStrategy: 'hover'`) and add `data-astro-prefetch="hover"` to the Home, Alliance, Ships, Market and Industry Neocom buttons, with a conventions rule limiting it to those five.
 
-**Gate:**
-- Hover then click on each of the five shows no `.loader` and swaps in under 50 ms on the built server.
-- Hovering without clicking makes one cached gates call per page, per the timing log.
-- Fleets, Learning and Corporation are never prefetched (checked in the network log).
+It was built and measured, then dropped because it failed its gate:
+
+- With the `ClientRouter`, Astro prefetches with `<link rel="prefetch">`, but the navigation then loads the page again with `fetch()`.
+- These pages send no cache headers, so the browser does not reuse the prefetched response. The dev server rendered `/alliance/` twice for one hover and click.
+- So prefetch doubled the server work and saved nothing.
+
+Making the pages cacheable (`Cache-Control: private, max-age`) would let a pilot see a cached signed-in page after logging out, so that is not an option.
+
+The workable route is a small `astro:before-preparation` handler that fetches on hover and hands the response to the router through `event.loader`. That means copying the router's default loader: redirect handling, the view-transitions meta check, `noscript` stripping and stylesheet preloading. It would also need its own reuse window. It is a follow-up, not part of this change.
+
+After step 2, the five landing pages make no backend calls for a returning pilot, so the remaining gain is small.
+
+**Never prefetch these, if this is revisited:**
+- `/fleets/upcoming/`: its GET clears `flash_form_error`.
+- Learning, Campaigns and corporation pages: every hover would cost a full backend round.
 
 ## Wrap-up (about 30 min)
 
@@ -223,7 +231,6 @@ Tests, using `testing/pages/*` with `AstroContainer` and `vi.mock` as in `corpor
 4. Copy this doc into the branch and commit it with step 1.
 5. Open the PR. List the steps as commits, and paste the `ssr_diff` and `settled_dom_diff` summaries, the timing table, D1/D2, and a rollback line per step:
    - steps 2 and 6: environment TTL = 0
-   - step 7: remove the attribute
    - other steps: `git revert`
 6. Clean up: stop PIDs 4325 and 4326, delete the base worktree, and remove the temporary `DiscordUser` row if it was added.
 
@@ -231,19 +238,42 @@ Tests, using `testing/pages/*` with `AstroContainer` and `vi.mock` as in `corpor
 
 - 4 and 5 need 2
 - 5 needs 3's audiences change, which is easy to carry over
-- 7 needs 2 to be cheap
 
 ## Results
 
-| Nav item | main calls / rounds | branch calls / rounds | main click→swap | branch click→swap |
+Measured on 2026-11-06 with production builds (`astro build`, then `node dist/server/entry.mjs`) of `origin/main` and this branch. Both used the same local backend and a clone of the dev DB with one live and three upcoming fleets, signed in as a superuser.
+
+- **Calls / rounds** come from the `API_TIMING_LOG` line for the page itself. For the two lazy pages, the partial's calls are shown after the `+`.
+- **Swap**: time from the click (a ClientRouter navigation from `/ships/`) to `astro:after-swap`, which is when the new page appears.
+- **Loaded**: time until nothing is `aria-busy` and no htmx request is in flight.
+- Times are the median of 5 runs, after one warm-up run.
+
+| Nav item | main calls / rounds | branch calls / rounds | main swap → loaded | branch swap → loaded |
 |---|---|---|---|---|
-| Home | | | | |
-| Fleets | | | | |
-| Fleets → Campaigns tab | | | | |
-| Fleets → History tab | | | | |
-| Corporation | | | | |
-| Alliance | | | | |
-| Ships | | | | |
-| Learning | | | | |
-| Market | | | | |
-| Industry | | | | |
+| Home | 4 / 4 | 1 / 1 | 354 → 413 ms | 176 → 235 ms |
+| Fleets | 13 / 7 | 1 / 1 + 11 / 2 | 521 → 577 ms | 147 → 313 ms |
+| Fleets → Campaigns tab | 2 / 2 | 0 / 0 + 1 / 1 | 289 → 358 ms | 132 → 251 ms |
+| Fleets → History tab | 4 / 4 | 3 / 1 | 259 → 315 ms | 156 → 209 ms |
+| Corporation | 8 / 8 | 7 / 3 | 562 → 623 ms | 290 → 342 ms |
+| Alliance | 1 / 1 | 0 / 0 | 128 → 185 ms | 96 → 152 ms |
+| Ships | 1 / 1 | 0 / 0 | 131 → 190 ms | 83 → 142 ms |
+| Learning | 12 / 8 | 11 / 3 | 532 → 592 ms | 364 → 418 ms |
+| Market | 1 / 1 | 0 / 0 | 124 → 180 ms | 90 → 149 ms |
+| Industry | 1 / 1 | 0 / 0 | 123 → 182 ms | 101 → 157 ms |
+
+Local backend calls take 20–80 ms. In production, each removed sequential round also saves a network round trip, so the gain there should be larger. Prod time to first byte for anonymous pages was measured from the dev machine: about 220 ms of server time after TLS for every public page, including ones with no backend calls, so most of it is round trip. Logged-in prod pages were not measured (decision D4).
+
+### Parity checks
+
+All of these compared `main` against the branch:
+
+- **SSR diff:** 19 pages and partials × 5 personas (anonymous, member, FC, superuser, corp CEO).
+  - After steps 1, 2, 3 and 6, the HTML and status codes are identical everywhere.
+  - Steps 4 and 5 change the shells of `/campaigns/` and `/fleets/upcoming/` by design.
+- **Settled-DOM diff:** full load and soft navigation, superuser and member.
+  - Campaigns, Learning, Home and Fleets with `?host=tribe` or `?host=mine` are identical after loading.
+  - Fleets with a live fleet differs only in a whitespace text node in the cover and in the refresh poller's fallback `X-Page-Cover` value. That value is only used when `sessionStorage` has no cover, and the swapped-in cover sets it.
+- **Requests:** each lazy partial is requested once per view.
+- **Fleets refresh:** with a fake clock, one request at +240 s and one at +480 s, the same as `main`.
+- **Flash-form alert:** shown once, the cookie is cleared, and the alert is gone after a reload, the same as `main`.
+- **Production build:** the lazy partial routes carry their components' CSS, and the loaded pages look the same as `main`.
