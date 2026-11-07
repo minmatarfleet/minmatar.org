@@ -296,3 +296,22 @@ export async function detach_campaign_project(slug:string, access_token:string, 
         error: 'Error fetching campaign project',
     })
 }
+
+/** One stored choice and its backend `TextChoices` label. */
+export type CampaignChoice = { value:string, label:string }
+
+/**
+ * GET /api/campaigns/choices (`CampaignChoicesOut`). Spelled out here until the
+ * schema is regenerated; then alias it as `ApiResponse<'CampaignChoicesOut'>`.
+ */
+export type CampaignChoices = Record<
+    'status' | 'kind' | 'goal' | 'role' | 'priority' | 'party_kind' | 'party_side' | 'site_kind' | 'metric',
+    CampaignChoice[]
+>
+
+export async function get_campaign_choices(access_token:string) {
+    return await api_request<CampaignChoices>(`${API_ENDPOINT}/choices`, {
+        token: access_token,
+        error: 'Error fetching campaign choices',
+    })
+}

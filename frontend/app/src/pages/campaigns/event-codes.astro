@@ -1,17 +1,18 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 
 import Viewport from '@layouts/Viewport.astro'
-import PageDefault from '@components/page/PageDefault.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
 
 const { user } = get_request_user(Astro)
 if (!user) return login_redirect(Astro)
@@ -20,35 +21,31 @@ const gates = await get_gates(Astro)
 if (!can(gates, 'campaigns.manage'))
     return HTTP_403_Forbidden()
 
-const CODES_PARTIAL_URL = translatePath('/partials/campaign_payout_codes_component')
-const page_title = t('campaigns.codes.page_title')
+const view = ['all', 'scoring', 'unmapped'].includes(Astro.url.searchParams.get('view') ?? '') ? Astro.url.searchParams.get('view') as string : 'all'
+const CODES_PARTIAL_URL = translatePath(`/partials/campaign_payout_codes_component/?part=list&view=${view}`)
+const page_title = t('campaigns.manage.payout_codes')
 
 const breadcrumbs = [
-    { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
-    { page_title, accumulated_path: '/campaigns/event-codes/' },
+    { page_title: t('campaigns.page_title'), accumulated_path: translatePath('/campaigns/') },
+    { page_title, accumulated_path: translatePath('/campaigns/event-codes/') },
 ]
 ---
 
 <Viewport title={page_title} meta_description={t('campaigns.codes.meta_description')}>
-    <PageDefault
-        cover={{
-            image: '/images/warzone-cover.jpg',
-            image_990: '/images/warzone-cover.jpg',
-            animated: false,
-            scrollable: true,
-            overlay: true,
-        }}
-        breadcrumbs={breadcrumbs}
-    >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-            <Button href={translatePath('/campaigns/')} color="transparent" size="sm">
-                {t('campaigns.settings.back')}
-            </Button>
-        </FlexInline>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} role={t('campaigns.manage.managers')} fact={t('campaigns.manage.codes_fact')}>
+                <Fragment slot="actions">
+                    <Button href={translatePath('/campaigns/')} color="transparent" size="sm">{t('campaigns.manage.codes_back')}</Button>
+                </Fragment>
+            </ManageHero>
+        </Flexblock>
 
         <LazyPartial url={CODES_PARTIAL_URL}>
-            <p>{t('campaigns.settings.loading')}</p>
+            <p class="[ manage-muted ]">{t('loading')}</p>
         </LazyPartial>
-    </PageDefault>
+    </Flexblock>
+</PageLanding>
 </Viewport>

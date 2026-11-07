@@ -1,0 +1,300 @@
+---
+/**
+ * The new-campaign form: name (the page address follows it), kind chips,
+ * start and end in EVE time with the length between them, and systems
+ * picked by name as chips. It posts to `campaign_new_component`, which
+ * swaps the form back with errors or sends the browser to the new
+ * campaign's Settings tab. Used in the "New campaign" dialog on /campaigns/
+ * and on /campaigns/new/.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CampaignChoice } from '@helpers/api.minmatar.org/campaigns'
+import { query_string } from '@helpers/string'
+import type { CampaignNewValues, CampaignNewErrors } from '@helpers/campaign_manage'
+
+interface Props {
+    kinds:          CampaignChoice[];
+    values?:        CampaignNewValues | null;
+    errors?:        CampaignNewErrors;
+    /** In the /campaigns/ dialog: Cancel closes it instead of leaving the page. */
+    in_dialog?:     boolean;
+    show_title?:    boolean;
+    [propName: string]: any;
+}
+
+const {
+    kinds,
+    values = null,
+    errors = {},
+    in_dialog = false,
+    show_title = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+/** Tomorrow 19:00 EVE, for two weeks: the usual shape of a push. */
+function default_times() {
+    const start = new Date()
+    start.setUTCDate(start.getUTCDate() + 1)
+    start.setUTCHours(19, 0, 0, 0)
+    const end = new Date(start.getTime() + 14 * 86_400_000)
+    return { start: start.toISOString(), end: end.toISOString() }
+}
+
+const defaults = default_times()
+const initial = {
+    name: values?.name ?? '',
+    slug: values?.slug ?? '',
+    kind: values?.kind || kinds[0]?.value || 'faction_warfare',
+    start_at: values?.start_at || defaults.start,
+    end_at: values?.end_at || defaults.end,
+    systems: values?.systems ?? [],
+}
+
+const POST_URL = translatePath(`/partials/campaign_new_component/?${query_string(in_dialog ? { dialog: '1' } : {})}`)
+const form_id = in_dialog ? 'campaign-new-dialog' : 'campaign-new'
+const page_prefix = translatePath('/campaigns/')
+
+const DURATION = {
+    weeks_one: t('campaigns.manage.duration_weeks_one'),
+    weeks: t('campaigns.manage.duration_weeks'),
+    days: t('campaigns.manage.duration_days'),
+    hours: t('campaigns.manage.duration_hours'),
+}
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
+---
+
+<form
+    id={form_id}
+    class:list={['[ manage-form campaign-new ]', Astro.props.class]}
+    hx-post={POST_URL}
+    hx-target="this"
+    hx-swap="outerHTML"
+    x-data={`{
+        name: ${JSON.stringify(initial.name)},
+        slug: ${JSON.stringify(initial.slug)},
+        slug_edited: ${JSON.stringify(Boolean(initial.slug) || Boolean(errors.slug))},
+        editing_slug: ${JSON.stringify(Boolean(errors.slug))},
+        systems: ${JSON.stringify(initial.systems)},
+        duration: '',
+        slugify(text) {
+            return text.normalize('NFKD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64).replace(/-+$/g, '')
+        },
+        get page_slug() { return this.slug_edited ? this.slug : this.slugify(this.name) },
+        add_system(picked, picker) {
+            if (picked.id && !this.systems.some((system) => system.id === picked.id))
+                this.systems.push({ id: picked.id, name: picked.name })
+            this.$nextTick(() => {
+                const data = picker && window.Alpine ? window.Alpine.$data(picker) : null
+                if (data) { data.query = ''; data.picked_id = ''; data.picked_name = ''; data.icon = '' }
+            })
+        },
+        remove_system(id) { this.systems = this.systems.filter((system) => system.id !== id) },
+        measure() {
+            const [start, end] = [...this.$refs.times.querySelectorAll('input[type=datetime-local]')]
+                .map((input) => new Date(input.value + ':00Z').getTime())
+            const hours = Math.round((end - start) / 3600000)
+            if (!(hours > 0)) { this.duration = ''; return }
+            const days = Math.round(hours / 24)
+            const text = ${JSON.stringify(DURATION)}
+            this.duration = hours < 48
+                ? text.hours.replace('~COUNT', hours)
+                : days % 7 === 0
+                    ? (days === 7 ? text.weeks_one : text.weeks.replace('~COUNT', days / 7))
+                    : text.days.replace('~COUNT', days)
+        },
+    }`}
+    x-init="measure()"
+    {...attributes}
+>
+    {show_title && <h2 class="[ campaign-new__title ]">{t('campaigns.manage.new')}</h2>}
+    <p class="[ manage-muted ]">{t('campaigns.manage.new_intro')}</p>
+
+    {errors.form && <p class="[ manage-field__error ]" role="alert">{errors.form}</p>}
+
+    <ManageField label={t('campaigns.manage.name')} for={`${form_id}-name`}>
+        <Input id={`${form_id}-name`} size="sm" name="name" x-model="name" value={initial.name} maxlength="128" required autocomplete="off" />
+    </ManageField>
+    <input type="hidden" name="slug" x-bind:value="page_slug" value={initial.slug} />
+    <p class="[ campaign-new__page ]" x-show="!editing_slug">
+        <span>{t('campaigns.manage.page_path').replace('~PATH', '')}<span x-text={`'${page_prefix}' + (page_slug || '…') + '/'`}>{page_prefix}{initial.slug || '…'}/</span></span>
+        {' · '}
+        <button type="button" class="[ campaign-new__change ]" x-on:click="slug = page_slug; slug_edited = true; editing_slug = true; $nextTick(() => $refs.slug.focus())">
+            {t('campaigns.manage.change')}
+        </button>
+    </p>
+    <div x-show="editing_slug" style={errors.slug ? undefined : 'display: none'}>
+        <ManageField label={t('campaigns.manage.page_slug')} for={`${form_id}-slug`} hint={t('campaigns.manage.page_slug_hint')} error={errors.slug}>
+            <Input
+                id={`${form_id}-slug`}
+                size="sm"
+                x-ref="slug"
+                x-model="slug"
+                value={initial.slug}
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                maxlength="64"
+                autocomplete="off"
+            />
+        </ManageField>
+    </div>
+
+    <fieldset class="[ campaign-new__kinds ]">
+        <legend class="[ manage-field__label ]">{t('campaigns.manage.kind')}</legend>
+        <div class="[ manage-chips ]">
+            {kinds.map((kind) => (
+                <label class="[ manage-chip ]">
+                    <input type="radio" name="kind" value={kind.value} checked={kind.value === initial.kind} />
+                    <span>{kind.label}</span>
+                </label>
+            ))}
+        </div>
+    </fieldset>
+
+    <div class="[ manage-fields ]" x-ref="times" x-on:input="measure()" x-on:change="measure()">
+        <EveTimeInput id={`${form_id}-start`} name="start_at" label={t('campaigns.manage.starts')} value={initial.start_at} required />
+        <div class="[ campaign-new__end ]">
+            <EveTimeInput id={`${form_id}-end`} name="end_at" label={t('campaigns.manage.ends')} value={initial.end_at} required />
+            <span class="[ manage-field__hint campaign-new__duration ]" x-text="duration" aria-live="polite"></span>
+        </div>
+    </div>
+
+    <div class="[ manage-field campaign-new__systems ]">
+        <div
+            class="[ campaign-new__chips ]"
+            x-on:manage-entity-picked="add_system($event.detail, $event.target.closest('.manage-picker'))"
+        >
+            <EntityPicker
+                id={`${form_id}-system`}
+                kind="system"
+                name="picked_system_id"
+                label={t('campaigns.manage.systems')}
+                placeholder={t('campaigns.manage.add_system')}
+            />
+            <ul class="[ campaign-new__chip-list ]" role="list" x-show="systems.length > 0" style={initial.systems.length > 0 ? undefined : 'display: none'}>
+                <template x-for="system in systems" x-bind:key="system.id">
+                    <li class="[ manage-chip campaign-new__chip ]">
+                        <input type="hidden" name="system_id" x-bind:value="system.id" />
+                        <input type="hidden" name="system_name" x-bind:value="system.name" />
+                        <span x-text="system.name"></span>
+                        <button
+                            type="button"
+                            class="[ campaign-new__chip-remove ]"
+                            x-bind:aria-label={`${JSON.stringify(t('campaigns.manage.remove_system'))}.replace('~NAME', system.name)`}
+                            x-on:click="remove_system(system.id)"
+                        >×</button>
+                    </li>
+                </template>
+            </ul>
+        </div>
+        {errors.systems
+            ? <span class="[ manage-field__error ]" role="alert">{errors.systems}</span>
+            : <span class="[ manage-field__hint ]">{t('campaigns.manage.fw_needs_system')}</span>
+        }
+    </div>
+
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('campaigns.manage.create_draft')}</Button>
+        {in_dialog
+            ? <Button type="button" color="transparent" size="sm" x-on:click="close_dialog()">{t('campaigns.manage.cancel')}</Button>
+            : <Button color="transparent" size="sm" href={translatePath('/campaigns/')}>{t('campaigns.manage.cancel')}</Button>
+        }
+    </div>
+</form>
+
+<style lang="scss">
+    .campaign-new {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .campaign-new__title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+    }
+
+    .campaign-new p {
+        margin: 0;
+    }
+
+    .campaign-new__page {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .campaign-new__change {
+        font-family: var(--button-font);
+        font-weight: 600;
+        color: var(--highlight);
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .campaign-new__kinds {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .campaign-new__kinds legend {
+        padding: 0;
+    }
+
+    .campaign-new__end {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .campaign-new__chips {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .campaign-new__chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .campaign-new__chip {
+        cursor: default;
+        color: var(--highlight);
+    }
+
+    .campaign-new__chip-remove {
+        background: none;
+        border: 0;
+        padding: 0 var(--space-3xs);
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: var(--step-0);
+        line-height: 1;
+    }
+
+    @media (hover: hover) {
+        .campaign-new__chip-remove:hover {
+            color: var(--highlight);
+        }
+    }
+</style>

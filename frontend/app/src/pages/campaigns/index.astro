@@ -8,7 +8,7 @@ import { get_request_user } from '@helpers/request_user'
 
 import { get_gates, can } from '@helpers/gates'
 import type { CampaignListItem } from '@dtypes/api.minmatar.org'
-import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
+import { get_campaigns, get_campaign_choices, type CampaignChoice } from '@helpers/api.minmatar.org/campaigns'
 import { getAllCampaigns } from '@/data/campaigns'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -20,7 +20,8 @@ import Button from '@components/blocks/Button.astro'
 import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro'
 import CampaignList from '@components/blocks/CampaignList.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import CogIcon from '@components/icons/buttons/CogIcon.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import CampaignNewForm from '@components/blocks/CampaignNewForm.astro'
 
 const { auth_token, user } = get_request_user(Astro)
 
@@ -42,6 +43,16 @@ try {
     campaigns = await get_campaigns(auth_token as string)
 } catch (error) {
     fetch_campaigns_error = error
+}
+
+// The "New campaign" dialog's kind chips carry the backend labels.
+let campaign_kinds:CampaignChoice[] = []
+if (can_create_campaigns) {
+    try {
+        campaign_kinds = (await get_campaign_choices(auth_token as string)).kind
+    } catch (error) {
+        console.log(`Could not load campaign kinds: ${error.message}`)
+    }
 }
 
 const retrospectives = getAllCampaigns()
@@ -79,19 +90,16 @@ const breadcrumbs = [
             </PageTitle>
             <PageActions>
                 {can_create_campaigns && (
-                    <Button href={translatePath('/campaigns/new/')} color="fleet-red" size="sm">
-                        {t('campaigns.new.page_title')}
-                    </Button>
+                    <DialogButton color="fleet-red" size="sm" max_width="40rem">
+                        {t('campaigns.manage.new')}
+                        <div slot="dialog" class="[ campaign-new-dialog ]">
+                            <CampaignNewForm kinds={campaign_kinds} in_dialog={true} />
+                        </div>
+                    </DialogButton>
                 )}
                 {can_manage_campaigns && (
-                    <Button
-                        href={translatePath('/campaigns/event-codes/')}
-                        color="transparent"
-                        narrow={true}
-                        aria-label={t('campaigns.codes.page_title')}
-                        title={t('campaigns.codes.page_title')}
-                    >
-                        <CogIcon slot="icon" />
+                    <Button href={translatePath('/campaigns/event-codes/')} color="transparent" size="sm">
+                        {t('campaigns.manage.payout_codes')}
                     </Button>
                 )}
             </PageActions>

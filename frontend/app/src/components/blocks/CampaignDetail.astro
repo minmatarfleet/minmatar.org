@@ -15,6 +15,7 @@ import type {
 } from '@dtypes/api.minmatar.org'
 import { campaign_totals_stats, sort_systems_by_contest, fw_objective_systems, ops_theater_systems } from '@helpers/fetching/campaigns'
 import { format_isk } from '@helpers/numbers'
+import type { CampaignChoices } from '@helpers/api.minmatar.org/campaigns'
 
 interface Props {
     campaign:           CampaignDetailType;
@@ -27,6 +28,9 @@ interface Props {
     roster:             CampaignRoster | null;
     readiness:          CampaignReadiness | null;
     token_error?:       string | false;
+    /** Managers get the Settings tab. */
+    can_manage?:        boolean;
+    choices?:           CampaignChoices | null;
     [propName: string]: any;
 }
 
@@ -41,6 +45,8 @@ const {
     roster,
     readiness,
     token_error = false,
+    can_manage = false,
+    choices = null,
     ...attributes
 } = Astro.props
 
@@ -64,7 +70,7 @@ const structures_tracking = t('campaigns.structures.tracking')
     .replace('{remaining}', String(structures_remaining))
 const has_systems = systems.length > 0 || areas.length > 0
 /** Structures lead strategic; FW systems (and any theater systems) show when attached. */
-const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'projects' | 'you' )[] = [
+const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'projects' | 'you' | 'settings' )[] = [
     ...(is_strategic ? ['structures'] as const : []),
     ...(has_systems || !is_strategic ? ['systems'] as const : []),
     'fleets',
@@ -72,8 +78,11 @@ const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'proj
     'pilots',
     'projects',
     'you',
+    ...(can_manage ? ['settings'] as const : []),
 ]
-const tab_label = (tab:string) => t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
+const tab_label = (tab:string) => tab === 'settings'
+    ? t('campaigns.manage.tab')
+    : t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
 const default_tab = TABS[0]
 const show_systems_tab = TABS.includes('systems')
 const show_structures_tab = TABS.includes('structures')
@@ -102,6 +111,7 @@ import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astr
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astro'
 ---
 
 <Flexblock gap='var(--space-l)' class:list={['[ campaign-detail ]', Astro.props.class]} {...attributes}>
@@ -278,6 +288,12 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
         <SectionTabPanel id="you" id_prefix="campaign" is_default={default_tab === 'you'}>
             <CampaignYouPanel campaign={campaign} readiness={readiness} flash={token_error} />
         </SectionTabPanel>
+
+        {can_manage &&
+            <SectionTabPanel id="settings" id_prefix="campaign" is_default={false}>
+                <CampaignSettingsPanel campaign={campaign} week={week} choices={choices} has_structures_tab={show_structures_tab} />
+            </SectionTabPanel>
+        }
     </SectionTabs>
 </Flexblock>
 
