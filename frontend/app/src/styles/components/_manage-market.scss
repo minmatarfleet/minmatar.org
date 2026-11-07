@@ -1,0 +1,120 @@
+// Market settings screens (LP desk, freight routes, buyback): the few
+// pieces the manage kit does not draw. Global, like _manage.scss, so they
+// apply inside htmx partials.
+
+// A unit inside a number box ("ISK/LP", "m³", "%"), right-aligned.
+.market-unit-field {
+    position: relative;
+
+    input {
+        padding-inline-end: var(--space-2xl);
+    }
+}
+
+.market-unit {
+    position: absolute;
+    inset-inline-end: var(--space-xs);
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    font-size: var(--step--1);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+// Switches that sit in a field's place (Orders: Buy, Sell).
+.market-switches {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs) var(--space-m);
+    min-height: var(--space-xl);
+}
+
+// An LP account tile: name and role on two lines, Edit on the right.
+.market-account {
+    justify-content: space-between;
+    min-width: 0;
+
+    .manage-who__text {
+        flex: 1 1 auto;
+    }
+
+    // Wrap rather than truncate: a nowrap name would set the open row's
+    // width on phones.
+    .manage-who__name {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+}
+
+// A nested form (an account, a contact) inside an open row.
+.market-subform {
+    padding: var(--space-s);
+    background-color: var(--surface-sunken);
+    border: solid 1px var(--border-color);
+}
+
+// The open row's footer: last change, quote preview.
+.market-note {
+    font-size: var(--step--1);
+    color: var(--text-muted);
+
+    b {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+}
+
+.market-history {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+}
+
+// A number cell's quiet trailing word ("100% in demand").
+.market-cell-note {
+    font-size: var(--step--1);
+    color: var(--text-muted);
+}
+
+.market-account__edit {
+    flex: 0 0 auto;
+    padding: var(--space-3xs) var(--space-2xs);
+    background: none;
+    border: 0;
+    color: var(--highlight);
+    font-family: var(--button-font);
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+
+    @media (hover: hover) {
+        &:hover {
+            color: var(--fleet-yellow);
+        }
+    }
+}
+
+// Account tiles carry two lines and Edit: wider than the kit's tiles.
+.market-accounts {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+}
+
+.market-subform fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+// Shown only where the table hides its column (≤48rem, as ManageTable's is-wide).
+.market-phone-only {
+    display: none;
+
+    @media (max-width: 48rem) {
+        display: inline;
+    }
+}

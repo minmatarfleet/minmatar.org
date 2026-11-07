@@ -1,10 +1,11 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
+import { query_string } from '@helpers/string'
 
 const { user } = get_request_user(Astro)
 if (!user) return login_redirect(Astro)
@@ -17,40 +18,91 @@ try {
 }
 if (!can_edit) return HTTP_404_Not_Found()
 
-const SETTINGS_PARTIAL = translatePath('/partials/loyalty_settings_component/')
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/loyalty_settings_component/?${query_string(values)}`)
 
 import Viewport from '@layouts/Viewport.astro'
-import PageDefault from '@components/page/PageDefault.astro'
-import PageTitle from '@components/page/PageTitle.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
 
 const page_title = t('industry.loyalty.settings.page_title')
 const breadcrumbs = [
-    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('market.page_title'), accumulated_path: translatePath('/market/') },
     { page_title: t('industry.loyalty.page_title'), accumulated_path: translatePath('/industry/loyalty/') },
-    { page_title: page_title, accumulated_path: Astro.url.pathname },
+    { page_title: t('manage.lp.crumb'), accumulated_path: Astro.url.pathname },
 ]
 ---
 
 <Viewport title={page_title} meta_description={t('industry.loyalty.settings.meta_description')}>
-    <PageDefault breadcrumbs={breadcrumbs}>
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-        </FlexInline>
-
-        <Flexblock gap="var(--space-l)">
-            <p>{t('industry.loyalty.settings.leading_text')}</p>
-            <LazyPartial url={SETTINGS_PARTIAL}>
-                <p>{t('loading')}</p>
-            </LazyPartial>
-            <div>
-                <Button href={translatePath('/industry/loyalty/desk/')} color="transparent" size="sm" narrow={true}>
-                    {t('industry.loyalty.settings.back')}
-                </Button>
-            </div>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} role={t('manage.lp.role')} fact={t('manage.lp.fact')}>
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/industry/loyalty/desk/')}>{t('industry.loyalty.settings.back')}</Button>
+                    <DialogButton color="fleet-red" max_width="34rem">
+                        {t('manage.lp.add_corporation')}
+                        <form
+                            slot="dialog"
+                            class="[ manage-form ]"
+                            hx-post={partial_url({ part: 'list' })}
+                            hx-target="#lp-list-root"
+                            hx-select="#lp-list-root"
+                            hx-swap="outerHTML"
+                            hx-include="#lp-filters"
+                            x-data="{ submitting: false }"
+                            {...{
+                                'x-on:htmx:before-request': 'submitting = true',
+                                'x-on:htmx:after-request': `submitting = false; if ($event.detail.successful) { $el.reset(); close_dialog() } else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
+                            }}
+                        >
+                            <input type="hidden" name="action" value="add_currency" />
+                            <h3>{t('manage.lp.add_corporation')}</h3>
+                            <EntityPicker
+                                id="lp-add-corporation"
+                                kind="corporation"
+                                name="corporation_id"
+                                name_field="name"
+                                label={t('manage.lp.corporation')}
+                                required={true}
+                            />
+                            <div class="[ manage-fields ]">
+                                <ManageField label={t('manage.lp.standard')} for="lp-add-standard">
+                                    <div class="[ market-unit-field ]">
+                                        <Input id="lp-add-standard" type="number" min="0" name="default_isk_per_lp" size="sm" value="800" required />
+                                        <span class="[ market-unit ]" aria-hidden="true">{t('manage.lp.isk_per_lp')}</span>
+                                    </div>
+                                </ManageField>
+                                <ManageField label={t('manage.lp.express')} for="lp-add-express" hint={t('manage.lp.express_hint')}>
+                                    <div class="[ market-unit-field ]">
+                                        <Input id="lp-add-express" type="number" min="0" name="express_isk_per_lp" size="sm" />
+                                        <span class="[ market-unit ]" aria-hidden="true">{t('manage.lp.isk_per_lp')}</span>
+                                    </div>
+                                </ManageField>
+                            </div>
+                            <p class="[ manage-field__error ]" role="alert" x-ref="error"></p>
+                            <FlexInline justification="flex-end">
+                                <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
+                                <Button type="submit" size="sm" color="fleet-red" x-bind:disabled="submitting">{t('industry.loyalty.settings.add')}</Button>
+                            </FlexInline>
+                        </form>
+                    </DialogButton>
+                </Fragment>
+            </ManageHero>
         </Flexblock>
-    </PageDefault>
+
+        <LazyPartial url={partial_url({ part: 'list' })} swap="outerHTML">
+            <p class="[ manage-muted ]">{t('loading')}</p>
+        </LazyPartial>
+    </Flexblock>
+</PageLanding>
 </Viewport>

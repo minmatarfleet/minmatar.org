@@ -1,0 +1,135 @@
+---
+/**
+ * An open LP desk row: the standard and express rates (an empty express box
+ * turns express off), the Buy/Sell switches, the account tiles, one Save,
+ * and the last price change with its History.
+ *
+ * The rates form saves the whole row (its summary cells change too); the
+ * account tiles and their forms swap only the accounts block.
+ */
+import type { LoyaltyDeskCorp } from '@helpers/market_settings'
+
+interface Props {
+    corp:       LoyaltyDeskCorp;
+    saved?:     boolean;
+    error?:     string;
+}
+
+const {
+    corp,
+    saved = false,
+    error,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { age_parts } from '@helpers/manage'
+import { query_string } from '@helpers/string'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import LpDeskAccounts from '@components/blocks/market_settings/LpDeskAccounts.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/loyalty_settings_component/?${query_string(values)}`)
+const id = corp.id
+const form_id = `lp-form-${id}`
+const row_target = `#lp-row-${id}`
+
+const change = corp.last_change ?? null
+const change_age = change ? age_parts(change.changed_at) : null
+const change_what = !change
+    ? ''
+    : change.account_name
+        ? t('manage.lp.tier_account').replace('~NAME', change.account_name)
+        : t(t_key('manage.lp.tier_', change.tier === 'express' ? 'express' : 'standard'))
+const change_text = change && change_age
+    ? t('manage.lp.changed')
+        .replace('~NAME', change.changed_by ?? t('manage.lp.someone'))
+        .replace('~WHAT', change_what)
+        .replace('~AGE', t(t_key('manage.age_', change_age.unit)).replace('~N', String(change_age.value)))
+    : ''
+---
+
+<div class="[ manage-form ]">
+    <form
+        id={form_id}
+        class="[ manage-form ]"
+        hx-post={partial_url({ part: 'row', id: String(id) })}
+        hx-target={row_target}
+        hx-select={row_target}
+        hx-include="#lp-filters"
+        hx-swap="outerHTML"
+    >
+        <input type="hidden" name="action" value="save_currency" />
+        <div class="[ manage-fields ]">
+            <ManageField label={t('manage.lp.standard')} for={`lp-standard-${id}`}>
+                <div class="[ market-unit-field ]">
+                    <Input id={`lp-standard-${id}`} type="number" min="0" name="default_isk_per_lp" size="sm" value={corp.default_isk_per_lp} required />
+                    <span class="[ market-unit ]" aria-hidden="true">{t('manage.lp.isk_per_lp')}</span>
+                </div>
+            </ManageField>
+            <ManageField label={t('manage.lp.express')} for={`lp-express-${id}`} hint={t('manage.lp.express_hint')}>
+                <div class="[ market-unit-field ]">
+                    <Input id={`lp-express-${id}`} type="number" min="0" name="express_isk_per_lp" size="sm" value={corp.express_isk_per_lp ?? ''} />
+                    <span class="[ market-unit ]" aria-hidden="true">{t('manage.lp.isk_per_lp')}</span>
+                </div>
+            </ManageField>
+            <div class="[ manage-field ]" role="group" aria-labelledby={`lp-orders-${id}`}>
+                <span class="[ manage-field__label ]" id={`lp-orders-${id}`}>{t('manage.lp.orders')}</span>
+                <div class="[ market-switches ]">
+                    <ManageSwitch name="allow_buy" label={t('manage.lp.buy')} checked={corp.allow_buy} />
+                    <ManageSwitch name="allow_sell" label={t('manage.lp.sell')} checked={corp.allow_sell} />
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <section class="[ manage-form ]" aria-labelledby={`lp-accounts-title-${id}`}>
+        <h3 class="[ manage-eyebrow ]" id={`lp-accounts-title-${id}`}>{t('manage.lp.accounts')}</h3>
+        <LpDeskAccounts corp={corp} />
+    </section>
+
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm" form={form_id}>{t('manage.kit.save')}</Button>
+        <Button
+            type="button"
+            size="sm"
+            color="transparent"
+            x-on:click={`document.getElementById('${form_id}')?.reset(); open = false`}
+        >
+            {t('cancel')}
+        </Button>
+        <Button
+            type="button"
+            size="sm"
+            color="transparent"
+            hx-get={partial_url({ part: 'account_form', id: String(id) })}
+            hx-target={`#lp-account-slot-${id}`}
+            hx-swap="innerHTML"
+        >
+            {t('manage.lp.add_account')}
+        </Button>
+        {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+        {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+        {change_text &&
+            <span class="[ manage-actions__end market-note ]">
+                {change_text} ·
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    narrow={true}
+                    hx-get={partial_url({ part: 'history', id: String(id) })}
+                    hx-target={`#lp-history-${id}`}
+                    hx-swap="innerHTML"
+                >
+                    {t('manage.lp.history')}
+                </Button>
+            </span>
+        }
+    </div>
+    <div id={`lp-history-${id}`} aria-live="polite"></div>
+</div>

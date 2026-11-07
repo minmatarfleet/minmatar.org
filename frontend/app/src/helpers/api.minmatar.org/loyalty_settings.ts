@@ -10,6 +10,7 @@ import type {
     LoyaltySettingsCurrency,
 } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
+import type { LoyaltyPriceChange } from '@helpers/market_settings'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/industry/loyalty/settings`
 
@@ -68,4 +69,9 @@ export async function patch_loyalty_contact(access_token: string, id: number, pa
 
 export async function delete_loyalty_contact(access_token: string, id: number) {
     return await api_request(`${API_ENDPOINT}/contacts/${id}`, { method: 'DELETE', token: access_token })
+}
+
+/** The corp's recent ISK/LP changes, newest first. */
+export async function get_loyalty_currency_history(access_token: string, id: number) {
+    return await api_request<LoyaltyPriceChange[]>(`${API_ENDPOINT}/currencies/${id}/history`, { token: access_token })
 }
