@@ -6060,6 +6060,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/manage/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find a system, corporation, alliance, type, ship, location, character or Discord channel by name */
+        get: operations["manage_hub_router_get_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/manage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The manage screens the user can reach and what waits on them */
+        get: operations["manage_hub_router_get_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/market/character-statistics": {
         parameters: {
             query?: never;
@@ -19289,6 +19323,20 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** ManageEntityMatchResponse */
+        ManageEntityMatchResponse: {
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Icon Url */
+            icon_url?: string | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** ManageItem */
         ManageItem: {
             /** Active */
@@ -19363,6 +19411,27 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** ManageQueueResponse */
+        ManageQueueResponse: {
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+            /**
+             * Next Label
+             * @default
+             */
+            next_label?: string;
+            /** Oldest At */
+            oldest_at?: string | null;
+            /** Screen */
+            screen: string;
+            /**
+             * Tone
+             * @default
+             */
+            tone?: string;
+        };
         /** ManageRoute */
         ManageRoute: {
             /** Active */
@@ -19396,6 +19465,13 @@ export interface components {
             locations: components["schemas"]["RouteLocation"][];
             /** Routes */
             routes: components["schemas"]["ManageRoute"][];
+        };
+        /** ManageScreenResponse */
+        ManageScreenResponse: {
+            /** Group */
+            group: string;
+            /** Key */
+            key: string;
         };
         /** ManageSettings */
         ManageSettings: {
@@ -19447,6 +19523,17 @@ export interface components {
             skills: components["schemas"]["ManageSkillLine"][];
             /** Total Skill Points */
             total_skill_points: number;
+        };
+        /** ManageSummaryResponse */
+        ManageSummaryResponse: {
+            /** Queues */
+            queues: components["schemas"]["ManageQueueResponse"][];
+            /** Role */
+            role: string;
+            /** Screens */
+            screens: components["schemas"]["ManageScreenResponse"][];
+            /** Total */
+            total: number;
         };
         /** ManagedCorporationRequirements */
         ManagedCorporationRequirements: {
@@ -40622,6 +40709,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PersonaRecommendationSchema"];
+                };
+            };
+        };
+    };
+    manage_hub_router_get_search: {
+        parameters: {
+            query: {
+                kind: string;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageEntityMatchResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    manage_hub_router_get_summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManageSummaryResponse"];
                 };
             };
         };

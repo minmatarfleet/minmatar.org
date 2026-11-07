@@ -25701,6 +25701,40 @@
         "title": "ManageCertificateSchema",
         "type": "object"
       },
+      "ManageEntityMatchResponse": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Url"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ManageEntityMatchResponse",
+        "type": "object"
+      },
       "ManageItem": {
         "properties": {
           "active": {
@@ -25870,6 +25904,51 @@
         "title": "ManageOnboardingSchema",
         "type": "object"
       },
+      "ManageQueueResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "next_label": {
+            "default": "",
+            "title": "Next Label",
+            "type": "string"
+          },
+          "oldest_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest At"
+          },
+          "screen": {
+            "title": "Screen",
+            "type": "string"
+          },
+          "tone": {
+            "default": "",
+            "title": "Tone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "screen",
+          "count"
+        ],
+        "title": "ManageQueueResponse",
+        "type": "object"
+      },
       "ManageRoute": {
         "properties": {
           "active": {
@@ -25991,6 +26070,24 @@
           "locations"
         ],
         "title": "ManageRoutes",
+        "type": "object"
+      },
+      "ManageScreenResponse": {
+        "properties": {
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "group"
+        ],
+        "title": "ManageScreenResponse",
         "type": "object"
       },
       "ManageSettings": {
@@ -26149,6 +26246,40 @@
           "skills"
         ],
         "title": "ManageSkillsetSchema",
+        "type": "object"
+      },
+      "ManageSummaryResponse": {
+        "properties": {
+          "queues": {
+            "items": {
+              "$ref": "#/components/schemas/ManageQueueResponse"
+            },
+            "title": "Queues",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "screens": {
+            "items": {
+              "$ref": "#/components/schemas/ManageScreenResponse"
+            },
+            "title": "Screens",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "role",
+          "screens",
+          "queues",
+          "total"
+        ],
+        "title": "ManageSummaryResponse",
         "type": "object"
       },
       "ManagedCorporationRequirements": {
@@ -64119,6 +64250,104 @@
         "summary": "Recommend a Learning Center persona for the authenticated user.",
         "tags": [
           "Learning Center"
+        ]
+      }
+    },
+    "/api/manage/search": {
+      "get": {
+        "operationId": "manage_hub_router_get_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ManageEntityMatchResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Find a system, corporation, alliance, type, ship, location, character or Discord channel by name",
+        "tags": [
+          "Manage"
+        ]
+      }
+    },
+    "/api/manage/summary": {
+      "get": {
+        "operationId": "manage_hub_router_get_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The manage screens the user can reach and what waits on them",
+        "tags": [
+          "Manage"
         ]
       }
     },

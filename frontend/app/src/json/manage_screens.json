@@ -1,0 +1,32 @@
+{
+    "$comment": "The Manage hub's settings screens and queues, in display order. Each screen opens with the site gate its page uses (feature_gates.json) or, where the page asks the API instead, a named backend check. Read by src/helpers/manage.ts (links, labels, the Neocom check). The backend decides access from its copy in backend/manage_hub/screens.py; its tests fail when the two drift. Paths are where the pages live today.",
+    "groups": ["fleets", "market", "content", "learning", "ships", "people"],
+    "screens": [
+        { "key": "campaigns", "group": "fleets", "path": "/campaigns/", "gate": "campaigns.manage" },
+        { "key": "payout_codes", "group": "fleets", "path": "/campaigns/event-codes/", "gate": "campaigns.manage" },
+        { "key": "npsi_feeds", "group": "fleets", "path": "/fleets/npsi-sources/", "gate": "fleets.npsi_sources.manage" },
+        { "key": "structure_timers", "group": "fleets", "path": "/intel/timers/manage/", "gate": "structures.timers.correct" },
+        { "key": "market_hubs", "group": "market", "path": "/market/ops/hubs/", "gate": "market.manage" },
+        { "key": "buyback", "group": "market", "path": "/market/buyback/settings/", "gate": "buyback.manage" },
+        { "key": "freight_routes", "group": "market", "path": "/market/freight/routes/", "gate": "freight.manage" },
+        { "key": "lp_desk", "group": "market", "path": "/industry/loyalty/desk/", "check": "lp_desk" },
+        { "key": "help_tickets", "group": "content", "path": "/alliance/help-tickets/", "gate": "help_tickets.manage" },
+        { "key": "post_tags", "group": "content", "path": "/alliance/propaganda/tags/", "gate": "posts.tags.manage" },
+        { "key": "reddit", "group": "content", "path": "/alliance/reddit-review/", "gate": "reddit.approvals.manage" },
+        { "key": "creators", "group": "content", "path": "/creators/manage/", "gate": "creators.moderate" },
+        { "key": "guides", "group": "learning", "path": "/learning/manage/#guides", "gate": "learning.manage" },
+        { "key": "certificates", "group": "learning", "path": "/learning/manage/#certificates", "gate": "learning.manage" },
+        { "key": "onboarding", "group": "learning", "path": "/learning/manage/#onboarding", "gate": "learning.manage" },
+        { "key": "skillsets", "group": "learning", "path": "/learning/manage/#skillsets", "gate": "skillsets.manage" },
+        { "key": "doctrines", "group": "ships", "path": "/ships/doctrines/review/", "gate": "fittings.doctrine.edit" },
+        { "key": "srp_amounts", "group": "ships", "path": "/ships/srp/programs/", "gate": "srp.programs.manage" },
+        { "key": "alliance_health", "group": "people", "path": "/alliance/health/", "check": "alliance_health" },
+        { "key": "surveys", "group": "people", "path": "/surveys/", "gate": "surveys.manage" }
+    ],
+    "queues": [
+        { "key": "doctrine_changes", "screen": "doctrines" },
+        { "key": "reddit_posts", "screen": "reddit" },
+        { "key": "payout_codes", "screen": "payout_codes" },
+        { "key": "npsi_feeds", "screen": "npsi_feeds", "tone": "warn" }
+    ]
+}
