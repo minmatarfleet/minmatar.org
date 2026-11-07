@@ -404,3 +404,36 @@ class CorporationProjectsResponse(Schema):
     projects: List[CorporationProject]
     # Scheduled and active campaigns a project can be put toward.
     campaigns: List[CorporationProjectCampaign]
+
+
+class CorporationPageText(Schema):
+    """The words on the corporation page, as the CEO and directors edit
+    them. Markdown except the headline."""
+
+    corporation_id: int
+    # The headline under the corp name; also its card and search snippet.
+    introduction: str
+    # About us.
+    biography: str
+    # Notable participation.
+    highlights: str
+    # How we fly (the Activity tab).
+    activity_summary: str
+    introduction_max: int
+    text_max: int
+
+
+class CorporationPageTextUpdate(Schema):
+    # Fields left out stay as they are; "" clears one.
+    introduction: Optional[str] = None
+    biography: Optional[str] = None
+    highlights: Optional[str] = None
+    activity_summary: Optional[str] = None
+
+
+class CorporationPageTextError(Schema):
+    # too_long | profanity | not_allowed | not_found
+    detail: str
+    field: Optional[str] = None
+    # The words that tripped the profanity check.
+    words: List[str] = []

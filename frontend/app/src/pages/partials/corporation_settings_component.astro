@@ -99,6 +99,7 @@ if (Astro.request.method === 'POST') {
             key: error instanceof RedditSettingsError
                 ? reddit_save_error_key(error.message)
                 : 'corporations.settings.error_save',
+            words: error instanceof RedditSettingsError ? error.words : [],
         }
         if (form.get('action') === 'disconnect') flash = failure
         else save_status = failure
@@ -517,7 +518,9 @@ const status_text = (() => {
                     >
                         <span class="[ corp-settings__saving ]">{t('corporations.settings.saving')}</span>
                         <span class="[ corp-settings__saved ]">
-                            {save_status ? t(save_status.key) : t('corporations.settings.autosave_note')}
+                            {save_status
+                                ? t(save_status.key).replace('~WORDS', (save_status.words ?? []).join(', '))
+                                : t('corporations.settings.autosave_note')}
                         </span>
                     </p>
                     {settings.last_post_at &&

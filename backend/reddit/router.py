@@ -104,7 +104,11 @@ def put_corporation_post(
             user=request.user,
         )
     except PostSettingsError as e:
-        return 400, {"detail": e.code, "problems": e.problems}
+        return 400, {
+            "detail": e.code,
+            "problems": e.problems,
+            "words": e.words,
+        }
     return post_settings(corporation, request.user)
 
 

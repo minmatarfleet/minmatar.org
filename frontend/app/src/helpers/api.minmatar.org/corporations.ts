@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate } from '@dtypes/api.minmatar.org'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -95,6 +95,45 @@ export async function refresh_corporation_projects(access_token: string, id: num
         })
     }
     return response.status
+}
+
+/** Thrown for a 400: `message` is `too_long` or `profanity`; `field` names
+ * the section, and `words` the profanity found. */
+export class PageTextError extends Error {
+    field: string
+    words: string[]
+
+    constructor(code: string, field: string = '', words: string[] = []) {
+        super(code)
+        this.field = field
+        this.words = words
+    }
+}
+
+/** The page's headline and sections, or null when the user can't edit them. */
+export async function get_corporation_page_text(access_token: string, corporation_id: number) {
+    return await api_request<CorporationPageText>(`${API_ENDPOINT}/corporations/${corporation_id}/page_text`, {
+        token: access_token,
+        allow: [403, 404],
+    })
+}
+
+export async function update_corporation_page_text(
+    access_token: string,
+    corporation_id: number,
+    payload: CorporationPageTextUpdate,
+) {
+    const response = await api_response(`${API_ENDPOINT}/corporations/${corporation_id}/page_text`, {
+        method: 'PUT',
+        token: access_token,
+        body: payload,
+        allow: [400],
+    })
+    if (response.status === 400) {
+        const body = await response.json().catch(() => ({}))
+        throw new PageTextError(body.detail ?? 'invalid', body.field ?? '', body.words ?? [])
+    }
+    return await response.json() as CorporationPageText
 }
 
 /** Thrown for a 400: `message` is the API's error code (e.g. `invite_expires`). */

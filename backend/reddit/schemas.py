@@ -75,6 +75,8 @@ class CorporationRedditPost(Schema):
 class PostSettingsErrorResponse(Schema):
     detail: str
     problems: list[MarkdownProblem] = []
+    # title_profanity / content_profanity: the words found.
+    words: list[str] = []
 
 
 class CorporationRedditPostUpdate(Schema):

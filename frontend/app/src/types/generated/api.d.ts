@@ -2502,6 +2502,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/page_text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The corporation page's headline and sections (CEO and directors) */
+        get: operations["eveonline_endpoints_corporations_get_corporation_page_text_get_corporation_page_text"];
+        /** Edit the corporation page's headline and sections; profanity is refused (CEO and directors) */
+        put: operations["eveonline_endpoints_corporations_put_corporation_page_text_put_corporation_page_text"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/projects": {
         parameters: {
             query?: never;
@@ -12433,6 +12451,50 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * CorporationPageText
+         * @description The words on the corporation page, as the CEO and directors edit
+         *     them. Markdown except the headline.
+         */
+        CorporationPageText: {
+            /** Activity Summary */
+            activity_summary: string;
+            /** Biography */
+            biography: string;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Highlights */
+            highlights: string;
+            /** Introduction */
+            introduction: string;
+            /** Introduction Max */
+            introduction_max: number;
+            /** Text Max */
+            text_max: number;
+        };
+        /** CorporationPageTextError */
+        CorporationPageTextError: {
+            /** Detail */
+            detail: string;
+            /** Field */
+            field?: string | null;
+            /**
+             * Words
+             * @default []
+             */
+            words?: string[];
+        };
+        /** CorporationPageTextUpdate */
+        CorporationPageTextUpdate: {
+            /** Activity Summary */
+            activity_summary?: string | null;
+            /** Biography */
+            biography?: string | null;
+            /** Highlights */
+            highlights?: string | null;
+            /** Introduction */
+            introduction?: string | null;
+        };
         /** CorporationPrimeWindow */
         CorporationPrimeWindow: {
             /** End Hour */
@@ -21629,6 +21691,11 @@ export interface components {
              * @default []
              */
             problems?: components["schemas"]["MarkdownProblem"][];
+            /**
+             * Words
+             * @default []
+             */
+            words?: string[];
         };
         /** PreferenceUpdateItem */
         PreferenceUpdateItem: {
@@ -32508,6 +32575,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_get_corporation_page_text_get_corporation_page_text: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageText"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageTextError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageTextError"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_put_corporation_page_text_put_corporation_page_text: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationPageTextUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageText"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageTextError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageTextError"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationPageTextError"];
                 };
             };
         };
