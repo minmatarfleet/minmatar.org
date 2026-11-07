@@ -94,11 +94,47 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
         }, { once: true })
 
-        document.addEventListener('astro:before-preparation', () => {
+        // A slow page left the clicked link looking idle, so pilots clicked
+        // again, and every click aborted and restarted the navigation. The
+        // clicked link shows it is loading, and further clicks on a link to
+        // the same page are ignored until the page swaps in.
+        let pending_navigation = null
+        const PENDING_NAVIGATION_MS = 20000
+        const clear_pending_navigation = () => {
+            pending_navigation?.link?.removeAttribute('data-navigation-pending')
+            document.documentElement.removeAttribute('data-navigating')
+            pending_navigation = null
+        }
+
+        document.addEventListener('click', (event) => {
+            if (!pending_navigation || event.button !== 0)
+                return
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                return
+            if (Date.now() - pending_navigation.started > PENDING_NAVIGATION_MS)
+                return
+            const link = event.target instanceof Element ? event.target.closest('a[href]') : null
+            if (!link || link.href !== pending_navigation.href)
+                return
+            // Capture phase on document: runs before the ClientRouter's own
+            // click handler, which would otherwise restart the navigation.
+            event.preventDefault()
+            event.stopPropagation()
+        }, true)
+
+        document.addEventListener('astro:before-preparation', (event) => {
             document.querySelectorAll('.loader').forEach(e => e.classList.add('active'))
+            clear_pending_navigation()
+            const link = event.sourceElement instanceof HTMLAnchorElement ? event.sourceElement : null
+            pending_navigation = { href: event.to.href, link, started: Date.now() }
+            link?.setAttribute('data-navigation-pending', '')
+            document.documentElement.setAttribute('data-navigating', '')
         })
 
+        window.addEventListener('pageshow', clear_pending_navigation)
+
         document.addEventListener('astro:after-swap', () => {
+            clear_pending_navigation()
             tippy('[data-tippy-content]', window.tippy_options)
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
             // Process the layout root, not only #content. Pages like account

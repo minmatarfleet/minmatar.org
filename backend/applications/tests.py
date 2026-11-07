@@ -4,8 +4,10 @@ from unittest.mock import patch
 
 from django.apps import apps
 from django.contrib.auth.models import Permission, User
+from django.db import connection
 from django.db.models import signals
 from django.test import Client, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from esi.models import Token
@@ -98,6 +100,42 @@ class EveCorporationApplicationTestCase(TestCase):
                 }
             ],
         )
+
+    def test_corporation_applications_query_count_does_not_grow(self):
+        """The corporation page waits on this list; one query per row made it slow."""
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        url = (
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications"
+        )
+
+        def query_count():
+            with CaptureQueriesContext(connection) as queries:
+                response = self.client.get(
+                    url, HTTP_AUTHORIZATION=f"Bearer {self.token}"
+                )
+            self.assertEqual(response.status_code, 200)
+            return len(queries), len(response.json())
+
+        EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation.corporation_id,
+            description="First",
+        )
+        one_query_count, one_rows = query_count()
+        for index in range(5):
+            EveCorporationApplication.objects.create(
+                user=User.objects.create(username=f"applicant-{index}"),
+                corporation_id=corporation.corporation_id,
+                description="More",
+                status="rejected",
+            )
+        many_query_count, many_rows = query_count()
+
+        self.assertEqual((one_rows, many_rows), (1, 6))
+        self.assertEqual(many_query_count, one_query_count)
 
     def test_create_corporation_application_blocked_while_one_is_open(self):
         first_corporation = EveCorporation.objects.create(

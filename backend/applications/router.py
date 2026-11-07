@@ -94,20 +94,20 @@ def get_my_open_corporation_application(request):
     response={200: List[CorporationApplicationResponse], 403: ErrorResponse},
 )
 def get_corporation_applications(request, corporation_id: int):
+    # One query: reading application.user.id per row cost a query per
+    # application, and the corporation page waits on this list.
     applications = EveCorporationApplication.objects.filter(
         corporation_id=corporation_id
-    )
-    response = []
-    for application in applications:
-        response.append(
-            {
-                "status": application.status,
-                "user_id": application.user.id,
-                "corporation_id": application.corporation_id,
-                "application_id": application.id,
-            }
-        )
-    return response
+    ).values_list("id", "status", "user_id", "corporation_id")
+    return [
+        {
+            "status": status,
+            "user_id": user_id,
+            "corporation_id": corp_id,
+            "application_id": application_id,
+        }
+        for application_id, status, user_id, corp_id in applications
+    ]
 
 
 @router.post(
