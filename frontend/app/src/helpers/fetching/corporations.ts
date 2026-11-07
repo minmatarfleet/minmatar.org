@@ -117,19 +117,26 @@ export async function get_corporations_list(corporation_type:CorporationType) {
 export async function get_corporation_list_by_id_auth(access_token:string, corporation_id:number, user_id: number) {
     let api_corporation:Corporation
 
+    // The applications and the open application only need the id, so they
+    // start with the corporation call. Each keeps its own failure handling.
+    const applications = get_corporation_applications(access_token, corporation_id)
+    const open_application = get_my_open_application(access_token)
+    applications.catch(() => null)
+    open_application.catch(() => null)
+
     api_corporation = await get_corporation_by_id(access_token, corporation_id)
 
-    const corporation = await add_status_to_corporation(access_token, api_corporation, user_id)
-    const [annotated] = await annotate_open_application(access_token, [corporation])
+    const corporation = await add_status_to_corporation(access_token, api_corporation, user_id, applications)
+    const [annotated] = await annotate_open_application(access_token, [corporation], open_application)
     return annotated
 }
 
 async function annotate_open_application<T extends {
     corporation_id: number
     open_application_corporation_name?: string
-}>(access_token: string, corporations: T[]) {
+}>(access_token: string, corporations: T[], open_application_promise?: ReturnType<typeof get_my_open_application>) {
     try {
-        const open_application = await get_my_open_application(access_token)
+        const open_application = await (open_application_promise ?? get_my_open_application(access_token))
         return corporations_with_open_application(corporations, open_application)
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
@@ -138,7 +145,12 @@ async function annotate_open_application<T extends {
     }
 }
 
-const add_status_to_corporation = async (access_token:string, api_corporation:Corporation, user_id:number) => {
+const add_status_to_corporation = async (
+    access_token:string,
+    api_corporation:Corporation,
+    user_id:number,
+    applications_promise?:Promise<CorporationApplication[]>,
+) => {
     let corporation_applications:CorporationApplication[]
     
     const corporation:CorporationObject = {
@@ -158,7 +170,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
     }
 
     try {
-        corporation_applications = await get_corporation_applications(access_token, api_corporation.corporation_id)
+        corporation_applications = await (applications_promise ?? get_corporation_applications(access_token, api_corporation.corporation_id))
     } catch (error) {
         corporation.status = 'error'
         return corporation

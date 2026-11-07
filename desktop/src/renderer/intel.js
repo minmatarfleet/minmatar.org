@@ -59,12 +59,14 @@ new ResizeObserver(capture_wheel).observe($('view'))
 on_state(next => {
     state = next
     window.eve_window.apply(state)
+    $('refresh').classList.toggle('is-loading', !!state.loading)
     // The range comes from main (intel.js DEFAULT_RANGE until the pilot picks one); hidden until the map loads.
     const intel = state.intel || { items: [] }
     if (state.intel) $('range').textContent = intel.range == null ? 'Any distance' : `Within ${intel.range} jumps`
     $('range').hidden = !intel.map_ready
     $('status').textContent = intel.error ? 'Offline' : intel.updated_at ? 'Live' : 'Connecting…'
     $('status').classList.toggle('is-error', !!intel.error)
+    $('status').classList.toggle('is-waiting', !intel.error && !intel.updated_at)
     $('version').textContent = `v${state.version}`
     window.eve_window.show_update($('update'), state.update)
     render()
@@ -89,7 +91,12 @@ document.addEventListener('click', event => {
     else if (action === 'open-report') { detail_tab = 'ships'; send('intel:discard'); send('intel:open-report', target.dataset.report) }
     else if (action === 'close-report') send('intel:close-report')
     else if (action === 'tab') { detail_tab = target.dataset.tab; rendered = null; render() }
-    else if (action === 'copy-link') { send('intel:copy-link', target.dataset.report); target.textContent = 'Link copied' }
+    else if (action === 'copy-link') {
+        send('intel:copy-link', target.dataset.report)
+        target.textContent = 'Link copied'
+        clearTimeout(target.__reset)
+        target.__reset = setTimeout(() => { target.textContent = 'Copy link' }, 2000)
+    }
     else if (action === 'open-site') send('intel:open-site', target.dataset.report)
     else if (action === 'more') target.parentElement.classList.toggle('is-open')
 })

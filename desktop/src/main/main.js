@@ -1,6 +1,6 @@
 // Minmatar Fleet desktop app: Discord sign-in, EVE-styled overlay windows (see windows.js) pinned as glass
 // over the EVE client, a Sneak mascot on EVE's notification badge that opens Settings, and the tray.
-const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard, Notification } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, safeStorage, screen, Tray, Menu, nativeImage, clipboard, Notification, dialog } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const { load_config } = require('./config')
@@ -253,6 +253,7 @@ function create_overlay(def) {
         hidden.add(def.id)
         conceal(win)
         update_polling()
+        push_state()
     })
     win.on('closed', () => { overlays.delete(def.id); update_polling() })
     return win
@@ -277,6 +278,7 @@ function show_windows() {
     start_reminders()
     sync_intel()
     update_polling()
+    push_state()
 }
 
 function set_window_enabled(id, enabled) {
@@ -459,10 +461,12 @@ function open_settings() {
         settings_win.moveTop()
         return
     }
+    // 680 px tall, or the screen's height on a small or highly scaled one (the page scrolls).
     const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+    const height = Math.min(680, area.height - 40)
     settings_win = base_window({
-        width: 420, height: 680,
-        x: Math.round(area.x + (area.width - 420) / 2), y: Math.round(area.y + Math.max(0, (area.height - 680) / 2)),
+        width: 420, height,
+        x: Math.round(area.x + (area.width - 420) / 2), y: Math.round(area.y + Math.max(0, (area.height - height) / 2)),
         ...OVERLAY_WINDOW, alwaysOnTop: true,
     })
     settings_win.__wanted = true
@@ -706,7 +710,27 @@ async function begin_login() {
     }
 }
 
+// Started offline on the stored session: the pilot's id and character aren't known yet, so the Fleet tab
+// can't tell which fleet is theirs. Ask again until the API answers (or the session turns out to be dead).
+let reverify_timer = null
+function reverify_session(delay_ms = 15_000) {
+    clearTimeout(reverify_timer)
+    reverify_timer = setTimeout(async () => {
+        if (!state.user || state.user.id) return
+        try {
+            await verify_session()
+            update_tray()
+            push_state()
+            if (fleet_window) fleet_window.poll()
+        } catch (err) {
+            if (is_unauthorized(err)) return session_expired()
+            reverify_session(Math.min(delay_ms * 2, 5 * 60_000))
+        }
+    }, delay_ms)
+}
+
 function sign_out(reason = null) {
+    clearTimeout(reverify_timer)
     clearInterval(reminder_timer)
     for (const poller of Object.values(pollers)) poller.reset()
     intel_on = false
@@ -770,7 +794,10 @@ function push_state() {
         locked: toggle('locked'),
         settings_sync: settings.status,
         settings: Object.fromEntries(USER_SETTINGS.map(k => [k, toggle(k)])),
-        windows: OVERLAY_WINDOWS.map(def => ({ id: def.id, title: def.title, description: def.description, enabled: window_enabled(def.id) })),
+        windows: OVERLAY_WINDOWS.map(def => ({
+            id: def.id, title: def.title, description: def.description, enabled: window_enabled(def.id),
+            hidden: hidden.has(def.id),   // closed to the tray this session: Settings offers to show it
+        })),
         glass: glass_ready,
         eve_running: eve ? eve.eve_running : false,
         api_url: config.api_url,
@@ -807,17 +834,43 @@ async function flush_settings_before_quit() {
     }
 }
 
+// The tray's Show windows (and a click on the icon). With every window turned off there is nothing to show,
+// so it opens Settings, where the windows are turned on.
+function show_windows_or_settings() {
+    if (OVERLAY_WINDOWS.some(def => window_enabled(def.id))) show_windows()
+    else open_settings()
+}
+
+// The CCP notice the README and docs/desktop/ccp-third-party-guidelines.md promise under About.
+function show_about() {
+    dialog.showMessageBox({
+        type: 'none',
+        title: 'About Minmatar Fleet',
+        message: `Minmatar Fleet v${app.getVersion()}`,
+        detail: CCP_NOTICE,
+        icon: nativeImage.createFromPath(path.join(ASSETS, 'icon.png')),
+        buttons: ['OK'],
+    }).catch(() => {})
+}
+
 function update_tray() {
     if (!tray) return
     const signed_in = !!state.user
     tray.setToolTip(`Minmatar Fleet ${app.getVersion()}${signed_in ? ` — ${state.user.name}` : ''}`)
+    // One checkbox per window, the same switches as Settings > Windows.
+    const window_items = signed_in && settings ? OVERLAY_WINDOWS.map(def => ({
+        label: def.title, type: 'checkbox', checked: window_enabled(def.id),
+        click: item => set_window_enabled(def.id, item.checked),
+    })) : []
     tray.setContextMenu(Menu.buildFromTemplate([
-        { label: 'Show windows', enabled: signed_in, click: () => show_windows() },
+        { label: 'Show windows', enabled: signed_in, click: () => show_windows_or_settings() },
+        { label: 'Windows', enabled: signed_in, submenu: window_items.length ? window_items : [{ label: 'Sign in first', enabled: false }] },
         { label: 'Settings…', enabled: signed_in, click: () => open_settings() },
         { label: 'Refresh', enabled: signed_in, click: () => refresh_all() },
         { type: 'separator' },
         ...update_menu_items(),
         signed_in ? { label: `Sign out (${state.user.name})`, click: () => sign_out() } : { label: 'Sign in…', click: show_login },
+        { label: 'About Minmatar Fleet…', click: () => show_about() },
         { label: `Quit (v${app.getVersion()})`, click: () => { quitting = true; app.quit() } },
     ]))
 }
@@ -854,7 +907,6 @@ on_fleet('fleet:srp', value => id_of(value) && fleet_window.file_srp(value))
 on_fleet('fleet:dismiss-loss', value => id_of(value) && fleet_window.dismiss_loss(value))
 on_fleet('fleet:done', () => fleet_window.done())
 on_fleet('fleet:destination', value => id_of(value) && fleet_window.set_destination(value))
-on_fleet('fleet:preping', value => id_of(value) && fleet_window.preping(value))
 on_fleet('fleet:start', value => id_of(value) && fleet_window.start(value))
 on_fleet('fleet:remind', value => id_of(value) && fleet_window.toggle_reminder(value))
 on_command('campaigns:open', () => {
@@ -871,7 +923,8 @@ function start_draft(text, detected = null) {
     intel.paste(text, null, detected)
 }
 function on_copied(text, detected) {
-    if (!intel.busy) start_draft(text, detected)
+    if (intel.busy) return false   // clipboard_watch.js offers it again once the share is done
+    start_draft(text, detected)
 }
 on_command('intel:paste-text', (event, text) => {
     clipboard_watch.mark_used(text)
@@ -907,7 +960,13 @@ on_command('intel:range', (event, value) => {
 on_command('update:install', () => install_update())
 on_command('update:download', () => { if (state.update.status === 'available') shell.openExternal(RELEASES_URL) })
 on_command('update:check', () => updater && updater.check())
-on_command('settings:open', () => { if (state.user) open_settings() })
+// Sneak toggles Settings: a second click on him closes it again. The gear buttons only ever open it.
+on_command('settings:open', event => {
+    if (!state.user) return
+    const open = settings_win && !settings_win.isDestroyed() && settings_win.isVisible()
+    if (open && sender_window(event) === mascot_win) settings_win.close()
+    else open_settings()
+})
 on_command('settings:set', (event, change) => change && set_user_setting(change.key, change.value))
 on_command('window:set-enabled', (event, value) => {
     const change = window_toggle(value)
@@ -921,6 +980,7 @@ on_command('window:minimize', event => {
         hidden.add(id)   // overlays have no taskbar button: "minimise" hides until the tray or Settings brings it back
         conceal(win)
         update_polling()
+        push_state()
     } else if (win) {
         win.minimize()
     }
@@ -961,7 +1021,7 @@ function debounce(fn, ms) {
 }
 
 app.on('second-instance', () => {
-    state.user ? show_windows() : show_login()
+    state.user ? show_windows_or_settings() : show_login()
 })
 
 app.whenReady().then(async () => {
@@ -984,7 +1044,11 @@ app.whenReady().then(async () => {
             if (Notification.isSupported()) new Notification({ title, body, icon: path.join(ASSETS, 'icon.png') }).show()
         },
         // Reminders follow the account, like window positions (settings.js).
-        store: { get: key => settings && settings.get(key), set: (key, value) => settings && settings.set(key, value) },
+        store: {
+            get: key => settings && settings.get(key),
+            set: (key, value) => settings && settings.set(key, value),
+            ready: () => !!(settings && settings.loaded),
+        },
     })
     fleet_window.on('change', set_fleet_snapshot)
     fleet_window.on('unauthorized', session_expired)
@@ -1050,7 +1114,7 @@ app.whenReady().then(async () => {
     updater.start()
 
     tray = new Tray(nativeImage.createFromPath(path.join(ASSETS, 'tray.png')))
-    tray.on('click', () => { state.user ? show_windows() : show_login() })
+    tray.on('click', () => { state.user ? show_windows_or_settings() : show_login() })
     update_tray()
 
     diag({ t: 'start', version: app.getVersion(), api_url: config.api_url, can_persist_token: tokens.can_persist() })
@@ -1074,6 +1138,7 @@ app.whenReady().then(async () => {
                 settings.load()   // retries in the background; windows move into place when it lands
                 update_tray()
                 show_windows()
+                reverify_session()
                 return
             }
         }

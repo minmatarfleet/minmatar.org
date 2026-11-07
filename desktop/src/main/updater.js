@@ -42,8 +42,12 @@ class Updater extends EventEmitter {
         autoUpdater.on('download-progress', p => this.set({ percent: Math.round(p.percent) }))
         autoUpdater.on('update-downloaded', info => this.set({ status: 'ready', version: info.version, percent: 100 }))
         autoUpdater.on('update-not-available', () => this.set({ status: 'current' }))
-        // Offline, rate-limited or no release yet: stay quiet and try again on the next check.
-        autoUpdater.on('error', err => { this.diag({ t: 'updater-error', message: err.message }); this.set({ status: 'idle' }) })
+        // Offline, rate-limited or no release yet: say so in Settings (nowhere else) and try again on the next
+        // check. A portable build that already knows about a newer version keeps its link.
+        autoUpdater.on('error', err => {
+            this.diag({ t: 'updater-error', message: err.message })
+            if (this.state.status !== 'available') this.set({ status: 'error' })
+        })
 
         this.check()
         this.timer = setInterval(() => this.check(), CHECK_EVERY_MS)
@@ -52,8 +56,10 @@ class Updater extends EventEmitter {
 
     stop() { clearInterval(this.timer) }
 
+    // Settings' "Check now" shows "Checking…" until GitHub answers.
     check() {
-        if (!this.auto || this.state.status === 'ready') return
+        if (!this.auto || ['ready', 'downloading', 'checking'].includes(this.state.status)) return
+        if (['idle', 'current', 'error'].includes(this.state.status)) this.set({ status: 'checking' })
         this.auto.checkForUpdates().catch(() => {})
     }
 

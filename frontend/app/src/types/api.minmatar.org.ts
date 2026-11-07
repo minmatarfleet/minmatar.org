@@ -584,6 +584,8 @@ export interface CorporationForumPostUpdate {
 
 export type CorporationDiscordSettings = ApiResponse<'CorporationDiscordSettings'>
 export type CorporationDiscordInvitePreview = ApiResponse<'CorporationDiscordInvitePreview'>
+export type CorporationPageText = ApiResponse<'CorporationPageText'>
+export type CorporationPageTextUpdate = ApiRequest<'CorporationPageTextUpdate'>
 export type CorporationDiscordInviteRequest = ApiRequest<'CorporationDiscordInviteRequest'>
 
 export interface CorporationPublicSummary {
@@ -860,6 +862,7 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
     utility_fittings?:  Fitting[];
+    capitals_fittings?: Fitting[];
     sig_ids:            number[];
     location_ids:       number[];
 }

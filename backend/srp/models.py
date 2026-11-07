@@ -60,6 +60,9 @@ class EveFleetShipReimbursement(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     comments = models.CharField(max_length=255, null=True)
+    # The victim was not tracked in the fleet, but another character on the
+    # same account was. Reviewers see a warning.
+    not_tracked_in_fleet = models.BooleanField(default=False)
     combat_log = models.ForeignKey(
         CombatLog, on_delete=models.SET_NULL, null=True
     )

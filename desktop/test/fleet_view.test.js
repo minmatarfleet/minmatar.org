@@ -90,7 +90,10 @@ test('a member sees their ship and where they are, never other pilots', () => {
     const parts = fleet_tab(snapshot({ fleet: fleet_view_of({ mode: 'member', you: KESRA, jumps: 3, pilots: [], attention: [] }) }))
     assert.match(parts.main, /characters\/5000\/portrait/)          // the FC's portrait leads
     assert.match(parts.main, /Not a doctrine ship/)
-    assert.match(parts.main, /3 jumps behind · fleet is in Huola/)
+    assert.match(parts.main, /24 pilots · 6 kills \/ 2 lost/)
+    const one = fleet_view_of({ mode: 'member', you: KESRA, counts: { in_fleet: 1, with_fc: 1, kills: 1, losses: 0, isk_destroyed: 0, isk_lost: 0 } })
+    assert.match(fleet_tab(snapshot({ fleet: one })).main, /1 pilot · 1 kill \/ 0 lost/)
+    assert.match(parts.main, /3 jumps behind<\/span><span class="fw-meta">Fleet is in Huola/)
     assert.match(parts.main, /data-fleet-command="fleet:destination" data-id="1"/)
     assert.match(parts.main, /data-fleet-command="fleet:copy-fit" data-id="7" data-key="f:2"/)
     assert.doesNotMatch(parts.main, /Isa Varn|Ardo/)
@@ -146,12 +149,12 @@ test('an FC on an alt: the header names the main as the alt, and pilots x up to 
     assert.match(parts.main, /Fleet chat in game · FC Henri Gray/)
 })
 
-test('FC pre-flight: checklist, sign-ups, pre-ping and Start', () => {
+test('FC pre-flight: checklist, sign-ups and Start, and no pre-ping (the alliance pings only at start)', () => {
     const v = fleet_view_of({ fleet: { ...FLEET, live: false, start_time: '2099-01-01T18:00:00Z' } })
     const parts = fleet_tab(snapshot({ kind: 'prep', fleet: v }))
     assert.match(parts.main, /Ready to start/)
-    assert.match(parts.main, /2 of 3/)
-    assert.match(parts.main, /data-fleet-command="fleet:preping" data-id="7"/)
+    assert.match(parts.main, /2 of 2/)
+    assert.doesNotMatch(parts.main, /pre-ping|preping/i)
     assert.match(parts.main, /17 pilots/)
     assert.match(parts.actions, /data-fleet-command="fleet:start" data-id="7"/)
 })
@@ -194,7 +197,7 @@ test('an opened fleet has a breadcrumb back, the ship picker and the reminder sw
     const parts = upcoming_tab(snapshot({ opened: { id: 8, is_current: false, row: LIST[1], fleet: v } }), LIST)
     assert.match(parts.main, /data-close aria-label="Back to upcoming fleets"/)
     assert.match(parts.main, /Form up in Amamake - Freeport/)
-    assert.match(parts.main, / · 5 jumps from you/)
+    assert.match(parts.main, /<span class="fw-meta">5 jumps from you/)
     assert.match(parts.main, /aria-checked="true" data-interactive data-fleet-command="fleet:sign-up" data-id="8" data-key="f:2"/)
     assert.match(parts.main, /Signed up as Scimitar/)
     assert.match(parts.main, /role="switch" aria-checked="true"[^>]*data-fleet-command="fleet:remind" data-id="8"/)
@@ -298,6 +301,9 @@ test('formatting helpers', () => {
     assert.equal(isk(3_100_000_000), '3.10B')
     assert.equal(isk(640_000_000), '640M')
     assert.equal(isk(950_000), '950K')
+    assert.equal(isk(999_700_000), '1.00B')     // never "1000M"
+    assert.equal(isk(999_600), '1M')            // never "1000K"
+    assert.equal(isk(999), '999')
     const now = new Date('2026-10-16T20:12:08Z')
     assert.equal(elapsed('2026-10-16T19:00:00Z', now), '1:12:08')
     assert.equal(until('2026-10-16T20:26:13Z', now), '14:05')

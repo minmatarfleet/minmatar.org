@@ -194,7 +194,7 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                         <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
                         <FlexInline>                            
                             <FittingShareButton fitting_id={fitting.id} fitting_name={fitting.name} />
-                            <ClipboardButton id="fit-clipboard" text={t('copy_eft')}>
+                            <ClipboardButton id="fit-clipboard" text={t('copy_eft')} source="fitting">
                                 {fitting?.eft_format as string}
                             </ClipboardButton>
 
@@ -287,7 +287,7 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                                     >
                                         <small>{refit.description}</small>
                                     </ItemBadge>
-                                    <ClipboardButton id={`refit-${refit.id}`}>{refit.eft_format}</ClipboardButton>
+                                    <ClipboardButton id={`refit-${refit.id}`} source="fitting">{refit.eft_format}</ClipboardButton>
                                 </FlexInlineSiblings>
                             )}
                         </Flexblock>

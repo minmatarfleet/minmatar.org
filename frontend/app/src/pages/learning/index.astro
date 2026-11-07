@@ -54,43 +54,43 @@ const skillsets_login_href = auth_token
     ? null
     : login_url(Astro)
 
+// The personal calls run in two rounds instead of one after another. The
+// outcome matches the old sequential code: if `me` or `recommendation` fails,
+// readiness, the admin links and skillsets stay empty; if the readiness
+// summary fails, the admin links and skillsets stay empty too; a primary
+// character or skillsets failure only empties skillsets.
+const primary_promise = auth_token
+    ? get_primary_characters(auth_token)
+    : null
+// Settled here so a rejection the page never awaits is not left unhandled.
+primary_promise?.catch(() => null)
+// Memoized per request; the layout awaits the same promise.
+const gates_promise = auth_token ? get_gates(Astro) : null
+
+let personal_ok = false
 if (auth_token) {
     try {
         ;[me, recommendation] = await Promise.all([
             get_learning_me(auth_token),
             get_learning_persona_recommendation(auth_token),
         ])
-
-        const gates = await get_gates(Astro)
-        if (can(gates, 'characters.readiness#strict')) {
-            const character_summary = await get_characters_summary_sorted(auth_token)
-            readiness_character_id = character_summary.characters?.[0]?.character_id ?? 0
-        }
-
-        if (can(gates, 'learning.manage')) {
-            certificates_admin_href = translatePath('/learning/manage/')
-        }
-        if (can(gates, 'skillsets.manage')) {
-            skillsets_admin_href = translatePath('/learning/manage/#skillsets')
-        }
-
-        try {
-            const primary = await get_primary_characters(auth_token)
-            if (primary?.character_id) {
-                const primary_skillsets = await get_skillsets(auth_token, primary.character_id)
-                skillsets = primary_skillsets.skillsets
-                skillsets_character = {
-                    character_id: primary_skillsets.character_id,
-                    character_name: primary_skillsets.character_name,
-                }
-            }
-        } catch (skillsets_error) {
-            console.error(skillsets_error)
-        }
+        personal_ok = true
     } catch (e) {
         console.error(e)
     }
 }
+
+const gates = personal_ok ? await gates_promise : null
+const summary_promise = personal_ok && gates && can(gates, 'characters.readiness#strict')
+    ? get_characters_summary_sorted(auth_token)
+    : null
+const skillsets_promise = personal_ok
+    ? primary_promise!.then((primary) =>
+        primary?.character_id ? get_skillsets(auth_token, primary.character_id) : null
+    )
+    : null
+summary_promise?.catch(() => null)
+skillsets_promise?.catch(() => null)
 
 const valid_personas = new Set(['alliance', 'militia', 'other'])
 const persona_candidates = [
@@ -107,12 +107,46 @@ const show_persona_gate =
     !persona_confirmed ||
     (Boolean(auth_token) && me !== null && !me.persona_confirmed && !query_persona && !cookie_persona)
 
+const certificates_promise = get_learning_certificates(
+    show_persona_gate ? null : persona,
+)
+certificates_promise.catch(() => null)
+
+if (personal_ok && gates) {
+    try {
+        if (summary_promise) {
+            const character_summary = await summary_promise
+            readiness_character_id = character_summary.characters?.[0]?.character_id ?? 0
+        }
+
+        if (can(gates, 'learning.manage')) {
+            certificates_admin_href = translatePath('/learning/manage/')
+        }
+        if (can(gates, 'skillsets.manage')) {
+            skillsets_admin_href = translatePath('/learning/manage/#skillsets')
+        }
+
+        try {
+            const primary_skillsets = await skillsets_promise
+            if (primary_skillsets) {
+                skillsets = primary_skillsets.skillsets
+                skillsets_character = {
+                    character_id: primary_skillsets.character_id,
+                    character_name: primary_skillsets.character_name,
+                }
+            }
+        } catch (skillsets_error) {
+            console.error(skillsets_error)
+        }
+    } catch (e) {
+        console.error(e)
+    }
+}
+
 let certificates: LearningCertificate[] = []
 let certificates_error = false
 try {
-    certificates = await get_learning_certificates(
-        show_persona_gate ? null : persona,
-    )
+    certificates = await certificates_promise
 } catch (e) {
     console.error(e)
     certificates_error = true

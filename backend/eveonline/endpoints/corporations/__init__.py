@@ -4,11 +4,13 @@ from eveonline.endpoints.corporations import (
     delete_corporation_discord,
     delete_corporation_discord_bot,
     get_corporation_discord,
+    get_corporation_page_text,
     get_corporation_discord_bot_callback,
     get_corporation_discord_bot_connect,
     post_corporation_discord_bot_refresh,
     post_corporation_discord_check,
     put_corporation_discord,
+    put_corporation_page_text,
 )
 from eveonline.endpoints.corporations.get_corp_member_details import (
     router as get_corp_member_details_router,
@@ -79,5 +81,14 @@ for endpoint in (
         endpoint.PATH, **endpoint.ROUTE_SPEC
     )(view)
 router.add_router("", discord_router)
+
+# The page text endpoints share a path too.
+page_text_router = Router(tags=["Corporations"])
+for endpoint in (get_corporation_page_text, put_corporation_page_text):
+    view = getattr(endpoint, endpoint.__name__.rsplit(".", 1)[-1])
+    getattr(page_text_router, endpoint.METHOD)(
+        endpoint.PATH, **endpoint.ROUTE_SPEC
+    )(view)
+router.add_router("", page_text_router)
 
 __all__ = ["router"]

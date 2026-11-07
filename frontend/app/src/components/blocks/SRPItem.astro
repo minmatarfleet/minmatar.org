@@ -196,6 +196,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                     </Flexblock>
                     
                     {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
+                    {srp.not_tracked_in_fleet && <p>{t('srp_not_tracked_in_fleet_warning')}</p> }
 
                     {srp.combat_log_id > 0 &&
                         <div>

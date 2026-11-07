@@ -6,6 +6,8 @@ const { EventEmitter } = require('events')
 const fs = require('fs')
 const path = require('path')
 
+const MAX_RESTARTS = 3          // times a helper that was ready is started again after it dies
+const RESTART_MS = 2000         // delay before the first restart; each later one waits longer
 const GLASS_TINT = '40080808'   // AABBGGRR: light native tint; the window's CSS adds the rest to match EVE's transparency setting
 
 class EveClients extends EventEmitter {
@@ -15,7 +17,9 @@ class EveClients extends EventEmitter {
         this.client_procs = client_procs
         this.proc = null
         this.ready = false
-        this.failed = false   // helper exited before it was ready: run without overlay awareness
+        this.failed = false   // helper exited before it was ready (or kept dying): run without overlay awareness
+        this.restarts = 0
+        this.stopping = false
         this.foreground = { client: false, pid: 0, hwnd: '0', proc: '', cls: '' }
         this.clients = []
     }
@@ -65,15 +69,29 @@ class EveClients extends EventEmitter {
         this.proc.on('exit', code => {
             this.proc = null
             this.watching_buttons = false
-            if (!this.ready) this.failed = true
+            const was_ready = this.ready
             this.ready = false
             this.emit('log', { t: 'helper-exit', code })
+            if (!this.stopping) {
+                // A helper that was working and died (PowerShell killed, sleep/resume) comes back, a few times,
+                // rather than leaving the windows frozen in whatever state they were in. Its client list is
+                // stale either way.
+                this.clients = []
+                if (was_ready && this.restarts < MAX_RESTARTS) {
+                    this.restarts++
+                    this.restart_timer = setTimeout(() => this.start(), RESTART_MS * this.restarts)
+                } else {
+                    this.failed = true
+                }
+            }
             this.emit('change')
         })
     }
 
     stop() {
+        this.stopping = true
         clearTimeout(this.ready_timer)
+        clearTimeout(this.restart_timer)
         if (!this.proc) return
         this.send('quit')
         this.proc.kill()

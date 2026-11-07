@@ -64,7 +64,8 @@ class ClipboardWatch {
         this.seen = sig
         if (sig === this.used) return
         const found = detect_paste(text)
-        if (found) this.on_copy(text, found)
+        // on_copy returns false when it can't take the copy yet (a share in flight): look at it again next tick.
+        if (found && this.on_copy(text, found) === false) this.seen = null
     }
 
     // The window got this text another way (Ctrl+V): don't open it a second time.

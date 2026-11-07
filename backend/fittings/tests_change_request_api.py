@@ -265,6 +265,52 @@ class ChangeRequestApiTestCase(TestCase):
             self.strategic.version_history.count(),
         )
 
+    def test_capitals_role_with_note_through_review(self):
+        self._grant("change_doctrine_strategic")
+        dread = EveFitting.objects.create(
+            name="Anti-Cap Naglfar",
+            eft_format="[Naglfar, Anti-Cap Naglfar]",
+            ship_id=19722,
+            description="",
+        )
+        body = self._doctrine_body(note="We bring two dreads now.")
+        body["composition"]["capitals"] = [dread.id]
+        preview = self._post(
+            f"doctrines/{self.strategic.id}/change-requests",
+            {**body, "preview": True},
+        )
+        self.assertEqual(200, preview.status_code)
+        labels = {d["label"] for d in preview.json()["diffs"]}
+        self.assertIn("Capitals", labels)
+
+        created = self._post(
+            f"doctrines/{self.strategic.id}/change-requests", body
+        ).json()["request"]
+        self.assertEqual("We bring two dreads now.", created["submit_note"])
+        listed = self.client.get(
+            "/api/change-requests/", **self._auth()
+        ).json()
+        self.assertEqual("We bring two dreads now.", listed[0]["submit_note"])
+
+        approver = User.objects.create(username="approver")
+        self._grant("approve_doctrine_strategic", user=approver)
+        self._post(
+            f"change-requests/doctrine/{created['id']}/review",
+            {"action": "approve"},
+            user=approver,
+        )
+        self.assertTrue(
+            EveDoctrineFitting.objects.filter(
+                doctrine=self.strategic, fitting=dread, role="capitals"
+            ).exists()
+        )
+        doctrine = self.client.get(
+            f"/api/doctrines/{self.strategic.id}"
+        ).json()
+        self.assertEqual(
+            [dread.id], [f["id"] for f in doctrine["capitals_fittings"]]
+        )
+
     def test_doctrine_validation(self):
         self._grant("change_doctrine_strategic")
         path = f"doctrines/{self.strategic.id}/change-requests"

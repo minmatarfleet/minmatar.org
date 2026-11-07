@@ -172,6 +172,7 @@ def serialize_request(user, kind: str, change_request) -> dict:
             else None
         ),
         "review_note": change_request.review_note,
+        "submit_note": getattr(change_request, "submit_note", ""),
         "can_review": pending and reviewer,
         "can_cancel": pending
         and (change_request.submitted_by_id == user.id or reviewer),

@@ -14,7 +14,7 @@ const can_view_fleets = can(gates, 'fleets.view')
 
 import type { Alert, StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
-import { fetch_posts } from '@helpers/fetching/posts'
+import { fetch_latest_published_posts } from '@helpers/fetching/posts'
 import { is_seasonal_date } from '@helpers/date'
 
 let posts:PostListUI[] = []
@@ -22,11 +22,7 @@ const PAGE_LENGTH = 3
 let post_fetching_error: Error | false = false
 
 try {
-    const paginated_posts = await fetch_posts({
-        page_num: 1,
-        page_size: PAGE_LENGTH,
-        status: 'published',
-    })
+    const paginated_posts = await fetch_latest_published_posts(PAGE_LENGTH)
 
     posts = paginated_posts.chunk
 } catch (error) {

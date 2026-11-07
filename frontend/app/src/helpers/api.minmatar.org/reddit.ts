@@ -7,10 +7,13 @@ const API_ENDPOINT = `${import.meta.env.API_URL}/api/reddit`
  * `problems` lists the Markdown Reddit can't render. */
 export class RedditSettingsError extends Error {
     problems: RedditMarkdownProblem[]
+    // title_profanity / content_profanity: the words the API found.
+    words: string[]
 
-    constructor(code: string, problems: RedditMarkdownProblem[] = []) {
+    constructor(code: string, problems: RedditMarkdownProblem[] = [], words: string[] = []) {
         super(code)
         this.problems = problems
+        this.words = words
     }
 }
 
@@ -35,7 +38,7 @@ export async function update_corporation_reddit_post(
     })
     if (response.status === 400) {
         const body = await response.json().catch(() => ({}))
-        throw new RedditSettingsError(body.detail ?? 'invalid', body.problems ?? [])
+        throw new RedditSettingsError(body.detail ?? 'invalid', body.problems ?? [], body.words ?? [])
     }
     return await response.json() as CorporationRedditPost
 }

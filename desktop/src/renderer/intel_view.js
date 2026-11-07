@@ -12,6 +12,9 @@
     const AMARR = 500003
     const MINMATAR = 500002
 
+    // "just now" rather than "now ago".
+    const ago_words = iso => { const a = ago(iso); return a === 'now' ? 'just now' : `${a} ago` }
+
     const in_range = (item, range) => range == null || item.jumps == null || item.jumps <= range
 
     // ---------------------------------------------------------------- rows
@@ -255,7 +258,7 @@
         if (r.status === 'loading') return `${back}<div class="eve-empty">Loading report…</div>`
         if (r.status === 'error') return `${back}<p class="eve-error">${esc(r.error)}</p>`
         return `${back}
-        <div class="intel-byline"><span><b>${esc(r.reporter_name)}</b> · ${esc(ago(r.created_at))} ago · ${esc(new Date(r.created_at).toISOString().slice(11, 16))} EVE</span>${r.note ? `<q>${esc(r.note)}</q>` : ''}</div>
+        <div class="intel-byline"><span><b>${esc(r.reporter_name)}</b> · ${esc(ago_words(r.created_at))} · ${esc(new Date(r.created_at).toISOString().slice(11, 16))} EVE</span>${r.note ? `<q>${esc(r.note)}</q>` : ''}</div>
         ${r.kind === 'dscan' ? dscan_detail(r, detail_tab) : local_detail(r)}
         <div class="intel-actions" data-interactive>
             <button class="intel-button intel-button--primary" data-action="copy-link" data-report="${esc(r.report_id)}">Copy link</button>

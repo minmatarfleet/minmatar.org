@@ -271,7 +271,7 @@ const ships_url = seo_input.shipsUrl
                 </div>
                 
                 <FittingShareButton fitting_id={fitting.id} fitting_name={fitting.name} size="lg" />
-                <ClipboardButton id="fit-clipboard" size='lg' text={t('copy_eft')}>
+                <ClipboardButton id="fit-clipboard" size='lg' text={t('copy_eft')} source="fitting">
                     {fitting?.eft_format as string}
                 </ClipboardButton>
             </PageActions>
@@ -325,7 +325,7 @@ const ships_url = seo_input.shipsUrl
                                     >
                                         <small>{refit.description}</small>
                                     </ItemBadge>
-                                    <ClipboardButton id={`refit-${refit.id}`}>{refit.eft_format}</ClipboardButton>
+                                    <ClipboardButton id={`refit-${refit.id}`} source="fitting">{refit.eft_format}</ClipboardButton>
                                 </FlexInlineSiblings>
                             )}
                         </Flexblock>

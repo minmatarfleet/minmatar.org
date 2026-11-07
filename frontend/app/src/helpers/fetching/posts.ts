@@ -3,6 +3,7 @@ import type { PostListUI, PostUI, Posts } from '@dtypes/layout_components'
 import type { Post, PostRequest, PostStates, RestrictedResponse } from '@dtypes/api.minmatar.org'
 import { get_posts, get_post, get_post_access, get_posts_tags } from '@helpers/api.minmatar.org/posts'
 import { host_group_ref_ui } from '@helpers/post_publishing'
+import { create_memo_cache, ttl_ms_from_env } from '@helpers/memo_cache'
 
 const t = useTranslations('en');
 
@@ -46,6 +47,30 @@ export async function fetch_posts(post_request:PostRequest, access_token?:string
         total: total_posts,
         chunk: chunk,
     } as Posts
+}
+
+const latest_posts_cache = create_memo_cache<Posts>(10)
+let latest_posts_ttl_ms: number | null = null
+
+/** Tests: empty the latest-posts cache and set its TTL in ms (null re-reads the env). */
+export function reset_latest_posts_cache(ttl_ms: number | null = null) {
+    latest_posts_cache.clear()
+    latest_posts_ttl_ms = ttl_ms
+}
+
+/**
+ * The newest published posts, as every visitor sees them (no token), shared
+ * across requests for HOME_POSTS_CACHE_TTL_SECONDS (60 by default, 0 turns it
+ * off). Failures are never cached. Each caller gets its own copy.
+ */
+export async function fetch_latest_published_posts(page_size:number):Promise<Posts> {
+    if (latest_posts_ttl_ms === null)
+        latest_posts_ttl_ms = ttl_ms_from_env('HOME_POSTS_CACHE_TTL_SECONDS', 60)
+
+    const posts = await latest_posts_cache.get(`published:1:${page_size}`, latest_posts_ttl_ms, () =>
+        fetch_posts({ page_num: 1, page_size: page_size, status: 'published' })
+    )
+    return structuredClone(posts)
 }
 
 export async function fetch_post(post_id:number, access_token?:string | false | null) {

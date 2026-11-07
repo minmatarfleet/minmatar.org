@@ -523,6 +523,7 @@ export interface DoctrineType {
     secondary_fittings:     FittingItem[];
     support_fittings:       FittingItem[];
     utility_fittings:       FittingItem[];
+    capitals_fittings:      FittingItem[];
     location_ids:           number[];
 }
 
@@ -837,6 +838,7 @@ export interface SRPUI {
     id:                         number;
     fleet_id:                   number;
     combat_log_id:              number;
+    not_tracked_in_fleet:       boolean;
     external_killmail_link:     string;
     status:                     SRPStatus;
     character_id:               number;

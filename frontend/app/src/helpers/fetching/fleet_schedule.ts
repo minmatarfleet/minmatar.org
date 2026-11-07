@@ -40,9 +40,29 @@ export interface FleetSchedule {
 
 const is_live = (fleet:FleetItem) => fleet_phase(fleet) === 'active'
 
+/**
+ * Waits for both, then throws the first one's error before the second's: the
+ * FC metrics used to be fetched before the fleets, so when both fail the
+ * error shown stays the same.
+ */
+async function settled_in_order<A, B>(first:Promise<A>, second:Promise<B>):Promise<[A, B]> {
+    const [a, b] = await Promise.allSettled([first, second])
+    if (a.status === 'rejected')
+        throw a.reason
+    if (b.status === 'rejected')
+        throw b.reason
+    return [a.value, b.value]
+}
+
 export async function fetch_fleet_schedule(auth_token:string, host_filter:FleetHostFilter = 'all'):Promise<FleetSchedule> {
-    const fc_metrics = await get_fleet_commander_metrics(auth_token)
-    const all_fleets = await fetch_fleets_auth(auth_token, true, false, fc_metrics)
+    // The FC metrics are requested together with the fleets (fetch_fleets_auth
+    // starts the fleets and their metrics at the same time).
+    const fc_metrics_promise = get_fleet_commander_metrics(auth_token)
+    fc_metrics_promise.catch(() => null)
+    const [fc_metrics, all_fleets] = await settled_in_order(
+        fc_metrics_promise,
+        fetch_fleets_auth(auth_token, true, false, fc_metrics_promise),
+    )
     all_fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
 
     const host_counts = count_fleets_by_host(all_fleets)
@@ -54,23 +74,29 @@ export async function fetch_fleet_schedule(auth_token:string, host_filter:FleetH
     const featured = new Set([ ...live.map(fleet => fleet.id), next?.id ])
     const rest = fleets.filter(fleet => !featured.has(fleet.id))
 
-    const doctrines = await fetch_doctrine_names(fleets)
-
-    let next_signups = 0
-    if (next) {
-        try {
-            const [summary, volunteers] = await Promise.all([
-                get_characters_summary_sorted(auth_token),
-                get_fleet_ship_volunteers(auth_token, next.id),
-            ])
-            const mine = new Set((summary.characters ?? []).map(character => character.character_id))
-            next_signups = volunteers.filter(volunteer => mine.has(volunteer.character_id)).length
-        } catch (error) {
-            console.log(`Skipping next fleet signups: ${error.message}`)
-        }
-    }
+    // The doctrine names and the next fleet's signups don't depend on each
+    // other; each still handles its own failures as before.
+    const [doctrines, next_signups] = await Promise.all([
+        fetch_doctrine_names(fleets),
+        next ? fetch_next_signups(auth_token, next.id) : Promise.resolve(0),
+    ])
 
     return { fleets, live, next, rest, doctrines, next_signups, fc_metrics, host_filter, host_counts }
+}
+
+/** How many of the viewer's characters signed up for this fleet; 0 if either call fails. */
+async function fetch_next_signups(auth_token:string, fleet_id:number):Promise<number> {
+    try {
+        const [summary, volunteers] = await Promise.all([
+            get_characters_summary_sorted(auth_token),
+            get_fleet_ship_volunteers(auth_token, fleet_id),
+        ])
+        const mine = new Set((summary.characters ?? []).map(character => character.character_id))
+        return volunteers.filter(volunteer => mine.has(volunteer.character_id)).length
+    } catch (error) {
+        console.log(`Skipping next fleet signups: ${error.message}`)
+        return 0
+    }
 }
 
 /**
@@ -126,8 +152,12 @@ export interface FleetHistory {
 
 /** `host_group_id` narrows the history to one tribe group's fleets. */
 export async function fetch_fleet_history(auth_token:string, host_group_id:number | null = null):Promise<FleetHistory> {
-    const fc_metrics = await get_fleet_commander_metrics(auth_token)
-    const fleets = await fetch_fleets_auth(auth_token, false, false, fc_metrics, host_group_id)
+    const fc_metrics_promise = get_fleet_commander_metrics(auth_token)
+    fc_metrics_promise.catch(() => null)
+    const [fc_metrics, fleets] = await settled_in_order(
+        fc_metrics_promise,
+        fetch_fleets_auth(auth_token, false, false, fc_metrics_promise, host_group_id),
+    )
     const started = (fleet:FleetItem) => new Date(fleet.tracking?.start_time ?? fleet.start_time).getTime()
     fleets.sort((a, b) => started(b) - started(a))
 

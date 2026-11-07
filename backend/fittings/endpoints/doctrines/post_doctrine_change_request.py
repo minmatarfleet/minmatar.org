@@ -98,7 +98,7 @@ def post_doctrine_change_request(
         return 409, {"detail": "A pending change request already exists."}
     try:
         change_request = submit_doctrine_change_request(
-            doctrine, proposed, request.user
+            doctrine, proposed, request.user, note=payload.note
         )
     except PermissionError as exc:
         return 403, {"detail": str(exc)}

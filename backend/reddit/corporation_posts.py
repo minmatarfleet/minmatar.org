@@ -2,6 +2,7 @@
 
 from django.utils import timezone
 
+from app.profanity import find_profanity
 from discord.models import DiscordUser
 from eveonline.helpers.corporations.permissions import ceo_user, user_is_ceo
 from reddit.markdown import check_reddit_markdown
@@ -30,12 +31,14 @@ NOT_SET_UP = "not_set_up"
 
 class PostSettingsError(ValueError):
     """Invalid CEO input. `code` names the problem for the frontend;
-    `problems` lists the Markdown Reddit can't render."""
+    `problems` lists the Markdown Reddit can't render; `words` the
+    profanity found."""
 
-    def __init__(self, code: str, problems=None):
+    def __init__(self, code: str, problems=None, words=None):
         super().__init__(code)
         self.code = code
         self.problems = problems or []
+        self.words = list(words or [])
 
 
 def markdown_problems(content: str) -> list[dict]:
@@ -211,6 +214,11 @@ def save_post_settings(
     problems = markdown_problems(typed_content)
     if any(problem["blocking"] for problem in problems):
         raise PostSettingsError("markdown_invalid", problems)
+    # Posts go out under the alliance's name.
+    if words := find_profanity(title):
+        raise PostSettingsError("title_profanity", words=words)
+    if words := find_profanity(content):
+        raise PostSettingsError("content_profanity", words=words)
 
     template = RedditPostTemplate.objects.filter(
         corporation=corporation

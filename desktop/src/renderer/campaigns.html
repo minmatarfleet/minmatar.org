@@ -22,13 +22,12 @@
             <button class="eve-icon-button" data-command="settings:open" aria-label="Settings" title="Settings">
                 <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="1.8"/><path d="M6 1v1.6M6 9.4V11M1 6h1.6M9.4 6H11M2.5 2.5l1.1 1.1M8.4 8.4l1.1 1.1M2.5 9.5l1.1-1.1M8.4 3.6l1.1-1.1"/></svg>
             </button>
-            <button class="eve-icon-button" data-command="window:minimize" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12"><path d="M2 6.5h8"/></svg></button>
-            <button class="eve-icon-button" data-command="window:close" aria-label="Close to tray" title="Close to tray"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+            <button class="eve-icon-button" data-command="window:close" aria-label="Hide. Bring it back from Settings or the tray" title="Hide (bring it back from Settings or the tray)"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
         </nav>
     </header>
     <main class="eve-window__body" id="content" aria-live="polite"></main>
     <footer class="eve-window__footer" data-interactive>
-        <span id="status"></span>
+        <span class="eve-status" id="status"></span>
         <button class="eve-link eve-link--update" id="update" hidden></button>
         <button class="eve-link" id="open-site" data-command="campaigns:open" hidden>Open on site</button>
         <span class="eve-version" id="version"></span>

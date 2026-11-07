@@ -147,6 +147,7 @@ def submit_doctrine_change_request(
     user,
     *,
     ensure_doctrine_row: bool = False,
+    note: str = "",
 ) -> EveDoctrineChangeRequest | None:
     tier = protection_tier_for_doctrine(doctrine)
     if tier is None:
@@ -179,6 +180,7 @@ def submit_doctrine_change_request(
         change_kind="full",
         payload=payload,
         submitted_by=user,
+        submit_note=note.strip(),
     )
 
 

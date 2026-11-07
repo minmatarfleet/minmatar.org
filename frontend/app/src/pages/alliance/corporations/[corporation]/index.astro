@@ -55,7 +55,18 @@ const biography = corporation.biography && corporation.biography !== corporation
     ? corporation.biography
     : ''
 const has_heatmap = (corporation.about?.heatmap ?? []).some((row) => row.some((people) => people > 0))
-const user_corporation_id = user ? await get_user_corporation_id(user.user_id) : null
+// These three only need the corporation id, so they start together rather
+// than one after another. Each keeps the failure handling it had.
+const user_corporation_id_promise = user ? get_user_corporation_id(user.user_id) : Promise.resolve(null)
+const apply_corporation_promise = auth_token && user
+    ? get_corporation_list_by_id_auth(auth_token, corporation_id, user.user_id)
+        .then((value) => ({ value }), () => ({ value: null }))
+    : null
+const member_access_promise = auth_token
+    ? get_corporation_member_access(auth_token, corporation.corporation_id).catch(() => null)
+    : Promise.resolve(null)
+
+const user_corporation_id = await user_corporation_id_promise
 const is_user_corporation = user_corporation_id === corporation.corporation_id
 // Members don't get the Fly with us pitch; everyone else does. The header's
 // apply button shows for everyone, disabled for members.
@@ -75,16 +86,9 @@ let apply_corporation: CorporationObject = {
     requirements: corporation.requirements,
     timezones: corporation.timezones,
 }
-if (auth_token && user) {
-    try {
-        apply_corporation = await get_corporation_list_by_id_auth(
-            auth_token,
-            corporation_id,
-            user.user_id,
-        )
-    } catch {
-        apply_corporation = { ...apply_corporation, status: 'error' }
-    }
+if (apply_corporation_promise) {
+    const apply_result = await apply_corporation_promise
+    apply_corporation = apply_result.value ?? { ...apply_corporation, status: 'error' }
 }
 
 type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'projects' | 'apply' | 'settings'
@@ -101,9 +105,7 @@ const has_about = Boolean(biography)
 const has_leadership = (corporation.leadership ?? []).length > 0
 // Roster access is decided by the API; it also hides alts from viewers who
 // may not see which characters belong to whom.
-const member_access = auth_token
-    ? await get_corporation_member_access(auth_token, corporation.corporation_id).catch(() => null)
-    : null
+const member_access = await member_access_promise
 const can_view_members = member_access?.can_view_members ?? false
 const members_partial = translatePath(`/partials/corporation_members_table_component/?corporation_id=${corporation_id}`)
 // CEO only. The Reddit link round trip lands back here with ?reddit=… for the partial to report.
@@ -125,6 +127,9 @@ for (const key of ['discord_bot', 'discord_bot_error']) {
     if (value) discord_params.set(key, value)
 }
 const discord_partial = translatePath(`/partials/corporation_discord_component/?${discord_params}`)
+const page_text_partial = translatePath(`/partials/corporation_page_text_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+})}`)
 const requirements_partial = translatePath(`/partials/corporation_requirements_settings_component/?${new URLSearchParams({
     corporation_id: String(corporation_id),
 })}`)
@@ -289,6 +294,24 @@ const breadcrumbs = [
                         <Flexblock gap="var(--space-s)">
                             <small class="corp-loading">{t('corporations.settings.only_ceo')}</small>
                             {/* One collapsible section per setting area; collapsed by default; each loads its own partial (and header summary) when the tab is shown. */}
+                            <section
+                                class="corp-settings-section"
+                                hx-get={page_text_partial}
+                                hx-trigger="intersect once"
+                                hx-target="find .corp-settings-section__body"
+                                hx-swap="outerHTML"
+                                hx-disinherit="*"
+                            >
+                                <CollapsibleBlock id="corporation-settings-page-text" padding_inline="0">
+                                    <span slot="head" class="corp-settings-section__head">
+                                        <span class="corp-settings-section__title">{t('corporations.page_text.section')}</span>
+                                        <span id="corporation-settings-page-text-summary" class="corp-settings-section__summary"></span>
+                                    </span>
+                                    <div class="corp-settings-section__body">
+                                        <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
+                                    </div>
+                                </CollapsibleBlock>
+                            </section>
                             <section
                                 class="corp-settings-section"
                                 hx-get={requirements_partial}

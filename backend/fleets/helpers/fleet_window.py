@@ -68,6 +68,7 @@ DOCTRINE_ROLE_LABELS = {
     "secondary": "Academy",
     "support": "Support",
     "utility": "Utility",
+    "capitals": "Capitals",
 }
 
 

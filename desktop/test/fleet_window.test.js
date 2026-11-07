@@ -100,7 +100,6 @@ function setup({ current = null, windows = {}, mine = { fleets: [], srp_owed: 0,
             calls.push(`waypoint:${character_id}:${system_id}`)
             if (api.waypoint_fail) throw api.waypoint_fail
         },
-        async preping(id) { calls.push(`preping:${id}`) },
         async start_fleet(id, fc) { calls.push(`start:${id}:${fc}`) },
     }
     const routes = { asked: [], async jumps(origin, destination) { routes.asked.push([origin, destination]); return 3 } }
@@ -207,11 +206,6 @@ test('your own fleet within 3 h shows its pre-flight, and Start uses the client 
     })
     await t.fw.poll()
     assert.equal(t.last().focus.kind, 'prep')
-    assert.equal(t.last().focus.fleet.prepinged, false)
-
-    await t.fw.preping(5)
-    assert.ok(t.calls.includes('preping:5'))
-    assert.equal(t.last().focus.fleet.prepinged, true)
 
     t.fw.set_front({ name: 'Alt', system: 'Hek', id: 1002 })
     await t.fw.start(5)
@@ -284,6 +278,62 @@ test('reminders are saved on the account and fire once, 15 minutes out', async (
     await t.clock.advance(30 * 60_000)   // long past: dropped from the account
     t.fw.check_reminders()
     assert.deepEqual(t.saved[REMINDERS_KEY], [])
+})
+
+test('a reminder follows the fleet when the FC moves it, and a cancelled fleet never reminds', async () => {
+    const t = setup({ list: [row(4, { hours: 1 }), row(5, { hours: 1 })] })
+    t.fw.toggle_reminder(4)
+    t.fw.toggle_reminder(5)
+    // The FC moves fleet 4 an hour later and cancels fleet 5.
+    t.fw.set_list([row(4, { hours: 2 }), row(5, { hours: 1, status: 'cancelled' })])
+    await t.clock.advance(46 * 60_000)
+    t.fw.check_reminders()
+    assert.equal(t.notified.length, 0)                       // not at the old time
+    assert.deepEqual(t.saved[REMINDERS_KEY].map(r => r.id), [4])
+    assert.equal(t.saved[REMINDERS_KEY][0].at, row(4, { hours: 2 }).start_time)
+    await t.clock.advance(60 * 60_000)
+    t.fw.check_reminders()
+    assert.equal(t.notified.length, 1)
+    assert.match(t.notified[0][0], /Fleet 4 forms in 14 min/)
+})
+
+test('a reminder waits for the account settings, so it never replaces the reminders set on another PC', () => {
+    const t = setup({ list: [row(4, { hours: 1 })] })
+    t.fw.store.ready = () => false
+    t.fw.toggle_reminder(4)
+    assert.equal(t.saved[REMINDERS_KEY], undefined)
+    assert.match(t.last().notice, /still loading/)
+})
+
+test('a poll for the last pilot that lands after sign-out changes nothing', async () => {
+    const t = setup({ list: [row(1, { hours: 2 })] })
+    let release
+    t.api.current_fleet_window = () => new Promise(resolve => { release = () => resolve({ body: { window: payload({ id: 9, mode: 'member', live: true }) }, changed: true }) })
+    const polling = t.fw.poll()
+    t.fw.reset()
+    release()
+    await polling
+    assert.equal(t.fw.current, null)
+    assert.equal(t.fw.mine, null)
+    assert.equal(t.fw.mine_at, -Infinity)                    // the next pilot's Recent loads on their first poll
+})
+
+test('a jump count ESI could not give is asked again a minute later', async () => {
+    const t = setup({ current: payload({ id: 9, mode: 'member', live: true }) })
+    let answer = null
+    t.routes.jumps = async (origin, destination) => { t.routes.asked.push([origin, destination]); return answer }
+    t.fw.set_front({ name: 'Kesra Lund', system: 30002537, id: 1001 })
+    await t.fw.poll()
+    await new Promise(setImmediate)
+    const asked = t.routes.asked.length
+    assert.ok(asked >= 1)
+    t.fw.publish()
+    assert.equal(t.routes.asked.length, asked)               // not on every redraw
+    answer = 4
+    await t.clock.advance(60_000)
+    t.fw.publish()
+    await new Promise(setImmediate)
+    assert.equal(t.routes.asked.length, asked + 1)
 })
 
 // ------------------------------------------------------------ Set destination

@@ -196,7 +196,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
                     <>
                         <FleetRowAction
                             title={t('copy_eft')}
-                            x-on:click.stop.prevent={`copyFitToClipboard('${id}-eft')`}
+                            x-on:click.stop.prevent={`copyFitToClipboard('${id}-eft', null, 'fitting')`}
                         >
                             <ClipboardIcon />
                         </FleetRowAction>

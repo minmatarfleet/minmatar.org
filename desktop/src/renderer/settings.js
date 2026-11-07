@@ -10,9 +10,13 @@ function render_windows(windows) {
     const signature = JSON.stringify(windows)
     if (signature === windows_signature) return
     windows_signature = signature
+    // A window closed to the tray this session is still on: Show brings it back (or use the tray).
     $('windows').innerHTML = windows.map(w => `
-        <label class="setting"><span><span class="setting__title">${esc(w.title)}</span><span class="setting__text">${esc(w.description)}</span></span>
-            <input type="checkbox" class="switch" data-window="${esc(w.id)}" ${w.enabled ? 'checked' : ''}></label>`).join('') +
+        <div class="setting">
+            <label class="setting__label" for="window-${esc(w.id)}"><span class="setting__title">${esc(w.title)}${w.enabled && w.hidden ? ' <span class="setting__state">Hidden</span>' : ''}</span><span class="setting__text">${esc(w.description)}</span></label>
+            ${w.enabled && w.hidden ? `<button class="eve-button setting__show" data-show-window="${esc(w.id)}">Show</button>` : ''}
+            <input type="checkbox" class="switch" id="window-${esc(w.id)}" data-window="${esc(w.id)}" ${w.enabled ? 'checked' : ''}>
+        </div>`).join('') +
         '<p class="eve-dim settings__hint">More windows are on the way.</p>'
 }
 
@@ -21,6 +25,9 @@ function render_update(state) {
     const button = $('update-button')
     let text = 'Up to date', label = null, command = null
     if (!state.updater_enabled) text = 'Updates are checked in installed builds'
+    else if (u.status === 'checking') text = 'Checking for updates…'
+    else if (u.status === 'error') { text = "Couldn't reach GitHub to check for updates"; label = 'Try again'; command = 'update:check' }
+    else if (u.status === 'idle') { text = 'Not checked yet'; label = 'Check now'; command = 'update:check' }
     else if (u.status === 'ready') { text = `v${u.version} is ready`; label = 'Restart to update'; command = 'update:install' }
     else if (u.status === 'downloading') text = `Downloading v${u.version}… ${u.percent || 0}%`
     else if (u.status === 'available') { text = `v${u.version} is available`; label = 'Download'; command = 'update:download' }
@@ -60,6 +67,8 @@ document.addEventListener('change', event => {
     if (input.dataset.window) send('window:set-enabled', { id: input.dataset.window, enabled: input.checked })
 })
 document.addEventListener('click', event => {
+    const show = event.target.closest('button[data-show-window]')
+    if (show) return send('window:set-enabled', { id: show.dataset.showWindow, enabled: true })
     const button = event.target.closest('button[data-command]')
     if (button && button.dataset.command) send(button.dataset.command)
 })

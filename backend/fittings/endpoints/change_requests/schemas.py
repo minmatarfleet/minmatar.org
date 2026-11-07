@@ -29,6 +29,7 @@ class ChangeRequestResponse(BaseModel):
     reviewed_by: str | None
     reviewed_at: str | None
     review_note: str
+    submit_note: str = ""
     can_review: bool
     can_cancel: bool
     diffs: List[FieldDiffResponse]
@@ -54,6 +55,7 @@ class DoctrineCompositionRequest(BaseModel):
     secondary: List[int] = []
     support: List[int] = []
     utility: List[int] = []
+    capitals: List[int] = []
 
 
 class DoctrineChangeRequestBody(BaseModel):
@@ -61,6 +63,7 @@ class DoctrineChangeRequestBody(BaseModel):
     type: str
     description: str
     composition: DoctrineCompositionRequest
+    note: str = ""
     preview: bool = False
 
 
