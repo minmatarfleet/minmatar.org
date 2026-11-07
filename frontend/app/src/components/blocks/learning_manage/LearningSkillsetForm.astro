@@ -1,0 +1,250 @@
+---
+/**
+ * A skillset's open-row form: Name, then its skills in order (drag or
+ * up/down, a level each, remove), a skill picker by name with a level and
+ * Add, and one Save. Posts to the skillsets partial (part=save), which
+ * answers with the whole row. Skill points are worked out by the API.
+ */
+interface Props {
+    name:           string;
+    skills:         { name: string; level: number }[];
+    /** null for a new skillset. */
+    skillset_id:    number | null;
+    row_id:         string;
+    post_url:       string;
+    /** The partial's skill-name typeahead (answers <option>s for ?q=). */
+    search_url:     string;
+    saved?:         boolean;
+    error?:         string | null;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    skills,
+    skillset_id,
+    row_id,
+    post_url,
+    search_url,
+    saved = false,
+    error = null,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { SKILLSET_SKILLS_EVENT } from '@helpers/learning_manage'
+import { sort_item_attrs } from '@helpers/manage_reorder'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSortControls from '@components/blocks/manage/ManageSortControls.astro'
+
+const id = (part: string) => `${row_id}-${part}`
+const LEVELS = [1, 2, 3, 4, 5]
+// Adds the typed skill (once) with the picked level, from the row template.
+const add_skill = `
+    const name = $refs.skill.value.trim()
+    if (!name) return
+    const list = $refs.list
+    const existing = [...list.querySelectorAll('input[name=skill_name]')].find((input) => input.value === name)
+    if (existing) { existing.closest('li').querySelector('select').value = $refs.level.value; $refs.skill.value = ''; return }
+    const row = $refs.row.content.firstElementChild.cloneNode(true)
+    row.querySelector('input[name=skill_name]').value = name
+    row.querySelector('.skill-line__name').textContent = name
+    row.querySelector('select').value = $refs.level.value
+    list.appendChild(row)
+    $refs.skill.value = ''
+    $refs.skill.focus()
+`
+---
+
+<form
+    class="[ manage-form skillset-form ]"
+    hx-post={post_url}
+    hx-target={`#${row_id}`}
+    hx-select={`#${row_id}`}
+    hx-swap="outerHTML"
+    hx-disinherit="*"
+    x-data="{ dragging: null }"
+>
+    <input type="hidden" name="skillset_id" value={skillset_id ?? ''} />
+    <input type="hidden" name="row_id" value={row_id} />
+
+    <div class="[ skillset-form__grid ]">
+        <div class="[ skillset-form__column ]">
+            <ManageField label={t('learning_manage.name')} for={id('name')}>
+                <Input id={id('name')} name="name" value={name} required />
+            </ManageField>
+
+            <div class="[ manage-field ]">
+                <span class="[ manage-field__label ]" id={id('skills-label')}>{t('learning_admin.skills_in_order')}</span>
+                <ol class="[ skill-lines ]" x-ref="list" aria-labelledby={id('skills-label')}>
+                    {skills.map((skill, index) => (
+                        <li class="[ skill-line ]" {...sort_item_attrs(SKILLSET_SKILLS_EVENT)}>
+                            <input type="hidden" name="skill_name" value={skill.name} />
+                            <span class="[ skill-line__name ]">{skill.name}</span>
+                            <label class="[ skill-line__level ]">
+                                <span>{t('learning_manage.skill_level')}</span>
+                                <select name="skill_level" aria-label={t('learning_admin.level_of').replace('~NAME', skill.name)} id={id(`level-${index}`)}>
+                                    {LEVELS.map((level) => <option value={String(level)} selected={skill.level === level}>{level}</option>)}
+                                </select>
+                            </label>
+                            <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={skill.name} />
+                            <button type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', skill.name)} x-on:click="$el.closest('li').remove()">×</button>
+                        </li>
+                    ))}
+                </ol>
+                <template x-ref="row">
+                    <li class="[ skill-line ]" {...sort_item_attrs(SKILLSET_SKILLS_EVENT)}>
+                        <input type="hidden" name="skill_name" value="" />
+                        <span class="[ skill-line__name ]"></span>
+                        <label class="[ skill-line__level ]">
+                            <span>{t('learning_manage.skill_level')}</span>
+                            <select name="skill_level">
+                                {LEVELS.map((level) => <option value={String(level)}>{level}</option>)}
+                            </select>
+                        </label>
+                        <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={t('learning_admin.this_skill')} />
+                        <button type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', t('learning_admin.this_skill'))} x-on:click="$el.closest('li').remove()">×</button>
+                    </li>
+                </template>
+            </div>
+        </div>
+
+        <div class="[ skillset-form__column ]">
+            <div class="[ skillset-form__add ]">
+                <ManageField label={t('learning_admin.find_skill')} for={id('skill')}>
+                    <Input
+                        id={id('skill')}
+                        name="q"
+                        list={id('skill-options')}
+                        autocomplete="off"
+                        placeholder={t('learning_manage.skill_search')}
+                        hx-get={search_url}
+                        hx-trigger="input changed delay:300ms"
+                        hx-target={`#${id('skill-options')}`}
+                        hx-swap="innerHTML"
+                        x-ref="skill"
+                        x-on:keydown.enter.prevent={add_skill}
+                    />
+                </ManageField>
+                <datalist id={id('skill-options')}></datalist>
+                <ManageField label={t('learning_manage.skill_level')} for={id('new-level')}>
+                    <Select id={id('new-level')} x-ref="level" width="6rem">
+                        {LEVELS.map((level) => <option value={String(level)} selected={level === 5}>{level}</option>)}
+                    </Select>
+                </ManageField>
+                <Button type="button" size="sm" color="transparent" x-on:click={add_skill}>{t('learning_admin.add')}</Button>
+            </div>
+            <p class="[ manage-field__hint ]">{t('learning_admin.skills_hint')}</p>
+        </div>
+    </div>
+
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('learning_manage.save')}</Button>
+        <Button type="button" size="sm" color="transparent" narrow={true} x-on:click="$el.closest('form').reset(); open = false">{t('cancel')}</Button>
+        {saved && <span class="[ manage-saved ]">{t('learning_admin.saved')}</span>}
+    </div>
+</form>
+
+<style lang="scss">
+    .skillset-form__grid {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: var(--space-m);
+        align-items: start;
+
+        @media (max-width: 48rem) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .skillset-form__column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .skillset-form__add {
+        display: flex;
+        align-items: flex-end;
+        gap: var(--space-xs);
+
+        > :first-child {
+            flex: 1 1 auto;
+        }
+    }
+
+    .skill-lines {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--hairline);
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    .skill-line {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-3xs) var(--space-xs);
+        background-color: var(--surface-sunken);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+
+        &[draggable='true'] {
+            opacity: 0.6;
+        }
+    }
+
+    .skill-line__name {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .skill-line__level {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        select {
+            padding: var(--space-3xs) var(--space-2xs);
+            background-color: var(--surface-sunken);
+            border: 1px solid var(--border-color);
+            color: var(--highlight);
+            font: inherit;
+        }
+    }
+
+    .skill-line__remove {
+        padding: 0 var(--space-2xs);
+        background: none;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        font-size: var(--step-1);
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--fleet-red);
+            border-color: var(--hairline-medium);
+        }
+    }
+</style>

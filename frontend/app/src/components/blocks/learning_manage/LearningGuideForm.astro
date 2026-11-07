@@ -1,0 +1,234 @@
+---
+/**
+ * A guide's open-row form: Title, Summary and Page address beside a live
+ * card preview, then Kind, Link and Reading time, a Published switch and one
+ * Save. The address fills in from the title until it is edited (new guides
+ * only, so a rename never moves a live page). Posts to the guides partial
+ * (part=save), which answers with the whole row.
+ */
+import type { LearningManageGuideWrite } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    values:         LearningManageGuideWrite;
+    /** The guide's slug before this edit; null for a new guide. */
+    original_slug:  string | null;
+    row_id:         string;
+    post_url:       string;
+    saved?:         boolean;
+    error?:         string | null;
+    [propName: string]: any;
+}
+
+const {
+    values,
+    original_slug,
+    row_id,
+    post_url,
+    saved = false,
+    error = null,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { GUIDE_KINDS, GUIDE_PATH_PREFIX } from '@helpers/learning_manage'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+
+const id = (name: string) => `${row_id}-${name}`
+const state = {
+    title: values.title,
+    summary: values.summary ?? '',
+    slug: values.slug,
+    kind: values.content_kind ?? 'guide',
+    image: values.thumbnail_url ?? '',
+    slug_edited: original_slug !== null,
+    picking: false,
+}
+---
+
+<form
+    class="[ manage-form guide-form ]"
+    hx-post={post_url}
+    hx-target={`#${row_id}`}
+    hx-select={`#${row_id}`}
+    hx-swap="outerHTML"
+    x-data={JSON.stringify(state)}
+>
+    <input type="hidden" name="original_slug" value={original_slug ?? ''} />
+    <input type="hidden" name="row_id" value={row_id} />
+
+    <div class="[ guide-form__grid ]">
+        <div class="[ guide-form__fields ]">
+            <ManageField label={t('learning_manage.title')} for={id('title')}>
+                <Input
+                    id={id('title')}
+                    name="title"
+                    value={values.title}
+                    required
+                    x-model="title"
+                    x-on:input={String.raw`if (!slug_edited) slug = $el.value.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '')`}
+                />
+            </ManageField>
+            <ManageField label={t('learning_manage.summary')} for={id('summary')}>
+                <Textarea id={id('summary')} name="summary" rows="3" x-model="summary">{values.summary}</Textarea>
+            </ManageField>
+            <ManageField label={t('learning_admin.page_address')} for={id('slug')} hint={t('learning_admin.page_address_hint')}>
+                <div class="[ guide-form__address ]">
+                    <span class="[ guide-form__prefix ]" x-show="kind === 'guide'">{GUIDE_PATH_PREFIX}</span>
+                    <input
+                        id={id('slug')}
+                        name="slug"
+                        value={values.slug}
+                        required
+                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                        autocomplete="off"
+                        x-model="slug"
+                        x-on:input="slug_edited = true"
+                    />
+                </div>
+            </ManageField>
+            <div class="[ manage-fields ]">
+                <ManageField label={t('learning_admin.kind')} for={id('kind')}>
+                    <Select id={id('kind')} name="content_kind" x-model="kind">
+                        {GUIDE_KINDS.map((kind) => <option value={kind} selected={state.kind === kind}>{t(t_key('learning_admin.kind_', kind))}</option>)}
+                    </Select>
+                </ManageField>
+                <ManageField label={t('learning_admin.minutes')} for={id('minutes')}>
+                    <Input id={id('minutes')} name="estimated_minutes" type="number" min="1" value={values.estimated_minutes ? String(values.estimated_minutes) : ''} />
+                </ManageField>
+            </div>
+            <ManageField label={t('learning_admin.link')} for={id('url')} hint={t('learning_admin.link_hint')} x-show="kind !== 'guide'" x-cloak={state.kind === 'guide'}>
+                <Input id={id('url')} name="url" value={state.kind === 'guide' ? '' : values.url} x-bind:required="kind !== 'guide'" />
+            </ManageField>
+        </div>
+
+        <div class="[ guide-form__preview ]">
+            <span class="[ manage-eyebrow ]">{t('learning_admin.card_preview')}</span>
+            <div class="[ guide-card ]">
+                <div class="[ guide-card__image ]">
+                    <img src={state.image || undefined} alt="" x-show="image" x-bind:src="image" x-cloak={!state.image} />
+                    <span class="[ manage-muted ]" x-show="!image" x-cloak={!!state.image}>{t('learning_admin.no_image')}</span>
+                </div>
+                <div class="[ guide-card__body ]">
+                    <h3 x-text={`title || ${JSON.stringify(t('learning_manage.guides_new'))}`}>{values.title || t('learning_manage.guides_new')}</h3>
+                    <p x-text="summary">{values.summary}</p>
+                </div>
+            </div>
+            <Button type="button" size="sm" color="transparent" narrow={true} x-show="!picking" x-on:click="picking = true; $nextTick(() => $refs.image.focus())">
+                {state.image ? t('learning_admin.change_image') : t('learning_admin.choose_image')}
+            </Button>
+            <ManageField label={t('learning_admin.image')} for={id('image')} hint={t('learning_admin.image_hint')} x-show="picking" x-cloak>
+                <Input id={id('image')} name="thumbnail_url" type="url" value={state.image} x-model="image" x-ref="image" />
+            </ManageField>
+        </div>
+    </div>
+
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('learning_manage.save')}</Button>
+        <Button type="button" size="sm" color="transparent" narrow={true} x-on:click="$el.closest('form').reset(); open = false">{t('cancel')}</Button>
+        {saved && <span class="[ manage-saved ]">{t('learning_admin.saved')}</span>}
+        <span class="[ manage-actions__end ]">
+            <ManageSwitch name="published" label={t('learning_manage.published')} checked={values.published ?? true} />
+        </span>
+    </div>
+</form>
+
+<style lang="scss">
+    .guide-form__grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-m);
+        align-items: start;
+
+        @media (max-width: 48rem) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .guide-form__fields,
+    .guide-form__preview {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .guide-form__preview > :global(button) {
+        align-self: flex-start;
+    }
+
+    .guide-form__address {
+        display: flex;
+        align-items: center;
+        border: solid 1px var(--border-color);
+        background-color: var(--surface-sunken);
+        padding-inline: var(--space-s-m);
+
+        &:focus-within {
+            outline: 1px solid var(--highlight);
+        }
+
+        input {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: var(--space-s) 0;
+            border: 0;
+            background: none;
+            color: var(--form-color);
+            font: inherit;
+            outline: none;
+        }
+    }
+
+    .guide-form__prefix {
+        flex: 0 0 auto;
+        color: var(--text-muted);
+    }
+
+    .guide-card {
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--hairline);
+        background-color: var(--surface-sunken);
+    }
+
+    .guide-card__image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 16 / 7;
+        border-bottom: 1px solid var(--hairline);
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .guide-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+        }
+    }
+</style>

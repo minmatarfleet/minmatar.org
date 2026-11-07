@@ -1,158 +1,370 @@
 ---
-// no-error-refetch: an author form; a failed save shows inline above the form.
+/**
+ * Creator moderation (/creators/manage/).
+ *
+ * part=list    the creators table with its chips and search (GET)
+ * part=items   an open creator's items: chips, search, table, paging (GET);
+ *              with offset > 0 only the next rows and the pager
+ * part=item    a Featured or Shown switch flip (POST): the item chips, the
+ *              "Saved" note and the featured count, swapped out of band
+ * part=status  suspend or approve a creator (POST): the row, in a <table>
+ *
+ * Every write goes through the moderation API, which writes the audit log.
+ */
 import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 import {
     get_moderation_accounts,
+    get_moderation_item_counts,
     get_moderation_items,
     set_moderation_account_status,
     update_moderation_item,
 } from '@helpers/api.minmatar.org/creators_moderation'
-import { error_text, form_int, form_text } from '@helpers/manage_forms'
-import type { ManageFlashState } from '@helpers/manage_forms'
+import type {
+    CreatorItemCounts,
+    CreatorItemView,
+    CreatorModerationAccountRow,
+} from '@helpers/api.minmatar.org/creators_moderation'
+import type { CreatorModerationItem } from '@dtypes/api.minmatar.org'
+import { CREATOR_ITEMS_PAGE, creator_matches, creator_name } from '@helpers/creators_moderation'
+import { error_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ManageFlash from '@components/blocks/ManageFlash.astro'
-
-const { t, translatePath } = i18n(Astro.url)
-const ROOT_ID = 'creators-moderation'
-const PARTIAL_URL = translatePath('/partials/creators_moderation_component/')
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+import CreatorModerationRow from '@components/blocks/creators/CreatorModerationRow.astro'
+import CreatorItemRow from '@components/blocks/creators/CreatorItemRow.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 if (!can(await get_gates(Astro), 'creators.moderate')) return HTTP_403_Forbidden()
 
-let flash: ManageFlashState | null = null
-// The account whose items are open; a POST keeps it open.
-let open_account_id = form_int_from_query(Astro.url.searchParams.get('account'))
+const PAGE_SIZE = 50
+const ITEM_VIEWS: CreatorItemView[] = ['shown', 'featured', 'hidden']
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'list'
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : null
+const field = (name: string) => String(form?.get(name) ?? params.get(name) ?? '').trim()
 
-function form_int_from_query(value: string | null): number | null {
-    const parsed = parseInt(value ?? '')
-    return Number.isNaN(parsed) ? null : parsed
-}
+const partial_url = (values: Record<string, string>) =>
+    translatePath(`/partials/creators_moderation_component/?${query_string(values)}`)
 
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const action = form_text(form, 'action')
+const account_id = parseInt(field('account')) || 0
+
+// --- Writes: a refused one answers 400 with the reason ------------------------
+
+if (part === 'item' && is_post) {
+    const on = form?.get('value') !== null
     try {
-        if (action === 'status') {
-            await set_moderation_account_status(auth_token, form_int(form, 'account_id') ?? 0, form_text(form, 'status'))
-        } else {
-            await update_moderation_item(auth_token, form_int(form, 'item_id') ?? 0, {
-                [action === 'feature' ? 'featured' : 'hidden']: form_text(form, 'value') === 'true',
-            })
-            open_account_id = form_int(form, 'account_id')
-        }
-        flash = { kind: 'success', message: t('creators_moderation.saved') }
+        await update_moderation_item(
+            auth_token,
+            parseInt(field('item_id')) || 0,
+            field('field') === 'featured' ? { featured: on } : { hidden: !on },
+        )
     } catch (error) {
-        flash = { kind: 'error', message: error_text(error, t('creators_moderation.error_save')) }
+        return new Response(error_text(error, t('creators_moderation.error_save')), { status: 400 })
     }
 }
 
-const accounts = await get_moderation_accounts(auth_token)
-const items = open_account_id ? await get_moderation_items(auth_token, open_account_id) : []
-const open_url = (account_id: number) => `${PARTIAL_URL}?account=${account_id}`
+if (part === 'status' && is_post) {
+    try {
+        await set_moderation_account_status(auth_token, account_id, field('status'))
+    } catch (error) {
+        return new Response(error_text(error, t('creators_moderation.error_save')), { status: 400 })
+    }
+}
+
+// --- Reads -------------------------------------------------------------------
+
+let accounts: CreatorModerationAccountRow[] = []
+let error: Error | null = null
+try {
+    accounts = await get_moderation_accounts(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+
+// part=list: search and chips run here, over the (short) list of accounts.
+const view = params.get('view') === 'approved' || params.get('view') === 'suspended' ? params.get('view') as string : 'all'
+const query = (params.get('q') ?? '').trim()
+const page = Math.max(1, parseInt(params.get('page') ?? '1') || 1)
+const searched = accounts
+    .filter((account) => creator_matches(account, query))
+    .sort((a, b) => b.item_count - a.item_count || creator_name(a).localeCompare(creator_name(b)))
+const rows = searched.filter((account) => view === 'all' || account.status === view)
+const total_pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+const page_rows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+const COLUMNS = [
+    { label: t('creators_manage.col_creator') },
+    { label: t('creators_manage.col_source'), phone: false },
+    { label: t('creators_manage.col_items'), align: 'num' as const, sort: 'descending' as const, phone: false },
+    { label: t('creators_manage.col_featured'), align: 'num' as const, phone: false },
+    { label: t('creators_manage.col_status') },
+]
+
+// part=items / part=item / part=status
+const account = accounts.find((candidate) => candidate.id === account_id) ?? null
+const item_view: CreatorItemView = ITEM_VIEWS.find((value) => value === field('view')) ?? 'shown'
+const item_query = field('q')
+const offset = Math.max(0, parseInt(field('offset')) || 0)
+
+let counts: CreatorItemCounts = { shown: 0, featured: 0, hidden: 0 }
+let items: CreatorModerationItem[] = []
+let items_error: Error | null = null
+if (account && (part === 'items' || part === 'item')) {
+    try {
+        counts = await get_moderation_item_counts(auth_token, account.id, item_query)
+        if (part === 'items') {
+            items = await get_moderation_items(auth_token, account.id, {
+                view: item_view,
+                q: item_query,
+                offset,
+                limit: CREATOR_ITEMS_PAGE,
+            })
+        }
+    } catch (failure) {
+        items_error = failure as Error
+    }
+}
+
+const ids = {
+    root: `creator-${account_id}-items-root`,
+    filters: `creator-${account_id}-item-filters`,
+    search: `creator-${account_id}-item-search`,
+    list: `creator-${account_id}-items`,
+    body: `creator-${account_id}-items-body`,
+    more: `creator-${account_id}-more`,
+    saved: `creator-${account_id}-saved`,
+}
+const items_url = partial_url({ part: 'items', account: String(account_id) })
+const item_post_url = partial_url({ part: 'item', account: String(account_id) })
+const status_url = partial_url({ part: 'status', account: String(account_id) })
+const shown_so_far = offset + items.length
+const next_count = Math.min(Math.max(0, counts[item_view] - shown_so_far), CREATOR_ITEMS_PAGE)
+const name = account ? creator_name(account) : ''
+const first_page = part === 'item' || (part === 'items' && offset === 0)
 ---
 
-<div id={ROOT_ID}>
-    <Flexblock gap="var(--space-l)">
-        <ManageFlash flash={flash} />
-
-        <p>{t('creators_moderation.lead')}</p>
-
-        {accounts.length === 0 && <p>{t('creators_moderation.none')}</p>}
-
-        {accounts.map((account) =>
-            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
-                <Flexblock gap="var(--space-s)">
-                    <FlexInline gap="var(--space-s)" justification="space-between" class="[ items-center ]">
-                        <Flexblock gap="var(--space-3xs)">
-                            <h3>{account.platform_username || account.username}</h3>
-                            <small>
-                                {account.provider} · {account.username} ·
-                                {t('creators_moderation.items_count').replace('{count}', String(account.item_count))}
-                            </small>
-                        </Flexblock>
-                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <strong>{t(t_key("creators_moderation.status_", account.status))}</strong>
-                            <form
-                                method="post"
-                                action={PARTIAL_URL}
-                                hx-post={PARTIAL_URL}
-                                hx-target={`#${ROOT_ID}`}
-                                hx-swap="outerHTML"
-                            >
-                                <input type="hidden" name="action" value="status" />
-                                <input type="hidden" name="account_id" value={account.id} />
-                                <input type="hidden" name="status" value={account.status === 'approved' ? 'suspended' : 'approved'} />
-                                <Button type="submit" size="sm" color={account.status === 'approved' ? 'transparent' : 'fleet-red'} narrow={true} off_disable={true}>
-                                    {account.status === 'approved' ? t('creators_moderation.suspend') : t('creators_moderation.approve')}
-                                </Button>
-                            </form>
-                            <Button
-                                size="sm"
-                                color="transparent"
-                                narrow={true}
-                                hx-get={open_url(account.id)}
-                                hx-target={`#${ROOT_ID}`}
-                                hx-swap="outerHTML"
-                            >{t('creators_moderation.items')}</Button>
-                        </FlexInline>
-                    </FlexInline>
-
-                    {open_account_id === account.id &&
-                        <Flexblock gap="var(--space-xs)">
-                            {items.length === 0 && <p>{t('creators_moderation.no_items')}</p>}
-                            {items.map((item) =>
-                                <FlexInline gap="var(--space-s)" justification="space-between" class="[ items-center ]">
-                                    <a href={item.url} target="_blank" rel="noreferrer noopener" class:list={{ 'is-hidden': item.hidden }}>
-                                        {item.title || item.url}
-                                    </a>
-                                    <FlexInline gap="var(--space-xs)">
-                                        {[
-                                            { action: 'feature', on: item.featured, label: item.featured ? t('creators_moderation.unfeature') : t('creators_moderation.feature') },
-                                            { action: 'hide', on: item.hidden, label: item.hidden ? t('creators_moderation.unhide') : t('creators_moderation.hide') },
-                                        ].map((toggle) =>
-                                            <form
-                                                method="post"
-                                                action={`${PARTIAL_URL}?account=${account.id}`}
-                                                hx-post={`${PARTIAL_URL}?account=${account.id}`}
-                                                hx-target={`#${ROOT_ID}`}
-                                                hx-swap="outerHTML"
-                                            >
-                                                <input type="hidden" name="action" value={toggle.action} />
-                                                <input type="hidden" name="account_id" value={account.id} />
-                                                <input type="hidden" name="item_id" value={item.id} />
-                                                <input type="hidden" name="value" value={String(!toggle.on)} />
-                                                <Button type="submit" size="sm" color="transparent" narrow={true} off_disable={true}>
-                                                    {toggle.label}
-                                                </Button>
-                                            </form>
-                                        )}
-                                    </FlexInline>
-                                </FlexInline>
-                            )}
-                        </Flexblock>
+{part === 'list' && (
+    error
+        ? (
+            <div id="creators-moderation">
+                <ErrorRefetch args={{ partial: partial_url({ part: 'list' }), error, delay: 0 }} />
+            </div>
+        )
+        : (
+            <div id="creators-moderation" class="[ manage-list ]">
+                <ViewChips
+                    id="creators-filters"
+                    url={partial_url({ part: 'list' })}
+                    target="creators-list"
+                    selected={view}
+                    search_id="creators-search"
+                    legend={t('creators_manage.views')}
+                    views={[
+                        { value: 'all', label: t('creators_manage.view_all'), count: searched.length },
+                        { value: 'approved', label: t('creators_moderation.status_approved'), count: searched.filter((a) => a.status === 'approved').length },
+                        { value: 'suspended', label: t('creators_moderation.status_suspended'), count: searched.filter((a) => a.status === 'suspended').length },
+                    ]}
+                >
+                    <div class="[ manage-toolbar ]">
+                        <ManageSearch id="creators-search" value={query} label={t('creators_manage.search')} placeholder={t('creators_manage.search')} />
+                    </div>
+                </ViewChips>
+                <div id="creators-list" class="[ manage-list ]" aria-live="polite">
+                    {page_rows.length === 0
+                        ? <EmptyState title={accounts.length === 0 ? t('creators_moderation.none') : t('creators_manage.no_match')} />
+                        : (
+                            <ManageTable caption={t('creators_manage.caption')} columns={COLUMNS}>
+                                {page_rows.map((row) => <CreatorModerationRow account={row} />)}
+                            </ManageTable>
+                        )
                     }
-                </Flexblock>
-            </ComponentBlock>
-        )}
-    </Flexblock>
-</div>
+                    <HtmxPager
+                        page={page}
+                        total_pages={total_pages}
+                        url_for={(to) => partial_url({ part: 'list', page: String(to) })}
+                        request={{ 'hx-target': '#creators-list', 'hx-select': '#creators-list', 'hx-swap': 'outerHTML', 'hx-include': '#creators-filters' }}
+                    />
+                </div>
+            </div>
+        )
+)}
+
+{part === 'status' && account &&
+    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
+    <table>
+        <CreatorModerationRow account={account} open={true} />
+    </table>
+}
+
+{part !== 'list' && part !== 'status' && !account && !error &&
+    <EmptyState title={t('creators_manage.not_found')} />
+}
+
+{part !== 'list' && (error || items_error) &&
+    <ErrorRefetch args={{ partial: items_url, error: (error ?? items_error) as Error, delay: 0 }} />
+}
+
+{account && !items_error && first_page &&
+    <div id={ids.root} class="[ creator-items ]">
+        <ViewChips
+            id={ids.filters}
+            url={items_url}
+            target={ids.list}
+            selected={item_view}
+            search_id={ids.search}
+            oob_ids={[ids.more]}
+            legend={t('creators_manage.item_views')}
+            views={ITEM_VIEWS.map((value) => ({
+                value,
+                label: t(t_key('creators_manage.item_view_', value)),
+                count: counts[value],
+            }))}
+        >
+            <div class="[ manage-toolbar ]">
+                <ManageSearch id={ids.search} value={item_query} label={t('creators_manage.item_search')} placeholder={t('creators_manage.item_search')} />
+                <span id={ids.saved} class="[ creator-items__saved ]" aria-live="polite">
+                    {part === 'item' && <span class="[ manage-saved ]">{t('creators_manage.saved')}</span>}
+                </span>
+            </div>
+        </ViewChips>
+
+        {part === 'item' && <span id={`creator-${account.id}-featured-count`}>{counts.featured}</span>}
+
+        {part === 'items' &&
+            <div id={ids.list} class="[ manage-list ]" aria-live="polite">
+                {items.length === 0
+                    ? <EmptyState title={t('creators_moderation.no_items')} />
+                    : (
+                        <ManageTable
+                            caption={t('creators_manage.items_caption').replace('~NAME', name)}
+                            expandable={false}
+                            min_width="0"
+                            columns={[
+                                { label: t('creators_manage.col_item') },
+                                { label: t('creators_manage.col_featured'), align: 'act' },
+                                { label: t('creators_manage.col_shown'), align: 'act' },
+                            ]}
+                        >
+                            <tbody id={ids.body}>
+                                {items.map((item) => (
+                                    <CreatorItemRow item={item} account_id={account.id} post_url={item_post_url} filters_id={ids.filters} saved_id={ids.saved} />
+                                ))}
+                            </tbody>
+                        </ManageTable>
+                    )
+                }
+            </div>
+        }
+
+        {part === 'items' &&
+            <div class="[ manage-actions creator-items__foot ]">
+                <div id={ids.more}>
+                    {next_count > 0 &&
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="transparent"
+                            narrow={true}
+                            hx-get={partial_url({ part: 'items', account: String(account.id), offset: String(shown_so_far) })}
+                            hx-include={`#${ids.filters}`}
+                            hx-target={`#${ids.body}`}
+                            hx-select={`#${ids.body} > tr`}
+                            hx-select-oob={`#${ids.more}`}
+                            hx-swap="beforeend"
+                        >{t('creators_manage.show_more').replace('~COUNT', String(next_count))}</Button>
+                    }
+                </div>
+                <span class="[ manage-actions__end ]">
+                    {account.status === 'approved'
+                        ? (
+                            <ConfirmAction
+                                label={t('creators_manage.suspend')}
+                                title={t('creators_manage.suspend_title').replace('~NAME', name)}
+                                consequence={t('creators_manage.suspend_consequence')
+                                    .replace('~NAME', name)
+                                    .replace('~COUNT', String(account.item_count - account.hidden_count))}
+                                confirm_label={t('creators_manage.suspend_confirm')}
+                                url={status_url}
+                                vals={{ status: 'suspended' }}
+                                target={`#creator-${account.id}`}
+                                select={`#creator-${account.id}`}
+                            />
+                        )
+                        : (
+                            <Button
+                                type="button"
+                                size="sm"
+                                hx-post={status_url}
+                                hx-vals={JSON.stringify({ status: 'approved' })}
+                                hx-target={`#creator-${account.id}`}
+                                hx-select={`#creator-${account.id}`}
+                                hx-swap="outerHTML"
+                            >{t('creators_manage.approve')}</Button>
+                        )
+                    }
+                </span>
+            </div>
+        }
+    </div>
+}
+
+{/* The next page of items: rows inside a <table> (the request picks them
+    with hx-select) and the pager, swapped out of band. */}
+{part === 'items' && account && !items_error && offset > 0 &&
+    <div>
+        <table>
+            <tbody id={ids.body}>
+                {items.map((item) => (
+                    <CreatorItemRow item={item} account_id={account.id} post_url={item_post_url} filters_id={ids.filters} saved_id={ids.saved} />
+                ))}
+            </tbody>
+        </table>
+        <div id={ids.more}>
+            {next_count > 0 &&
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    narrow={true}
+                    hx-get={partial_url({ part: 'items', account: String(account.id), offset: String(shown_so_far) })}
+                    hx-include={`#${ids.filters}`}
+                    hx-target={`#${ids.body}`}
+                    hx-select={`#${ids.body} > tr`}
+                    hx-select-oob={`#${ids.more}`}
+                    hx-swap="beforeend"
+                >{t('creators_manage.show_more').replace('~COUNT', String(next_count))}</Button>
+            }
+        </div>
+    </div>
+}
 
 <style lang="scss">
-    h3 {
-        font-size: var(--step-0);
-        margin-block-end: 0;
+    .creator-items {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
     }
 
-    .is-hidden {
-        color: var(--faded);
-        text-decoration: line-through;
+    .creator-items__foot {
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .creator-items__saved:empty {
+        display: none;
     }
 </style>

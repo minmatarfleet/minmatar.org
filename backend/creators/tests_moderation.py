@@ -12,6 +12,7 @@ from creators.models import (
     CreatorItemKind,
     CreatorProvider,
 )
+from eveonline.models import EveCharacter, EvePlayer
 from groups.helpers.feature_access import clear_feature_cache
 from groups.management.commands.sync_pilot_features import (
     Command as SyncPilotFeaturesCommand,
@@ -139,3 +140,65 @@ class CreatorModerationTestCase(TestCase):
     def test_unchanged_action_writes_no_audit_entry(self):
         self._put(f"items/{self.item.pk}", {"hidden": False})
         self.assertFalse(AuditEntry.objects.exists())
+
+    def test_items_filter_by_view_and_search_and_page(self):
+        for index in range(3):
+            CreatorItem.objects.create(
+                account=self.account,
+                provider=CreatorProvider.YOUTUBE,
+                external_id=f"h{index}",
+                kind=CreatorItemKind.VIDEO,
+                title=f"Hidden roam {index}",
+                hidden=True,
+            )
+        self.item.featured = True
+        self.item.save()
+        url = f"{BASE}/accounts/{self.account.pk}/items"
+        headers = auth_headers(self.user)
+
+        def titles(query):
+            return [
+                i["title"]
+                for i in self.client.get(f"{url}?{query}", **headers).json()
+            ]
+
+        self.assertEqual(titles("view=featured"), ["A video"])
+        self.assertEqual(len(titles("view=hidden")), 3)
+        self.assertEqual(titles("view=shown"), ["A video"])
+        self.assertEqual(len(titles("q=roam")), 3)
+        self.assertEqual(len(titles("view=hidden&limit=2")), 2)
+        self.assertEqual(len(titles("view=hidden&offset=2&limit=2")), 1)
+        bad = self.client.get(f"{url}?view=nope", **headers)
+        self.assertEqual(bad.status_code, 400)
+
+        counts = self.client.get(
+            f"{BASE}/accounts/{self.account.pk}/item-counts", **headers
+        ).json()
+        self.assertEqual(counts, {"shown": 1, "featured": 1, "hidden": 3})
+        counts = self.client.get(
+            f"{BASE}/accounts/{self.account.pk}/item-counts?q=video",
+            **headers,
+        ).json()
+        self.assertEqual(counts, {"shown": 1, "featured": 1, "hidden": 0})
+
+    def test_item_counts_are_refused_to_outsiders(self):
+        response = self.client.get(
+            f"{BASE}/accounts/{self.account.pk}/item-counts",
+            **auth_headers(self.outsider),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_accounts_name_the_owners_main(self):
+        main = EveCharacter.objects.create(
+            character_id=90000001,
+            character_name="Creator Main",
+            user=self.account.user,
+        )
+        EvePlayer.objects.update_or_create(
+            user=self.account.user, defaults={"primary_character": main}
+        )
+        row = self.client.get(
+            f"{BASE}/accounts", **auth_headers(self.user)
+        ).json()[0]
+        self.assertEqual(row["character_id"], 90000001)
+        self.assertEqual(row["character_name"], "Creator Main")

@@ -1,6 +1,6 @@
 ---
 import { i18n, t_key } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -15,12 +15,14 @@ const can_skillsets = can(gates, 'skillsets.manage')
 if (!can_learning && !can_skillsets) return HTTP_403_Forbidden()
 
 const page_title = t('learning_manage.page_title')
+// "New guide" in the hero opens a blank guide row at the top of Guides.
+const new_guide = Astro.url.searchParams.get('new_guide') === '1'
 
-// Tabs follow SectionTabs: /learning/manage/#guides opens that tab.
+// Tabs follow SectionTabs: /learning/manage/#certificates opens that tab.
 const panels = [
     ...(can_learning ? [
+        { id: 'guides', partial: `/partials/learning_manage_guides_component/${new_guide ? '?new=1' : ''}` },
         { id: 'certificates', partial: '/partials/learning_manage_certificates_component/' },
-        { id: 'guides', partial: '/partials/learning_manage_guides_component/' },
         { id: 'onboarding', partial: '/partials/learning_manage_onboarding_component/' },
     ] : []),
     ...(can_skillsets ? [
@@ -29,24 +31,40 @@ const panels = [
 ]
 const tabs = panels.map((panel) => ({ id: panel.id, label: t(t_key("learning_manage.tab_", panel.id)) }))
 
+const breadcrumbs = [
+    { page_title: t('learning_admin.crumb_learning'), accumulated_path: translatePath('/learning/') },
+    { page_title: t('learning_admin.crumb_manage'), accumulated_path: translatePath('/learning/manage/') },
+]
+
 import Viewport from '@layouts/Viewport.astro'
-import PageDefault from '@components/page/PageDefault.astro'
-import PageTitle from '@components/page/PageTitle.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import Button from '@components/blocks/Button.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('learning_manage.description')}>
-    <PageDefault>
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-            <Button href={translatePath('/learning/')} color="transparent" size="sm" narrow={true}>
-                {t('learning_manage.back')}
-            </Button>
-        </FlexInline>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero
+                title={page_title}
+                role={can_learning ? t('learning_admin.role') : t('learning_admin.role_skillsets')}
+                fact={t('learning_admin.fact')}
+            >
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/learning/')}>{t('learning_manage.back')}</Button>
+                    {can_learning &&
+                        <Button href={`${translatePath('/learning/manage/')}?new_guide=1#guides`}>{t('learning_manage.guides_new')}</Button>
+                    }
+                </Fragment>
+            </ManageHero>
+        </Flexblock>
 
         <SectionTabs aria_label={t('learning_manage.tabs_label')} id_prefix="learning-manage" tabs={tabs}>
             {panels.map((panel, index) =>
@@ -57,5 +75,6 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                 </SectionTabPanel>
             )}
         </SectionTabs>
-    </PageDefault>
+    </Flexblock>
+</PageLanding>
 </Viewport>

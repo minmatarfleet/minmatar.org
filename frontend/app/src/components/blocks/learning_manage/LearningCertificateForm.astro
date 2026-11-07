@@ -1,0 +1,295 @@
+---
+/**
+ * A certificate's open-row form: Title, Summary, Page address, who it is
+ * for, its guides in order (drag, or up/down; add by title, remove), a
+ * Published switch and one Save. Posts to the certificates partial
+ * (part=save), which answers with the whole row.
+ */
+import type { LearningManageCertificateWrite } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    values:         LearningManageCertificateWrite;
+    original_slug:  string | null;
+    row_id:         string;
+    post_url:       string;
+    /** Every guide, for titles and the "Add a guide" picker. */
+    guides:         { slug: string; title: string; published: boolean }[];
+    saved?:         boolean;
+    error?:         string | null;
+    [propName: string]: any;
+}
+
+const {
+    values,
+    original_slug,
+    row_id,
+    post_url,
+    guides,
+    saved = false,
+    error = null,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { CERTIFICATE_GUIDES_EVENT, CERTIFICATE_PATH_PREFIX, PERSONAS } from '@helpers/learning_manage'
+import { sort_item_attrs } from '@helpers/manage_reorder'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import ManageSortControls from '@components/blocks/manage/ManageSortControls.astro'
+
+const id = (name: string) => `${row_id}-${name}`
+const by_slug = new Map(guides.map((guide) => [guide.slug, guide]))
+const chosen = (values.learning_slugs ?? []).map((slug) => by_slug.get(slug) ?? { slug, title: slug, published: false })
+const personas = values.personas ?? []
+const state = { slug_edited: original_slug !== null, slug: values.slug, dragging: null }
+const slug_from_title = String.raw`if (!slug_edited) slug = $el.value.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '')`
+// Adds the picked guide (once) to the end of the list, from the row template.
+const add_guide = `
+    const option = $refs.pick.selectedOptions[0]
+    if (!option || !option.value) return
+    if ([...$refs.list.querySelectorAll('input[name=learning_slugs]')].some((input) => input.value === option.value)) return
+    const row = $refs.row.content.firstElementChild.cloneNode(true)
+    row.querySelector('input').value = option.value
+    row.querySelector('.cert-guide__title').textContent = option.text
+    $refs.list.appendChild(row)
+    $refs.pick.value = ''
+`
+---
+
+<form
+    class="[ manage-form cert-form ]"
+    hx-post={post_url}
+    hx-target={`#${row_id}`}
+    hx-select={`#${row_id}`}
+    hx-swap="outerHTML"
+    x-data={JSON.stringify(state)}
+>
+    <input type="hidden" name="original_slug" value={original_slug ?? ''} />
+    <input type="hidden" name="row_id" value={row_id} />
+
+    <div class="[ cert-form__grid ]">
+        <div class="[ cert-form__column ]">
+            <ManageField label={t('learning_manage.title')} for={id('title')}>
+                <Input id={id('title')} name="title" value={values.title} required x-on:input={slug_from_title} />
+            </ManageField>
+            <ManageField label={t('learning_manage.summary')} for={id('summary')}>
+                <Textarea id={id('summary')} name="summary" rows="3">{values.summary}</Textarea>
+            </ManageField>
+            <ManageField label={t('learning_admin.page_address')} for={id('slug')} hint={t('learning_admin.page_address_hint')}>
+                <div class="[ cert-form__address ]">
+                    <span class="[ cert-form__prefix ]">{CERTIFICATE_PATH_PREFIX}</span>
+                    <input
+                        id={id('slug')}
+                        name="slug"
+                        value={values.slug}
+                        required
+                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                        autocomplete="off"
+                        x-model="slug"
+                        x-on:input="slug_edited = true"
+                    />
+                </div>
+            </ManageField>
+            <fieldset class="[ cert-form__personas ]">
+                <legend>{t('learning_admin.personas')}</legend>
+                {PERSONAS.map((persona) => (
+                    <label>
+                        <input type="checkbox" name="personas" value={persona} checked={personas.includes(persona)} />
+                        {t(t_key('learning_manage.persona_', persona))}
+                    </label>
+                ))}
+            </fieldset>
+        </div>
+
+        <div class="[ cert-form__column ]">
+            <div class="[ manage-field ]">
+            <span class="[ manage-field__label ]" id={id('guides-label')}>{t('learning_admin.certificate_guides')}</span>
+            <ol class="[ cert-guides ]" x-ref="list" aria-labelledby={id('guides-label')}>
+                {chosen.map((guide) => (
+                    <li class="[ cert-guide ]" {...sort_item_attrs(CERTIFICATE_GUIDES_EVENT)}>
+                        <input type="hidden" name="learning_slugs" value={guide.slug} />
+                        <span class="[ cert-guide__title ]">{guide.title}</span>
+                        {!guide.published && <span class="[ manage-muted ]">{t('learning_manage.draft')}</span>}
+                        <ManageSortControls event={CERTIFICATE_GUIDES_EVENT} name={guide.title} />
+                        <button type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', guide.title)} x-on:click="$el.closest('li').remove()">×</button>
+                    </li>
+                ))}
+            </ol>
+            </div>
+            <template x-ref="row">
+                <li class="[ cert-guide ]" {...sort_item_attrs(CERTIFICATE_GUIDES_EVENT)}>
+                    <input type="hidden" name="learning_slugs" value="" />
+                    <span class="[ cert-guide__title ]"></span>
+                    <ManageSortControls event={CERTIFICATE_GUIDES_EVENT} name={t('learning_admin.this_guide')} />
+                    <button type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', t('learning_admin.this_guide'))} x-on:click="$el.closest('li').remove()">×</button>
+                </li>
+            </template>
+            <div class="[ cert-form__add ]">
+                <ManageField label={t('learning_admin.add_guide')} for={id('pick')}>
+                    <Select id={id('pick')} x-ref="pick">
+                        <option value="">{t('learning_admin.pick_guide')}</option>
+                        {guides.map((guide) => <option value={guide.slug}>{guide.title}</option>)}
+                    </Select>
+                </ManageField>
+                <Button type="button" size="sm" color="transparent" x-on:click={add_guide}>{t('learning_admin.add')}</Button>
+            </div>
+        </div>
+    </div>
+
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('learning_manage.save')}</Button>
+        <Button type="button" size="sm" color="transparent" narrow={true} x-on:click="$el.closest('form').reset(); open = false">{t('cancel')}</Button>
+        {saved && <span class="[ manage-saved ]">{t('learning_admin.saved')}</span>}
+        <span class="[ manage-actions__end ]">
+            <ManageSwitch name="published" label={t('learning_manage.published')} checked={values.published ?? true} />
+        </span>
+    </div>
+</form>
+
+<style lang="scss">
+    .cert-form__grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-m);
+        align-items: start;
+
+        @media (max-width: 48rem) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .cert-form__column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .cert-form__address {
+        display: flex;
+        align-items: center;
+        border: solid 1px var(--border-color);
+        background-color: var(--surface-sunken);
+        padding-inline: var(--space-s-m);
+
+        &:focus-within {
+            outline: 1px solid var(--highlight);
+        }
+
+        input {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: var(--space-s) 0;
+            border: 0;
+            background: none;
+            color: var(--form-color);
+            font: inherit;
+            outline: none;
+        }
+    }
+
+    .cert-form__prefix {
+        flex: 0 0 auto;
+        color: var(--text-muted);
+    }
+
+    .cert-form__personas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-m);
+        margin: 0;
+        padding: 0;
+        border: 0;
+
+        legend {
+            margin-block-end: var(--space-2xs);
+            font-size: var(--step--1);
+        }
+
+        label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            color: var(--highlight);
+        }
+    }
+
+    .cert-guides {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+        border: 1px solid var(--hairline);
+    }
+
+    .cert-guide {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-xs);
+        counter-increment: step;
+        background-color: var(--surface-sunken);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+
+        &::before {
+            content: counter(step);
+            flex: 0 0 auto;
+            min-width: 1.5em;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        &[draggable='true'] {
+            opacity: 0.6;
+        }
+    }
+
+    .cert-guides:empty {
+        display: none;
+    }
+
+    .cert-guide__title {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .cert-guide__remove {
+        padding: 0 var(--space-2xs);
+        background: none;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        font-size: var(--step-1);
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--fleet-red);
+            border-color: var(--hairline-medium);
+        }
+    }
+
+    .cert-form__add {
+        display: flex;
+        align-items: flex-end;
+        gap: var(--space-xs);
+
+        > :first-child {
+            flex: 1 1 auto;
+        }
+    }
+</style>

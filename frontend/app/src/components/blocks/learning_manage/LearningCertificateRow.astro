@@ -1,0 +1,69 @@
+---
+/**
+ * One certificate in Manage learning's Certificates table: a drag grip and
+ * up/down buttons (the list saves its order when a row moves), the title
+ * with who it is for, its guide and award counts, and a status dot. It
+ * opens in place on its form (`url`, or the `detail` slot).
+ */
+import type { LearningManageCertificate } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    /** null: the new certificate row (not sortable). */
+    certificate:    LearningManageCertificate | null;
+    row_id:         string;
+    url?:           string;
+    open?:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    certificate,
+    row_id,
+    url,
+    open = false,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { sort_item_attrs } from '@helpers/manage_reorder'
+import { CERTIFICATE_ORDER_EVENT } from '@helpers/learning_manage'
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageStatusDot from '@components/blocks/manage/ManageStatusDot.astro'
+import ManageSortControls from '@components/blocks/manage/ManageSortControls.astro'
+
+const title = certificate?.title || t('learning_admin.certificates_new')
+const personas = certificate?.personas.map((persona) => t(t_key('learning_manage.persona_', persona))).join(' · ') ?? ''
+---
+
+<ExpandRow
+    id={row_id}
+    colspan={6}
+    label={t('learning_admin.open').replace('~NAME', title)}
+    url={url}
+    open={open}
+    {...(certificate ? sort_item_attrs(CERTIFICATE_ORDER_EVENT) : {})}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{title}</span>
+                {personas && <span class="[ manage-who__sub ]">{personas}</span>}
+            </span>
+        </button>
+    </td>
+    <td class="[ num is-wide ]">{certificate?.learning_slugs.length ?? 0}</td>
+    <td class="[ num is-wide ]">{certificate?.award_count ?? 0}</td>
+    <td>
+        <ManageStatusDot
+            tone={certificate?.published ? 'good' : 'quiet'}
+            text={certificate?.published ? t('learning_manage.published') : t('learning_manage.draft')}
+        />
+    </td>
+    <td class="act">
+        {certificate && <input type="hidden" name="order" value={certificate.slug} />}
+        {certificate && <ManageSortControls event={CERTIFICATE_ORDER_EVENT} name={title} />}
+    </td>
+    <Fragment slot="detail"><slot name="detail" /></Fragment>
+</ExpandRow>
