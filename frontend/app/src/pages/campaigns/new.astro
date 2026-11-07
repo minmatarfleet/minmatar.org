@@ -1,21 +1,17 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
-import { create_campaign } from '@helpers/api.minmatar.org/campaigns'
+import { get_campaign_choices, type CampaignChoice } from '@helpers/api.minmatar.org/campaigns'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageDefault from '@components/page/PageDefault.astro'
 import PageTitle from '@components/page/PageTitle.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Button from '@components/blocks/Button.astro'
-import Input from '@components/blocks/Input.astro'
-import Select from '@components/blocks/Select.astro'
+import CampaignNewForm from '@components/blocks/CampaignNewForm.astro'
 
 const { auth_token, user } = get_request_user(Astro)
 if (!user || !auth_token) return login_redirect(Astro)
@@ -24,34 +20,16 @@ const gates = await get_gates(Astro)
 if (!can(gates, 'campaigns.create'))
     return HTTP_403_Forbidden()
 
-const text = (form: FormData, key: string) => String(form.get(key) ?? '').trim()
-/** `datetime-local` values are EVE time (UTC). */
-const to_iso = (raw: string) => `${raw}${raw.length === 16 ? ':00' : ''}Z`
-
-let error_message: string | null = null
-let values: Record<string, string> = {}
-
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    values = Object.fromEntries([...form.entries()].map(([key, value]) => [key, String(value)]))
-    try {
-        const created = await create_campaign(auth_token, {
-            name: text(form, 'name'),
-            slug: text(form, 'slug'),
-            short_code: text(form, 'short_code'),
-            kind: text(form, 'kind') === 'strategic' ? 'strategic' : 'faction_warfare',
-            tagline: text(form, 'tagline'),
-            start_at: to_iso(text(form, 'start_at')),
-            end_at: to_iso(text(form, 'end_at')),
-            system_ids: text(form, 'system_ids').split(/[\s,]+/).filter(Boolean).map((id) => parseInt(id)),
-        })
-        return Astro.redirect(translatePath(`/campaigns/${created.slug}/settings/`))
-    } catch (error) {
-        error_message = error.message
-    }
+// The same form as the "New campaign" dialog on /campaigns/; this route stays for released links.
+let kinds: CampaignChoice[] = []
+let fetch_error = ''
+try {
+    kinds = (await get_campaign_choices(auth_token)).kind
+} catch (error) {
+    fetch_error = error.message
 }
 
-const page_title = t('campaigns.new.page_title')
+const page_title = t('campaigns.manage.new')
 const breadcrumbs = [
     { page_title: t('campaigns.page_title'), accumulated_path: '/campaigns/' },
     { page_title, accumulated_path: '/campaigns/new/' },
@@ -72,45 +50,7 @@ const breadcrumbs = [
         <PageTitle slot="header">{page_title}</PageTitle>
 
         <ComponentBlock>
-            <form method="post">
-                <Flexblock gap="var(--space-xs)">
-                    {error_message && <p class="[ campaign-new__error ]" role="alert">{error_message}</p>}
-                    <label>{t('campaigns.settings.name')}<Input name="name" value={values.name ?? ''} maxlength="128" required /></label>
-                    <FlexInline gap="var(--space-s)">
-                        <label>{t('campaigns.new.slug')}<Input name="slug" value={values.slug ?? ''} pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="64" required /></label>
-                        <label>{t('campaigns.new.short_code')}<Input name="short_code" value={values.short_code ?? ''} pattern="[A-Za-z0-9]{2,12}" maxlength="12" required /></label>
-                        <label>{t('campaigns.settings.kind')}
-                            <Select name="kind" size="sm">
-                                <option value="faction_warfare" selected={values.kind !== 'strategic'}>faction_warfare</option>
-                                <option value="strategic" selected={values.kind === 'strategic'}>strategic</option>
-                            </Select>
-                        </label>
-                    </FlexInline>
-                    <label>{t('campaigns.settings.tagline')}<Input name="tagline" value={values.tagline ?? ''} maxlength="200" /></label>
-                    <FlexInline gap="var(--space-s)">
-                        <label>{t('campaigns.settings.start')}<Input type="datetime-local" name="start_at" value={values.start_at ?? ''} required /></label>
-                        <label>{t('campaigns.settings.end')}<Input type="datetime-local" name="end_at" value={values.end_at ?? ''} required /></label>
-                    </FlexInline>
-                    <small>{t('campaigns.settings.eve_time')}</small>
-                    <label>{t('campaigns.new.systems')}<Input name="system_ids" value={values.system_ids ?? ''} /></label>
-                    <small>{t('campaigns.new.systems_hint')}</small>
-                    <div><Button type="submit" color="fleet-red" off_disable={true}>{t('campaigns.new.create')}</Button></div>
-                </Flexblock>
-            </form>
+            <CampaignNewForm kinds={kinds} errors={fetch_error ? { form: fetch_error } : {}} show_title={false} />
         </ComponentBlock>
     </PageDefault>
 </Viewport>
-
-<style lang="scss">
-    label {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-    }
-
-    .campaign-new__error {
-        margin: 0;
-        padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--fleet-red);
-    }
-</style>

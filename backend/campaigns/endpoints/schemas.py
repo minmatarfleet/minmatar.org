@@ -477,7 +477,8 @@ class GangRequest(Schema):
 class CampaignCreateRequest(Schema):
     name: str = Field(min_length=1, max_length=128)
     slug: str = Field(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=64)
-    short_code: str = Field(pattern=r"^[A-Za-z0-9]{2,12}$")
+    # Blank: derived from the name (initials), unique.
+    short_code: str = Field(default="", pattern=r"^(?:[A-Za-z0-9]{2,12})?$")
     kind: Literal["faction_warfare", "strategic"] = "faction_warfare"
     tagline: str = Field(default="", max_length=200)
     description_md: str = ""
@@ -712,3 +713,20 @@ class PayoutCodeRequest(Schema):
     site_kind: str
     label: str = Field(default="", max_length=64)
     confirmed: bool = False
+
+
+class ChoiceOut(Schema):
+    value: str
+    label: str
+
+
+class CampaignChoicesOut(Schema):
+    status: list[ChoiceOut]
+    kind: list[ChoiceOut]
+    goal: list[ChoiceOut]
+    role: list[ChoiceOut]
+    priority: list[ChoiceOut]
+    party_kind: list[ChoiceOut]
+    party_side: list[ChoiceOut]
+    site_kind: list[ChoiceOut]
+    metric: list[ChoiceOut]

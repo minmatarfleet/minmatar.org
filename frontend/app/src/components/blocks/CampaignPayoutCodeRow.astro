@@ -1,0 +1,92 @@
+---
+/**
+ * One row of the payout codes table: the code (with "Not mapped" in orange
+ * when nobody has mapped it), what it counts as, how often it was seen in
+ * 30 days, and a Scores switch that saves when flipped. It opens in place
+ * to the code's edit form (`campaign_payout_codes_component?part=row`).
+ */
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+interface Props {
+    row: {
+        event_code:     number;
+        site_kind:      string | null;
+        label:          string;
+        confirmed:      boolean;
+        seen:           number;
+    };
+    colspan:        number;
+    counts_as:      string;
+    row_url:        string;
+    switch_url:     string;
+    open?:          boolean;
+    saved?:         boolean;
+    error?:         string;
+    [propName: string]: any;
+}
+
+const {
+    row,
+    colspan,
+    counts_as,
+    row_url,
+    switch_url,
+    open = false,
+    saved = false,
+    error = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const id = `payout-code-${row.event_code}`
+const unmapped = row.site_kind === null
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+---
+
+<ExpandRow
+    id={id}
+    colspan={colspan}
+    label={t('campaigns.manage.code_open').replace('~CODE', String(row.event_code))}
+    url={row_url}
+    open={open}
+    {...attributes}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{row.event_code}</span>
+                {unmapped && <span class="[ manage-who__sub manage-warn ]">{t('campaigns.manage.code_unmapped_sub')}</span>}
+                {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+            </span>
+        </button>
+    </td>
+    <td class:list={['is-wide', unmapped ? 'manage-muted' : 'campaign-code__kind']}>{counts_as}</td>
+    <td class="num">{row.seen.toLocaleString(lang)}</td>
+    <td class="act">
+        <ManageSwitch
+            name="confirmed"
+            label={`${t('campaigns.manage.scores')}: ${row.event_code}`}
+            hide_label={true}
+            checked={row.confirmed}
+            disabled={unmapped}
+            hx-post={switch_url}
+            hx-trigger="change"
+            hx-vals={JSON.stringify({ site_kind: row.site_kind ?? 'unknown', label: row.label })}
+            hx-target={`#${id}`}
+            hx-select={`#${id}`}
+            hx-swap="outerHTML"
+            title={unmapped ? t('campaigns.manage.code_pick_kind') : undefined}
+        />
+    </td>
+</ExpandRow>
+
+<style lang="scss">
+    .campaign-code__kind {
+        color: var(--highlight);
+    }
+</style>

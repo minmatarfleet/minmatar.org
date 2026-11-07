@@ -29,6 +29,8 @@ import {
     get_campaign_roster,
     get_campaign_readiness,
     include_campaign_character,
+    get_campaign_choices,
+    type CampaignChoices,
 } from '@helpers/api.minmatar.org/campaigns'
 import { ACTIVITY_PAGE_SIZE, paginate } from '@helpers/fetching/campaigns'
 
@@ -42,7 +44,6 @@ import Button from '@components/blocks/Button.astro'
 import CampaignCountdown from '@components/blocks/CampaignCountdown.astro'
 import Markdown from '@components/blocks/Markdown.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import CogIcon from '@components/icons/buttons/CogIcon.astro'
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
 import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 
@@ -98,6 +99,7 @@ let killmails:{ rows:CampaignKillmail[]; has_more:boolean } = { rows: [], has_mo
 let sites:{ rows:CampaignSite[]; has_more:boolean } = { rows: [], has_more: false }
 let roster:CampaignRoster | null = null
 let readiness:CampaignReadiness | null = null
+let choices:CampaignChoices | null = null
 
 /** Sub-resources answer 403 without `campaigns.view`; each section degrades on its own. */
 if (campaign) {
@@ -110,6 +112,7 @@ if (campaign) {
         get_campaign_roster(slug, auth_token as string),
         get_campaign_readiness(auth_token as string),
         get_campaign_corporation_leaderboard(slug, auth_token as string, 'kills', 'week'),
+        can_manage_campaign ? get_campaign_choices(auth_token as string) : Promise.resolve(null),
     ])
 
     week = results[0].status === 'fulfilled' ? results[0].value : null
@@ -120,6 +123,7 @@ if (campaign) {
     roster = results[5].status === 'fulfilled' ? results[5].value : null
     readiness = results[6].status === 'fulfilled' ? results[6].value : null
     corporation_board = results[7].status === 'fulfilled' ? results[7].value : []
+    choices = results[8].status === 'fulfilled' ? results[8].value : null
 }
 
 /** Enlisting only makes sense while the campaign can still be joined. */
@@ -200,13 +204,11 @@ const breadcrumbs = [
                 )}
                 {can_manage_campaign && (
                     <Button
-                        href={translatePath(`/campaigns/${slug}/settings/`)}
+                        href={translatePath('/campaigns/event-codes/')}
                         color="transparent"
-                        narrow={true}
-                        aria-label={t('campaigns.settings.page_title')}
-                        title={t('campaigns.settings.page_title')}
+                        size="sm"
                     >
-                        <CogIcon slot="icon" />
+                        {t('campaigns.manage.payout_codes')}
                     </Button>
                 )}
             </PageActions>
@@ -232,6 +234,8 @@ const breadcrumbs = [
                 roster={roster}
                 readiness={readiness}
                 token_error={token_error_message}
+                can_manage={can_manage_campaign}
+                choices={choices}
             />
         }
     </PageWide>

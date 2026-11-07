@@ -1,0 +1,101 @@
+---
+/**
+ * The campaign page's Settings tab (managers only): one SettingsSection per
+ * group, each with a live summary of its current value. The summaries come
+ * from the campaign the page already loaded; each body loads its own part
+ * of `campaign_settings_component` when the section opens.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { CampaignDetail, CampaignWeek } from '@dtypes/api.minmatar.org'
+import type { CampaignChoices } from '@helpers/api.minmatar.org/campaigns'
+import { query_string } from '@helpers/string'
+import { choice_label, systems_summary, sides_summary, eve_weekday_date } from '@helpers/campaign_manage'
+
+interface Props {
+    campaign:               CampaignDetail;
+    week:                   CampaignWeek | null;
+    choices:                CampaignChoices | null;
+    has_structures_tab:     boolean;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    week,
+    choices,
+    has_structures_tab,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const part_url = (part: string) => translatePath(`/partials/campaign_settings_component/?${query_string({
+    slug: campaign.slug,
+    part,
+    ...(has_structures_tab ? { tab: '1' } : {}),
+})}`)
+
+const none_yet = t('campaigns.manage.none_yet')
+const basics = [
+    campaign.tagline && `"${campaign.tagline}"`,
+    choice_label(choices?.status, campaign.status),
+    t('campaigns.manage.ends_on').replace('~DATE', eve_weekday_date(lang, campaign.end_at)),
+].filter(Boolean).join(' · ')
+
+const targets = week?.targets ?? []
+const proposed = targets.filter((row) => row.proposed).length
+const targets_summary = targets.length === 0
+    ? t('campaigns.manage.targets_none')
+    : [
+        targets.length === 1 ? t('campaigns.manage.targets_count_one') : t('campaigns.manage.targets_count').replace('~COUNT', String(targets.length)),
+        proposed > 0 ? t('campaigns.manage.targets_proposed').replace('~COUNT', String(proposed)) : '',
+    ].filter(Boolean).join(' · ')
+
+const order_summary = campaign.commander_order_text
+    ? `${campaign.commander_order_text}${campaign.commander_order_is_draft ? ` ${t('campaigns.manage.order_draft_suffix')}` : ''}`
+    : t('campaigns.manage.order_none')
+
+const structures = campaign.structures ?? []
+const structures_summary = structures.length === 0
+    ? (has_structures_tab ? `${none_yet} · ${t('campaigns.manage.structures_hint')}` : none_yet)
+    : structures.length === 1
+        ? t('campaigns.manage.structures_count_one')
+        : t('campaigns.manage.structures_count').replace('~COUNT', String(structures.length))
+
+const fittings = campaign.fittings ?? []
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
+---
+
+<Flexblock gap="var(--space-m)" class:list={['[ campaign-settings-panel ]', Astro.props.class]} {...attributes}>
+    <p class="[ manage-muted ]">{t('campaigns.manage.gate_note')}</p>
+
+    <SettingsSection id="campaign-settings-basics" title={t('campaigns.manage.basics')} summary={basics} url={part_url('basics')} load="open" />
+    <SettingsSection
+        id="campaign-settings-systems"
+        title={t('campaigns.manage.systems')}
+        summary={systems_summary(campaign.systems, choices?.goal) || none_yet}
+        url={part_url('systems')}
+        load="open"
+    />
+    <SettingsSection
+        id="campaign-settings-sides"
+        title={t('campaigns.manage.sides')}
+        summary={sides_summary(campaign.parties ?? [], choices?.party_side) || none_yet}
+        url={part_url('sides')}
+        load="open"
+    />
+    <SettingsSection
+        id="campaign-settings-fittings"
+        title={t('campaigns.manage.fittings')}
+        summary={fittings.map((fitting) => fitting.role_label ? `${fitting.name} (${fitting.role_label})` : fitting.name).join(' · ') || none_yet}
+        url={part_url('fittings')}
+        load="open"
+    />
+    <SettingsSection id="campaign-settings-targets" title={t('campaigns.manage.targets')} summary={targets_summary} url={part_url('targets')} load="open" />
+    <SettingsSection id="campaign-settings-order" title={t('campaigns.manage.order')} summary={order_summary} url={part_url('order')} load="open" />
+    <SettingsSection id="campaign-settings-structures" title={t('campaigns.manage.structures')} summary={structures_summary} url={part_url('structures')} load="open" />
+</Flexblock>
