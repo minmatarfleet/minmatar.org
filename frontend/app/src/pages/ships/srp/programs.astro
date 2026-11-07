@@ -1,6 +1,11 @@
 ---
+/**
+ * SRP amounts: what SRP pays per hull. One grid saved from one save bar;
+ * hulls whose open requests were filed at an old amount show under Needs
+ * attention and open to pay them at the current amount or keep them.
+ */
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -16,61 +21,76 @@ if (!can(gates, 'srp.programs.manage'))
     return HTTP_403_Forbidden()
 
 const PROGRAMS_PARTIAL_URL = translatePath('/partials/srp_programs_component/')
-const RECALCULATE_PARTIAL_URL = translatePath('/partials/srp_recalculate_component/')
+const page_title = t('admin_srp.page_title')
 
 import Viewport from '@layouts/Viewport.astro'
-
-import PageWide from '@components/page/PageWide.astro'
-import PageActions from '@components/page/PageActions.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-
-import FlexInline from '@components/compositions/FlexInline.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-
 import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
-
-const page_title = t('srp_programs.page_title')
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import Input from '@components/blocks/Input.astro'
 ---
 
 <Viewport title={page_title}>
-    <PageWide
-        cover={{
-            image: '/images/srp-cover.jpg',
-            image_990: '/images/srp-cover.jpg',
-            scrollable: true,
-            overlay: true,
-        }}
-    >
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>{page_title}</PageTitle>
-                <small>{t('srp_programs.leading_text')}</small>
-            </Flexblock>
-            <PageActions>
-                <Button href={translatePath('/ships/srp/')}>
-                    {t('keep_browsing')}
-                </Button>
-            </PageActions>
-        </FlexInline>
-
-        <Flexblock gap="var(--space-l)">
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('srp_programs.recalculate_title')}</h2>
-                    <p>{t('srp_programs.recalculate_text')}</p>
-                    <div id="srp-recalculate">
-                        <LazyPartial url={RECALCULATE_PARTIAL_URL} />
-                    </div>
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <div id="srp-programs">
-                    <LazyPartial url={PROGRAMS_PARTIAL_URL} />
-                </div>
-            </ComponentBlock>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-l)" x-data="{ adding: false }">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs
+                is_landing_page={true}
+                links_only={true}
+                breadcrumbs={[
+                    { page_title: t('ships'), accumulated_path: translatePath('/ships/') },
+                    { page_title: t('ships.srp.page_title'), accumulated_path: translatePath('/ships/srp/') },
+                    { page_title: t('admin_srp.crumb'), accumulated_path: translatePath('/ships/srp/programs/') },
+                ]}
+            />
+            <ManageHero title={page_title} role={t('admin_srp.role')} fact={t('admin_srp.fact')}>
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/ships/srp/')}>{t('admin_srp.back')}</Button>
+                    <Button type="button" x-on:click="adding = !adding" x-bind:aria-expanded="adding" aria-controls="srp-add">
+                        {t('admin_srp.add_hull')}
+                    </Button>
+                </Fragment>
+            </ManageHero>
         </Flexblock>
-    </PageWide>
+
+        <ComponentBlock id="srp-add" x-show="adding" x-cloak>
+            <form
+                class="[ manage-form srp-add ]"
+                hx-post={`${PROGRAMS_PARTIAL_URL}?part=add`}
+                hx-target="#srp-programs"
+                hx-select="#srp-programs"
+                hx-swap="outerHTML"
+                {...{ 'x-on:htmx:after-request': 'if ($event.detail.successful) $el.reset()' }}
+            >
+                <div class="[ manage-fields ]">
+                    <EntityPicker
+                        id="srp-add-hull"
+                        kind="ship"
+                        name="eve_type_id"
+                        label={t('admin_srp.hull')}
+                        placeholder={t('admin_srp.add_placeholder')}
+                        required={true}
+                    />
+                    <ManageField label={t('admin_srp.pays')} for="srp-add-amount" hint={t('admin_srp.amount_hint')}>
+                        <Input id="srp-add-amount" name="srp_value" size="sm" inputmode="decimal" autocomplete="off" required />
+                    </ManageField>
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('admin_srp.add_hull')}</Button>
+                    <Button type="button" size="sm" color="transparent" x-on:click="adding = false">{t('cancel')}</Button>
+                </div>
+            </form>
+        </ComponentBlock>
+
+        <LazyPartial id="srp-programs" url={PROGRAMS_PARTIAL_URL} swap="outerHTML">
+            <p class="[ manage-muted ]">{t('loading')}</p>
+        </LazyPartial>
+    </Flexblock>
+</PageLanding>
 </Viewport>

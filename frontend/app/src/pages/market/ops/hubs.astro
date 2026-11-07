@@ -1,13 +1,18 @@
 ---
+/**
+ * Market hub settings, one hub at a time: order-book sync, what the hub
+ * keeps in stock, and removing it. The hub switcher and "Add a hub" sit in
+ * the masthead. Each section saves through market_hubs_component.
+ */
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 
-const { user } = get_request_user(Astro)
-if (!user) return login_redirect(Astro)
+const { auth_token, user } = get_request_user(Astro)
+if (!user || !auth_token) return login_redirect(Astro)
 
 let can_manage = false
 try {
@@ -17,42 +22,210 @@ try {
 }
 if (!can_manage) return HTTP_404_Not_Found()
 
+import type { MarketHub } from '@dtypes/api.minmatar.org'
+import { get_market_hubs } from '@helpers/api.minmatar.org/market_hubs'
 import { query_string } from '@helpers/string'
+import { hub_stock_summary } from '@helpers/market_hub_settings'
 
-const location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
-const HUBS_PARTIAL = translatePath(`/partials/market_hubs_component/${location_id > 0 ? `?${query_string({ location_id: String(location_id) })}` : ''}`)
+let hubs: MarketHub[] = []
+let fetching_error = false
+try {
+    hubs = (await get_market_hubs(auth_token)) ?? []
+} catch (error) {
+    console.log(error)
+    fetching_error = true
+}
 
-import Viewport from '@layouts/Viewport.astro'
-import PageDefault from '@components/page/PageDefault.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import LazyPartial from '@components/blocks/LazyPartial.astro'
-import Button from '@components/blocks/Button.astro'
+const active_hubs = hubs.filter((hub) => hub.market_active)
+const location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0') || 0
+const hub = active_hubs.find((row) => row.location_id === location_id) ?? active_hubs[0]
 
-const page_title = t('market.hubs.page_title')
+const PAGE_URL = translatePath('/market/ops/hubs/')
+const hub_url = (id: number) => `${PAGE_URL}?${query_string({ location_id: String(id) })}`
+const part_url = (part: string, values: Record<string, string> = {}) =>
+    translatePath(`/partials/market_hubs_component/?${query_string({ part, ...values })}`)
+
+const hub_title = (row: MarketHub) => row.solar_system_name || row.short_name || row.location_name
+const page_title = hub ? hub_title(hub) : t('market.hubs.page_title')
+
+const stock_summary = (row: MarketHub) =>
+    hub_stock_summary(t, row.contract_expectations, row.fitting_expectations, row.item_expectations)
+const tracked_total = hub ? hub.contract_expectations + hub.fitting_expectations + hub.item_expectations : 0
+
 const breadcrumbs = [
     { page_title: t('staging_supply.ops.page_title'), accumulated_path: translatePath('/market/ops/') },
-    { page_title: page_title, accumulated_path: Astro.url.pathname },
+    { page_title: t('market.hubs.page_title'), accumulated_path: PAGE_URL },
+    ...(hub ? [{ page_title: hub_title(hub), accumulated_path: hub_url(hub.location_id) }] : []),
 ]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('market.hubs.meta_description')}>
-    <PageDefault breadcrumbs={breadcrumbs}>
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-        </FlexInline>
-
-        <Flexblock gap="var(--space-l)">
-            <p>{t('market.hubs.leading_text')}</p>
-            <LazyPartial url={HUBS_PARTIAL}>
-                <p>{t('loading')}</p>
-            </LazyPartial>
-            <div>
-                <Button href={translatePath('/market/ops/')} color="transparent" size="sm" narrow={true}>
-                    {t('market.hubs.back')}
-                </Button>
-            </div>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-l)" x-data={`{ adding: ${JSON.stringify(!fetching_error && active_hubs.length === 0)} }`}>
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero
+                title={page_title}
+                path={hub ? hub_url(hub.location_id) : PAGE_URL}
+                role={t('admin_hubs.badge')}
+                fact={hub?.location_name}
+            >
+                <Fragment slot="actions">
+                    {active_hubs.length > 1 &&
+                        <Button color="transparent" href="#hub-switch">{t('admin_hubs.switch')}</Button>
+                    }
+                    <Button type="button" x-on:click="adding = !adding" x-bind:aria-expanded="adding" aria-controls="hub-add">
+                        {t('market.hubs.add')}
+                    </Button>
+                </Fragment>
+            </ManageHero>
         </Flexblock>
-    </PageDefault>
+
+        <ComponentBlock id="hub-add" x-show="adding" x-cloak={active_hubs.length > 0 ? true : undefined}>
+            <form
+                class="[ manage-form hub-add ]"
+                hx-post={part_url('add')}
+                hx-target="find .hub-add__result"
+                hx-swap="innerHTML"
+            >
+                <EntityPicker
+                    id="hub-add-location"
+                    kind="location"
+                    name="location_id"
+                    label={t('admin_hubs.add_label')}
+                    placeholder={t('admin_hubs.add_placeholder')}
+                    hint={t('admin_hubs.add_hint')}
+                    required={true}
+                />
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('market.hubs.add_button')}</Button>
+                    <Button type="button" size="sm" color="transparent" x-on:click="adding = false">{t('cancel')}</Button>
+                    <span class="[ hub-add__result ]" role="status"></span>
+                </div>
+            </form>
+        </ComponentBlock>
+
+        {fetching_error &&
+            <EmptyState title={t('admin_hubs.load_failed')} hint={t('admin_hubs.load_failed_hint')} />
+        }
+
+        {!fetching_error && !hub &&
+            <EmptyState title={t('market.hubs.empty')} hint={t('admin_hubs.empty_hint')} />
+        }
+
+        {active_hubs.length > 1 &&
+            <nav id="hub-switch" class="[ hub-switch ]" aria-label={t('admin_hubs.switch')}>
+                {active_hubs.map((row) => (
+                    <a
+                        href={hub_url(row.location_id)}
+                        class="[ hub-switch__tab ]"
+                        aria-current={row.location_id === hub?.location_id ? 'page' : undefined}
+                    >{hub_title(row)}</a>
+                ))}
+            </nav>
+        }
+
+        {hub &&
+            <Flexblock gap="var(--space-s)">
+                <SettingsSection
+                    id="hub-sync"
+                    title={t('market.hubs.order_book_sync')}
+                    summary={hub.prices_active ? t('admin_hubs.on') : t('admin_hubs.off')}
+                >
+                    <ManageSwitch
+                        slot="switch"
+                        hide_label={true}
+                        name="enabled"
+                        label={t('market.hubs.order_book_sync')}
+                        checked={hub.prices_active}
+                        hx-post={part_url('sync', { location_id: String(hub.location_id) })}
+                        hx-trigger="change"
+                        hx-swap="none"
+                    />
+                </SettingsSection>
+
+                <SettingsSection
+                    id="hub-stock"
+                    title={t('admin_hubs.stock_title')}
+                    summary={stock_summary(hub)}
+                    url={part_url('stock', { location_id: String(hub.location_id) })}
+                    expanded={true}
+                />
+
+                <SettingsSection
+                    id="hub-remove"
+                    title={t('admin_hubs.remove_title')}
+                    summary={t('admin_hubs.remove_summary')}
+                >
+                    <Flexblock gap="var(--space-s)">
+                        <p>{t('admin_hubs.remove_text')}</p>
+                        <div>
+                            <ConfirmAction
+                                label={t('admin_hubs.remove_button')}
+                                title={t('admin_hubs.remove_confirm_title').replace('~NAME', hub_title(hub))}
+                                consequence={[
+                                    hub.price_baseline ? t('admin_hubs.remove_keeps_baseline') : t('admin_hubs.remove_stops_sync'),
+                                    t('admin_hubs.remove_targets').replace('~COUNT', String(tracked_total)),
+                                ].join(' ')}
+                                confirm_label={t('admin_hubs.remove_confirm')}
+                                url={part_url('remove', { location_id: String(hub.location_id) })}
+                                target="#hub-remove-result"
+                                swap="innerHTML"
+                                color="fleet-red"
+                            />
+                            <span id="hub-remove-result" role="status"></span>
+                        </div>
+                    </Flexblock>
+                </SettingsSection>
+            </Flexblock>
+        }
+    </Flexblock>
+</PageLanding>
 </Viewport>
+
+<style lang="scss">
+    .hub-switch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-l);
+        border-block-end: 1px solid var(--hairline-medium);
+    }
+
+    .hub-switch__tab {
+        padding-block: var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--foreground);
+        text-decoration: none;
+        border-block-end: 2px solid transparent;
+        transition: color var(--fast-transition), border-color var(--fast-transition);
+
+        &[aria-current='page'] {
+            color: var(--highlight);
+            border-block-end-color: var(--fleet-red);
+        }
+    }
+
+    @media (hover: hover) {
+        .hub-switch__tab:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .hub-add {
+        max-width: 36rem;
+    }
+</style>

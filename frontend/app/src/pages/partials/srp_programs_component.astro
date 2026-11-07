@@ -1,4 +1,17 @@
 ---
+/**
+ * The SRP amounts grid (pages/ships/srp/programs.astro): every hull with its
+ * open requests and an editable "Pays" amount, saved from one SaveBar.
+ *
+ * GET              the grid
+ * POST             save every changed amount (fields amount_<program_id>)
+ * POST part=add    add a hull (eve_type_id, srp_value)
+ * POST part=pay    pay a hull's requests filed at an old amount at the current one
+ * POST part=keep   keep a hull's requests at their filed amounts
+ *
+ * Every answer is the grid again (#srp-programs). The class chips and the
+ * search filter the rendered rows locally, so unsaved amounts survive them.
+ */
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
@@ -7,7 +20,7 @@ import { get_request_user } from '@helpers/request_user'
 
 const { auth_token, user } = get_request_user(Astro)
 
-if (!user)
+if (!user || !auth_token)
     return HTTP_403_Forbidden()
 
 import { get_gates, can } from '@helpers/gates'
@@ -17,104 +30,294 @@ if (!can(gates, 'srp.programs.manage'))
     return HTTP_403_Forbidden()
 
 import type { SRPProgram } from '@dtypes/api.minmatar.org'
-import { get_srp_programs, set_srp_program_amount } from '@helpers/api.minmatar.org/srp'
-import { number_thousand_separator } from '@helpers/numbers'
+import {
+    add_srp_program,
+    get_srp_programs,
+    keep_srp_filed_amounts,
+    recalculate_srp_hull,
+    set_srp_program_amount,
+} from '@helpers/api.minmatar.org/srp'
+import { format_isk_shorthand, parse_isk_shorthand } from '@helpers/isk_shorthand'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
+
+// open_requests and stale_requests are new on the API; the generated types
+// catch up when the schema is regenerated.
+type HullRow = SRPProgram & { open_requests?: number, stale_requests?: number }
 
 const PROGRAMS_PARTIAL_URL = translatePath('/partials/srp_programs_component/')
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const RECALCULATE_PARTIAL_URL = translatePath('/partials/srp_recalculate_component/')
+const ROOT_ID = 'srp-programs'
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'save'
+const delay = parseInt(params.get('delay') ?? '0')
+const is_post = Astro.request.method === 'POST'
+const shorthand = (value: number) => format_isk_shorthand(value, lang)
+const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-let flash:string | false = false
-let saved_program_id = 0
+let fetch_error: Error | false = false
+let programs: HullRow[] = []
 
-if (Astro.request.method === 'POST') {
-    const program_id = parseInt(Astro.url.searchParams.get('program_id') ?? '0')
+async function load_programs() {
+    programs = (await get_srp_programs(auth_token as string)) ?? []
+}
+
+let saved_text: string | false = false
+let error_message: string | false = false
+
+if (is_post) {
     const form = await Astro.request.formData()
-    const srp_value = parseInt(String(form.get('srp_value') ?? '').replace(/[^0-9]/g, ''))
-
     try {
-        if (isNaN(srp_value))
-            throw new Error(t('srp_programs.invalid_amount'))
-        await set_srp_program_amount(auth_token as string, program_id, srp_value)
-        saved_program_id = program_id
-        flash = t('srp_programs.saved')
+        if (part === 'add') {
+            const eve_type_id = parseInt(String(form.get('eve_type_id') ?? '')) || 0
+            const amount = parse_isk_shorthand(String(form.get('srp_value') ?? ''))
+            if (!eve_type_id)
+                throw new Error(t('admin_srp.pick_hull'))
+            if (amount === null)
+                throw new Error(t('admin_srp.invalid_amount'))
+            await add_srp_program(auth_token, eve_type_id, amount)
+            await load_programs()
+            const added = programs.find((program) => program.eve_type.id === eve_type_id)
+            saved_text = t('admin_srp.added').replace('~NAME', added?.eve_type.name ?? '').replace('~AMOUNT', shorthand(amount))
+        } else if (part === 'pay' || part === 'keep') {
+            const ship_type_id = parseInt(params.get('ship_type_id') ?? '0') || 0
+            const result = part === 'pay'
+                ? await recalculate_srp_hull(auth_token, ship_type_id)
+                : await keep_srp_filed_amounts(auth_token, ship_type_id)
+            await load_programs()
+            const hull = programs.find((program) => program.eve_type.id === ship_type_id)
+            const amount = hull?.current_amount?.srp_value ?? 0
+            saved_text = (part === 'pay' ? t('admin_srp.paid') : t('admin_srp.kept'))
+                .replace('~COUNT', String(result?.updated ?? 0))
+                .replace('~NAME', hull?.eve_type.name ?? '')
+                .replace('~AMOUNT', shorthand(amount))
+        } else {
+            await load_programs()
+            const changes: { program: HullRow, amount: number }[] = []
+            const invalid: string[] = []
+            for (const program of programs) {
+                const raw = form.get(`amount_${program.id}`)
+                if (raw === null)
+                    continue
+                const amount = parse_isk_shorthand(String(raw))
+                if (amount === null) {
+                    invalid.push(program.eve_type.name)
+                    continue
+                }
+                if (amount !== (program.current_amount?.srp_value ?? null))
+                    changes.push({ program, amount })
+            }
+            if (invalid.length > 0)
+                throw new Error(t('admin_srp.invalid_amounts').replace('~NAMES', invalid.join(', ')))
+            for (const change of changes)
+                await set_srp_program_amount(auth_token, change.program.id, change.amount)
+            if (changes.length > 0)
+                await load_programs()
+            saved_text = changes.length === 0
+                ? t('admin_srp.nothing_changed')
+                : t('admin_srp.saved').replace('~LIST', changes.map((change) => `${change.program.eve_type.name} ${shorthand(change.amount)}`).join(', '))
+        }
     } catch (error) {
-        flash = error instanceof Error ? error.message : t('srp_programs.save_failed')
+        error_message = error_text(error)
     }
 }
 
-let fetch_error:Error | false = false
-let programs:SRPProgram[] = []
-
-try {
-    programs = await get_srp_programs(auth_token as string)
-} catch (error) {
-    fetch_error = error
+if (programs.length === 0) {
+    try {
+        await load_programs()
+    } catch (error) {
+        fetch_error = error as Error
+    }
 }
+
+const classes = [...new Map(programs.map((program) => [program.eve_group.id, program.eve_group.name])).entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+const stale_hulls = programs.filter((program) => (program.stale_requests ?? 0) > 0)
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import Button from '@components/blocks/Button.astro'
-import Input from '@components/blocks/Input.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import SaveBar from '@components/blocks/manage/SaveBar.astro'
+
+const COLUMNS = [
+    { label: t('admin_srp.hull') },
+    { label: t('admin_srp.open_requests'), align: 'num' as const, phone: false },
+    { label: t('admin_srp.pays'), align: 'num' as const },
+]
+
+/** The Alpine filter test for a row: class chip or Needs attention, then the search. */
+const row_filter = (program: HullRow) => {
+    const view_match = `view === 'all' || view === ${JSON.stringify(String(program.eve_group.id))}${(program.stale_requests ?? 0) > 0 ? ` || view === 'stale'` : ''}`
+    return `(${view_match}) && (!q || ${JSON.stringify(program.eve_type.name.toLowerCase())}.includes(q.trim().toLowerCase()))`
+}
 ---
 
 {fetch_error ?
-    <ErrorRefetch
-        args={{
-            partial: PROGRAMS_PARTIAL_URL,
-            error: fetch_error,
-            delay: delay,
-            target: '#srp-programs',
-        }}
-    />
+    <div id={ROOT_ID}>
+        <ErrorRefetch
+            args={{
+                partial: PROGRAMS_PARTIAL_URL,
+                error: fetch_error,
+                delay: delay,
+                target: `#${ROOT_ID}`,
+            }}
+        />
+    </div>
     :
-    <Flexblock gap="var(--space-s)">
-        {flash && <p role="status">{flash}</p>}
+    <div id={ROOT_ID} class="[ manage-list srp-amounts ]" x-data={`{ view: ${JSON.stringify(stale_hulls.length > 0 && is_post && part === 'save' ? 'stale' : 'all')}, q: '' }`}>
+        <div class="[ manage-filters ]" role="search">
+            <div class="[ manage-filters__chips ]">
+                <fieldset class="[ manage-chips ]">
+                    <legend class="[ visually-hidden ]">{t('admin_srp.classes')}</legend>
+                    <label class="[ manage-chip ]">
+                        <input type="radio" name="srp_view" value="all" x-model="view" />
+                        <span>{t('admin_srp.all')}</span>
+                        <span class="[ manage-chip__count ]">{programs.length}</span>
+                    </label>
+                    {classes.map(([group_id, group_name]) => (
+                        <label class="[ manage-chip ]">
+                            <input type="radio" name="srp_view" value={String(group_id)} x-model="view" />
+                            <span>{group_name}</span>
+                            <span class="[ manage-chip__count ]">{programs.filter((program) => program.eve_group.id === group_id).length}</span>
+                        </label>
+                    ))}
+                </fieldset>
+                {stale_hulls.length > 0 &&
+                    <fieldset class="[ manage-chips is-attention ]">
+                        <legend class="[ manage-eyebrow ]">{t('manage.kit.needs_attention')}</legend>
+                        <label class="[ manage-chip is-warn ]">
+                            <input type="radio" name="srp_view" value="stale" x-model="view" />
+                            <span>{t('admin_srp.filed_old')}</span>
+                            <span class="[ manage-chip__count ]">{stale_hulls.length}</span>
+                        </label>
+                    </fieldset>
+                }
+            </div>
+            <div class="[ manage-toolbar ]">
+                <ManageSearch id="srp-search" name="srp_q" label={t('admin_srp.search')} x-model="q" />
+            </div>
+        </div>
+
+        {error_message && <p class="[ manage-field__error ]" role="alert">{error_message}</p>}
+
         {programs.length === 0 ?
-            <EmptyState title={t('srp_programs.empty')} />
+            <EmptyState title={t('srp_programs.empty')} hint={t('admin_srp.empty_hint')} />
             :
-            <XFadeScroll>
-                <table>
-                    <thead>
-                        <tr>
-                            <th scope="col">{t('srp_programs.ship')}</th>
-                            <th scope="col">{t('srp_programs.class')}</th>
-                            <th scope="col">{t('srp_programs.current')}</th>
-                            <th scope="col">{t('srp_programs.new_amount')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {programs.map((program) =>
-                            <tr>
-                                <td>{program.eve_type.name}</td>
-                                <td>{program.eve_group.name}</td>
-                                <td>{program.current_amount ? number_thousand_separator(program.current_amount.srp_value, lang) : '—'}</td>
+            <form
+                id="srp-grid"
+                class="[ manage-list ]"
+                hx-post={PROGRAMS_PARTIAL_URL}
+                hx-target={`#${ROOT_ID}`}
+                hx-select={`#${ROOT_ID}`}
+                hx-swap="outerHTML"
+            >
+                <ManageTable caption={t('admin_srp.page_title')} columns={COLUMNS} min_width="30rem">
+                    {programs.map((program) => {
+                        const stale = program.stale_requests ?? 0
+                        const amount = program.current_amount?.srp_value
+                        const amount_text = amount === undefined ? '' : shorthand(amount)
+                        const cells = (
+                            <Fragment>
                                 <td>
-                                    <form
-                                        hx-post={`${PROGRAMS_PARTIAL_URL}?program_id=${program.id}`}
-                                        hx-target="#srp-programs"
-                                        hx-swap="innerHTML"
-                                    >
-                                        <FlexInline gap="var(--space-2xs)">
-                                            <Input
-                                                width="14rem"
-                                                type="text"
-                                                inputmode="numeric"
-                                                name="srp_value"
-                                                aria-label={`${t('srp_programs.new_amount')}: ${program.eve_type.name}`}
-                                                value={saved_program_id === program.id ? '' : String(program.current_amount?.srp_value ?? '')}
-                                            />
-                                            <Button type="submit" size="sm" color="green">{t('srp_programs.save')}</Button>
-                                        </FlexInline>
-                                    </form>
+                                    <span class="[ manage-who ]">
+                                        <img src={get_item_icon(program.eve_type.id)} alt="" width="40" height="40" loading="lazy" />
+                                        <span class="[ manage-who__text ]">
+                                            <span class="[ manage-who__name ]">{program.eve_type.name}</span>
+                                            {stale > 0
+                                                ? <span class="[ manage-who__sub manage-warn ]">{t('admin_srp.filed_old_count').replace('~COUNT', String(stale))}</span>
+                                                : <span class="[ manage-who__sub ]">{program.eve_group.name}</span>
+                                            }
+                                        </span>
+                                    </span>
                                 </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </XFadeScroll>
+                                <td class:list={['num is-wide', { 'manage-muted': (program.open_requests ?? 0) === 0 }]}>{program.open_requests ?? 0}</td>
+                                <td class="num">
+                                    <span class="[ srp-pays ]">
+                                        <label class="[ visually-hidden ]" for={`srp-amount-${program.id}`}>
+                                            {t('admin_srp.pays_for').replace('~NAME', program.eve_type.name)}
+                                        </label>
+                                        <input
+                                            id={`srp-amount-${program.id}`}
+                                            class="[ manage-amount ]"
+                                            name={`amount_${program.id}`}
+                                            inputmode="decimal"
+                                            autocomplete="off"
+                                            value={amount_text}
+                                            placeholder={t('admin_srp.not_set')}
+                                        />
+                                        {amount_text && <span class="[ srp-pays__was ]">{t('admin_srp.was').replace('~AMOUNT', amount_text)}</span>}
+                                    </span>
+                                </td>
+                            </Fragment>
+                        )
+                        return stale > 0
+                            ? (
+                                <ExpandRow
+                                    id={`srp-hull-${program.eve_type.id}`}
+                                    colspan={COLUMNS.length + 1}
+                                    label={t('admin_srp.open_hull').replace('~NAME', program.eve_type.name)}
+                                    url={`${RECALCULATE_PARTIAL_URL}?${query_string({ ship_type_id: String(program.eve_type.id) })}`}
+                                    x-show={row_filter(program)}
+                                    hx-select="unset"
+                                >
+                                    {cells}
+                                </ExpandRow>
+                            )
+                            : (
+                                <tbody x-show={row_filter(program)}>
+                                    <tr class="[ manage-row ]">
+                                        {cells}
+                                        <td class="[ manage-row__chevron act ]"></td>
+                                    </tr>
+                                </tbody>
+                            )
+                    })}
+                </ManageTable>
+                <SaveBar label_one={t('admin_srp.changed_one')} label_many={t('admin_srp.changed_many')} />
+            </form>
         }
-    </Flexblock>
+
+        {saved_text && <p class="[ manage-good ]" role="status">{saved_text}</p>}
+    </div>
 }
+
+<style lang="scss">
+    .srp-pays {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .srp-pays :global(.manage-amount) {
+        width: 12rem;
+        text-align: end;
+    }
+
+    // "was 1.5M": only on a changed row (SaveBar marks it is-dirty).
+    .srp-pays__was {
+        display: none;
+        position: absolute;
+        inset-inline-start: var(--space-xs);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    :global(.is-dirty) .srp-pays__was {
+        display: inline;
+    }
+
+    @media (max-width: 48rem) {
+        .srp-pays :global(.manage-amount) {
+            width: 6.5rem;
+        }
+
+        // No room for "was" inside a phone-width field: the row's tint shows the change.
+        :global(.is-dirty) .srp-pays__was {
+            display: none;
+        }
+    }
+</style>
