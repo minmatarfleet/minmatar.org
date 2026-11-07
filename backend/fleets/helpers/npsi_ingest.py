@@ -150,23 +150,110 @@ def _record_poll(source: NpsiEventSource, error: str = "") -> None:
     )
 
 
+NOT_A_LIST = "The feed did not return a list of events."
+
+
+def read_feed(url: str) -> tuple[list | None, str]:
+    """Fetch a feed and parse its JSON list: (items, "") or (None, error)."""
+    try:
+        response = _fetch_feed(url)
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning("NPSI feed %s request failed", url, exc_info=True)
+        return None, f"Feed request failed: {exc}"
+    if not isinstance(payload, list):
+        logger.warning("NPSI feed %s did not return a list", url)
+        return None, NOT_A_LIST
+    return payload, ""
+
+
+def feed_error_kind(error: str) -> str:
+    """Sort a stored poll error into a kind the site words in plain language.
+
+    timeout, unreachable, http, not_json, not_list, not_public, or other.
+    """
+    text = (error or "").lower()
+    if not text:
+        return ""
+    if "timed out" in text or "timeout" in text:
+        return "timeout"
+    if "not a public address" in text:
+        return "not_public"
+    if text.startswith(NOT_A_LIST.lower()):
+        return "not_list"
+    if "client error" in text or "server error" in text:
+        return "http"
+    if (
+        "max retries" in text
+        or "failed to resolve" in text
+        or "name or service not known" in text
+        or "connection refused" in text
+        or "connectionerror" in text
+    ):
+        return "unreachable"
+    if "expecting value" in text or "json" in text:
+        return "not_json"
+    return "other"
+
+
+TRY_PREVIEW_LIMIT = 5
+
+
+def try_feed(source: NpsiEventSource) -> dict:
+    """Read a source's feed now without storing or sending anything.
+
+    A dry run for the manage screen: no events are written, the source's poll
+    columns are left alone, and nobody is messaged on Discord.
+    """
+    items, error = read_feed(source.feed_url)
+    if items is None:
+        return {
+            "ok": False,
+            "error": error[:255],
+            "error_kind": feed_error_kind(error),
+            "item_count": 0,
+            "upcoming_count": 0,
+            "upcoming": [],
+        }
+    now = timezone.now()
+    upcoming = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        start = parse_feed_datetime(item.get("start"))
+        if start is None or start < now:
+            continue
+        upcoming.append(
+            {
+                "summary": (
+                    (item.get("summary") or "").strip() or "NPSI fleet"
+                )[:255],
+                "start_time": start,
+                "character_name": (
+                    (item.get("character_name") or "").strip()
+                    or source.fc_character_name
+                )[:255],
+            }
+        )
+    upcoming.sort(key=lambda row: row["start_time"])
+    return {
+        "ok": True,
+        "error": "",
+        "error_kind": "",
+        "item_count": len(items),
+        "upcoming_count": len(upcoming),
+        "upcoming": upcoming[:TRY_PREVIEW_LIMIT],
+    }
+
+
 def poll_npsi_source(
     source: NpsiEventSource, *, force_renotify: bool = False
 ) -> dict:
     stats = {"upserted": 0, "notified": 0, "skipped": 0}
-    try:
-        response = _fetch_feed(source.feed_url)
-        response.raise_for_status()
-        payload = response.json()
-    except (requests.RequestException, ValueError) as exc:
-        logger.warning(
-            "NPSI feed %s request failed", source.name, exc_info=True
-        )
-        _record_poll(source, f"Feed request failed: {exc}")
-        return stats
-    if not isinstance(payload, list):
-        logger.warning("NPSI feed %s did not return a list", source.name)
-        _record_poll(source, "The feed did not return a list of events.")
+    payload, error = read_feed(source.feed_url)
+    if payload is None:
+        _record_poll(source, error)
         return stats
 
     now = timezone.now()

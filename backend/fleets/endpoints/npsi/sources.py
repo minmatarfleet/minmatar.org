@@ -12,7 +12,13 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from fleets.helpers.npsi_ingest import public_feed_url
+from eveonline.models import EveCharacter
+from fleets.helpers.npsi_ingest import (
+    FEED_TIMEOUT_SECONDS,
+    feed_error_kind,
+    public_feed_url,
+    try_feed,
+)
 from fleets.models import EveFleetAudience, NpsiEventSource, NpsiExternalEvent
 from groups.helpers.feature_access import can_use_feature
 
@@ -32,7 +38,12 @@ class NpsiSourceResponse(BaseModel):
     last_polled_at: Optional[datetime] = None
     last_success_at: Optional[datetime] = None
     last_error: str
+    # timeout, unreachable, http, not_json, not_list, not_public, other;
+    # empty when the last poll worked.
+    last_error_kind: str = ""
     event_count: int
+    upcoming_count: int = 0
+    fc_character_id: Optional[int] = None
 
 
 class NpsiAudienceOption(BaseModel):
@@ -43,6 +54,8 @@ class NpsiAudienceOption(BaseModel):
 class NpsiSourceList(BaseModel):
     sources: list[NpsiSourceResponse]
     audiences: list[NpsiAudienceOption]
+    # How long a poll waits for a feed before it gives up.
+    feed_timeout_seconds: int = FEED_TIMEOUT_SECONDS
 
 
 class NpsiSourceCreate(BaseModel):
@@ -70,8 +83,36 @@ class NpsiEventPreview(BaseModel):
     skip_reason: str
 
 
-def _source_row(source: NpsiEventSource) -> dict:
+class NpsiTryEvent(BaseModel):
+    summary: str
+    start_time: datetime
+    character_name: str
+
+
+class NpsiTryResult(BaseModel):
+    """A dry-run read of a feed: nothing stored, nothing sent."""
+
+    ok: bool
+    error: str
+    error_kind: str
+    item_count: int
+    upcoming_count: int
+    upcoming: list[NpsiTryEvent]
+    feed_timeout_seconds: int = FEED_TIMEOUT_SECONDS
+
+
+def _fc_character_ids(names) -> dict[str, int]:
+    return dict(
+        EveCharacter.objects.filter(character_name__in=set(names)).values_list(
+            "character_name", "character_id"
+        )
+    )
+
+
+def _source_row(source: NpsiEventSource, fc_ids=None) -> dict:
     audience = source.default_audience
+    if fc_ids is None:
+        fc_ids = _fc_character_ids([source.fc_character_name])
     return {
         "id": source.id,
         "name": source.name,
@@ -83,7 +124,12 @@ def _source_row(source: NpsiEventSource) -> dict:
         "last_polled_at": source.last_polled_at,
         "last_success_at": source.last_success_at,
         "last_error": source.last_error,
+        "last_error_kind": feed_error_kind(source.last_error),
         "event_count": source.events.count(),
+        "upcoming_count": source.events.filter(
+            start_time__gte=timezone.now()
+        ).count(),
+        "fc_character_id": fc_ids.get(source.fc_character_name),
     }
 
 
@@ -121,8 +167,9 @@ def get_npsi_sources(request):
     sources = NpsiEventSource.objects.select_related(
         "default_audience"
     ).order_by("name")
+    fc_ids = _fc_character_ids(source.fc_character_name for source in sources)
     return 200, {
-        "sources": [_source_row(source) for source in sources],
+        "sources": [_source_row(source, fc_ids) for source in sources],
         "audiences": [
             {"id": audience.id, "name": audience.name}
             for audience in EveFleetAudience.objects.order_by("name")
@@ -249,3 +296,30 @@ def get_npsi_source_events(request, source_id: int):
         }
         for event in events
     ]
+
+
+TRY_PATH = "/npsi-sources/{source_id}/try"
+TRY_METHOD = "post"
+TRY_SPEC = {
+    "summary": "Read a source's feed now, without importing or posting",
+    "auth": AuthBearer(),
+    "response": {
+        200: NpsiTryResult,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+}
+
+
+def post_npsi_source_try(request, source_id: int):
+    """A dry run: fetch and parse the saved feed address, store nothing.
+
+    The source's last import columns stay as the scheduled poll left them,
+    and no event is created or sent to Discord.
+    """
+    if (denied := _denied(request)) is not None:
+        return denied
+    source = NpsiEventSource.objects.filter(pk=source_id).first()
+    if source is None:
+        return 404, ErrorResponse(detail="Source not found.")
+    return 200, try_feed(source)

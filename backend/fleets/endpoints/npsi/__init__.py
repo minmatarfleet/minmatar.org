@@ -52,6 +52,12 @@ _ROUTES = (
         sources.get_npsi_source_events,
     ),
     (
+        sources.TRY_METHOD,
+        sources.TRY_PATH,
+        sources.TRY_SPEC,
+        sources.post_npsi_source_try,
+    ),
+    (
         post_discord_create_method,
         post_discord_create_path,
         post_discord_create_spec,

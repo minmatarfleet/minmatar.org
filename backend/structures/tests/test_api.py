@@ -207,6 +207,33 @@ class StructureTimerCorrectionTests(TestCase):
         self.assertFalse(EveStructureTimer.objects.exists())
         self.assertIn("Deleted timer", AuditEntry.objects.get().summary)
 
+    def test_a_reason_goes_to_the_audit_log_only(self):
+        self.grant()
+        response = self.patch(
+            {"state": "hull", "reason": "  Wrong state on the paste  "}
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertNotIn("reason", response.json())
+        summary = AuditEntry.objects.get().summary
+        self.assertTrue(summary.endswith("Reason: Wrong state on the paste"))
+        self.assertNotIn("reason '", summary)
+
+    def test_a_reason_alone_changes_nothing(self):
+        self.grant()
+        self.assertEqual(
+            200, self.patch({"reason": "just looking"}).status_code
+        )
+        self.assertFalse(AuditEntry.objects.exists())
+
+    def test_delete_records_the_reason(self):
+        self.grant()
+        response = self.client.delete(
+            f"/api/structures/timers/{self.timer.id}?reason=Duplicate",
+            **self.headers,
+        )
+        self.assertEqual(204, response.status_code)
+        self.assertIn("Reason: Duplicate", AuditEntry.objects.get().summary)
+
     def test_pings_can_be_filtered_to_failures(self):
         self.grant()
         EveStructurePing.objects.create(
