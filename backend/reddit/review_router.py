@@ -210,6 +210,7 @@ def approve_change(request, change_id: int):
     "/changes/{change_id}/reject",
     response={
         200: RedditReviewDecision,
+        400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
     },
@@ -227,6 +228,8 @@ def reject_change(request, change_id: int, payload: RedditRejectRequest):
     if change is None:
         return 404, ErrorResponse(detail="Change not found")
     note = payload.note.strip()
+    if not note:
+        return 400, ErrorResponse(detail="Give the CEO a reason.")
     changed = approval.reject(change, request.user, note)
     notified = _notify(change.template, False, note) if changed else False
     return {"changed": changed, "notified": notified}
