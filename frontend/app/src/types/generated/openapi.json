@@ -8028,6 +8028,132 @@
         "title": "CorporationOpenApplication",
         "type": "object"
       },
+      "CorporationPageText": {
+        "description": "The words on the corporation page, as the CEO and directors edit\nthem. Markdown except the headline.",
+        "properties": {
+          "activity_summary": {
+            "title": "Activity Summary",
+            "type": "string"
+          },
+          "biography": {
+            "title": "Biography",
+            "type": "string"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "highlights": {
+            "title": "Highlights",
+            "type": "string"
+          },
+          "introduction": {
+            "title": "Introduction",
+            "type": "string"
+          },
+          "introduction_max": {
+            "title": "Introduction Max",
+            "type": "integer"
+          },
+          "text_max": {
+            "title": "Text Max",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "introduction",
+          "biography",
+          "highlights",
+          "activity_summary",
+          "introduction_max",
+          "text_max"
+        ],
+        "title": "CorporationPageText",
+        "type": "object"
+      },
+      "CorporationPageTextError": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "words": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Words",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "CorporationPageTextError",
+        "type": "object"
+      },
+      "CorporationPageTextUpdate": {
+        "properties": {
+          "activity_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity Summary"
+          },
+          "biography": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Biography"
+          },
+          "highlights": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlights"
+          },
+          "introduction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Introduction"
+          }
+        },
+        "title": "CorporationPageTextUpdate",
+        "type": "object"
+      },
       "CorporationPrimeWindow": {
         "properties": {
           "end_hour": {
@@ -31735,6 +31861,14 @@
             },
             "title": "Problems",
             "type": "array"
+          },
+          "words": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Words",
+            "type": "array"
           }
         },
         "required": [
@@ -52177,6 +52311,140 @@
           }
         ],
         "summary": "Move a trial member to active (CEO, directors, People team)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/page_text": {
+      "get": {
+        "operationId": "eveonline_endpoints_corporations_get_corporation_page_text_get_corporation_page_text",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageText"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageTextError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageTextError"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The corporation page's headline and sections (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      },
+      "put": {
+        "operationId": "eveonline_endpoints_corporations_put_corporation_page_text_put_corporation_page_text",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationPageTextUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageText"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageTextError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageTextError"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationPageTextError"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Edit the corporation page's headline and sections; profanity is refused (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"

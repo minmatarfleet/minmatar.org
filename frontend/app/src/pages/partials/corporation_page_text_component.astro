@@ -1,0 +1,184 @@
+---
+// no-error-refetch: a section save; a refused save shows in the form it swaps back.
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationPageText } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    PageTextError,
+    get_corporation_page_text,
+    update_corporation_page_text,
+} from '@helpers/api.minmatar.org/corporations'
+import {
+    PAGE_TEXT_FIELDS,
+    is_page_text_field,
+    page_text_error_key,
+    page_text_label_key,
+    page_text_summary,
+} from '@helpers/corporations/page_text'
+import type { PageTextField } from '@helpers/corporations/page_text'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+
+const ROOT_ID = 'corporation-page-text'
+// Lives in the accordion header on the corporation page; refreshed out of band.
+const SUMMARY_ID = 'corporation-settings-page-text-summary'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_page_text_component/?${query_string({
+    corporation_id: String(corporation_id),
+})}`)
+
+// A refused save keeps what was typed.
+let draft: Record<PageTextField, string> | null = null
+let error: { field: PageTextField | null, message: string } | null = null
+let saved = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    draft = Object.fromEntries(
+        PAGE_TEXT_FIELDS.map((field) => [field, String(form.get(field) ?? '')]),
+    ) as Record<PageTextField, string>
+    try {
+        await update_corporation_page_text(auth_token, corporation_id, draft)
+        draft = null
+        saved = true
+    } catch (failure) {
+        const field = failure instanceof PageTextError && is_page_text_field(failure.field)
+            ? failure.field
+            : null
+        error = {
+            field,
+            message: t(page_text_error_key(failure instanceof Error ? failure.message : ''))
+                .replace('~FIELD', field ? t(page_text_label_key(field)) : '')
+                .replace('~WORDS', failure instanceof PageTextError ? failure.words.join(', ') : ''),
+        }
+    }
+}
+
+const data = await get_corporation_page_text(auth_token, corporation_id) as CorporationPageText | null
+if (!data) return HTTP_403_Forbidden()
+
+const value = (field: PageTextField) => draft?.[field] ?? data[field]
+const help: Record<PageTextField, string> = {
+    introduction: t('corporations.page_text.introduction_help'),
+    biography: t('corporations.page_text.biography_help'),
+    highlights: t('corporations.page_text.highlights_help'),
+    activity_summary: t('corporations.page_text.activity_summary_help'),
+}
+const summary = page_text_summary(data.introduction, t('corporations.page_text.summary_empty'))
+---
+
+<span id={SUMMARY_ID} hx-swap-oob="innerHTML">{summary}</span>
+
+<form
+    id={ROOT_ID}
+    class="[ corp-page-text ]"
+    hx-post={PARTIAL_URL}
+    hx-target="this"
+    hx-swap="outerHTML"
+>
+    <Flexblock gap="var(--space-m)">
+        <small class="[ corp-page-text__muted ]">{t('corporations.page_text.intro')}</small>
+
+        {PAGE_TEXT_FIELDS.map((field) => {
+            const id = `corp-page-text-${field}`
+            const help_id = `${id}-help`
+            const invalid = error?.field === field
+            const max = field === 'introduction' ? data.introduction_max : data.text_max
+            return (
+                <Flexblock gap="var(--space-3xs)">
+                    <label class="[ corp-page-text__label ]" for={id}>{t(page_text_label_key(field))}</label>
+                    {field === 'introduction'
+                        ? <Input
+                            id={id}
+                            name={field}
+                            type="text"
+                            maxlength={String(max)}
+                            autocomplete="off"
+                            value={value(field)}
+                            aria-describedby={help_id}
+                            aria-invalid={invalid ? 'true' : undefined}
+                        />
+                        : <Textarea
+                            id={id}
+                            name={field}
+                            rows="6"
+                            maxlength={String(max)}
+                            aria-describedby={help_id}
+                            aria-invalid={invalid ? 'true' : undefined}
+                        >{value(field)}</Textarea>
+                    }
+                    <small id={help_id} class="[ corp-page-text__muted ]">{help[field]}</small>
+                </Flexblock>
+            )
+        })}
+
+        <FlexInline gap="var(--space-m)">
+            <Button type="submit" size="sm">{t('corporations.page_text.save')}</Button>
+            <p
+                class:list={['[ corp-page-text__status ]', { 'is-error': error }]}
+                role={error ? 'alert' : 'status'}
+            >
+                {error?.message}
+                {saved && <>
+                    {t('corporations.page_text.saved')}
+                    <button type="button" class="[ corp-page-text__reload ]" x-data x-on:click="location.reload()">
+                        {t('corporations.page_text.reload')}
+                    </button>
+                </>}
+            </p>
+        </FlexInline>
+    </Flexblock>
+</form>
+
+<style lang="scss">
+    .corp-page-text {
+        padding-block-start: var(--space-m);
+    }
+
+    .corp-page-text__label {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .corp-page-text__muted {
+        color: var(--text-muted);
+    }
+
+    .corp-page-text__status {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        &.is-error {
+            color: var(--fleet-red);
+        }
+    }
+
+    .corp-page-text__reload {
+        padding: 0;
+        background: none;
+        border: 0;
+        font: inherit;
+        color: var(--highlight);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .corp-page-text :global([aria-invalid='true']) {
+        border-color: var(--fleet-red);
+    }
+</style>

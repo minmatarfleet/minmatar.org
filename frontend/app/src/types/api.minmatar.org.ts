@@ -584,6 +584,8 @@ export interface CorporationForumPostUpdate {
 
 export type CorporationDiscordSettings = ApiResponse<'CorporationDiscordSettings'>
 export type CorporationDiscordInvitePreview = ApiResponse<'CorporationDiscordInvitePreview'>
+export type CorporationPageText = ApiResponse<'CorporationPageText'>
+export type CorporationPageTextUpdate = ApiRequest<'CorporationPageTextUpdate'>
 export type CorporationDiscordInviteRequest = ApiRequest<'CorporationDiscordInviteRequest'>
 
 export interface CorporationPublicSummary {

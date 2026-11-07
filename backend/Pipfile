@@ -34,6 +34,7 @@ pillow = "*"
 pytz = "*"
 pywebpush = "*"
 django-admin-tabs = {git = "https://github.com/mehmetakyuz/django-admin-tabs.git", ref = "441780aa16a8650ce93aa0cf6816f60178b23201"}
+better-profanity = "~=0.7.0"
 
 [dev-packages]
 pylint = "*"

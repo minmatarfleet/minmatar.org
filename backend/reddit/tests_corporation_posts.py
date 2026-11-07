@@ -360,6 +360,29 @@ class SaveSettingsTestCase(CorporationPostTestCase):
                 save_post_settings(self.corporation, *args)
             self.assertEqual(code, raised.exception.code)
 
+    def test_rejects_profanity(self):
+        for args, code, words in (
+            (
+                ("Join the F.U.C.K.ing Rat", "Body", "automatic"),
+                "title_profanity",
+                ["fuck"],
+            ),
+            (
+                ("Title", "We kill Amarr, no bullsh1t", "automatic"),
+                "content_profanity",
+                ["bullshit"],
+            ),
+        ):
+            with self.assertRaises(PostSettingsError) as raised:
+                save_post_settings(self.corporation, *args)
+            self.assertEqual(code, raised.exception.code)
+            self.assertEqual(words, raised.exception.words)
+        self.assertFalse(
+            RedditPostTemplate.objects.filter(
+                corporation=self.corporation
+            ).exists()
+        )
+
 
 class RouterTestCase(CorporationPostTestCase):
     def setUp(self):
@@ -515,6 +538,22 @@ class RouterTestCase(CorporationPostTestCase):
         )
         self.assertEqual(400, response.status_code)
         self.assertEqual("title_required", response.json()["detail"])
+
+    def test_profanity_is_a_400_naming_the_words(self):
+        response = self.client.put(
+            self.url,
+            data={
+                "title": "Title",
+                "content": "Free slaves, shoot sh!t",
+                "delivery_method": "automatic",
+            },
+            content_type="application/json",
+            **self.auth(),
+        )
+        self.assertEqual(400, response.status_code)
+        body = response.json()
+        self.assertEqual("content_profanity", body["detail"])
+        self.assertEqual(["shit"], body["words"])
 
     def test_member_access_reports_settings_tab(self):
         body = self.client.get(

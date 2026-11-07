@@ -40,6 +40,8 @@ export function is_corporation_slug(value: string | null | undefined): value is 
 export interface RedditFlash {
     kind: 'success' | 'error';
     key: UiKey;
+    // Fills ~WORDS in the message (the profanity a save was refused for).
+    words?: string[];
 }
 
 /** The message to show after the Reddit OAuth round trip, from the page URL. */
@@ -63,6 +65,8 @@ const SAVE_ERRORS: Record<string, UiKey> = {
     title_too_long: 'corporations.settings.error_title_too_long',
     content_required: 'corporations.settings.error_content_required',
     content_too_long: 'corporations.settings.error_content_too_long',
+    title_profanity: 'corporations.settings.error_title_profanity',
+    content_profanity: 'corporations.settings.error_content_profanity',
 }
 
 export function reddit_save_error_key(code: string): UiKey {

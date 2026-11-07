@@ -127,6 +127,9 @@ for (const key of ['discord_bot', 'discord_bot_error']) {
     if (value) discord_params.set(key, value)
 }
 const discord_partial = translatePath(`/partials/corporation_discord_component/?${discord_params}`)
+const page_text_partial = translatePath(`/partials/corporation_page_text_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+})}`)
 const requirements_partial = translatePath(`/partials/corporation_requirements_settings_component/?${new URLSearchParams({
     corporation_id: String(corporation_id),
 })}`)
@@ -291,6 +294,24 @@ const breadcrumbs = [
                         <Flexblock gap="var(--space-s)">
                             <small class="corp-loading">{t('corporations.settings.only_ceo')}</small>
                             {/* One collapsible section per setting area; collapsed by default; each loads its own partial (and header summary) when the tab is shown. */}
+                            <section
+                                class="corp-settings-section"
+                                hx-get={page_text_partial}
+                                hx-trigger="intersect once"
+                                hx-target="find .corp-settings-section__body"
+                                hx-swap="outerHTML"
+                                hx-disinherit="*"
+                            >
+                                <CollapsibleBlock id="corporation-settings-page-text" padding_inline="0">
+                                    <span slot="head" class="corp-settings-section__head">
+                                        <span class="corp-settings-section__title">{t('corporations.page_text.section')}</span>
+                                        <span id="corporation-settings-page-text-summary" class="corp-settings-section__summary"></span>
+                                    </span>
+                                    <div class="corp-settings-section__body">
+                                        <p class="corp-loading">{t('corporations.detail.loading_settings')}</p>
+                                    </div>
+                                </CollapsibleBlock>
+                            </section>
                             <section
                                 class="corp-settings-section"
                                 hx-get={requirements_partial}
