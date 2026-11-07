@@ -1,0 +1,92 @@
+---
+/**
+ * One freight route: From → To (flagged when its XL fee never applies), a
+ * price summary, the limits, the accept and complete days, and the Live
+ * switch that saves when flipped. Opens in place to FreightRouteDetail.
+ */
+import type { FreightEditorRoute } from '@helpers/market_settings'
+
+interface Props {
+    route:      FreightEditorRoute;
+    open?:      boolean;
+    /** Render the detail now (after a save) instead of lazily. */
+    detail?:    { saved?: boolean, error?: string } | null;
+}
+
+const {
+    route,
+    open = false,
+    detail = null,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { FREIGHT_COLSPAN, isk_input_text, share_to_percent } from '@helpers/market_settings'
+import { number_thousand_separator } from '@helpers/numbers'
+import { query_string } from '@helpers/string'
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import FreightRouteDetail from '@components/blocks/market_settings/FreightRouteDetail.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/freight_routes_component/?${query_string(values)}`)
+const id = String(route.route_id)
+const name = `${route.origin?.short_name ?? '?'} → ${route.destination?.short_name ?? '?'}`
+const fixed = route.route_type === 'fixed'
+const collateral = route.collateral_modifier > 0 ? ` + ${share_to_percent(route.collateral_modifier)}%` : ''
+const price = fixed
+    ? `${t('manage.freight.price_flat').replace('~FEE', isk_input_text(route.fixed_fee_millions * 1e6))}${collateral}`
+    : `${t('manage.freight.price_rate').replace('~RATE', number_thousand_separator(route.isk_per_m3))}${collateral}`
+const limits = fixed && (route.max_m3 !== null || route.max_collateral !== null)
+    ? [
+        route.max_m3 !== null ? `${number_thousand_separator(route.max_m3)} ${t('manage.freight.unit_m3')}` : t('manage.freight.any_volume'),
+        route.max_collateral !== null ? isk_input_text(route.max_collateral) : t('manage.freight.any_collateral'),
+    ].join(' · ')
+    : null
+const days = t('manage.freight.days_pair')
+    .replace('~ACCEPT', String(route.expiration_days))
+    .replace('~COMPLETE', String(route.days_to_complete))
+---
+
+<ExpandRow
+    id={`freight-row-${id}`}
+    colspan={FREIGHT_COLSPAN}
+    label={t('manage.freight.open_row').replace('~NAME', name)}
+    url={detail ? undefined : partial_url({ part: 'row', id })}
+    open={open}
+    dim={!route.active}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{name}</span>
+                {route.fee_never_applies
+                    ? <span class="[ manage-who__sub manage-warn ]">{t('manage.freight.view_fee_never')}</span>
+                    : <span class="[ manage-who__sub market-phone-only ]">{price}</span>
+                }
+            </span>
+        </button>
+    </td>
+    <td class="is-wide">{price}</td>
+    <td class:list={['is-wide', { 'manage-muted': limits === null }]}>{limits ?? t('manage.freight.no_limits')}</td>
+    <td class="num is-wide">{days}</td>
+    <td class="act">
+        <ManageSwitch
+            name="active"
+            label={t('manage.freight.live_for').replace('~NAME', name)}
+            hide_label={true}
+            checked={route.active}
+            hx-post={partial_url({ part: 'switch', id })}
+            hx-trigger="change"
+            hx-swap="none"
+            x-on:change="$root.classList.toggle('is-dim', !$event.target.checked)"
+            {...{ 'x-on:htmx:after-request': `if (!$event.detail.successful) { $el.checked = !$el.checked; $root.classList.toggle('is-dim', !$el.checked); if (typeof show_alert_dialog === 'function') show_alert_dialog({ title: ${JSON.stringify(t('manage.freight.live_failed'))}, content: $event.detail.xhr.responseText }) }` }}
+        />
+    </td>
+    {detail &&
+        <div slot="detail">
+            <FreightRouteDetail route={route} saved={detail.saved} error={detail.error} />
+        </div>
+    }
+</ExpandRow>

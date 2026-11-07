@@ -118,3 +118,26 @@
         display: inline;
     }
 }
+
+// The pricing mode toggle: "Pricing" then the two mode chips on one line.
+.market-mode {
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+
+    legend {
+        float: left;
+        padding: 0;
+        margin-inline-end: var(--space-xs);
+    }
+}
+
+.market-warning {
+    margin: 0;
+
+    &:empty {
+        display: none;
+    }
+}

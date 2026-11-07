@@ -1,143 +1,183 @@
 ---
-import { i18n, dynamic_key } from '@helpers/i18n'
+/**
+ * Freight routes (pages/market/freight/routes.astro).
+ *
+ * part=list         view chips + the routes table (GET); POST action=add_route adds one
+ * part=row&id=      an open route's detail (GET); POST saves it and answers with the row
+ * part=switch&id=   the Live switch (POST): nothing to swap
+ * part=quote&id=    the warning + quote for the unsaved boxes (POST)
+ */
+import { i18n, t_key } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FreightManageRoute, FreightManageRoutes } from '@dtypes/api.minmatar.org'
+import type { FreightEditorRoute, FreightRouteQuote } from '@helpers/market_settings'
 import {
     add_freight_route,
     get_freight_manage_routes,
     patch_freight_route,
+    quote_freight_route,
 } from '@helpers/api.minmatar.org/freight_routes'
+import { error_text, form_flag, form_int, form_text } from '@helpers/manage_forms'
+import { freight_in_view, read_freight_pricing } from '@helpers/market_settings'
+import { query_string } from '@helpers/string'
 
-import Button from '@components/blocks/Button.astro'
-import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-
-const ROOT_ID = 'freight-routes'
-const PARTIAL_URL = translatePath('/partials/freight_routes_component/')
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import FreightRouteRow from '@components/blocks/market_settings/FreightRouteRow.astro'
+import FreightRouteDetail from '@components/blocks/market_settings/FreightRouteDetail.astro'
+import FreightQuote from '@components/blocks/market_settings/FreightQuote.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 if (!can(await get_gates(Astro), 'freight.manage')) return HTTP_403_Forbidden()
 
-let flash: { error: boolean, text: string } | null = null
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'list'
+const id = parseInt(params.get('id') ?? '') || 0
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : new FormData()
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/freight_routes_component/?${query_string(values)}`)
+const failed = t('manage.kit.confirm_failed')
+const field_label = (name: string) => t(t_key('manage.freight.field_', name))
 
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const action = String(form.get('action') ?? '')
-    const text = (name: string) => String(form.get(name) ?? '').trim()
-    const integer = (name: string) => parseInt(text(name)) || 0
-    const decimal = (name: string) => parseFloat(text(name)) || 0
-    const optional_integer = (name: string) => text(name) === '' ? null : integer(name)
-    const pricing = () => ({
-        route_type: text('route_type') || 'rate',
-        isk_per_m3: integer('isk_per_m3'),
-        // Shown as a percentage of collateral; stored as a share.
-        collateral_modifier: decimal('collateral_percent') / 100,
-        fixed_fee_millions: decimal('fixed_fee_millions'),
-        xl_fee_millions: decimal('xl_fee_millions'),
-        max_m3: optional_integer('max_m3'),
-        max_collateral: optional_integer('max_collateral'),
-        expiration_days: integer('expiration_days') || 3,
-        days_to_complete: integer('days_to_complete') || 3,
-        active: form.get('active') === 'on',
-    })
-    try {
-        if (action === 'add_route')
-            await add_freight_route(auth_token, {
-                origin_location_id: integer('origin_location_id'),
-                destination_location_id: integer('destination_location_id'),
-                ...pricing(),
-            })
-        else if (action === 'save_route')
-            await patch_freight_route(auth_token, integer('route_id'), pricing())
-        flash = { error: false, text: t('freight.routes.saved') }
-    } catch (error) {
-        flash = { error: true, text: (error as Error).message }
+const days = () => ({
+    expiration_days: form_int(form, 'expiration_days') ?? 3,
+    days_to_complete: form_int(form, 'days_to_complete') ?? 3,
+})
+
+// The quote: price the unsaved boxes, change nothing.
+let quote: FreightRouteQuote | null = null
+let quote_invalid: string | undefined
+let quote_xl_fee = 0
+if (part === 'quote') {
+    const read = read_freight_pricing(form)
+    if ('invalid' in read) {
+        quote_invalid = field_label(read.invalid)
+    } else {
+        quote_xl_fee = read.pricing.xl_fee_millions * 1e6
+        try {
+            quote = await quote_freight_route(auth_token, read.pricing)
+        } catch (caught) {
+            quote_invalid = error_text(caught, failed)
+        }
     }
 }
 
-let data: FreightManageRoutes | null = null
-let fetching_error: Error | false = false
-try {
-    data = await get_freight_manage_routes(auth_token)
-} catch (error) {
-    fetching_error = error as Error
-}
-if (!fetching_error && !data) return HTTP_403_Forbidden()
+let saved = false
+let error: string | undefined
 
-const form_attrs = { 'hx-post': PARTIAL_URL, 'hx-target': `#${ROOT_ID}`, 'hx-swap': 'outerHTML' }
-const route_types = ['rate', 'fixed']
-const route_label = (route: FreightManageRoute) =>
-    `${route.origin?.short_name ?? '?'} → ${route.destination?.short_name ?? '?'}`
+if (is_post) {
+    try {
+        if (part === 'list' && form_text(form, 'action') === 'add_route') {
+            const origin = form_int(form, 'origin_location_id')
+            const destination = form_int(form, 'destination_location_id')
+            if (!origin || !destination)
+                return new Response(t('manage.freight.pick_both'), { status: 400 })
+            const read = read_freight_pricing(form)
+            if ('invalid' in read)
+                return new Response(t('manage.freight.not_an_amount').replace('~FIELD', field_label(read.invalid)), { status: 400 })
+            await add_freight_route(auth_token, {
+                origin_location_id: origin,
+                destination_location_id: destination,
+                ...read.pricing,
+                ...days(),
+                active: true,
+            })
+        } else if (part === 'switch' && id) {
+            await patch_freight_route(auth_token, id, { active: form_flag(form, 'active') })
+            return new Response(null, { status: 204 })
+        } else if (part === 'row' && id) {
+            const read = read_freight_pricing(form)
+            if ('invalid' in read) {
+                error = t('manage.freight.not_an_amount').replace('~FIELD', field_label(read.invalid))
+            } else {
+                await patch_freight_route(auth_token, id, { ...read.pricing, ...days() })
+                saved = true
+            }
+        }
+    } catch (caught) {
+        if (part === 'list' || part === 'switch')
+            return new Response(error_text(caught, failed), { status: 400 })
+        error = error_text(caught, failed)
+    }
+}
+
+let routes: FreightEditorRoute[] = []
+let fetching_error: Error | false = false
+if (part !== 'quote') {
+    try {
+        const data = await get_freight_manage_routes(auth_token)
+        if (!data)
+            return HTTP_403_Forbidden()
+        routes = data.routes as FreightEditorRoute[]
+    } catch (caught) {
+        fetching_error = caught as Error
+    }
+}
+
+const route = routes.find((candidate) => candidate.route_id === id) ?? null
+const view = params.get('view') || form_text(form, 'view') || 'all'
+const selected_view = ['all', 'live', 'retired', 'fee_never'].includes(view) ? view : 'all'
+const rows = routes.filter((candidate) => freight_in_view(selected_view, candidate))
+const count = (key: string) => routes.filter((candidate) => freight_in_view(key, candidate)).length
+const chips = {
+    id: 'freight-filters',
+    url: partial_url({ part: 'list' }),
+    target: 'freight-list',
+    selected: selected_view,
+    legend: t('manage.freight.views'),
+    views: [
+        { value: 'all', label: t('manage.freight.view_all'), count: routes.length },
+        { value: 'live', label: t('manage.freight.view_live'), count: count('live') },
+        { value: 'retired', label: t('manage.freight.view_retired'), count: count('retired') },
+    ],
+    attention: [
+        { value: 'fee_never', label: t('manage.freight.view_fee_never'), count: count('fee_never'), tone: 'warn' as const },
+    ],
+}
+const columns = [
+    { label: t('manage.freight.col_route') },
+    { label: t('manage.freight.col_price'), phone: false },
+    { label: t('manage.freight.col_limits'), phone: false },
+    { label: t('manage.freight.col_days'), align: 'num' as const, phone: false },
+    { label: t('manage.freight.col_live'), align: 'act' as const },
+]
 ---
 
-{fetching_error !== false || !data ?
-    <ErrorRefetch args={{ partial: PARTIAL_URL, target: `#${ROOT_ID}`, error: fetching_error || new Error(), delay: parseInt(Astro.url.searchParams.get('delay') ?? '0') }} />
-:
-<div id={ROOT_ID} class="[ settings-editor ]">
-    {flash &&
-        <p class:list={['[ settings-editor__flash ]', { 'is-error': flash.error }]} role={flash.error ? 'alert' : 'status'}>
-            {flash.text}
-        </p>
-    }
-
-    <section class="[ settings-editor__panel ]" aria-labelledby="freight-routes-list">
-        <h3 id="freight-routes-list">{t('freight.routes.routes')}</h3>
-        {data.routes.length === 0 && <EmptyState title={t('freight.routes.empty')} />}
-        {data.routes.map((route) =>
-            <form {...form_attrs} class:list={['[ settings-editor__row ]', { 'is-off': !route.active }]}>
-                <input type="hidden" name="action" value="save_route" />
-                <input type="hidden" name="route_id" value={route.route_id} />
-                <strong class="[ settings-editor__grow ]">{route_label(route)}</strong>
-                <label class="[ settings-editor__field ]">{t('freight.routes.type')}
-                    <select name="route_type">
-                        {route_types.map((type) => <option value={type} selected={type === route.route_type}>{t(dynamic_key(`freight.routes.type_${type}`))}</option>)}
-                    </select>
-                </label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.isk_per_m3')}<Input type="number" min="0" name="isk_per_m3" size="sm" value={route.isk_per_m3} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.collateral_percent')}<Input type="number" min="0" step="0.01" name="collateral_percent" size="sm" value={Math.round(route.collateral_modifier * 10000) / 100} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.fixed_fee')}<Input type="number" min="0" step="0.1" name="fixed_fee_millions" size="sm" value={route.fixed_fee_millions} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.xl_fee')}<Input type="number" min="0" step="0.1" name="xl_fee_millions" size="sm" value={route.xl_fee_millions} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.max_m3')}<Input type="number" min="0" name="max_m3" size="sm" value={route.max_m3 ?? ''} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.max_collateral')}<Input type="number" min="0" name="max_collateral" size="sm" value={route.max_collateral ?? ''} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.expiration_days')}<Input type="number" min="1" name="expiration_days" size="sm" value={route.expiration_days} /></label>
-                <label class="[ settings-editor__field ]">{t('freight.routes.days_to_complete')}<Input type="number" min="1" name="days_to_complete" size="sm" value={route.days_to_complete} /></label>
-                <label class="[ settings-editor__check ]"><input type="checkbox" name="active" checked={route.active} />{t('freight.routes.active')}</label>
-                <Button type="submit" size="sm" color="transparent" narrow={true}>{t('freight.routes.save')}</Button>
-            </form>
-        )}
-    </section>
-
-    <section class="[ settings-editor__panel ]" aria-labelledby="freight-routes-add">
-        <h3 id="freight-routes-add">{t('freight.routes.add')}</h3>
-        <p class="[ settings-editor__muted ]">{t('freight.routes.one_direction')}</p>
-        <form {...form_attrs} class="[ settings-editor__inline ]">
-            <input type="hidden" name="action" value="add_route" />
-            <input type="hidden" name="active" value="on" />
-            <label class="[ settings-editor__field ]">{t('freight.routes.origin')}
-                <select name="origin_location_id" required>
-                    {data.locations.map((location) => <option value={location.location_id}>{location.name}</option>)}
-                </select>
-            </label>
-            <label class="[ settings-editor__field ]">{t('freight.routes.destination')}
-                <select name="destination_location_id" required>
-                    {data.locations.map((location) => <option value={location.location_id}>{location.name}</option>)}
-                </select>
-            </label>
-            <label class="[ settings-editor__field ]">{t('freight.routes.type')}
-                <select name="route_type">
-                    {route_types.map((type) => <option value={type}>{t(dynamic_key(`freight.routes.type_${type}`))}</option>)}
-                </select>
-            </label>
-            <label class="[ settings-editor__field ]">{t('freight.routes.isk_per_m3')}<Input type="number" min="0" name="isk_per_m3" size="sm" value="0" /></label>
-            <label class="[ settings-editor__field ]">{t('freight.routes.collateral_percent')}<Input type="number" min="0" step="0.01" name="collateral_percent" size="sm" value="0" /></label>
-            <Button type="submit" size="sm" color="fleet-red" narrow={true}>{t('freight.routes.add_button')}</Button>
-        </form>
-    </section>
-</div>
+{part === 'quote'
+    ? (
+        <Fragment>
+            <FreightQuote route_key={`freight-${id}`} part="warning" quote={quote} xl_fee={quote_xl_fee} invalid={quote_invalid} />
+            <FreightQuote route_key={`freight-${id}`} part="quote" quote={quote} invalid={quote_invalid} oob={true} />
+        </Fragment>
+    )
+    : fetching_error !== false
+    ? <ErrorRefetch args={{ partial: partial_url({ part, id: String(id) }), error: fetching_error, delay: parseInt(params.get('delay') ?? '0') }} />
+    : part === 'list'
+        ? (
+            <div id="freight-list-root" class="[ manage-list ]">
+                <ViewChips {...chips} />
+                <div id="freight-list" class="[ manage-list ]" aria-live="polite">
+                    {rows.length === 0
+                        ? <EmptyState title={routes.length === 0 ? t('freight.routes.empty') : t('manage.freight.none_in_view')} />
+                        : (
+                            <ManageTable caption={t('manage.freight.caption')} columns={columns}>
+                                {rows.map((row) => <FreightRouteRow route={row} />)}
+                            </ManageTable>
+                        )
+                    }
+                </div>
+            </div>
+        )
+    : part === 'row' && route
+        ? (is_post
+            // The row goes back inside a <table>; the request picks it with hx-select.
+            ? <Fragment><table><FreightRouteRow route={route} open={true} detail={{ saved, error }} /></table><ViewChips {...chips} hx-swap-oob="true" /></Fragment>
+            : <FreightRouteDetail route={route} />)
+        : <EmptyState title={t('manage.freight.not_found')} />
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     freight_in_view,
+    read_freight_pricing,
     isk_input_text,
     loyalty_in_view,
     loyalty_orders_key,
@@ -84,5 +85,31 @@ describe('views', () => {
         expect(freight_in_view('retired', route(true, false))).toBe(false)
         expect(freight_in_view('fee_never', route(true, true))).toBe(true)
         expect(freight_in_view('fee_never', route(true, false))).toBe(false)
+    })
+})
+
+describe('read_freight_pricing', () => {
+    const form = (values: Record<string, string>) => {
+        const data = new FormData()
+        for (const [name, value] of Object.entries(values)) data.set(name, value)
+        return data
+    }
+
+    it('reads short ISK into the API units', () => {
+        expect(read_freight_pricing(form({
+            route_type: 'fixed', fixed_fee: '95M', xl_fee: '40m', max_m3: '350k', max_collateral: '5b', collateral_percent: '1.2',
+        }))).toEqual({
+            pricing: {
+                route_type: 'fixed', isk_per_m3: 0, collateral_modifier: 0.012,
+                fixed_fee_millions: 95, xl_fee_millions: 40, max_m3: 350_000, max_collateral: 5_000_000_000,
+            },
+        })
+    })
+
+    it('leaves empty caps empty and names the first bad box', () => {
+        const read = read_freight_pricing(form({ route_type: 'rate', isk_per_m3: '420' }))
+        expect('pricing' in read && read.pricing.max_m3).toBeNull()
+        expect(read_freight_pricing(form({ fixed_fee: 'lots' }))).toEqual({ invalid: 'fixed_fee' })
+        expect(read_freight_pricing(form({ collateral_percent: 'x' }))).toEqual({ invalid: 'collateral_percent' })
     })
 })

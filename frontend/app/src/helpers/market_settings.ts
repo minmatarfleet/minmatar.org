@@ -127,6 +127,9 @@ export function loyalty_orders_key(corp: { allow_buy: boolean, allow_sell: boole
     return 'none'
 }
 
+/** Above this volume a fixed route also charges its XL fee (backend STANDARD_MAX_M3). */
+export const FREIGHT_STANDARD_MAX_M3 = 350_000
+
 /** Freight views: all, live, retired, and the "fee never applies" chip. */
 export function freight_in_view(view: string, route: FreightEditorRoute): boolean {
     if (view === 'live')
@@ -154,4 +157,45 @@ export function percent_to_share(text: string | null | undefined): number | null
 /** Buyback item views: all, or one category ("ore", "p1"). */
 export function buyback_in_view(view: string, item: BuybackEditorItem): boolean {
     return view === 'all' || item.category === view
+}
+
+/** Pricing boxes posted by the freight route editor, read into API values. */
+export interface FreightPricingInput {
+    route_type: 'rate' | 'fixed'
+    isk_per_m3: number
+    collateral_modifier: number
+    fixed_fee_millions: number
+    xl_fee_millions: number
+    max_m3: number | null
+    max_collateral: number | null
+}
+
+/**
+ * Read the editor's pricing boxes. ISK boxes take "95m"/"5b"; the result
+ * names the first box that is not an amount instead.
+ */
+export function read_freight_pricing(form: FormData): { pricing: FreightPricingInput } | { invalid: string } {
+    const text = (name: string) => String(form.get(name) ?? '')
+    const amounts: Record<string, number | null> = {}
+    for (const name of ['isk_per_m3', 'fixed_fee', 'xl_fee', 'max_m3', 'max_collateral']) {
+        const value = parse_isk(text(name))
+        if (Number.isNaN(value))
+            return { invalid: name }
+        amounts[name] = value
+    }
+    const percent = text('collateral_percent').trim()
+    const share = percent === '' ? 0 : percent_to_share(percent)
+    if (share === null)
+        return { invalid: 'collateral_percent' }
+    return {
+        pricing: {
+            route_type: text('route_type') === 'fixed' ? 'fixed' : 'rate',
+            isk_per_m3: amounts.isk_per_m3 ?? 0,
+            collateral_modifier: share,
+            fixed_fee_millions: (amounts.fixed_fee ?? 0) / 1e6,
+            xl_fee_millions: (amounts.xl_fee ?? 0) / 1e6,
+            max_m3: amounts.max_m3,
+            max_collateral: amounts.max_collateral,
+        },
+    }
 }

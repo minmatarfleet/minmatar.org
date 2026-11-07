@@ -61,8 +61,9 @@ const breadcrumbs = [
                             hx-include="#lp-filters"
                             x-data="{ submitting: false }"
                             {...{
-                                'x-on:htmx:before-request': 'submitting = true',
-                                'x-on:htmx:after-request': `submitting = false; if ($event.detail.successful) { $el.reset(); close_dialog() } else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
+                                // Only this form's own request: the picker's searches bubble up too.
+                                'x-on:htmx:before-request': 'if ($event.target === $el) submitting = true',
+                                'x-on:htmx:after-request': `if ($event.target !== $el) return; submitting = false; if ($event.detail.successful) { $el.reset(); close_dialog() } else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
                             }}
                         >
                             <input type="hidden" name="action" value="add_currency" />
