@@ -261,6 +261,13 @@ class EveDoctrineForm(forms.ModelForm):
         choices=EveDoctrine.type_choices,
     )
     description = forms.CharField(widget=forms.Textarea)
+    retired = forms.BooleanField(
+        required=False,
+        help_text=(
+            "Hides the doctrine from the doctrine list and fleet pickers. "
+            "Its page and past fleets stay."
+        ),
+    )
     primary_fittings = forms.ModelMultipleChoiceField(
         queryset=EveFitting.objects.all(),
         widget=FilteredSelectMultiple("Primary Fittings", is_stacked=False),
@@ -335,6 +342,7 @@ class EveDoctrineForm(forms.ModelForm):
                 )
             ]
             self.fields["locations"].initial = self.instance.locations.all()
+            self.fields["retired"].initial = self.instance.retired
 
     class Meta:
         model = EveDoctrine

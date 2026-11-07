@@ -59,5 +59,7 @@ def get_doctrine(request, doctrine_id: int):
         location_ids=[
             location.location_id for location in doctrine.locations.all()
         ],
+        retired=doctrine.retired,
+        retired_at=doctrine.retired_at,
     )
     return doctrine_response

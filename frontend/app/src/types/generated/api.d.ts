@@ -13815,6 +13815,8 @@ export interface components {
              * @default false
              */
             preview?: boolean;
+            /** Retired */
+            retired?: boolean | null;
             /** Type */
             type: string;
         };
@@ -13887,6 +13889,13 @@ export interface components {
             name: string;
             /** Primary Fittings */
             primary_fittings: components["schemas"]["FittingResponse"][];
+            /**
+             * Retired
+             * @default false
+             */
+            retired?: boolean;
+            /** Retired At */
+            retired_at?: string | null;
             /** Secondary Fittings */
             secondary_fittings: components["schemas"]["FittingResponse"][];
             /** Sig Ids */
@@ -31858,7 +31867,9 @@ export interface operations {
     };
     fittings_endpoints_doctrines_get_doctrines_get_doctrines: {
         parameters: {
-            query?: never;
+            query?: {
+                include_retired?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;

@@ -525,6 +525,7 @@ export interface DoctrineType {
     utility_fittings:       FittingItem[];
     capitals_fittings:      FittingItem[];
     location_ids:           number[];
+    retired?:               boolean;
 }
 
 export interface HeroFittings extends FittingItem {

@@ -32,6 +32,7 @@ from fittings.helpers.doctrine_changes import (
     approve_doctrine_change_request,
     build_doctrine_payload_from_form,
     cancel_doctrine_change_request,
+    change_tier_for,
     reject_doctrine_change_request,
     submit_doctrine_change_request,
 )
@@ -52,7 +53,6 @@ from fittings.helpers.permissions import (
     can_propose_doctrine_change,
     can_propose_fitting_change,
     effective_protection_tier,
-    protection_tier_for_doctrine,
 )
 from fittings.known_fitting import KnownFitting
 from fittings.models import (
@@ -1490,7 +1490,7 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
     """
 
     form = EveDoctrineForm
-    list_display = ("name", "type", "description")
+    list_display = ("name", "type", "retired_at", "description")
     search_fields = ("name", "type", "description")
     ordering = ("name",)
 
@@ -1509,7 +1509,7 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
         payload = build_doctrine_payload_from_form(form.cleaned_data)
 
         if not change:
-            tier = protection_tier_for_doctrine(obj)
+            tier = change_tier_for(obj, payload)
             if tier is None:
                 if not obj.pk:
                     obj.save()
@@ -1541,7 +1541,7 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
                 _mark_change_request_queued(request, url)
             return
 
-        tier = protection_tier_for_doctrine(obj)
+        tier = change_tier_for(obj, payload)
         if tier is None:
             apply_doctrine_payload(obj, payload)
             return

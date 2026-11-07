@@ -21,6 +21,36 @@ def protection_tier_for_doctrine(doctrine: EveDoctrine) -> str | None:
     return protection_tier_for_doctrine_type(doctrine.type)
 
 
+_TIER_RANK = {
+    None: 0,
+    PROTECTION_TIER_NON_STRATEGIC: 1,
+    PROTECTION_TIER_STRATEGIC: 2,
+}
+
+
+def stricter_tier(*tiers: str | None) -> str | None:
+    """The most protected of the given tiers (None = no review)."""
+    return max(tiers, key=lambda tier: _TIER_RANK.get(tier, 0), default=None)
+
+
+def tier_covers(request_tier: str | None, needed: str | None) -> bool:
+    return _TIER_RANK.get(request_tier, 0) >= _TIER_RANK.get(needed, 0)
+
+
+def doctrine_change_tier(stored_type: str | None, new_type: str) -> str | None:
+    """
+    Review tier for moving a doctrine from stored_type to new_type.
+
+    A category change is reviewed at the stricter of the two tiers, so
+    Strategic -> Experimental still needs a strategic approver and
+    Experimental -> Strategic cannot skip review.
+    """
+    return stricter_tier(
+        protection_tier_for_doctrine_type(stored_type or ""),
+        protection_tier_for_doctrine_type(new_type or ""),
+    )
+
+
 def effective_protection_tier(fitting) -> str | None:
     types = set(
         EveDoctrineFitting.objects.filter(fitting=fitting).values_list(

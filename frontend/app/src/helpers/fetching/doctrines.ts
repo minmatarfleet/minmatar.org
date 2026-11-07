@@ -104,6 +104,7 @@ export async function fetch_doctrine_by_id(id:number) {
         support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         utility_fittings: await Promise.all((doctrine.utility_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
         capitals_fittings: await Promise.all((doctrine.capitals_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
-        location_ids: doctrine.location_ids ?? []
+        location_ids: doctrine.location_ids ?? [],
+        retired: doctrine.retired ?? false,
     } as DoctrineType
 }

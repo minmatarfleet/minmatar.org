@@ -8,6 +8,7 @@ from app.errors import ErrorResponse
 from fittings.models import EveDoctrine
 from fleets.endpoints.helpers import fleet_host_fields, send_discord_pre_ping
 from fleets.endpoints.schemas import CreateEveFleetRequest, EveFleetResponse
+from fleets.helpers.fleet_doctrine import doctrine_choice_error
 from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
 from fleets.models import EveFleet, EveFleetAudience
 
@@ -62,6 +63,9 @@ def create_scheduled_fleet(
         error = private_fleet_error(user, payload)
         if error:
             return error
+    error = doctrine_choice_error(payload.doctrine_id)
+    if error:
+        return error
     if getattr(payload, "host_group_id", None):
         return create_group_fleet(user=user, payload=payload)
 

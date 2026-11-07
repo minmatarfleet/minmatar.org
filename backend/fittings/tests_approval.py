@@ -355,6 +355,47 @@ class DoctrineChangeRequestTestCase(TestCase):
         with self.assertRaises(ValueError):
             approve_doctrine_change_request(req, self.approver)
 
+    def test_downgrade_to_experimental_is_reviewed_as_strategic(self):
+        doctrine = EveDoctrine.objects.create(
+            name="D",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="",
+            latest_version="v1",
+        )
+        payload = {
+            "name": "D",
+            "type": DOCTRINE_TYPE_EXPERIMENTAL,
+            "description": "",
+            "composition": {"primary": [], "secondary": [], "support": []},
+            "location_ids": [],
+        }
+        req = submit_doctrine_change_request(doctrine, payload, self.proposer)
+        self.assertEqual("strategic", req.tier)
+        doctrine.refresh_from_db()
+        self.assertEqual(DOCTRINE_TYPE_STRATEGIC, doctrine.type)
+        approve_doctrine_change_request(req, self.approver)
+        doctrine.refresh_from_db()
+        self.assertEqual(DOCTRINE_TYPE_EXPERIMENTAL, doctrine.type)
+
+    def test_upgrade_from_experimental_needs_review(self):
+        doctrine = EveDoctrine.objects.create(
+            name="D",
+            type=DOCTRINE_TYPE_EXPERIMENTAL,
+            description="",
+            latest_version="v1",
+        )
+        payload = {
+            "name": "D",
+            "type": DOCTRINE_TYPE_STRATEGIC,
+            "description": "",
+            "composition": {"primary": [], "secondary": [], "support": []},
+            "location_ids": [],
+        }
+        req = submit_doctrine_change_request(doctrine, payload, self.proposer)
+        self.assertEqual("strategic", req.tier)
+        doctrine.refresh_from_db()
+        self.assertEqual(DOCTRINE_TYPE_EXPERIMENTAL, doctrine.type)
+
     def test_approve_rejects_payload_tier_mismatch(self):
         doctrine = EveDoctrine.objects.create(
             name="D",
@@ -370,8 +411,68 @@ class DoctrineChangeRequestTestCase(TestCase):
             "location_ids": [],
         }
         req = submit_doctrine_change_request(doctrine, payload, self.proposer)
+        # A request filed at a lower tier than the move needs is refused.
+        req.tier = "non_strategic"
+        req.save(update_fields=["tier"])
         with self.assertRaises(ValueError):
             approve_doctrine_change_request(req, self.approver)
+
+    def test_retire_and_restore_through_review(self):
+        doctrine = EveDoctrine.objects.create(
+            name="D",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="",
+            latest_version="v1",
+        )
+        payload = {
+            "name": "D",
+            "type": DOCTRINE_TYPE_STRATEGIC,
+            "description": "",
+            "retired": True,
+            "composition": {"primary": [], "secondary": [], "support": []},
+            "location_ids": [],
+        }
+        req = submit_doctrine_change_request(doctrine, payload, self.proposer)
+        doctrine.refresh_from_db()
+        self.assertFalse(doctrine.retired)
+        approve_doctrine_change_request(req, self.approver)
+        doctrine.refresh_from_db()
+        self.assertTrue(doctrine.retired)
+
+        payload["retired"] = False
+        req = submit_doctrine_change_request(doctrine, payload, self.proposer)
+        approve_doctrine_change_request(req, self.approver)
+        doctrine.refresh_from_db()
+        self.assertFalse(doctrine.retired)
+
+    def test_payload_without_retired_keeps_state(self):
+        doctrine = EveDoctrine.objects.create(
+            name="D", type=DOCTRINE_TYPE_EXPERIMENTAL, description=""
+        )
+        apply_doctrine_payload(
+            doctrine,
+            {
+                "name": "D",
+                "type": DOCTRINE_TYPE_EXPERIMENTAL,
+                "description": "",
+                "retired": True,
+                "composition": {},
+                "location_ids": [],
+            },
+        )
+        apply_doctrine_payload(
+            doctrine,
+            {
+                "name": "D2",
+                "type": DOCTRINE_TYPE_EXPERIMENTAL,
+                "description": "",
+                "composition": {},
+                "location_ids": [],
+            },
+        )
+        doctrine.refresh_from_db()
+        self.assertEqual("D2", doctrine.name)
+        self.assertTrue(doctrine.retired)
 
     def test_propose_without_permission_denied(self):
         doctrine = EveDoctrine.objects.create(
@@ -1274,6 +1375,25 @@ class DoctrineAdminAddTestCase(TestCase):
         change_request = doctrine.change_requests.get()
         self.assertEqual(
             [self.location.pk], change_request.payload["location_ids"]
+        )
+
+    def test_admin_downgrade_to_experimental_queues_review(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Plexing",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="Mixture of armor ships.",
+        )
+        response = self.client.post(
+            reverse("admin:fittings_evedoctrine_change", args=[doctrine.pk]),
+            self._doctrine_post(type=DOCTRINE_TYPE_EXPERIMENTAL),
+        )
+        self.assertEqual(302, response.status_code, response.content[:500])
+        doctrine.refresh_from_db()
+        self.assertEqual(DOCTRINE_TYPE_STRATEGIC, doctrine.type)
+        change_request = doctrine.change_requests.get()
+        self.assertEqual("strategic", change_request.tier)
+        self.assertEqual(
+            DOCTRINE_TYPE_EXPERIMENTAL, change_request.payload["type"]
         )
 
     def test_add_experimental_doctrine_applies_immediately(self):

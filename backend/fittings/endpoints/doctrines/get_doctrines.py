@@ -1,4 +1,4 @@
-"""GET \"\" - list all doctrines with fittings by role."""
+"""GET \"\" - list doctrines with fittings by role (retired ones on request)."""
 
 from typing import List
 
@@ -13,11 +13,13 @@ ROUTE_SPEC = {
 }
 
 
-def get_doctrines(request):
+def get_doctrines(request, include_retired: bool = False):
     doctrines = EveDoctrine.objects.prefetch_related(
         "evedoctrinefitting_set__fitting__refits",
         "evedoctrinefitting_set__fitting__tags",
     )
+    if not include_retired:
+        doctrines = doctrines.filter(retired_at__isnull=True)
     response = []
     for doctrine in doctrines:
         primary_fittings = []
@@ -54,6 +56,8 @@ def get_doctrines(request):
             location_ids=[
                 location.location_id for location in doctrine.locations.all()
             ],
+            retired=doctrine.retired,
+            retired_at=doctrine.retired_at,
         )
         response.append(doctrine_response)
     return response

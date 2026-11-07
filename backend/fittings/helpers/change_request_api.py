@@ -107,14 +107,30 @@ def fitting_diffs(fitting: EveFitting, payload: dict) -> list[dict]:
     return diffs
 
 
+def _doctrine_type_text(value) -> str:
+    return dict(EveDoctrine.type_choices).get(value, _as_text(value))
+
+
+def _doctrine_status_text(retired: bool) -> str:
+    return "Retired" if retired else "Active"
+
+
 def doctrine_diffs(doctrine: EveDoctrine, payload: dict) -> list[dict]:
     diffs = []
     for field in ("name", "type", "description"):
+        current, proposed = getattr(doctrine, field), payload.get(field)
+        if field == "type":
+            current = _doctrine_type_text(current)
+            proposed = _doctrine_type_text(proposed)
+        row = _field_diff(field, field, _as_text(current), _as_text(proposed))
+        if row:
+            diffs.append(row)
+    if "retired" in payload:
         row = _field_diff(
-            field,
-            field,
-            _as_text(getattr(doctrine, field)),
-            _as_text(payload.get(field)),
+            "retired",
+            "status",
+            _doctrine_status_text(doctrine.retired),
+            _doctrine_status_text(bool(payload["retired"])),
         )
         if row:
             diffs.append(row)

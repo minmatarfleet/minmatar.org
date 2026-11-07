@@ -21,6 +21,7 @@ from fleets.models import (
 )
 from fleets.helpers.fleet_boss import alt_for_boss
 from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
+from fleets.helpers.fleet_doctrine import doctrine_choice_error
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
 
@@ -199,6 +200,16 @@ def _fleet_patch_audience_location_errors(
         ).exists():
             return {"detail": "Audience does not exist"}
         fleet.audience = EveFleetAudience.objects.get(id=payload.audience_id)
+
+    # Only a change is checked: a fleet already on a doctrine that has since
+    # been retired keeps it when the form is saved again.
+    if (
+        "doctrine_id" in payload.model_fields_set
+        and payload.doctrine_id != fleet.doctrine_id
+    ):
+        error = doctrine_choice_error(payload.doctrine_id)
+        if error:
+            return {"detail": error[1].detail}
 
     if payload.location_id:
         location_result = resolve_scheduled_fleet_location(payload.location_id)
