@@ -1,0 +1,40 @@
+---
+/**
+ * The NPSI feeds list's chips: All, On and the "Failing" needs-attention
+ * chip, with counts. NpsiSourcesManager draws them above the list; the
+ * On switch's answer carries them too, so the counts follow a flip
+ * (picked out of band by their fieldset ids).
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { NpsiSourceListing } from '@helpers/api.minmatar.org/npsi_sources'
+import type { NpsiFeedView } from '@helpers/manage_intel'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    list:               NpsiSourceListing;
+    view:               NpsiFeedView;
+    [propName: string]: any;
+}
+
+const { list, view } = Astro.props
+
+const on = list.sources.filter((source) => source.enabled)
+const failing = on.filter((source) => !!source.last_error)
+
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+---
+
+<ViewChips
+    id="npsi-filters"
+    url={translatePath(`/partials/npsi_sources_component/?${query_string({ part: 'list' })}`)}
+    target="npsi-list"
+    selected={view}
+    legend={t('manage.npsi.views')}
+    views={[
+        { value: 'all', label: t('manage.npsi.all'), count: list.sources.length },
+        { value: 'on', label: t('manage.npsi.on'), count: on.length },
+    ]}
+    attention={[{ value: 'failing', label: t('manage.npsi.failing'), count: failing.length, tone: 'warn' }]}
+/>

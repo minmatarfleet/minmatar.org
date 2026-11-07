@@ -1,0 +1,132 @@
+---
+/**
+ * One NPSI calendar feed in the manage list: name, last import (an orange
+ * "Failed 18:26 · timeout" when the last read failed), upcoming imported
+ * events, who it posts to, the fallback FC, and an On switch that saves
+ * when flipped. It opens in place to NpsiFeedForm. npsi_sources_component
+ * answers a save or a flip with this row inside a <table>.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { NpsiEventPreview } from '@dtypes/api.minmatar.org'
+import type { NpsiSourceListing, NpsiSourceRow } from '@helpers/api.minmatar.org/npsi_sources'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { eve_short_day_time, feed_row_id } from '@helpers/manage_intel'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    source:             NpsiSourceRow;
+    list:               NpsiSourceListing;
+    colspan:            number;
+    open?:              boolean;
+    /** The open row's note after a save: saved or added. */
+    note?:              'saved' | 'added' | null;
+    error?:             string | null;
+    events?:            NpsiEventPreview[];
+    [propName: string]: any;
+}
+
+const { source, list, colspan, open = false, note = null, error = null, events = [] } = Astro.props
+
+const row_id = feed_row_id(source.id)
+const row_url = (part: string) => translatePath(`/partials/npsi_sources_component/?${query_string({ part, id: String(source.id) })}`)
+const failing = !!source.last_error
+const kind = source.last_error_kind || 'other'
+const status = !source.last_polled_at ? t('manage.npsi.not_polled') :
+    failing ?
+        t('manage.npsi.failed_at')
+            .replace('~TIME', eve_short_day_time(source.last_polled_at, lang))
+            .replace('~KIND', t(t_key('manage.npsi.kind.', kind))) :
+        t('manage.npsi.imported_at').replace('~TIME', eve_short_day_time(source.last_success_at, lang))
+const upcoming = source.upcoming_count ?? source.event_count
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
+---
+
+<ExpandRow
+    id={row_id}
+    colspan={colspan}
+    label={t('manage.npsi.open').replace('~NAME', source.name)}
+    url={open ? undefined : row_url('row')}
+    open={open}
+    dim={!source.enabled}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{source.name}</span>
+                <span class:list={['[ manage-who__sub feed-row__sub-phone ]', { 'manage-warn': failing }]}>{status}</span>
+            </span>
+        </button>
+    </td>
+    <td class="[ is-wide ]">
+        <span class:list={['[ feed-row__status ]', failing ? 'manage-warn' : source.last_polled_at ? 'manage-good' : 'manage-muted']}>
+            {source.last_polled_at && <span class="[ feed-row__dot ]" aria-hidden="true"></span>}
+            {status}
+        </span>
+    </td>
+    <td class="[ num is-wide ]"><span class="[ feed-row__value ]">{upcoming}</span></td>
+    <td class="[ is-wide ]">
+        {source.default_audience_name ?
+            <span class="[ feed-row__value ]">{source.default_audience_name}</span>
+            :
+            <span class="[ manage-warn ]">{t('manage.npsi.no_audience')}</span>
+        }
+    </td>
+    <td class="[ is-wide ]">
+        <span class="[ manage-who ]">
+            {source.fc_character_id && <img src={get_player_icon(source.fc_character_id, 64)} alt="" width="32" height="32" loading="lazy" />}
+            <span class="[ feed-row__value ]">{source.fc_character_name}</span>
+        </span>
+    </td>
+    <td class="[ act ]">
+        <ManageSwitch
+            name="enabled"
+            label={t('manage.npsi.switch').replace('~NAME', source.name)}
+            hide_label={true}
+            checked={source.enabled}
+            hx-post={row_url('toggle')}
+            hx-trigger="change"
+            hx-target={`#${row_id}`}
+            hx-select={`#${row_id}`}
+            hx-select-oob="#npsi-filters-views,#npsi-filters-attention"
+            hx-include="#npsi-filters"
+            hx-swap="outerHTML"
+        />
+    </td>
+    {open &&
+        <NpsiFeedForm slot="detail" source={source} list={list} note={note} error={error} events={events} />
+    }
+</ExpandRow>
+
+<style lang="scss">
+    .feed-row__sub-phone {
+        display: none;
+
+        @media (max-width: 48rem) {
+            display: inline;
+        }
+    }
+
+    .feed-row__value {
+        color: var(--highlight);
+    }
+
+    .feed-row__status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        white-space: nowrap;
+    }
+
+    .feed-row__dot {
+        flex: 0 0 auto;
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        border-radius: 50%;
+        background: currentColor;
+    }
+</style>

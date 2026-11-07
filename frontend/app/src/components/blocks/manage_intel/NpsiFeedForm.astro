@@ -1,0 +1,228 @@
+---
+/**
+ * The open row of an NPSI calendar feed: why the last import failed in
+ * plain words, the feed address, who its events post to and the fallback
+ * FC, then Save and "Try the feed now" (a dry run: nothing is imported or
+ * posted), and the upcoming events it imported. With no `source` it is the
+ * "Add feed" row, which also asks for a name. Feeds are turned off, never
+ * deleted, so what they imported keeps its history.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { NpsiEventPreview } from '@dtypes/api.minmatar.org'
+import type { NpsiSourceListing, NpsiSourceRow } from '@helpers/api.minmatar.org/npsi_sources'
+import { get_player_icon } from '@helpers/eve_image_server'
+import type { NpsiFeedDraft } from '@helpers/manage_intel'
+import { eve_day_time, feed_row_id } from '@helpers/manage_intel'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    /** The feed; omitted for the new-feed row. */
+    source?:            NpsiSourceRow | null;
+    list:               NpsiSourceListing;
+    note?:              'saved' | 'added' | null;
+    error?:             string | null;
+    events?:            NpsiEventPreview[];
+    /** What was typed into the new-feed row, shown again with its error. */
+    draft?:             NpsiFeedDraft | null;
+    [propName: string]: any;
+}
+
+const { source = null, list, note = null, error = null, events = [], draft = null } = Astro.props
+
+const key = source ? String(source.id) : 'new'
+const row_id = feed_row_id(source ? source.id : 'new')
+const field_id = (field: string) => `npsi-${key}-${field}`
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/npsi_sources_component/?${query_string(values)}`)
+
+const values = source ?
+    {
+        name: source.name,
+        feed_url: source.feed_url,
+        fc_character_name: source.fc_character_name,
+        fc_character_id: source.fc_character_id ? String(source.fc_character_id) : '',
+        default_audience_id: source.default_audience_id ? String(source.default_audience_id) : '',
+    } :
+    draft ?? { name: '', feed_url: '', fc_character_name: '', fc_character_id: '', default_audience_id: '' }
+
+const fc_value = values.fc_character_name ?
+    {
+        id: values.fc_character_id,
+        name: values.fc_character_name,
+        icon_url: values.fc_character_id ? get_player_icon(parseInt(values.fc_character_id), 64) : null,
+    } :
+    null
+
+// Why the last import failed, in plain words, and what stays on the schedule.
+let explain: string | null = null
+if (source?.last_error) {
+    const kind = source.last_error_kind || 'other'
+    const seconds = list.feed_timeout_seconds
+    const cause = kind === 'timeout' && seconds ?
+        t('manage.npsi.explain.timeout').replace('~SECONDS', String(seconds)) :
+        kind === 'timeout' || kind === 'other' ?
+            t('manage.npsi.explain.other').replace('~ERROR', source.last_error) :
+            t(t_key('manage.npsi.explain.', kind))
+    const kept = source.upcoming_count ?? 0
+    const kept_text = kept === 0 ? t('manage.npsi.explain_kept_none') :
+        kept === 1 ? t('manage.npsi.explain_kept_one') :
+        t('manage.npsi.explain_kept_many').replace('~COUNT', String(kept))
+    explain = `${cause} ${kept_text}`
+}
+
+const form_attributes = source ?
+    {
+        'hx-post': partial_url({ part: 'row', id: key }),
+        'hx-target': `#${row_id}`,
+        'hx-select': `#${row_id}`,
+        'hx-swap': 'outerHTML',
+    } :
+    {
+        'hx-post': partial_url({ part: 'create' }),
+        'hx-target': '#npsi-list',
+        'hx-select': '#npsi-list',
+        'hx-select-oob': '#npsi-filters-views,#npsi-filters-attention',
+        'hx-swap': 'outerHTML',
+    }
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+---
+
+<form class="[ manage-form ]" {...form_attributes}>
+    {explain && <p class="[ manage-warn ]" role="status">{explain}</p>}
+    {source && !source.enabled && <p class="[ manage-muted ]">{t('manage.npsi.disabled_note')}</p>}
+    <div class:list={['[ manage-fields npsi-form__fields ]', { 'is-new': !source }]}>
+        {!source &&
+            <ManageField label={t('manage.npsi.field_name')} for={field_id('name')}>
+                <Input id={field_id('name')} name="name" size="sm" required maxlength="100" value={values.name} />
+            </ManageField>
+        }
+        <ManageField label={t('manage.npsi.field_feed_url')} for={field_id('feed_url')}>
+            <Input id={field_id('feed_url')} type="url" name="feed_url" size="sm" required maxlength="500" value={values.feed_url} />
+        </ManageField>
+        <ManageField label={t('manage.npsi.field_posts_to')} for={field_id('audience')}>
+            <Select id={field_id('audience')} name="default_audience_id" size="sm">
+                <option value="" selected={!values.default_audience_id}>{t('manage.npsi.posts_to_unset')}</option>
+                {list.audiences.map((audience) =>
+                    <option value={String(audience.id)} selected={String(audience.id) === values.default_audience_id}>{audience.name}</option>
+                )}
+            </Select>
+        </ManageField>
+        <EntityPicker
+            id={field_id('fc')}
+            kind="character"
+            name="fc_character_id"
+            name_field="fc_character_name"
+            label={t('manage.npsi.field_fc')}
+            value={fc_value}
+            required={true}
+        />
+    </div>
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{source ? t('manage.npsi.save') : t('manage.npsi.add')}</Button>
+        <Button type="reset" size="sm" color="transparent" x-on:click="open = false">{t('cancel')}</Button>
+        {note && <span class="[ manage-saved ]" role="status">{note === 'added' ? t('manage.npsi.added') : t('manage.npsi.saved')}</span>}
+        {source &&
+            <span class="[ manage-actions__end ]">
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    hx-post={partial_url({ part: 'try', id: key })}
+                    hx-target={`#${field_id('try')}`}
+                    hx-select="unset"
+                    hx-select-oob="unset"
+                    hx-swap="innerHTML"
+                    hx-params="none"
+                    hx-disabled-elt="this"
+                >
+                    {t('manage.npsi.try')}
+                </Button>
+            </span>
+        }
+    </div>
+    {source && <div id={field_id('try')} class="[ npsi-form__try ]" aria-live="polite"></div>}
+
+    {source &&
+        <section class="[ npsi-form__events ]" aria-labelledby={field_id('events')}>
+            <h3 id={field_id('events')} class="[ manage-eyebrow ]">{t('manage.npsi.upcoming_title')}</h3>
+            {events.length === 0 ?
+                <EmptyState title={t('manage.npsi.upcoming_empty')} />
+                :
+                <ul class="[ npsi-form__event-list ]" role="list">
+                    {events.slice(0, 5).map((event) =>
+                        <li>
+                            <span class="[ npsi-form__event-time ]">{eve_day_time(event.start_time, lang)}</span>
+                            <span class="[ npsi-form__event-name ]">{event.summary}</span>
+                            <span class="[ manage-muted ]">{event.character_name}</span>
+                            <span class:list={[event.status === 'skipped' ? 'manage-warn' : event.status === 'created' ? 'manage-good' : 'manage-muted']}>
+                                {t(t_key('manage.npsi.event_status.', event.status))}{event.skip_reason ? `: ${event.skip_reason}` : ''}
+                            </span>
+                        </li>
+                    )}
+                </ul>
+            }
+        </section>
+    }
+</form>
+
+<style lang="scss">
+    // The address gets the wide column, as on the board.
+    .npsi-form__fields {
+        grid-template-columns: 2fr 1fr 1fr;
+
+        &.is-new {
+            grid-template-columns: 1fr 2fr 1fr 1fr;
+        }
+
+        @media (max-width: 48rem) {
+            &,
+            &.is-new {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+    }
+
+    .npsi-form__try:empty {
+        display: none;
+    }
+
+    .npsi-form__events {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .npsi-form__event-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs) var(--space-s);
+            font-size: var(--step--1);
+        }
+    }
+
+    .npsi-form__event-time {
+        min-width: 9rem;
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .npsi-form__event-name {
+        color: var(--highlight);
+    }
+</style>

@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -24,67 +24,73 @@ try {
         get_structure_timers(auth_token, false),
         get_structure_pings(auth_token, false),
     ])
-    timers = [...timers].sort((a, b) => new Date(b.timer).getTime() - new Date(a.timer).getTime()).slice(0, 100)
 } catch (error) {
     if (error?.cause === 403) return HTTP_403_Forbidden()
     data_fetching_error = error
 }
 
+const failed_pings = pings.filter((ping) => !ping.discord_success).length
 const tabs = [
-    { id: 'timers', label: t('structure_timers_manage.tab.timers'), meta: String(timers.length) },
-    { id: 'pings', label: t('structure_timers_manage.tab.pings') },
+    { id: 'timers', label: t('manage.timers.tab_timers') },
+    {
+        id: 'pings',
+        label: t('manage.timers.tab_pings'),
+        ...(failed_pings > 0 && { meta: t('manage.timers.failed_count').replace('~COUNT', String(failed_pings)), flag: 'attention' as const }),
+    },
 ]
 
-const page_title = t('structure_timers_manage.page_title')
+const page_title = t('manage.timers.title')
 
 import Viewport from '@layouts/Viewport.astro'
-import PageWide from '@components/page/PageWide.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-import PageActions from '@components/page/PageActions.astro'
-
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
 import StructurePingsPanel from '@components/blocks/StructurePingsPanel.astro'
 import StructureTimersManager from '@components/blocks/StructureTimersManager.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('page_finder.intel.timers.manage.description')}>
-    <PageWide
-        cover={{
-            image: '/images/intel-cover.jpg',
-            image_990: '/images/intel-cover-990.jpg',
-            alt: t('intel.cover_alt'),
-            animated: false,
-            scrollable: true,
-            overlay: true,
-        }}
-    >
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-            <PageActions>
-                <Button href={translatePath('/intel/timers/active/')}>{t('structure_timers_manage.back')}</Button>
-            </PageActions>
-        </FlexInline>
-
-        <Flexblock gap="var(--space-l)">
-            <p>{t('structure_timers_manage.leading_text')}</p>
-            {data_fetching_error ?
-                <ErrorRefetch args={{ partial: translatePath('/partials/structure_timers_manage_component'), error: data_fetching_error, delay: 0 }} />
-                :
-                <SectionTabs aria_label={t('structure_timers_manage.tabs_label')} id_prefix="structure-timers-manage" tabs={tabs}>
-                    <SectionTabPanel id="timers" id_prefix="structure-timers-manage" is_default={true}>
-                        <StructureTimersManager timers={timers} />
-                    </SectionTabPanel>
-                    <SectionTabPanel id="pings" id_prefix="structure-timers-manage">
-                        <StructurePingsPanel pings={pings} />
-                    </SectionTabPanel>
-                </SectionTabs>
-            }
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs
+                is_landing_page={true}
+                links_only={true}
+                breadcrumbs={[
+                    { page_title: t('structure_timers'), accumulated_path: translatePath('/intel/timers/active/') },
+                    { page_title: t('manage.timers.crumb_manage'), accumulated_path: translatePath('/intel/timers/manage/') },
+                ]}
+            />
+            <ManageHero title={page_title} role={t('manage.timers.role')} fact={t('manage.timers.fact')}>
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/intel/timers/active/')}>{t('manage.timers.active')}</Button>
+                    {can(gates, 'structures.timers.manage') &&
+                        <Button href={translatePath('/intel/timers/add/')}>{t('manage.timers.add')}</Button>
+                    }
+                </Fragment>
+            </ManageHero>
         </Flexblock>
-    </PageWide>
+
+        {data_fetching_error ?
+            <div>
+                <ErrorRefetch args={{ partial: translatePath('/partials/structure_timers_manage_component/?part=list'), error: data_fetching_error, delay: 0 }} />
+            </div>
+            :
+            <SectionTabs aria_label={t('manage.timers.tabs')} id_prefix="structure-timers-manage" tabs={tabs}>
+                <SectionTabPanel id="timers" id_prefix="structure-timers-manage" is_default={true}>
+                    <StructureTimersManager timers={timers} />
+                </SectionTabPanel>
+                <SectionTabPanel id="pings" id_prefix="structure-timers-manage">
+                    <StructurePingsPanel pings={pings} />
+                </SectionTabPanel>
+            </SectionTabs>
+        }
+    </Flexblock>
+</PageLanding>
 </Viewport>
