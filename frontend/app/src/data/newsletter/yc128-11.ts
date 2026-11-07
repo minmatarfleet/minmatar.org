@@ -7,8 +7,7 @@ export const COVER_IMAGE = '/images/home-vard-cover-eve.jpg'
 const IMG = `/images/newsletter/${SLUG}`
 const HELP_URL = 'https://discord.com/channels/1041384161505722368/1183401618943791186'
 const QUESTIONS_URL = 'https://discord.com/channels/1041384161505722368/1561471935462903839'
-// TODO(town hall #38): swap in the highlights video URL and its thumbnail once the cut is published.
-const TOWN_HALL_URL = 'https://www.youtube.com/@MinmatarFleet'
+const TOWN_HALL_URL = 'https://www.youtube.com/watch?v=qZwMM5xm7c0'
 
 export const YC128_11: NewsletterIssue = {
     slug: SLUG,
@@ -22,11 +21,10 @@ export const YC128_11: NewsletterIssue = {
     lead_video: {
         kicker: 'Watch first',
         title: 'Town Hall #38 highlights',
-        text: 'Missed the November town hall? The highlights cut goes here as soon as it’s published.',
-        placeholder: true,
+        text: 'Missed the November town hall? The highlights cut covers it in a fraction of the time.',
         url: TOWN_HALL_URL,
         thumbnail: `${IMG}/townhall38.webp`,
-        thumbnail_alt: 'Town Hall #38, November YC 128, Highlights, coming soon',
+        thumbnail_alt: 'Town Hall #38, November 2026, Highlights',
         play_position: 'top-right',
         cta: { links: [{ label: 'Watch on YouTube', href: TOWN_HALL_URL }] },
     },
