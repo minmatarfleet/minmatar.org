@@ -17,6 +17,8 @@ import type {
     CreateOrderResponse,
     OrderLinePricing,
     OrderPatch,
+    PlannerInvention,
+    PlannerInventionInfo,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -134,6 +136,38 @@ export async function get_product_build(id:number) {
 
     return await api_request<ProductBuild>(ENDPOINT, {
         error: 'Error fetching product build',
+    })
+}
+
+/** Invention sources and decryptors for a T2/T3 product; null for anything else. */
+export async function get_planner_invention(type_id: number) {
+    const ENDPOINT = `${API_ENDPOINT}/planner/invention/${type_id}`
+
+    return await api_request<PlannerInventionInfo | null>(ENDPOINT, {
+        error: 'Error fetching invention info',
+        allow: [404],
+    })
+}
+
+// Query of GET /planner/invention/{type_id}/quote (a request, not a schema).
+type PlannerInventionQuoteParams = {
+    quantity: number
+    facility_key: string
+    decryptor: string
+    source_type_id?: number | null
+}
+
+/** Cheapest way to invent a lot's copies at a freeport (same maths as the plan). */
+export async function get_planner_invention_quote(type_id: number, params: PlannerInventionQuoteParams) {
+    const ENDPOINT = `${API_ENDPOINT}/planner/invention/${type_id}/quote?${query_string({
+        quantity: params.quantity,
+        facility_key: params.facility_key,
+        decryptor: params.decryptor,
+        ...(params.source_type_id ? { source_type_id: params.source_type_id } : {}),
+    })}`
+
+    return await api_request<PlannerInvention>(ENDPOINT, {
+        error: 'Error fetching invention quote',
     })
 }
 

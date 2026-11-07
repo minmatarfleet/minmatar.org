@@ -9303,6 +9303,28 @@
       },
       "CostIndicesSchema": {
         "properties": {
+          "copying": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copying"
+          },
+          "invention": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invention"
+          },
           "manufacturing": {
             "title": "Manufacturing",
             "type": "number"
@@ -31699,6 +31721,21 @@
             "title": "Grand Total Isk",
             "type": "integer"
           },
+          "invention_isk": {
+            "default": 0,
+            "title": "Invention Isk",
+            "type": "integer"
+          },
+          "invention_job_costs_isk": {
+            "default": 0,
+            "title": "Invention Job Costs Isk",
+            "type": "integer"
+          },
+          "invention_materials_isk": {
+            "default": 0,
+            "title": "Invention Materials Isk",
+            "type": "integer"
+          },
           "line_items": {
             "items": {
               "$ref": "#/components/schemas/PlanCostLineItemSchema"
@@ -31804,6 +31841,279 @@
           "quantity"
         ],
         "title": "PlanImportLineSchema",
+        "type": "object"
+      },
+      "PlanInventionInputSchema": {
+        "properties": {
+          "buy_quantity": {
+            "title": "Buy Quantity",
+            "type": "integer"
+          },
+          "expected_quantity": {
+            "title": "Expected Quantity",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity_per_attempt": {
+            "title": "Quantity Per Attempt",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          },
+          "unit_price": {
+            "title": "Unit Price",
+            "type": "number"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "quantity_per_attempt",
+          "unit_price",
+          "expected_quantity",
+          "buy_quantity"
+        ],
+        "title": "PlanInventionInputSchema",
+        "type": "object"
+      },
+      "PlanInventionOptionSchema": {
+        "properties": {
+          "chance": {
+            "title": "Chance",
+            "type": "number"
+          },
+          "copy_me": {
+            "title": "Copy Me",
+            "type": "integer"
+          },
+          "copy_te": {
+            "title": "Copy Te",
+            "type": "integer"
+          },
+          "decryptor_name": {
+            "title": "Decryptor Name",
+            "type": "string"
+          },
+          "decryptor_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decryptor Type Id"
+          },
+          "invention_per_unit_isk": {
+            "title": "Invention Per Unit Isk",
+            "type": "number"
+          },
+          "per_unit_isk": {
+            "title": "Per Unit Isk",
+            "type": "number"
+          },
+          "runs_per_copy": {
+            "title": "Runs Per Copy",
+            "type": "integer"
+          },
+          "source_kind": {
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_type_id": {
+            "title": "Source Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_type_id",
+          "source_name",
+          "source_kind",
+          "decryptor_name",
+          "chance",
+          "runs_per_copy",
+          "copy_me",
+          "copy_te",
+          "invention_per_unit_isk",
+          "per_unit_isk"
+        ],
+        "title": "PlanInventionOptionSchema",
+        "type": "object"
+      },
+      "PlanInventionSchema": {
+        "properties": {
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/PlanInventionOptionSchema"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "attempt_isk": {
+            "title": "Attempt Isk",
+            "type": "number"
+          },
+          "attempts_p90": {
+            "title": "Attempts P90",
+            "type": "integer"
+          },
+          "buy_attempts": {
+            "title": "Buy Attempts",
+            "type": "integer"
+          },
+          "chance": {
+            "title": "Chance",
+            "type": "number"
+          },
+          "copies_needed": {
+            "title": "Copies Needed",
+            "type": "number"
+          },
+          "copy_me": {
+            "title": "Copy Me",
+            "type": "integer"
+          },
+          "copy_te": {
+            "title": "Copy Te",
+            "type": "integer"
+          },
+          "decryptor_name": {
+            "title": "Decryptor Name",
+            "type": "string"
+          },
+          "decryptor_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decryptor Type Id"
+          },
+          "expected_attempts": {
+            "title": "Expected Attempts",
+            "type": "number"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/PlanInventionInputSchema"
+            },
+            "title": "Inputs",
+            "type": "array"
+          },
+          "invention_isk": {
+            "title": "Invention Isk",
+            "type": "number"
+          },
+          "invention_job_costs_isk": {
+            "title": "Invention Job Costs Isk",
+            "type": "number"
+          },
+          "invention_materials_isk": {
+            "title": "Invention Materials Isk",
+            "type": "number"
+          },
+          "invention_per_unit_isk": {
+            "title": "Invention Per Unit Isk",
+            "type": "number"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "per_unit_isk": {
+            "title": "Per Unit Isk",
+            "type": "number"
+          },
+          "runs_needed": {
+            "title": "Runs Needed",
+            "type": "integer"
+          },
+          "runs_per_copy": {
+            "title": "Runs Per Copy",
+            "type": "integer"
+          },
+          "science_seconds": {
+            "title": "Science Seconds",
+            "type": "number"
+          },
+          "source_kind": {
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_type_id": {
+            "title": "Source Type Id",
+            "type": "integer"
+          },
+          "units": {
+            "title": "Units",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "source_type_id",
+          "source_name",
+          "source_kind",
+          "decryptor_name",
+          "chance",
+          "runs_per_copy",
+          "copy_me",
+          "copy_te",
+          "invention_per_unit_isk",
+          "per_unit_isk",
+          "kind",
+          "units",
+          "runs_needed",
+          "copies_needed",
+          "expected_attempts",
+          "buy_attempts",
+          "attempts_p90",
+          "attempt_isk",
+          "invention_materials_isk",
+          "invention_job_costs_isk",
+          "invention_isk",
+          "science_seconds",
+          "inputs",
+          "alternatives"
+        ],
+        "title": "PlanInventionSchema",
+        "type": "object"
+      },
+      "PlanInventionSkillsSchema": {
+        "properties": {
+          "encryption": {
+            "default": 4,
+            "title": "Encryption",
+            "type": "integer"
+          },
+          "science_1": {
+            "default": 5,
+            "title": "Science 1",
+            "type": "integer"
+          },
+          "science_2": {
+            "default": 5,
+            "title": "Science 2",
+            "type": "integer"
+          }
+        },
+        "title": "PlanInventionSkillsSchema",
         "type": "object"
       },
       "PlanJobSchema": {
@@ -32052,6 +32362,17 @@
             ],
             "title": "Blueprint Me"
           },
+          "blueprint_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blueprint Source"
+          },
           "blueprint_te": {
             "anyOf": [
               {
@@ -32062,6 +32383,28 @@
               }
             ],
             "title": "Blueprint Te"
+          },
+          "bpc_me": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpc Me"
+          },
+          "bpc_te": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpc Te"
           },
           "build_fuel_blocks": {
             "default": false,
@@ -32084,6 +32427,17 @@
             "title": "Compressed",
             "type": "boolean"
           },
+          "decryptor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decryptor"
+          },
           "exclude_type_ids": {
             "anyOf": [
               {
@@ -32102,6 +32456,27 @@
             "default": "amamake",
             "title": "Facility Key",
             "type": "string"
+          },
+          "invention_skills": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanInventionSkillsSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invention_source_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invention Source Type Id"
           },
           "isk_per_lp": {
             "anyOf": [
@@ -32174,6 +32549,11 @@
             "title": "Blueprint Me",
             "type": "number"
           },
+          "blueprint_source": {
+            "default": "bpo",
+            "title": "Blueprint Source",
+            "type": "string"
+          },
           "blueprint_te": {
             "title": "Blueprint Te",
             "type": "number"
@@ -32205,6 +32585,16 @@
               }
             ]
           },
+          "default_blueprint_me": {
+            "default": 10.0,
+            "title": "Default Blueprint Me",
+            "type": "number"
+          },
+          "default_blueprint_te": {
+            "default": 20.0,
+            "title": "Default Blueprint Te",
+            "type": "number"
+          },
           "estimated_materials_buy_isk": {
             "default": 0.0,
             "title": "Estimated Materials Buy Isk",
@@ -32217,6 +32607,16 @@
           "indices_from_esi": {
             "title": "Indices From Esi",
             "type": "boolean"
+          },
+          "invention": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanInventionSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "jobs": {
             "items": {
@@ -32257,6 +32657,39 @@
           "reaction_index": {
             "title": "Reaction Index",
             "type": "number"
+          },
+          "root_blueprint_me": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Blueprint Me"
+          },
+          "root_blueprint_te": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Blueprint Te"
+          },
+          "root_runs_per_copy": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Runs Per Copy"
           },
           "step_savings": {
             "default": [],
@@ -32462,6 +32895,116 @@
         "title": "PlanetWithColoniesItem",
         "type": "object"
       },
+      "PlannerDecryptorSchema": {
+        "properties": {
+          "me_modifier": {
+            "title": "Me Modifier",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "probability_multiplier": {
+            "title": "Probability Multiplier",
+            "type": "number"
+          },
+          "runs_modifier": {
+            "title": "Runs Modifier",
+            "type": "integer"
+          },
+          "te_modifier": {
+            "title": "Te Modifier",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "probability_multiplier",
+          "runs_modifier",
+          "me_modifier",
+          "te_modifier"
+        ],
+        "title": "PlannerDecryptorSchema",
+        "type": "object"
+      },
+      "PlannerInventionInfoSchema": {
+        "properties": {
+          "decryptors": {
+            "items": {
+              "$ref": "#/components/schemas/PlannerDecryptorSchema"
+            },
+            "title": "Decryptors",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/PlannerInventionSourceSchema"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "kind",
+          "sources",
+          "decryptors"
+        ],
+        "title": "PlannerInventionInfoSchema",
+        "type": "object"
+      },
+      "PlannerInventionSourceSchema": {
+        "properties": {
+          "base_chance": {
+            "title": "Base Chance",
+            "type": "number"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "runs": {
+            "title": "Runs",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "kind",
+          "base_chance",
+          "runs"
+        ],
+        "title": "PlannerInventionSourceSchema",
+        "type": "object"
+      },
       "PostOrderItemAssignmentRequest": {
         "description": "Assign quantity of a line to one of the user's characters.",
         "properties": {
@@ -32637,6 +33180,27 @@
             "title": "Blueprint Type Id",
             "type": "integer"
           },
+          "invention": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductBuildInvention"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invention_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invention Cost"
+          },
           "margin": {
             "anyOf": [
               {
@@ -32709,6 +33273,146 @@
           "activity"
         ],
         "title": "ProductBuild",
+        "type": "object"
+      },
+      "ProductBuildInvention": {
+        "description": "How the blueprint copy is invented (T2/T3 products only).",
+        "properties": {
+          "chance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chance"
+          },
+          "copy_me": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copy Me"
+          },
+          "copy_te": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copy Te"
+          },
+          "cost_per_unit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Unit"
+          },
+          "decryptor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decryptor Name"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "runs_per_copy": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runs Per Copy"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "sources": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductBuildInventionSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "ProductBuildInvention",
+        "type": "object"
+      },
+      "ProductBuildInventionSource": {
+        "properties": {
+          "base_chance": {
+            "title": "Base Chance",
+            "type": "number"
+          },
+          "datacores": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProductBuildMaterial"
+            },
+            "title": "Datacores",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "runs": {
+            "title": "Runs",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "kind",
+          "base_chance",
+          "runs"
+        ],
+        "title": "ProductBuildInventionSource",
         "type": "object"
       },
       "ProductBuildMaterial": {
@@ -63294,6 +63998,188 @@
           }
         },
         "summary": "Facility profile detail: structures, job-class bonuses, and live ESI cost indices for the facility system",
+        "tags": [
+          "Industry",
+          "Industry - Planner"
+        ]
+      }
+    },
+    "/api/industry/planner/invention/{type_id}": {
+      "get": {
+        "operationId": "industry_endpoints_planner_get_invention_get_invention",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlannerInventionInfoSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "Invention sources (T1 blueprint or relic grades) and decryptors for a T2/T3 product; 404 when the product isn't invented",
+        "tags": [
+          "Industry",
+          "Industry - Planner"
+        ]
+      }
+    },
+    "/api/industry/planner/invention/{type_id}/quote": {
+      "get": {
+        "operationId": "industry_endpoints_planner_get_invention_quote_get_invention_quote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quantity",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Quantity",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "facility_key",
+            "required": false,
+            "schema": {
+              "default": "amamake",
+              "title": "Facility Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "decryptor",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "title": "Decryptor",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_type_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Type Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "science_1",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "title": "Science 1",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "science_2",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "title": "Science 2",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "encryption",
+            "required": false,
+            "schema": {
+              "default": 4,
+              "title": "Encryption",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanInventionSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "summary": "Quote invention for a T2/T3 product at a freeport: chance, copies, expected and buy-list attempts, cost per unit, and the alternatives",
         "tags": [
           "Industry",
           "Industry - Planner"

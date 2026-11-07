@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from django.utils import timezone
 
@@ -19,21 +19,22 @@ from industry.models import IndustrySystemCostIndex
 
 logger = logging.getLogger(__name__)
 
+# ESI ``activity`` names stored on IndustrySystemCostIndex.
+_ACTIVITIES = ("manufacturing", "reaction", "invention", "copying")
 
-def _parse_system_indices(row: dict) -> Tuple[int, float, float] | None:
+
+def _parse_system_indices(row: dict) -> Dict[str, float] | None:
+    """ESI row → {"solar_system_id", "manufacturing", "reaction", ...}."""
     system_id = int(row.get("solar_system_id") or 0)
     if not system_id:
         return None
-    manufacturing = 0.0
-    reaction = 0.0
+    parsed: Dict[str, float] = {activity: 0.0 for activity in _ACTIVITIES}
     for entry in row.get("cost_indices") or []:
         activity = entry.get("activity")
-        cost = float(entry.get("cost_index") or 0.0)
-        if activity == "manufacturing":
-            manufacturing = cost
-        elif activity == "reaction":
-            reaction = cost
-    return system_id, manufacturing, reaction
+        if activity in parsed:
+            parsed[activity] = float(entry.get("cost_index") or 0.0)
+    parsed["solar_system_id"] = system_id
+    return parsed
 
 
 def fetch_industry_systems_from_esi() -> List[dict]:
@@ -73,12 +74,13 @@ def sync_industry_system_cost_indices() -> int:
         parsed = _parse_system_indices(row)
         if parsed is None:
             continue
-        system_id, manufacturing, reaction = parsed
         instances.append(
             IndustrySystemCostIndex(
-                solar_system_id=system_id,
-                manufacturing=manufacturing,
-                reaction=reaction,
+                solar_system_id=int(parsed["solar_system_id"]),
+                manufacturing=parsed["manufacturing"],
+                reaction=parsed["reaction"],
+                invention=parsed["invention"],
+                copying=parsed["copying"],
                 updated_at=now,
             )
         )
@@ -93,16 +95,8 @@ def sync_industry_system_cost_indices() -> int:
     return count
 
 
-def fetch_system_cost_indices(
-    system_id: int = AMAMAKE_SYSTEM_ID,
-) -> Tuple[float, float]:
-    """
-    Return (manufacturing_index, reaction_index) for a solar system.
-
-    Reads the Celery-backed cache. If the system is missing (empty DB / first
-    deploy), runs a one-shot ESI sync then re-reads. Steady-state planner
-    traffic does not call ESI. Unit tests never auto-sync from ESI.
-    """
+def _cost_index_row(system_id: int) -> IndustrySystemCostIndex:
+    """Cached row for a system; syncs from ESI once if the table lacks it."""
     row = IndustrySystemCostIndex.objects.filter(
         solar_system_id=system_id
     ).first()
@@ -122,7 +116,20 @@ def fetch_system_cost_indices(
         ).first()
     if row is None:
         raise ValueError(f"No industry cost indices for system {system_id}")
+    return row
 
+
+def fetch_system_cost_indices(
+    system_id: int = AMAMAKE_SYSTEM_ID,
+) -> Tuple[float, float]:
+    """
+    Return (manufacturing_index, reaction_index) for a solar system.
+
+    Reads the Celery-backed cache. If the system is missing (empty DB / first
+    deploy), runs a one-shot ESI sync then re-reads. Steady-state planner
+    traffic does not call ESI. Unit tests never auto-sync from ESI.
+    """
+    row = _cost_index_row(system_id)
     logger.info(
         "Cached cost indices for system %s: manufacturing=%.6f reaction=%.6f",
         system_id,
@@ -130,3 +137,11 @@ def fetch_system_cost_indices(
         row.reaction,
     )
     return float(row.manufacturing), float(row.reaction)
+
+
+def fetch_system_science_indices(
+    system_id: int = AMAMAKE_SYSTEM_ID,
+) -> Tuple[float, float]:
+    """Return (invention_index, copying_index) for a solar system."""
+    row = _cost_index_row(system_id)
+    return float(row.invention), float(row.copying)

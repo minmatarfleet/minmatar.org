@@ -354,6 +354,13 @@ CELERYBEAT_CAPABILITIES = [
         },
     ),
     (
+        "[Industry] Load invention data from new SDE builds",
+        {
+            "task": "industry.tasks.refresh_invention_data_task",
+            "schedule": crontab(minute=55, hour=12),
+        },
+    ),
+    (
         "[Capabilities] Nightly readiness and capabilities",
         {
             "task": "capabilities.tasks.nightly_capabilities",

@@ -115,6 +115,7 @@ import CorporationPicture from '@components/blocks/CorporationPicture.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ProductBuildCost from '@components/blocks/ProductBuildCost.astro'
 import ProductBuildMaterials from '@components/blocks/ProductBuildMaterials.astro'
+import ProductBuildInvention from '@components/blocks/ProductBuildInvention.astro'
 import ProductBuildQueue from '@components/blocks/ProductBuildQueue.astro'
 import ProductHeader from '@components/blocks/ProductHeader.astro'
 ---
@@ -169,6 +170,8 @@ import ProductHeader from '@components/blocks/ProductHeader.astro'
                     }
 
                     <ProductBuildCost build={build} planner_path={PLANNER_PATH} />
+
+                    {build.invention && <ProductBuildInvention invention={build.invention} />}
                 </Grid>
 
                 <ProductBuildMaterials build={build} />

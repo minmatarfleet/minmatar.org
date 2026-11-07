@@ -119,8 +119,6 @@
       "ProductLoss": "closest backend schema ProductLoss, no field or null drift found; alias it when its domain is next changed",
       "ProductFight": "closest backend schema ProductFight, no field or null drift found; alias it when its domain is next changed",
       "ProductRunningJob": "closest backend schema ProductRunningJob, no field or null drift found; alias it when its domain is next changed",
-      "ProductBuildMaterial": "closest backend schema ProductBuildMaterial, no field or null drift found; alias it when its domain is next changed",
-      "ProductBuild": "closest backend schema ProductBuild, no field or null drift found; alias it when its domain is next changed",
       "ProductWeek": "closest backend schema ProductWeek, no field or null drift found; alias it when its domain is next changed",
       "ProductInsights": "closest backend schema ProductInsights, no field or null drift found; alias it when its domain is next changed",
       "PlanetaryCharacterRef": "closest backend schema BasicCharacterResponse, no field or null drift found; alias it when its domain is next changed",

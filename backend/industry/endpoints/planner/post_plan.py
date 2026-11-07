@@ -20,7 +20,7 @@ from industry.helpers.blueprint_efficiency import (
     default_blueprint_me_te_percent,
     is_faction_navy_hull,
 )
-from industry.helpers.build_planner import plan_build
+from industry.helpers.build_planner import RootBlueprint, plan_build
 from industry.helpers.cost_breakdown import jita_sell_unit_prices_by_type_id
 from industry.helpers.compressed_ore import (
     build_compressed_ore_plan,
@@ -34,6 +34,17 @@ from industry.helpers.plan_costing import (
 from industry.helpers.facility_profiles import (
     FACILITY_PROFILES,
     get_facility_reprocessing_tax,
+)
+from industry.helpers.invention import (
+    BASE_COPY_ME,
+    BASE_COPY_TE,
+    InventionSkills,
+)
+from industry.helpers.invention_planner import (
+    InventionRequest,
+    invention_to_dict,
+    is_invented_product,
+    plan_invented_build,
 )
 from industry.helpers.loyalty_store import (
     get_offer_for_blueprint_type,
@@ -308,6 +319,7 @@ def _plan_response_body(
     stock_applied=None,
     stock_unresolved=None,
     step_savings=None,
+    blueprint=None,
 ):
     navy_bpc_isk = navy_bpc.total_isk if navy_bpc is not None else 0
     cost_breakdown = cost_build_plan(
@@ -325,6 +337,7 @@ def _plan_response_body(
         },
         "blueprint_me": plan.blueprint_me,
         "blueprint_te": plan.blueprint_te,
+        **_blueprint_payload(plan, blueprint),
         "facility": plan.facility_key,
         "system_id": plan.system_id,
         "manufacturing_index": plan.manufacturing_index,
@@ -371,6 +384,11 @@ def _plan_response_body(
         "compressed_ore": compressed_payload,
         "cost_breakdown": cost_breakdown.to_legacy_breakdown_dict(),
         "navy_bpc": navy_bpc.to_dict() if navy_bpc is not None else None,
+        "invention": (
+            invention_to_dict(plan.invention)
+            if plan.invention is not None
+            else None
+        ),
         "stock_applied": _stock_applied_payload(stock_applied or []),
         "stock_unresolved": list(stock_unresolved or []),
         "step_savings": [
@@ -385,6 +403,62 @@ def _plan_response_body(
             for row in (step_savings or [])
         ],
     }
+
+
+def _blueprint_payload(plan, blueprint) -> dict:
+    """Which blueprint the root is built from, plus the tree's BPO defaults."""
+    source, default_me, default_te = blueprint or ("bpo", 10.0, 20.0)
+    root = plan.root_blueprint
+    return {
+        "blueprint_source": source,
+        "default_blueprint_me": default_me,
+        "default_blueprint_te": default_te,
+        "root_blueprint_me": root.me * 100.0 if root else None,
+        "root_blueprint_te": root.te * 100.0 if root else None,
+        "root_runs_per_copy": root.runs_per_copy if root else None,
+    }
+
+
+def _invention_skills(payload) -> InventionSkills:
+    skills = payload.invention_skills
+    if skills is None:
+        return InventionSkills()
+    levels = (skills.science_1, skills.science_2, skills.encryption)
+    if any(level < 0 or level > 5 for level in levels):
+        raise ValueError("invention skill levels must be 0-5")
+    return InventionSkills(
+        science_1=skills.science_1,
+        science_2=skills.science_2,
+        encryption=skills.encryption,
+    )
+
+
+def _resolve_root_blueprint(eve_type, payload):
+    """(source, InventionRequest | None, RootBlueprint | None) for the root.
+
+    Raises ValueError for a bad blueprint_source, ME/TE or skill level.
+    """
+    if is_faction_navy_hull(eve_type):
+        return "navy_bpc", None, None
+    if not is_invented_product(eve_type.id):
+        return "bpo", None, None
+    source = (payload.blueprint_source or "invent").strip().lower()
+    if source == "supplied_bpc":
+        me = normalize_me_te(
+            BASE_COPY_ME if payload.bpc_me is None else payload.bpc_me
+        )
+        te = normalize_me_te(
+            BASE_COPY_TE if payload.bpc_te is None else payload.bpc_te
+        )
+        return source, None, RootBlueprint(me=me, te=te)
+    if source != "invent":
+        raise ValueError("blueprint_source must be 'invent' or 'supplied_bpc'")
+    request = InventionRequest(
+        decryptor=(payload.decryptor or "auto").strip().lower(),
+        source_type_id=payload.invention_source_type_id,
+        skills=_invention_skills(payload),
+    )
+    return source, request, None
 
 
 def _resolve_navy_bpc(eve_type, payload):
@@ -412,8 +486,9 @@ def _resolve_navy_bpc(eve_type, payload):
 def _resolve_plan_request(request, payload: PlanRequestSchema):
     """Validate payload and resolve entities.
 
-    Returns ((key, eve_type, character, me, te, exclude_type_ids), None)
-    or (None, (status, ErrorResponse)).
+    Returns ((key, eve_type, character, me, te, exclude_type_ids, root), None)
+    or (None, (status, ErrorResponse)). ``root`` is
+    ``(blueprint_source, InventionRequest | None, RootBlueprint | None)``.
     """
     if payload.quantity < 1:
         return None, (400, ErrorResponse(detail="quantity must be >= 1"))
@@ -483,21 +558,33 @@ def _resolve_plan_request(request, payload: PlanRequestSchema):
             ),
         )
 
-    return (key, eve_type, character, me, te, exclude_type_ids), None
-
-
-def _execute_plan_build(eve_type, payload, key, me, te, exclude_type_ids):
     try:
-        return plan_build(
-            eve_type,
-            quantity=payload.quantity,
-            blueprint_me=me,
-            blueprint_te=te,
-            facility=key,
-            build_fuel_blocks=payload.build_fuel_blocks,
-            exclude_type_ids=exclude_type_ids,
-            max_runs_per_job=payload.max_runs_per_job,
-        )
+        root = _resolve_root_blueprint(eve_type, payload)
+    except ValueError as exc:
+        return None, (400, ErrorResponse(detail=str(exc)))
+
+    return (key, eve_type, character, me, te, exclude_type_ids, root), None
+
+
+def _execute_plan_build(
+    eve_type, payload, key, me, te, exclude_type_ids, root
+):
+    _, invention_request, root_blueprint = root
+    kwargs = {
+        "quantity": payload.quantity,
+        "blueprint_me": me,
+        "blueprint_te": te,
+        "facility": key,
+        "build_fuel_blocks": payload.build_fuel_blocks,
+        "exclude_type_ids": exclude_type_ids,
+        "max_runs_per_job": payload.max_runs_per_job,
+    }
+    try:
+        if invention_request is not None:
+            return plan_invented_build(
+                eve_type, request=invention_request, **kwargs
+            )
+        return plan_build(eve_type, root_blueprint=root_blueprint, **kwargs)
     except ValueError as exc:
         msg = str(exc)
         if "cost index" in msg.lower() or "esi" in msg.lower():
@@ -519,11 +606,24 @@ def _step_savings_cache_key(payload, key, me, te) -> str:
         key,
         int(bool(payload.build_fuel_blocks)),
         payload.max_runs_per_job or 0,
+        # T2/T3: the root copy changes the root's demand for every step.
+        payload.blueprint_source or "",
+        payload.decryptor or "",
+        payload.invention_source_type_id or 0,
+        payload.bpc_me if payload.bpc_me is not None else "",
+        payload.bpc_te if payload.bpc_te is not None else "",
+        (
+            payload.invention_skills.model_dump_json()
+            if payload.invention_skills is not None
+            else ""
+        ),
     ]
-    return "industry_plan_step_savings:v1:" + ":".join(str(p) for p in parts)
+    return "industry_plan_step_savings:v2:" + ":".join(str(p) for p in parts)
 
 
-def _step_savings(plan, eve_type, payload, key, me, te, exclude_type_ids):
+def _step_savings(
+    plan, eve_type, payload, key, me, te, exclude_type_ids, root
+):
     """
     Build-vs-buy saving for every intermediate, ticked or not.
 
@@ -537,7 +637,9 @@ def _step_savings(plan, eve_type, payload, key, me, te, exclude_type_ids):
         cached = cache_get(cache_key)
         if cached is not None:
             return [plan_step_savings.StepSaving(**row) for row in cached]
-        full_plan = _execute_plan_build(eve_type, payload, key, me, te, [])
+        full_plan = _execute_plan_build(
+            eve_type, payload, key, me, te, [], root
+        )
         if isinstance(full_plan, tuple):
             return []
     else:
@@ -555,15 +657,15 @@ def post_plan(request, payload: PlanRequestSchema):
     resolved, error = _resolve_plan_request(request, payload)
     if error is not None:
         return error
-    key, eve_type, character, me, te, exclude_type_ids = resolved
+    key, eve_type, character, me, te, exclude_type_ids, root = resolved
 
     plan = _execute_plan_build(
-        eve_type, payload, key, me, te, exclude_type_ids
+        eve_type, payload, key, me, te, exclude_type_ids, root
     )
     if isinstance(plan, tuple):
         return plan
     step_savings = _step_savings(
-        plan, eve_type, payload, key, me, te, exclude_type_ids
+        plan, eve_type, payload, key, me, te, exclude_type_ids, root
     )
 
     stock_applied_rows = []
@@ -605,4 +707,5 @@ def post_plan(request, payload: PlanRequestSchema):
         stock_applied=stock_applied_rows,
         stock_unresolved=stock_unresolved,
         step_savings=step_savings,
+        blueprint=(root[0], *default_blueprint_me_te_percent(eve_type)),
     )

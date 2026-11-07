@@ -1,0 +1,157 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ProductBuildInvention } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    invention:          ProductBuildInvention;
+    [propName: string]: any;
+}
+
+const {
+    invention,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { format_isk, ISK_COMPACT_PRECISE, number_thousand_separator } from '@helpers/numbers'
+
+const n = (value: number) => number_thousand_separator(value)
+const pct = (value: number) => `${Math.round(value * 100)}%`
+
+const best = invention.chance !== null && invention.decryptor_name !== null
+    ? t('industry.product.invention_best')
+        .replace('{decryptor}', invention.decryptor_name)
+        .replace('{chance}', pct(invention.chance))
+        .replace('{runs}', n(invention.runs_per_copy ?? 1))
+        .replace('{me}', n(invention.copy_me ?? 2))
+    : null
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+---
+
+<div class:list={['[ build-invention ]', Astro.props.class]} {...attributes}>
+    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+        <Flexblock gap="var(--space-s)">
+            <header class="[ panel-header ]">
+                <h3>{t('industry.product.invented_from')}</h3>
+                <small>
+                    {invention.kind === 'T3'
+                        ? t('industry.product.invention_hint_t3')
+                        : t('industry.product.invention_hint_t2')}
+                </small>
+            </header>
+
+            <ul class="[ sources ]" role="list">
+                {invention.sources.map(source =>
+                    <li class="[ source ]">
+                        <span class="[ source-name ]">
+                            <ItemPicture
+                                item_id={source.type_id}
+                                size={32}
+                                icon_quality={64}
+                                blueprint={source.kind === 't1_blueprint' ? { is_copy: true } : undefined}
+                            />
+                            <span>{source.name}</span>
+                        </span>
+                        <span class="[ source-stats ]">
+                            {t('industry.product.invention_source_stats')
+                                .replace('{chance}', pct(source.base_chance))
+                                .replace('{runs}', n(source.runs))}
+                        </span>
+                        <small class="[ muted ]">
+                            {source.datacores.map(core => `${n(core.quantity)} × ${core.name}`).join(', ')}
+                        </small>
+                    </li>
+                )}
+            </ul>
+
+            {invention.cost_per_unit !== null &&
+                <dl class="[ invention-cost ]">
+                    <dt>{t('industry.product.invention_per_unit')}</dt>
+                    <dd>{format_isk(invention.cost_per_unit, { format: ISK_COMPACT_PRECISE })}</dd>
+                </dl>
+            }
+            {best && <small class="[ muted ]">{best}</small>}
+        </Flexblock>
+    </ComponentBlock>
+</div>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .panel-header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
+    .muted {
+        color: var(--foreground);
+    }
+
+    .sources {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin: 0;
+        padding: 0;
+    }
+
+    .source {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--space-3xs) var(--space-s);
+        padding-block: var(--space-2xs);
+        border-block-end: solid 1px var(--hairline);
+
+        small {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .source-name {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .source-stats {
+        font-size: var(--step--1);
+        color: var(--foreground);
+        white-space: nowrap;
+    }
+
+    .invention-cost {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-s);
+        margin: 0;
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--foreground);
+        }
+
+        dd {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--highlight);
+        }
+    }
+</style>

@@ -18,7 +18,7 @@ const {
 
 delete attributes.class
 
-import { format_isk, number_thousand_separator } from '@helpers/numbers'
+import { format_isk, ISK_COMPACT_PRECISE, number_thousand_separator } from '@helpers/numbers'
 
 const n = (value: number) => number_thousand_separator(value)
 const isk = (value: number | null) => format_isk(value)
@@ -78,7 +78,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro'
             </dl>
 
             <small class="[ muted ]">
-                {build.prices_complete ? t('industry.product.base_numbers_hint') : t('industry.product.missing_prices_hint')}
+                {!build.prices_complete
+                    ? t('industry.product.missing_prices_hint')
+                    : build.invention_cost !== null
+                        ? t('industry.product.base_numbers_invention_hint').replace('{isk}', format_isk(build.invention_cost, { format: ISK_COMPACT_PRECISE }))
+                        : t('industry.product.base_numbers_hint')}
             </small>
 
             <div>
