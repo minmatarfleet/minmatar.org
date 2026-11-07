@@ -2,6 +2,7 @@
  * Helpers for the market settings screens: LP desk settings, freight routes
  * and buyback settings (pages/partials/{loyalty,freight_routes,buyback}_settings_component).
  */
+import type { i18n } from '@helpers/i18n'
 import type {
     BuybackManageItem,
     BuybackManageSettings,
@@ -198,4 +199,29 @@ export function read_freight_pricing(form: FormData): { pricing: FreightPricingI
             max_collateral: amounts.max_collateral,
         },
     }
+}
+
+type Translate = ReturnType<typeof i18n>['t']
+
+/** The buyback settings sections' header summaries. */
+export function buyback_summaries(settings: BuybackEditorSettings, t: Translate) {
+    const percent = (share: number) => share_to_percent(share)
+    const accepting = settings.items.filter((item) => item.active).length
+    return {
+        open: settings.active ? t('manage.buyback.open') : t('manage.buyback.closed'),
+        rates: t('manage.buyback.rates_summary')
+            .replace('~DEMAND', percent(settings.demand_jita_buy))
+            .replace('~SURPLUS', percent(settings.surplus_jita_buy))
+            .replace('~REFINE', percent(settings.ore_refine)),
+        location: settings.location_name ?? t('manage.buyback.location_unset'),
+        items: t('manage.buyback.items_summary')
+            .replace('~COUNT', String(settings.items.length))
+            .replace('~ACCEPTING', String(accepting)),
+    }
+}
+
+/** Highest pay first; items not taken last; then by name. */
+export function buyback_items_by_pay(items: BuybackEditorItem[]): BuybackEditorItem[] {
+    return [...items].sort((a, b) =>
+        (b.pays_rate ?? -1) - (a.pays_rate ?? -1) || a.name.localeCompare(b.name))
 }

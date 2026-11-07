@@ -141,3 +141,26 @@
         display: none;
     }
 }
+
+// Accepted items: the category chips, then the add picker on the right.
+.market-items-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-s);
+}
+
+.market-items-add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
+    align-items: start;
+    gap: var(--space-xs);
+    flex: 0 1 34rem;
+    min-width: 0;
+
+    @media (max-width: 48rem) {
+        flex-basis: 100%;
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
