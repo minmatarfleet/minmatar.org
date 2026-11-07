@@ -142,8 +142,8 @@ Tests, using `testing/pages/*` with `AstroContainer` and `vi.mock` as in `corpor
   - the v3 and metrics calls start before fc_metrics resolves
   - with `?host=mine`, doctrines are fetched for the filtered fleets only
   - every call is made exactly once
-- `testing/pages/learning_index.test.ts`: inject a failure into each call in turn, and check the rendered fallback matches what `main`'s code produces.
-- `testing/pages/corporation_detail_parallel.test.ts`: member-access failure, apply-list failure, and the 404 path.
+- `testing/pages/learning_index_parallel.test.ts`: inject a failure into each call in turn, and check the rendered fallback matches what `main`'s code produces.
+- `testing/helpers/parallel_fetching.test.ts`: the corporation and application calls start together; an applications failure, an open-application failure, and a corporation failure behave as before.
 
 **Gate:**
 - `ssr_diff` shows identical HTML and status codes for all personas, including Fleets with `?host=all|alliance|tribe|mine`, History, and Learning with `?persona=` and `?unavailable=1`.
@@ -157,7 +157,7 @@ Tests, using `testing/pages/*` with `AstroContainer` and `vi.mock` as in `corpor
   - Keep `CampaignList` rendered somewhere on the page (for example an empty hidden instance) only if the partial route's manifest styles turn out not to include it. Check `dist/server/manifest_*.mjs` after the build. `htmx_partial_styles` (#2897) should already cover it.
 - New `components/blocks/CampaignListSkeleton.astro`: same grid as `CampaignList`, fill from `@include skeleton.shimmer`, no keyframes.
 - `campaign_list_component` already renders `ErrorRefetch`, so it doesn't change.
-- Test: `testing/components/blocks/CampaignListSkeleton.test.ts` renders with the grid classes. The page container test checks that the shell makes no `get_campaigns` call and includes the LazyPartial URL.
+- Test: `testing/pages/campaigns_lazy_list.test.ts` checks that the shell makes no `get_campaigns` call and includes the LazyPartial URL.
 
 **Gate:**
 - `settled_dom_diff` matches.
