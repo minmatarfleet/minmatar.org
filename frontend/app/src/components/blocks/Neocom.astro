@@ -105,16 +105,14 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                         </NeocomButton>
                         <UserAuth active={page.startsWith(translatePath('/account'))} />
                     </Flexblock>
-                    {can_view_fleets &&
-                        <NeocomButton
-                            active={page.startsWith(translatePath('/fleets')) || page.startsWith(translatePath('/campaigns'))}
-                            title='neocom.fleets'
-                            description='fleets.description'
-                            href={translatePath('/fleets/upcoming/')}
-                        >
-                            <FleetEvEIcon />
-                        </NeocomButton>
-                    }
+                    <NeocomButton
+                        active={page.startsWith(translatePath('/alliance')) && !on_led_corporation}
+                        title='neocom.alliance'
+                        description='alliance.description'
+                        href={translatePath('/alliance/')}
+                    >
+                        <AllianceEvEIcon />
+                    </NeocomButton>
                     {led_corporation_path &&
                         <NeocomButton
                             active={on_led_corporation}
@@ -125,14 +123,16 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                             <CorporationEvEIcon />
                         </NeocomButton>
                     }
-                    <NeocomButton
-                        active={page.startsWith(translatePath('/alliance')) && !on_led_corporation}
-                        title='neocom.alliance'
-                        description='alliance.description'
-                        href={translatePath('/alliance/')}
-                    >
-                        <AllianceEvEIcon />
-                    </NeocomButton>
+                    {can_view_fleets &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/fleets')) || page.startsWith(translatePath('/campaigns'))}
+                            title='neocom.fleets'
+                            description='fleets.description'
+                            href={translatePath('/fleets/upcoming/')}
+                        >
+                            <FleetEvEIcon />
+                        </NeocomButton>
+                    }
                     <NeocomButton
                         active={page.startsWith(translatePath('/ships'))}
                         title='neocom.ships'
@@ -165,23 +165,6 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                     >
                         <IndustryEVEIcon />
                     </NeocomButton>
-                    {can_manage &&
-                        <NeocomButton
-                            active={page.startsWith(translatePath('/manage'))}
-                            title='neocom.manage'
-                            description='manage.neocom_description'
-                            href={translatePath('/manage/')}
-                        >
-                            <ManageEvEIcon />
-                            <LazyPartial
-                                slot="badge"
-                                class="[ neocom-badge-slot ]"
-                                url={translatePath('/partials/manage_neocom_badge_component/')}
-                                swap="outerHTML"
-                                indicator={false}
-                            />
-                        </NeocomButton>
-                    }
                     {false && primary_character &&
                         <NeocomButton
                             active={page.startsWith(translatePath('/character/assets/user/'))}
@@ -222,6 +205,23 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                     >
                         <TutorialIcon />
                     </NeocomButton>
+                    {can_manage &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/manage'))}
+                            title='neocom.manage'
+                            description='manage.neocom_description'
+                            href={translatePath('/manage/')}
+                        >
+                            <ManageEvEIcon />
+                            <LazyPartial
+                                slot="badge"
+                                class="[ neocom-badge-slot ]"
+                                url={translatePath('/partials/manage_neocom_badge_component/')}
+                                swap="outerHTML"
+                                indicator={false}
+                            />
+                        </NeocomButton>
+                    }
                 </Flexblock>
             </nav>
             <Flexblock
