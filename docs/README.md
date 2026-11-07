@@ -28,6 +28,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [architecture/nav-click-latency-plan.md](architecture/nav-click-latency-plan.md) | current | Faster nav clicks: gates cache, parallel backend calls, Campaigns and Fleets skeletons, and what was measured |
 | [market-pricing.md](market-pricing.md) | current | Which market price source to use where |
 | [industry/lp-buyback.md](industry/lp-buyback.md) | current | LP buyback orders: tiers, states, timers, Discord threads |
+| [industry/invention-planner.md](industry/invention-planner.md) | current | T2/T3 in the build planner: invention data, maths, root copy, costs, API and UI |
 | [capabilities/capability-engine-design.md](capabilities/capability-engine-design.md) | current | Character capability engine: computed skill requirements per doctrine fitting, the fit check, readiness, accounts, SDE updates |
 | [fleet-ships-and-refits.md](fleet-ships-and-refits.md) | current | Fleet ship lists, refits and in-game fittings |
 | [fleets/fleet-on-alt.md](fleets/fleet-on-alt.md) | current | Running a fleet on an alt: the start finds the boss character, the main stays the FC, public pages show only the alt |
