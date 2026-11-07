@@ -313,6 +313,8 @@ class EveStructureTimerPatch(BaseModel):
     corporation_name: str | None = None
     alliance_name: str | None = None
     fitting: str | None = None
+    # Why, for the audit log; not stored on the timer.
+    reason: str | None = None
 
 
 class EveStructurePingResponse(BaseModel):
@@ -357,6 +359,11 @@ def _timer_label(timer: EveStructureTimer) -> str:
     return f"timer {timer.id} ({timer.system_name} - {timer.name})"
 
 
+def _with_reason(summary: str, reason: str | None) -> str:
+    reason = (reason or "").strip()
+    return f"{summary}. Reason: {reason}" if reason else summary
+
+
 @router.patch(
     "/timers/{timer_id}",
     auth=AuthBearer(),
@@ -378,6 +385,7 @@ def update_structure_timer(
         return 404, ErrorResponse(detail="Timer does not exist")
 
     changes = payload.dict(exclude_unset=True)
+    reason = changes.pop("reason", None)
     for field in ("name", "system_name"):
         if field in changes and not (changes[field] or "").strip():
             return 400, ErrorResponse(detail=f"{field} cannot be empty")
@@ -401,7 +409,10 @@ def update_structure_timer(
         timer.save()
         _audit(
             request.user,
-            f"Corrected {_timer_label(timer)}: {'; '.join(changed)}",
+            _with_reason(
+                f"Corrected {_timer_label(timer)}: {'; '.join(changed)}",
+                reason,
+            ),
         )
     return _timer_response(timer)
 
@@ -412,7 +423,7 @@ def update_structure_timer(
     response={204: None, 403: ErrorResponse, 404: ErrorResponse},
     summary="Delete a wrong structure timer (recorded in the audit log)",
 )
-def delete_structure_timer(request, timer_id: int):
+def delete_structure_timer(request, timer_id: int, reason: str | None = None):
     if not can_use_feature(request.user, CORRECT_FEATURE):
         return 403, ErrorResponse(detail="Permission denied")
     timer = EveStructureTimer.objects.filter(id=timer_id).first()
@@ -421,7 +432,12 @@ def delete_structure_timer(request, timer_id: int):
     label = _timer_label(timer)
     when = timer.timer
     timer.delete()
-    _audit(request.user, f"Deleted {label}, was due {when:%Y-%m-%d %H:%M}")
+    _audit(
+        request.user,
+        _with_reason(
+            f"Deleted {label}, was due {when:%Y-%m-%d %H:%M}", reason
+        ),
+    )
     return 204, None
 
 

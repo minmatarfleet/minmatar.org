@@ -1,87 +1,140 @@
 ---
+/**
+ * The structure timers manage screen's htmx partial (/intel/timers/manage/).
+ *
+ * part=list   GET: the Timers tab list (?view=upcoming|past, q, page)
+ * part=row    GET: a timer's open-row form (?id=)
+ *             POST action=update: correct it; answers with the row, open
+ *             POST action=delete: delete it; answers with the row, dimmed
+ * part=pings  GET: the Pings tab (?view=all|failed)
+ *
+ * Rows go back inside a <table> and the request picks them with hx-select:
+ * htmx drops a bare <tbody> after Astro's leading <style>/<link>.
+ */
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 
-// no-error-refetch: a correction; a failed save shows in the panel it swaps back.
-// POST edits or deletes a timer and answers with the timers panel;
-// GET ?view=pings answers with the ping log (?failed_only=true filters it).
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const gates = await get_gates(Astro)
 if (!can(gates, 'structures.timers.correct')) return HTTP_403_Forbidden()
 
-import type { StructurePing, StructureTimer, StructureTimerPatch } from '@dtypes/api.minmatar.org'
+import type { StructurePing, StructureTimer } from '@dtypes/api.minmatar.org'
+import type { StructureTimerCorrection } from '@helpers/api.minmatar.org/structures'
 import { delete_structure_timer, get_structure_pings, get_structure_timers, update_structure_timer } from '@helpers/api.minmatar.org/structures'
+import type { TimerView } from '@helpers/manage_intel'
+import { parse_iso } from '@helpers/manage_intel'
 
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import StructurePingsPanel from '@components/blocks/StructurePingsPanel.astro'
 import StructureTimersManager from '@components/blocks/StructureTimersManager.astro'
+import StructureTimerForm from '@components/blocks/manage_intel/StructureTimerForm.astro'
+import StructureTimerRow from '@components/blocks/manage_intel/StructureTimerRow.astro'
 
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'list'
 const is_post = Astro.request.method === 'POST'
-const show_pings = !is_post && Astro.url.searchParams.get('view') === 'pings'
-const failed_only = Astro.url.searchParams.get('failed_only') === 'true'
+const COLSPAN = 5
 
-let error: string | null = null
-let notice: string | null = null
+if (!['list', 'row', 'pings'].includes(part) || (is_post && part !== 'row')) return HTTP_400_Bad_Request()
+
 let timers: StructureTimer[] = []
 let pings: StructurePing[] = []
+let fetch_error: Error | false = false
+let row_error: string | null = null
+let saved = false
+let deleted = false
+
+const timer_id = parseInt(params.get('id') ?? '') || 0
+if (part === 'row' && !timer_id) return HTTP_400_Bad_Request()
 
 try {
-    if (is_post) {
-        const form = await Astro.request.formData()
-        const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
-        const timer_id = parseInt(text('timer_id'))
-        if (!timer_id) return HTTP_400_Bad_Request()
-
-        if (text('action') === 'update') {
-            const changes: StructureTimerPatch = {
-                name: text('name'),
-                system_name: text('system_name'),
-                corporation_name: text('corporation_name'),
-                alliance_name: text('alliance_name'),
-                state: text('state') as StructureTimerPatch['state'],
-                type: text('type') as StructureTimerPatch['type'],
-                // the form's datetime-local value is EVE time
-                timer: `${text('timer')}:00Z`,
-            }
-            await update_structure_timer(auth_token, timer_id, changes)
-            notice = t('structure_timers_manage.saved')
-        } else if (text('action') === 'delete') {
-            if (!(await delete_structure_timer(auth_token, timer_id)))
-                error = t('structure_timers_manage.delete_failed')
-            else
-                notice = t('structure_timers_manage.deleted')
-        } else {
-            return HTTP_400_Bad_Request()
-        }
-    }
-} catch (failure) {
-    if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
-    error = (failure as Error).message
-}
-
-try {
-    if (show_pings)
-        pings = await get_structure_pings(auth_token, failed_only)
+    if (part === 'pings')
+        pings = await get_structure_pings(auth_token, false)
     else
         timers = await get_structure_timers(auth_token, false)
 } catch (failure) {
     if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
-    error = error ?? (failure as Error).message
+    fetch_error = failure as Error
 }
 
-if (!show_pings) {
-    // newest first, as the manage page lists them
-    timers = [...timers].sort((a, b) => new Date(b.timer).getTime() - new Date(a.timer).getTime()).slice(0, 100)
+const same_minute = (posted: string, stored: string) =>
+    parse_iso(posted)?.toISOString().slice(0, 16) === parse_iso(stored)?.toISOString().slice(0, 16)
+
+let row_timer: StructureTimer | undefined = timers.find((timer) => timer.id === timer_id)
+
+if (is_post) {
+    if (!row_timer) return new Response(t('manage.timers.not_found'), { status: 404 })
+    const form = await Astro.request.formData()
+    const text = (key: string) => String(form.get(key) ?? '').trim()
+    const action = text('action')
+    try {
+        if (action === 'update') {
+            const changes: StructureTimerCorrection = {
+                name: text('name'),
+                system_name: text('system_name'),
+                corporation_name: text('corporation_name'),
+                alliance_name: text('alliance_name'),
+                state: text('state') as StructureTimerCorrection['state'],
+                type: text('type') as StructureTimerCorrection['type'],
+                // The field has minute precision: unchanged, it must not drop the stored seconds.
+                ...(same_minute(text('timer'), row_timer.timer) ? {} : { timer: text('timer') }),
+                reason: text('reason') || null,
+            }
+            // Shown again with the error if the save fails, so nothing typed is lost.
+            row_timer = {
+                ...row_timer,
+                name: text('name'),
+                system_name: text('system_name'),
+                corporation_name: text('corporation_name') || null,
+                alliance_name: text('alliance_name') || null,
+                state: text('state'),
+                type: text('type'),
+                timer: text('timer') || row_timer.timer,
+            }
+            row_timer = await update_structure_timer(auth_token, timer_id, changes) ?? row_timer
+            saved = true
+        } else if (action === 'delete') {
+            if (!(await delete_structure_timer(auth_token, timer_id, text('reason'))))
+                return new Response(t('manage.timers.not_found'), { status: 404 })
+            deleted = true
+        } else {
+            return HTTP_400_Bad_Request()
+        }
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        if (action === 'delete') return new Response((failure as Error).message, { status: 400 })
+        row_error = (failure as Error).message
+    }
 }
+
+const view: TimerView = params.get('view') === 'past' ? 'past' : 'upcoming'
+const pings_view = params.get('view') === 'failed' ? 'failed' : 'all'
+const query = params.get('q') ?? ''
+const page = parseInt(params.get('page') ?? '1') || 1
 ---
 
-{show_pings ?
-    <StructurePingsPanel pings={pings} failed_only={failed_only} error={error} />
-    :
-    <StructureTimersManager timers={timers} error={error} notice={notice} />
+{fetch_error ?
+    <ErrorRefetch args={{ partial: translatePath(`/partials/structure_timers_manage_component/${Astro.url.search}`), error: fetch_error, delay: 0 }} />
+: part === 'list' ?
+    <StructureTimersManager timers={timers} view={view} query={query} page={page} />
+: part === 'pings' ?
+    <StructurePingsPanel pings={pings} view={pings_view} />
+: !is_post ?
+    (row_timer ?
+        <StructureTimerForm timer={row_timer} />
+        :
+        <p class="[ manage-muted ]">{t('manage.timers.not_found')}</p>
+    )
+: row_timer ?
+    <table>
+        <StructureTimerRow timer={row_timer} colspan={COLSPAN} open={!deleted} deleted={deleted} saved={saved} error={row_error} />
+    </table>
+:
+    <p class="[ manage-muted ]">{t('manage.timers.not_found')}</p>
 }

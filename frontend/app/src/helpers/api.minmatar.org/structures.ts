@@ -30,7 +30,11 @@ export async function verify_structure_timer(access_token:string, timer_id:numbe
 
 
 // Corrections and the ping log answer 403 without the structures.timers.correct feature.
-export async function update_structure_timer(access_token:string, timer_id:number, changes:StructureTimerPatch) {
+// `reason` goes to the audit log only. It is in the backend schema since the
+// manage redesign; the generated StructureTimerPatch gains it at the next regen.
+export type StructureTimerCorrection = StructureTimerPatch & { reason?: string | null }
+
+export async function update_structure_timer(access_token:string, timer_id:number, changes:StructureTimerCorrection) {
     return await api_request<StructureTimer>(`${API_ENDPOINT}timers/${timer_id}`, {
         method: 'PATCH',
         token: access_token,
@@ -38,8 +42,9 @@ export async function update_structure_timer(access_token:string, timer_id:numbe
     })
 }
 
-export async function delete_structure_timer(access_token:string, timer_id:number) {
-    return await api_status_is(`${API_ENDPOINT}timers/${timer_id}`, {
+export async function delete_structure_timer(access_token:string, timer_id:number, reason:string = '') {
+    const query = reason ? `?reason=${encodeURIComponent(reason)}` : ''
+    return await api_status_is(`${API_ENDPOINT}timers/${timer_id}${query}`, {
         method: 'DELETE',
         token: access_token,
     }, 204)

@@ -1,97 +1,95 @@
 ---
-import { i18n, t_key } from '@helpers/i18n'
+/**
+ * The Timers tab of /intel/timers/manage/: Upcoming and Past 7 days chips,
+ * a search across system, structure and owner, and a table whose rows open
+ * in place to correct or delete a timer. structure_timers_manage_component
+ * renders it again for every chip, search and page.
+ */
+import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { structure_states, structure_types } from '@dtypes/api.minmatar.org'
 import type { StructureTimer } from '@dtypes/api.minmatar.org'
+import type { ManageColumn } from '@dtypes/layout_components'
+import type { TimerView } from '@helpers/manage_intel'
+import { sort_timers, timer_in_view, timer_matches } from '@helpers/manage_intel'
+import { query_string } from '@helpers/string'
 
-/** Correct or delete structure timers. structure_timers_manage_component saves and answers with this panel again. */
 interface Props {
     timers:             StructureTimer[];
-    error?:             string | null;
-    notice?:            string | null;
+    view?:              TimerView;
+    query?:             string;
+    page?:              number;
     [propName: string]: any;
 }
 
-const { timers, error = null, notice = null } = Astro.props
+const { timers, view = 'upcoming', query = '', page = 1 } = Astro.props
 
-const PARTIAL_URL = translatePath('/partials/structure_timers_manage_component')
+const PAGE_SIZE = 50
+const now = new Date()
+const list_url = (values: Record<string, string> = {}) =>
+    translatePath(`/partials/structure_timers_manage_component/?${query_string({ part: 'list', ...values })}`)
 
-// <input type="datetime-local"> wants "YYYY-MM-DDTHH:mm" in EVE time (UTC).
-const local_value = (iso: string) => new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toISOString().slice(0, 16)
+const searched = timers.filter((timer) => timer_matches(timer, query))
+const upcoming = searched.filter((timer) => timer_in_view(timer, 'upcoming', now))
+const past = searched.filter((timer) => timer_in_view(timer, 'past', now))
+const rows = sort_timers(view === 'past' ? past : upcoming, view)
+const total_pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+const current_page = Math.min(Math.max(1, page), total_pages)
+const page_rows = rows.slice((current_page - 1) * PAGE_SIZE, current_page * PAGE_SIZE)
 
-import Button from '@components/blocks/Button.astro'
+const COLUMNS: ManageColumn[] = [
+    { label: t('manage.timers.col_structure') },
+    { label: t('manage.timers.col_owner'), phone: false },
+    { label: t('manage.timers.col_state'), phone: false },
+    { label: t('manage.timers.col_timer'), align: 'num', phone: false, sort: view === 'past' ? 'descending' : 'ascending' },
+]
+
+const empty_title = query ? t('manage.timers.empty_search') :
+    view === 'past' ? t('manage.timers.empty_past') : t('manage.timers.empty_upcoming')
+
 import EmptyState from '@components/blocks/EmptyState.astro'
-import Input from '@components/blocks/Input.astro'
-import ManagePanel from '@components/blocks/ManagePanel.astro'
-import Select from '@components/blocks/Select.astro'
-
-const attrs = {
-    'hx-post': PARTIAL_URL,
-    'hx-target': '#structure-timers-manager',
-    'hx-swap': 'outerHTML',
-    'hx-disabled-elt': 'find button',
-}
+import HtmxPager from '@components/blocks/HtmxPager.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import StructureTimerRow from '@components/blocks/manage_intel/StructureTimerRow.astro'
 ---
 
-<ManagePanel id="structure-timers-manager">
-    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
-    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
-
-    {timers.length === 0 ?
-        <EmptyState title={t('structure_timers_manage.empty')} />
-        :
-        <ul class="[ manage-panel__rows ]" role="list">
-            {timers.map(timer =>
-                <li class="[ manage-panel__row ]" id={`manage-timer-${timer.id}`}>
-                    <form class="[ manage-panel__form ]" {...attrs}>
-                        <input type="hidden" name="action" value="update" />
-                        <input type="hidden" name="timer_id" value={timer.id} />
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.system')}</span>
-                            <Input type="text" name="system_name" size="sm" required maxlength="255" value={timer.system_name} />
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.name')}</span>
-                            <Input type="text" name="name" size="sm" required maxlength="255" value={timer.name} />
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.corporation')}</span>
-                            <Input type="text" name="corporation_name" size="sm" maxlength="255" value={timer.corporation_name ?? ''} />
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.alliance')}</span>
-                            <Input type="text" name="alliance_name" size="sm" maxlength="255" value={timer.alliance_name ?? ''} />
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.state')}</span>
-                            <Select name="state" size="sm">
-                                {structure_states.map(state =>
-                                    <option value={state} selected={state === timer.state}>{t(t_key('structure_timers_manage.state.', state))}</option>
-                                )}
-                            </Select>
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.type')}</span>
-                            <Select name="type" size="sm">
-                                {structure_types.map(type =>
-                                    <option value={type} selected={type === timer.type}>{type.replaceAll('_', ' ')}</option>
-                                )}
-                            </Select>
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('structure_timers_manage.field.timer')}</span>
-                            <Input type="datetime-local" name="timer" size="sm" required value={local_value(timer.timer)} />
-                        </label>
-                        <Button type="submit" size="sm">{t('structure_timers_manage.save')}</Button>
-                    </form>
-                    <form class="[ manage-panel__form ]" {...attrs} hx-confirm={t('structure_timers_manage.confirm_delete')}>
-                        <input type="hidden" name="action" value="delete" />
-                        <input type="hidden" name="timer_id" value={timer.id} />
-                        <Button type="submit" size="sm" color="transparent">{t('structure_timers_manage.delete')}</Button>
-                    </form>
-                </li>
-            )}
-        </ul>
-    }
-</ManagePanel>
+<div class="[ manage-list ]" id="timers-list-root">
+    <ViewChips
+        id="timers-filters"
+        url={list_url()}
+        target="timers-list"
+        selected={view}
+        search_id="timers-search"
+        legend={t('manage.timers.views')}
+        views={[
+            { value: 'upcoming', label: t('manage.timers.upcoming'), count: upcoming.length },
+            { value: 'past', label: t('manage.timers.past_week'), count: past.length },
+        ]}
+    >
+        <div class="[ manage-toolbar ]">
+            <ManageSearch
+                id="timers-search"
+                value={query}
+                label={t('manage.timers.search')}
+                placeholder={t('manage.timers.search_placeholder')}
+            />
+        </div>
+    </ViewChips>
+    <div id="timers-list" class="[ manage-list ]" aria-live="polite">
+        {page_rows.length === 0 ?
+            <EmptyState title={empty_title} />
+            :
+            <ManageTable caption={t('manage.timers.caption')} columns={COLUMNS}>
+                {page_rows.map((timer) => <StructureTimerRow timer={timer} colspan={COLUMNS.length + 1} />)}
+            </ManageTable>
+        }
+        {total_pages > 1 && <HtmxPager
+            page={current_page}
+            total_pages={total_pages}
+            url_for={(to) => list_url({ page: String(to) })}
+            request={{ 'hx-target': '#timers-list', 'hx-select': '#timers-list', 'hx-swap': 'outerHTML', 'hx-include': '#timers-filters' }}
+        />}
+    </div>
+</div>
