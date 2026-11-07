@@ -3248,6 +3248,8 @@ export type NpsiEventPreview = ApiResponse<'NpsiEventPreview'>
 export type HelpCategory = ApiResponse<'HelpCategoryResponse'>
 export type HelpSettings = ApiResponse<'HelpSettingsResponse'>
 export type HelpPanel = ApiResponse<'HelpPanelResponse'>
+export type PostTagCount = ApiResponse<'EveTagCountResponse'>
+export type PostTagMergePreview = ApiResponse<'EveTagMergePreview'>
 export type HelpCategoryCreate = ApiRequest<'HelpCategoryCreate'>
 export type HelpCategoryPatch = ApiRequest<'HelpCategoryPatch'>
 // Settings editors (admin -> app migration)

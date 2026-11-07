@@ -1,4 +1,4 @@
-import type { Post, PostListItem, PostParams, PostTag, PostRequest, RestrictedResponse } from '@dtypes/api.minmatar.org'
+import type { Post, PostListItem, PostParams, PostTag, PostTagCount, PostTagMergePreview, PostRequest, RestrictedResponse } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response, api_status_is } from '@helpers/api.minmatar.org/client'
 
@@ -95,6 +95,20 @@ export async function get_posts_tags() {
 }
 
 // Tag management answers 403 without the posts.tags.manage feature.
+export async function get_post_tag_counts(access_token:string) {
+    return await api_request<PostTagCount[]>(`${API_ENDPOINT}/tags/counts`, {
+        token: access_token,
+        error: 'Error fetching post tags',
+    })
+}
+
+export async function get_post_tag_merge_preview(access_token:string, tag_id:number, into_tag_id:number) {
+    return await api_request<PostTagMergePreview>(`${API_ENDPOINT}/tags/${tag_id}/merge-preview?into_tag_id=${into_tag_id}`, {
+        token: access_token,
+        error: 'Error previewing the merge',
+    })
+}
+
 export async function create_post_tag(access_token:string, tag:string) {
     return await api_request<PostTag>(`${API_ENDPOINT}/tags`, {
         method: 'POST',
