@@ -324,12 +324,17 @@ def _lists() -> tuple[frozenset[str], tuple[str, ...]]:
 def _variants(word: str):
     """The word as written, with stretched letters squeezed, and each of
     those without an ending. Stems shorter than four letters are skipped,
-    so "bass" and "assess" never become "ass"."""
-    forms = {
-        word,
-        _RUNS_OF_THREE.sub(r"\1\1", word),
-        _RUNS_OF_TWO.sub(r"\1", word),
-    }
+    so "bass" and "assess" never become "ass".
+
+    Ordered most specific first, so "fucking" reports "fucking" rather
+    than "fuck" (a set made the answer depend on the hash seed)."""
+    forms = dict.fromkeys(
+        (
+            word,
+            _RUNS_OF_THREE.sub(r"\1\1", word),
+            _RUNS_OF_TWO.sub(r"\1", word),
+        )
+    )
     for form in list(forms):
         for ending in _ENDINGS:
             if not form.endswith(ending) or len(form) - len(ending) < 4:
@@ -337,8 +342,8 @@ def _variants(word: str):
             # "assess" and "class" end in s without being plurals.
             if ending == "s" and form.endswith("ss"):
                 continue
-            forms.add(form[: -len(ending)])
-    return forms
+            forms.setdefault(form[: -len(ending)])
+    return list(forms)
 
 
 def _word_hit(word: str, words: frozenset[str]) -> str | None:
