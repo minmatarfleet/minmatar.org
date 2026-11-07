@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -28,6 +30,8 @@ from campaigns.models import (
 )
 from campaigns.services import plan
 from campaigns.services import structures as structure_service
+from eveonline.models import EveAlliance, EveCorporation
+from eveuniverse.models import EveSolarSystem
 from feed.models import FeedMonitoredSystem
 from groups.helpers.feature_access import can_use_feature, require_feature
 from structures.helpers import get_skyhook_details, get_structure_details
@@ -66,6 +70,42 @@ def _denied():
     return 403, {"detail": "feature_denied", "feature": MANAGE_FEATURE}
 
 
+FW_NEEDS_SYSTEM = "Faction Warfare needs at least one warzone system."
+
+
+def not_warzone_detail(solar_system_ids: list[int]) -> str:
+    """Name the systems the feed does not watch, so the form never shows ids."""
+    names = dict(
+        EveSolarSystem.objects.filter(id__in=solar_system_ids).values_list(
+            "id", "name"
+        )
+    )
+    listed = ", ".join(names.get(sid, str(sid)) for sid in solar_system_ids)
+    return f"Not a warzone system the feed watches: {listed}"
+
+
+def derive_short_code(name: str, slug: str) -> str:
+    """The donation tag from the name's initials, made unique with a number.
+
+    "Huola Push" gives HP, then HP2, HP3... A one-word name takes its first
+    three letters.
+    """
+    words = re.findall(r"[A-Za-z0-9]+", name) or re.findall(r"[a-z0-9]+", slug)
+    if len(words) > 1:
+        base = "".join(word[0] for word in words)
+    else:
+        base = (words[0] if words else "CMP")[:3]
+    base = base.upper()[:10]
+    if len(base) < 2:
+        base = (base + "CMP")[:3]
+    code = base
+    number = 2
+    while Campaign.objects.filter(short_code=code).exists():
+        code = f"{base}{number}"
+        number += 1
+    return code
+
+
 @router.post(
     "",
     response={
@@ -86,17 +126,18 @@ def create_campaign(request, payload: schemas.CampaignCreateRequest):
 
     kind = payload.kind or CampaignKind.FACTION_WARFARE
     if kind == CampaignKind.FACTION_WARFARE and not payload.system_ids:
-        return 400, {
-            "detail": "faction_warfare campaigns need at least one system"
-        }
+        return 400, {"detail": FW_NEEDS_SYSTEM}
 
-    short_code = payload.short_code.upper()
     if payload.slug in RESERVED_SLUGS:
         return 400, {"detail": f"slug {payload.slug} is reserved"}
     if Campaign.objects.filter(slug=payload.slug).exists():
         return 400, {"detail": f"slug {payload.slug} is already taken"}
-    if Campaign.objects.filter(short_code=short_code).exists():
-        return 400, {"detail": f"short code {short_code} is already taken"}
+    if payload.short_code:
+        short_code = payload.short_code.upper()
+        if Campaign.objects.filter(short_code=short_code).exists():
+            return 400, {"detail": f"short code {short_code} is already taken"}
+    else:
+        short_code = derive_short_code(payload.name, payload.slug)
 
     known = dict(
         FeedMonitoredSystem.objects.filter(
@@ -105,10 +146,7 @@ def create_campaign(request, payload: schemas.CampaignCreateRequest):
     )
     unknown = [sid for sid in payload.system_ids if sid not in known]
     if unknown:
-        return 400, {
-            "detail": "unknown solar system ids: "
-            + ", ".join(str(sid) for sid in unknown)
-        }
+        return 400, {"detail": not_warzone_detail(unknown)}
 
     campaign = Campaign.objects.create(
         slug=payload.slug,
@@ -470,6 +508,21 @@ def attach_structure_timer(
     return serializers.structure_out(structure)
 
 
+def _known_ticker(payload) -> str:
+    """A picked corporation or alliance brings its ticker when we know it."""
+    if payload.kind == PartyKind.CORPORATION and payload.corporation_id:
+        row = EveCorporation.objects.filter(
+            corporation_id=payload.corporation_id
+        ).first()
+    elif payload.kind == PartyKind.ALLIANCE and payload.alliance_id:
+        row = EveAlliance.objects.filter(
+            alliance_id=payload.alliance_id
+        ).first()
+    else:
+        return ""
+    return (row.ticker or "")[:16] if row else ""
+
+
 @router.post(
     "/{slug}/parties",
     response={
@@ -500,9 +553,10 @@ def attach_party(request, slug: str, payload: schemas.PartyAttachRequest):
     elif payload.kind == PartyKind.FACTION and payload.faction_id:
         lookup["faction_id"] = payload.faction_id
 
+    ticker = payload.ticker or _known_ticker(payload)
     defaults = {
         "name": payload.name,
-        "ticker": payload.ticker,
+        "ticker": ticker,
         "kind": payload.kind,
         "side": payload.side,
         "character_id": payload.character_id,
