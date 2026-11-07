@@ -20,6 +20,7 @@ from groups.helpers.feature_access import require_feature
 from learning.manage_schemas import (
     ManageAwardRequest,
     ManageAwardResponse,
+    ManageCertificateOrderRequest,
     ManageCertificateRequest,
     ManageCertificateSchema,
     ManageLearningRequest,
@@ -61,8 +62,37 @@ def _error(detail: str, status: int = 400):
 # --- Guides (Learning) -----------------------------------------------------
 
 
-def _guide_schema(item: Learning) -> ManageLearningSchema:
+def _certificate_steps() -> dict[int, list[tuple[Certificate, int]]]:
+    """Learning id -> [(certificate, 1-based step)], certificates in
+    their own order. One query."""
+    steps: dict[int, list[tuple[Certificate, int]]] = {}
+    links = CertificateLearning.objects.select_related("certificate").order_by(
+        "certificate__sort_order", "certificate__title", "order", "id"
+    )
+    positions: dict[int, int] = {}
+    for link in links:
+        positions[link.certificate_id] = (
+            positions.get(link.certificate_id, 0) + 1
+        )
+        steps.setdefault(link.learning_id, []).append(
+            (link.certificate, positions[link.certificate_id])
+        )
+    return steps
+
+
+def _guide_schema(
+    item: Learning,
+    steps: dict[int, list[tuple[Certificate, int]]] | None = None,
+) -> ManageLearningSchema:
+    if steps is None:
+        steps = _certificate_steps()
+    memberships = steps.get(item.pk, [])
+    first = memberships[0] if memberships else None
     return ManageLearningSchema(
+        certificate_slug=first[0].slug if first else "",
+        certificate_title=first[0].title if first else "",
+        certificate_step=first[1] if first else None,
+        certificate_count=len(memberships),
         id=item.pk,
         slug=item.slug,
         title=item.title,
@@ -107,7 +137,8 @@ def _apply_guide(item: Learning, payload: ManageLearningRequest) -> None:
 def list_guides(request):
     if denied := require_feature(request.user, FEATURE_LEARNING):
         return denied
-    return [_guide_schema(i) for i in Learning.objects.all()]
+    steps = _certificate_steps()
+    return [_guide_schema(i, steps) for i in Learning.objects.all()]
 
 
 @router.post(
@@ -246,6 +277,42 @@ def create_certificate(request, payload: ManageCertificateRequest):
     _apply_certificate(cert, payload)
     record_audit(request.user, f"Created certificate {cert.slug}")
     return _certificate_schema(cert)
+
+
+@router.post(
+    "certificates/order",
+    response={
+        200: list[ManageCertificateSchema],
+        400: ErrorResponse,
+        403: dict,
+    },
+    summary="Put certificates in this order (the slugs, first to last).",
+)
+def order_certificates(request, payload: ManageCertificateOrderRequest):
+    if denied := require_feature(request.user, FEATURE_LEARNING):
+        return denied
+    by_slug = {c.slug: c for c in Certificate.objects.all()}
+    if len(set(payload.slugs)) != len(payload.slugs):
+        return _error("A certificate is listed twice.")
+    if missing := [s for s in payload.slugs if s not in by_slug]:
+        return _error(f"Certificate not found: {missing[0]}.")
+    # Certificates left out keep their relative order after the listed ones.
+    rest = [c for c in by_slug.values() if c.slug not in payload.slugs]
+    ordered = [by_slug[s] for s in payload.slugs] + sorted(
+        rest, key=lambda c: (c.sort_order, c.title)
+    )
+    changed = []
+    for index, cert in enumerate(ordered, start=1):
+        if cert.sort_order != index:
+            cert.sort_order = index
+            changed.append(cert)
+    if changed:
+        Certificate.objects.bulk_update(changed, ["sort_order"])
+        record_audit(
+            request.user,
+            "Reordered certificates: " + ", ".join(c.slug for c in ordered),
+        )
+    return [_certificate_schema(c) for c in Certificate.objects.all()]
 
 
 @router.put(

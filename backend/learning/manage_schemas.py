@@ -11,6 +11,12 @@ class ManageLearningSchema(Schema):
     thumbnail_url: str
     estimated_minutes: int | None = None
     published: bool
+    # The first certificate the guide is a step of (by certificate order),
+    # and its 1-based step there; empty when it is in none.
+    certificate_slug: str = ""
+    certificate_title: str = ""
+    certificate_step: int | None = None
+    certificate_count: int = 0
 
 
 class ManageLearningRequest(Schema):
@@ -44,6 +50,10 @@ class ManageCertificateRequest(Schema):
     sort_order: int = 0
     personas: list[str] = []
     learning_slugs: list[str] = []
+
+
+class ManageCertificateOrderRequest(Schema):
+    slugs: list[str]
 
 
 class ManageAwardRequest(Schema):
