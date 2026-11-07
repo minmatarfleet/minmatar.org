@@ -4568,6 +4568,7 @@ export const ui = {
         'discord_login_notice_body': 'Minmatar Fleet accounts are tied to your Discord account.\n\n- Upon logging in, we will add you to the Minmatar Fleet Discord server\n- Upon leaving, we delete your Minmatar Fleet account and all data to respect your privacy\n\nLeaving Discord means starting over for Minmatar Fleet — you will need to sign up again, add your accounts again, and re-submit any applications for corporations and tribe groups.\n\nBy continuing you agree to the [Terms of Service](/legal/terms/) and [Privacy Policy](/legal/privacy/).',
         'continue_to_discord': 'Continue to Discord',
         'discord_login_notice_leave_checkbox': 'I understand that leaving the Minmatar Fleet Discord server will delete my Minmatar Fleet account and all data.',
+        'discord_login_notice_check_hint': 'Tick the box above to continue to Discord.',
         'add_primary_pilot_dialog_required_text': 'The requested action requires you to add a primary character. You’ll sign in with it through EVE Online, then come straight back here. Basic and Faction Warfare are required. The other groups are optional, and your choices are remembered for the next character you add.',
         'error': 'Error',
         'get_groups_error': 'An error occurred while fetching the SIGs.',

@@ -160,6 +160,8 @@ const SAVE_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}
 })}`
 
 const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+// The save response sends fleet-ships-picked only when it stored at least one ship.
+const SIGNED_UP = "window.capture_event && window.capture_event('fleet_signed_up', { fleet_id: event.detail.fleet_id, ships: event.detail.ships })"
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
@@ -183,6 +185,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         hx-swap="outerHTML transition:true"
         hx-indicator=".loader"
         hx-on--after-request={CLOSE_MODAL}
+        hx-on:fleet-ships-picked={SIGNED_UP}
         x-data={`{ show_all: ${show_all_by_default} }`}
     >
         <Flexblock gap='var(--space-m)'>

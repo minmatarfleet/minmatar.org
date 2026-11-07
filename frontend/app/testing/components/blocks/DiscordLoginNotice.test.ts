@@ -36,3 +36,19 @@ test("discord login notice submits without waiting for Alpine", async () => {
     expect(result).not.toContain("x-bind:disabled");
     expect(result).not.toContain("removeAttribute");
 });
+
+test("discord login notice explains the checkbox without disabling Continue", async () => {
+    const container = await AstroContainer.create();
+    const result = await container.renderToString(DiscordLoginNotice);
+    const submit = result.match(/<button type="submit"[^>]*>/)?.[0] ?? "";
+    const cancel = result.match(/<a href="\/"[^>]*>/)?.[0] ?? "";
+    const onsubmit = result.match(/onsubmit="([^"]*)"/)?.[1] ?? "";
+
+    expect(result).toContain('id="discord-login-notice-hint"');
+    expect(submit).toContain('aria-describedby="discord-login-notice-hint"');
+    expect(submit).not.toContain("disabled");
+    // Acceptance is stored before the analytics call, which can never block the submit.
+    expect(onsubmit.indexOf("discord_login_notice_accepted")).toBeLessThan(onsubmit.indexOf("login_continued"));
+    expect(onsubmit).toContain("sendBeacon");
+    expect(cancel).toContain("login_cancelled");
+});

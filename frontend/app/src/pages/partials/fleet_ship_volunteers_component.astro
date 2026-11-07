@@ -88,6 +88,11 @@ if (Astro.request.method === 'POST' && Astro.url.searchParams.get('action') === 
             })
         }
         await set_my_ship_volunteers(auth_token as string, fleet_id, selections)
+        // Tells the picker a save went through with real ships (for analytics).
+        // A failed save renders an alert with a 200, so the client can't tell on its own.
+        const ships = selections.filter(s => s.ship_type_id || s.fitting_id || s.fleet_fitting_id).length
+        if (ships > 0)
+            Astro.response.headers.set('HX-Trigger', JSON.stringify({ 'fleet-ships-picked': { fleet_id, ships } }))
     } catch (error) {
         alert = { title: t('volunteer_my_ships'), content: error.message as string }
     }
