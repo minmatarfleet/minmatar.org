@@ -838,6 +838,7 @@ export interface SRPUI {
     id:                         number;
     fleet_id:                   number;
     combat_log_id:              number;
+    not_tracked_in_fleet:       boolean;
     external_killmail_link:     string;
     status:                     SRPStatus;
     character_id:               number;

@@ -49,6 +49,7 @@ class SrpRequestResponse(BaseModel):
     category: Optional[SrpCategory] = None
     comments: Optional[str] = None
     combat_log_id: Optional[int] = None
+    not_tracked_in_fleet: bool = False
 
 
 class SrpRequestListSchema(BaseModel):

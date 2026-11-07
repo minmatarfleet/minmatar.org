@@ -16,6 +16,7 @@ from srp.helpers import (
     UserCharacterMismatch,
     get_killmail_details,
     get_latest_program_amount,
+    UNTRACKED_IN_FLEET,
     is_valid_for_reimbursement,
 )
 from srp.models import EveFleetShipReimbursement
@@ -104,6 +105,7 @@ def create_srp_request(request, payload: CreateSrpRequest):
         amount=reimbursement_amount,
         reimbursement_program_amount=reimbursement_program_amount,
         is_corp_ship=payload.is_corp_ship,
+        not_tracked_in_fleet=reason == UNTRACKED_IN_FLEET,
         corp_id=(
             details.victim_character.corporation_id
             if details.victim_character
@@ -141,4 +143,5 @@ def create_srp_request(request, payload: CreateSrpRequest):
         category=reimbursement.category,
         comments=reimbursement.comments,
         combat_log_id=reimbursement.combat_log_id,
+        not_tracked_in_fleet=reimbursement.not_tracked_in_fleet,
     )

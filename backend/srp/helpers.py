@@ -196,11 +196,36 @@ def select_fleet_instance_for_killmail(
     return instances[0]
 
 
+UNTRACKED_IN_FLEET = "Character not tracked in fleet"
+
+
+def account_tracked_in_fleet(
+    victim: EveCharacter, fleet_instance: EveFleetInstance
+) -> bool:
+    """
+    True when another character on the victim's account was tracked in the
+    fleet. A boxed alt (often a capital) is sometimes never in the FC's
+    fleet while the pilot's main is.
+    """
+    if not victim.user_id:
+        return False
+    return EveFleetInstanceMember.objects.filter(
+        eve_fleet_instance=fleet_instance,
+        character_id__in=EveCharacter.objects.filter(
+            user_id=victim.user_id
+        ).values("character_id"),
+    ).exists()
+
+
 def is_valid_for_reimbursement(
     killmail: KillmailDetails, fleet: Optional[EveFleet]
 ):
     """
-    Check if a character is valid for reimbursement
+    Check if a character is valid for reimbursement.
+
+    Returns (valid, reason). A valid request whose victim was not tracked
+    in the fleet, while another character on the same account was, returns
+    (True, UNTRACKED_IN_FLEET) so reviewers can be warned.
     """
 
     if fleet is None:
@@ -212,10 +237,13 @@ def is_valid_for_reimbursement(
     if fleet_instance is None:
         return True, "Non-fleet SRP"
 
-    if not EveFleetInstanceMember.objects.filter(
+    untracked = not EveFleetInstanceMember.objects.filter(
         eve_fleet_instance=fleet_instance,
         character_id=killmail.victim_character.character_id,
-    ).exists():
+    ).exists()
+    if untracked and not account_tracked_in_fleet(
+        killmail.victim_character, fleet_instance
+    ):
         logger.info(
             "Killmail %d not eligible for SRP, character %d not in fleet %d",
             killmail.killmail_id,
@@ -244,6 +272,8 @@ def is_valid_for_reimbursement(
         )
         return False, "Lost before fleet started"
 
+    if untracked:
+        return True, UNTRACKED_IN_FLEET
     return True, None
 
 
