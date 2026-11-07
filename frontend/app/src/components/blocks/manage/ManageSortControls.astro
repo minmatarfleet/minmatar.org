@@ -71,8 +71,8 @@ import { sort_down_attrs, sort_handle_attrs, sort_up_attrs } from '@helpers/mana
         }
     }
 
-    // Phones drag poorly; the buttons stay.
-    @media (hover: none) {
+    // Phones drag poorly, and the row is narrow; the buttons stay.
+    @media (hover: none), (max-width: 48rem) {
         .manage-sort__grip {
             display: none;
         }

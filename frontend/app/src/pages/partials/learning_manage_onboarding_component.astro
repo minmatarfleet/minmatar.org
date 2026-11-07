@@ -1,80 +1,82 @@
 ---
-// no-error-refetch: an author form; a failed save shows inline above the form.
+/**
+ * Manage learning: Onboarding.
+ *
+ * part=list  the programs and how many pilots are on the current version (GET)
+ * part=bump  bump a program's version (POST): the row, inside a <table>
+ *
+ * Writes go through the learning manage API, which writes the audit log.
+ */
 import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 import { bump_manage_onboarding, get_manage_onboarding } from '@helpers/api.minmatar.org/learning_manage'
-import { error_text, form_text } from '@helpers/manage_forms'
-import type { ManageFlashState } from '@helpers/manage_forms'
+import type { LearningManageOnboarding } from '@dtypes/api.minmatar.org'
+import { error_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ManageFlash from '@components/blocks/ManageFlash.astro'
-
-const { t, translatePath } = i18n(Astro.url)
-const ROOT_ID = 'learning-manage-onboarding'
-const PARTIAL_URL = translatePath('/partials/learning_manage_onboarding_component/')
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import LearningOnboardingRow from '@components/blocks/learning_manage/LearningOnboardingRow.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 if (!can(await get_gates(Astro), 'learning.manage')) return HTTP_403_Forbidden()
 
-let flash: ManageFlashState | null = null
+const ROOT_ID = 'learning-manage-onboarding'
+const part = Astro.url.searchParams.get('part') ?? 'list'
+const partial_url = (values: Record<string, string>) =>
+    translatePath(`/partials/learning_manage_onboarding_component/?${query_string(values)}`)
+const bump_url = partial_url({ part: 'bump' })
 
-if (Astro.request.method === 'POST') {
+let bumped: LearningManageOnboarding | null = null
+if (part === 'bump' && Astro.request.method === 'POST') {
     const form = await Astro.request.formData()
     try {
-        await bump_manage_onboarding(auth_token, form_text(form, 'program_type'))
-        flash = { kind: 'success', message: t('learning_manage.bumped') }
+        bumped = await bump_manage_onboarding(auth_token, String(form.get('program_type') ?? ''))
     } catch (error) {
-        flash = { kind: 'error', message: error_text(error, t('learning_manage.error_save')) }
+        return new Response(error_text(error, t('learning_manage.error_save')), { status: 400 })
     }
 }
 
-const programs = await get_manage_onboarding(auth_token)
+let programs: LearningManageOnboarding[] = []
+let error: Error | null = null
+if (part === 'list') {
+    try {
+        programs = await get_manage_onboarding(auth_token)
+    } catch (failure) {
+        error = failure as Error
+    }
+}
+
+const COLUMNS = [
+    { label: t('learning_admin.col_program') },
+    { label: t('learning_admin.col_current'), align: 'num' as const },
+]
 ---
 
-<div id={ROOT_ID}>
-    <Flexblock gap="var(--space-l)">
-        <ManageFlash flash={flash} />
+{part === 'list' &&
+    <div id={ROOT_ID} class="[ manage-list ]">
+        {error
+            ? <ErrorRefetch args={{ partial: partial_url({ part: 'list' }), error, delay: 0 }} />
+            : programs.length === 0
+                ? <EmptyState title={t('learning_admin.no_programs')} />
+                : (
+                    <ManageTable caption={t('learning_admin.programs_caption')} columns={COLUMNS}>
+                        {programs.map((program) => <LearningOnboardingRow program={program} bump_url={bump_url} />)}
+                    </ManageTable>
+                )
+        }
+    </div>
+}
 
-        <p>{t('learning_manage.onboarding_lead')}</p>
-
-        {programs.map((program) =>
-            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
-                <form
-                    method="post"
-                    action={PARTIAL_URL}
-                    hx-post={PARTIAL_URL}
-                    hx-target={`#${ROOT_ID}`}
-                    hx-swap="outerHTML"
-                    hx-confirm={t('learning_manage.bump_confirm')}
-                >
-                    <FlexInline gap="var(--space-m)" justification="space-between" class="[ items-center ]">
-                        <Flexblock gap="var(--space-3xs)">
-                            <h3>{program.label}</h3>
-                            <small>{t('learning_manage.acknowledged').replace('{count}', String(program.acknowledgments))}</small>
-                            <small class="[ onboarding-version ]">{program.version}</small>
-                        </Flexblock>
-                        <input type="hidden" name="program_type" value={program.program_type} />
-                        <Button type="submit" color="fleet-red" size="sm" off_disable={true}>{t('learning_manage.bump')}</Button>
-                    </FlexInline>
-                </form>
-            </ComponentBlock>
-        )}
-    </Flexblock>
-</div>
-
-<style lang="scss">
-    h3 {
-        font-size: var(--step-0);
-        margin-block-end: 0;
-    }
-
-    .onboarding-version {
-        color: var(--faded);
-    }
-</style>
+{part === 'bump' && bumped &&
+    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
+    <table>
+        <LearningOnboardingRow program={bumped} bump_url={bump_url} open={true} bumped={true} />
+    </table>
+}

@@ -58,7 +58,7 @@ const items_url = translatePath(`/partials/creators_moderation_component/?${quer
         </button>
     </td>
     <td class="[ is-wide ]">{t(t_key('creators_manage.provider_', account.provider))}</td>
-    <td class="num">{account.item_count}</td>
+    <td class="[ num is-wide ]">{account.item_count}</td>
     <td class="[ num is-wide ]"><span id={`creator-${account.id}-featured-count`}>{account.featured_count}</span></td>
     <td>
         <ManageStatusDot

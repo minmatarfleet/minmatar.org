@@ -109,7 +109,7 @@ const page_rows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 const COLUMNS = [
     { label: t('creators_manage.col_creator') },
     { label: t('creators_manage.col_source'), phone: false },
-    { label: t('creators_manage.col_items'), align: 'num' as const, sort: 'descending' as const },
+    { label: t('creators_manage.col_items'), align: 'num' as const, sort: 'descending' as const, phone: false },
     { label: t('creators_manage.col_featured'), align: 'num' as const, phone: false },
     { label: t('creators_manage.col_status') },
 ]

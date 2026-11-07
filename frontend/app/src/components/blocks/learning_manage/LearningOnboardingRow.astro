@@ -1,0 +1,62 @@
+---
+/**
+ * One onboarding program in Manage learning: its name and how many pilots
+ * acknowledged the current version. It opens in place on "Ask everyone
+ * again…", a confirm that bumps the version (onboarding partial,
+ * part=bump), answered with this row inside a <table>.
+ */
+import type { LearningManageOnboarding } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    program:    LearningManageOnboarding;
+    bump_url:   string;
+    open?:      boolean;
+    bumped?:    boolean;
+    [propName: string]: any;
+}
+
+const {
+    program,
+    bump_url,
+    open = false,
+    bumped = false,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+
+const row_id = `onboarding-${program.program_type}`
+---
+
+<ExpandRow id={row_id} colspan={3} label={t('learning_admin.open').replace('~NAME', program.label)} open={open}>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{program.label}</span>
+            </span>
+        </button>
+    </td>
+    <td class="num">{program.acknowledgments}</td>
+    <div slot="detail" class="[ manage-form ]">
+        <p>{t('learning_admin.onboarding_detail').replace('~COUNT', String(program.acknowledgments))}</p>
+        <div class="[ manage-actions ]">
+            <ConfirmAction
+                label={t('learning_admin.bump')}
+                title={t('learning_admin.bump_title').replace('~NAME', program.label)}
+                consequence={t('learning_admin.bump_consequence')
+                    .replace('~COUNT', String(program.acknowledgments))
+                    .replace('~NAME', program.label)}
+                confirm_label={t('learning_manage.bump')}
+                url={bump_url}
+                vals={{ program_type: program.program_type }}
+                target={`#${row_id}`}
+                select={`#${row_id}`}
+                color="fleet-red"
+            />
+            {bumped && <span class="[ manage-saved ]">{t('learning_manage.bumped')}</span>}
+        </div>
+    </div>
+</ExpandRow>

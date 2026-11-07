@@ -20,3 +20,24 @@ export const slugify = (text: string): string =>
         .trim()
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '')
+
+/** Fired when a certificate row moves; the list then saves its order. */
+export const CERTIFICATE_ORDER_EVENT = 'certificates-reordered'
+
+/** Fired when a guide moves inside a certificate's form (saved with Save). */
+export const CERTIFICATE_GUIDES_EVENT = 'certificate-guides-reordered'
+
+/** Fired when a skill moves inside a skillset's form (saved with Save). */
+export const SKILLSET_SKILLS_EVENT = 'skillset-skills-reordered'
+
+/** Certificate personas (backend Persona). */
+export const PERSONAS = ['alliance', 'militia', 'other'] as const
+
+/** Each skill once, at the highest level listed: older skillsets list a
+ *  skill once per level ("Drones 1", "Drones 2"...), which the API refuses
+ *  to save. Keeps the order of first appearance. */
+export function distinct_skills(skills: { name: string; level: number }[]): { name: string; level: number }[] {
+    const levels = new Map<string, number>()
+    for (const skill of skills) levels.set(skill.name, Math.max(levels.get(skill.name) ?? 0, skill.level))
+    return [...levels].map(([name, level]) => ({ name, level }))
+}

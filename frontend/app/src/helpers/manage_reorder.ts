@@ -20,13 +20,13 @@ const ITEM = '[data-sort-item]'
 /** Attributes for each sortable item (a <li>, or an ExpandRow <tbody>). */
 export const sort_item_attrs = (event: string): Record<string, string> => ({
     'data-sort-item': '',
-    'x-on:dragstart': "dragging = $el; $event.dataTransfer.effectAllowed = 'move'",
+    'x-on:dragstart.self': "dragging = $el; $event.dataTransfer.effectAllowed = 'move'",
     'x-on:dragover.prevent': `
         if (!dragging || dragging === $el || dragging.parentNode !== $el.parentNode) return
         const box = $el.getBoundingClientRect()
         $el.parentNode.insertBefore(dragging, $event.clientY - box.top > box.height / 2 ? $el.nextSibling : $el)
     `,
-    'x-on:dragend': `$el.draggable = false; if (dragging) { dragging = null; $dispatch('${event}') }`,
+    'x-on:dragend.self': `$el.draggable = false; if (dragging) { dragging = null; $dispatch('${event}') }`,
 })
 
 /** The grip: only it starts a drag, so text in an open row stays selectable. */
