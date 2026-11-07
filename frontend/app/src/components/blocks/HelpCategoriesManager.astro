@@ -3,122 +3,199 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { HelpSettings } from '@dtypes/api.minmatar.org'
+import type { ManageColumn } from '@dtypes/layout_components'
 
-/** Add and rename help ticket categories, set the owning tribe group, order the panel options and set its channel. help_tickets_settings_component saves and answers with this panel again. */
+/**
+ * The Options section body on /alliance/help-tickets/: the #help panel's
+ * options in panel order. Rows drag to reorder (the open row's Move up /
+ * Move down are the keyboard way), show who gets pinged, and carry a Shown
+ * switch; a row opens to edit its title, menu section and owning tribe
+ * group. Under it, a preview of the panel as Discord shows it.
+ * help_tickets_settings_component renders it and answers saves with it
+ * (a row save or switch picks its row out with hx-select).
+ */
 interface Props {
     settings:           HelpSettings;
+    /** A row to render open with its form (after a save). */
+    open_id?:           number | null;
+    saved?:             boolean;
+    row_error?:         string | null;
     error?:             string | null;
     notice?:            string | null;
     [propName: string]: any;
 }
 
-const { settings, error = null, notice = null } = Astro.props
+const { settings, open_id = null, saved = false, row_error = null, error = null, notice = null } = Astro.props
 
 const PARTIAL_URL = translatePath('/partials/help_tickets_settings_component')
-const last_index = settings.categories.length - 1
+const tribe_of = new Map(settings.tribe_groups.map(group => [group.id, group.tribe_name]))
 
-import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+const COLUMNS: ManageColumn[] = [
+    { label: t('admin_content.help.option') },
+    { label: t('admin_content.help.pings'), phone: false },
+    { label: t('admin_content.help.shown'), align: 'act' },
+]
+
+// Drag to reorder (local UI only): rows move in the DOM while dragging and
+// the drop posts the new order through the hidden htmx form below.
+const drag = `{
+    dragging: null,
+    initial: '',
+    order() { return [...this.$root.querySelectorAll('tbody[data-option-id]')].map((row) => row.dataset.optionId).join(',') },
+    grab(event) { const row = event.target.closest('tbody'); if (row) row.draggable = true },
+    start(event) {
+        const row = event.target.closest && event.target.closest('tbody[data-option-id]')
+        if (!row || !row.draggable) return
+        this.dragging = row
+        this.initial = this.order()
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', row.dataset.optionId)
+        row.classList.add('is-dragging')
+    },
+    over(event) {
+        if (!this.dragging) return
+        event.preventDefault()
+        const row = event.target.closest('tbody[data-option-id]')
+        if (!row || row === this.dragging) return
+        const box = row.getBoundingClientRect()
+        row.parentNode.insertBefore(this.dragging, event.clientY > box.top + box.height / 2 ? row.nextSibling : row)
+    },
+    finish() {
+        if (!this.dragging) return
+        this.dragging.classList.remove('is-dragging')
+        this.dragging.draggable = false
+        this.dragging = null
+        const ids = this.order()
+        if (ids === this.initial) return
+        this.$refs.order_ids.value = ids
+        this.$refs.order_form.requestSubmit()
+    },
+}`
+
 import EmptyState from '@components/blocks/EmptyState.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import Input from '@components/blocks/Input.astro'
-import ManagePanel from '@components/blocks/ManagePanel.astro'
-import Select from '@components/blocks/Select.astro'
-import Tag from '@components/blocks/Tag.astro'
-
-const attrs = {
-    'hx-post': PARTIAL_URL,
-    'hx-target': '#help-categories-manager',
-    'hx-swap': 'outerHTML',
-    'hx-disabled-elt': 'find button',
-}
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import HelpCategoryForm from '@components/blocks/HelpCategoryForm.astro'
+import HelpPanelPreview from '@components/blocks/HelpPanelPreview.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
 ---
 
-<ManagePanel id="help-categories-manager">
-    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
-    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+<div
+    id="help-options-body"
+    class="[ manage-section__body manage-form help-options ]"
+    x-data={drag}
+    x-on:dragstart="start($event)"
+    x-on:dragover="over($event)"
+    x-on:drop.prevent="finish()"
+    x-on:dragend="finish()"
+>
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-saved ]" role="status">{notice}</p>}
 
-    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
-        <Flexblock gap="var(--space-xs)">
-            <h2 class="[ manage-panel__heading ]">{t('help_settings.panel')}</h2>
-            <form class="[ manage-panel__form ]" {...attrs}>
-                <input type="hidden" name="action" value="panel" />
-                <label class="[ manage-panel__field ]">
-                    <span>{t('help_settings.panel_channel')}</span>
-                    <Input type="text" name="channel_id" size="sm" inputmode="numeric" pattern="[0-9]+" required value={settings.panel.channel_id ? String(settings.panel.channel_id) : ''} />
-                </label>
-                <Button type="submit" size="sm">{t('help_settings.save')}</Button>
-            </form>
-        </Flexblock>
-    </ComponentBlock>
-
-    <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
-        <Flexblock gap="var(--space-xs)">
-            <h2 class="[ manage-panel__heading ]">{t('help_settings.add')}</h2>
-            <form class="[ manage-panel__form ]" {...attrs}>
-                <input type="hidden" name="action" value="create" />
-                <label class="[ manage-panel__field ]">
-                    <span>{t('help_settings.field.title')}</span>
-                    <Input type="text" name="title" size="sm" required maxlength="100" />
-                </label>
-                <label class="[ manage-panel__field ]">
-                    <span>{t('help_settings.field.owner')}</span>
-                    <Select name="tribe_group_id" size="sm">
-                        <option value="">{t('help_settings.no_owner')}</option>
-                        {settings.tribe_groups.filter(group => !group.taken).map(group =>
-                            <option value={String(group.id)}>{group.tribe_name}: {group.name}</option>
-                        )}
-                    </Select>
-                </label>
-                <Button type="submit" size="sm" color="green">{t('help_settings.add_button')}</Button>
-            </form>
-        </Flexblock>
-    </ComponentBlock>
+    <form
+        x-ref="order_form"
+        hx-post={PARTIAL_URL}
+        hx-target="#help-options-body"
+        hx-select="#help-options-body"
+        hx-swap="outerHTML"
+        hidden
+    >
+        <input type="hidden" name="action" value="order" />
+        <input type="hidden" name="ids" x-ref="order_ids" value="" />
+    </form>
 
     {settings.categories.length === 0 ?
-        <EmptyState title={t('help_settings.empty')} />
+        <EmptyState title={t('help_settings.empty')} hint={t('admin_content.help.empty_hint')} />
         :
-        <ul class="[ manage-panel__rows ]" role="list">
-            {settings.categories.map((category, index) =>
-                <li class="[ manage-panel__row ]">
-                    <form class="[ manage-panel__form ]" {...attrs}>
-                        <input type="hidden" name="action" value="update" />
-                        <input type="hidden" name="category_id" value={category.id} />
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('help_settings.field.title')}</span>
-                            <Input type="text" name="title" size="sm" required maxlength="100" value={category.title} />
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('help_settings.field.section')}</span>
-                            <Input type="text" name="section" size="sm" maxlength="128" value={category.section} />
-                        </label>
-                        <label class="[ manage-panel__field ]">
-                            <span>{t('help_settings.field.owner')}</span>
-                            <Select name="tribe_group_id" size="sm">
-                                <option value="" selected={category.tribe_group_id === null}>{t('help_settings.no_owner')}</option>
-                                {settings.tribe_groups.filter(group => !group.taken || group.id === category.tribe_group_id).map(group =>
-                                    <option value={String(group.id)} selected={group.id === category.tribe_group_id}>{group.tribe_name}: {group.name}</option>
-                                )}
-                            </Select>
-                        </label>
-                        <Button type="submit" size="sm">{t('help_settings.save')}</Button>
-                    </form>
-                    {!category.is_active && <Tag color="fleet-red" text={t('help_settings.off')} />}
-                    {category.assignee_names.length > 0 && <span class="[ manage-panel__muted ]">{category.assignee_names.join(', ')}</span>}
-                    <form class="[ manage-panel__form ]" {...attrs}>
-                        <input type="hidden" name="action" value="toggle" />
-                        <input type="hidden" name="category_id" value={category.id} />
-                        <input type="hidden" name="is_active" value={category.is_active ? 'false' : 'true'} />
-                        <Button type="submit" size="sm" color="transparent">{category.is_active ? t('help_settings.turn_off') : t('help_settings.turn_on')}</Button>
-                    </form>
-                    <form class="[ manage-panel__form ]" {...attrs}>
-                        <input type="hidden" name="action" value="move" />
-                        <input type="hidden" name="category_id" value={category.id} />
-                        <Button type="submit" size="sm" color="transparent" name="direction" value="up" disabled={index === 0} aria-label={t('help_settings.move_up')}>↑</Button>
-                        <Button type="submit" size="sm" color="transparent" name="direction" value="down" disabled={index === last_index} aria-label={t('help_settings.move_down')}>↓</Button>
-                    </form>
-                </li>
-            )}
-        </ul>
+        <ManageTable caption={t('admin_content.help.options')} columns={COLUMNS} min_width="28rem">
+            {settings.categories.map(category => {
+                const row_id = `help-option-${category.id}`
+                const is_open = category.id === open_id
+                const tribe = category.tribe_group_id ? tribe_of.get(category.tribe_group_id) : null
+                return (
+                    <ExpandRow
+                        id={row_id}
+                        data-option-id={String(category.id)}
+                        colspan={COLUMNS.length + 1}
+                        label={t('admin_content.help.open').replace('~NAME', category.title)}
+                        url={is_open ? undefined : translatePath(`/partials/help_tickets_settings_component/?part=edit&id=${category.id}`)}
+                        open={is_open}
+                        dim={!category.is_active}
+                    >
+                        <td>
+                            <div class="[ help-options__option ]">
+                            <span
+                                class="[ help-options__handle ]"
+                                title={t('admin_content.help.drag')}
+                                aria-hidden="true"
+                                x-on:pointerdown="grab($event)"
+                            >⋮⋮</span>
+                            <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                <span class="[ manage-who__text ]">
+                                    <span class="[ manage-who__name ]">{category.title}</span>
+                                    {category.section && <span class="[ manage-who__sub ]">{category.section}</span>}
+                                </span>
+                            </button>
+                            </div>
+                        </td>
+                        <td class="[ is-wide ]">
+                            {category.tribe_group_name
+                                ? <span class="[ help-options__group ]">{[tribe, category.tribe_group_name].filter(Boolean).join(' · ')}</span>
+                                : <span class="[ manage-muted ]">{t('admin_content.help.nobody')}</span>}
+                        </td>
+                        <td class="[ act ]">
+                            <ManageSwitch
+                                name="is_active"
+                                hide_label={true}
+                                label={t('admin_content.help.shown_label').replace('~NAME', category.title)}
+                                checked={category.is_active}
+                                hx-post={PARTIAL_URL}
+                                hx-vals={JSON.stringify({ action: 'toggle', category_id: category.id })}
+                                hx-trigger="change"
+                                hx-target={`#${row_id}`}
+                                hx-select={`#${row_id}`}
+                                hx-swap="outerHTML"
+                            />
+                        </td>
+                        {is_open &&
+                            <HelpCategoryForm slot="detail" category={category} settings={settings} saved={saved} error={row_error} />
+                        }
+                    </ExpandRow>
+                )
+            })}
+        </ManageTable>
     }
-</ManagePanel>
+
+    <HelpPanelPreview settings={settings} />
+</div>
+
+<style lang="scss" is:global>
+    .help-options__option {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .help-options__handle {
+        display: inline-block;
+        padding-inline: var(--space-3xs);
+        color: var(--text-muted);
+        letter-spacing: -0.2em;
+        cursor: grab;
+        user-select: none;
+
+        // Touch has no drag and drop; phones reorder with Move up / Move down.
+        @media (max-width: 48rem) {
+            display: none;
+        }
+    }
+
+    .help-options tbody.is-dragging > .manage-row > td {
+        background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+    }
+
+    .help-options__group {
+        color: var(--foreground);
+    }
+</style>
