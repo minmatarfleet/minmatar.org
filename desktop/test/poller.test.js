@@ -163,3 +163,21 @@ test('a window\'s data is wanted only while the window can show', () => {
     assert.equal(window_data_wanted({ ...up, helper: { supported: true, failed: true } }), true)   // PowerShell blocked
     assert.equal(window_data_wanted({ ...up, helper: null }), true)
 })
+
+test('a poll asked for while a run is in flight runs again when it ends', async () => {
+    const clock = fake_timers()
+    let runs = 0, release
+    const poller = new Poller({
+        interval_ms: INTERVAL, now: clock.now, timers: clock.timers,
+        run: () => { runs++; return runs === 1 ? new Promise(resolve => { release = resolve }) : Promise.resolve(true) },
+    })
+    poller.active = true
+    const first = poller.poll()          // the run in flight
+    const joined = poller.poll()         // joins it (that run chose its fleets already)
+    release(true)
+    await Promise.all([first, joined])
+    assert.equal(clock.due_in(), 0)      // so another run is due at once
+    await clock.advance(0)
+    assert.equal(runs, 2)
+    assert.equal(clock.due_in(), INTERVAL)
+})

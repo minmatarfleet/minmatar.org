@@ -31,10 +31,11 @@
     const render_img = type_id => type_id
         ? `<img class="fw-render" src="${type_render(Number(type_id))}" alt="" decoding="async">` : ''
 
+    // 1.42B, 312M, 48K. A value that rounds up to the next unit reads in it (999.7M is 1.00B, not 1000M).
     function isk(value) {
-        const n = Number(value) || 0
-        if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-        if (n >= 1e6) return `${Math.round(n / 1e6)}M`
+        const n = Math.round(Number(value) || 0)
+        if (n >= 999.5e6) return `${(n / 1e9).toFixed(2)}B`
+        if (n >= 999.5e3) return `${Math.round(n / 1e6)}M`
         if (n >= 1e3) return `${Math.round(n / 1e3)}K`
         return String(n)
     }
@@ -90,7 +91,7 @@
         // fc_alt_name: the FC runs the fleet in game on another character (older backends send none).
         const fc = f.fc_name ? `FC ${f.fc_name}${f.fc_alt_name ? ` as ${f.fc_alt_name}` : ''}` : 'No FC'
         const bits = [fc, f.type_label]
-        if (f.live && c) bits.push(plural(c.in_fleet, 'pilot'), `${c.kills} kills / ${c.losses} lost`)
+        if (f.live && c) bits.push(plural(c.in_fleet, 'pilot'), `${plural(c.kills, 'kill')} / ${c.losses} lost`)
         return `<section class="fw-head" aria-label="Fleet">
                 ${portrait(f.fc_character_id, 36)}
                 <span class="fw-title">${esc(f.title)}</span>
@@ -121,12 +122,13 @@
             </section>`
     }
 
+    // Where you are against the fleet: the headline, and where the fleet is underneath it.
     function where_line(v) {
         const f = v.fleet
         const system = f.fc_system_name || f.location_system_name || ''
-        if (v.jumps === 0) return { text: `With the fleet in ${system}`, warn: false }
-        if (v.jumps == null) return { text: system ? `Fleet is in ${system}` : 'Fleet location unknown', warn: false }
-        return { text: `${plural(v.jumps, 'jump')} behind · fleet is in ${system}`, warn: true }
+        if (v.jumps === 0) return { text: `With the fleet in ${system}`, sub: '', warn: false }
+        if (v.jumps == null) return { text: system ? `Fleet is in ${system}` : 'Fleet location unknown', sub: '', warn: false }
+        return { text: `${plural(v.jumps, 'jump')} behind`, sub: system ? `Fleet is in ${system}` : '', warn: true }
     }
 
     function fits(v) {
@@ -156,7 +158,7 @@
             ${v.loss ? loss_card(v) : ''}
             <div class="fw-card">
                 ${you ? `<div class="fw-you">${ship_icon(you.ship_type_id, 44)}<span class="fw-you__ship">${esc(you.ship_name)}</span><span class="fw-you__who">${esc(you.character_name)}</span>${ship_line}</div>` : ''}
-                <div class="fw-where${where.warn ? ' fw-warn' : ''}"><span>${esc(where.text)}</span>${route}</div>
+                <div class="fw-where"><span class="fw-where__text"><span${where.warn ? ' class="fw-warn"' : ''}>${esc(where.text)}</span>${where.sub ? `<span class="fw-meta">${esc(where.sub)}</span>` : ''}</span>${route}</div>
             </div>
             ${v.fights && v.fights.latest.fighting ? section('Fighting now') + round_card(v.fights.latest) : ''}
             ${needs ? section('Fleet needs') + `<div class="fw-chips">${needs}</div>` : ''}
@@ -333,7 +335,7 @@
         }).join('')
         return `<div class="fw-compact-count"><span class="fw-stat fw-stat--big">${c.in_fleet}</span><span class="eve-dim">in fleet · ${c.with_fc} with you</span><span class="fw-compact-kl">${c.kills} / ${c.losses}</span></div>
             <div class="fw-bars">${bars}</div>
-            ${people || gaps.length ? `<div class="fw-compact-alert"><span class="fw-warn">!</span> <span>${people ? plural(people, 'pilot') + ' need attention' : 'Roles missing'}</span> <span class="eve-dim">${esc(reasons.join(' · '))}</span></div>` : ''}`
+            ${people || gaps.length ? `<div class="fw-compact-alert"><span class="fw-warn">!</span> <span>${people ? `${plural(people, 'pilot')} ${people === 1 ? 'needs' : 'need'} attention` : 'Roles missing'}</span> <span class="eve-dim">${esc(reasons.join(' · '))}</span></div>` : ''}`
     }
 
     // ------------------------------------------------------------ Fleet tab: wrap-up, form-up, pre-flight, next
@@ -405,13 +407,12 @@
     function prep_main(v) {
         const f = v.fleet
         const signed = v.ships.reduce((n, ship) => n + ship.signed_up, 0)
+        // No Discord pre-ping step: the alliance pings once, when the fleet starts (Start fleet).
         const checks = [
             check(!!f.doctrine_name, 'Doctrine', f.doctrine_name || 'not set'),
             check(!!f.location_name, 'Form-up', f.location_name || 'not set'),
-            check(v.prepinged, 'Discord pre-ping', v.prepinged ? 'sent' : 'not sent from here',
-                v.prepinged ? '' : button('fleet:preping', 'Send pre-ping', { quiet: true, id: f.id })),
         ]
-        const ready = [!!f.doctrine_name, !!f.location_name, v.prepinged].filter(Boolean).length
+        const ready = [!!f.doctrine_name, !!f.location_name].filter(Boolean).length
         const most = Math.max(1, ...v.ships.map(ship => ship.signed_up))
         const ships = v.ships.map(ship => `<div class="fw-hull">
                 ${ship_icon(ship.ship_type_id, 24)}
@@ -423,7 +424,7 @@
                 <div class="fw-id"><span class="fw-title">${esc(f.title)}</span>${fleet_clock(f.start_time, true)}</div>
                 <div class="fw-meta">${esc(f.type_label)} · ${when(f.start_time)} · you are FC</div>
             </section>
-            ${section('Ready to start', `${ready} of 3`)}
+            ${section('Ready to start', `${ready} of ${checks.length}`)}
             ${checks.join('')}
             ${v.ships.length ? section('Signed up', plural(signed, 'pilot')) + ships + roles_line(v.roles) : '<div class="fw-quiet">No doctrine set yet.</div>'}`
     }
@@ -542,11 +543,11 @@
         const f = v.fleet
         const picked = picked_ship(v)
         const place = f.location_name || f.location_system_name
-        const jumps = v.jumps == null ? '' : v.jumps === 0 ? ' · you are here' : ` · ${plural(v.jumps, 'jump')} from you`
+        const jumps = v.jumps == null ? '' : v.jumps === 0 ? 'You are here' : `${plural(v.jumps, 'jump')} from you`
         return `${crumb}
             ${fleet_header(v, f.live ? live_clock(f.started_at) : fleet_clock(f.start_time))}
             <div class="fw-meta fw-detail-when">${f.live ? 'Live now' : when(f.start_time)}</div>
-            ${place ? `<div class="fw-card"><div class="fw-where"><span>Form up in ${esc(place)}<span class="eve-dim">${esc(jumps)}</span></span>${v.jumps === 0 ? '' : destination_button(f.live ? f.fc_system_id : f.location_system_id)}</div></div>` : ''}
+            ${place ? `<div class="fw-card"><div class="fw-where"><span class="fw-where__text"><span>Form up in ${esc(place)}</span>${jumps ? `<span class="fw-meta">${esc(jumps)}</span>` : ''}</span>${v.jumps === 0 ? '' : destination_button(f.live ? f.fc_system_id : f.location_system_id)}</div></div>` : ''}
             ${picks(v)}
             ${picked ? `<div class="fw-picked"><span class="eve-dim">Signed up as ${esc(picked.ship_name)}</span>${button('fleet:copy-fit', 'Copy fit', { quiet: true, id: f.id, key: picked.key })}</div>` : ''}
             ${f.live ? '' : `<button class="fw-toggle" role="switch" aria-checked="${v.reminder}" data-interactive data-fleet-command="fleet:remind" data-id="${Number(f.id)}"><span class="fw-toggle__box" aria-hidden="true"></span>Remind me 15 min before form-up</button>`}`
@@ -645,9 +646,11 @@
     // The status bar's message: a confirmation replaces the sync line for a moment, never sits beside it.
     function status(s, { update = null } = {}) {
         if (s.notice) return `<span class="fw-status fw-status--notice" role="status"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5l2.2 2.2 4.8-5.2"/></svg>${esc(s.notice)}</span>`
-        if (s.error) return `<span class="fw-status fw-status--error" role="status">${esc(s.error)}</span>`
+        // The update prompt stays beside an error: a pilot whose old version can't reach the API needs it most.
+        if (s.error) return `<span class="fw-status fw-status--error" role="status">${esc(s.error)}</span>${update || ''}`
         const synced = s.synced_at ? `Synced ${eve_clock(s.synced_at)} EVE` : s.loaded ? 'Synced' : 'Connecting…'
-        return `<span class="fw-status"><span class="fw-status__dot" aria-hidden="true"></span>${synced}</span>${update || ''}`
+        const waiting = !s.synced_at && !s.loaded
+        return `<span class="fw-status"><span class="fw-status__dot${waiting ? ' is-waiting' : ''}" aria-hidden="true"></span>${synced}</span>${update || ''}`
     }
 
     function tabs(s, list) {

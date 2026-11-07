@@ -33,7 +33,16 @@ on_state(state => {
     if (state.campaign) pilots = state.campaign.pilots
     $('content').innerHTML = content(state)
     apply_geometry($('content'))
+    capture_wheel()
 })
+
+// Click-through hands the mouse wheel to EVE too, so a list that scrolls takes the whole body (the gaps
+// between rows and the scrollbar), as the Intel window does.
+function capture_wheel() {
+    const el = $('content')
+    el.toggleAttribute('data-interactive', el.scrollHeight > el.clientHeight)
+}
+new ResizeObserver(capture_wheel).observe($('content'))
 
 // ---------------------------------------------------------------- pilot tooltip
 

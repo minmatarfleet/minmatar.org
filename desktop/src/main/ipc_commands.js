@@ -12,7 +12,7 @@ const COMMANDS = [
     'update:install', 'update:download', 'update:check',
     'settings:open', 'settings:set', 'window:set-enabled',
     'fleet:open', 'fleet:close', 'fleet:open-site', 'fleet:refresh-motd', 'fleet:copy-fit', 'fleet:sign-up',
-    'fleet:srp', 'fleet:dismiss-loss', 'fleet:done', 'fleet:destination', 'fleet:preping', 'fleet:start', 'fleet:remind',
+    'fleet:srp', 'fleet:dismiss-loss', 'fleet:done', 'fleet:destination', 'fleet:start', 'fleet:remind',
     'intel:focus', 'intel:paste-text', 'intel:kind', 'intel:edit', 'intel:share', 'intel:discard',
     'intel:open-report', 'intel:close-report', 'intel:copy-link', 'intel:open-site', 'intel:range',
 ]

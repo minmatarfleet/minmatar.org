@@ -143,10 +143,6 @@ class ApiClient {
         })
     }
 
-    preping(fleet_id) {
-        return this.request('POST', `/api/fleets/${Number(fleet_id)}/preping`)
-    }
-
     // Start tracking: the API checks the FC's in-game fleet over ESI and pings Discord.
     start_fleet(fleet_id, fc_character_id) {
         return this.request('POST', `/api/fleets/${Number(fleet_id)}/tracking`, {

@@ -24,6 +24,7 @@ const PREP_WINDOW_MS = 3 * 3600_000
 // "Remind me" fires this long before form-up, and not at all once the fleet is this far past its start.
 const REMIND_BEFORE_MS = 15 * 60_000
 const REMIND_LATE_MS = 10 * 60_000
+const ROUTE_RETRY_MS = 60_000      // a jump count ESI could not give is asked again after this
 
 class FleetWindow extends EventEmitter {
     constructor({
@@ -50,6 +51,7 @@ class FleetWindow extends EventEmitter {
     // Signed out: forget everything about this pilot.
     reset() {
         this.poller.reset()
+        this.epoch = (this.epoch || 0) + 1   // a fetch still in flight for the last pilot changes nothing
         this.timers.clearTimeout(this.notice_timer)
         this.current = null           // window payload for the fleet you are in (or just ran), or null
         this.windows = new Map()      // fleet id -> window payload for the other fleets on screen
@@ -61,7 +63,6 @@ class FleetWindow extends EventEmitter {
         this.mine_at = -Infinity
         this.done_losses = new Set()  // loss cards closed (their SRP stays in Recent)
         this.done_after = new Set()   // wrap-ups marked done
-        this.prepinged = new Set()    // fleets pre-pinged from here this session
         this.reminded = new Set()
         this.front = { name: null, system: null, id: null }
         this.routes_known = new Map() // "origin>destination" -> jumps
@@ -127,15 +128,19 @@ class FleetWindow extends EventEmitter {
 
     // One poll. Resolves false when the API could not be reached (the poller backs off); a 401 throws.
     async fetch_all() {
+        const epoch = this.epoch
         try {
             const current = await this.api.current_fleet_window()
+            if (epoch !== this.epoch) return false
             this.current = current.body.window
             if (this.now() - this.mine_at >= this.mine_poll_ms) await this.fetch_mine()
             await this.fetch_watched()
+            if (epoch !== this.epoch) return false
             this.error = null
             this.loaded = true
             this.synced_at = new Date(this.now()).toISOString()
         } catch (err) {
+            if (epoch !== this.epoch) return false
             if (is_unauthorized(err)) throw err   // no publish: main signs out
             this.error = 'Could not reach Minmatar Fleet. Retrying…'
             this.publish()
@@ -146,10 +151,14 @@ class FleetWindow extends EventEmitter {
     }
 
     // Recent and sign-ups are a nice-to-have on every tab: a failure here never fails the poll.
+    // mine_at moves only on success, so a failed fetch is tried again on the next poll.
     async fetch_mine() {
-        this.mine_at = this.now()
+        const epoch = this.epoch
         try {
-            this.mine = (await this.api.my_fleets()).body
+            const mine = (await this.api.my_fleets()).body
+            if (epoch !== this.epoch) return
+            this.mine = mine
+            this.mine_at = this.now()
         } catch (err) {
             if (is_unauthorized(err)) throw err
         }
@@ -158,10 +167,14 @@ class FleetWindow extends EventEmitter {
     async fetch_watched() {
         const ids = this.watched()
         for (const id of [...this.windows.keys()]) if (!ids.includes(id)) this.windows.delete(id)
+        const epoch = this.epoch
         for (const id of ids) {
             try {
-                this.windows.set(id, (await this.api.fleet_window(id)).body)
+                const body = (await this.api.fleet_window(id)).body
+                if (epoch !== this.epoch) return
+                this.windows.set(id, body)
             } catch (err) {
+                if (epoch !== this.epoch) return
                 if (!(err instanceof ApiError) || ![403, 404].includes(err.status)) throw err
                 this.windows.delete(id)   // fleet deleted, or not one the pilot may see
                 if (this.opened === id) this.opened = null
@@ -248,7 +261,11 @@ class FleetWindow extends EventEmitter {
         if (this.routes_known.has(key)) return this.routes_known.get(key)
         if (!this.routes_asked.has(key)) {
             this.routes_asked.add(key)
+            const epoch = this.epoch
             this.routes.jumps(origin, destination).then(jumps => {
+                if (epoch !== this.epoch) return
+                // ESI blipped or didn't know a system: ask again in a minute rather than never.
+                if (jumps == null) return void this.timers.setTimeout(() => this.routes_asked.delete(key), ROUTE_RETRY_MS)
                 this.routes_known.set(key, jumps)
                 this.publish()
             })
@@ -280,7 +297,6 @@ class FleetWindow extends EventEmitter {
             you: this.you(win),
             signed_up_key: signed_character ? (win.me.ship_volunteers[signed_character] || null) : null,
             jumps: win.mode === 'fc' ? null : this.jumps(win),
-            prepinged: this.prepinged.has(win.fleet.id),
             reminder: this.reminders().some(r => r.id === win.fleet.id),
         }
     }
@@ -448,16 +464,6 @@ class FleetWindow extends EventEmitter {
         })
     }
 
-    async preping(fleet_id) {
-        const win = this.known_window(fleet_id)
-        if (!win || win.mode !== 'fc' || win.fleet.live) return
-        const sent = await this.run('preping', () => this.api.preping(fleet_id), { done: 'Pre-ping sent', failed: () => 'Could not send the pre-ping' })
-        if (sent) {
-            this.prepinged.add(fleet_id)
-            this.publish()
-        }
-    }
-
     // Start tracking with the client in front as the in-game FC; the API pings Discord.
     async start(fleet_id) {
         const win = this.known_window(fleet_id)
@@ -472,6 +478,9 @@ class FleetWindow extends EventEmitter {
 
     toggle_reminder(fleet_id) {
         if (!this.store) return
+        // Reminders are one list on the account: written before the account's copy has loaded, it would
+        // replace the reminders set on the pilot's other PCs.
+        if (this.store.ready && !this.store.ready()) return this.flash('Settings are still loading. Try again in a moment')
         const row = this.list.find(f => f.id === fleet_id)
         if (!row) return
         const list = this.reminders()
@@ -483,19 +492,29 @@ class FleetWindow extends EventEmitter {
     }
 
     // Called by main.js once a minute, whether or not the window is up.
+    // A fleet still on the schedule reminds at its current start time (the FC may have moved it), and a
+    // cancelled one never reminds; one that has left the schedule keeps the time it was set with.
     check_reminders() {
         const now = this.now()
         const list = this.reminders()
+        let changed = false
+        const kept = []
         for (const r of list) {
-            const until = new Date(r.at) - now
-            if (until <= REMIND_BEFORE_MS && until > -REMIND_LATE_MS && !this.reminded.has(r.id)) {
-                this.reminded.add(r.id)
+            const row = this.list.find(f => f.id === r.id)
+            if (row && row.status === 'cancelled') { changed = true; continue }
+            const at = row && row.start_time ? row.start_time : r.at
+            if (at !== r.at) changed = true
+            const until = new Date(at) - now
+            if (until <= -REMIND_LATE_MS) { changed = true; continue }
+            kept.push(at === r.at ? r : { ...r, at })
+            const key = `${r.id}@${at}`
+            if (until <= REMIND_BEFORE_MS && !this.reminded.has(key)) {
+                this.reminded.add(key)
                 const minutes = Math.max(0, Math.round(until / 60_000))
                 this.notify(`${r.title} ${minutes ? `forms in ${minutes} min` : 'is forming'}`, r.where ? `Form up: ${r.where}` : 'Open the Fleets window for details')
             }
         }
-        const kept = list.filter(r => new Date(r.at) - now > -REMIND_LATE_MS)
-        if (kept.length !== list.length && this.store) this.store.set(REMINDERS_KEY, kept)
+        if (changed && this.store) this.store.set(REMINDERS_KEY, kept)
     }
 
     // One busy action at a time; the result shows in the status bar. Resolves true on success.

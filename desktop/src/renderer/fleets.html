@@ -27,8 +27,7 @@
             <button class="eve-icon-button" data-command="settings:open" aria-label="Settings" title="Settings">
                 <svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="1.8"/><path d="M6 1v1.6M6 9.4V11M1 6h1.6M9.4 6H11M2.5 2.5l1.1 1.1M8.4 8.4l1.1 1.1M2.5 9.5l1.1-1.1M8.4 3.6l1.1-1.1"/></svg>
             </button>
-            <button class="eve-icon-button" data-command="window:minimize" aria-label="Minimize" title="Minimize"><svg viewBox="0 0 12 12"><path d="M2 6.5h8"/></svg></button>
-            <button class="eve-icon-button" data-command="window:close" aria-label="Close to tray" title="Close to tray"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+            <button class="eve-icon-button" data-command="window:close" aria-label="Hide. Bring it back from Settings or the tray" title="Hide (bring it back from Settings or the tray)"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
         </nav>
     </header>
     <div class="fw-strip-slot" id="strip" data-interactive></div>
@@ -36,7 +35,7 @@
     <footer class="fw-foot" id="foot" data-interactive>
         <div class="fw-foot__actions" id="actions"></div>
         <div class="fw-foot__status" id="status"></div>
-        <button class="fw-site" id="site" data-fleet-command="fleet:open-site" hidden>Open on site<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5h5v5M9.5 2.5l-7 7"/></svg></button>
+        <button class="fw-site" id="site" data-fleet-command="fleet:open-site" hidden aria-label="Open on site"><span class="fw-site__label">Open on site</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5h5v5M9.5 2.5l-7 7"/></svg></button>
     </footer>
     <div class="eve-resize" id="resize" data-interactive aria-hidden="true"></div>
 </section>

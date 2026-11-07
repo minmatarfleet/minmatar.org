@@ -45,6 +45,7 @@ test('splits the hull strip from the "+N" list', () => {
 test('formats ages, jumps and image urls', () => {
     const now = Date.parse('2026-10-16T20:00:00Z')
     assert.equal(ago('2026-10-16T19:57:30Z', now), '2m')
+    assert.equal(ago('2026-10-16T19:59:30Z', now), 'now')
     assert.equal(ago('2026-10-16T18:10:00Z', now), '1h 50m')
     assert.equal(jumps_label(0), 'here')
     assert.equal(jumps_label(1), '1 jump')
@@ -201,4 +202,38 @@ test('report detail trims the raw paste and links only known reports', async () 
     assert.equal(c.detail.raw_lines, 2)
     assert.equal(c.detail.jumps, 1)
     assert.equal(c.url_for('r1'), 'https://web.example/intel/scans/r1')
+})
+
+test('a retried share clears the last failure, and a failure after Discard does not bring the form back', async () => {
+    let fail = true
+    const err = Object.assign(new Error('500'), { status: 500 })
+    const api = fake_api({ intel_share: async () => { if (fail) throw err; return { report_id: 'abc123' } } })
+    const { c } = controller(api)
+    await c.paste('Ardo Kesh')
+    await c.share()
+    assert.ok(c.draft.error)
+    fail = false
+    await c.share()
+    assert.equal(c.draft.status, 'shared')
+    assert.equal(c.draft.error, null)
+
+    let reject
+    const slow = fake_api({ intel_preview: () => new Promise((resolve, no) => { reject = no }) })
+    const { c: c2 } = controller(slow)
+    const pasting = c2.paste('Ardo Kesh')
+    c2.discard()
+    reject(Object.assign(new Error('timeout'), { status: 0 }))
+    await pasting
+    assert.equal(c2.draft, null)
+})
+
+test('a report that fails to load after it was closed stays closed', async () => {
+    let reject
+    const api = fake_api({ intel_report: () => new Promise((resolve, no) => { reject = no }) })
+    const { c } = controller(api)
+    const opening = c.open_report('abc')
+    c.close_report()
+    reject(Object.assign(new Error('500'), { status: 500 }))
+    await opening
+    assert.equal(c.detail, null)
 })

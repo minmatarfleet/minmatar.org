@@ -19,6 +19,8 @@
     --eve-gold: #f1d9a0;        /* fleet yellow */
 }
 * { box-sizing: border-box; }
+/* The hidden attribute always wins over a component's display (a flex block stayed on screen without this). */
+[hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; user-select: none; }
 body { font: 13px/1.35 var(--eve-font); color: var(--eve-text); -webkit-font-smoothing: antialiased; }
 button { font: inherit; color: inherit; }
@@ -41,14 +43,20 @@ body.is-hidden .eve-window { opacity: 0; transition-timing-function: ease-in; }
 .eve-window__body { flex: 1; min-height: 0; padding: 4px 10px 10px; overflow-y: auto; }
 .eve-window__body::-webkit-scrollbar { width: 4px; }
 .eve-window__body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.18); }
-.eve-window__footer { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 22px 6px 10px; font-size: 11px; color: var(--eve-text-dim); }
+.eve-window__footer { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 22px 6px 10px; font-size: 11px; color: var(--eve-text-dim); }
+/* Status on the left, everything else (update, site link, version) grouped on the right. */
+.eve-window__footer > .eve-status { margin-right: auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eve-resize { position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
 /* Click-through overlay windows ([data-interactive] header) move from script instead: eve_window.js wire_drag. */
 .eve-window__header[data-interactive] { -webkit-app-region: no-drag; }
 body.is-locked .eve-resize { display: none; }
+/* Unpinned: the header is the drag handle, so say so. */
+body:not(.is-locked) .eve-window__header[data-interactive] { cursor: move; }
+body:not(.is-locked) .eve-window__header[data-interactive] button { cursor: default; }
 .eve-resize::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 7px; height: 7px; border-right: 1px solid var(--eve-text-dim); border-bottom: 1px solid var(--eve-text-dim); }
 
 @keyframes eve-spin { to { transform: rotate(360deg); } }
+.eve-icon-button.is-loading svg { animation: eve-spin 0.9s linear infinite; }
 @keyframes eve-fade-in { from { opacity: 0; } }
 @keyframes eve-shimmer { from { background-position: -200px 0; } to { background-position: 200px 0; } }
 @media (prefers-reduced-motion: reduce) {
@@ -63,7 +71,8 @@ body.is-locked .eve-resize { display: none; }
 .eve-button--primary { border-color: var(--eve-accent); background: var(--eve-accent-soft); }
 .eve-link { padding: 0; border: 0; background: none; color: var(--eve-text-dim); text-decoration: underline; cursor: default; }
 .eve-link:hover { color: var(--eve-text-strong); }
-.eve-link--update { margin-left: auto; color: var(--eve-gold); }
+.eve-link--update { color: var(--eve-gold); }
+.eve-link:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 1px; }
 .eve-version { color: var(--eve-text-dim); opacity: 0.7; font-variant-numeric: tabular-nums; }
 
 /* text */
@@ -72,3 +81,8 @@ body.is-locked .eve-resize { display: none; }
 .eve-section { margin: 10px 0 4px; color: var(--eve-text); }
 .eve-empty { padding: 24px 6px; text-align: center; color: var(--eve-text-dim); }
 .eve-error { margin: 4px 0; padding: 4px 6px; background: rgba(224, 54, 42, 0.14); color: var(--eve-text-strong); }
+
+/* Loading placeholders: a dim bar with a slow shimmer. */
+.skeleton { display: block; height: 8px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.11) 50%, rgba(255, 255, 255, 0.05) 100%) no-repeat, rgba(255, 255, 255, 0.05);
+    background-size: 200px 100%; animation: eve-shimmer 1.4s linear infinite; }
+.skeleton--short { width: 30%; }
