@@ -1,0 +1,111 @@
+---
+/**
+ * The manage screens kit, working: every component in
+ * components/blocks/manage wired to a real htmx round trip
+ * (pages/partials/manage_kit_component.astro). Nothing is stored. For the
+ * package screens to copy from; superusers only (site.debug_pages).
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { get_corporation_logo, get_item_icon } from '@helpers/eve_image_server'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+if (!can(await get_gates(Astro), 'site.debug_pages')) return HTTP_403_Forbidden()
+
+const page_title = t('manage.kit.demo_title')
+const kit_url = (part: string) => translatePath(`/partials/manage_kit_component/?part=${part}`)
+const TLF_CORPORATION_ID = 1000182
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import ManageTile from '@components/blocks/manage/ManageTile.astro'
+import KitGrid from '@components/blocks/manage/KitGrid.astro'
+---
+
+<Viewport title={page_title}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-2xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs
+                is_landing_page={true}
+                links_only={true}
+                breadcrumbs={[
+                    { page_title: t('manage.page_title'), accumulated_path: translatePath('/manage/') },
+                    { page_title, accumulated_path: translatePath('/manage/kit/') },
+                ]}
+            />
+            <ManageHero
+                title={page_title}
+                image={get_corporation_logo(TLF_CORPORATION_ID, 128)}
+                role={t('manage.role_superuser')}
+                fact={t('manage.kit.demo_fact')}
+            >
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/manage/')}>{t('manage.page_title')}</Button>
+                    <Button href="#kit-list-block">{t('manage.kit.demo_primary')}</Button>
+                </Fragment>
+            </ManageHero>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-s)">
+            <h2>{t('manage.kit.demo_sections')}</h2>
+            <SettingsSection id="kit-section-switch" title={t('manage.kit.demo_switch_title')} summary={t('manage.kit.demo_on')}>
+                <ManageSwitch
+                    slot="switch"
+                    name="enabled"
+                    label={t('manage.kit.demo_switch_title')}
+                    hide_label={true}
+                    checked={true}
+                    hx-post={kit_url('switch')}
+                    hx-trigger="change"
+                    hx-swap="none"
+                />
+            </SettingsSection>
+            <SettingsSection
+                id="kit-section-lazy"
+                title={t('manage.kit.demo_section_title')}
+                summary={t('manage.kit.demo_not_set')}
+                url={kit_url('section')}
+            />
+        </Flexblock>
+
+        <Flexblock gap="var(--space-s)" id="kit-list-block">
+            <h2>{t('manage.kit.demo_list')}</h2>
+            <LazyPartial url={kit_url('list')} trigger="reveal" swap="outerHTML">
+                <p class="[ manage-muted ]">{t('loading')}</p>
+            </LazyPartial>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-s)">
+            <h2>{t('manage.kit.demo_grid')}</h2>
+            <KitGrid />
+        </Flexblock>
+
+        <Flexblock gap="var(--space-s)">
+            <h2>{t('manage.kit.demo_cards')}</h2>
+            <div class="[ manage-stats ]">
+                <ManageStatCard label={t('manage.queue_doctrine_changes')} value={2} detail={t('manage.queue_oldest').replace('~AGE', '3 h').replace('~NAME', 'Rifter Roam')} />
+                <ManageStatCard label={t('manage.queue_npsi_feeds')} value={1} tone="warn" detail={t('manage.queue_since').replace('~NAME', 'Unaligned').replace('~TIME', '18:26')} />
+            </div>
+            <ul class="[ manage-tiles ]" role="list">
+                <ManageTile label="Tritanium" image={get_item_icon(34)} />
+                <ManageTile label="Pyerite" image={get_item_icon(35)} />
+                <ManageTile label={t('manage.screen_reddit')} href={translatePath('/alliance/reddit-review/')} count={2} />
+            </ul>
+        </Flexblock>
+    </Flexblock>
+</PageLanding>
+</Viewport>

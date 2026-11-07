@@ -1,290 +1,403 @@
 ---
+/**
+ * The market hub settings page's sections (pages/market/ops/hubs.astro).
+ *
+ * part=sync    POST: the order-book sync switch; answers with the summary only
+ * part=stock   GET: the "Keep in stock" body for one doctrine;
+ *              POST: a switch flip, a tile removed or an item added, then the body again
+ * part=add     POST: add a hub picked by name, then load its page
+ * part=remove  POST: take the hub off the market, then load the hubs page
+ */
 import { i18n } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { MarketHub, MarketHubExpectations } from '@dtypes/api.minmatar.org'
+import type { MarketHubExpectations } from '@dtypes/api.minmatar.org'
 import {
     add_market_hub,
     add_market_item_expectation,
     get_market_hub_expectations,
-    get_market_hubs,
     patch_market_hub,
     remove_market_hub,
     remove_market_item_expectation,
-    search_market_types,
     set_expectations_from_doctrine,
     set_market_expectation_tracked,
 } from '@helpers/api.minmatar.org/market_hubs'
+import { get_item_icon } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
+import { hub_stock_summary } from '@helpers/market_hub_settings'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
-import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-
-const ROOT_ID = 'market-hubs'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 if (!can(await get_gates(Astro), 'market.manage')) return HTTP_403_Forbidden()
 
 const params = Astro.url.searchParams
-let location_id = parseInt(params.get('location_id') ?? '0') || 0
-let flash: { error: boolean, text: string } | null = null
-let search_query = ''
-let search_results: { type_id: number, name: string }[] = []
+const part = params.get('part') ?? 'stock'
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : null
+const field = (name: string) => String(form?.get(name) ?? params.get(name) ?? '').trim()
+const number_field = (name: string) => parseInt(field(name)) || 0
+const location_id = number_field('location_id')
 
-const PARTIAL_URL = (id: number) => translatePath(`/partials/market_hubs_component/${id ? `?${query_string({ location_id: String(id) })}` : ''}`)
+const PAGE_URL = translatePath('/market/ops/hubs/')
+const part_url = (name: string, values: Record<string, string> = {}) =>
+    translatePath(`/partials/market_hubs_component/?${query_string({ part: name, location_id: String(location_id), ...values })}`)
+const error_text = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const action = String(form.get('action') ?? '')
-    const hub_id = parseInt(String(form.get('hub_id') ?? '0')) || 0
-    const number_field = (name: string) => parseInt(String(form.get(name) ?? '0')) || 0
+const STOCK_ID = 'hub-stock-body'
+
+if (part === 'add' && is_post) {
+    const new_id = number_field('location_id')
+    if (!new_id)
+        return new Response(t('admin_hubs.add_pick_first'), { status: 200 })
+    try {
+        await add_market_hub(auth_token, { location_id: new_id, is_structure: true })
+    } catch (error) {
+        return new Response(error_text(error), { status: 200 })
+    }
+    return new Response(null, {
+        status: 200,
+        headers: { 'HX-Redirect': `${PAGE_URL}?${query_string({ location_id: String(new_id) })}` },
+    })
+}
+
+if (part === 'remove' && is_post) {
+    try {
+        await remove_market_hub(auth_token, location_id)
+    } catch (error) {
+        return new Response(error_text(error), { status: 400 })
+    }
+    return new Response(null, { status: 200, headers: { 'HX-Redirect': PAGE_URL } })
+}
+
+let sync_text = ''
+if (part === 'sync' && is_post) {
+    const enabled = form?.has('enabled') ?? false
+    try {
+        await patch_market_hub(auth_token, location_id, { prices_active: enabled })
+        sync_text = enabled ? t('admin_hubs.on') : t('admin_hubs.off')
+    } catch (error) {
+        console.log(error)
+        sync_text = t('admin_hubs.save_failed')
+    }
+}
+
+// part=stock
+let action_error: string | false = false
+let saved = false
+if (part === 'stock' && is_post) {
+    const action = field('action')
     try {
         switch (action) {
-            case 'add_hub': {
-                const new_id = number_field('existing_location_id') || number_field('location_id')
-                const name = String(form.get('location_name') ?? '').trim()
-                await add_market_hub(auth_token, {
-                    location_id: new_id,
-                    location_name: name || null,
-                    solar_system_id: number_field('solar_system_id') || null,
-                    solar_system_name: String(form.get('solar_system_name') ?? '').trim() || null,
-                    is_structure: true,
-                })
-                flash = { error: false, text: t('market.hubs.added') }
-                break
-            }
-            case 'toggle_hub':
-                await patch_market_hub(auth_token, hub_id, {
-                    [String(form.get('field'))]: form.get('value') === 'true',
-                })
-                flash = { error: false, text: t('market.hubs.saved') }
-                break
-            case 'remove_hub':
-                await remove_market_hub(auth_token, hub_id)
-                flash = { error: false, text: t('market.hubs.removed') }
-                break
-            case 'track':
+            case 'contract':
+            case 'fitting':
                 await set_market_expectation_tracked(
                     auth_token,
-                    hub_id,
-                    form.get('kind') === 'contracts' ? 'contracts' : 'fittings',
+                    location_id,
+                    action === 'contract' ? 'contracts' : 'fittings',
                     number_field('fitting_id'),
-                    form.get('tracked') === 'true',
+                    form?.has('tracked') ?? false,
                 )
                 break
+            case 'all_contracts':
+                await set_expectations_from_doctrine(auth_token, location_id, number_field('doctrine_id'))
+                break
             case 'add_item':
-                await add_market_item_expectation(auth_token, hub_id, number_field('type_id'))
+                if (number_field('type_id'))
+                    await add_market_item_expectation(auth_token, location_id, number_field('type_id'))
                 break
             case 'remove_item':
-                await remove_market_item_expectation(auth_token, hub_id, number_field('type_id'))
+                await remove_market_item_expectation(auth_token, location_id, number_field('type_id'))
                 break
-            case 'search_item':
-                search_query = String(form.get('q') ?? '').trim()
-                search_results = (await search_market_types(auth_token, search_query)) ?? []
-                break
-            case 'from_doctrine': {
-                const result = await set_expectations_from_doctrine(auth_token, hub_id, number_field('doctrine_id'))
-                flash = {
-                    error: false,
-                    text: t('market.hubs.from_doctrine_done').replace('{created}', String(result.created)),
-                }
-                break
-            }
         }
-        if (hub_id) location_id = hub_id
+        saved = true
     } catch (error) {
-        flash = { error: true, text: (error as Error).message }
-        if (hub_id) location_id = hub_id
+        action_error = error_text(error)
     }
 }
 
-let hubs: MarketHub[] = []
-let expectations: MarketHubExpectations | null = null
-let fetching_error: Error | false = false
+// ship_id and doctrine_ids are new on the API; the generated types catch up
+// when the schema is regenerated.
+type StockRow = MarketHubExpectations['contracts'][number] & { ship_id?: number | null, doctrine_ids?: number[] }
+type Stock = Omit<MarketHubExpectations, 'contracts' | 'fittings'> & { contracts: StockRow[], fittings: StockRow[] }
 
-try {
-    hubs = (await get_market_hubs(auth_token)) ?? []
-    if (location_id)
+let expectations: Stock | null = null
+let fetching_error: Error | false = false
+if (part === 'stock') {
+    try {
         expectations = await get_market_hub_expectations(auth_token, location_id)
-} catch (error) {
-    fetching_error = error as Error
+    } catch (error) {
+        fetching_error = error as Error
+    }
 }
 
-const active_hubs = hubs.filter((hub) => hub.market_active)
-const other_locations = hubs.filter((hub) => !hub.market_active)
-const selected = hubs.find((hub) => hub.location_id === location_id)
-const own_url = PARTIAL_URL(location_id)
+const contracts = expectations?.contracts ?? []
+const fittings = expectations?.fittings ?? []
+const items = expectations?.items ?? []
+const doctrines = expectations?.doctrines ?? []
+const in_doctrine = (row: StockRow, doctrine_id: number) => (row.doctrine_ids ?? []).includes(doctrine_id)
+
+// The doctrine shown: the one asked for, else the first with a fit kept stocked.
+const asked_doctrine = number_field('doctrine_id')
+const doctrine_id = doctrines.some((doctrine) => doctrine.id === asked_doctrine)
+    ? asked_doctrine
+    : (doctrines.find((doctrine) => contracts.some((row) => row.tracked && in_doctrine(row, doctrine.id))) ?? doctrines[0])?.id ?? 0
+const doctrine_rows = contracts.filter((row) => in_doctrine(row, doctrine_id))
+const tracked_fittings = fittings.filter((row) => row.tracked)
+const untracked_fittings = fittings.filter((row) => !row.tracked)
+
+const stock_summary = hub_stock_summary(t, contracts.filter((row) => row.tracked).length, tracked_fittings.length, items.length)
+
+const STOCK_URL = part_url('stock')
+const swap_body = { 'hx-target': `#${STOCK_ID}`, 'hx-swap': 'outerHTML' }
+const doctrine_vals = (values: Record<string, string | number>) =>
+    JSON.stringify({ doctrine_id, ...values })
+
+const COLUMNS = [
+    { label: t('admin_hubs.fitting') },
+    { label: t('admin_hubs.on_contract'), align: 'num' as const, phone: false },
+    { label: t('admin_hubs.keep_stocked'), align: 'num' as const },
+]
 ---
 
-{fetching_error !== false ?
-    <ErrorRefetch args={{ partial: own_url, target: `#${ROOT_ID}`, error: fetching_error, delay: parseInt(params.get('delay') ?? '0') }} />
-:
-<div id={ROOT_ID} class="[ settings-editor ]">
-    {flash &&
-        <p class:list={['[ settings-editor__flash ]', { 'is-error': flash.error }]} role={flash.error ? 'alert' : 'status'}>
-            {flash.text}
-        </p>
-    }
+{part === 'sync' && <SectionSummary section_id="hub-sync" text={sync_text} />}
 
-    <section class="[ settings-editor__panel ]" aria-labelledby="market-hubs-list">
-        <h3 id="market-hubs-list">{t('market.hubs.hubs')}</h3>
-        {active_hubs.length === 0 && <EmptyState title={t('market.hubs.empty')} />}
-        {active_hubs.map((hub) =>
-            <div class="[ settings-editor__row ]">
-                <span class="[ settings-editor__grow ]">
-                    <strong>{hub.short_name}</strong> {hub.location_name}
-                    <span class="[ settings-editor__muted ]">
-                        {t('market.hubs.counts')
-                            .replace('{fittings}', String(hub.fitting_expectations))
-                            .replace('{contracts}', String(hub.contract_expectations))
-                            .replace('{items}', String(hub.item_expectations))}
-                    </span>
-                </span>
-                <form hx-post={PARTIAL_URL(hub.location_id)} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                    <input type="hidden" name="action" value="toggle_hub" />
-                    <input type="hidden" name="hub_id" value={hub.location_id} />
-                    <input type="hidden" name="field" value="prices_active" />
-                    <input type="hidden" name="value" value={hub.prices_active ? 'false' : 'true'} />
-                    <label class="[ settings-editor__check ]">
-                        <input type="checkbox" checked={hub.prices_active} hx-trigger="change" hx-post={PARTIAL_URL(hub.location_id)} hx-include="closest form" hx-target={`#${ROOT_ID}`} hx-swap="outerHTML" />
-                        {t('market.hubs.order_book_sync')}
-                    </label>
-                </form>
-                <FlexInline gap="var(--space-xs)">
-                    <Button
-                        type="button"
-                        size="sm"
-                        color={hub.location_id === location_id ? 'green' : 'transparent'}
-                        narrow={true}
-                        hx-get={PARTIAL_URL(hub.location_id)}
-                        hx-target={`#${ROOT_ID}`}
-                        hx-swap="outerHTML"
-                    >{t('market.hubs.edit_expectations')}</Button>
-                    <form hx-post={PARTIAL_URL(hub.location_id)} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML" hx-confirm={t('market.hubs.confirm_remove')}>
-                        <input type="hidden" name="action" value="remove_hub" />
-                        <input type="hidden" name="hub_id" value={hub.location_id} />
-                        <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.remove')}</Button>
-                    </form>
-                </FlexInline>
+{part === 'stock' && (fetching_error !== false || !expectations ?
+    <div id={STOCK_ID} class="[ manage-section__body ]">
+        <ErrorRefetch args={{ partial: STOCK_URL, target: `#${STOCK_ID}`, error: fetching_error || new Error(t('admin_hubs.load_failed')), delay: parseInt(params.get('delay') ?? '0') }} />
+    </div>
+    :
+    <div id={STOCK_ID} class="[ manage-section__body manage-form hub-stock ]">
+        {is_post && <SectionSummary section_id="hub-stock" text={stock_summary} />}
+        {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}
+        {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+
+        <section class="[ hub-stock__group ]" aria-labelledby="hub-stock-contracts">
+            <div class="[ hub-stock__head ]">
+                <h3 id="hub-stock-contracts" class="[ manage-eyebrow is-red ]">{t('market.hubs.contract_targets')}</h3>
+                {doctrines.length > 0 &&
+                    <div class="[ hub-stock__control ]">
+                        <label class="[ visually-hidden ]" for="hub-stock-doctrine">{t('market.hubs.doctrine')}</label>
+                        <Select
+                            id="hub-stock-doctrine"
+                            name="doctrine_id"
+                            size="sm"
+                            hx-get={STOCK_URL}
+                            hx-trigger="change"
+                            {...swap_body}
+                        >
+                            {doctrines.map((doctrine) => <option value={doctrine.id} selected={doctrine.id === doctrine_id}>{doctrine.name}</option>)}
+                        </Select>
+                    </div>
+                }
             </div>
-        )}
-
-        <h4>{t('market.hubs.add')}</h4>
-        <form class="[ settings-editor__inline ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-            <input type="hidden" name="action" value="add_hub" />
-            {other_locations.length > 0 &&
-                <label class="[ settings-editor__field ]">
-                    {t('market.hubs.existing_location')}
-                    <select name="existing_location_id">
-                        <option value="">—</option>
-                        {other_locations.map((hub) => <option value={hub.location_id}>{hub.location_name}</option>)}
-                    </select>
-                </label>
+            {doctrine_rows.length === 0 ?
+                <EmptyState title={t('market.hubs.no_fittings')} />
+                :
+                <>
+                    <ManageTable caption={t('market.hubs.contract_targets')} columns={COLUMNS} expandable={false} min_width="28rem">
+                        {doctrine_rows.map((row) => (
+                            <tbody class:list={{ 'is-dim': !row.tracked }}>
+                                <tr class="[ manage-row ]">
+                                    <td>
+                                        <span class="[ manage-who ]">
+                                            {row.ship_id && <img src={get_item_icon(row.ship_id)} alt="" width="40" height="40" loading="lazy" />}
+                                            <span class="[ manage-who__text ]">
+                                                <span class="[ manage-who__name ]">{row.fitting_name}</span>
+                                                <span class:list={['[ manage-who__sub hub-stock__phone ]', { 'manage-warn': row.tracked && (row.current ?? 0) === 0 }]}>
+                                                    {row.tracked ? t('admin_hubs.on_contract_count').replace('~COUNT', String(row.current ?? 0)) : t('admin_hubs.not_tracked')}
+                                                </span>
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td class:list={['num is-wide', { 'manage-warn': row.tracked && (row.current ?? 0) === 0 }]}>
+                                        {row.tracked ? (row.current ?? 0) : t('admin_hubs.not_tracked')}
+                                    </td>
+                                    <td class="num">
+                                        <ManageSwitch
+                                            name="tracked"
+                                            hide_label={true}
+                                            label={t('admin_hubs.keep_stocked_name').replace('~NAME', row.fitting_name)}
+                                            checked={row.tracked}
+                                            hx-post={STOCK_URL}
+                                            hx-trigger="change"
+                                            hx-vals={doctrine_vals({ action: 'contract', fitting_id: row.fitting_id })}
+                                            {...swap_body}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        ))}
+                    </ManageTable>
+                    {doctrine_rows.some((row) => !row.tracked) &&
+                        <div>
+                            <Button
+                                type="button"
+                                size="sm"
+                                color="transparent"
+                                hx-post={STOCK_URL}
+                                hx-vals={doctrine_vals({ action: 'all_contracts' })}
+                                {...swap_body}
+                            >{t('admin_hubs.keep_all_stocked')}</Button>
+                        </div>
+                    }
+                </>
             }
-            <label class="[ settings-editor__field ]">
-                {t('market.hubs.new_location_id')}
-                <Input type="number" name="location_id" size="sm" />
-            </label>
-            <label class="[ settings-editor__field ]">
-                {t('market.hubs.new_location_name')}
-                <Input type="text" name="location_name" size="sm" />
-            </label>
-            <label class="[ settings-editor__field ]">
-                {t('market.hubs.new_system_id')}
-                <Input type="number" name="solar_system_id" size="sm" />
-            </label>
-            <label class="[ settings-editor__field ]">
-                {t('market.hubs.new_system_name')}
-                <Input type="text" name="solar_system_name" size="sm" />
-            </label>
-            <Button type="submit" size="sm" color="fleet-red" narrow={true}>{t('market.hubs.add_button')}</Button>
-        </form>
-    </section>
-
-    {selected && expectations &&
-        <section class="[ settings-editor__panel ]" aria-labelledby="market-hubs-expectations">
-            <h3 id="market-hubs-expectations">{t('market.hubs.expectations_for').replace('{hub}', selected.short_name)}</h3>
-
-            <h4>{t('market.hubs.from_doctrine')}</h4>
-            <form class="[ settings-editor__inline ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                <input type="hidden" name="action" value="from_doctrine" />
-                <input type="hidden" name="hub_id" value={selected.location_id} />
-                <label class="[ settings-editor__field ]">
-                    {t('market.hubs.doctrine')}
-                    <select name="doctrine_id" required>
-                        {expectations.doctrines.map((doctrine) => <option value={doctrine.id}>{doctrine.name}</option>)}
-                    </select>
-                </label>
-                <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.from_doctrine_button')}</Button>
-            </form>
-
-            {[
-                { kind: 'contracts', heading: t('market.hubs.contract_targets'), rows: expectations.contracts },
-                { kind: 'fittings', heading: t('market.hubs.fitting_targets'), rows: expectations.fittings },
-            ].map((group) =>
-                <Flexblock gap="var(--space-2xs)">
-                    <h4>{group.heading}</h4>
-                    {group.rows.length === 0 && <EmptyState title={t('market.hubs.no_fittings')} />}
-                    {group.rows.map((row) =>
-                        <form class:list={['[ settings-editor__row ]', { 'is-off': !row.tracked }]} hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="action" value="track" />
-                            <input type="hidden" name="hub_id" value={selected.location_id} />
-                            <input type="hidden" name="kind" value={group.kind} />
-                            <input type="hidden" name="fitting_id" value={row.fitting_id} />
-                            <input type="hidden" name="tracked" value={row.tracked ? 'false' : 'true'} />
-                            <span class="[ settings-editor__grow ]">{row.fitting_name}</span>
-                            {group.kind === 'contracts' && row.tracked &&
-                                <span class="[ settings-editor__muted ]">{t('market.hubs.current').replace('{count}', String(row.current ?? 0))}</span>
-                            }
-                            <Button type="submit" size="sm" color={row.tracked ? 'transparent' : 'green'} narrow={true}>
-                                {row.tracked ? t('market.hubs.untrack') : t('market.hubs.track')}
-                            </Button>
-                        </form>
-                    )}
-                </Flexblock>
-            )}
-
-            <Flexblock gap="var(--space-2xs)">
-                <h4>{t('market.hubs.item_targets')}</h4>
-                {expectations.items.length === 0 && <EmptyState title={t('market.hubs.no_items')} />}
-                {expectations.items.map((item) =>
-                    <form class="[ settings-editor__row ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <input type="hidden" name="action" value="remove_item" />
-                        <input type="hidden" name="hub_id" value={selected.location_id} />
-                        <input type="hidden" name="type_id" value={item.type_id} />
-                        <span class="[ settings-editor__grow ]">{item.name}</span>
-                        <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.untrack')}</Button>
-                    </form>
-                )}
-                <form class="[ settings-editor__inline ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                    <input type="hidden" name="action" value="search_item" />
-                    <input type="hidden" name="hub_id" value={selected.location_id} />
-                    <label class="[ settings-editor__field ]">
-                        {t('market.hubs.search_item')}
-                        <Input type="search" name="q" size="sm" value={search_query} minlength="2" required />
-                    </label>
-                    <Button type="submit" size="sm" color="transparent" narrow={true}>{t('market.hubs.search')}</Button>
-                </form>
-                {search_query && search_results.length === 0 && <EmptyState title={t('market.hubs.no_results')} />}
-                {search_results.map((result) =>
-                    <form class="[ settings-editor__row ]" hx-post={own_url} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <input type="hidden" name="action" value="add_item" />
-                        <input type="hidden" name="hub_id" value={selected.location_id} />
-                        <input type="hidden" name="type_id" value={result.type_id} />
-                        <span class="[ settings-editor__grow ]">{result.name}</span>
-                        <Button type="submit" size="sm" color="green" narrow={true}>{t('market.hubs.track')}</Button>
-                    </form>
-                )}
-            </Flexblock>
         </section>
+
+        <section class="[ hub-stock__group ]" aria-labelledby="hub-stock-fittings">
+            <div class="[ hub-stock__head ]">
+                <h3 id="hub-stock-fittings" class="[ manage-eyebrow is-red ]">{t('market.hubs.fitting_targets')}</h3>
+                {untracked_fittings.length > 0 &&
+                    <form class="[ hub-stock__control ]" hx-post={STOCK_URL} hx-trigger="change" {...swap_body}>
+                        <input type="hidden" name="action" value="fitting" />
+                        <input type="hidden" name="tracked" value="on" />
+                        <input type="hidden" name="doctrine_id" value={doctrine_id} />
+                        <label class="[ visually-hidden ]" for="hub-stock-add-fitting">{t('admin_hubs.add_fitting')}</label>
+                        <Select id="hub-stock-add-fitting" name="fitting_id" size="sm">
+                            <option value="" selected>{t('admin_hubs.add_fitting')}</option>
+                            {untracked_fittings.map((row) => <option value={row.fitting_id}>{row.fitting_name}</option>)}
+                        </Select>
+                    </form>
+                }
+            </div>
+            {tracked_fittings.length === 0 ?
+                <p class="[ manage-muted ]">{t('admin_hubs.no_fitting_items')}</p>
+                :
+                <ul class="[ manage-tiles ]" role="list">
+                    {tracked_fittings.map((row) => (
+                        <li>
+                            <span class="[ manage-tile hub-tile ]">
+                                {row.ship_id && <img src={get_item_icon(row.ship_id)} alt="" width="32" height="32" loading="lazy" />}
+                                <span class="[ hub-tile__name ]">{row.fitting_name}</span>
+                                <button
+                                    type="button"
+                                    class="[ hub-tile__remove ]"
+                                    aria-label={t('admin_hubs.stop_name').replace('~NAME', row.fitting_name)}
+                                    hx-post={STOCK_URL}
+                                    hx-vals={doctrine_vals({ action: 'fitting', fitting_id: row.fitting_id })}
+                                    {...swap_body}
+                                >×</button>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            }
+        </section>
+
+        <section class="[ hub-stock__group ]" aria-labelledby="hub-stock-items">
+            <div class="[ hub-stock__head ]">
+                <h3 id="hub-stock-items" class="[ manage-eyebrow is-red ]">{t('market.hubs.item_targets')}</h3>
+                <form
+                    class="[ hub-stock__control ]"
+                    hx-post={STOCK_URL}
+                    hx-trigger="change[target.type=='hidden']"
+                    {...swap_body}
+                >
+                    <input type="hidden" name="action" value="add_item" />
+                    <input type="hidden" name="doctrine_id" value={doctrine_id} />
+                    <EntityPicker
+                        id="hub-stock-add-item"
+                        kind="type"
+                        name="type_id"
+                        label={t('admin_hubs.add_item')}
+                        placeholder={t('admin_hubs.add_item')}
+                    />
+                </form>
+            </div>
+            {items.length === 0 ?
+                <p class="[ manage-muted ]">{t('market.hubs.no_items')}</p>
+                :
+                <ul class="[ manage-tiles ]" role="list">
+                    {items.map((item) => (
+                        <li>
+                            <span class="[ manage-tile hub-tile ]">
+                                <img src={get_item_icon(item.type_id)} alt="" width="32" height="32" loading="lazy" />
+                                <span class="[ hub-tile__name ]">{item.name}</span>
+                                <button
+                                    type="button"
+                                    class="[ hub-tile__remove ]"
+                                    aria-label={t('admin_hubs.stop_name').replace('~NAME', item.name)}
+                                    hx-post={STOCK_URL}
+                                    hx-vals={doctrine_vals({ action: 'remove_item', type_id: item.type_id })}
+                                    {...swap_body}
+                                >×</button>
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            }
+        </section>
+    </div>
+)}
+
+<style lang="scss">
+    .hub-stock {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
     }
-</div>
-}
+
+    .hub-stock__group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .hub-stock__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs) var(--space-m);
+    }
+
+    .hub-stock__control {
+        width: min(100%, 20rem);
+    }
+
+    // The on-contract count moves under the name at phone width.
+    .hub-stock__phone {
+        display: none;
+    }
+
+    @media (max-width: 48rem) {
+        .hub-stock__phone {
+            display: block;
+        }
+    }
+
+    .hub-tile__name {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .hub-tile__remove {
+        margin-inline-start: auto;
+        padding-inline: var(--space-2xs);
+        color: var(--text-muted);
+        background: none;
+        border: 0;
+        font-size: var(--step-1);
+        line-height: 1;
+        cursor: pointer;
+        transition: color var(--fast-transition);
+    }
+
+    @media (hover: hover) {
+        .hub-tile__remove:hover {
+            color: var(--fleet-red);
+        }
+    }
+</style>

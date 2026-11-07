@@ -1,177 +1,287 @@
 ---
-import { i18n } from '@helpers/i18n'
+/**
+ * Buyback settings (pages/market/buyback/settings.astro): one body per
+ * SettingsSection. Saves answer with the body and the section's summary
+ * out of band.
+ *
+ * part=active              the "Buyback open" switch (POST): the summary only
+ * part=rates               the rates form (GET) / its save (POST)
+ * part=location            where contracts go (GET) / its save (POST)
+ * part=items               category chips, the add picker and the items table (GET);
+ *                          POST action=add_item accepts a type
+ * part=item&type_id=       the Accepting switch, or action=remove (POST): the row
+ */
+import { i18n, t_key } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { BuybackManageSettings } from '@dtypes/api.minmatar.org'
 import {
     add_buyback_item,
     delete_buyback_item,
     get_buyback_manage_settings,
     patch_buyback_item,
     patch_buyback_settings,
-    search_buyback_types,
 } from '@helpers/api.minmatar.org/buyback_settings'
+import { error_text, form_flag, form_int, form_text } from '@helpers/manage_forms'
+import {
+    buyback_in_view,
+    buyback_items_by_pay,
+    buyback_summaries,
+    percent_to_share,
+    share_to_percent,
+    type BuybackEditorItem,
+    type BuybackEditorSettings,
+} from '@helpers/market_settings'
+import { query_string } from '@helpers/string'
 
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-
-const ROOT_ID = 'buyback-settings'
-const PARTIAL_URL = translatePath('/partials/buyback_settings_component/')
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
+import BuybackItemRow from '@components/blocks/market_settings/BuybackItemRow.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 if (!can(await get_gates(Astro), 'buyback.manage')) return HTTP_403_Forbidden()
 
-let flash: { error: boolean, text: string } | null = null
-let search_query = ''
-let search_results: { type_id: number, name: string }[] = []
-let new_category = 'ore'
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'items'
+const type_id = parseInt(params.get('type_id') ?? '') || 0
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : new FormData()
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/buyback_settings_component/?${query_string(values)}`)
+const failed = t('manage.kit.confirm_failed')
 
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const action = String(form.get('action') ?? '')
-    const text = (name: string) => String(form.get(name) ?? '').trim()
-    const number = (name: string) => parseFloat(text(name))
+let saved = false
+let removed = false
+let error: string | undefined
+
+if (is_post) {
     try {
-        switch (action) {
-            case 'save_settings': {
-                const location_id = parseInt(text('location_id'))
-                await patch_buyback_settings(auth_token, {
-                    active: form.get('active') === 'on',
-                    location_id: location_id || null,
-                    clear_location: !location_id,
-                    // The form shows percentages; the API takes shares from 0 to 1.
-                    ore_refine: number('ore_refine') / 100,
-                    demand_jita_buy: number('demand_jita_buy') / 100,
-                    surplus_jita_buy: number('surplus_jita_buy') / 100,
-                })
-                flash = { error: false, text: t('buyback.settings.saved') }
-                break
+        if (part === 'active') {
+            await patch_buyback_settings(auth_token, { active: form_flag(form, 'active') })
+        } else if (part === 'rates') {
+            const shares = ['demand_jita_buy', 'surplus_jita_buy', 'ore_refine'].map((name) => percent_to_share(form_text(form, name)))
+            if (shares.some((share) => share === null || share < 0 || share > 1)) {
+                error = t('manage.buyback.rates_invalid')
+            } else {
+                const [demand_jita_buy, surplus_jita_buy, ore_refine] = shares as number[]
+                await patch_buyback_settings(auth_token, { demand_jita_buy, surplus_jita_buy, ore_refine })
+                saved = true
             }
-            case 'search':
-                search_query = text('q')
-                new_category = text('category') || 'ore'
-                search_results = (await search_buyback_types(auth_token, search_query)) ?? []
-                break
-            case 'add_item':
-                await add_buyback_item(auth_token, parseInt(text('type_id')), text('category'))
-                flash = { error: false, text: t('buyback.settings.item_added') }
-                break
-            case 'save_item':
-                await patch_buyback_item(auth_token, parseInt(text('type_id')), {
-                    active: form.get('active') === 'on',
-                    category: text('category'),
-                })
-                break
-            case 'delete_item':
-                await delete_buyback_item(auth_token, parseInt(text('type_id')))
-                break
+        } else if (part === 'location') {
+            const location_id = form_int(form, 'location_id')
+            await patch_buyback_settings(auth_token, { location_id, clear_location: !location_id })
+            saved = true
+        } else if (part === 'items' && form_text(form, 'action') === 'add_item') {
+            const picked = form_int(form, 'type_id')
+            if (picked) {
+                await add_buyback_item(auth_token, picked, form_text(form, 'category'))
+                saved = true
+            }
+        } else if (part === 'item' && type_id) {
+            if (form_text(form, 'action') === 'remove') {
+                await delete_buyback_item(auth_token, type_id)
+                removed = true
+            } else {
+                await patch_buyback_item(auth_token, type_id, { active: form_flag(form, 'active') })
+            }
         }
-    } catch (error) {
-        flash = { error: true, text: (error as Error).message }
+    } catch (caught) {
+        // The switches and ConfirmAction show a refused write themselves.
+        if (part === 'active' || part === 'item')
+            return new Response(error_text(caught, failed), { status: 400 })
+        error = error_text(caught, failed)
     }
 }
 
-let settings: BuybackManageSettings | null = null
+let settings: BuybackEditorSettings | null = null
 let fetching_error: Error | false = false
 try {
-    settings = await get_buyback_manage_settings(auth_token)
-} catch (error) {
-    fetching_error = error as Error
+    settings = (await get_buyback_manage_settings(auth_token)) as BuybackEditorSettings | null
+    if (!settings)
+        return HTTP_403_Forbidden()
+} catch (caught) {
+    fetching_error = caught as Error
 }
-if (!fetching_error && !settings) return HTTP_403_Forbidden()
 
-const percent = (share: number) => String(Math.round(share * 1000) / 10)
-const form_attrs = { 'hx-post': PARTIAL_URL, 'hx-target': `#${ROOT_ID}`, 'hx-swap': 'outerHTML' }
+const summaries = settings ? buyback_summaries(settings, t) : null
+const items: BuybackEditorItem[] = settings ? buyback_items_by_pay(settings.items) : []
+const categories = settings?.categories ?? []
+const view = params.get('view') || form_text(form, 'view') || 'all'
+const selected_view = view === 'all' || categories.includes(view) ? view : 'all'
+const query = (params.get('q') ?? '').trim().toLowerCase()
+const searched = items.filter((candidate) => !query || candidate.name.toLowerCase().includes(query))
+const PAGE_SIZE = 50
+const matching = searched.filter((candidate) => buyback_in_view(selected_view, candidate))
+const total_pages = Math.max(1, Math.ceil(matching.length / PAGE_SIZE))
+const page = Math.min(total_pages, Math.max(1, parseInt(params.get('page') ?? '1') || 1))
+const rows = matching.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+const category_label = (category: string) => items.find((item) => item.category === category)?.category_label || category.toUpperCase()
+const item = items.find((candidate) => candidate.type_id === type_id) ?? null
+// A removed item is gone from the settings: keep its row (dimmed) until the next load.
+const removed_item: BuybackEditorItem | null = removed
+    ? { type_id, name: form_text(form, 'name') || t('manage.buyback.removed'), category: '', category_label: form_text(form, 'category_label'), demand_status: '', demand_label: '', active: false, pays_rate: null }
+    : null
+
+const columns = [
+    { label: t('manage.buyback.col_item') },
+    { label: t('manage.buyback.col_category'), phone: false },
+    { label: t('manage.buyback.col_pays'), align: 'num' as const, sort: 'descending' as const, phone: false },
+    { label: t('manage.buyback.col_accepting'), align: 'act' as const },
+    { label: t('manage.buyback.col_remove'), align: 'act' as const, hidden: true, phone: false },
+]
 ---
 
-{fetching_error !== false || !settings ?
-    <ErrorRefetch args={{ partial: PARTIAL_URL, target: `#${ROOT_ID}`, error: fetching_error || new Error(), delay: parseInt(Astro.url.searchParams.get('delay') ?? '0') }} />
-:
-<div id={ROOT_ID} class="[ settings-editor ]">
-    {flash &&
-        <p class:list={['[ settings-editor__flash ]', { 'is-error': flash.error }]} role={flash.error ? 'alert' : 'status'}>
-            {flash.text}
-        </p>
-    }
-
-    <section class="[ settings-editor__panel ]" aria-labelledby="buyback-settings-rates">
-        <h3 id="buyback-settings-rates">{t('buyback.settings.rates')}</h3>
-        <form {...form_attrs} class="[ settings-editor__inline ]">
-            <input type="hidden" name="action" value="save_settings" />
-            <label class="[ settings-editor__field ]">{t('buyback.settings.demand_jita_buy')}
-                <Input type="number" name="demand_jita_buy" size="sm" min="0" max="100" step="0.1" value={percent(settings.demand_jita_buy)} required />
-            </label>
-            <label class="[ settings-editor__field ]">{t('buyback.settings.surplus_jita_buy')}
-                <Input type="number" name="surplus_jita_buy" size="sm" min="0" max="100" step="0.1" value={percent(settings.surplus_jita_buy)} required />
-            </label>
-            <label class="[ settings-editor__field ]">{t('buyback.settings.ore_refine')}
-                <Input type="number" name="ore_refine" size="sm" min="0" max="100" step="0.1" value={percent(settings.ore_refine)} required />
-            </label>
-            <label class="[ settings-editor__field ]">{t('buyback.settings.location')}
-                <select name="location_id">
-                    <option value="">—</option>
-                    {settings.locations.map((location) =>
-                        <option value={location.location_id} selected={location.location_id === settings.location_id}>{location.name}</option>
-                    )}
-                </select>
-            </label>
-            <label class="[ settings-editor__check ]"><input type="checkbox" name="active" checked={settings.active} />{t('buyback.settings.active')}</label>
-            <Button type="submit" size="sm" color="fleet-red" narrow={true}>{t('buyback.settings.save')}</Button>
-        </form>
-    </section>
-
-    <section class="[ settings-editor__panel ]" aria-labelledby="buyback-settings-items">
-        <h3 id="buyback-settings-items">{t('buyback.settings.items')}</h3>
-        {settings.items.length === 0 && <EmptyState title={t('buyback.settings.no_items')} />}
-        {settings.items.map((item) =>
-            <div class:list={['[ settings-editor__row ]', { 'is-off': !item.active }]}>
-                <form {...form_attrs} class="[ settings-editor__inline ]">
-                    <input type="hidden" name="action" value="save_item" />
-                    <input type="hidden" name="type_id" value={item.type_id} />
-                    <span class="[ settings-editor__grow ]">{item.name}</span>
-                    <select name="category" aria-label={t('buyback.settings.category')}>
-                        {settings.categories.map((category) => <option value={category} selected={category === item.category}>{category.toUpperCase()}</option>)}
-                    </select>
-                    <label class="[ settings-editor__check ]"><input type="checkbox" name="active" checked={item.active} />{t('buyback.settings.active')}</label>
-                    <Button type="submit" size="sm" color="transparent" narrow={true}>{t('buyback.settings.save')}</Button>
-                </form>
-                <form {...form_attrs} hx-confirm={t('buyback.settings.confirm_delete')}>
-                    <input type="hidden" name="action" value="delete_item" />
-                    <input type="hidden" name="type_id" value={item.type_id} />
-                    <Button type="submit" size="sm" color="transparent" narrow={true}>{t('buyback.settings.delete')}</Button>
-                </form>
-            </div>
-        )}
-
-        <h4>{t('buyback.settings.add_item')}</h4>
-        <form {...form_attrs} class="[ settings-editor__inline ]">
-            <input type="hidden" name="action" value="search" />
-            <label class="[ settings-editor__field ]">{t('buyback.settings.search')}
-                <Input type="search" name="q" size="sm" value={search_query} minlength="2" required />
-            </label>
-            <label class="[ settings-editor__field ]">{t('buyback.settings.category')}
-                <select name="category">
-                    {settings.categories.map((category) => <option value={category} selected={category === new_category}>{category.toUpperCase()}</option>)}
-                </select>
-            </label>
-            <Button type="submit" size="sm" color="transparent" narrow={true}>{t('buyback.settings.search_button')}</Button>
-        </form>
-        {search_query && search_results.length === 0 && <EmptyState title={t('buyback.settings.no_results')} />}
-        {search_results.map((result) =>
-            <form {...form_attrs} class="[ settings-editor__row ]">
-                <input type="hidden" name="action" value="add_item" />
-                <input type="hidden" name="type_id" value={result.type_id} />
-                <input type="hidden" name="category" value={new_category} />
-                <span class="[ settings-editor__grow ]">{result.name}</span>
-                <Button type="submit" size="sm" color="green" narrow={true}>{t('buyback.settings.accept').replace('{category}', new_category.toUpperCase())}</Button>
+{fetching_error !== false || !settings || !summaries
+    ? <ErrorRefetch args={{ partial: partial_url({ part }), error: fetching_error || new Error(failed), delay: parseInt(params.get('delay') ?? '0') }} />
+    : part === 'active'
+        ? <SectionSummary section_id="bb-open" text={summaries.open} />
+    : part === 'rates'
+        ? (
+            <form
+                class="[ manage-section__body manage-form ]"
+                hx-post={partial_url({ part: 'rates' })}
+                hx-target="this"
+                hx-swap="outerHTML"
+            >
+                <div class="[ manage-fields ]">
+                    {[
+                        { name: 'demand_jita_buy', label: t('manage.buyback.rate_demand'), hint: t('manage.buyback.rate_demand_hint'), value: settings.demand_jita_buy },
+                        { name: 'surplus_jita_buy', label: t('manage.buyback.rate_surplus'), hint: t('manage.buyback.rate_surplus_hint'), value: settings.surplus_jita_buy },
+                        { name: 'ore_refine', label: t('manage.buyback.rate_refine'), hint: t('manage.buyback.rate_refine_hint'), value: settings.ore_refine },
+                    ].map((rate) => (
+                        <ManageField label={rate.label} for={`bb-${rate.name}`} hint={rate.hint}>
+                            <div class="[ market-unit-field ]">
+                                <Input id={`bb-${rate.name}`} type="number" name={rate.name} size="sm" min="0" max="100" step="0.1" value={share_to_percent(rate.value)} required />
+                                <span class="[ market-unit ]" aria-hidden="true">%</span>
+                            </div>
+                        </ManageField>
+                    ))}
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+                    {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+                    {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+                </div>
+                {saved && <SectionSummary section_id="bb-rates" text={summaries.rates} />}
             </form>
-        )}
-    </section>
-</div>
+        )
+    : part === 'location'
+        ? (
+            <form
+                class="[ manage-section__body manage-form ]"
+                hx-post={partial_url({ part: 'location' })}
+                hx-target="this"
+                hx-swap="outerHTML"
+            >
+                <div class="[ manage-fields ]">
+                    <EntityPicker
+                        id="bb-location"
+                        kind="location"
+                        name="location_id"
+                        label={t('manage.buyback.location_label')}
+                        hint={t('manage.buyback.location_hint')}
+                        value={settings.location_id ? { id: settings.location_id, name: settings.location_name ?? String(settings.location_id) } : null}
+                    />
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+                    {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+                    {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+                </div>
+                {saved && <SectionSummary section_id="bb-location" text={summaries.location} />}
+            </form>
+        )
+    : part === 'items'
+        ? (
+            <div id="bb-items-body" class="[ manage-section__body manage-form ]">
+                <div class="[ market-items-bar ]">
+                    <ViewChips
+                        id="bb-items-filters"
+                        url={partial_url({ part: 'items' })}
+                        target="bb-items-list"
+                        selected={selected_view}
+                        search_id="bb-items-search"
+                        legend={t('manage.buyback.views')}
+                        views={[
+                            { value: 'all', label: t('manage.buyback.view_all'), count: searched.length },
+                            ...categories
+                                .filter((category) => items.some((candidate) => candidate.category === category))
+                                .map((category) => ({ value: category, label: category_label(category), count: searched.filter((candidate) => candidate.category === category).length })),
+                        ]}
+                    >
+                        <div class="[ manage-toolbar ]">
+                            <ManageSearch id="bb-items-search" value={params.get('q') ?? ''} label={t('manage.buyback.search')} placeholder={t('manage.buyback.search')} />
+                        </div>
+                    </ViewChips>
+                    <form
+                        class="[ market-items-add ]"
+                        hx-post={partial_url({ part: 'items' })}
+                        hx-trigger="change[target.name=='type_id']"
+                        hx-target="#bb-items-body"
+                        hx-select="#bb-items-body"
+                        hx-swap="outerHTML"
+                        hx-include="#bb-items-filters"
+                    >
+                        <input type="hidden" name="action" value="add_item" />
+                        <EntityPicker
+                            id="bb-add-type"
+                            kind="type"
+                            name="type_id"
+                            label={t('manage.buyback.add_label')}
+                            placeholder={t('manage.buyback.add_placeholder')}
+                        />
+                        <ManageField label={t('manage.buyback.add_category')} for="bb-add-category">
+                            <Select id="bb-add-category" name="category" size="sm">
+                                <option value="">{t('manage.buyback.category_auto')}</option>
+                                {categories.map((category) => <option value={category}>{t(t_key('manage.buyback.category_', category))}</option>)}
+                            </Select>
+                        </ManageField>
+                    </form>
+                </div>
+                {saved && <span class="[ manage-saved ]" role="status">{t('manage.buyback.added')}</span>}
+                {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+                <div id="bb-items-list" class="[ manage-list ]" aria-live="polite">
+                    {rows.length === 0
+                        ? <EmptyState title={items.length === 0 ? t('buyback.settings.no_items') : t('manage.buyback.none_in_view')} />
+                        : (
+                            <ManageTable caption={t('manage.buyback.caption')} columns={columns} expandable={false} min_width="36rem">
+                                {rows.map((row) => <BuybackItemRow item={row} />)}
+                            </ManageTable>
+                        )
+                    }
+                    <HtmxPager
+                        page={page}
+                        total_pages={total_pages}
+                        url_for={(to) => partial_url({ part: 'items', page: String(to) })}
+                        request={{ 'hx-target': '#bb-items-list', 'hx-select': '#bb-items-list', 'hx-swap': 'outerHTML', 'hx-include': '#bb-items-filters' }}
+                    />
+                </div>
+                {is_post && <SectionSummary section_id="bb-items" text={summaries.items} />}
+            </div>
+        )
+    : part === 'item'
+        ? (
+            <Fragment>
+                {/* The row goes back inside a <table>; the request picks it with hx-select. */}
+                <table>
+                    {removed_item
+                        ? <BuybackItemRow item={removed_item} removed={true} />
+                        : item && <BuybackItemRow item={item} />}
+                </table>
+                <SectionSummary section_id="bb-items" text={summaries.items} />
+            </Fragment>
+        )
+        : <EmptyState title={t('manage.buyback.not_found')} />
 }

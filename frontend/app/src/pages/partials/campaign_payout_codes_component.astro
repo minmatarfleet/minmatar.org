@@ -1,12 +1,29 @@
 ---
+/**
+ * The payout codes screen (/campaigns/event-codes/): which ESI LP payout
+ * event codes count as complexes or advantage sites.
+ *
+ * part=list    view chips (All, Scoring, Needs attention: Not mapped) and the table (GET)
+ * part=row     a row's detail: what was seen, counts as, label, Scores (GET);
+ *              its Save (POST) re-renders the whole row, opened
+ * part=switch  the row's Scores switch (POST): saves when flipped, re-renders the row
+ */
 import { i18n } from '@helpers/i18n'
-const { t, translatePath, lang } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
-import { get_campaign_payout_codes, set_campaign_payout_code } from '@helpers/api.minmatar.org/campaigns'
+import {
+    get_campaign_payout_codes,
+    set_campaign_payout_code,
+    get_campaign_choices,
+    type CampaignChoices,
+} from '@helpers/api.minmatar.org/campaigns'
 import type { CampaignPayoutCodes } from '@dtypes/api.minmatar.org'
+import { form_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
+import { choice_label, refusal_text } from '@helpers/campaign_manage'
 
 const { auth_token, user } = get_request_user(Astro)
 if (!user || !auth_token) return HTTP_403_Forbidden()
@@ -14,135 +31,228 @@ if (!user || !auth_token) return HTTP_403_Forbidden()
 const gates = await get_gates(Astro)
 if (!can(gates, 'campaigns.manage')) return HTTP_403_Forbidden()
 
-const ROOT_ID = 'campaign-payout-codes'
-const PARTIAL_URL = translatePath('/partials/campaign_payout_codes_component')
+const PAGE_SIZE = 50
+const params = Astro.url.searchParams
+const part = ['list', 'row', 'switch'].includes(params.get('part') ?? '') ? params.get('part') as string : 'list'
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : null
+const field = (name: string) => form ? form_text(form, name) : ''
 
-let flash: { kind: 'success' | 'error', message: string } | null = null
+const VIEWS = ['all', 'scoring', 'unmapped'] as const
+const view = (VIEWS as readonly string[]).includes(params.get('view') ?? '') ? params.get('view') as string : 'all'
+const page = Math.max(1, parseInt(params.get('page') ?? '1') || 1)
+const code_param = parseInt(params.get('code') ?? field('code'))
 
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const event_code = parseInt(String(form.get('event_code') ?? ''))
+const codes_url = (values: Record<string, string>) => translatePath(`/partials/campaign_payout_codes_component/?${query_string(values)}`)
+const LIST_URL = codes_url({ part: 'list' })
+const row_id = (code: number) => `payout-code-${code}`
+
+/** One code, mapped or only seen. `site_kind` is null until someone maps it. */
+interface CodeRow {
+    event_code:     number;
+    site_kind:      string | null;
+    label:          string;
+    confirmed:      boolean;
+    confirmed_by:   string;
+    seen:           number;
+    last_seen:      string | null;
+    sample_lp:      number | null;
+}
+
+let saved = false
+let error_message = ''
+
+if (is_post && Number.isFinite(code_param)) {
     try {
-        if (!Number.isFinite(event_code)) throw new Error(t('campaigns.codes.bad_code'))
-        await set_campaign_payout_code(auth_token, event_code, {
-            site_kind: String(form.get('site_kind') ?? 'unknown'),
-            label: String(form.get('label') ?? ''),
-            confirmed: form.get('confirmed') === 'on',
+        await set_campaign_payout_code(auth_token, code_param, {
+            site_kind: field('site_kind') || 'unknown',
+            label: field('label'),
+            confirmed: field('confirmed') === 'on',
         })
-        flash = { kind: 'success', message: t('campaigns.settings.saved') }
+        saved = true
     } catch (error) {
-        flash = { kind: 'error', message: error.message }
+        error_message = refusal_text(error, t('campaigns.action_failed'))
     }
 }
 
 let data: CampaignPayoutCodes | null = null
+let choices: CampaignChoices | null = null
 let fetch_error: Error | false = false
 try {
-    data = await get_campaign_payout_codes(auth_token)
+    [ data, choices ] = await Promise.all([ get_campaign_payout_codes(auth_token), get_campaign_choices(auth_token) ])
 } catch (error) {
     fetch_error = error
 }
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+const all_rows: CodeRow[] = data
+    ? [
+        ...data.unmapped.map((row) => ({
+            event_code: row.event_code,
+            site_kind: null,
+            label: '',
+            confirmed: false,
+            confirmed_by: '',
+            seen: row.seen,
+            last_seen: row.last_seen,
+            sample_lp: row.sample_amount_lp,
+        })),
+        ...data.codes.map((row) => ({
+            event_code: row.event_code,
+            site_kind: row.site_kind,
+            label: row.label,
+            confirmed: row.confirmed,
+            confirmed_by: row.confirmed_by ?? '',
+            seen: row.seen_30d ?? 0,
+            last_seen: null,
+            sample_lp: null,
+        })),
+    ].sort((a, b) => b.seen - a.seen || a.event_code - b.event_code)
+    : []
+
+const in_view = (row: CodeRow, key: string) =>
+    key === 'all' || (key === 'scoring' ? row.confirmed : row.site_kind === null)
+const rows = all_rows.filter((row) => in_view(row, view))
+const total_pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+const page_rows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+const the_row = all_rows.find((row) => row.event_code === code_param) ?? null
+
+const counts_as = (row: CodeRow) => row.site_kind === null
+    ? choice_label(choices?.site_kind, 'unknown')
+    : row.label || choice_label(choices?.site_kind, row.site_kind)
+
+function seen_text(row: CodeRow): string {
+    if (row.site_kind !== null)
+        return row.seen > 0 ? t('campaigns.manage.code_seen_mapped').replace('~COUNT', row.seen.toLocaleString(lang)) : t('campaigns.manage.code_seen_none')
+    const date = row.last_seen ? new Date(row.last_seen).toLocaleDateString(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' }) : ''
+    const lp = (row.sample_lp ?? 0).toLocaleString(lang)
+    return (row.seen === 1 ? t('campaigns.manage.code_seen_one') : t('campaigns.manage.code_seen_many').replace('~COUNT', row.seen.toLocaleString(lang)))
+        .replace('~LP', lp)
+        .replace('~DATE', date)
+}
+
+const COLUMNS = [
+    { label: t('campaigns.manage.code') },
+    { label: t('campaigns.manage.counts_as'), phone: false },
+    { label: t('campaigns.manage.seen_30d'), align: 'num' as const, sort: 'descending' as const },
+    { label: t('campaigns.manage.scores'), align: 'act' as const },
+]
+const COLSPAN = COLUMNS.length + 1
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
-import EmptyState from '@components/blocks/EmptyState.astro'
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import CodeRowView from '@components/blocks/CampaignPayoutCodeRow.astro'
 ---
 
-<div id={ROOT_ID}>
-    {fetch_error || !data ?
+{fetch_error || !data || !choices ?
+    <div id="payout-codes-root">
         <ErrorRefetch
             args={{
-                partial: PARTIAL_URL,
+                partial: LIST_URL,
                 error: fetch_error || new Error(t('campaigns.action_failed')),
                 delay: 0,
-                target: `#${ROOT_ID}`,
+                target: '#payout-codes-root',
             }}
         />
-        :
-        <Flexblock gap="var(--space-l)">
-            {flash && <p class:list={['[ campaign-codes__flash ]', `is-${flash.kind}`]} role="status">{flash.message}</p>}
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.codes.unmapped')}</h2>
-                    <small>{t('campaigns.codes.unmapped_hint')}</small>
-                    {data.unmapped.length === 0 && <EmptyState title={t('campaigns.codes.no_unmapped')} />}
-                    {data.unmapped.map((row) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="event_code" value={row.event_code} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <strong>{row.event_code}</strong>
-                                <span>{row.seen}x · {row.sample_amount_lp} LP · {new Date(row.last_seen).toLocaleDateString(lang)}</span>
-                                <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
-                                    {data.site_kinds.map((kind) => <option value={kind}>{kind}</option>)}
-                                </Select>
-                                <Input width="14rem" name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
-                                <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" />{t('campaigns.codes.counts')}</label>
-                                <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
-                            </FlexInline>
-                        </form>
-                    )}
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.codes.mapped')}</h2>
-                    {data.codes.map((row) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="event_code" value={row.event_code} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <strong>{row.event_code}</strong>
-                                <span>{row.seen_30d}x</span>
-                                <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
-                                    {data.site_kinds.map((kind) => <option value={kind} selected={kind === row.site_kind}>{kind}</option>)}
-                                </Select>
-                                <Input width="14rem" name="label" value={row.label} aria-label={t('campaigns.codes.label')} maxlength="64" />
-                                <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" checked={row.confirmed} />{t('campaigns.codes.counts')}</label>
-                                <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.save')}</Button>
-                            </FlexInline>
-                        </form>
-                    )}
-                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input width="12rem" type="number" name="event_code" placeholder={t('campaigns.codes.event_code')} aria-label={t('campaigns.codes.event_code')} required />
-                            <Select name="site_kind" size="sm" width="auto" aria-label={t('campaigns.codes.site_kind')}>
-                                {data.site_kinds.map((kind) => <option value={kind}>{kind}</option>)}
-                            </Select>
-                            <Input width="14rem" name="label" placeholder={t('campaigns.codes.label')} aria-label={t('campaigns.codes.label')} maxlength="64" />
-                            <label class="[ campaign-codes__counts ]"><input type="checkbox" name="confirmed" />{t('campaigns.codes.counts')}</label>
-                            <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
-                        </FlexInline>
-                    </form>
-                </Flexblock>
-            </ComponentBlock>
-        </Flexblock>
-    }
-</div>
-
-<style lang="scss">
-    h2 {
-        margin-block: 0;
-        font-size: var(--step-1);
-    }
-
-    .campaign-codes__counts {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-    }
-
-    .campaign-codes__flash {
-        margin: 0;
-        padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--border-color);
-
-        &.is-success { border-color: var(--green); }
-        &.is-error { border-color: var(--fleet-red); }
-    }
-</style>
+    </div>
+    :
+    part === 'list' ?
+        <div id="payout-codes-root" class="[ manage-list ]">
+            <ViewChips
+                id="payout-codes-filters"
+                url={LIST_URL}
+                target="payout-codes-list"
+                selected={view}
+                legend={t('campaigns.manage.codes_views')}
+                views={[
+                    { value: 'all', label: t('campaigns.manage.codes_all'), count: all_rows.length },
+                    { value: 'scoring', label: t('campaigns.manage.codes_scoring'), count: all_rows.filter((row) => in_view(row, 'scoring')).length },
+                ]}
+                attention={[
+                    { value: 'unmapped', label: t('campaigns.manage.codes_unmapped'), count: all_rows.filter((row) => in_view(row, 'unmapped')).length, tone: 'warn' },
+                ]}
+            />
+            <div id="payout-codes-list" class="[ manage-list ]" aria-live="polite">
+                {page_rows.length === 0
+                    ? <EmptyState title={t('campaigns.manage.codes_empty')} />
+                    : (
+                        <ManageTable caption={t('campaigns.manage.codes_caption')} columns={COLUMNS} min_width="32rem">
+                            {page_rows.map((row) => (
+                                <CodeRowView
+                                    row={row}
+                                    colspan={COLSPAN}
+                                    counts_as={counts_as(row)}
+                                    row_url={codes_url({ part: 'row', code: String(row.event_code) })}
+                                    switch_url={codes_url({ part: 'switch', code: String(row.event_code) })}
+                                />
+                            ))}
+                        </ManageTable>
+                    )
+                }
+                <HtmxPager
+                    page={page}
+                    total_pages={total_pages}
+                    url_for={(to) => codes_url({ part: 'list', view, page: String(to) })}
+                    request={{ 'hx-target': '#payout-codes-list', 'hx-select': '#payout-codes-list', 'hx-swap': 'outerHTML', 'hx-include': '#payout-codes-filters' }}
+                />
+            </div>
+        </div>
+    : !the_row ?
+        <EmptyState title={t('campaigns.manage.codes_empty')} />
+    : part === 'row' && !is_post ?
+        <form
+            class="[ manage-form ]"
+            hx-post={codes_url({ part: 'row', code: String(the_row.event_code) })}
+            hx-target={`#${row_id(the_row.event_code)}`}
+            hx-select={`#${row_id(the_row.event_code)}`}
+            hx-swap="outerHTML"
+        >
+            <p class:list={[the_row.site_kind === null ? 'manage-warn' : 'manage-muted']}>{seen_text(the_row)}</p>
+            <div class="[ manage-fields ]">
+                <ManageField label={t('campaigns.manage.counts_as')} for={`code-${the_row.event_code}-kind`}>
+                    <Select id={`code-${the_row.event_code}-kind`} size="sm" name="site_kind">
+                        {choices.site_kind.map((choice) => (
+                            <option value={choice.value} selected={choice.value === (the_row.site_kind ?? 'complex')}>{choice.label}</option>
+                        ))}
+                    </Select>
+                </ManageField>
+                <ManageField label={t('campaigns.manage.code_label')} for={`code-${the_row.event_code}-label`}>
+                    <Input id={`code-${the_row.event_code}-label`} size="sm" name="label" value={the_row.label} maxlength="64" placeholder={t('campaigns.manage.code_label_hint')} />
+                </ManageField>
+                <div class="[ manage-field ]">
+                    <span class="[ manage-field__label ]">{t('campaigns.manage.scores')}</span>
+                    <ManageSwitch name="confirmed" label={t('campaigns.manage.scores_hint')} checked={the_row.site_kind === null ? true : the_row.confirmed} />
+                </div>
+            </div>
+            {the_row.confirmed && the_row.confirmed_by &&
+                <p class="[ manage-muted ]">{t('campaigns.manage.code_confirmed_by').replace('~NAME', the_row.confirmed_by)}</p>
+            }
+            <div class="[ manage-actions ]">
+                <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
+                <Button type="button" color="transparent" size="sm" x-on:click="open = false">{t('campaigns.manage.cancel')}</Button>
+            </div>
+        </form>
+    :
+        // A saved row goes back inside a <table> and the request picks it with
+        // hx-select: htmx drops a bare <tbody> after Astro's leading <style>.
+        <table>
+            <CodeRowView
+                row={the_row}
+                colspan={COLSPAN}
+                counts_as={counts_as(the_row)}
+                row_url={codes_url({ part: 'row', code: String(the_row.event_code) })}
+                switch_url={codes_url({ part: 'switch', code: String(the_row.event_code) })}
+                open={part === 'row'}
+                saved={saved}
+                error={error_message}
+            />
+        </table>
+}

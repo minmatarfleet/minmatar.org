@@ -1,0 +1,42 @@
+---
+/**
+ * One number per card, as the corp About tab's vitals ("Pilots 107"): a
+ * Norwester eyebrow, the big number, one line under it. With `href` the
+ * whole card links to where the number is worked on. `tone="warn"` colours
+ * the number orange for a problem (failing feeds). Lay several out in
+ * <div class="manage-stats">.
+ *
+ *   <ManageStatCard label={t('...reddit_posts')} value={2} detail="Oldest 1 d · Rattini Tribe" href="/alliance/reddit-review/" />
+ */
+interface Props {
+    label:      string;
+    value:      number | string;
+    detail?:    string;
+    href?:      string;
+    tone?:      'warn';
+    [propName: string]: any;
+}
+
+const {
+    label,
+    value,
+    detail,
+    href,
+    tone,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const Element = href ? 'a' : 'div'
+---
+
+<Element
+    href={href}
+    class:list={['[ manage-stat ]', { 'is-warn': tone === 'warn' }, Astro.props.class]}
+    {...attributes}
+>
+    <span class="[ manage-stat__label ]">{label}</span>
+    <span class="[ manage-stat__value ]">{value}</span>
+    {detail && <span class="[ manage-stat__detail ]">{detail}</span>}
+</Element>

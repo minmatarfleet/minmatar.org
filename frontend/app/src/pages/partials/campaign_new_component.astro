@@ -1,0 +1,74 @@
+---
+/**
+ * POST: create a draft campaign from CampaignNewForm. Success sends the
+ * browser (HX-Redirect) to the new campaign's Settings tab; a refusal swaps
+ * the form back with the error next to the field it is about.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { create_campaign, get_campaign_choices, type CampaignChoice } from '@helpers/api.minmatar.org/campaigns'
+import { form_text } from '@helpers/manage_forms'
+import { slug_from_name, refusal_text, type CampaignNewValues, type CampaignNewErrors } from '@helpers/campaign_manage'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user || !auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'campaigns.create')) return HTTP_403_Forbidden()
+
+const in_dialog = Astro.url.searchParams.get('dialog') === '1'
+
+let kinds: CampaignChoice[] = []
+let values: CampaignNewValues | null = null
+const errors: CampaignNewErrors = {}
+
+try {
+    kinds = (await get_campaign_choices(auth_token)).kind
+} catch (error) {
+    errors.form = refusal_text(error, t('campaigns.action_failed'))
+}
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const ids = form.getAll('system_id').map(String)
+    const names = form.getAll('system_name').map(String)
+    const name = form_text(form, 'name')
+    values = {
+        name,
+        slug: form_text(form, 'slug') || slug_from_name(name),
+        kind: form_text(form, 'kind') === 'strategic' ? 'strategic' : 'faction_warfare',
+        start_at: form_text(form, 'start_at'),
+        end_at: form_text(form, 'end_at'),
+        systems: ids.map((id, index) => ({ id, name: names[index] ?? id })),
+    }
+    try {
+        const created = await create_campaign(auth_token, {
+            name: values.name,
+            slug: values.slug,
+            short_code: '',
+            kind: values.kind as 'faction_warfare' | 'strategic',
+            start_at: values.start_at,
+            end_at: values.end_at,
+            system_ids: ids.map((id) => parseInt(id)).filter(Number.isFinite),
+        })
+        return new Response(null, {
+            status: 200,
+            headers: { 'HX-Redirect': `${translatePath(`/campaigns/${created.slug}/`)}#settings` },
+        })
+    } catch (error) {
+        const message = refusal_text(error, t('campaigns.action_failed'))
+        if (/warzone/i.test(message)) errors.systems = message
+        else if (/slug/i.test(message)) errors.slug = message
+        else errors.form = message
+    }
+}
+
+import CampaignNewForm from '@components/blocks/CampaignNewForm.astro'
+---
+
+{/* no-error-refetch: a refused or failed create renders inline in the form. */}
+<CampaignNewForm kinds={kinds} values={values} errors={errors} in_dialog={in_dialog} show_title={in_dialog} />

@@ -1,0 +1,60 @@
+---
+/**
+ * A status word with a dot before it, as the creators and guides tables
+ * show it: green and filled for a good state, a hollow dot for a quiet one
+ * (draft), orange for one that needs attention.
+ *
+ *   <ManageStatusDot tone="good" text={t('...published')} />
+ */
+interface Props {
+    text:       string;
+    tone?:      'good' | 'quiet' | 'warn';
+    id?:        string;
+    [propName: string]: any;
+}
+
+const {
+    text,
+    tone = 'quiet',
+    id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<span id={id} class:list={['[ manage-status-dot ]', `is-${tone}`, Astro.props.class]} {...attributes}>{text}</span>
+
+<style lang="scss">
+    .manage-status-dot {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        white-space: nowrap;
+
+        &::before {
+            content: '';
+            flex: 0 0 auto;
+            width: 0.5em;
+            height: 0.5em;
+            border-radius: 50%;
+            border: 1px solid currentColor;
+        }
+
+        &.is-good {
+            color: var(--manage_good);
+
+            &::before {
+                background-color: currentColor;
+            }
+        }
+
+        &.is-warn {
+            color: var(--manage_warn);
+
+            &::before {
+                background-color: currentColor;
+            }
+        }
+    }
+</style>

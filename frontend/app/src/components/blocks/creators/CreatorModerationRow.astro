@@ -1,0 +1,78 @@
+---
+/**
+ * One creator in the moderation table: portrait, name and handle, source,
+ * item and featured counts, and a status dot. It opens in place on the
+ * creator's items (creators_moderation_component part=items). The partial
+ * also answers a status change with this row inside a <table>.
+ */
+import type { CreatorModerationAccountRow } from '@helpers/api.minmatar.org/creators_moderation'
+
+interface Props {
+    account:    CreatorModerationAccountRow;
+    open?:      boolean;
+    [propName: string]: any;
+}
+
+const {
+    account,
+    open = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_player_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
+import { creator_name, creator_handle, CREATOR_COLUMNS } from '@helpers/creators_moderation'
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageStatusDot from '@components/blocks/manage/ManageStatusDot.astro'
+
+const name = creator_name(account)
+const items_url = translatePath(`/partials/creators_moderation_component/?${query_string({ part: 'items', account: String(account.id) })}`)
+---
+
+<ExpandRow
+    id={`creator-${account.id}`}
+    colspan={CREATOR_COLUMNS + 1}
+    label={t('creators_manage.open').replace('~NAME', name)}
+    url={items_url}
+    open={open}
+    dim={account.status === 'suspended'}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            {account.character_id
+                ? <img src={get_player_icon(account.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                : <span class="[ creator-row__blank ]" aria-hidden="true"></span>
+            }
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{name}</span>
+                <span class="[ manage-who__sub ]">{creator_handle(account, t(t_key('creators_manage.channel_', account.provider)))}</span>
+            </span>
+        </button>
+    </td>
+    <td class="[ is-wide ]">{t(t_key('creators_manage.provider_', account.provider))}</td>
+    <td class="[ num is-wide ]">{account.item_count}</td>
+    <td class="[ num is-wide ]"><span id={`creator-${account.id}-featured-count`}>{account.featured_count}</span></td>
+    <td>
+        <ManageStatusDot
+            tone={account.status === 'approved' ? 'good' : 'warn'}
+            text={t(t_key('creators_moderation.status_', account.status))}
+        />
+    </td>
+</ExpandRow>
+
+<style lang="scss">
+    .creator-row__blank {
+        flex: 0 0 auto;
+        width: var(--space-l);
+        height: var(--space-l);
+        background-color: var(--surface-sunken);
+    }
+</style>

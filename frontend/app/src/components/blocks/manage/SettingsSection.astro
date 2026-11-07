@@ -1,0 +1,99 @@
+---
+/**
+ * One collapsible group of settings, as the corp Settings tab draws them:
+ * a Norwester title, a live summary of the current value, and a body that
+ * loads its own partial. Closed by default.
+ *
+ * - `url`: the body partial. It replaces the loading line (outerHTML), so it
+ *   returns the whole body with class "manage-section__body" on its root,
+ *   typically a form that posts back to itself and swaps only itself.
+ *   `load` = 'reveal' (default) fetches when the section scrolls into view,
+ *   so the summary fills in on a closed section; 'open' waits for the
+ *   first open.
+ * - Summary: the span `#${section_summary_id(id)}`. Pass the current value
+ *   as `summary`, or let the partial fill it: after a save the partial
+ *   renders <SectionSummary section_id={id} text="..." />, an hx-swap-oob
+ *   span that replaces it.
+ * - `switch` slot: one ManageSwitch in the header (pass `hide_label`; the
+ *   title names it). It sits outside the toggle, so flipping it saves
+ *   without opening the section. A section with a switch and no `url` or
+ *   body is a header only, with no chevron.
+ * - Default slot: a static body instead of `url`.
+ *
+ *   <SettingsSection id="hub-sync" title={t('...sync')} summary={t('on')}>
+ *       <ManageSwitch slot="switch" hide_label name="sync" label={t('...sync')} checked hx-post={url} hx-trigger="change" hx-swap="none" />
+ *   </SettingsSection>
+ *   <SettingsSection id="hub-stock" title={t('...stock')} url={translatePath('/partials/hub_stock_component/?hub=1')} />
+ */
+interface Props {
+    /** Stable id: the section's DOM id and the base of its summary id. */
+    id:         string;
+    title:      string;
+    summary?:   string;
+    url?:       string;
+    load?:      'reveal' | 'open';
+    expanded?:  boolean;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    title,
+    summary = '',
+    url,
+    load = 'reveal',
+    expanded = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { section_summary_id } from '@helpers/manage'
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
+
+const has_switch = Astro.slots.has('switch')
+const has_body = Boolean(url) || Astro.slots.has('default')
+const lazy = url
+    ? {
+        'hx-get': url,
+        // `find button` is the section's toggle, the first button inside it.
+        'hx-trigger': load === 'open' ? 'click once from:find button' : 'intersect once',
+        'hx-target': 'find .manage-section__loading',
+        'hx-swap': 'outerHTML',
+        'hx-disinherit': '*',
+    }
+    : {}
+---
+
+<section
+    id={id}
+    class:list={['[ manage-section ]', { 'has-switch': has_switch, 'is-static': !has_body }, Astro.props.class]}
+    {...lazy}
+    {...attributes}
+>
+    {has_body ?
+        <CollapsibleBlock id={`${id}-block`} padding_inline="0" expanded={expanded}>
+            <span slot="head" class="[ manage-section__head ]">
+                <span class="[ manage-section__title ]">{title}</span>
+                <span id={section_summary_id(id)} class="[ manage-section__summary ]">{summary}</span>
+            </span>
+            {url
+                ? <p class="[ manage-section__loading ]">{t('loading')}</p>
+                : <div class="[ manage-section__body ]"><slot /></div>
+            }
+        </CollapsibleBlock>
+        :
+        <span class="[ manage-section__head ]">
+            <span class="[ manage-section__title ]">{title}</span>
+            <span id={section_summary_id(id)} class="[ manage-section__summary ]">{summary}</span>
+        </span>
+    }
+    {has_switch &&
+        <div class="[ manage-section__switch ]">
+            <slot name="switch" />
+        </div>
+    }
+</section>

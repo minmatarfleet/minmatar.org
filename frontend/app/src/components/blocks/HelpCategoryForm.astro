@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { HelpCategory, HelpSettings } from '@dtypes/api.minmatar.org'
+
+/**
+ * An open help option row: title, menu section and owning tribe group, with
+ * Save, and Move up / Move down (the keyboard way to reorder; the table also
+ * drags). Saving swaps only the row (hx-select); moving swaps the options.
+ */
+interface Props {
+    category:           HelpCategory;
+    settings:           HelpSettings;
+    saved?:             boolean;
+    error?:             string | null;
+    [propName: string]: any;
+}
+
+const { category, settings, saved = false, error = null } = Astro.props
+
+const PARTIAL_URL = translatePath('/partials/help_tickets_settings_component')
+const row_id = `help-option-${category.id}`
+const ids = settings.categories.map(other => other.id)
+const position = ids.indexOf(category.id)
+const groups = settings.tribe_groups.filter(group => !group.taken || group.id === category.tribe_group_id)
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import Select from '@components/blocks/Select.astro'
+---
+
+<div class="[ manage-form ]">
+<form
+    id={`${row_id}-form`}
+    class="[ manage-form ]"
+    hx-post={PARTIAL_URL}
+    hx-target={`#${row_id}`}
+    hx-select={`#${row_id}`}
+    hx-swap="outerHTML"
+>
+    <input type="hidden" name="action" value="update" />
+    <input type="hidden" name="category_id" value={category.id} />
+    <div class="[ manage-fields ]">
+        <ManageField label={t('help_settings.field.title')} for={`${row_id}-title`}>
+            <Input id={`${row_id}-title`} type="text" name="title" size="sm" required maxlength="100" value={category.title} />
+        </ManageField>
+        <ManageField label={t('help_settings.field.section')} for={`${row_id}-section`} hint={t('admin_content.help.section_hint')}>
+            <Input id={`${row_id}-section`} type="text" name="section" size="sm" maxlength="128" value={category.section} />
+        </ManageField>
+        <ManageField label={t('help_settings.field.owner')} for={`${row_id}-owner`} hint={t('admin_content.help.owner_hint')}>
+            <Select id={`${row_id}-owner`} name="tribe_group_id" size="sm">
+                <option value="" selected={category.tribe_group_id === null}>{t('admin_content.help.nobody')}</option>
+                {groups.map(group =>
+                    <option value={String(group.id)} selected={group.id === category.tribe_group_id}>{group.tribe_name} · {group.name}</option>
+                )}
+            </Select>
+        </ManageField>
+    </div>
+</form>
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm" form={`${row_id}-form`}>{t('manage.kit.save')}</Button>
+        {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+        <span class="[ manage-actions__end help-option__move ]">
+            <Button
+                type="button" size="sm" color="transparent" disabled={position <= 0}
+                hx-post={PARTIAL_URL} hx-vals={JSON.stringify({ action: 'move', category_id: category.id, direction: 'up' })}
+                hx-target="#help-options-body" hx-select="#help-options-body" hx-swap="outerHTML"
+            >{t('help_settings.move_up')}</Button>
+            <Button
+                type="button" size="sm" color="transparent" disabled={position < 0 || position >= ids.length - 1}
+                hx-post={PARTIAL_URL} hx-vals={JSON.stringify({ action: 'move', category_id: category.id, direction: 'down' })}
+                hx-target="#help-options-body" hx-select="#help-options-body" hx-swap="outerHTML"
+            >{t('help_settings.move_down')}</Button>
+        </span>
+    </div>
+</div>

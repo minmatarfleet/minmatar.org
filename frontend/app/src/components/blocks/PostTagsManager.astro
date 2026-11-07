@@ -2,73 +2,180 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { PostTag } from '@dtypes/api.minmatar.org'
+import type { PostTagCount } from '@dtypes/api.minmatar.org'
+import type { ManageColumn } from '@dtypes/layout_components'
 
-/** Create, rename and merge post tags. post_tags_component saves and answers with this panel again. */
+/**
+ * Post tags with their post counts, most used first. A row renames in
+ * place; "Merge..." confirms with the consequence in post counts. The
+ * hero's "Add tag" dialog posts here too. post_tags_component saves and
+ * answers with this panel; a rename swaps only its row (hx-select).
+ */
 interface Props {
-    tags:               PostTag[];
+    tags:               PostTagCount[];
+    /** The row a rename just saved (shows "Saved"). */
+    saved_id?:          number | null;
+    /** A failed rename: its row opens again with the message. */
+    row_error?:         { tag_id: number, message: string, value: string } | null;
     error?:             string | null;
     notice?:            string | null;
     [propName: string]: any;
 }
 
-const { tags, error = null, notice = null } = Astro.props
+const { tags, saved_id = null, row_error = null, error = null, notice = null } = Astro.props
 
 const PARTIAL_URL = translatePath('/partials/post_tags_component')
 
+const COLUMNS: ManageColumn[] = [
+    { label: t('admin_content.tags.tag') },
+    { label: t('admin_content.tags.posts'), align: 'num', sort: 'descending' },
+    { label: t('admin_content.tags.actions'), align: 'act', hidden: true },
+]
+
+const posts_text = (count: number) => count === 1 ? t('admin_content.tags.posts_one') : t('admin_content.tags.posts_many').replace('~COUNT', String(count))
+
 import Button from '@components/blocks/Button.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Input from '@components/blocks/Input.astro'
-import ManagePanel from '@components/blocks/ManagePanel.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import Select from '@components/blocks/Select.astro'
 ---
 
-<ManagePanel id="post-tags-manager">
-    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
-    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
-
-    <form class="[ manage-panel__form ]" hx-post={PARTIAL_URL} hx-target="#post-tags-manager" hx-swap="outerHTML" hx-disabled-elt="find button">
-        <input type="hidden" name="action" value="create" />
-        <label class="[ manage-panel__field ]">
-            <span>{t('post_tags.manage.new')}</span>
-            <Input type="text" name="tag" size="sm" required maxlength="100" autocomplete="off" />
-        </label>
-        <Button type="submit" size="sm">{t('post_tags.manage.add')}</Button>
-    </form>
+<section id="post-tags-manager" class="[ manage-list ]" aria-live="polite">
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-saved ]" role="status">{notice}</p>}
 
     {tags.length === 0 ?
-        <EmptyState title={t('post_tags.manage.empty')} />
+        <EmptyState title={t('post_tags.manage.empty')} hint={t('admin_content.tags.empty_hint')} />
         :
-        <ul class="[ manage-panel__rows ]" role="list">
-            {tags.map(tag =>
-                <li class="[ manage-panel__row ]">
-                    <form class="[ manage-panel__form ]" hx-post={PARTIAL_URL} hx-target="#post-tags-manager" hx-swap="outerHTML" hx-disabled-elt="find button">
-                        <input type="hidden" name="action" value="rename" />
-                        <input type="hidden" name="tag_id" value={tag.tag_id} />
-                        <label class="[ manage-panel__field ]">
-                            <span class="[ visually-hidden ]">{t('post_tags.manage.rename')}</span>
-                            <Input type="text" name="tag" size="sm" required maxlength="100" value={tag.tag} autocomplete="off" />
-                        </label>
-                        <Button type="submit" size="sm" color="transparent">{t('post_tags.manage.rename')}</Button>
-                    </form>
-                    {tags.length > 1 &&
-                        <form class="[ manage-panel__form ]" hx-post={PARTIAL_URL} hx-target="#post-tags-manager" hx-swap="outerHTML" hx-disabled-elt="find button">
-                            <input type="hidden" name="action" value="merge" />
-                            <input type="hidden" name="tag_id" value={tag.tag_id} />
-                            <label class="[ manage-panel__field ]">
-                                <span class="[ visually-hidden ]">{t('post_tags.manage.merge_into')}</span>
-                                <Select name="into_tag_id" size="sm" required>
-                                    <option value="" selected>{t('post_tags.manage.merge_into')}</option>
-                                    {tags.filter(other => other.tag_id !== tag.tag_id).map(other =>
-                                        <option value={String(other.tag_id)}>{other.tag}</option>
-                                    )}
-                                </Select>
-                            </label>
-                            <Button type="submit" size="sm" color="transparent">{t('post_tags.manage.merge')}</Button>
-                        </form>
-                    }
-                </li>
-            )}
-        </ul>
+        <ManageTable caption={t('post_tags.manage.page_title')} columns={COLUMNS} expandable={false} min_width="20rem">
+            {tags.map(tag => {
+                const others = tags.filter(other => other.tag_id !== tag.tag_id)
+                const default_into = others[0]
+                const failed = row_error?.tag_id === tag.tag_id ? row_error : null
+                const row_id = `tag-row-${tag.tag_id}`
+                return (
+                    <tbody id={row_id} x-data={`{ editing: ${failed ? 'true' : 'false'} }`}>
+                        <tr class="[ manage-row ]">
+                            <td>
+                                <button type="button" class="[ manage-who ]" x-on:click="editing = !editing; if (editing) $nextTick(() => $refs.name.focus())" x-bind:aria-expanded="editing" aria-expanded={failed ? 'true' : 'false'}>
+                                    <span class="[ manage-who__text ]">
+                                        <span class="[ manage-who__name ]">{tag.tag}</span>
+                                    </span>
+                                </button>
+                            </td>
+                            <td class="[ num ]">
+                                {tag.post_count}
+                                {saved_id === tag.tag_id && <span class="[ manage-saved post-tags__saved ]">{t('manage.kit.saved')}</span>}
+                            </td>
+                            <td class="[ act ]">
+                                <div class="[ post-tags__actions ]">
+                                    <Button type="button" size="sm" color="transparent" class="[ post-tags__rename-button ]" x-show="!editing" x-on:click="editing = true; $nextTick(() => $refs.name.focus())">
+                                        {t('post_tags.manage.rename')}
+                                    </Button>
+                                    {default_into &&
+                                        <ConfirmAction
+                                            label={t('admin_content.tags.merge')}
+                                            title={t('admin_content.tags.merge_title').replace('~NAME', tag.tag)}
+                                            consequence=""
+                                            confirm_label={tag.post_count > 0 ? t('admin_content.tags.merge_confirm').replace('~POSTS', posts_text(tag.post_count)) : t('post_tags.manage.merge')}
+                                            url={PARTIAL_URL}
+                                            vals={{ action: 'merge', tag_id: tag.tag_id }}
+                                            target="#post-tags-manager"
+                                            select="#post-tags-manager"
+                                        >
+                                            <ManageField slot="fields" label={t('admin_content.tags.into')} for={`${row_id}-into`}>
+                                                <Select
+                                                    id={`${row_id}-into`}
+                                                    name="into_tag_id"
+                                                    required
+                                                    hx-get={`${PARTIAL_URL}?part=preview&tag_id=${tag.tag_id}`}
+                                                    hx-trigger="change"
+                                                    hx-target={`#${row_id}-consequence`}
+                                                    hx-select="[data-merge-consequence]"
+                                                    hx-swap="innerHTML"
+                                                >
+                                                    {others.map(other =>
+                                                        <option value={String(other.tag_id)} selected={other.tag_id === default_into.tag_id}>{other.tag}</option>
+                                                    )}
+                                                </Select>
+                                            </ManageField>
+                                            <span
+                                                slot="consequence"
+                                                id={`${row_id}-consequence`}
+                                                hx-get={`${PARTIAL_URL}?part=preview&tag_id=${tag.tag_id}&into_tag_id=${default_into.tag_id}`}
+                                                hx-trigger="merge-preview"
+                                                hx-target="this"
+                                                hx-select="[data-merge-consequence]"
+                                                hx-swap="innerHTML"
+                                                x-init="$watch('button_dialog_open', (open) => { if (open && !$el.dataset.asked) { $el.dataset.asked = '1'; htmx.trigger($el, 'merge-preview') } })"
+                                            >
+                                                {t('loading')}
+                                            </span>
+                                        </ConfirmAction>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="[ manage-detail ]" x-show="editing" x-cloak={failed ? undefined : true}>
+                            <td colspan="3">
+                                <div class="[ manage-detail__body ]">
+                                        <form
+                                            class="[ post-tags__rename ]"
+                                                                                hx-post={PARTIAL_URL}
+                                            hx-target={`#${row_id}`}
+                                            hx-select={`#${row_id}`}
+                                            hx-swap="outerHTML"
+                                            hx-disabled-elt="find button"
+                                        >
+                                            <input type="hidden" name="action" value="rename" />
+                                            <input type="hidden" name="tag_id" value={tag.tag_id} />
+                                                                                <ManageField label={t('admin_content.tags.rename_label').replace('~NAME', tag.tag)} for={`${row_id}-name`} error={failed?.message}>
+                                                <Input id={`${row_id}-name`} type="text" name="tag" size="sm" required maxlength="100" value={failed ? failed.value : tag.tag} autocomplete="off" x-ref="name" />
+                                            </ManageField>
+                                            <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+                                            <Button type="button" size="sm" color="transparent" x-on:click="editing = false">{t('cancel')}</Button>
+                                        </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                )
+            })}
+        </ManageTable>
     }
-</ManagePanel>
+</section>
+
+<style lang="scss" is:global>
+    .post-tags__rename {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: var(--space-2xs) var(--space-xs);
+
+        .manage-field {
+            flex: 1 1 16rem;
+            max-width: 28rem;
+        }
+    }
+
+    .post-tags__actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+    }
+
+    // On a phone the name opens the rename (as on desktop); the button goes for room.
+    @media (max-width: 48rem) {
+        .post-tags__rename-button {
+            display: none !important;
+        }
+    }
+
+    .post-tags__saved {
+        margin-inline-start: var(--space-2xs);
+    }
+</style>

@@ -3251,6 +3251,8 @@ export type NpsiEventPreview = ApiResponse<'NpsiEventPreview'>
 export type HelpCategory = ApiResponse<'HelpCategoryResponse'>
 export type HelpSettings = ApiResponse<'HelpSettingsResponse'>
 export type HelpPanel = ApiResponse<'HelpPanelResponse'>
+export type PostTagCount = ApiResponse<'EveTagCountResponse'>
+export type PostTagMergePreview = ApiResponse<'EveTagMergePreview'>
 export type HelpCategoryCreate = ApiRequest<'HelpCategoryCreate'>
 export type HelpCategoryPatch = ApiRequest<'HelpCategoryPatch'>
 // Settings editors (admin -> app migration)
@@ -3284,3 +3286,14 @@ export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
 export type CampaignPayoutCodes = ApiResponse<'PayoutCodesOut'>
 export type CampaignPayoutCode = ApiResponse<'PayoutCodeOut'>
 export type CampaignPayoutCodePut = ApiRequest<'PayoutCodeRequest'>
+
+// Manage hub (/api/manage)
+export type ManageSummary = ApiResponse<'ManageSummaryResponse'>
+export type ManageQueue = ApiResponse<'ManageQueueResponse'>
+export type ManageScreen = ApiResponse<'ManageScreenResponse'>
+export type ManageEntityMatch = ApiResponse<'ManageEntityMatchResponse'>
+
+/** GET /api/campaigns/choices: each choice list with its backend `TextChoices` labels. */
+export type CampaignChoices = ApiResponse<'CampaignChoicesOut'>
+/** One stored campaign choice and its label. */
+export type CampaignChoice = CampaignChoices['status'][number]

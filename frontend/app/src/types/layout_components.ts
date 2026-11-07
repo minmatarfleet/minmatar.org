@@ -1107,3 +1107,38 @@ export interface BattlePilotRow {
     /** The other hulls they flew, shown as icons after the ship name. */
     extras:             { type_id: number, title: string, lost: boolean, killmail_id: number | null }[];
 }
+
+// Manage screens kit (components/blocks/manage)
+
+/** A ViewChips filter chip: one value of the list's view param. */
+export interface ManageViewChip {
+    value:      string;
+    label:      string;
+    count?:     number;
+}
+
+/** A chip in ViewChips' "Needs attention" group. */
+export interface ManageAttentionChip extends ManageViewChip {
+    /** warn: a problem (orange); good: ready to act on (green). */
+    tone?:      'warn' | 'good';
+}
+
+/** A ManageTable column header. */
+export interface ManageColumn {
+    label:      string;
+    /** num: right-aligned numbers; act: a narrow actions column. */
+    align?:     'start' | 'num' | 'act';
+    /** false hides the column at phone width (≤48rem). Give its cells class "is-wide" too. */
+    phone?:     boolean;
+    /** The sorted column's direction (aria-sort). */
+    sort?:      'ascending' | 'descending';
+    /** Visually hidden header text (a checkbox column). */
+    hidden?:    boolean;
+}
+
+/** The entity an EntityPicker starts with (from the row being edited). */
+export interface ManageEntityValue {
+    id:         string | number;
+    name:       string;
+    icon_url?:  string | null;
+}

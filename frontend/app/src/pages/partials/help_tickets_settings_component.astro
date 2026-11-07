@@ -1,14 +1,18 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 
-// no-error-refetch: a settings save; a failed save shows in the panel it swaps back.
-// POST adds, edits, turns off, moves a category or sets the panel channel,
-// then answers with the settings panel. GET just renders it.
+// The help ticket settings sections on /alliance/help-tickets/.
+// GET ?part=panel   the Panel section body (channel picker)
+// GET ?part=options the Options section body (default; also the retry)
+// GET ?part=edit&id an option row's open form
+// POST runs one action and answers with that body; option saves add the
+// section summary and the Discord preview out of band. A failed add (the
+// hero dialog) answers 400 with the message, which the dialog shows.
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
@@ -24,34 +28,51 @@ import {
     update_help_panel,
 } from '@helpers/api.minmatar.org/help_tickets'
 
+const is_post = Astro.request.method === 'POST'
+const params = Astro.url.searchParams
+const form = is_post ? await Astro.request.formData() : new FormData()
+const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
+const action = text('action')
+const category_id = parseInt(is_post ? text('category_id') : (params.get('id') ?? ''))
+const part = is_post ? (action === 'panel' ? 'panel' : 'options') : (params.get('part') ?? 'options')
+
+const failed = (message: string) => new Response(message, { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+
 let error: string | null = null
 let notice: string | null = null
-let settings: HelpSettings | null = null
+let row_error: string | null = null
+let saved = false
+let open_id: number | null = null
 
 try {
-    if (Astro.request.method === 'POST') {
-        const form = await Astro.request.formData()
-        const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
-        const category_id = parseInt(text('category_id'))
+    if (is_post) {
         const owner = text('tribe_group_id')
-        const action = text('action')
-
         if (action === 'create') {
-            await create_help_category(auth_token, {
-                title: text('title'),
-                ...(owner ? { tribe_group_id: parseInt(owner) } : {}),
-            })
+            try {
+                await create_help_category(auth_token, {
+                    title: text('title'),
+                    ...(owner ? { tribe_group_id: parseInt(owner) } : {}),
+                })
+            } catch (failure) {
+                if ((failure as Error).cause === 403) throw failure
+                return failed((failure as Error).message)
+            }
             notice = t('help_settings.added')
         } else if (action === 'update' && category_id) {
-            await update_help_category(auth_token, category_id, {
-                title: text('title'),
-                section: text('section'),
-                tribe_group_id: owner ? parseInt(owner) : null,
-            })
-            notice = t('help_settings.saved')
+            open_id = category_id
+            try {
+                await update_help_category(auth_token, category_id, {
+                    title: text('title'),
+                    section: text('section'),
+                    tribe_group_id: owner ? parseInt(owner) : null,
+                })
+                saved = true
+            } catch (failure) {
+                if ((failure as Error).cause === 403) throw failure
+                row_error = (failure as Error).message
+            }
         } else if (action === 'toggle' && category_id) {
-            await update_help_category(auth_token, category_id, { is_active: text('is_active') === 'true' })
-            notice = t('help_settings.saved')
+            await update_help_category(auth_token, category_id, { is_active: form.has('is_active') })
         } else if (action === 'move' && category_id) {
             const current = await get_help_settings(auth_token)
             const ids = current.categories.map(category => category.id)
@@ -61,10 +82,17 @@ try {
                 ;[ids[from], ids[to]] = [ids[to], ids[from]]
                 await order_help_categories(auth_token, ids)
             }
+            open_id = category_id
+        } else if (action === 'order') {
+            const ids = text('ids').split(',').map(id => parseInt(id)).filter(id => id > 0)
+            if (ids.length === 0) return HTTP_400_Bad_Request()
+            await order_help_categories(auth_token, ids)
             notice = t('help_settings.moved')
-        } else if (action === 'panel' && /^[1-9]\d*$/.test(text('channel_id').trim())) {
-            await update_help_panel(auth_token, text('channel_id').trim())
-            notice = t('help_settings.saved')
+        } else if (action === 'panel' && /^[1-9]\d*$/.test(text('channel_id'))) {
+            await update_help_panel(auth_token, text('channel_id'))
+            saved = true
+        } else if (action === 'panel') {
+            error = t('admin_content.help.pick_channel')
         } else {
             return HTTP_400_Bad_Request()
         }
@@ -74,6 +102,7 @@ try {
     error = (failure as Error).message
 }
 
+let settings: HelpSettings | null = null
 try {
     settings = await get_help_settings(auth_token)
 } catch (failure) {
@@ -81,12 +110,64 @@ try {
     error = error ?? (failure as Error).message
 }
 
-import HelpCategoriesManager from '@components/blocks/HelpCategoriesManager.astro'
+const edit_category = part === 'edit' ? settings?.categories.find(category => category.id === category_id) ?? null : null
+const shown = settings?.categories.filter(category => category.is_active).length ?? 0
+const options_summary = settings ? t('admin_content.help.options_summary').replace('~COUNT', String(settings.categories.length)).replace('~SHOWN', String(shown)) : ''
+const panel_summary = settings?.panel.channel_name
+    ? t('admin_content.help.posted_in').replace('~CHANNEL', settings.panel.channel_name)
+    : settings?.panel.channel_id && settings.panel.channel_id !== '0' ? t('admin_content.help.channel_unknown') : t('admin_content.help.no_channel')
+
+import Button from '@components/blocks/Button.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import HelpCategoriesManager from '@components/blocks/HelpCategoriesManager.astro'
+import HelpCategoryForm from '@components/blocks/HelpCategoryForm.astro'
+import HelpPanelPreview from '@components/blocks/HelpPanelPreview.astro'
+import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
 ---
 
-{settings ?
-    <HelpCategoriesManager settings={settings} error={error} notice={notice} />
-    :
-    <ErrorRefetch args={{ partial: Astro.url.pathname, error: new Error(error ?? ''), delay: 0 }} />
+{!settings ?
+    <div id={part === 'panel' ? 'help-panel-body' : 'help-options-body'} class="[ manage-section__body ]">
+        <ErrorRefetch args={{ partial: translatePath(`/partials/help_tickets_settings_component/?part=${part === 'panel' ? 'panel' : 'options'}`), error: new Error(error ?? ''), delay: 0 }} />
+    </div>
+: part === 'panel' ?
+    <form
+        id="help-panel-body"
+        class="[ manage-section__body manage-form ]"
+        hx-post={translatePath('/partials/help_tickets_settings_component')}
+        hx-target="this"
+        hx-swap="outerHTML"
+    >
+        <input type="hidden" name="action" value="panel" />
+        <div class="[ manage-fields ]">
+            <EntityPicker
+                id="help-panel-channel"
+                kind="discord_channel"
+                name="channel_id"
+                label={t('admin_content.help.channel')}
+                hint={t('admin_content.help.channel_hint')}
+                required={true}
+                value={settings.panel.channel_id && settings.panel.channel_id !== '0'
+                    ? { id: settings.panel.channel_id, name: settings.panel.channel_name ? `#${settings.panel.channel_name}` : t('admin_content.help.channel_unknown') }
+                    : null}
+            />
+        </div>
+        {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+        <div class="[ manage-actions ]">
+            <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+            {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+        </div>
+        {is_post && <SectionSummary section_id="help-panel" text={panel_summary} />}
+        {is_post && <HelpPanelPreview settings={settings} oob={true} />}
+    </form>
+: part === 'edit' ?
+    (edit_category
+        ? <HelpCategoryForm category={edit_category} settings={settings} />
+        : <p class="[ manage-muted ]">{t('admin_content.help.option_gone')}</p>)
+:
+    <Fragment>
+        <HelpCategoriesManager settings={settings} open_id={open_id} saved={saved} row_error={row_error} error={error} notice={notice} />
+        {is_post && <SectionSummary section_id="help-options" text={options_summary} />}
+        {is_post && <HelpPanelPreview settings={settings} oob={true} />}
+    </Fragment>
 }

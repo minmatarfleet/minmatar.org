@@ -1,0 +1,142 @@
+---
+/**
+ * The Manage hub below its masthead: "Waiting on you" (one stat card per
+ * queue with something in it) and the Settings blocks (tiles per group,
+ * only the screens the user can reach). Rendered by /manage/ and by its
+ * retry partial.
+ */
+import type { ManageQueue, ManageSummary } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    summary: ManageSummary;
+}
+
+const { summary } = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import {
+    MANAGE_GROUPS,
+    age_parts,
+    eve_short_time,
+    manage_screen,
+    waiting_queues,
+    type ManageGroupKey,
+} from '@helpers/manage'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import ManageTile from '@components/blocks/manage/ManageTile.astro'
+
+const now = new Date()
+const queues = waiting_queues(summary)
+
+function age_label(iso: string | null): string {
+    const age = age_parts(iso, now)
+    if (!age) return ''
+    return t(t_key('manage.age_', age.unit)).replace('~N', String(age.value))
+}
+
+function queue_detail(queue: ManageQueue): string {
+    switch (queue.key) {
+        case 'payout_codes':
+            return t('manage.queue_code')
+                .replace('~CODE', queue.next_label)
+                .replace('~DATE', eve_short_time(queue.oldest_at, lang, now))
+        case 'npsi_feeds':
+            return queue.oldest_at
+                ? t('manage.queue_since')
+                    .replace('~NAME', queue.next_label)
+                    .replace('~TIME', eve_short_time(queue.oldest_at, lang, now))
+                : queue.next_label
+        default: {
+            const age = age_label(queue.oldest_at)
+            if (!age) return queue.next_label
+            return queue.next_label
+                ? t('manage.queue_oldest').replace('~AGE', age).replace('~NAME', queue.next_label)
+                : t('manage.queue_oldest_only').replace('~AGE', age)
+        }
+    }
+}
+
+function screen_href(key: string): string | undefined {
+    const screen = manage_screen(key)
+    return screen ? translatePath(screen.path) : undefined
+}
+
+// Queue counts on the tiles they are worked on.
+const counts = Object.fromEntries(queues.map((queue) => [queue.screen, queue.count]))
+
+const groups = MANAGE_GROUPS
+    .map((group: ManageGroupKey) => ({
+        group,
+        screens: summary.screens.filter((screen) => screen.group === group),
+    }))
+    .filter((row) => row.screens.length > 0)
+---
+
+<Flexblock gap="var(--space-2xl)">
+    <section class="[ manage-hub-section ]" aria-labelledby="manage-waiting">
+        <Flexblock gap="var(--space-s)">
+            <h2 id="manage-waiting">{t('manage.waiting')}</h2>
+            {queues.length === 0
+                ? <EmptyState title={t('manage.nothing_waiting')} hint={t('manage.nothing_waiting_hint')} />
+                : (
+                    <div class="[ manage-stats ]">
+                        {queues.map((queue) => (
+                            <ManageStatCard
+                                label={t(t_key('manage.queue_', queue.key))}
+                                value={queue.count}
+                                detail={queue_detail(queue)}
+                                href={screen_href(queue.screen)}
+                                tone={queue.tone === 'warn' ? 'warn' : undefined}
+                            />
+                        ))}
+                    </div>
+                )
+            }
+        </Flexblock>
+    </section>
+
+    {groups.length > 0 &&
+        <section aria-labelledby="manage-settings">
+            <Flexblock gap="var(--space-s)">
+                <h2 id="manage-settings">{t('manage.settings')}</h2>
+                <div class="[ manage-hub-groups ]">
+                    {groups.map(({ group, screens }) => (
+                        <section class="[ manage-group ]" aria-labelledby={`manage-group-${group}`}>
+                            <h3 id={`manage-group-${group}`} class="[ manage-eyebrow is-red ]">{t(t_key('manage.group_', group))}</h3>
+                            <ul class="[ manage-tiles ]" role="list">
+                                {screens.map((screen) => (
+                                    <ManageTile
+                                        label={t(t_key('manage.screen_', screen.key))}
+                                        href={screen_href(screen.key)}
+                                        count={counts[screen.key]}
+                                    />
+                                ))}
+                            </ul>
+                        </section>
+                    ))}
+                </div>
+            </Flexblock>
+        </section>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .manage-hub-groups {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .manage-hub-groups :global(.manage-tiles) {
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+    }
+
+    .manage-hub-groups :global(.manage-eyebrow) {
+        font-size: var(--step--1);
+    }
+</style>

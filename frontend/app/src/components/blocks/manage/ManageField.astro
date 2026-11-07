@@ -1,0 +1,40 @@
+---
+/**
+ * A labelled field in an open row or a section body: a visible label
+ * above the input (default slot), an optional hint and error under it.
+ * Put several in <div class="manage-fields">; they stack on phones.
+ *
+ *   <div class="manage-fields">
+ *       <ManageField label={t('...state')} for="timer-12-state">
+ *           <Select id="timer-12-state" name="state" size="sm">...</Select>
+ *       </ManageField>
+ *   </div>
+ *
+ * EntityPicker and EveTimeInput carry their own label; don't wrap them.
+ */
+interface Props {
+    label:      string;
+    /** The input's id. */
+    for?:       string;
+    hint?:      string;
+    error?:     string;
+    [propName: string]: any;
+}
+
+const {
+    label,
+    for: input_id,
+    hint,
+    error,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div class:list={['[ manage-field ]', Astro.props.class]} {...attributes}>
+    <label for={input_id}>{label}</label>
+    <slot />
+    {hint && <span class="[ manage-field__hint ]">{hint}</span>}
+    {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+</div>

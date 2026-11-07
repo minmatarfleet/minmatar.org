@@ -1,0 +1,129 @@
+---
+/**
+ * The open row of a structure timer: correct its time, state, type, name,
+ * system and owner, with a reason for the audit log; or delete it. Saving
+ * posts to structure_timers_manage_component, which answers with the whole
+ * row (summary cells refreshed) inside a <table>.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StructureTimer } from '@dtypes/api.minmatar.org'
+import { structure_states, structure_types } from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+import { timer_row_id } from '@helpers/manage_intel'
+
+interface Props {
+    timer:              StructureTimer;
+    saved?:             boolean;
+    error?:             string | null;
+    [propName: string]: any;
+}
+
+const { timer, saved = false, error = null } = Astro.props
+
+const row_id = timer_row_id(timer.id)
+const field_id = (field: string) => `timer-${timer.id}-${field}`
+const row_url = translatePath(`/partials/structure_timers_manage_component/?${query_string({ part: 'row', id: String(timer.id) })}`)
+const state_label = t(t_key('structure_timers_manage.state.', timer.state))
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+---
+
+<form
+    class="[ manage-form ]"
+    hx-post={row_url}
+    hx-target={`#${row_id}`}
+    hx-select={`#${row_id}`}
+    hx-swap="outerHTML"
+>
+    <input type="hidden" name="action" value="update" />
+    <div class="[ manage-fields timer-form__fields ]">
+        <EveTimeInput id={field_id('timer')} name="timer" label={t('manage.timers.field_timer')} value={timer.timer} required={true} />
+        <ManageField label={t('manage.timers.field_state')} for={field_id('state')}>
+            <Select id={field_id('state')} name="state" size="sm">
+                {structure_states.map((state) =>
+                    <option value={state} selected={state === timer.state}>{t(t_key('structure_timers_manage.state.', state))}</option>
+                )}
+            </Select>
+        </ManageField>
+        <EntityPicker
+            id={field_id('corporation')}
+            kind="corporation"
+            name="corporation_id"
+            name_field="corporation_name"
+            label={t('manage.timers.field_corporation')}
+            value={timer.corporation_name ? { id: '', name: timer.corporation_name } : null}
+        />
+        <EntityPicker
+            id={field_id('alliance')}
+            kind="alliance"
+            name="alliance_id"
+            name_field="alliance_name"
+            label={t('manage.timers.field_alliance')}
+            value={timer.alliance_name ? { id: '', name: timer.alliance_name } : null}
+        />
+        <ManageField label={t('manage.timers.field_type')} for={field_id('type')}>
+            <Select id={field_id('type')} name="type" size="sm">
+                {structure_types.map((type) =>
+                    <option value={type} selected={type === timer.type}>{t(t_key('', type))}</option>
+                )}
+            </Select>
+        </ManageField>
+        <ManageField label={t('manage.timers.field_name')} for={field_id('name')}>
+            <Input id={field_id('name')} name="name" size="sm" required maxlength="255" value={timer.name} />
+        </ManageField>
+        <EntityPicker
+            id={field_id('system')}
+            kind="system"
+            name="system_id"
+            name_field="system_name"
+            label={t('manage.timers.field_system')}
+            value={{ id: '', name: timer.system_name }}
+            required={true}
+        />
+        <ManageField label={t('manage.timers.field_reason')} for={field_id('reason')}>
+            <Input id={field_id('reason')} name="reason" size="sm" maxlength="200" placeholder={t('manage.timers.reason_placeholder')} />
+        </ManageField>
+    </div>
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('manage.timers.save')}</Button>
+        <Button type="reset" size="sm" color="transparent" x-on:click="open = false">{t('cancel')}</Button>
+        {saved && <span class="[ manage-saved ]" role="status">{t('manage.timers.saved')}</span>}
+        <span class="[ manage-actions__end ]">
+            <ConfirmAction
+                label={t('manage.timers.delete')}
+                title={t('manage.timers.delete_title').replace('~NAME', timer.name)}
+                consequence={t('manage.timers.delete_consequence').replace('~STATE', state_label.toLowerCase()).replace('~SYSTEM', timer.system_name)}
+                confirm_label={t('manage.timers.delete_confirm')}
+                url={row_url}
+                vals={{ action: 'delete' }}
+                include={`#${field_id('reason')}`}
+                target={`#${row_id}`}
+                select={`#${row_id}`}
+            />
+        </span>
+    </div>
+</form>
+
+<style lang="scss">
+    // Two rows of four, as on the board: when, state and owner, then the rest.
+    .timer-form__fields {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+
+        @media (max-width: 64rem) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>

@@ -3352,6 +3352,86 @@
         "title": "CampaignAreaOut",
         "type": "object"
       },
+      "CampaignChoicesOut": {
+        "properties": {
+          "goal": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Goal",
+            "type": "array"
+          },
+          "kind": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Kind",
+            "type": "array"
+          },
+          "metric": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Metric",
+            "type": "array"
+          },
+          "party_kind": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Party Kind",
+            "type": "array"
+          },
+          "party_side": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Party Side",
+            "type": "array"
+          },
+          "priority": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Priority",
+            "type": "array"
+          },
+          "role": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Role",
+            "type": "array"
+          },
+          "site_kind": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Site Kind",
+            "type": "array"
+          },
+          "status": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOut"
+            },
+            "title": "Status",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "kind",
+          "goal",
+          "role",
+          "priority",
+          "party_kind",
+          "party_side",
+          "site_kind",
+          "metric"
+        ],
+        "title": "CampaignChoicesOut",
+        "type": "object"
+      },
       "CampaignCreateRequest": {
         "properties": {
           "description_md": {
@@ -3380,7 +3460,8 @@
             "type": "string"
           },
           "short_code": {
-            "pattern": "^[A-Za-z0-9]{2,12}$",
+            "default": "",
+            "pattern": "^(?:[A-Za-z0-9]{2,12})?$",
             "title": "Short Code",
             "type": "string"
           },
@@ -3413,7 +3494,6 @@
         "required": [
           "name",
           "slug",
-          "short_code",
           "start_at",
           "end_at"
         ],
@@ -6050,6 +6130,24 @@
           "created_at"
         ],
         "title": "ChiefVolunteerSchema",
+        "type": "object"
+      },
+      "ChoiceOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "ChoiceOut",
         "type": "object"
       },
       "ClaimLoyaltyMarketOrderRequest": {
@@ -9880,6 +9978,24 @@
           "public_short_code"
         ],
         "title": "CreateOrderResponse",
+        "type": "object"
+      },
+      "CreateProgramRequest": {
+        "properties": {
+          "eve_type_id": {
+            "title": "Eve Type Id",
+            "type": "integer"
+          },
+          "srp_value": {
+            "title": "Srp Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "eve_type_id",
+          "srp_value"
+        ],
+        "title": "CreateProgramRequest",
         "type": "object"
       },
       "CreateReportRequest": {
@@ -14434,6 +14550,17 @@
             ],
             "title": "Name"
           },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
           "state": {
             "anyOf": [
               {
@@ -14725,6 +14852,67 @@
         ],
         "title": "EveStructureType",
         "type": "string"
+      },
+      "EveTagCountResponse": {
+        "properties": {
+          "post_count": {
+            "title": "Post Count",
+            "type": "integer"
+          },
+          "tag": {
+            "title": "Tag",
+            "type": "string"
+          },
+          "tag_id": {
+            "title": "Tag Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tag_id",
+          "tag",
+          "post_count"
+        ],
+        "title": "EveTagCountResponse",
+        "type": "object"
+      },
+      "EveTagMergePreview": {
+        "properties": {
+          "into_tag": {
+            "title": "Into Tag",
+            "type": "string"
+          },
+          "into_tag_id": {
+            "title": "Into Tag Id",
+            "type": "integer"
+          },
+          "into_total": {
+            "title": "Into Total",
+            "type": "integer"
+          },
+          "moving": {
+            "title": "Moving",
+            "type": "integer"
+          },
+          "tag": {
+            "title": "Tag",
+            "type": "string"
+          },
+          "tag_id": {
+            "title": "Tag Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tag_id",
+          "tag",
+          "into_tag_id",
+          "into_tag",
+          "moving",
+          "into_total"
+        ],
+        "title": "EveTagMergePreview",
+        "type": "object"
       },
       "EveTagMergeRequest": {
         "properties": {
@@ -16442,6 +16630,14 @@
             ],
             "title": "Current"
           },
+          "doctrine_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Doctrine Ids",
+            "type": "array"
+          },
           "fitting_id": {
             "title": "Fitting Id",
             "type": "integer"
@@ -16449,6 +16645,17 @@
           "fitting_name": {
             "title": "Fitting Name",
             "type": "string"
+          },
+          "ship_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Id"
           },
           "tracked": {
             "title": "Tracked",
@@ -21564,6 +21771,17 @@
             "title": "Channel Id",
             "type": "string"
           },
+          "channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Name"
+          },
           "message_id": {
             "anyOf": [
               {
@@ -23512,6 +23730,7 @@
       "ItemCreateRequest": {
         "properties": {
           "category": {
+            "default": "",
             "title": "Category",
             "type": "string"
           },
@@ -23521,8 +23740,7 @@
           }
         },
         "required": [
-          "type_id",
-          "category"
+          "type_id"
         ],
         "title": "ItemCreateRequest",
         "type": "object"
@@ -25745,6 +25963,22 @@
         "title": "ManageAwardResponse",
         "type": "object"
       },
+      "ManageCertificateOrderRequest": {
+        "properties": {
+          "slugs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Slugs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "slugs"
+        ],
+        "title": "ManageCertificateOrderRequest",
+        "type": "object"
+      },
       "ManageCertificateRequest": {
         "properties": {
           "learning_slugs": {
@@ -25853,6 +26087,40 @@
         "title": "ManageCertificateSchema",
         "type": "object"
       },
+      "ManageEntityMatchResponse": {
+        "properties": {
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Url"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ManageEntityMatchResponse",
+        "type": "object"
+      },
       "ManageItem": {
         "properties": {
           "active": {
@@ -25863,9 +26131,35 @@
             "title": "Category",
             "type": "string"
           },
+          "category_label": {
+            "default": "",
+            "title": "Category Label",
+            "type": "string"
+          },
+          "demand_label": {
+            "default": "",
+            "title": "Demand Label",
+            "type": "string"
+          },
+          "demand_status": {
+            "default": "",
+            "title": "Demand Status",
+            "type": "string"
+          },
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "pays_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pays Rate"
           },
           "type_id": {
             "title": "Type Id",
@@ -25937,6 +26231,32 @@
       },
       "ManageLearningSchema": {
         "properties": {
+          "certificate_count": {
+            "default": 0,
+            "title": "Certificate Count",
+            "type": "integer"
+          },
+          "certificate_slug": {
+            "default": "",
+            "title": "Certificate Slug",
+            "type": "string"
+          },
+          "certificate_step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certificate Step"
+          },
+          "certificate_title": {
+            "default": "",
+            "title": "Certificate Title",
+            "type": "string"
+          },
           "content_kind": {
             "title": "Content Kind",
             "type": "string"
@@ -26022,6 +26342,51 @@
         "title": "ManageOnboardingSchema",
         "type": "object"
       },
+      "ManageQueueResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "next_label": {
+            "default": "",
+            "title": "Next Label",
+            "type": "string"
+          },
+          "oldest_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest At"
+          },
+          "screen": {
+            "title": "Screen",
+            "type": "string"
+          },
+          "tone": {
+            "default": "",
+            "title": "Tone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "screen",
+          "count"
+        ],
+        "title": "ManageQueueResponse",
+        "type": "object"
+      },
       "ManageRoute": {
         "properties": {
           "active": {
@@ -26049,6 +26414,11 @@
           "expiration_days": {
             "title": "Expiration Days",
             "type": "integer"
+          },
+          "fee_never_applies": {
+            "default": false,
+            "title": "Fee Never Applies",
+            "type": "boolean"
           },
           "fixed_fee_millions": {
             "title": "Fixed Fee Millions",
@@ -26084,6 +26454,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RouteLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RouteQuote"
               },
               {
                 "type": "null"
@@ -26145,6 +26525,24 @@
         "title": "ManageRoutes",
         "type": "object"
       },
+      "ManageScreenResponse": {
+        "properties": {
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "group"
+        ],
+        "title": "ManageScreenResponse",
+        "type": "object"
+      },
       "ManageSettings": {
         "properties": {
           "active": {
@@ -26179,6 +26577,17 @@
               }
             ],
             "title": "Location Id"
+          },
+          "location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Name"
           },
           "locations": {
             "items": {
@@ -26301,6 +26710,40 @@
           "skills"
         ],
         "title": "ManageSkillsetSchema",
+        "type": "object"
+      },
+      "ManageSummaryResponse": {
+        "properties": {
+          "queues": {
+            "items": {
+              "$ref": "#/components/schemas/ManageQueueResponse"
+            },
+            "title": "Queues",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "screens": {
+            "items": {
+              "$ref": "#/components/schemas/ManageScreenResponse"
+            },
+            "title": "Screens",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "role",
+          "screens",
+          "queues",
+          "total"
+        ],
+        "title": "ManageSummaryResponse",
         "type": "object"
       },
       "ManagedCorporationRequirements": {
@@ -27690,6 +28133,22 @@
       },
       "ModerationAccountSchema": {
         "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
           "featured_count": {
             "title": "Featured Count",
             "type": "integer"
@@ -27739,6 +28198,29 @@
           "featured_count"
         ],
         "title": "ModerationAccountSchema",
+        "type": "object"
+      },
+      "ModerationItemCountsSchema": {
+        "properties": {
+          "featured": {
+            "title": "Featured",
+            "type": "integer"
+          },
+          "hidden": {
+            "title": "Hidden",
+            "type": "integer"
+          },
+          "shown": {
+            "title": "Shown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "shown",
+          "featured",
+          "hidden"
+        ],
+        "title": "ModerationItemCountsSchema",
         "type": "object"
       },
       "ModerationItemRequest": {
@@ -28727,6 +29209,11 @@
             "title": "Audiences",
             "type": "array"
           },
+          "feed_timeout_seconds": {
+            "default": 15,
+            "title": "Feed Timeout Seconds",
+            "type": "integer"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/NpsiSourceResponse"
@@ -28835,6 +29322,17 @@
             "title": "Event Count",
             "type": "integer"
           },
+          "fc_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Character Id"
+          },
           "fc_character_name": {
             "title": "Fc Character Name",
             "type": "string"
@@ -28849,6 +29347,11 @@
           },
           "last_error": {
             "title": "Last Error",
+            "type": "string"
+          },
+          "last_error_kind": {
+            "default": "",
+            "title": "Last Error Kind",
             "type": "string"
           },
           "last_polled_at": {
@@ -28878,6 +29381,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "upcoming_count": {
+            "default": 0,
+            "title": "Upcoming Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -28890,6 +29398,77 @@
           "event_count"
         ],
         "title": "NpsiSourceResponse",
+        "type": "object"
+      },
+      "NpsiTryEvent": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "start_time",
+          "character_name"
+        ],
+        "title": "NpsiTryEvent",
+        "type": "object"
+      },
+      "NpsiTryResult": {
+        "description": "A dry-run read of a feed: nothing stored, nothing sent.",
+        "properties": {
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "error_kind": {
+            "title": "Error Kind",
+            "type": "string"
+          },
+          "feed_timeout_seconds": {
+            "default": 15,
+            "title": "Feed Timeout Seconds",
+            "type": "integer"
+          },
+          "item_count": {
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/NpsiTryEvent"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          },
+          "upcoming_count": {
+            "title": "Upcoming Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "error",
+          "error_kind",
+          "item_count",
+          "upcoming_count",
+          "upcoming"
+        ],
+        "title": "NpsiTryResult",
         "type": "object"
       },
       "NudgeQueuedResponse": {
@@ -33498,9 +34077,25 @@
       },
       "RecalculationChangeResponse": {
         "properties": {
+          "character_id": {
+            "default": 0,
+            "title": "Character Id",
+            "type": "integer"
+          },
           "character_name": {
             "title": "Character Name",
             "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
           },
           "current_amount": {
             "title": "Current Amount",
@@ -33947,6 +34542,17 @@
           "can_link_to_discord": {
             "title": "Can Link To Discord",
             "type": "boolean"
+          },
+          "corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Id"
           },
           "corporation_name": {
             "title": "Corporation Name",
@@ -35476,6 +36082,95 @@
         "title": "RoutePatchRequest",
         "type": "object"
       },
+      "RouteQuote": {
+        "description": "What a sample haul costs on a route, and whether its XL fee is dead.",
+        "properties": {
+          "collateral": {
+            "title": "Collateral",
+            "type": "integer"
+          },
+          "cost": {
+            "title": "Cost",
+            "type": "integer"
+          },
+          "fee_never_applies": {
+            "title": "Fee Never Applies",
+            "type": "boolean"
+          },
+          "m3": {
+            "title": "M3",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "m3",
+          "collateral",
+          "cost",
+          "fee_never_applies"
+        ],
+        "title": "RouteQuote",
+        "type": "object"
+      },
+      "RouteQuoteRequest": {
+        "description": "Unsaved editor values, priced as the route would price them.",
+        "properties": {
+          "collateral_modifier": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Collateral Modifier",
+            "type": "number"
+          },
+          "fixed_fee_millions": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Fixed Fee Millions",
+            "type": "number"
+          },
+          "isk_per_m3": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Isk Per M3",
+            "type": "integer"
+          },
+          "max_collateral": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Collateral"
+          },
+          "max_m3": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max M3"
+          },
+          "route_type": {
+            "default": "rate",
+            "title": "Route Type",
+            "type": "string"
+          },
+          "xl_fee_millions": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Xl Fee Millions",
+            "type": "number"
+          }
+        },
+        "title": "RouteQuoteRequest",
+        "type": "object"
+      },
       "ScheduleChange": {
         "properties": {
           "created_at": {
@@ -36053,6 +36748,11 @@
             "title": "Accounts",
             "type": "array"
           },
+          "active_account_count": {
+            "default": 0,
+            "title": "Active Account Count",
+            "type": "integer"
+          },
           "allow_buy": {
             "title": "Allow Buy",
             "type": "boolean"
@@ -36087,6 +36787,16 @@
           "is_active": {
             "title": "Is Active",
             "type": "boolean"
+          },
+          "last_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SettingsPriceChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "title": "Name",
@@ -36210,6 +36920,74 @@
           }
         },
         "title": "SettingsPatchRequest",
+        "type": "object"
+      },
+      "SettingsPriceChange": {
+        "description": "One ISK/LP change: the corp's standard or express rate, or an account offer.",
+        "properties": {
+          "account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Name"
+          },
+          "changed_at": {
+            "format": "date-time",
+            "title": "Changed At",
+            "type": "string"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          },
+          "new_isk_per_lp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Isk Per Lp"
+          },
+          "old_isk_per_lp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Isk Per Lp"
+          },
+          "tier": {
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "account_name",
+          "old_isk_per_lp",
+          "new_isk_per_lp",
+          "changed_at",
+          "changed_by"
+        ],
+        "title": "SettingsPriceChange",
         "type": "object"
       },
       "SettingsStructureOut": {
@@ -36489,6 +37267,16 @@
           },
           "id": {
             "title": "Id",
+            "type": "integer"
+          },
+          "open_requests": {
+            "default": 0,
+            "title": "Open Requests",
+            "type": "integer"
+          },
+          "stale_requests": {
+            "default": 0,
+            "title": "Stale Requests",
             "type": "integer"
           }
         },
@@ -44742,6 +45530,47 @@
         ]
       }
     },
+    "/api/blog/tags/counts": {
+      "get": {
+        "operationId": "posts_router_get_tag_counts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EveTagCountResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post tags with how many posts carry each, most used first",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
     "/api/blog/tags/{tag_id}": {
       "patch": {
         "operationId": "posts_router_rename_tag",
@@ -44891,6 +45720,82 @@
           }
         ],
         "summary": "Merge a tag into another: its posts move over and it is deleted",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/api/blog/tags/{tag_id}/merge-preview": {
+      "get": {
+        "operationId": "posts_router_preview_tag_merge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tag_id",
+            "required": true,
+            "schema": {
+              "title": "Tag Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "into_tag_id",
+            "required": true,
+            "schema": {
+              "title": "Into Tag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveTagMergePreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "What merging a tag into another would do, in post counts",
         "tags": [
           "Posts"
         ]
@@ -46033,6 +46938,34 @@
           }
         ],
         "summary": "Create Campaign",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/choices": {
+      "get": {
+        "description": "The labels of every stored choice, so forms never show raw values.",
+        "operationId": "campaigns_endpoints_get_choices_list_choices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignChoicesOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List Choices",
         "tags": [
           "Campaigns"
         ]
@@ -49473,8 +50406,79 @@
         ]
       }
     },
+    "/api/creators/moderation/accounts/{account_id}/item-counts": {
+      "get": {
+        "operationId": "creators_moderation_item_counts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "account_id",
+            "required": true,
+            "schema": {
+              "title": "Account Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationItemCountsSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Count a creator account's shown, featured and hidden items.",
+        "tags": [
+          "Creators",
+          "Creators moderation"
+        ]
+      }
+    },
     "/api/creators/moderation/accounts/{account_id}/items": {
       "get": {
+        "description": "One page of items, newest first. `view` is all, shown (not hidden),\nfeatured or hidden; `q` matches the title.",
         "operationId": "creators_moderation_list_items",
         "parameters": [
           {
@@ -49483,6 +50487,46 @@
             "required": true,
             "schema": {
               "title": "Account Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "view",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "title": "View",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
               "type": "integer"
             }
           }
@@ -49501,6 +50545,16 @@
               }
             },
             "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
           },
           "403": {
             "content": {
@@ -53946,6 +55000,64 @@
         ]
       }
     },
+    "/api/fleets/npsi-sources/{source_id}/try": {
+      "post": {
+        "description": "A dry run: fetch and parse the saved feed address, store nothing.\n\nThe source's last import columns stay as the scheduled poll left them,\nand no event is created or sent to Discord.",
+        "operationId": "fleets_endpoints_npsi_sources_post_npsi_source_try",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NpsiTryResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Read a source's feed now, without importing or posting",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/ping-preview": {
       "post": {
         "description": "The Discord start ping for these fleet details, built by the same code as the real ping (a group fleet: the group's channel and role). channel_name is null when there is no channel to ping. Needs fleets.create, or, with host_group_id, the group's fleet publishing right.",
@@ -57754,6 +58866,64 @@
         ]
       }
     },
+    "/api/freight/manage/routes/quote": {
+      "post": {
+        "operationId": "freight_endpoints_manage_post_manage_route_quote_post_manage_route_quote",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteQuote"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Sample quote and warnings for unsaved route pricing",
+        "tags": [
+          "Freight",
+          "Freight"
+        ]
+      }
+    },
     "/api/freight/manage/routes/{route_id}": {
       "patch": {
         "operationId": "freight_endpoints_manage_patch_manage_route_patch_manage_route",
@@ -59988,6 +61158,68 @@
           }
         ],
         "summary": "Edit an LP corp",
+        "tags": [
+          "Industry",
+          "Industry - Loyalty"
+        ]
+      }
+    },
+    "/api/industry/loyalty/settings/currencies/{currency_id}/history": {
+      "get": {
+        "operationId": "industry_endpoints_loyalty_get_settings_history_get_settings_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "currency_id",
+            "required": true,
+            "schema": {
+              "title": "Currency Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SettingsPriceChange"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Recent ISK/LP changes of an LP corp, newest first",
         "tags": [
           "Industry",
           "Industry - Loyalty"
@@ -63717,6 +64949,70 @@
         ]
       }
     },
+    "/api/learning/manage/certificates/order": {
+      "post": {
+        "operationId": "learning_manage_order_certificates",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManageCertificateOrderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ManageCertificateSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put certificates in this order (the slugs, first to last).",
+        "tags": [
+          "Learning Center",
+          "Learning Center management"
+        ]
+      }
+    },
     "/api/learning/manage/certificates/{slug}": {
       "put": {
         "operationId": "learning_manage_update_certificate",
@@ -64418,6 +65714,104 @@
         "summary": "Recommend a Learning Center persona for the authenticated user.",
         "tags": [
           "Learning Center"
+        ]
+      }
+    },
+    "/api/manage/search": {
+      "get": {
+        "operationId": "manage_hub_router_get_search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ManageEntityMatchResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Find a system, corporation, alliance, type, ship, location, character or Discord channel by name",
+        "tags": [
+          "Manage"
+        ]
+      }
+    },
+    "/api/manage/summary": {
+      "get": {
+        "operationId": "manage_hub_router_get_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManageSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The manage screens the user can reach and what waits on them",
+        "tags": [
+          "Manage"
         ]
       }
     },
@@ -67932,6 +69326,16 @@
             },
             "description": "OK"
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -68714,6 +70118,62 @@
           "SRP",
           "SRP - Programs"
         ]
+      },
+      "post": {
+        "operationId": "srp_endpoints_programs_post_program_post_program",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShipReimbursementProgramAmountResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Program",
+        "tags": [
+          "SRP",
+          "SRP - Programs"
+        ]
       }
     },
     "/api/srp/programs/history": {
@@ -68760,8 +70220,26 @@
     },
     "/api/srp/programs/recalculate": {
       "get": {
+        "description": "With ship_type_id: that hull's requests filed at an old amount.",
         "operationId": "srp_endpoints_programs_get_recalculation_preview_get_recalculation_preview",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ship_type_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ship Type Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -68796,8 +70274,26 @@
         ]
       },
       "post": {
+        "description": "With ship_type_id: only that hull's requests filed at an old amount.",
         "operationId": "srp_endpoints_programs_post_recalculate_outstanding_post_recalculate_outstanding",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ship_type_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ship Type Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -68826,6 +70322,55 @@
           }
         ],
         "summary": "Post Recalculate Outstanding",
+        "tags": [
+          "SRP",
+          "SRP - Programs"
+        ]
+      }
+    },
+    "/api/srp/programs/recalculate/keep": {
+      "post": {
+        "description": "The hull's requests stop showing as filed at an old amount.",
+        "operationId": "srp_endpoints_programs_post_keep_filed_amounts_post_keep_filed_amounts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "ship_type_id",
+            "required": true,
+            "schema": {
+              "title": "Ship Type Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecalculationResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Keep Filed Amounts",
         "tags": [
           "SRP",
           "SRP - Programs"
@@ -69670,6 +71215,22 @@
             "schema": {
               "title": "Timer Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reason"
             }
           }
         ],

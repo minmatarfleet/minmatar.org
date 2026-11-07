@@ -1,3 +1,4 @@
+import type { CampaignChoices } from '@dtypes/api.minmatar.org'
 import type {
     CampaignListItem,
     CampaignDetail,
@@ -294,5 +295,14 @@ export async function detach_campaign_project(slug:string, access_token:string, 
         method: 'DELETE',
         token: access_token,
         error: 'Error fetching campaign project',
+    })
+}
+
+export type { CampaignChoices, CampaignChoice } from '@dtypes/api.minmatar.org'
+
+export async function get_campaign_choices(access_token:string) {
+    return await api_request<CampaignChoices>(`${API_ENDPOINT}/choices`, {
+        token: access_token,
+        error: 'Error fetching campaign choices',
     })
 }

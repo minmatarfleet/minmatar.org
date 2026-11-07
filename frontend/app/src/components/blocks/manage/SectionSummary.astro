@@ -1,0 +1,23 @@
+---
+/**
+ * Updates a SettingsSection's header summary from the partial that just
+ * saved its body: render it anywhere in the response and htmx swaps it
+ * out-of-band into the header.
+ *
+ *   <SectionSummary section_id="hub-rates" text="100% · 90% of Jita buy" />
+ */
+interface Props {
+    section_id: string;
+    text:       string;
+}
+
+const { section_id, text } = Astro.props
+
+import { section_summary_id } from '@helpers/manage'
+---
+
+<span
+    id={section_summary_id(section_id)}
+    class="[ manage-section__summary ]"
+    hx-swap-oob="true"
+>{text}</span>

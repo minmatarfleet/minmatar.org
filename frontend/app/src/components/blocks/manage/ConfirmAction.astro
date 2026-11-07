@@ -1,0 +1,116 @@
+---
+/**
+ * A destructive action (merge, remove, delete, suspend, retire) behind a
+ * confirm dialog that states the consequence in numbers ("14 posts move to
+ * Lore. Propaganda is deleted."). Confirming posts `url` with htmx and
+ * swaps `target`; the dialog closes when the request finishes. A failed
+ * request's error text (4xx/5xx body) shows in the dialog instead.
+ *
+ * The dialog is teleported to <body>, so `target` must be an id selector,
+ * not `closest ...`. Reversible actions skip the confirm.
+ *
+ * Slots: `fields` (inputs posted with the confirm, above the consequence,
+ * e.g. the merge target select) and `consequence` (markup that replaces the
+ * `consequence` text, e.g. a span an htmx select re-renders).
+ *
+ *   <ConfirmAction
+ *       label={t('...delete_timer')} title={t('...delete_title').replace('~NAME', name)}
+ *       consequence={t('...delete_consequence')} confirm_label={t('...delete')}
+ *       url={row_url} vals={{ action: 'delete' }} target={`#timer-${id}`}
+ *   />
+ */
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components'
+
+interface Props {
+    /** The trigger button's text ("Delete timer..."). */
+    label:          string;
+    /** Dialog heading ("Delete Old Athanor?"). */
+    title:          string;
+    /** What happens, in numbers. */
+    consequence:    string;
+    /** The red confirm button ("Delete"). */
+    confirm_label:  string;
+    url:            string;
+    /** Extra form fields posted with the confirm. */
+    vals?:          Record<string, string | number>;
+    /** Id selector the response swaps into. */
+    target:         string;
+    swap?:          string;
+    /** hx-select: the part of the response to swap, e.g. the row id when the
+     *  partial answers with an ExpandRow inside a <table>. */
+    select?:        string;
+    /** hx-include: a selector of fields outside the dialog posted with the
+     *  confirm, e.g. the open row's reason input. */
+    include?:       string;
+    /** The trigger's look: quiet (transparent) by default. */
+    color?:         ButtonColors;
+    size?:          ButtonSizes;
+    [propName: string]: any;
+}
+
+const {
+    label,
+    title,
+    consequence,
+    confirm_label,
+    url,
+    vals = {},
+    target,
+    swap = 'outerHTML',
+    select,
+    include,
+    color = 'transparent',
+    size = 'sm',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<DialogButton
+    size={size}
+    color={color}
+    max_width="32rem"
+    class={Astro.props.class}
+    {...attributes}
+>
+    {label}
+
+    <form
+        slot="dialog"
+        class="[ manage-confirm ]"
+        hx-post={url}
+        hx-target={target}
+        hx-swap={swap}
+        hx-select={select}
+        hx-include={include}
+        x-data="{ submitting: false }"
+        {...{
+            // Only the confirm's own request: a field's htmx (a select that
+            // re-renders the consequence) bubbles here too.
+            'x-on:htmx:before-request': 'if ($event.detail.elt === $el) submitting = true',
+            'x-on:htmx:after-request': `if ($event.detail.elt !== $el) return; submitting = false; if ($event.detail.successful) close_dialog(); else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
+        }}
+    >
+        {Object.entries(vals).map(([name, value]) => <input type="hidden" name={name} value={String(value)} />)}
+        <h3>{title}</h3>
+        <slot name="fields" />
+        <p class="[ manage-confirm__consequence ]"><slot name="consequence">{consequence}</slot></p>
+        <p class="[ manage-confirm__error manage-field__error ]" role="alert" x-ref="error"></p>
+        <FlexInline justification="flex-end">
+            <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">
+                {t('cancel')}
+            </Button>
+            <Button type="submit" size="sm" color="fleet-red" x-bind:disabled="submitting">
+                {confirm_label}
+            </Button>
+        </FlexInline>
+    </form>
+</DialogButton>

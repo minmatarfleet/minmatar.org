@@ -178,3 +178,28 @@ class HubEditorTestCase(TestCase):
         self.assertEqual(denied.status_code, 403)
         found = self._call("get", "-type-search?q=pye", self._manager())
         self.assertEqual(found.json(), [{"type_id": 35, "name": "Pyerite"}])
+
+    def test_expectations_carry_hull_and_doctrines(self):
+        manager = self._manager()
+        doctrine = EveDoctrine.objects.create(
+            name="Test Doctrine", type="strategic", description="d"
+        )
+        fit = EveFitting.objects.create(
+            name="[NVY-5] Atron",
+            ship_id=608,
+            description="t",
+            eft_format="[Atron, [NVY-5] Atron]",
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine, fitting=fit, role="primary"
+        )
+        response = self._call("get", "/1234/expectations", manager)
+        self.assertEqual(response.status_code, 200)
+        rows = [
+            row
+            for row in response.json()["contracts"]
+            if row["fitting_id"] == fit.id
+        ]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["ship_id"], 608)
+        self.assertEqual(rows[0]["doctrine_ids"], [doctrine.id])

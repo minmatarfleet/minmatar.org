@@ -7,6 +7,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.programs.schemas import ShipReimbursementProgramResponse
+from srp.helpers import outstanding_counts_by_hull
 from srp.models import ShipReimbursementProgram
 
 PATH = ""
@@ -37,6 +38,11 @@ def get_srp_programs(request):
         if denied:
             return denied
 
+    counts = (
+        outstanding_counts_by_hull()
+        if can_use_feature(request.user, "srp.programs.manage")
+        else {}
+    )
     programs = ShipReimbursementProgram.objects.select_related(
         "eve_type__eve_group__eve_category"
     ).all()
@@ -65,6 +71,10 @@ def get_srp_programs(request):
                 }
                 if latest_amount
                 else None
+            ),
+            "open_requests": counts.get(entry.eve_type_id, {}).get("open", 0),
+            "stale_requests": counts.get(entry.eve_type_id, {}).get(
+                "stale", 0
             ),
         }
         for entry in programs.order_by("eve_type__name", "id")

@@ -1,0 +1,113 @@
+---
+/**
+ * A date and time entered in EVE time (the label carries the EVE unit, so
+ * a 12-hour locale's AM/PM never runs under it), with the pilot's local time and a
+ * countdown under it ("Your time Mon 17:26 · in 2 d 3 h"). The local line
+ * is Alpine display only.
+ *
+ * Posts `name` as an ISO UTC string ("2026-11-09T22:26:00Z") from a hidden
+ * input; the visible field is unnamed. `value` is the stored ISO time.
+ *
+ *   <EveTimeInput id="timer-12-time" name="timer" label={t('...timer')} value={timer.timer} required />
+ */
+interface Props {
+    id:         string;
+    name:       string;
+    label:      string;
+    /** ISO date-time, stored in UTC. */
+    value?:     string | null;
+    hint?:      string;
+    required?:  boolean;
+    /** Earliest pickable time, ISO (e.g. now for a future timer). */
+    min?:       string;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    name,
+    label,
+    value,
+    hint,
+    required = false,
+    min,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import { local_hour_bands } from '@helpers/local_hour'
+import Input from '@components/blocks/Input.astro'
+
+/** "YYYY-MM-DDTHH:MM" in UTC, what a datetime-local input holds. */
+function to_eve_local(iso: string | null | undefined): string {
+    if (!iso) return ''
+    const date = new Date(iso)
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 16)
+}
+
+const eve_value = to_eve_local(value)
+const iso_value = eve_value ? `${eve_value}:00Z` : ''
+const HOUR_BANDS = local_hour_bands(t)
+---
+
+<div
+    class:list={['[ manage-time manage-field ]', Astro.props.class]}
+    x-data={`{
+        eve: ${JSON.stringify(eve_value)},
+        now: Date.now(),
+        bands: ${JSON.stringify(HOUR_BANDS)},
+        timer: null,
+        init() { this.timer = setInterval(() => this.now = Date.now(), 30000) },
+        destroy() { clearInterval(this.timer) },
+        get start() {
+            if (!this.eve) return null
+            const start = new Date(this.eve + ':00Z')
+            return isNaN(start.getTime()) ? null : start
+        },
+        get iso() { return this.start ? this.eve + ':00Z' : '' },
+        get local() {
+            if (!this.start) return ''
+            const day = this.start.toLocaleDateString(${JSON.stringify(lang)}, { weekday: 'short' })
+            const time = this.start.toLocaleTimeString(${JSON.stringify(lang)}, { hour: '2-digit', minute: '2-digit', hour12: false })
+            return day + ' ' + time
+        },
+        get band() { return this.start ? this.bands[this.start.getHours()][0] : '' },
+        get countdown() {
+            if (!this.start) return ''
+            const minutes = Math.round((this.start.getTime() - this.now) / 60000)
+            const span = Math.abs(minutes)
+            const days = Math.floor(span / 1440)
+            const hours = Math.floor((span % 1440) / 60)
+            const text = days > 0
+                ? ${JSON.stringify(t('manage.kit.duration_days'))}.replace('~D', days).replace('~H', hours)
+                : hours > 0
+                    ? ${JSON.stringify(t('manage.kit.duration_hours'))}.replace('~H', hours).replace('~M', span % 60)
+                    : ${JSON.stringify(t('manage.kit.duration_minutes'))}.replace('~M', span)
+            return (minutes >= 0 ? ${JSON.stringify(t('manage.kit.time_in'))} : ${JSON.stringify(t('manage.kit.time_ago'))}).replace('~TIME', text)
+        },
+    }`}
+    {...attributes}
+>
+    <label for={id}>{label} <span class="[ manage-time__unit ]">{t('manage.kit.eve')}</span></label>
+    <div class="[ manage-time__field ]">
+        <Input
+            id={id}
+            size="sm"
+            type="datetime-local"
+            value={eve_value}
+            min={min ? to_eve_local(min) : undefined}
+            x-model="eve"
+            required={required}
+            style="color-scheme: dark"
+        />
+    </div>
+    <input type="hidden" name={name} value={iso_value} x-bind:value="iso" />
+    <span class="[ manage-field__hint ]" aria-live="polite" x-show="start" style={eve_value ? undefined : 'display: none'}>
+        {t('manage.kit.your_time')} <b x-bind:class="band" x-text="local"></b> · <span x-text="countdown"></span>
+    </span>
+    {hint && <span class="[ manage-field__hint ]">{hint}</span>}
+</div>

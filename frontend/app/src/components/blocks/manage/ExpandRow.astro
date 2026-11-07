@@ -1,0 +1,104 @@
+---
+/**
+ * One ManageTable row that opens in place to edit, as a Members row opens:
+ * the summary cells (default slot), a chevron, and a detail row under it.
+ * The detail loads its partial (`url`) the first time the row opens, then
+ * the chevron only shows and hides it. No drawers, no edit pages.
+ *
+ * Saving, either way swaps only this row:
+ * - the detail form swaps itself (`hx-target="this" hx-swap="outerHTML"`),
+ *   answering with the form plus <span class="manage-saved">Saved</span>; or
+ * - to refresh the summary cells too, post with
+ *   `hx-target="#${id}" hx-select="#${id}" hx-swap="outerHTML"` and answer
+ *   with this row (`open`, the form in the `detail` slot) wrapped in a
+ *   <table>. The wrapper matters: Astro starts a partial with <style>/<link>
+ *   tags, after which htmx's parser drops a bare <tbody>.
+ *
+ *   <ExpandRow id={`timer-${timer.id}`} colspan={4} label={t('...open').replace('~NAME', timer.name)}
+ *       url={translatePath(`/partials/timer_edit_component/?id=${timer.id}`)}>
+ *       <td>
+ *           <button type="button" class="manage-who" x-on:click="open = !open">
+ *               <img src={icon} alt="" width="40" height="40" />
+ *               <span class="manage-who__text">
+ *                   <span class="manage-who__name">{timer.name}</span>
+ *                   <span class="manage-who__sub">{timer.type} · {timer.system}</span>
+ *               </span>
+ *           </button>
+ *       </td>
+ *       <td class="is-wide">{timer.owner}</td>
+ *       <td class="num">{timer.when}</td>
+ *   </ExpandRow>
+ *
+ * Inside the detail, lay fields out with <div class="manage-fields"> and
+ * <ManageField>; they stack to one column on phones.
+ */
+interface Props {
+    /** Columns in the table, chevron included (ManageTable columns + 1). */
+    colspan:    number;
+    /** Accessible name of the chevron ("Open Rifter"). */
+    label:      string;
+    /** Detail partial, fetched once on first open. Or use the `detail` slot. */
+    url?:       string;
+    /** The <tbody> id: the target a save swaps. */
+    id?:        string;
+    open?:      boolean;
+    /** Greyed out (disabled, retired). */
+    dim?:       boolean;
+    [propName: string]: any;
+}
+
+const {
+    colspan,
+    label,
+    url,
+    id,
+    open = false,
+    dim = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+---
+
+<tbody
+    id={id}
+    class:list={[{ 'is-open': open, 'is-dim': dim }, Astro.props.class]}
+    x-data={`{ open: ${JSON.stringify(open)} }`}
+    x-bind:class="{ 'is-open': open }"
+    {...attributes}
+>
+    <tr class="[ manage-row ]">
+        <slot />
+        <td class="[ manage-row__chevron act ]">
+            <button
+                type="button"
+                class="[ manage-chevron ]"
+                x-on:click="open = !open"
+                x-bind:aria-expanded="open"
+                aria-expanded={open ? 'true' : 'false'}
+                aria-label={label}
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+        </td>
+    </tr>
+    <tr class="[ manage-detail ]" x-show="open" x-cloak={!open}>
+        <td colspan={colspan}>
+            <div class="[ manage-detail__body ]">
+                {url
+                    ? (
+                        <LazyPartial url={url} trigger="reveal" indicator={false}>
+                            <p class="[ manage-muted ]">{t('loading')}</p>
+                        </LazyPartial>
+                    )
+                    : <slot name="detail" />
+                }
+            </div>
+        </td>
+    </tr>
+</tbody>

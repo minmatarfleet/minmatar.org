@@ -1,0 +1,110 @@
+---
+/**
+ * Edit or add an LP account under its corp's tiles: name, role, offer,
+ * enabled, and its contacts (a Remove box takes effect on Save, so a
+ * mistake is undone by not saving). One Save swaps the accounts block.
+ */
+import type { LoyaltySettingsAccount } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    corp_id:    number;
+    /** null adds a new account. */
+    account:    LoyaltySettingsAccount | null;
+    error?:     string;
+}
+
+const {
+    corp_id,
+    account,
+    error,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { query_string } from '@helpers/string'
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/loyalty_settings_component/?${query_string(values)}`)
+const key = account ? String(account.id) : `new-${corp_id}`
+const roles = ['seller', 'stockpile'] as const
+const contacts = account?.contacts ?? []
+---
+
+<form
+    class="[ manage-form market-subform ]"
+    hx-post={partial_url({ part: 'account', id: String(corp_id) })}
+    hx-target={`#lp-accounts-${corp_id}`}
+    hx-include="#lp-filters"
+    hx-swap="outerHTML"
+    x-data
+>
+    <input type="hidden" name="action" value={account ? 'save_account' : 'add_account'} />
+    {account && <input type="hidden" name="account_id" value={account.id} />}
+    <h4 class="[ manage-eyebrow ]">{account ? account.name : t('industry.loyalty.settings.add_account')}</h4>
+    <div class="[ manage-fields ]">
+        <ManageField label={t('industry.loyalty.settings.name')} for={`lp-account-name-${key}`}>
+            <Input id={`lp-account-name-${key}`} type="text" name="name" size="sm" value={account?.name ?? ''} required />
+        </ManageField>
+        <ManageField label={t('industry.loyalty.settings.role')} for={`lp-account-role-${key}`}>
+            <Select id={`lp-account-role-${key}`} name="role" size="sm">
+                {roles.map((role) => <option value={role} selected={role === (account?.role ?? 'seller')}>{t(t_key('industry.loyalty.settings.role_', role))}</option>)}
+            </Select>
+        </ManageField>
+        <ManageField label={t('industry.loyalty.settings.offer')} for={`lp-account-offer-${key}`} hint={t('manage.lp.offer_hint')}>
+            <div class="[ market-unit-field ]">
+                <Input id={`lp-account-offer-${key}`} type="number" min="0" name="isk_per_lp" size="sm" value={account?.isk_per_lp ?? ''} />
+                <span class="[ market-unit ]" aria-hidden="true">{t('manage.lp.isk_per_lp')}</span>
+            </div>
+        </ManageField>
+        {account &&
+            <div class="[ manage-field ]">
+                <span class="[ manage-field__label ]">{t('manage.lp.account_status')}</span>
+                <div class="[ market-switches ]">
+                    <ManageSwitch name="is_active" label={t('industry.loyalty.settings.enabled')} checked={account.is_active} />
+                </div>
+            </div>
+        }
+    </div>
+
+    {contacts.map((contact) => (
+        <fieldset class="[ manage-fields ]">
+            <legend class="[ visually-hidden ]">{contact.character_name}</legend>
+            <input type="hidden" name="contact_ids" value={contact.id} />
+            <ManageField label={t('industry.loyalty.settings.contact')} for={`lp-contact-name-${contact.id}`}>
+                <Input id={`lp-contact-name-${contact.id}`} type="text" name={`contact_${contact.id}_name`} size="sm" value={contact.character_name} required />
+            </ManageField>
+            <ManageField label={t('industry.loyalty.settings.discord')} for={`lp-contact-discord-${contact.id}`}>
+                <Input id={`lp-contact-discord-${contact.id}`} type="text" name={`contact_${contact.id}_discord`} size="sm" value={contact.discord_username} />
+            </ManageField>
+            <div class="[ manage-field ]">
+                <span class="[ manage-field__label ]">{t('manage.lp.contact_status')}</span>
+                <div class="[ market-switches ]">
+                    <ManageSwitch name={`contact_${contact.id}_active`} label={t('manage.lp.listed')} checked={contact.is_active} />
+                    <ManageSwitch name={`contact_${contact.id}_remove`} label={t('manage.lp.remove_contact')} />
+                </div>
+            </div>
+        </fieldset>
+    ))}
+
+    <fieldset class="[ manage-fields ]">
+        <legend class="[ visually-hidden ]">{t('industry.loyalty.settings.add_contact')}</legend>
+        <ManageField label={t('industry.loyalty.settings.add_contact')} for={`lp-contact-new-${key}`}>
+            <Input id={`lp-contact-new-${key}`} type="text" name="new_contact_name" size="sm" />
+        </ManageField>
+        <ManageField label={t('industry.loyalty.settings.discord')} for={`lp-contact-new-discord-${key}`}>
+            <Input id={`lp-contact-new-discord-${key}`} type="text" name="new_contact_discord" size="sm" />
+        </ManageField>
+    </fieldset>
+
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+        <Button type="button" size="sm" color="transparent" x-on:click="$root.remove()">{t('cancel')}</Button>
+        {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+    </div>
+</form>

@@ -242,6 +242,7 @@ def build_fitting_expectation_rows(location) -> list[dict]:
             {
                 "fitting_id": fitting.pk,
                 "fitting_name": fitting.name,
+                "ship_id": fitting.ship_id,
                 "fitting_tags": fitting.tag_slugs(),
                 "quantity": expectation.quantity if expectation else None,
                 "item_count": len(item_quantities(fitting.eft_format)),
@@ -300,6 +301,7 @@ def build_contract_expectation_rows(location) -> list[dict]:
             {
                 "fitting_id": fitting.pk,
                 "fitting_name": fitting.name,
+                "ship_id": fitting.ship_id,
                 "fitting_tags": fitting.tag_slugs(),
                 "doctrine_names": ", ".join(doctrine_names),
                 "doctrine_names_list": doctrines_names,

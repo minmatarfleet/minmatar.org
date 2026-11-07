@@ -204,3 +204,55 @@ class LearningManageTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
+
+    def test_guides_name_their_certificate_and_step(self):
+        self._join()
+        for slug in ("one", "two", "loose"):
+            Learning.objects.create(slug=slug, title=slug, url="/x")
+        self._post(
+            "certificates",
+            {
+                "slug": "late",
+                "title": "Late",
+                "sort_order": 5,
+                "learning_slugs": ["two"],
+            },
+        )
+        self._post(
+            "certificates",
+            {
+                "slug": "early",
+                "title": "Early",
+                "sort_order": 1,
+                "learning_slugs": ["one", "two"],
+            },
+        )
+        response = self.client.get(f"{BASE}/guides", **auth_headers(self.user))
+        guides = {g["slug"]: g for g in response.json()}
+        self.assertEqual(guides["one"]["certificate_title"], "Early")
+        self.assertEqual(guides["one"]["certificate_step"], 1)
+        self.assertEqual(guides["two"]["certificate_slug"], "early")
+        self.assertEqual(guides["two"]["certificate_step"], 2)
+        self.assertEqual(guides["two"]["certificate_count"], 2)
+        self.assertEqual(guides["loose"]["certificate_slug"], "")
+        self.assertIsNone(guides["loose"]["certificate_step"])
+
+    def test_certificate_order(self):
+        self._join()
+        Certificate.objects.all().delete()  # drop the seeded ones
+        for slug, order in (("a", 1), ("b", 2), ("c", 3)):
+            Certificate.objects.create(slug=slug, title=slug, sort_order=order)
+        response = self._post("certificates/order", {"slugs": ["c", "a"]})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([c["slug"] for c in response.json()], ["c", "a", "b"])
+        self.assertEqual(AuditEntry.objects.count(), 1)
+        self._post("certificates/order", {"slugs": ["c", "a", "b"]})
+        self.assertEqual(AuditEntry.objects.count(), 1)
+        bad = self._post("certificates/order", {"slugs": ["c", "c"]})
+        self.assertEqual(bad.status_code, 400)
+        bad = self._post("certificates/order", {"slugs": ["zzz"]})
+        self.assertEqual(bad.status_code, 400)
+        refused = self._post(
+            "certificates/order", {"slugs": ["a"]}, user=self.outsider
+        )
+        self.assertEqual(refused.status_code, 403)

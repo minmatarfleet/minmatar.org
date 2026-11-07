@@ -1,0 +1,92 @@
+---
+/**
+ * The save bar of a grid of numbers (SRP amounts): one bar under the grid
+ * counts the changed rows and saves them together. Place it inside the
+ * <form> that holds the grid; the form posts with htmx (`hx-post` on the
+ * form) and the partial answers with the grid re-rendered, which resets
+ * the count. Discard puts every field back.
+ *
+ * The count is local Alpine state, no fetch: a field is changed when its
+ * value differs from the one the server rendered (defaultValue /
+ * defaultChecked). Changes are counted per row (the field's `tr`, or the
+ * closest `[data-dirty-scope]`), and changed rows get class "is-dirty".
+ * The bar hides while nothing has changed.
+ *
+ *   <form hx-post={grid_url} hx-target="#srp-grid" hx-select="#srp-grid" hx-swap="outerHTML" id="srp-grid">
+ *       <ManageTable ...>...</ManageTable>
+ *       <SaveBar label_one={t('...hull_changed')} label_many={t('...hulls_changed')} />
+ *   </form>
+ */
+interface Props {
+    /** "1 hull changed"; ~COUNT is replaced. */
+    label_one?:     string;
+    /** "~COUNT hulls changed". */
+    label_many?:    string;
+    [propName: string]: any;
+}
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const {
+    label_one = t('manage.kit.changes_one'),
+    label_many = t('manage.kit.changes_many'),
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Button from '@components/blocks/Button.astro'
+
+const save_label = t('manage.kit.save_count')
+---
+
+<div
+    class:list={['[ manage-savebar ]', Astro.props.class]}
+    role="status"
+    x-data={`{
+        count: 0,
+        form: null,
+        init() {
+            this.form = this.$el.closest('form')
+            if (!this.form) return
+            const recount = () => this.recount()
+            this.form.addEventListener('input', recount)
+            this.form.addEventListener('change', recount)
+            // Rows the save swapped back hold the new saved values.
+            this.form.addEventListener('htmx:afterSettle', recount)
+        },
+        changed(field) {
+            if (field.type === 'checkbox' || field.type === 'radio') return field.checked !== field.defaultChecked
+            if (field.tagName === 'SELECT') return [...field.options].some((option) => option.selected !== option.defaultSelected)
+            return field.value !== field.defaultValue
+        },
+        recount() {
+            const scopes = new Set()
+            for (const field of this.form.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=search]), select, textarea')) {
+                const scope = field.closest('[data-dirty-scope]') ?? field.closest('tr') ?? field
+                scope.classList.remove('is-dirty')
+                if (this.changed(field)) scopes.add(scope)
+            }
+            scopes.forEach((scope) => scope.classList.add('is-dirty'))
+            this.count = scopes.size
+        },
+        discard() {
+            this.form.reset()
+            setTimeout(() => this.recount())
+        },
+        get label() {
+            return (this.count === 1 ? ${JSON.stringify(label_one)} : ${JSON.stringify(label_many)}).replace('~COUNT', this.count)
+        },
+        get save_label() {
+            return ${JSON.stringify(save_label)}.replace('~COUNT', this.count)
+        },
+    }`}
+    x-show="count > 0"
+    x-cloak
+    {...attributes}
+>
+    <span class="[ manage-savebar__count ]" x-text="label"></span>
+    <Button type="button" size="sm" color="transparent" x-on:click="discard()">{t('manage.kit.discard')}</Button>
+    <Button type="submit" size="sm" color="fleet-red"><span x-text="save_label">{t('manage.kit.save')}</span></Button>
+</div>

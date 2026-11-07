@@ -1,12 +1,41 @@
 ---
+/**
+ * The bodies of the campaign Settings tab's sections (CampaignSettingsPanel).
+ * Each `part` GETs its form and POSTs back to itself; the form swaps only
+ * itself and sends the section's summary out of band.
+ *
+ * part=basics     name, tagline, status, start and end (EVE time)
+ * part=systems    goal, role and priority per system, retire, add by name; one Save
+ *                 (op=preview re-renders with a picked system added as a New row)
+ * part=sides      enemies and allies picked by name
+ * part=fittings   the campaign's fittings
+ * part=targets    this week's targets: accept, nudge, propose again
+ * part=order      the commander's order: publish, draft from the week plan
+ * part=structures the structures under recon (added from the Structures tab)
+ */
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
-import { get_campaign_settings, change_campaign } from '@helpers/api.minmatar.org/campaigns'
-import type { CampaignSettings } from '@dtypes/api.minmatar.org'
+import {
+    get_campaign_settings,
+    get_campaign_choices,
+    change_campaign,
+    type CampaignChoices,
+} from '@helpers/api.minmatar.org/campaigns'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import type { CampaignSettings, Fitting } from '@dtypes/api.minmatar.org'
+import { form_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
+import {
+    choice_label,
+    systems_summary,
+    sides_summary,
+    eve_weekday_date,
+    refusal_text,
+} from '@helpers/campaign_manage'
 
 const { auth_token, user } = get_request_user(Astro)
 if (!user || !auth_token) return HTTP_403_Forbidden()
@@ -14,351 +43,738 @@ if (!user || !auth_token) return HTTP_403_Forbidden()
 const gates = await get_gates(Astro)
 if (!can(gates, 'campaigns.manage')) return HTTP_403_Forbidden()
 
-const slug = Astro.url.searchParams.get('slug') ?? ''
+const params = Astro.url.searchParams
+const slug = params.get('slug') ?? ''
 if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
 
-const ROOT_ID = 'campaign-settings'
-const PARTIAL_URL = translatePath(`/partials/campaign_settings_component?slug=${encodeURIComponent(slug)}`)
+const PARTS = ['basics', 'systems', 'sides', 'fittings', 'targets', 'order', 'structures'] as const
+type Part = typeof PARTS[number]
+const part = (PARTS as readonly string[]).includes(params.get('part') ?? '') ? params.get('part') as Part : 'basics'
+const has_structures_tab = params.get('tab') === '1'
 
-const GOALS = ['take', 'hold', 'pressure', 'disrupt', 'recon', 'none']
-const ROLES = ['primary', 'secondary', 'support']
-const PRIORITIES = ['high', 'medium', 'low']
-const STATUSES = ['draft', 'scheduled', 'active', 'completed', 'archived']
-const PARTY_KINDS = ['alliance', 'corporation', 'character', 'faction']
-const PARTY_SIDES = ['enemy', 'ally']
+const PART_URL = translatePath(`/partials/campaign_settings_component/?${query_string({ slug, part, ...(has_structures_tab ? { tab: '1' } : {}) })}`)
+const section_id = `campaign-settings-${part}`
+const body_id = `${section_id}-body`
 
-/** `datetime-local` values are EVE time (UTC). */
-const to_iso = (value: FormDataEntryValue | null) => {
-    const raw = String(value ?? '')
-    if (!raw) return undefined
-    return `${raw}${raw.length === 16 ? ':00' : ''}Z`
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : null
+const field = (name: string) => form ? form_text(form, name) : ''
+const op = field('op')
+const is_preview = is_post && part === 'systems' && op !== 'save'
+
+/** A row of the systems table, from the stored system or from the posted form. */
+interface SystemRow {
+    key:                string;
+    id:                 number | null;
+    solar_system_id:    number;
+    name:               string;
+    goal:               string;
+    role:               string;
+    priority:           string;
+    retire:             boolean;
+    is_new:             boolean;
+    error?:             string;
 }
-const text = (form: FormData, key: string) => String(form.get(key) ?? '')
-const number = (form: FormData, key: string) => parseInt(text(form, key))
 
-let flash: { kind: 'success' | 'error', message: string } | null = null
+let saved = false
+let error_message = ''
+const row_errors: Record<string, string> = {}
+const pending_new: SystemRow[] = []
 
-if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const action = text(form, 'action')
-    const id = number(form, 'id')
-    try {
-        switch (action) {
-            case 'basics':
-                await change_campaign(slug, auth_token, 'PATCH', '/settings', {
-                    name: text(form, 'name'),
-                    tagline: text(form, 'tagline'),
-                    status: text(form, 'status'),
-                    start_at: to_iso(form.get('start_at')),
-                    end_at: to_iso(form.get('end_at')),
-                })
-                break
-            case 'system_add':
-                await change_campaign(slug, auth_token, 'POST', '/systems', {
-                    solar_system_id: number(form, 'solar_system_id'),
-                    goal: text(form, 'goal') || undefined,
-                })
-                break
-            case 'system_save':
-                await change_campaign(slug, auth_token, 'PATCH', `/systems/${id}`, {
-                    goal: text(form, 'goal'),
-                    role: text(form, 'role'),
-                    priority: text(form, 'priority'),
-                })
-                break
-            case 'system_retire':
-                await change_campaign(slug, auth_token, 'DELETE', `/systems/${id}`)
-                break
-            case 'party_add': {
-                const kind = text(form, 'kind')
-                await change_campaign(slug, auth_token, 'POST', '/parties', {
-                    name: text(form, 'name'),
-                    ticker: text(form, 'ticker'),
-                    kind,
-                    side: text(form, 'side'),
-                    [`${kind}_id`]: number(form, 'entity_id'),
-                })
-                break
-            }
-            case 'party_remove':
-                await change_campaign(slug, auth_token, 'DELETE', `/parties/${id}`)
-                break
-            case 'structure_remove':
-                await change_campaign(slug, auth_token, 'DELETE', `/structures/${id}`)
-                break
-            case 'fitting_add':
-                await change_campaign(slug, auth_token, 'POST', '/fittings', {
-                    fitting_id: number(form, 'fitting_id'),
-                    role_label: text(form, 'role_label'),
-                })
-                break
-            case 'fitting_remove':
-                await change_campaign(slug, auth_token, 'DELETE', `/fittings/${id}`)
-                break
-            case 'week_propose':
-                await change_campaign(slug, auth_token, 'POST', '/week/propose')
-                break
-            case 'week_accept':
-                await change_campaign(slug, auth_token, 'PATCH', `/week/${id}`, { target: parseFloat(text(form, 'target')) })
-                break
-            case 'order_save':
-                await change_campaign(slug, auth_token, 'POST', '/commander-order', { text: text(form, 'text') })
-                break
-            case 'order_draft':
-                await change_campaign(slug, auth_token, 'POST', '/commander-order/draft')
-                break
-            case 'order_publish':
-                await change_campaign(slug, auth_token, 'POST', '/commander-order/publish')
-                break
-        }
-        flash = { kind: 'success', message: t('campaigns.settings.saved') }
-    } catch (error) {
-        flash = { kind: 'error', message: error.message }
-    }
+const posted_number = (name: string) => {
+    const value = parseInt(field(name))
+    return Number.isFinite(value) ? value : null
+}
+
+async function load() {
+    return await get_campaign_settings(slug, auth_token as string)
 }
 
 let settings: CampaignSettings | null = null
+let choices: CampaignChoices | null = null
+let fittings: Fitting[] = []
 let fetch_error: Error | false = false
+
 try {
-    settings = await get_campaign_settings(slug, auth_token)
+    [ settings, choices ] = await Promise.all([ load(), get_campaign_choices(auth_token) ])
 } catch (error) {
     fetch_error = error
 }
 
-const input_time = (iso: string) => iso.slice(0, 16)
+/** Rows as posted: existing systems keep their stored name; new ones carry theirs. */
+function posted_rows(current: CampaignSettings): SystemRow[] {
+    if (!form) return []
+    const stored = new Map(current.systems.map((system) => [`e${system.id}`, system]))
+    const rows: SystemRow[] = []
+    for (const key of form.getAll('row').map(String)) {
+        const values = {
+            goal: field(`goal_${key}`),
+            role: field(`role_${key}`),
+            priority: field(`priority_${key}`),
+            retire: field(`retire_${key}`) === 'on',
+        }
+        const system = stored.get(key)
+        if (system) {
+            rows.push({ key, id: system.id, solar_system_id: system.solar_system_id, name: system.name, is_new: false, ...values })
+        } else if (/^n\d+$/.test(key)) {
+            rows.push({ key, id: null, solar_system_id: parseInt(key.slice(1)), name: field(`name_${key}`), is_new: true, ...values, retire: false })
+        }
+    }
+    return rows
+}
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+function stored_rows(current: CampaignSettings): SystemRow[] {
+    return current.systems
+        .filter((system) => !system.retired)
+        .map((system) => ({
+            key: `e${system.id}`,
+            id: system.id,
+            solar_system_id: system.solar_system_id,
+            name: system.name,
+            goal: system.goal,
+            role: system.role,
+            priority: system.priority,
+            retire: false,
+            is_new: false,
+        }))
+}
+
+let rows: SystemRow[] = []
+
+if (is_post && settings && choices) {
+    const current = settings
+    try {
+        switch (part) {
+            case 'basics':
+                await change_campaign(slug, auth_token, 'PATCH', '/settings', {
+                    name: field('name'),
+                    tagline: field('tagline'),
+                    status: field('status'),
+                    start_at: field('start_at') || undefined,
+                    end_at: field('end_at') || undefined,
+                })
+                saved = true
+                break
+            case 'systems': {
+                const posted = posted_rows(current)
+                const added_id = posted_number('add_system_id')
+                const live = (solar_id: number) => current.systems.some((system) => !system.retired && system.solar_system_id === solar_id)
+                if (added_id && !posted.some((row) => row.solar_system_id === added_id) && !live(added_id)) {
+                    posted.push({
+                        key: `n${added_id}`,
+                        id: null,
+                        solar_system_id: added_id,
+                        name: field('add_system_name'),
+                        goal: 'take',
+                        role: 'primary',
+                        priority: 'medium',
+                        retire: false,
+                        is_new: true,
+                    })
+                }
+                if (is_preview) {
+                    rows = posted
+                    break
+                }
+                const stored = new Map(current.systems.map((system) => [system.id, system]))
+                for (const row of posted) {
+                    try {
+                        if (row.is_new) {
+                            await change_campaign(slug, auth_token, 'POST', '/systems', {
+                                solar_system_id: row.solar_system_id,
+                                goal: row.goal,
+                                role: row.role,
+                                priority: row.priority,
+                            })
+                        } else if (row.retire && row.id) {
+                            await change_campaign(slug, auth_token, 'DELETE', `/systems/${row.id}`)
+                        } else if (row.id) {
+                            const before = stored.get(row.id)
+                            if (before && (before.goal !== row.goal || before.role !== row.role || before.priority !== row.priority)) {
+                                await change_campaign(slug, auth_token, 'PATCH', `/systems/${row.id}`, {
+                                    goal: row.goal,
+                                    role: row.role,
+                                    priority: row.priority,
+                                })
+                            }
+                        }
+                    } catch (error) {
+                        row_errors[row.key] = refusal_text(error, t('campaigns.action_failed'))
+                        if (row.is_new) pending_new.push({ ...row, error: row_errors[row.key] })
+                    }
+                }
+                saved = Object.keys(row_errors).length === 0
+                break
+            }
+            case 'sides':
+                if (op === 'remove') {
+                    await change_campaign(slug, auth_token, 'DELETE', `/parties/${posted_number('party_id')}`)
+                } else {
+                    const kind = field('kind')
+                    if (!['alliance', 'corporation', 'character'].includes(kind)) throw new Error(t('campaigns.manage.pick_first'))
+                    const entity_id = posted_number(`${kind}_id`)
+                    const name = field(`${kind}_name`)
+                    if (!entity_id || !name) throw new Error(t('campaigns.manage.pick_first'))
+                    await change_campaign(slug, auth_token, 'POST', '/parties', {
+                        name,
+                        kind,
+                        side: field('side'),
+                        [`${kind}_id`]: entity_id,
+                    })
+                }
+                saved = true
+                break
+            case 'fittings':
+                if (op === 'remove') {
+                    await change_campaign(slug, auth_token, 'DELETE', `/fittings/${posted_number('row_id')}`)
+                } else {
+                    const fitting_id = posted_number('fitting_id')
+                    if (!fitting_id) throw new Error(t('campaigns.manage.pick_fitting'))
+                    await change_campaign(slug, auth_token, 'POST', '/fittings', {
+                        fitting_id,
+                        role_label: field('role_label'),
+                    })
+                }
+                saved = true
+                break
+            case 'targets':
+                if (op === 'propose') {
+                    await change_campaign(slug, auth_token, 'POST', '/week/propose')
+                } else {
+                    for (const row of current.week_targets) {
+                        const value = parseFloat(field(`target_${row.id}`))
+                        if (Number.isFinite(value))
+                            await change_campaign(slug, auth_token, 'PATCH', `/week/${row.id}`, { target: value })
+                    }
+                }
+                saved = true
+                break
+            case 'order':
+                if (op === 'draft') {
+                    await change_campaign(slug, auth_token, 'POST', '/commander-order/draft')
+                } else if (op === 'publish_draft') {
+                    await change_campaign(slug, auth_token, 'POST', '/commander-order/publish')
+                } else {
+                    await change_campaign(slug, auth_token, 'POST', '/commander-order', { text: field('text') })
+                }
+                saved = true
+                break
+        }
+    } catch (error) {
+        error_message = refusal_text(error, t('campaigns.action_failed'))
+    }
+    // Reload after a write, so the form and the summary show what is stored.
+    if (!is_preview) {
+        try {
+            settings = await load()
+        } catch (error) {
+            fetch_error = error
+        }
+    }
+}
+
+if (settings && part === 'systems' && !is_preview)
+    rows = [...stored_rows(settings), ...pending_new]
+
+if (settings && part === 'fittings') {
+    try {
+        fittings = (await get_fittings()).sort((a, b) => a.name.localeCompare(b.name))
+    } catch (error) {
+        console.log(`Could not load fittings: ${error.message}`)
+    }
+}
+
+const retired = settings?.systems.filter((system) => system.retired && !rows.some((row) => row.solar_system_id === system.solar_system_id)) ?? []
+
+function summary_for(current: CampaignSettings): string {
+    switch (part) {
+        case 'basics': {
+            const status = choice_label(choices?.status, current.status)
+            const ends = t('campaigns.manage.ends_on').replace('~DATE', eve_weekday_date(lang, current.end_at))
+            return [current.tagline && `"${current.tagline}"`, status, ends].filter(Boolean).join(' · ')
+        }
+        case 'systems':
+            return systems_summary(current.systems, choices?.goal) || t('campaigns.manage.none_yet')
+        case 'sides':
+            return sides_summary(current.parties, choices?.party_side) || t('campaigns.manage.none_yet')
+        case 'fittings':
+            return current.fittings.map((fitting) => fitting.role_label ? `${fitting.name} (${fitting.role_label})` : fitting.name).join(' · ') || t('campaigns.manage.none_yet')
+        case 'targets': {
+            const count = current.week_targets.length
+            if (count === 0) return t('campaigns.manage.targets_none')
+            const proposed = current.week_targets.filter((row) => row.proposed).length
+            return [
+                count === 1 ? t('campaigns.manage.targets_count_one') : t('campaigns.manage.targets_count').replace('~COUNT', String(count)),
+                proposed > 0 ? t('campaigns.manage.targets_proposed').replace('~COUNT', String(proposed)) : '',
+            ].filter(Boolean).join(' · ')
+        }
+        case 'order':
+            return current.commander_order_text
+                ? `${current.commander_order_text}${current.commander_order_is_draft ? ` ${t('campaigns.manage.order_draft_suffix')}` : ''}`
+                : t('campaigns.manage.order_none')
+        case 'structures':
+            return current.structures.length === 0
+                ? t('campaigns.manage.none_yet')
+                : current.structures.length === 1
+                    ? t('campaigns.manage.structures_count_one')
+                    : t('campaigns.manage.structures_count').replace('~COUNT', String(current.structures.length))
+    }
+}
+
+const PARTY_KINDS = ['alliance', 'corporation', 'character'] as const
+const party_kind_label = (kind: string) =>
+    kind === 'alliance' ? t('campaigns.manage.party_alliance')
+        : kind === 'corporation' ? t('campaigns.manage.party_corporation')
+            : kind === 'character' ? t('campaigns.manage.party_character')
+                : choice_label(choices?.party_kind, kind)
+
+const format_number = (value: number) => value.toLocaleString(lang, { maximumFractionDigits: 1 })
+
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
+import Tag from '@components/blocks/Tag.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
+import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
 ---
 
-<div id={ROOT_ID}>
-    {fetch_error || !settings ?
+{fetch_error || !settings || !choices ?
+    <div id={body_id} class="[ manage-section__body ]">
         <ErrorRefetch
             args={{
-                partial: PARTIAL_URL,
+                partial: PART_URL,
                 error: fetch_error || new Error(t('campaigns.action_failed')),
                 delay: 0,
-                target: `#${ROOT_ID}`,
+                target: `#${body_id}`,
             }}
         />
-        :
-        <Flexblock gap="var(--space-l)">
-            {flash && <p class:list={['[ campaign-settings__flash ]', `is-${flash.kind}`]} role="status">{flash.message}</p>}
+    </div>
+    :
+    <form
+        id={body_id}
+        class="[ manage-section__body manage-form campaign-settings ]"
+        hx-post={PART_URL}
+        hx-target="this"
+        hx-swap="outerHTML"
+    >
+        {part === 'basics' &&
+            <Fragment>
+                <div class="[ manage-fields ]">
+                    <ManageField label={t('campaigns.manage.name')} for="campaign-basics-name">
+                        <Input id="campaign-basics-name" size="sm" name="name" value={settings.name} maxlength="128" required />
+                    </ManageField>
+                    <ManageField label={t('campaigns.manage.tagline')} for="campaign-basics-tagline" hint={t('campaigns.manage.tagline_hint')}>
+                        <Input id="campaign-basics-tagline" size="sm" name="tagline" value={settings.tagline} maxlength="200" />
+                    </ManageField>
+                    <ManageField label={t('campaigns.manage.status')} for="campaign-basics-status">
+                        <Select id="campaign-basics-status" size="sm" name="status">
+                            {choices.status.map((choice) => <option value={choice.value} selected={choice.value === settings.status}>{choice.label}</option>)}
+                        </Select>
+                    </ManageField>
+                    <EveTimeInput id="campaign-basics-start" name="start_at" label={t('campaigns.manage.starts')} value={settings.start_at} required />
+                    <EveTimeInput id="campaign-basics-end" name="end_at" label={t('campaigns.manage.ends')} value={settings.end_at} required />
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
 
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.settings.basics')}</h2>
-                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <input type="hidden" name="action" value="basics" />
-                        <Flexblock gap="var(--space-xs)">
-                            <label>{t('campaigns.settings.name')}<Input name="name" value={settings.name} maxlength="128" required /></label>
-                            <label>{t('campaigns.settings.tagline')}<Input name="tagline" value={settings.tagline} maxlength="200" /></label>
-                            <FlexInline gap="var(--space-s)">
-                                <label>{t('campaigns.settings.status')}
-                                    <Select name="status" size="sm">
-                                        {STATUSES.map((status) => <option value={status} selected={status === settings.status}>{status}</option>)}
-                                    </Select>
-                                </label>
-                                <label>{t('campaigns.settings.start')}<Input type="datetime-local" name="start_at" value={input_time(settings.start_at)} required /></label>
-                                <label>{t('campaigns.settings.end')}<Input type="datetime-local" name="end_at" value={input_time(settings.end_at)} required /></label>
-                            </FlexInline>
-                            <small>{t('campaigns.settings.eve_time')}</small>
-                            <div><Button type="submit" color="fleet-red" size="sm" off_disable={true}>{t('campaigns.settings.save')}</Button></div>
-                        </Flexblock>
-                    </form>
-                </Flexblock>
-            </ComponentBlock>
+        {part === 'systems' &&
+            <Fragment>
+                {rows.length === 0 ?
+                    <EmptyState title={t('campaigns.manage.no_systems')} />
+                    :
+                    <XFadeScroll>
+                        <table class="[ manage-table campaign-systems ]" style="--manage_table_min_width: 40rem">
+                            <caption class="[ visually-hidden ]">{t('campaigns.manage.systems_caption')}</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{t('campaigns.manage.system')}</th>
+                                    <th scope="col">{t('campaigns.manage.goal')}</th>
+                                    <th scope="col">{t('campaigns.manage.role')}</th>
+                                    <th scope="col">{t('campaigns.manage.priority')}</th>
+                                    <th scope="col" class="act"><span class="[ visually-hidden ]">{t('campaigns.manage.retire')}</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row) => (
+                                    <tr class:list={['[ campaign-systems__row ]', { 'is-new': row.is_new }]}>
+                                        <td>
+                                            <input type="hidden" name="row" value={row.key} />
+                                            {row.is_new && <input type="hidden" name={`name_${row.key}`} value={row.name} />}
+                                            <span class="[ campaign-systems__name ]">
+                                                <span class="[ manage-who__name ]">{row.name}</span>
+                                                {row.is_new && <Tag text={t('campaigns.manage.new_badge')} color="fleet-yellow" />}
+                                            </span>
+                                            {(row_errors[row.key] || row.error) &&
+                                                <span class="[ manage-field__error ]" role="alert">{row_errors[row.key] || row.error}</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <Select size="sm" name={`goal_${row.key}`} aria-label={`${t('campaigns.manage.goal')}: ${row.name}`}>
+                                                {choices.goal.map((choice) => <option value={choice.value} selected={choice.value === row.goal}>{choice.label}</option>)}
+                                            </Select>
+                                        </td>
+                                        <td>
+                                            <Select size="sm" name={`role_${row.key}`} aria-label={`${t('campaigns.manage.role')}: ${row.name}`}>
+                                                {choices.role.map((choice) => <option value={choice.value} selected={choice.value === row.role}>{choice.label}</option>)}
+                                            </Select>
+                                        </td>
+                                        <td>
+                                            <Select size="sm" name={`priority_${row.key}`} aria-label={`${t('campaigns.manage.priority')}: ${row.name}`}>
+                                                {choices.priority.map((choice) => <option value={choice.value} selected={choice.value === row.priority}>{choice.label}</option>)}
+                                            </Select>
+                                        </td>
+                                        <td class="act">
+                                            {row.is_new ?
+                                                <button
+                                                    type="button"
+                                                    class="[ campaign-systems__action ]"
+                                                    aria-label={t('campaigns.manage.remove_system').replace('~NAME', row.name)}
+                                                    x-data
+                                                    x-on:click="$el.closest('tr').remove()"
+                                                >
+                                                    {t('campaigns.manage.remove')}
+                                                </button>
+                                                :
+                                                <label class="[ campaign-systems__action campaign-systems__retire ]">
+                                                    <input type="checkbox" name={`retire_${row.key}`} checked={row.retire} class="[ visually-hidden ]" />
+                                                    <span class="[ campaign-systems__retire-off ]">{t('campaigns.manage.retire')}</span>
+                                                    <span class="[ campaign-systems__retire-on ]">{t('campaigns.manage.undo')}</span>
+                                                </label>
+                                            }
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </XFadeScroll>
+                }
+                {retired.length > 0 &&
+                    <p class="[ manage-muted ]">{t('campaigns.manage.retired_systems').replace('~NAMES', retired.map((system) => system.name).join(', '))}</p>
+                }
+                <div class="[ campaign-systems__foot ]">
+                    <div
+                        class="[ campaign-systems__add ]"
+                        hx-post={PART_URL}
+                        hx-vals='{"op": "preview"}'
+                        hx-trigger="manage-entity-picked"
+                        hx-include="closest form"
+                    >
+                        <EntityPicker
+                            id="campaign-systems-add"
+                            kind="system"
+                            name="add_system_id"
+                            name_field="add_system_name"
+                            label={t('campaigns.manage.add_system')}
+                            placeholder={t('campaigns.manage.add_system')}
+                        />
+                    </div>
+                    <div class="[ manage-actions ]">
+                        <Button type="button" color="transparent" size="sm" hx-get={PART_URL}>{t('campaigns.manage.discard')}</Button>
+                        <Button type="submit" size="sm" name="op" value="save">{t('campaigns.manage.save_systems')}</Button>
+                        {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                    </div>
+                </div>
+            </Fragment>
+        }
 
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.settings.systems')}</h2>
-                    {settings.systems.length === 0 && <EmptyState title={t('campaigns.settings.no_systems')} />}
-                    {settings.systems.map((system) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="id" value={system.id} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <strong>{system.name}{system.retired ? ` (${t('campaigns.settings.retired')})` : ''}</strong>
-                                <Select name="goal" size="sm" width="auto" aria-label={t('campaigns.settings.goal')}>
-                                    {GOALS.map((value) => <option value={value} selected={value === system.goal}>{value}</option>)}
-                                </Select>
-                                <Select name="role" size="sm" width="auto" aria-label={t('campaigns.settings.role')}>
-                                    {ROLES.map((value) => <option value={value} selected={value === system.role}>{value}</option>)}
-                                </Select>
-                                <Select name="priority" size="sm" width="auto" aria-label={t('campaigns.settings.priority')}>
-                                    {PRIORITIES.map((value) => <option value={value} selected={value === system.priority}>{value}</option>)}
-                                </Select>
-                                <Button type="submit" name="action" value="system_save" size="sm" off_disable={true}>{t('campaigns.settings.save')}</Button>
-                                {!system.retired &&
-                                    <Button type="submit" name="action" value="system_retire" color="transparent" size="sm" off_disable={true}>{t('campaigns.settings.retire')}</Button>
-                                }
-                            </FlexInline>
-                        </form>
-                    )}
-                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <input type="hidden" name="action" value="system_add" />
-                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input width="12rem" type="number" name="solar_system_id" placeholder={t('campaigns.settings.solar_system_id')} aria-label={t('campaigns.settings.solar_system_id')} required />
-                            <Select name="goal" size="sm" width="auto" aria-label={t('campaigns.settings.goal')}>
-                                {GOALS.map((value) => <option value={value}>{value}</option>)}
-                            </Select>
-                            <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add_system')}</Button>
-                        </FlexInline>
-                    </form>
-                </Flexblock>
-            </ComponentBlock>
+        {part === 'sides' &&
+            <Fragment>
+                {settings.parties.length === 0 ?
+                    <p class="[ manage-muted ]">{t('campaigns.manage.no_sides')}</p>
+                    :
+                    <ul class="[ campaign-list ]" role="list">
+                        {settings.parties.map((party) => (
+                            <li class="[ campaign-list__row ]">
+                                <span class="[ campaign-list__name ]">
+                                    <span class="[ manage-who__name ]">{party.name}{party.ticker && ` [${party.ticker}]`}</span>
+                                    <span class="[ manage-who__sub ]">{party_kind_label(party.kind)}</span>
+                                </span>
+                                <Tag text={choice_label(choices.party_side, party.side)} color={party.side === 'enemy' ? 'fleet-red' : 'alliance-blue'} />
+                                <Button
+                                    type="button"
+                                    color="transparent"
+                                    size="sm"
+                                    hx-post={PART_URL}
+                                    hx-vals={JSON.stringify({ op: 'remove', party_id: String(party.id) })}
+                                >{t('campaigns.manage.remove')}</Button>
+                            </li>
+                        ))}
+                    </ul>
+                }
+                <div class="[ manage-fields ]" x-data="{ kind: 'alliance' }">
+                    <ManageField label={t('campaigns.manage.side')} for="campaign-sides-side">
+                        <Select id="campaign-sides-side" size="sm" name="side">
+                            {choices.party_side.map((choice) => <option value={choice.value}>{choice.label}</option>)}
+                        </Select>
+                    </ManageField>
+                    <ManageField label={t('campaigns.manage.party_kind')} for="campaign-sides-kind">
+                        <Select id="campaign-sides-kind" size="sm" name="kind" x-model="kind">
+                            {PARTY_KINDS.map((kind) => <option value={kind}>{party_kind_label(kind)}</option>)}
+                        </Select>
+                    </ManageField>
+                    {PARTY_KINDS.map((kind) => (
+                        <EntityPicker
+                            id={`campaign-sides-${kind}`}
+                            kind={kind}
+                            name={`${kind}_id`}
+                            name_field={`${kind}_name`}
+                            label={party_kind_label(kind)}
+                            x-show={`kind === '${kind}'`}
+                            style={kind === 'alliance' ? undefined : 'display: none'}
+                        />
+                    ))}
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm" name="op" value="add">{t('campaigns.manage.add_side')}</Button>
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
 
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.settings.parties')}</h2>
-                    {settings.parties.length === 0 && <EmptyState title={t('campaigns.settings.no_parties')} />}
-                    {settings.parties.map((party) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="id" value={party.id} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <span>{party.name} {party.ticker && `[${party.ticker}]`} ({party.kind}, {party.side})</span>
-                                <Button type="submit" name="action" value="party_remove" color="transparent" size="sm" off_disable={true}>{t('campaigns.settings.remove')}</Button>
-                            </FlexInline>
-                        </form>
-                    )}
-                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <input type="hidden" name="action" value="party_add" />
-                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input width="14rem" name="name" placeholder={t('campaigns.settings.name')} aria-label={t('campaigns.settings.name')} required />
-                            <Input width="8rem" name="ticker" placeholder={t('campaigns.settings.ticker')} aria-label={t('campaigns.settings.ticker')} maxlength="16" />
-                            <Select name="kind" size="sm" width="auto" aria-label={t('campaigns.settings.kind')}>
-                                {PARTY_KINDS.map((value) => <option value={value}>{value}</option>)}
-                            </Select>
-                            <Select name="side" size="sm" width="auto" aria-label={t('campaigns.settings.side')}>
-                                {PARTY_SIDES.map((value) => <option value={value}>{value}</option>)}
-                            </Select>
-                            <Input width="12rem" type="number" name="entity_id" placeholder={t('campaigns.settings.entity_id')} aria-label={t('campaigns.settings.entity_id')} required />
-                            <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
-                        </FlexInline>
-                    </form>
-                </Flexblock>
-            </ComponentBlock>
+        {part === 'fittings' &&
+            <Fragment>
+                {settings.fittings.length === 0 ?
+                    <p class="[ manage-muted ]">{t('campaigns.manage.no_fittings')}</p>
+                    :
+                    <ul class="[ campaign-list ]" role="list">
+                        {settings.fittings.map((fitting) => (
+                            <li class="[ campaign-list__row ]">
+                                <span class="[ campaign-list__name ]">
+                                    <span class="[ manage-who__name ]">{fitting.name}</span>
+                                    {(fitting.ship_name || fitting.role_label) &&
+                                        <span class="[ manage-who__sub ]">{[fitting.ship_name, fitting.role_label].filter(Boolean).join(' · ')}</span>
+                                    }
+                                </span>
+                                <Button
+                                    type="button"
+                                    color="transparent"
+                                    size="sm"
+                                    hx-post={PART_URL}
+                                    hx-vals={JSON.stringify({ op: 'remove', row_id: String(fitting.id) })}
+                                >{t('campaigns.manage.remove')}</Button>
+                            </li>
+                        ))}
+                    </ul>
+                }
+                <div class="[ manage-fields ]">
+                    <ManageField label={t('campaigns.manage.fitting')} for="campaign-fittings-fitting">
+                        <Select id="campaign-fittings-fitting" size="sm" name="fitting_id">
+                            <option value="">{t('campaigns.manage.pick_fitting')}</option>
+                            {fittings.map((fitting) => <option value={fitting.id}>{fitting.name}</option>)}
+                        </Select>
+                    </ManageField>
+                    <ManageField label={t('campaigns.manage.fitting_role')} for="campaign-fittings-role" hint={t('campaigns.manage.fitting_role_hint')}>
+                        <Input id="campaign-fittings-role" size="sm" name="role_label" maxlength="64" />
+                    </ManageField>
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm" name="op" value="add">{t('campaigns.manage.add')}</Button>
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
 
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.settings.structures')}</h2>
-                    {settings.structures.length === 0 && <EmptyState title={t('campaigns.settings.no_structures')} />}
-                    {settings.structures.map((structure) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="id" value={structure.id} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <span>{structure.name} ({structure.structure_type}, {structure.system_name})</span>
-                                <Button type="submit" name="action" value="structure_remove" color="transparent" size="sm" off_disable={true}>{t('campaigns.settings.remove')}</Button>
-                            </FlexInline>
-                        </form>
-                    )}
-                    <small>{t('campaigns.settings.structures_hint')}</small>
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.settings.fittings')}</h2>
-                    {settings.fittings.length === 0 && <EmptyState title={t('campaigns.settings.no_fittings')} />}
-                    {settings.fittings.map((fitting) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="id" value={fitting.id} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <span>{fitting.name} {fitting.role_label && `(${fitting.role_label})`}</span>
-                                <Button type="submit" name="action" value="fitting_remove" color="transparent" size="sm" off_disable={true}>{t('campaigns.settings.remove')}</Button>
-                            </FlexInline>
-                        </form>
-                    )}
-                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <input type="hidden" name="action" value="fitting_add" />
-                        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                            <Input width="12rem" type="number" name="fitting_id" placeholder={t('campaigns.settings.fitting_id')} aria-label={t('campaigns.settings.fitting_id')} required />
-                            <Input width="12rem" name="role_label" placeholder={t('campaigns.settings.role_label')} aria-label={t('campaigns.settings.role_label')} maxlength="64" />
-                            <Button type="submit" size="sm" off_disable={true}>{t('campaigns.settings.add')}</Button>
-                        </FlexInline>
-                    </form>
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <FlexInline gap="var(--space-s)" justification="space-between">
-                        <h2>{t('campaigns.settings.week_targets')}</h2>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <Button type="submit" name="action" value="week_propose" size="sm" off_disable={true}>{t('campaigns.settings.propose')}</Button>
-                        </form>
-                    </FlexInline>
-                    {settings.week_targets.length === 0 && <EmptyState title={t('campaigns.settings.no_targets')} />}
-                    {settings.week_targets.map((row) =>
-                        <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                            <input type="hidden" name="id" value={row.id} />
-                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
-                                <span>{row.system}: {row.metric}</span>
-                                <Input width="12rem" type="number" step="any" name="target" value={row.target} aria-label={t('campaigns.settings.target')} />
-                                <Button type="submit" name="action" value="week_accept" size="sm" off_disable={true}>
-                                    {row.proposed ? t('campaigns.settings.accept') : t('campaigns.settings.accepted')}
-                                </Button>
-                            </FlexInline>
-                        </form>
-                    )}
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('campaigns.settings.orders')}</h2>
-                    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
-                        <Flexblock gap="var(--space-xs)">
-                            <label>
-                                {t('campaigns.settings.commander_order')}
-                                {settings.commander_order_is_draft && <em> ({t('campaigns.settings.draft')})</em>}
-                                <Input name="text" value={settings.commander_order_text} maxlength="280" />
-                            </label>
-                            <FlexInline gap="var(--space-xs)">
-                                <Button type="submit" name="action" value="order_save" size="sm" off_disable={true}>{t('campaigns.settings.publish_text')}</Button>
-                                <Button type="submit" name="action" value="order_draft" color="transparent" size="sm" off_disable={true}>{t('campaigns.settings.draft_order')}</Button>
-                                {settings.commander_order_is_draft &&
-                                    <Button type="submit" name="action" value="order_publish" size="sm" off_disable={true}>{t('campaigns.settings.publish_draft')}</Button>
-                                }
-                            </FlexInline>
-                        </Flexblock>
-                    </form>
-                    {settings.daily_orders.length > 0 &&
-                        <ul>
-                            {settings.daily_orders.map((order) =>
-                                <li>{order.kind}{order.system && ` · ${order.system}`} · {order.points}</li>
-                            )}
-                        </ul>
+        {part === 'targets' &&
+            <Fragment>
+                {settings.week_targets.length === 0 ?
+                    <p class="[ manage-muted ]">{t('campaigns.manage.targets_empty')}</p>
+                    :
+                    <XFadeScroll>
+                        <table class="[ manage-table ]" style="--manage_table_min_width: 36rem">
+                            <caption class="[ visually-hidden ]">{t('campaigns.manage.targets_caption')}</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{t('campaigns.manage.system')}</th>
+                                    <th scope="col">{t('campaigns.manage.metric')}</th>
+                                    <th scope="col" class="num">{t('campaigns.manage.progress')}</th>
+                                    <th scope="col">{t('campaigns.manage.target')}</th>
+                                    <th scope="col">{t('campaigns.manage.target_state')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {settings.week_targets.map((row) => (
+                                    <tr>
+                                        <td><span class="[ manage-who__name ]">{row.system}</span></td>
+                                        <td>{choice_label(choices.metric, row.metric)}</td>
+                                        <td class="num">{format_number(row.progress)}</td>
+                                        <td>
+                                            <Input
+                                                size="sm"
+                                                width="8rem"
+                                                type="number"
+                                                step="any"
+                                                name={`target_${row.id}`}
+                                                value={row.target}
+                                                class="[ manage-amount ]"
+                                                aria-label={`${t('campaigns.manage.target')}: ${row.system}, ${choice_label(choices.metric, row.metric)}`}
+                                            />
+                                        </td>
+                                        <td class:list={[row.proposed ? 'manage-warn' : 'manage-good']}>
+                                            {row.proposed ? t('campaigns.manage.proposed') : t('campaigns.manage.accepted')}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </XFadeScroll>
+                }
+                <div class="[ manage-actions ]">
+                    {settings.week_targets.length > 0 &&
+                        <Button type="submit" size="sm" name="op" value="accept">{t('campaigns.manage.accept_targets')}</Button>
                     }
-                </Flexblock>
-            </ComponentBlock>
-        </Flexblock>
-    }
-</div>
+                    <Button type="submit" color="transparent" size="sm" name="op" value="propose">{t('campaigns.manage.propose_again')}</Button>
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
+
+        {part === 'order' &&
+            <Fragment>
+                <div class="[ manage-fields campaign-order ]">
+                    <ManageField
+                        label={settings.commander_order_is_draft ? `${t('campaigns.manage.order_text')} ${t('campaigns.manage.order_draft_suffix')}` : t('campaigns.manage.order_text')}
+                        for="campaign-order-text"
+                        hint={t('campaigns.manage.order_hint')}
+                    >
+                        <Input id="campaign-order-text" size="sm" name="text" value={settings.commander_order_text} maxlength="280" />
+                    </ManageField>
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm" name="op" value="publish">{t('campaigns.manage.order_publish')}</Button>
+                    <Button type="submit" color="transparent" size="sm" name="op" value="draft">{t('campaigns.manage.order_draft')}</Button>
+                    {settings.commander_order_is_draft &&
+                        <Button type="submit" color="transparent" size="sm" name="op" value="publish_draft">{t('campaigns.manage.order_publish_draft')}</Button>
+                    }
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
+
+        {part === 'structures' &&
+            <Fragment>
+                {settings.structures.length === 0 ?
+                    <p class="[ manage-muted ]">{t('campaigns.manage.none_yet')}</p>
+                    :
+                    <ul class="[ campaign-list ]" role="list">
+                        {settings.structures.map((structure) => (
+                            <li class="[ campaign-list__row ]">
+                                <span class="[ campaign-list__name ]">
+                                    <span class="[ manage-who__name ]">{structure.name}</span>
+                                    <span class="[ manage-who__sub ]">{[structure.structure_type, structure.system_name].filter(Boolean).join(' · ')}</span>
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                }
+                <div class="[ manage-actions ]">
+                    {has_structures_tab
+                        ? <Button color="transparent" size="sm" href="#structures">{t('campaigns.manage.structures_open')}</Button>
+                        : <span class="[ manage-muted ]">{t('campaigns.manage.structures_scout')}</span>
+                    }
+                </div>
+            </Fragment>
+        }
+
+        {is_post && !is_preview && <SectionSummary section_id={section_id} text={summary_for(settings)} />}
+    </form>
+}
 
 <style lang="scss">
-    h2 {
-        margin-block: 0;
-        font-size: var(--step-1);
+    .campaign-settings :global(select) {
+        min-width: 8rem;
     }
 
-    label {
+    .campaign-systems__name {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .campaign-systems__row.is-new > td {
+        background: color-mix(in srgb, var(--fleet-yellow) 5%, transparent);
+    }
+
+    .campaign-systems__action {
+        font-family: var(--button-font);
+        font-weight: 600;
+        color: var(--highlight);
+        cursor: pointer;
+        white-space: nowrap;
+        background: none;
+        border: 0;
+        padding: var(--space-3xs) var(--space-2xs);
+    }
+
+    .campaign-systems__retire-on {
+        display: none;
+    }
+
+    .campaign-systems__row:has(.campaign-systems__retire input:checked) {
+        > td { opacity: 0.5; }
+        > td.act { opacity: 1; }
+
+        .campaign-systems__retire-on { display: inline; }
+        .campaign-systems__retire-off { display: none; }
+    }
+
+    .campaign-systems__retire:has(input:focus-visible) {
+        outline: 2px solid var(--highlight);
+        outline-offset: 2px;
+    }
+
+    .campaign-systems__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-s);
+    }
+
+    .campaign-systems__add {
+        flex: 0 1 22rem;
+        min-width: 0;
+    }
+
+    .campaign-list {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
     }
 
-    .campaign-settings__flash {
-        margin: 0;
-        padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--border-color);
+    .campaign-list__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-block-end: 1px solid var(--hairline);
+    }
 
-        &.is-success { border-color: var(--green); }
-        &.is-error { border-color: var(--fleet-red); }
+    .campaign-list__name {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    @media (max-width: 48rem) {
+        .campaign-systems__add {
+            flex-basis: 100%;
+        }
     }
 </style>

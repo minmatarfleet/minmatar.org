@@ -17,6 +17,12 @@ const {
 const primary_character = Astro.cookies.has('primary_pilot')
 
 const can_view_fleets = can(gates, 'fleets.view')
+// manage.hub: reaches at least one manage screen. The queue count loads lazily.
+const can_manage = can_manage_hub(gates)
+
+import { can_manage_hub } from '@helpers/manage'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import ManageEvEIcon from '@components/icons/ManageEvEIcon.astro'
 
 // CEOs and directors get a shortcut to their corporation's page (the first
 // one they're CEO of), lit on any corporation page they lead.
@@ -159,6 +165,23 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                     >
                         <IndustryEVEIcon />
                     </NeocomButton>
+                    {can_manage &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/manage'))}
+                            title='neocom.manage'
+                            description='manage.neocom_description'
+                            href={translatePath('/manage/')}
+                        >
+                            <ManageEvEIcon />
+                            <LazyPartial
+                                slot="badge"
+                                class="[ neocom-badge-slot ]"
+                                url={translatePath('/partials/manage_neocom_badge_component/')}
+                                swap="outerHTML"
+                                indicator={false}
+                            />
+                        </NeocomButton>
+                    }
                     {false && primary_character &&
                         <NeocomButton
                             active={page.startsWith(translatePath('/character/assets/user/'))}

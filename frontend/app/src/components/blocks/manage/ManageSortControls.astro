@@ -1,0 +1,80 @@
+---
+/**
+ * A drag grip plus Move up / Move down buttons for one item of a list
+ * ordered with @helpers/manage_reorder. Put it inside the item (the
+ * element carrying `sort_item_attrs(event)`), under a container with
+ * x-data="{ dragging: null }".
+ *
+ *   <ManageSortControls event="guides-reordered" name={guide.title} />
+ */
+interface Props {
+    /** Fired on the item after it moves. */
+    event:      string;
+    /** What moves, for the buttons' accessible names. */
+    name:       string;
+    [propName: string]: any;
+}
+
+const {
+    event,
+    name,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { sort_down_attrs, sort_handle_attrs, sort_up_attrs } from '@helpers/manage_reorder'
+---
+
+<span class:list={['[ manage-sort ]', Astro.props.class]} {...attributes}>
+    <span class="[ manage-sort__grip ]" title={t('learning_admin.drag')} {...sort_handle_attrs}>
+        <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/></svg>
+    </span>
+    <button class="[ manage-sort__move ]" aria-label={t('learning_admin.move_up').replace('~NAME', name)} {...sort_up_attrs(event)}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg>
+    </button>
+    <button class="[ manage-sort__move ]" aria-label={t('learning_admin.move_down').replace('~NAME', name)} {...sort_down_attrs(event)}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+</span>
+
+<style lang="scss">
+    .manage-sort {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--text-muted);
+    }
+
+    .manage-sort__grip {
+        display: inline-flex;
+        padding: var(--space-3xs);
+        cursor: grab;
+        touch-action: none;
+    }
+
+    .manage-sort__move {
+        display: inline-flex;
+        padding: var(--space-3xs);
+        background: none;
+        border: 1px solid transparent;
+        color: inherit;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--highlight);
+            border-color: var(--hairline-medium);
+        }
+    }
+
+    // Phones drag poorly, and the row is narrow; the buttons stay.
+    @media (hover: none), (max-width: 48rem) {
+        .manage-sort__grip {
+            display: none;
+        }
+    }
+</style>

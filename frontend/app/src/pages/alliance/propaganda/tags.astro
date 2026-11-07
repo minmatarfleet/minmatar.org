@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -12,59 +12,84 @@ if (!auth_token || !user) return login_redirect(Astro)
 const gates = await get_gates(Astro)
 if (!can(gates, 'posts.tags.manage')) return HTTP_403_Forbidden()
 
-import type { PostTag } from '@dtypes/api.minmatar.org'
-import { get_posts_tags } from '@helpers/api.minmatar.org/posts'
+import type { PostTagCount } from '@dtypes/api.minmatar.org'
+import { get_post_tag_counts } from '@helpers/api.minmatar.org/posts'
 
-let tags: PostTag[] = []
+let tags: PostTagCount[] = []
 let data_fetching_error: Error | false = false
 
 try {
-    tags = await get_posts_tags()
+    tags = await get_post_tag_counts(auth_token)
 } catch (error) {
+    if (error?.cause === 403) return HTTP_403_Forbidden()
     data_fetching_error = error
 }
 
 const page_title = t('post_tags.manage.page_title')
+const PARTIAL_URL = translatePath('/partials/post_tags_component')
 
 import Viewport from '@layouts/Viewport.astro'
-import PageWide from '@components/page/PageWide.astro'
-import PageTitle from '@components/page/PageTitle.astro'
-import PageActions from '@components/page/PageActions.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
 import PostTagsManager from '@components/blocks/PostTagsManager.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('page_finder.propaganda.tags.description')}>
-    <PageWide
-        cover={{
-            image: '/images/propaganda-cover.jpg',
-            image_990: '/images/propaganda-cover.jpg',
-            overlay: true,
-            scrollable: true,
-        }}
-    >
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-            <PageActions>
-                <Button href={translatePath('/alliance/propaganda/my_posts/')}>{t('my_posts')}</Button>
-            </PageActions>
-        </FlexInline>
-
-        <Flexblock gap="var(--space-l)">
-            <p>{t('post_tags.manage.leading_text')}</p>
-            {data_fetching_error ?
-                <ErrorRefetch args={{ partial: translatePath('/partials/post_tags_component'), error: data_fetching_error, delay: 0 }} />
-                :
-                <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
-                    <PostTagsManager tags={tags} />
-                </ComponentBlock>
-            }
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} />
+            <ManageHero title={page_title} role={t('admin_content.tags.role')} fact={t('admin_content.tags.fact')}>
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/alliance/propaganda/my_posts/')}>{t('my_posts')}</Button>
+                    <DialogButton color="fleet-red" size="lg" max_width="28rem">
+                        {t('post_tags.manage.add')}
+                        <form
+                            slot="dialog"
+                            class="[ manage-form ]"
+                            hx-post={PARTIAL_URL}
+                            hx-target="#post-tags-manager"
+                            hx-select="#post-tags-manager"
+                            hx-swap="outerHTML"
+                            x-data="{ submitting: false }"
+                            {...{
+                                'x-on:htmx:before-request': 'submitting = true; $refs.error.textContent = ""',
+                                'x-on:htmx:after-request': `submitting = false; if ($event.detail.successful) { $el.reset(); close_dialog() } else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
+                            }}
+                        >
+                            <input type="hidden" name="action" value="create" />
+                            <h3>{t('post_tags.manage.add')}</h3>
+                            <ManageField label={t('post_tags.manage.new')} for="post-tag-new">
+                                <Input id="post-tag-new" type="text" name="tag" required maxlength="100" autocomplete="off" />
+                            </ManageField>
+                            <p class="[ manage-field__error ]" role="alert" x-ref="error"></p>
+                            <FlexInline justification="flex-end">
+                                <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
+                                <Button type="submit" size="sm" x-bind:disabled="submitting">{t('post_tags.manage.add')}</Button>
+                            </FlexInline>
+                        </form>
+                    </DialogButton>
+                </Fragment>
+            </ManageHero>
         </Flexblock>
-    </PageWide>
+
+        {data_fetching_error ?
+            <div id="post-tags-manager">
+                <ErrorRefetch args={{ partial: PARTIAL_URL, error: data_fetching_error, delay: 0 }} />
+            </div>
+            :
+            <PostTagsManager tags={tags} />
+        }
+    </Flexblock>
+</PageLanding>
 </Viewport>

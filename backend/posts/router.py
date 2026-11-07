@@ -6,7 +6,7 @@ import re
 from ninja import Router
 from pydantic import BaseModel
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponse
 from django.core.paginator import Paginator
 
@@ -220,6 +220,23 @@ class EveTagRequest(BaseModel):
 
 class EveTagMergeRequest(BaseModel):
     into_tag_id: int
+
+
+class EveTagCountResponse(BaseModel):
+    tag_id: int
+    tag: str
+    post_count: int
+
+
+class EveTagMergePreview(BaseModel):
+    tag_id: int
+    tag: str
+    into_tag_id: int
+    into_tag: str
+    # Posts carrying the merged tag; all of them end up under `into_tag`.
+    moving: int
+    # Posts under `into_tag` after the merge (a post with both counts once).
+    into_total: int
 
 
 class CreateEvePostRequest(BaseModel):
@@ -570,6 +587,59 @@ def _tag_name_error(name: str, exclude_id: int | None = None):
 
 def _tag_response(tag: EveTag) -> EveTagResponse:
     return EveTagResponse(tag_id=tag.id, tag=tag.tag)
+
+
+@router.get(
+    "/tags/counts",
+    response={200: List[EveTagCountResponse], 403: ErrorResponse},
+    auth=AuthBearer(),
+    summary="Post tags with how many posts carry each, most used first",
+)
+def get_tag_counts(request):
+    if not can_use_feature(request.user, TAGS_FEATURE):
+        return 403, {"detail": TAGS_FORBIDDEN}
+    tags = EveTag.objects.annotate(post_count=Count("evepost")).order_by(
+        "-post_count", "tag"
+    )
+    return [
+        EveTagCountResponse(tag_id=t.id, tag=t.tag, post_count=t.post_count)
+        for t in tags
+    ]
+
+
+@router.get(
+    "/tags/{tag_id}/merge-preview",
+    response={
+        200: EveTagMergePreview,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+    auth=AuthBearer(),
+    summary="What merging a tag into another would do, in post counts",
+)
+def preview_tag_merge(request, tag_id: int, into_tag_id: int):
+    if not can_use_feature(request.user, TAGS_FEATURE):
+        return 403, {"detail": TAGS_FORBIDDEN}
+    if into_tag_id == tag_id:
+        return 400, {"detail": "Pick a different tag to merge into."}
+    source = EveTag.objects.filter(id=tag_id).first()
+    target = EveTag.objects.filter(id=into_tag_id).first()
+    if source is None or target is None:
+        return 404, {"detail": "Tag not found."}
+    into_total = (
+        EvePost.objects.filter(Q(tags=source) | Q(tags=target))
+        .distinct()
+        .count()
+    )
+    return EveTagMergePreview(
+        tag_id=source.id,
+        tag=source.tag,
+        into_tag_id=target.id,
+        into_tag=target.tag,
+        moving=EvePost.objects.filter(tags=source).count(),
+        into_total=into_total,
+    )
 
 
 @router.post(

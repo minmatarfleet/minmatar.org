@@ -1,0 +1,237 @@
+---
+/**
+ * The working examples on /manage/kit/: every manage kit component wired to
+ * a real htmx round trip. Nothing is stored; saves echo what was posted.
+ * Package screens copy these patterns (see the kit's status notes).
+ *
+ * part=list    ViewChips + ManageTable of the screens you reach (GET)
+ * part=row     an ExpandRow's detail (GET) / its save or ConfirmAction (POST)
+ * part=section a SettingsSection body (GET) / its save (POST)
+ * part=switch  a header switch flip (POST): only the summary changes
+ * part=grid    SaveBar grid save (POST)
+ */
+// no-error-refetch: a superuser-only demo; a failed summary renders an empty list.
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ManageSummary } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { get_manage_summary } from '@helpers/api.minmatar.org/manage'
+import { manage_screen, waiting_queues } from '@helpers/manage'
+import { query_string } from '@helpers/string'
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
+import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
+import KitGrid from '@components/blocks/manage/KitGrid.astro'
+import Button from '@components/blocks/Button.astro'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+if (!can(await get_gates(Astro), 'site.debug_pages')) return HTTP_403_Forbidden()
+
+const PAGE_SIZE = 50
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'list'
+const is_post = Astro.request.method === 'POST'
+const form = is_post ? await Astro.request.formData() : null
+const field = (name: string) => String(form?.get(name) ?? '').trim()
+
+const kit_url = (values: Record<string, string>) => translatePath(`/partials/manage_kit_component/?${query_string(values)}`)
+const label_of = (key: string) => t(t_key('manage.screen_', key))
+
+let summary: ManageSummary | null = null
+if (part === 'list' || part === 'row') {
+    try {
+        summary = await get_manage_summary(auth_token)
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+// part=list
+const view = params.get('view') ?? 'all'
+const query = (params.get('q') ?? '').trim().toLowerCase()
+const page = Math.max(1, parseInt(params.get('page') ?? '1') || 1)
+const waiting = new Map(waiting_queues(summary).map((queue) => [queue.screen, queue]))
+const screens = summary?.screens ?? []
+const searched = screens.filter((screen) => !query || label_of(screen.key).toLowerCase().includes(query))
+const in_view = (key: string, screen: { key: string, group: string }) =>
+    key === 'all' || (key === 'waiting' ? waiting.has(screen.key) : screen.group === key)
+const groups = [...new Set(screens.map((screen) => screen.group))]
+const rows = searched.filter((screen) => in_view(view, screen))
+const total_pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+const page_rows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+// part=row / part=section
+const row_key = params.get('key') ?? field('key')
+const row_screen = manage_screen(row_key)
+const saved = is_post
+const removed = is_post && field('action') === 'remove'
+const picked_corporation = { id: field('corporation_id'), name: field('corporation_name') }
+const picked_system = { id: field('system_id'), name: field('system_name') }
+const when = field('when')
+const section_text = [picked_corporation.name, picked_system.name, when && `${when.slice(0, 16).replace('T', ' ')} EVE`]
+    .filter(Boolean).join(' · ')
+
+const COLUMNS = [
+    { label: t('manage.kit.demo_screen') },
+    { label: t('manage.kit.demo_group'), phone: false },
+    { label: t('manage.kit.demo_waiting'), align: 'num' as const },
+]
+---
+
+{part === 'list' &&
+    <div class="[ manage-list ]" id="kit-list-root">
+        <ViewChips
+            id="kit-filters"
+            url={kit_url({ part: 'list' })}
+            target="kit-list"
+            selected={view}
+            search_id="kit-search"
+            legend={t('manage.kit.demo_views')}
+            views={[
+                { value: 'all', label: t('manage.kit.demo_all'), count: searched.length },
+                ...groups.map((group) => ({ value: group, label: t(t_key('manage.group_', group)), count: searched.filter((s) => s.group === group).length })),
+            ]}
+            attention={[{ value: 'waiting', label: t('manage.waiting'), count: searched.filter((s) => waiting.has(s.key)).length, tone: 'warn' }]}
+        >
+            <div class="[ manage-toolbar ]">
+                <ManageSearch id="kit-search" value={params.get('q') ?? ''} label={t('manage.kit.demo_search')} />
+            </div>
+        </ViewChips>
+        <div id="kit-list" class="[ manage-list ]" aria-live="polite">
+            {page_rows.length === 0
+                ? <EmptyState title={t('manage.kit.demo_no_screens')} />
+                : (
+                    <ManageTable caption={t('manage.kit.demo_screens')} columns={COLUMNS}>
+                        {page_rows.map((screen) => (
+                            <ExpandRow
+                                id={`kit-row-${screen.key}`}
+                                colspan={COLUMNS.length + 1}
+                                label={t('manage.kit.demo_open').replace('~NAME', label_of(screen.key))}
+                                url={kit_url({ part: 'row', key: screen.key })}
+                            >
+                                <td>
+                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                        <span class="[ manage-who__text ]">
+                                            <span class="[ manage-who__name ]">{label_of(screen.key)}</span>
+                                            <span class="[ manage-who__sub ]">{manage_screen(screen.key)?.path}</span>
+                                        </span>
+                                    </button>
+                                </td>
+                                <td class="[ is-wide ]">{t(t_key('manage.group_', screen.group))}</td>
+                                <td class:list={['num', { 'manage-warn': waiting.has(screen.key) }]}>{waiting.get(screen.key)?.count ?? 0}</td>
+                            </ExpandRow>
+                        ))}
+                    </ManageTable>
+                )
+            }
+            <HtmxPager
+                page={page}
+                total_pages={total_pages}
+                url_for={(to) => kit_url({ part: 'list', page: String(to) })}
+                request={{ 'hx-target': '#kit-list', 'hx-select': '#kit-list', 'hx-swap': 'outerHTML', 'hx-include': '#kit-filters' }}
+            />
+        </div>
+    </div>
+}
+
+{part === 'row' && row_screen && (
+    removed
+        ? (
+            // A row goes back inside a <table> and the request picks it with hx-select:
+            // htmx would drop a bare <tbody> after Astro's leading <style>/<link>.
+            <table>
+                <ExpandRow id={`kit-row-${row_screen.key}`} colspan={COLUMNS.length + 1} label={label_of(row_screen.key)} dim={true}>
+                    <td><span class="[ manage-who__name ]">{label_of(row_screen.key)}</span></td>
+                    <td class="[ is-wide ]">{t(t_key('manage.group_', row_screen.group))}</td>
+                    <td class="num"><span class="[ manage-saved ]">{t('manage.kit.demo_removed')}</span></td>
+                    <p slot="detail" class="[ manage-muted ]">{t('manage.kit.demo_removed')}</p>
+                </ExpandRow>
+            </table>
+        )
+        : (
+            <form
+                class="[ manage-form ]"
+                hx-post={kit_url({ part: 'row', key: row_screen.key })}
+                hx-target="this"
+                hx-swap="outerHTML"
+            >
+                <div class="[ manage-fields ]">
+                    <div class="[ manage-field ]">
+                        <span class="[ manage-field__label ]">{t('manage.kit.demo_path')}</span>
+                        <a href={translatePath(row_screen.path)}>{row_screen.path}</a>
+                    </div>
+                    <EveTimeInput id={`kit-when-${row_screen.key}`} name="when" label={t('manage.kit.demo_when')} value={when ? when : new Date(Date.now() + 26 * 3_600_000).toISOString()} />
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+                    {saved && <span class="[ manage-saved ]">{t('manage.kit.saved')}</span>}
+                    <span class="[ manage-actions__end ]">
+                        <ConfirmAction
+                            label={t('manage.kit.demo_remove')}
+                            title={t('manage.kit.demo_remove_title').replace('~NAME', label_of(row_screen.key))}
+                            consequence={t('manage.kit.demo_remove_consequence')}
+                            confirm_label={t('manage.kit.demo_remove_confirm')}
+                            url={kit_url({ part: 'row', key: row_screen.key })}
+                            vals={{ action: 'remove' }}
+                            target={`#kit-row-${row_screen.key}`}
+                            select={`#kit-row-${row_screen.key}`}
+                        />
+                    </span>
+                </div>
+            </form>
+        )
+)}
+
+{part === 'section' &&
+    <form
+        class="[ manage-section__body manage-form ]"
+        hx-post={kit_url({ part: 'section' })}
+        hx-target="this"
+        hx-swap="outerHTML"
+    >
+        <div class="[ manage-fields ]">
+            <EntityPicker
+                id="kit-corporation"
+                kind="corporation"
+                name="corporation_id"
+                name_field="corporation_name"
+                label={t('manage.kit.demo_corporation')}
+                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: `https://images.evetech.net/corporations/${picked_corporation.id}/logo?size=64` } : null}
+            />
+            <EntityPicker
+                id="kit-system"
+                kind="system"
+                name="system_id"
+                name_field="system_name"
+                label={t('manage.kit.demo_system')}
+                value={picked_system.id ? picked_system : null}
+            />
+            <EveTimeInput id="kit-section-when" name="when" label={t('manage.kit.demo_when')} value={when || null} />
+        </div>
+        <div class="[ manage-actions ]">
+            <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+            {saved && <span class="[ manage-saved ]">{t('manage.kit.saved')}</span>}
+        </div>
+        {saved && <SectionSummary section_id="kit-section-lazy" text={section_text || t('manage.kit.demo_not_set')} />}
+    </form>
+}
+
+{part === 'switch' &&
+    <SectionSummary section_id="kit-section-switch" text={field('enabled') ? t('manage.kit.demo_on') : t('manage.kit.demo_off')} />
+}
+
+{part === 'grid' &&
+    <KitGrid values={[field('rifter'), field('slasher'), field('scythe')]} saved={true} />
+}

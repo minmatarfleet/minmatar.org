@@ -1,0 +1,56 @@
+---
+/**
+ * An on/off switch that saves when flipped. It is a checkbox, so htmx
+ * attributes go straight on it; post the form it sits in, or the switch
+ * alone with its own `hx-post`:
+ *
+ *   <ManageSwitch
+ *       name="enabled" checked={feed.enabled} label={t('...enabled')}
+ *       hx-post={row_url} hx-trigger="change" hx-target={`#${row_id}`} hx-swap="outerHTML"
+ *   />
+ *
+ * The label is visible unless `hide_label` is set, for a switch whose
+ * meaning is already on screen (a section header's title); it then becomes
+ * the accessible name. An unchecked checkbox posts nothing, so the handler
+ * reads a missing field as off (or pair it with a hidden input).
+ */
+interface Props {
+    name:           string;
+    label:          string;
+    checked?:       boolean;
+    hide_label?:    boolean;
+    disabled?:      boolean;
+    value?:         string;
+    id?:            string;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    label,
+    checked = false,
+    hide_label = false,
+    disabled = false,
+    value = 'on',
+    id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<label class:list={['[ manage-switch ]', Astro.props.class]}>
+    <input
+        type="checkbox"
+        role="switch"
+        id={id}
+        name={name}
+        value={value}
+        checked={checked}
+        disabled={disabled}
+        aria-label={hide_label ? label : undefined}
+        {...attributes}
+    />
+    <span class="[ manage-switch__track ]" aria-hidden="true"></span>
+    {!hide_label && <span>{label}</span>}
+</label>

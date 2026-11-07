@@ -325,18 +325,8 @@ def make_reimbursement_evemail(reimbursement):
 OUTSTANDING_STATUSES = ("pending", "approved")
 
 
-def outstanding_recalculation_preview(limit: int = 50) -> dict:
-    """
-    What recalculating every outstanding (pending/approved) request would
-    change, without saving anything. Amounts follow the latest program amount
-    per hull; a hull with no program or amount history pays 0, as in
-    recalculate_reimbursement_amount.
-    """
-    outstanding = list(
-        EveFleetShipReimbursement.objects.filter(
-            status__in=OUTSTANDING_STATUSES
-        ).order_by("id")
-    )
+def latest_program_amounts() -> dict[int, ShipReimbursementProgramAmount]:
+    """The latest program amount row per hull type id."""
     latest = {}
     for program in ShipReimbursementProgram.objects.prefetch_related(
         "amounts"
@@ -348,6 +338,82 @@ def outstanding_recalculation_preview(limit: int = 50) -> dict:
         )
         if row:
             latest[program.eve_type_id] = row
+    return latest
+
+
+def is_filed_at_old_amount(
+    reimbursement: EveFleetShipReimbursement,
+    latest: Optional[ShipReimbursementProgramAmount],
+) -> bool:
+    """
+    An outstanding request filed at an amount the hull no longer pays, that
+    a manager has not chosen to keep (keep_filed_amounts points the request
+    at the current amount row and leaves its amount alone).
+    """
+    if latest is None:
+        return False
+    if reimbursement.amount == latest.srp_value:
+        return False
+    return reimbursement.reimbursement_program_amount_id != latest.id
+
+
+def outstanding_counts_by_hull() -> dict[int, dict]:
+    """Open (pending/approved) and filed-at-an-old-amount counts per hull."""
+    latest = latest_program_amounts()
+    counts: dict[int, dict] = {}
+    for reimbursement in EveFleetShipReimbursement.objects.filter(
+        status__in=OUTSTANDING_STATUSES
+    ).only(
+        "id",
+        "ship_type_id",
+        "amount",
+        "reimbursement_program_amount_id",
+    ):
+        row = counts.setdefault(
+            reimbursement.ship_type_id, {"open": 0, "stale": 0}
+        )
+        row["open"] += 1
+        if is_filed_at_old_amount(
+            reimbursement, latest.get(reimbursement.ship_type_id)
+        ):
+            row["stale"] += 1
+    return counts
+
+
+def _hull_stale_requests(ship_type_id: int):
+    latest = latest_program_amounts().get(ship_type_id)
+    requests = [
+        reimbursement
+        for reimbursement in EveFleetShipReimbursement.objects.filter(
+            status__in=OUTSTANDING_STATUSES, ship_type_id=ship_type_id
+        ).order_by("created_at", "id")
+        if is_filed_at_old_amount(reimbursement, latest)
+    ]
+    return latest, requests
+
+
+def outstanding_recalculation_preview(
+    limit: int = 50, ship_type_id: Optional[int] = None
+) -> dict:
+    """
+    What recalculating every outstanding (pending/approved) request would
+    change, without saving anything. Amounts follow the latest program amount
+    per hull; a hull with no program or amount history pays 0, as in
+    recalculate_reimbursement_amount.
+
+    With ``ship_type_id``, only that hull's requests filed at an old amount
+    that a manager has not kept (is_filed_at_old_amount).
+    """
+    if ship_type_id is not None:
+        row, outstanding = _hull_stale_requests(ship_type_id)
+        latest = {ship_type_id: row} if row else {}
+    else:
+        outstanding = list(
+            EveFleetShipReimbursement.objects.filter(
+                status__in=OUTSTANDING_STATUSES
+            ).order_by("id")
+        )
+        latest = latest_program_amounts()
     changes = []
     current_total = 0
     new_total = 0
@@ -362,9 +428,15 @@ def outstanding_recalculation_preview(limit: int = 50) -> dict:
                     "id": reimbursement.id,
                     "ship_name": reimbursement.ship_name,
                     "character_name": reimbursement.character_name,
+                    "character_id": reimbursement.character_id,
                     "status": reimbursement.status,
                     "current_amount": reimbursement.amount,
                     "new_amount": new_amount,
+                    "created_at": (
+                        reimbursement.created_at.isoformat()
+                        if reimbursement.created_at
+                        else None
+                    ),
                 }
             )
     changes.sort(
@@ -382,8 +454,18 @@ def outstanding_recalculation_preview(limit: int = 50) -> dict:
     }
 
 
-def recalculate_outstanding() -> dict:
-    """Apply the preview: rewrite every outstanding request's amount."""
+def recalculate_outstanding(ship_type_id: Optional[int] = None) -> dict:
+    """
+    Apply the preview: rewrite every outstanding request's amount. With
+    ``ship_type_id``, only the hull's requests filed at an old amount.
+    """
+    if ship_type_id is not None:
+        row, requests = _hull_stale_requests(ship_type_id)
+        for reimbursement in requests:
+            reimbursement.reimbursement_program_amount = row
+            reimbursement.amount = row.srp_value
+            reimbursement.save()
+        return {"updated": len(requests), "errors": 0}
     updated = 0
     errors = 0
     for reimbursement in EveFleetShipReimbursement.objects.filter(
@@ -410,3 +492,16 @@ def recalculate_outstanding() -> dict:
             )
             errors += 1
     return {"updated": updated, "errors": errors}
+
+
+def keep_filed_amounts(ship_type_id: int) -> dict:
+    """
+    Keep what a hull's outstanding requests were filed at: point them at
+    the current amount row (so they stop showing as filed at an old
+    amount) without changing their amount.
+    """
+    row, requests = _hull_stale_requests(ship_type_id)
+    for reimbursement in requests:
+        reimbursement.reimbursement_program_amount = row
+        reimbursement.save(update_fields=["reimbursement_program_amount"])
+    return {"updated": len(requests), "errors": 0}

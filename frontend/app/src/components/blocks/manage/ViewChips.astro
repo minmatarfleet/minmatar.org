@@ -1,0 +1,120 @@
+---
+/**
+ * The filter form above a manage list, as the corp Members table draws it:
+ * view chips with counts, then a "Needs attention" group in the warn (or
+ * good) colour, then the default slot for the toolbar (a ManageSearch and
+ * any selects, inside <div class="manage-toolbar">).
+ *
+ * The chips are radios named `name` (default `view`). Any change reloads
+ * the list from `url` (the partial that renders this form and the list)
+ * and swaps only the list element `#${target}` and the two chip groups
+ * (their counts change); the search box is never replaced, so it keeps
+ * focus. With `search_id` the search runs as you type (300 ms debounce).
+ *
+ * Render the list as <div id={target} class="manage-list">...</div> in the
+ * same partial. Counts should respect the search and the selects, so each
+ * chip shows what picking it yields.
+ *
+ *   <ViewChips
+ *       id="timers-filters" url={partial_url} target="timers-body"
+ *       selected={view} search_id="timers-search" legend={t('...views')}
+ *       views={[{ value: 'upcoming', label: t('...upcoming'), count: 2 }]}
+ *       attention={[{ value: 'failing', label: t('...failing'), count: 1, tone: 'warn' }]}
+ *   >
+ *       <div class="manage-toolbar">
+ *           <ManageSearch id="timers-search" value={q} label={t('...search')} />
+ *       </div>
+ *   </ViewChips>
+ */
+import type { ManageAttentionChip, ManageViewChip } from '@dtypes/layout_components'
+
+interface Props {
+    /** Form id; the chip groups are `${id}-views` and `${id}-attention`. */
+    id:             string;
+    url:            string;
+    /** Id (no #) of the list element the partial re-renders. */
+    target:         string;
+    selected:       string;
+    views:          ManageViewChip[];
+    attention?:     ManageAttentionChip[];
+    name?:          string;
+    /** Visually hidden legend of the main chips. */
+    legend:         string;
+    /** Id of a search input in the slot: searches while typing. */
+    search_id?:     string;
+    /** More ids (no #) the partial re-renders out of band, e.g. sort inputs. */
+    oob_ids?:       string[];
+    [propName: string]: any;
+}
+
+const {
+    id,
+    url,
+    target,
+    selected,
+    views,
+    attention = [],
+    name = 'view',
+    legend,
+    search_id,
+    oob_ids = [],
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const views_id = `${id}-views`
+const attention_id = `${id}-attention`
+const oob = [views_id, ...(attention.length > 0 ? [attention_id] : []), ...oob_ids]
+    .map((oob_id) => `#${oob_id}`)
+    .join(',')
+
+// A search's blur `change` is skipped: keyup already searched, and a second
+// reload would close the row the blurring click just opened.
+const trigger = search_id
+    ? `input changed delay:300ms from:#${search_id}, search from:#${search_id}, change[target.id!='${search_id}'], submit`
+    : 'change, submit'
+---
+
+<form
+    id={id}
+    class:list={['[ manage-filters ]', Astro.props.class]}
+    role="search"
+    hx-get={url}
+    hx-trigger={trigger}
+    hx-sync="this:replace"
+    hx-target={`#${target}`}
+    hx-select={`#${target}`}
+    hx-select-oob={oob}
+    hx-swap="outerHTML"
+    {...attributes}
+>
+    <div class="[ manage-filters__chips ]">
+        <fieldset id={views_id} class="[ manage-chips ]">
+            <legend class="[ visually-hidden ]">{legend}</legend>
+            {views.map((view) => (
+                <label class="[ manage-chip ]">
+                    <input type="radio" name={name} value={view.value} checked={selected === view.value} />
+                    <span>{view.label}</span>
+                    {view.count !== undefined && <span class="[ manage-chip__count ]">{view.count}</span>}
+                </label>
+            ))}
+        </fieldset>
+        {attention.length > 0 &&
+            <fieldset id={attention_id} class="[ manage-chips is-attention ]">
+                <legend class="[ manage-eyebrow ]">{t('manage.kit.needs_attention')}</legend>
+                {attention.map((view) => (
+                    <label class:list={['[ manage-chip ]', view.tone === 'good' ? 'is-good' : 'is-warn']}>
+                        <input type="radio" name={name} value={view.value} checked={selected === view.value} />
+                        <span>{view.label}</span>
+                        {view.count !== undefined && <span class="[ manage-chip__count ]">{view.count}</span>}
+                    </label>
+                ))}
+            </fieldset>
+        }
+    </div>
+    <slot />
+</form>

@@ -1,0 +1,119 @@
+---
+/**
+ * One structure timer in the manage list: type icon, name, "type · system",
+ * owner, state and the timer in EVE time with a countdown. It opens in place
+ * to StructureTimerForm (lazily, or inline after a save).
+ * structure_timers_manage_component answers a save or delete with this row
+ * inside a <table>, picked by its id.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { StructureTimer } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { get_structure_id } from '@helpers/eve'
+import { countdown_parts, eve_day_time, timer_owner, timer_row_id } from '@helpers/manage_intel'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    timer:              StructureTimer;
+    colspan:            number;
+    open?:              boolean;
+    saved?:             boolean;
+    deleted?:           boolean;
+    error?:             string | null;
+    [propName: string]: any;
+}
+
+const { timer, colspan, open = false, saved = false, deleted = false, error = null } = Astro.props
+
+const row_id = timer_row_id(timer.id)
+const type_id = get_structure_id(timer.type)
+const type_label = t(t_key('', timer.type))
+const state_label = t(t_key('structure_timers_manage.state.', timer.state))
+const owner = timer_owner(timer)
+const when = eve_day_time(timer.timer, lang)
+
+const parts = countdown_parts(timer.timer)
+const span = !parts ? '' :
+    parts.days > 0 ? t('manage.timers.days_hours').replace('~D', String(parts.days)).replace('~H', String(parts.hours)) :
+    parts.hours > 0 ? t('manage.timers.hours_minutes').replace('~H', String(parts.hours)).replace('~M', String(parts.minutes)) :
+    t('manage.timers.minutes').replace('~M', String(parts.minutes))
+const countdown = parts ? (parts.future ? t('manage.timers.in') : t('manage.timers.ago')).replace('~TIME', span) : ''
+
+const detail_url = translatePath(`/partials/structure_timers_manage_component/?${query_string({ part: 'row', id: String(timer.id) })}`)
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import StructureTimerForm from '@components/blocks/manage_intel/StructureTimerForm.astro'
+---
+
+<ExpandRow
+    id={row_id}
+    colspan={colspan}
+    label={t('manage.timers.open').replace('~NAME', timer.name)}
+    url={deleted || open ? undefined : detail_url}
+    open={open && !deleted}
+    dim={deleted}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            {type_id && <img src={get_item_icon(type_id, 64)} alt="" width="40" height="40" loading="lazy" />}
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{timer.name}</span>
+                <span class="[ manage-who__sub timer-row__sub-wide ]">{type_label} · {timer.system_name}</span>
+                <span class="[ manage-who__sub timer-row__sub-phone ]">
+                    {deleted ? t('manage.timers.deleted') : `${state_label} · ${when.replace(/ \d\d \S+ /, ' ')}`}
+                </span>
+            </span>
+        </button>
+    </td>
+    <td class="[ is-wide ]">
+        <span class:list={[{ "manage-muted": !owner }]}>{owner ?? t('manage.timers.unknown_owner')}</span>
+        {timer.alliance_name && timer.corporation_name && <span class="[ timer-row__small ]">{timer.corporation_name}</span>}
+    </td>
+    <td class="[ is-wide ]">{state_label}</td>
+    <td class="[ num is-wide ]">
+        {deleted ?
+            <span class="[ manage-muted ]">{t('manage.timers.deleted')}</span>
+            :
+            <>
+                <span class="[ timer-row__when ]">{when}</span>
+                <span class:list={['[ timer-row__small ]', { 'manage-muted': parts && !parts.future }]}>{countdown}</span>
+            </>
+        }
+    </td>
+    {open && !deleted &&
+        <StructureTimerForm slot="detail" timer={timer} saved={saved} error={error} />
+    }
+</ExpandRow>
+
+<style lang="scss">
+    .timer-row__sub-phone {
+        display: none;
+    }
+
+    .timer-row__value {
+        color: var(--highlight);
+    }
+
+    .timer-row__when {
+        display: block;
+        color: var(--highlight);
+    }
+
+    .timer-row__small {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    @media (max-width: 48rem) {
+        .timer-row__sub-wide {
+            display: none;
+        }
+
+        .timer-row__sub-phone {
+            display: inline;
+        }
+    }
+</style>

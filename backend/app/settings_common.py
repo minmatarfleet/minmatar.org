@@ -93,6 +93,8 @@ INSTALLED_APPS = [
     "capabilities.apps.CapabilitiesConfig",
     # Pilot timezones and the USTZ/EUTZ/AUTZ Discord roles
     "timezones.apps.TimezonesConfig",
+    # Manage hub: the settings screens and queues waiting on each user
+    "manage_hub.apps.ManageHubConfig",
 ]
 
 # Discord Login

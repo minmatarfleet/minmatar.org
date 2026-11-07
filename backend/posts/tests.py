@@ -324,3 +324,52 @@ class TagManagementTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertFalse(EveTag.objects.filter(id=old.id).exists())
         self.assertEqual([new], list(post.tags.all()))
+
+    def _get(self, path):
+        return self.client.get(f"{BASE_URL}{path}", **self.headers)
+
+    def _tagged_post(self, slug, *tags):
+        post = EvePost.objects.create(
+            title=slug,
+            seo_description="x",
+            slug=slug,
+            content="body",
+            user=self.user,
+        )
+        post.tags.add(*tags)
+        return post
+
+    def test_counts_need_the_feature_and_sort_by_posts(self):
+        lore = EveTag.objects.create(tag="Lore")
+        guides = EveTag.objects.create(tag="Guides")
+        EveTag.objects.create(tag="Empty")
+        self._tagged_post("a", lore, guides)
+        self._tagged_post("b", lore)
+        self.assertEqual(403, self._get("/tags/counts").status_code)
+        self.grant()
+        response = self._get("/tags/counts")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            [("Lore", 2), ("Guides", 1), ("Empty", 0)],
+            [(row["tag"], row["post_count"]) for row in response.json()],
+        )
+
+    def test_merge_preview_counts_shared_posts_once(self):
+        old = EveTag.objects.create(tag="Propaganda")
+        new = EveTag.objects.create(tag="Lore")
+        self._tagged_post("a", old)
+        self._tagged_post("b", old, new)
+        self._tagged_post("c", new)
+        path = f"/tags/{old.id}/merge-preview?into_tag_id={new.id}"
+        self.assertEqual(403, self._get(path).status_code)
+        self.grant()
+        data = self._get(path).json()
+        self.assertEqual(2, data["moving"])
+        self.assertEqual(3, data["into_total"])
+        self.assertEqual("Lore", data["into_tag"])
+        same = self._get(f"/tags/{old.id}/merge-preview?into_tag_id={old.id}")
+        self.assertEqual(400, same.status_code)
+        missing = self._get(f"/tags/{old.id}/merge-preview?into_tag_id=999")
+        self.assertEqual(404, missing.status_code)
+        # A preview changes nothing.
+        self.assertTrue(EveTag.objects.filter(id=old.id).exists())

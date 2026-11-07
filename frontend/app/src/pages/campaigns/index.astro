@@ -15,9 +15,9 @@ import PageActions from '@components/page/PageActions.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import CampaignListSkeleton from '@components/blocks/CampaignListSkeleton.astro'
-import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const { user } = get_request_user(Astro)
 
@@ -35,6 +35,8 @@ if (!can_view_campaigns)
 // The list loads after the page: the shell answers without waiting for the
 // campaigns call, and the partial renders the list (or ErrorRefetch).
 const CAMPAIGNS_PARTIAL_URL = translatePath('/partials/campaign_list_component')
+// The New campaign form (and its backend kind labels) loads when the dialog opens.
+const NEW_CAMPAIGN_PARTIAL_URL = `${translatePath('/partials/campaign_new_component')}?dialog=1`
 
 const page_title = t('campaigns.page_title')
 
@@ -67,19 +69,18 @@ const breadcrumbs = [
             </PageTitle>
             <PageActions>
                 {can_create_campaigns && (
-                    <Button href={translatePath('/campaigns/new/')} color="fleet-red" size="sm">
-                        {t('campaigns.new.page_title')}
-                    </Button>
+                    <DialogButton color="fleet-red" size="sm" max_width="40rem">
+                        {t('campaigns.manage.new')}
+                        <div slot="dialog" class="[ campaign-new-dialog ]">
+                            <LazyPartial url={NEW_CAMPAIGN_PARTIAL_URL} trigger="reveal" swap="outerHTML">
+                                <p>{t('campaigns.manage.loading_form')}</p>
+                            </LazyPartial>
+                        </div>
+                    </DialogButton>
                 )}
                 {can_manage_campaigns && (
-                    <Button
-                        href={translatePath('/campaigns/event-codes/')}
-                        color="transparent"
-                        narrow={true}
-                        aria-label={t('campaigns.codes.page_title')}
-                        title={t('campaigns.codes.page_title')}
-                    >
-                        <CogIcon slot="icon" />
+                    <Button href={translatePath('/campaigns/event-codes/')} color="transparent" size="sm">
+                        {t('campaigns.manage.payout_codes')}
                     </Button>
                 )}
             </PageActions>

@@ -49,6 +49,10 @@ class SrpProgramEditingTestCase(TestCase):
         add_user_permission(self.user, "change_shipreimbursementprogram")
         clear_feature_cache()
 
+    def _grant_view(self):
+        add_user_permission(self.user, "view_evefleetshipreimbursement")
+        self._grant()
+
     def _claim(self, status, amount):
         return EveFleetShipReimbursement.objects.create(
             external_killmail_link="x",
@@ -65,7 +69,7 @@ class SrpProgramEditingTestCase(TestCase):
 
     def _post(self, path, body=None):
         return self.client.post(
-            f"{BASE}/{path}",
+            f"{BASE}/{path}" if path else BASE,
             body or {},
             content_type="application/json",
             **self._auth(),
@@ -119,3 +123,98 @@ class SrpProgramEditingTestCase(TestCase):
         rejected.refresh_from_db()
         self.assertEqual(1_000_000, pending.amount)
         self.assertEqual(500_000, rejected.amount)
+
+    def test_programs_list_counts_open_and_stale_requests(self):
+        self._grant_view()
+        self._claim("pending", 500_000)
+        self._claim("approved", 1_000_000)
+        self._claim("rejected", 500_000)
+        response = self.client.get(BASE, **self._auth())
+        self.assertEqual(200, response.status_code)
+        row = response.json()[0]
+        self.assertEqual(2, row["open_requests"])
+        self.assertEqual(1, row["stale_requests"])
+
+    def test_hull_preview_lists_only_stale_requests(self):
+        self._grant()
+        stale = self._claim("pending", 500_000)
+        self._claim("pending", 1_000_000)
+        preview = self.client.get(
+            f"{BASE}/recalculate?ship_type_id={self.ship.id}", **self._auth()
+        )
+        self.assertEqual(200, preview.status_code)
+        body = preview.json()
+        self.assertEqual(1, body["outstanding_count"])
+        self.assertEqual([stale.id], [c["id"] for c in body["changes"]])
+        self.assertEqual(1, body["changes"][0]["character_id"])
+        other = self.client.get(
+            f"{BASE}/recalculate?ship_type_id=999", **self._auth()
+        )
+        self.assertEqual(0, other.json()["changed_count"])
+
+    def test_hull_pay_rewrites_only_that_hull(self):
+        self._grant()
+        stale = self._claim("pending", 500_000)
+        other_hull = self._claim("pending", 500_000)
+        other_hull.ship_type_id = 999
+        other_hull.save()
+        applied = self._post(f"recalculate?ship_type_id={self.ship.id}")
+        self.assertEqual(200, applied.status_code)
+        self.assertEqual(1, applied.json()["updated"])
+        stale.refresh_from_db()
+        other_hull.refresh_from_db()
+        self.assertEqual(1_000_000, stale.amount)
+        self.assertEqual(500_000, other_hull.amount)
+
+    def test_keep_filed_amounts_clears_the_stale_count(self):
+        self._grant_view()
+        stale = self._claim("pending", 500_000)
+        kept = self._post(f"recalculate/keep?ship_type_id={self.ship.id}")
+        self.assertEqual(200, kept.status_code)
+        self.assertEqual(1, kept.json()["updated"])
+        stale.refresh_from_db()
+        self.assertEqual(500_000, stale.amount)
+        row = self.client.get(BASE, **self._auth()).json()[0]
+        self.assertEqual(1, row["open_requests"])
+        self.assertEqual(0, row["stale_requests"])
+        # A new amount makes the kept request stale again.
+        self._post(f"{self.program.id}/amount", {"srp_value": 2_000_000})
+        row = self.client.get(BASE, **self._auth()).json()[0]
+        self.assertEqual(1, row["stale_requests"])
+
+    def test_keep_requires_permission(self):
+        response = self._post(f"recalculate/keep?ship_type_id={self.ship.id}")
+        self.assertEqual(403, response.status_code)
+
+    def test_add_hull(self):
+        self._grant()
+        slasher = EveType.objects.create(
+            id=585,
+            name="Slasher",
+            eve_group=self.ship.eve_group,
+            published=True,
+        )
+        response = self._post("", {"eve_type_id": 585, "srp_value": 800_000})
+        self.assertEqual(200, response.status_code)
+        program = ShipReimbursementProgram.objects.get(eve_type=slasher)
+        self.assertEqual(800_000, program.amounts.get().srp_value)
+        again = self._post("", {"eve_type_id": 585, "srp_value": 1})
+        self.assertEqual(400, again.status_code)
+
+    def test_add_hull_rejects_non_ships_and_needs_permission(self):
+        self.assertEqual(
+            403,
+            self._post("", {"eve_type_id": 587, "srp_value": 1}).status_code,
+        )
+        self._grant()
+        category = EveCategory.objects.create(
+            id=4, name="Material", published=True
+        )
+        group = EveGroup.objects.create(
+            id=18, name="Mineral", eve_category=category, published=True
+        )
+        EveType.objects.create(
+            id=34, name="Tritanium", eve_group=group, published=True
+        )
+        response = self._post("", {"eve_type_id": 34, "srp_value": 1})
+        self.assertEqual(400, response.status_code)

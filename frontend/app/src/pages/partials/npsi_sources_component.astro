@@ -1,111 +1,182 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+/**
+ * The NPSI calendar feeds manage screen's htmx partial (/fleets/npsi-sources/).
+ *
+ * part=list    GET: the chips and the feeds table (?view=all|on|failing, new=1
+ *              adds an open new-feed row on top)
+ * part=row     GET: a feed's open row (?id=); POST: save it, answers with the row
+ * part=toggle  POST: the On switch (?id=); answers with the row
+ * part=create  POST: add a feed; answers with the list, its row open
+ * part=try     POST: read the feed now (?id=), a dry run: nothing is
+ *              imported, stored or posted to Discord
+ *
+ * Rows go back inside a <table> and the request picks them with hx-select:
+ * htmx drops a bare <tbody> after Astro's leading <style>/<link>.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 
-// no-error-refetch: a settings save; a failed save shows in the panel it swaps back.
-// POST adds, edits or enables/disables a source and answers with the panel;
-// GET ?view=events&source_id= answers with that source's upcoming imported events.
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const gates = await get_gates(Astro)
 if (!can(gates, 'fleets.npsi_sources.manage')) return HTTP_403_Forbidden()
 
-import type { NpsiEventPreview, NpsiSourceList } from '@dtypes/api.minmatar.org'
-import { create_npsi_source, get_npsi_source_events, get_npsi_sources, update_npsi_source } from '@helpers/api.minmatar.org/npsi_sources'
+import type { NpsiEventPreview } from '@dtypes/api.minmatar.org'
+import type { NpsiSourceListing, NpsiTryResult } from '@helpers/api.minmatar.org/npsi_sources'
+import { create_npsi_source, get_npsi_source_events, get_npsi_source_listing, try_npsi_source, update_npsi_source } from '@helpers/api.minmatar.org/npsi_sources'
+import type { NpsiFeedDraft, NpsiFeedView } from '@helpers/manage_intel'
+import { eve_day_time } from '@helpers/manage_intel'
 
-import NpsiSourcesManager from '@components/blocks/NpsiSourcesManager.astro'
-import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import NpsiSourcesManager from '@components/blocks/NpsiSourcesManager.astro'
+import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
+import NpsiFeedRow from '@components/blocks/manage_intel/NpsiFeedRow.astro'
+import NpsiFeedChips from '@components/blocks/manage_intel/NpsiFeedChips.astro'
 
+const PARTS = ['list', 'row', 'toggle', 'create', 'try']
+const POST_PARTS = ['row', 'toggle', 'create', 'try']
+const COLSPAN = 7
+
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'list'
 const is_post = Astro.request.method === 'POST'
-const events_for = !is_post && Astro.url.searchParams.get('view') === 'events' ? parseInt(Astro.url.searchParams.get('source_id') ?? '') : 0
+const source_id = parseInt(params.get('id') ?? '') || 0
 
-let events: NpsiEventPreview[] = []
-let events_error: Error | false = false
-if (events_for) {
-    try {
-        events = await get_npsi_source_events(auth_token, events_for)
-    } catch (failure) {
-        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
-        events_error = failure as Error
-    }
-}
+if (!PARTS.includes(part)) return HTTP_400_Bad_Request()
+if (is_post ? !POST_PARTS.includes(part) : !['list', 'row'].includes(part)) return HTTP_400_Bad_Request()
+if (['row', 'toggle', 'try'].includes(part) && !source_id) return HTTP_400_Bad_Request()
 
-let error: string | null = null
-let notice: string | null = null
-let list: NpsiSourceList = { sources: [], audiences: [] }
+const failure_of = (failure: unknown) => failure as Error
+const form = is_post && part !== 'try' ? await Astro.request.formData() : null
+const text = (key: string) => String(form?.get(key) ?? '').trim()
 
-if (!events_for) {
-    try {
-        if (is_post) {
-            const form = await Astro.request.formData()
-            const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
-            const source_id = parseInt(text('source_id'))
-            const audience = text('default_audience_id')
-            const action = text('action')
+let note: 'saved' | 'added' | null = null
+let row_error: string | null = null
+let draft: NpsiFeedDraft | null = null
+let draft_error: string | null = null
+let added_id: number | null = null
+let tried: NpsiTryResult | null = null
+let try_error: string | null = null
 
-            if (action === 'create') {
-                await create_npsi_source(auth_token, {
-                    name: text('name'),
-                    feed_url: text('feed_url'),
-                    fc_character_name: text('fc_character_name'),
-                    ...(audience ? { default_audience_id: parseInt(audience) } : {}),
-                })
-                notice = t('npsi_sources.added')
-            } else if (action === 'update' && source_id) {
-                await update_npsi_source(auth_token, source_id, {
-                    feed_url: text('feed_url'),
-                    fc_character_name: text('fc_character_name'),
-                    default_audience_id: audience ? parseInt(audience) : null,
-                })
-                notice = t('npsi_sources.saved')
-            } else if (action === 'toggle' && source_id) {
-                const enabled = text('enabled') === 'true'
-                await update_npsi_source(auth_token, source_id, { enabled })
-                notice = enabled ? t('npsi_sources.now_enabled') : t('npsi_sources.now_disabled')
-            } else {
-                return HTTP_400_Bad_Request()
-            }
+// Writes first, then read the list the answer is drawn from.
+try {
+    if (part === 'row' && is_post) {
+        const audience = text('default_audience_id')
+        await update_npsi_source(auth_token, source_id, {
+            feed_url: text('feed_url'),
+            fc_character_name: text('fc_character_name'),
+            default_audience_id: audience ? parseInt(audience) : null,
+        })
+        note = 'saved'
+    } else if (part === 'toggle') {
+        await update_npsi_source(auth_token, source_id, { enabled: !!text('enabled') })
+    } else if (part === 'create') {
+        draft = {
+            name: text('name'),
+            feed_url: text('feed_url'),
+            fc_character_name: text('fc_character_name'),
+            fc_character_id: text('fc_character_id'),
+            default_audience_id: text('default_audience_id'),
         }
-    } catch (failure) {
-        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
-        error = (failure as Error).message
+        const created = await create_npsi_source(auth_token, {
+            name: draft.name,
+            feed_url: draft.feed_url,
+            fc_character_name: draft.fc_character_name,
+            ...(draft.default_audience_id ? { default_audience_id: parseInt(draft.default_audience_id) } : {}),
+        })
+        added_id = created?.id ?? null
+        draft = null
+    } else if (part === 'try') {
+        tried = await try_npsi_source(auth_token, source_id)
     }
+} catch (failure) {
+    if (failure_of(failure).cause === 403) return HTTP_403_Forbidden()
+    if (part === 'create') draft_error = failure_of(failure).message
+    else if (part === 'try') try_error = failure_of(failure).message
+    else row_error = failure_of(failure).message
+}
 
+let list: NpsiSourceListing = { sources: [], audiences: [], feed_timeout_seconds: 15 }
+let events: NpsiEventPreview[] = []
+let fetch_error: Error | false = false
+if (part !== 'try') {
     try {
-        list = await get_npsi_sources(auth_token)
+        const open_row = (part === 'row') || (part === 'create' && added_id)
+        ;[list, events] = await Promise.all([
+            get_npsi_source_listing(auth_token),
+            open_row && (source_id || added_id) ? get_npsi_source_events(auth_token, source_id || added_id || 0) : Promise.resolve([]),
+        ])
     } catch (failure) {
-        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
-        error = error ?? (failure as Error).message
+        if (failure_of(failure).cause === 403) return HTTP_403_Forbidden()
+        fetch_error = failure_of(failure)
     }
 }
 
-const event_time = (iso: string) => new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toISOString().slice(0, 16).replace('T', ' ')
+const source = list.sources.find((row) => row.id === source_id)
+const view_param = params.get('view') ?? (text('view') || null)
+const view: NpsiFeedView = view_param === 'on' || view_param === 'failing' ? view_param : 'all'
+
+// A failed save shows what was typed again, with the error.
+const row_source = source && row_error && part === 'row' ?
+    { ...source, feed_url: text('feed_url'), fc_character_name: text('fc_character_name') } :
+    source
+
+const try_text = (result: NpsiTryResult) => {
+    if (result.ok)
+        return t('manage.npsi.try_ok').replace('~COUNT', String(result.item_count)).replace('~UPCOMING', String(result.upcoming_count))
+    const kind = result.error_kind || 'other'
+    const seconds = result.feed_timeout_seconds
+    const cause = kind === 'timeout' && seconds ? t('manage.npsi.explain.timeout').replace('~SECONDS', String(seconds)) :
+        kind === 'timeout' || kind === 'other' ? t('manage.npsi.explain.other').replace('~ERROR', result.error) :
+        t(t_key('manage.npsi.explain.', kind))
+    return `${cause} ${t('manage.npsi.try_failed')}`
+}
 ---
 
-{events_for ?
-    (events_error ?
-        <ErrorRefetch args={{ partial: Astro.url.pathname + Astro.url.search, error: events_error, delay: 0 }} />
+{part === 'try' ?
+    (tried ?
+        <div class="[ manage-form ]">
+            <p class:list={[tried.ok ? 'manage-good' : 'manage-warn']} role="status">{try_text(tried)}</p>
+            {tried.upcoming.length > 0 &&
+                <ul class="[ manage-muted ]" role="list">
+                    {tried.upcoming.map((event) => <li>{eve_day_time(event.start_time, lang)} · {event.summary} · {event.character_name}</li>)}
+                </ul>
+            }
+        </div>
         :
-        events.length === 0 ?
-            <EmptyState title={t('npsi_sources.preview_empty')} />
-            :
-            <ul class="[ manage-panel__rows ]" role="list">
-                {events.map(event =>
-                    <li class="[ manage-panel__row ]">
-                        <span class="[ manage-panel__muted ]">{event_time(event.start_time)} EVE</span>
-                        <strong>{event.summary}</strong>
-                        {event.character_name && <span>{event.character_name}</span>}
-                        <span class="[ manage-panel__muted ]">{event.status}{event.skip_reason ? `: ${event.skip_reason}` : ''}</span>
-                    </li>
-                )}
-            </ul>
+        <p class="[ manage-warn ]" role="alert">{try_error ?? t('manage.npsi.try_failed')}</p>
     )
-    :
-    <NpsiSourcesManager list={list} error={error} notice={notice} />
+: fetch_error ?
+    <ErrorRefetch args={{ partial: translatePath(`/partials/npsi_sources_component/?part=${part === 'row' && !is_post ? 'row' : 'list'}${source_id ? `&id=${source_id}` : ''}`), error: fetch_error, delay: 0 }} />
+: part === 'list' || part === 'create' ?
+    <NpsiSourcesManager
+        list={list}
+        view={part === 'create' ? 'all' : view}
+        adding={part === 'list' ? params.get('new') === '1' : !!draft_error}
+        draft={draft}
+        draft_error={draft_error}
+        added_id={added_id}
+    />
+: !row_source ?
+    <p class="[ manage-muted ]">{t('manage.npsi.empty')}</p>
+: part === 'row' && !is_post ?
+    <NpsiFeedForm source={row_source} list={list} events={events} />
+:
+    <table>
+        <NpsiFeedRow
+            source={row_source}
+            list={list}
+            colspan={COLSPAN}
+            open={part === 'row'}
+            note={note}
+            error={row_error}
+            events={events}
+        />
+    </table>
 }
+{part === 'toggle' && !fetch_error && <NpsiFeedChips list={list} view={view} />}

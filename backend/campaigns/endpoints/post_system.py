@@ -10,7 +10,11 @@ from authentication import AuthBearer
 
 from campaigns.endpoints import schemas
 from campaigns.endpoints.base import router
-from campaigns.endpoints.manage import _can_manage, _denied
+from campaigns.endpoints.manage import (
+    _can_manage,
+    _denied,
+    not_warzone_detail,
+)
 from campaigns.endpoints.settings_helpers import _system_out
 from campaigns.models import (
     Campaign,
@@ -41,9 +45,7 @@ def add_system(request, slug: str, payload: schemas.SystemAddRequest):
         solar_system_id=payload.solar_system_id
     ).first()
     if not monitored:
-        return 400, {
-            "detail": f"unknown solar system id: {payload.solar_system_id}"
-        }
+        return 400, {"detail": not_warzone_detail([payload.solar_system_id])}
     for value, choices, label in (
         (payload.goal, SystemGoal.values, "goal"),
         (payload.role, SystemRole.values, "role"),

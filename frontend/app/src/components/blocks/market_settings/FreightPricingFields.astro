@@ -1,0 +1,110 @@
+---
+/**
+ * A freight route's pricing boxes: the mode toggle (per m³ + collateral, or
+ * a flat fee), then only that mode's boxes. ISK boxes take "95m" / "5b".
+ * Used by an open route row and by the Add route dialog.
+ */
+import type { FreightEditorRoute } from '@helpers/market_settings'
+
+interface Props {
+    /** Unique per form: the inputs' ids start with it. */
+    key:        string;
+    route?:     FreightEditorRoute | null;
+    /** Also show the days a contract may wait and take. */
+    days?:      boolean;
+}
+
+const {
+    key,
+    route = null,
+    days = true,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { FREIGHT_STANDARD_MAX_M3, isk_input_text, share_to_percent } from '@helpers/market_settings'
+import { number_thousand_separator } from '@helpers/numbers'
+
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+
+const mode = route?.route_type === 'fixed' ? 'fixed' : 'rate'
+const id = (name: string) => `${key}-${name}`
+const modes = [
+    { value: 'rate', label: t('manage.freight.mode_rate') },
+    { value: 'fixed', label: t('manage.freight.mode_fixed') },
+]
+---
+
+<div class="[ manage-form ]" x-data={`{ mode: ${JSON.stringify(mode)} }`}>
+    <fieldset class="[ manage-chips market-mode ]">
+        <legend class="[ manage-field__label ]">{t('manage.freight.pricing')}</legend>
+        {modes.map((option) => (
+            <label class="[ manage-chip ]">
+                <input type="radio" name="route_type" value={option.value} checked={option.value === mode} x-model="mode" />
+                <span>{option.label}</span>
+            </label>
+        ))}
+    </fieldset>
+
+    <div class="[ manage-fields ]">
+        <ManageField label={t('manage.freight.isk_per_m3')} for={id('isk-per-m3')} x-show="mode === 'rate'" style={mode === 'rate' ? undefined : 'display: none'}>
+            <div class="[ market-unit-field ]">
+                <Input id={id('isk-per-m3')} type="text" inputmode="numeric" name="isk_per_m3" size="sm" value={route ? String(route.isk_per_m3) : ''} />
+                <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_isk_m3')}</span>
+            </div>
+        </ManageField>
+        <ManageField label={t('manage.freight.flat_fee')} for={id('fixed-fee')} x-show="mode === 'fixed'" style={mode === 'fixed' ? undefined : 'display: none'}>
+            <div class="[ market-unit-field ]">
+                <Input id={id('fixed-fee')} type="text" inputmode="decimal" name="fixed_fee" size="sm" value={route ? isk_input_text(route.fixed_fee_millions * 1e6) : ''} placeholder="95M" />
+                <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_isk')}</span>
+            </div>
+        </ManageField>
+        <ManageField
+            label={t('manage.freight.xl_fee').replace('~M3', number_thousand_separator(FREIGHT_STANDARD_MAX_M3))}
+            for={id('xl-fee')}
+            x-show="mode === 'fixed'"
+            style={mode === 'fixed' ? undefined : 'display: none'}
+        >
+            <div class="[ market-unit-field ]">
+                <Input id={id('xl-fee')} type="text" inputmode="decimal" name="xl_fee" size="sm" value={route?.xl_fee_millions ? isk_input_text(route.xl_fee_millions * 1e6) : ''} placeholder="0" />
+                <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_isk')}</span>
+            </div>
+        </ManageField>
+        <ManageField label={t('manage.freight.max_m3')} for={id('max-m3')} hint={t('manage.freight.empty_no_cap')} x-show="mode === 'fixed'" style={mode === 'fixed' ? undefined : 'display: none'}>
+            <div class="[ market-unit-field ]">
+                <Input id={id('max-m3')} type="text" inputmode="decimal" name="max_m3" size="sm" value={route?.max_m3 != null ? number_thousand_separator(route.max_m3) : ''} />
+                <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_m3')}</span>
+            </div>
+        </ManageField>
+        <ManageField label={t('manage.freight.max_collateral')} for={id('max-collateral')} hint={t('manage.freight.empty_no_cap')} x-show="mode === 'fixed'" style={mode === 'fixed' ? undefined : 'display: none'}>
+            <div class="[ market-unit-field ]">
+                <Input id={id('max-collateral')} type="text" inputmode="decimal" name="max_collateral" size="sm" value={isk_input_text(route?.max_collateral)} />
+                <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_isk')}</span>
+            </div>
+        </ManageField>
+        <ManageField label={t('manage.freight.collateral_fee')} for={id('collateral')} hint={t('manage.freight.collateral_hint')}>
+            <div class="[ market-unit-field ]">
+                <Input id={id('collateral')} type="text" inputmode="decimal" name="collateral_percent" size="sm" value={route ? share_to_percent(route.collateral_modifier) : ''} placeholder="0" />
+                <span class="[ market-unit ]" aria-hidden="true">%</span>
+            </div>
+        </ManageField>
+        {days &&
+            <Fragment>
+                <ManageField label={t('manage.freight.accept_days')} for={id('accept')}>
+                    <div class="[ market-unit-field ]">
+                        <Input id={id('accept')} type="number" min="1" name="expiration_days" size="sm" value={route?.expiration_days ?? 3} required />
+                        <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_days')}</span>
+                    </div>
+                </ManageField>
+                <ManageField label={t('manage.freight.complete_days')} for={id('complete')}>
+                    <div class="[ market-unit-field ]">
+                        <Input id={id('complete')} type="number" min="1" name="days_to_complete" size="sm" value={route?.days_to_complete ?? 3} required />
+                        <span class="[ market-unit ]" aria-hidden="true">{t('manage.freight.unit_days')}</span>
+                    </div>
+                </ManageField>
+            </Fragment>
+        }
+    </div>
+</div>

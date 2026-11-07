@@ -1,0 +1,919 @@
+// Manage screens kit (src/components/blocks/manage/*). Global, like the
+// settings editor and EmptyState, so the htmx partials that render these
+// pieces (table rows, open rows, section bodies, picker results) are styled
+// too, and so a caller's slotted cells pick the styles up.
+//
+// The look copies the corp detail page: Members (chips, table, open rows),
+// Settings (sections), About (stat cards) and the product page's tiles.
+
+:root {
+    // Members table: good reads green toward white, attention red toward yellow.
+    --manage_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
+    --manage_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
+}
+
+.manage-eyebrow {
+    margin: 0;
+    font-family: var(--heading-font);
+    font-size: var(--step--2);
+    font-weight: normal;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.manage-eyebrow.is-red {
+    color: color-mix(in srgb, var(--fleet-red) 70%, var(--fleet-yellow));
+}
+
+.manage-muted {
+    color: var(--text-muted);
+}
+
+.manage-good {
+    color: var(--manage_good);
+}
+
+.manage-warn {
+    color: var(--manage_warn);
+}
+
+// "Saved" after a save swaps a row or section back; fades so it never sticks.
+.manage-saved {
+    font-size: var(--step--1);
+    color: var(--manage_good);
+    white-space: nowrap;
+    animation: manage-saved-fade 3s ease-in forwards;
+}
+
+@keyframes manage-saved-fade {
+    0%, 70% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .manage-saved {
+        animation: none;
+    }
+}
+
+// ManageHero: CorporationDetailHero's masthead.
+.manage-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-s) var(--space-m);
+    width: 100%;
+}
+
+.manage-hero__image {
+    height: var(--step-5);
+    width: auto;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.manage-hero__copy {
+    flex: 1 1 24rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+}
+
+.manage-hero__copy .page-title h1.is-landing {
+    line-height: 1;
+}
+
+.manage-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3xs) var(--space-xs);
+    font-size: var(--step--1);
+}
+
+.manage-hero__actions {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+@media (max-width: 48rem) {
+    .manage-hero__actions {
+        width: 100%;
+    }
+}
+
+// SettingsSection: corp Settings' collapsible section.
+.manage-section {
+    position: relative;
+    padding: var(--space-s) var(--space-m);
+    border: solid 1px var(--border-color);
+
+    @media (max-width: 48rem) {
+        padding: var(--space-s);
+    }
+}
+
+.manage-section__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-3xs) var(--space-s);
+    min-width: 0;
+}
+
+// Room for the header switch, which sits beside the chevron (outside the
+// toggle button, so it never toggles the section).
+.manage-section.has-switch .manage-section__head {
+    padding-inline-end: calc(var(--space-2xl) + var(--space-s));
+}
+
+.manage-section__title {
+    font-family: var(--heading-font);
+    font-size: var(--step-2);
+    text-transform: uppercase;
+    color: var(--highlight);
+    line-height: 1;
+}
+
+.manage-section__summary {
+    font-size: var(--step--1);
+    color: var(--foreground);
+}
+
+.manage-section__switch {
+    position: absolute;
+    inset-block-start: var(--space-s);
+    inset-inline-end: calc(var(--space-m) + var(--space-l));
+}
+
+.manage-section.is-static .manage-section__switch {
+    inset-inline-end: var(--space-m);
+}
+
+@media (max-width: 48rem) {
+    .manage-section__switch {
+        inset-inline-end: calc(var(--space-s) + var(--space-l));
+    }
+
+    .manage-section.is-static .manage-section__switch {
+        inset-inline-end: var(--space-s);
+    }
+}
+
+// Space under the header lives inside the body, so a closed section stays tight.
+.manage-section__body {
+    padding-block-start: var(--space-m);
+}
+
+.manage-section__loading {
+    margin: 0;
+    padding-block-start: var(--space-m);
+    color: var(--faded);
+}
+
+// ManageSwitch: the board's square switch; green when on.
+.manage-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    font-size: var(--step--1);
+    color: var(--highlight);
+    white-space: nowrap;
+    cursor: pointer;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+    }
+}
+
+.manage-switch__track {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--space-l);
+    height: var(--space-s);
+    background: var(--hairline-strong);
+    transition: background-color var(--fast-transition);
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset-block-start: 3px;
+        inset-inline-start: 3px;
+        width: calc(var(--space-s) - 6px);
+        height: calc(var(--space-s) - 6px);
+        background: var(--faded);
+        transition: inset-inline-start var(--fast-transition), background-color var(--fast-transition);
+    }
+}
+
+.manage-switch input:checked + .manage-switch__track {
+    background: var(--green);
+
+    &::after {
+        inset-inline-start: calc(var(--space-l) - var(--space-s) + 3px);
+        background: var(--highlight);
+    }
+}
+
+.manage-switch input:focus-visible + .manage-switch__track {
+    outline: 2px solid var(--highlight);
+    outline-offset: 2px;
+}
+
+.manage-switch input:disabled + .manage-switch__track {
+    opacity: 0.5;
+}
+
+// ViewChips: the Members table's view chips and needs-attention group.
+.manage-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+
+    fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+    }
+}
+
+.manage-filters__chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-s);
+}
+
+.manage-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs);
+}
+
+.manage-chips.is-attention {
+    padding-inline-start: var(--space-s);
+    border-inline-start: 1px solid var(--hairline-strong);
+
+    legend {
+        float: left;
+        margin-inline-end: var(--space-3xs);
+    }
+
+    @media (max-width: 48rem) {
+        padding-inline-start: 0;
+        border-inline-start: 0;
+    }
+}
+
+.manage-chip {
+    --chip_color: var(--fleet-yellow);
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    min-height: var(--space-l);
+    padding-inline: var(--space-xs);
+    border: 1px solid var(--hairline-strong);
+    color: var(--chip_color);
+    font-family: var(--button-font);
+    font-size: var(--step--1);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        border-color var(--fast-transition),
+        background-color var(--fast-transition),
+        color var(--fast-transition);
+
+    &.is-good {
+        --chip_color: var(--manage_good);
+        border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
+    }
+
+    &.is-warn {
+        --chip_color: var(--manage_warn);
+        border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
+    }
+
+    &.is-on,
+    &:has(input:checked) {
+        background: var(--chip_color);
+        border-color: var(--chip_color);
+        color: var(--background);
+    }
+
+    @media (hover: hover) {
+        &:not(.is-on):not(:has(input:checked)):hover {
+            border-color: color-mix(in srgb, var(--chip_color) 60%, transparent);
+            color: var(--highlight);
+        }
+    }
+
+    &:has(input:focus-visible) {
+        outline: 2px solid var(--highlight);
+        outline-offset: 2px;
+    }
+
+    input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+    }
+}
+
+.manage-chip__count {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+}
+
+// Search plus selects: one row of matching fields under the chips.
+.manage-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 13rem);
+    gap: var(--space-2xs);
+
+    input,
+    select {
+        background-color: var(--component-background);
+        border-color: var(--hairline-strong);
+    }
+
+    @media (max-width: 48rem) {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-columns: auto;
+
+        > :first-child {
+            grid-column: 1 / -1;
+        }
+    }
+}
+
+.manage-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    min-width: 0;
+    transition: opacity var(--fast-transition);
+
+    &.htmx-swapping {
+        opacity: 0.4;
+    }
+}
+
+// ManageTable + ExpandRow: the Members table and its rows that open in place.
+.manage-table-block {
+    min-width: 0;
+}
+
+.manage-table {
+    width: 100%;
+    min-width: var(--manage_table_min_width, 40rem);
+    border-collapse: collapse;
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+
+    // The global table style blurs behind every cell; the block is opaque.
+    th,
+    td {
+        padding: var(--space-2xs) var(--space-xs);
+        text-align: left;
+        vertical-align: middle;
+        background: transparent;
+        border: none;
+        backdrop-filter: none;
+    }
+
+    th {
+        padding-block: var(--space-s);
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        font-weight: normal;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        white-space: nowrap;
+        border-bottom: 1px solid var(--hairline-strong);
+    }
+
+    th[aria-sort] {
+        color: var(--highlight);
+    }
+
+    .num {
+        text-align: end;
+        white-space: nowrap;
+    }
+
+    .act {
+        width: 1%;
+        text-align: end;
+        white-space: nowrap;
+    }
+
+    tbody + tbody > .manage-row > td {
+        border-top: 1px solid var(--hairline);
+    }
+
+    .is-dim > .manage-row > td {
+        opacity: 0.55;
+    }
+
+    tr.is-dirty > td,
+    tbody.is-dirty > .manage-row > td {
+        background: color-mix(in srgb, var(--manage_warn) 7%, transparent);
+    }
+}
+
+.manage-row {
+    transition: background-color var(--fast-transition);
+}
+
+@media (hover: hover) {
+    .manage-row:hover {
+        background: var(--hairline);
+    }
+}
+
+tbody.is-open > .manage-row {
+    background: var(--hairline);
+}
+
+.manage-row__chevron {
+    width: var(--space-xl);
+}
+
+.manage-chevron {
+    display: inline-grid;
+    place-items: center;
+    width: var(--space-l);
+    height: var(--space-l);
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    color: var(--fleet-yellow);
+    cursor: pointer;
+    transition:
+        border-color var(--fast-transition),
+        color var(--fast-transition);
+
+    svg {
+        transition: transform var(--fast-transition);
+    }
+
+    @media (hover: hover) {
+        &:hover {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+            color: var(--highlight);
+        }
+    }
+}
+
+tbody.is-open .manage-chevron svg {
+    transform: rotate(180deg);
+}
+
+.manage-table .manage-detail > td {
+    padding: 0 var(--space-xs) var(--space-m);
+    background: var(--hairline);
+}
+
+.manage-detail__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    padding-block-start: var(--space-s);
+    border-top: 1px solid var(--hairline);
+}
+
+// The first cell of a row: image, name, one line under it.
+.manage-who {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    min-width: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+
+    img {
+        flex: 0 0 auto;
+        width: var(--space-l);
+        height: var(--space-l);
+    }
+}
+
+button.manage-who {
+    width: 100%;
+    cursor: pointer;
+}
+
+.manage-who__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.manage-who__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: var(--highlight);
+}
+
+.manage-who__sub {
+    font-size: var(--step--1);
+    color: var(--foreground);
+}
+
+// Phones: the table keeps only the columns marked for phones and fits the
+// screen; the open row stacks its fields.
+@media (max-width: 48rem) {
+    // Auto layout, not fixed: an open row's colspan counts the hidden
+    // columns, and fixed layout would give that phantom column a share.
+    // The first column takes what is left and truncates its name.
+    .manage-table {
+        min-width: 0;
+    }
+
+    .manage-table .manage-row > td:first-child {
+        width: 100%;
+        max-width: 0;
+    }
+
+    .manage-table .is-wide {
+        display: none;
+    }
+
+    .manage-table .manage-detail > td {
+        padding-inline: var(--space-s);
+    }
+}
+
+// Fields in an open row or section body: labels above inputs, a grid that
+// stacks to one column on phones.
+.manage-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: var(--space-s);
+    align-items: start;
+
+    @media (max-width: 48rem) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.manage-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    min-width: 0;
+
+    > label,
+    .manage-field__label {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+}
+
+.manage-field__hint {
+    font-size: var(--step--1);
+    color: var(--text-muted);
+}
+
+.manage-field__error {
+    font-size: var(--step--1);
+    color: var(--manage_warn);
+}
+
+// An open row's or section's form: fields, then the actions row.
+.manage-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+}
+
+// Save and Cancel under an open row's fields; the destructive link sits right.
+.manage-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-s);
+}
+
+.manage-actions__end {
+    margin-inline-start: auto;
+}
+
+// SaveBar: the dirty-count bar under a grid of numbers.
+.manage-savebar {
+    position: sticky;
+    inset-block-end: var(--space-s);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs) var(--space-s);
+    padding: var(--space-2xs) var(--space-s);
+    background: color-mix(in srgb, var(--manage_warn) 10%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--manage_warn) 40%, transparent);
+}
+
+// A number input in a grid cell (SRP amounts): right-aligned, sunken.
+.manage-amount {
+    // A fixed width (not a %), so a phone's shrinking name column never squeezes it.
+    width: 10rem;
+    max-width: 40vw;
+    padding: var(--space-2xs) var(--space-xs);
+    background: var(--surface-sunken);
+    border: 1px solid var(--hairline-medium);
+    color: var(--foreground);
+    font: inherit;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+
+    &:focus-visible {
+        outline: 1px solid var(--fleet-yellow);
+        outline-offset: 0;
+    }
+}
+
+.is-dirty .manage-amount {
+    border-color: var(--fleet-yellow);
+}
+
+.manage-savebar__count {
+    flex: 1 1 auto;
+    color: var(--foreground);
+}
+
+// EntityPicker: a typeahead with a result menu under the field.
+.manage-picker {
+    position: relative;
+    min-width: 0;
+}
+
+.manage-picker__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    img {
+        position: absolute;
+        inset-inline-start: var(--space-2xs);
+        width: var(--space-m);
+        height: var(--space-m);
+        pointer-events: none;
+    }
+
+    img {
+        z-index: 1;
+    }
+}
+
+// Beats Input's scoped padding (one more class).
+.manage-picker .manage-picker__field.has-icon input {
+    padding-inline-start: calc(var(--space-m) + var(--space-xs));
+}
+
+// In flow, not floating: open rows sit inside XFadeScroll, whose overflow
+// would clip a floating menu.
+.manage-picker__menu {
+    margin-block-start: var(--space-3xs);
+    max-height: 20rem;
+    overflow-y: auto;
+    background: var(--component-background);
+    border: 1px solid var(--hairline-strong);
+
+    &:empty {
+        display: none;
+    }
+}
+
+.manage-picker__option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 100%;
+    margin: 0;
+    padding: var(--space-2xs) var(--space-xs);
+    background: transparent;
+    border: 0;
+    color: var(--highlight);
+    font: inherit;
+    font-size: var(--step--1);
+    text-align: start;
+    cursor: pointer;
+
+    img {
+        flex: 0 0 auto;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    &:hover,
+    &:focus-visible {
+        background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        outline: none;
+    }
+}
+
+.manage-picker__detail {
+    margin-inline-start: auto;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.manage-picker__note {
+    margin: 0;
+    padding: var(--space-2xs) var(--space-xs);
+    font-size: var(--step--1);
+    color: var(--text-muted);
+}
+
+// EveTimeInput: "EVE" inside the field, the pilot's time under it.
+.manage-time__field {
+    position: relative;
+}
+
+.manage-time__unit {
+    font-size: var(--step--1);
+    color: var(--text-muted);
+}
+
+
+// ConfirmAction's dialog body.
+.manage-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+}
+
+.manage-confirm__consequence {
+    margin: 0;
+    color: var(--highlight);
+}
+
+.manage-confirm__error:empty {
+    display: none;
+}
+
+// ManageStatCard: the About tab's vitals card. One number per card.
+.manage-stat {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+    padding: var(--space-m);
+    background: var(--component-background);
+    min-width: 0;
+    color: var(--foreground);
+    text-decoration: none;
+    transition: background-color var(--fast-transition);
+
+    @media (max-width: 30rem) {
+        padding: var(--space-s);
+    }
+}
+
+@media (hover: hover) {
+    a.manage-stat:hover {
+        background: color-mix(in srgb, var(--highlight) 4%, var(--component-background));
+    }
+}
+
+.manage-stat__label {
+    font-family: var(--heading-font);
+    font-size: var(--step--1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faded);
+}
+
+// Scales with the card, so four digits never clip on a phone.
+.manage-stat__value {
+    font-family: var(--heading-font);
+    font-size: min(var(--step-4), 28cqi);
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--highlight);
+    font-variant-numeric: tabular-nums;
+}
+
+.manage-stat.is-warn .manage-stat__value {
+    color: var(--manage_warn);
+}
+
+.manage-stat__detail {
+    font-size: var(--step--1);
+    color: var(--foreground);
+}
+
+.manage-stats {
+    display: grid;
+    // auto-fill: two cards keep a quarter width each, as four would.
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-s);
+
+    @media (max-width: 30rem) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-2xs);
+    }
+}
+
+// ManageTile: the product page's "Made from" tile.
+.manage-tiles {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+    gap: var(--space-2xs);
+    margin: 0;
+    padding: 0;
+}
+
+.manage-tile {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    height: 100%;
+    min-height: var(--space-xl);
+    padding: var(--space-2xs) var(--space-s);
+    background-color: var(--surface-sunken);
+    border: solid 1px var(--border-color);
+    color: var(--highlight);
+    font-size: var(--step-0);
+    text-decoration: none;
+    transition: border-color var(--fast-transition);
+
+    img {
+        flex: 0 0 auto;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+}
+
+@media (hover: hover) {
+    a.manage-tile:hover {
+        border-color: var(--fleet-yellow);
+    }
+}
+
+.manage-tile__count {
+    margin-inline-start: auto;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--manage_warn);
+}
+
+// The Manage Neocom button's queue count (pages/partials/manage_neocom_badge_component).
+.neocom-badge {
+    position: absolute;
+    inset-block-start: var(--space-3xs);
+    inset-inline-end: var(--space-3xs);
+    min-width: var(--space-s);
+    height: var(--space-s);
+    padding-inline: var(--space-3xs);
+    border-radius: var(--space-s);
+    background: var(--manage_warn);
+    color: var(--background);
+    font-family: var(--default-font);
+    font-size: var(--step--2);
+    font-weight: 700;
+    line-height: var(--space-s);
+    text-align: center;
+    pointer-events: none;
+}
+
+.neocom-badge-slot:empty {
+    display: none;
+}
+
+// A group of tiles under a red eyebrow (the hub's Settings blocks).
+.manage-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    padding: var(--space-m);
+    background: var(--component-background);
+
+    @media (max-width: 30rem) {
+        padding: var(--space-s);
+    }
+}

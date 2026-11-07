@@ -1,52 +1,101 @@
 ---
+/**
+ * The Pings tab of /intel/timers/manage/: the last 100 structure pings the
+ * bot sent, and whether Discord took them. The Failed chip is the
+ * "needs attention" view. structure_timers_manage_component (part=pings)
+ * renders it again when a chip changes.
+ */
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import type { StructurePing } from '@dtypes/api.minmatar.org'
+import type { ManageColumn } from '@dtypes/layout_components'
+import { eve_short_day_time, notification_label } from '@helpers/manage_intel'
+import { query_string } from '@helpers/string'
 
-/** Recent structure pings and whether Discord took them. Filtering swaps this panel through structure_timers_manage_component. */
 interface Props {
     pings:              StructurePing[];
-    failed_only?:       boolean;
-    error?:             string | null;
+    view?:              'all' | 'failed';
     [propName: string]: any;
 }
 
-const { pings, failed_only = false, error = null } = Astro.props
+const { pings, view = 'all' } = Astro.props
 
-const PARTIAL_URL = `${translatePath('/partials/structure_timers_manage_component')}?view=pings`
+const failed = pings.filter((ping) => !ping.discord_success)
+const rows = view === 'failed' ? failed : pings
 
-const when = (iso: string | null) => iso ? new Date(iso.endsWith('Z') ? iso : `${iso}Z`).toISOString().slice(0, 16).replace('T', ' ') : ''
+const COLUMNS: ManageColumn[] = [
+    { label: t('manage.timers.col_kind') },
+    { label: t('manage.timers.col_sent'), align: 'num', sort: 'descending', phone: false },
+    { label: t('manage.timers.col_discord'), align: 'num' },
+]
 
 import EmptyState from '@components/blocks/EmptyState.astro'
-import ManagePanel from '@components/blocks/ManagePanel.astro'
-import Tag from '@components/blocks/Tag.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
 ---
 
-<ManagePanel id="structure-pings-panel">
-    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
+<div class="[ manage-list ]" id="pings-list-root">
+    <ViewChips
+        id="pings-filters"
+        url={translatePath(`/partials/structure_timers_manage_component/?${query_string({ part: 'pings' })}`)}
+        target="pings-list"
+        selected={view}
+        legend={t('manage.timers.pings_views')}
+        views={[{ value: 'all', label: t('manage.timers.pings_all'), count: pings.length }]}
+        attention={[{ value: 'failed', label: t('manage.timers.pings_failed'), count: failed.length, tone: 'warn' }]}
+    >
+        <p class="[ manage-muted ]">{t('manage.timers.pings_hint')}</p>
+    </ViewChips>
+    <div id="pings-list" class="[ manage-list ]" aria-live="polite">
+        {rows.length === 0 ?
+            <EmptyState title={view === 'failed' ? t('manage.timers.pings_empty_failed') : t('manage.timers.pings_empty')} />
+            :
+            <ManageTable caption={t('manage.timers.pings_caption')} columns={COLUMNS} expandable={false}>
+                {rows.map((ping) =>
+                    <tbody>
+                        <tr class="[ manage-row ]">
+                            <td class="[ pings__summary ]">
+                                <span class="[ manage-who__text ]">
+                                    <span class="[ manage-who__name ]">{notification_label(ping.notification_type)}</span>
+                                    <span class="[ manage-who__sub pings__text ]" title={ping.summary}><span class="[ pings__phone-time ]">{eve_short_day_time(ping.created_at, lang)} · </span>{ping.summary}</span>
+                                </span>
+                            </td>
+                            <td class="[ num is-wide pings__when ]">{eve_short_day_time(ping.created_at, lang)}</td>
+                            <td class:list={['num', ping.discord_success ? 'manage-good' : 'manage-warn']}>
+                                {ping.discord_success ? t('manage.timers.ping_sent') : t('manage.timers.ping_failed')}
+                            </td>
+                        </tr>
+                    </tbody>
+                )}
+            </ManageTable>
+        }
+    </div>
+</div>
 
-    <form hx-get={PARTIAL_URL} hx-target="#structure-pings-panel" hx-swap="outerHTML" hx-trigger="change">
-        <label class="[ manage-panel__field ]">
-            <span>
-                <input type="checkbox" name="failed_only" value="true" checked={failed_only} />
-                {' '}{t('structure_timers_manage.pings.failed_only')}
-            </span>
-        </label>
-    </form>
-
-    {pings.length === 0 ?
-        <EmptyState title={t('structure_timers_manage.pings.empty')} />
-        :
-        <ul class="[ manage-panel__rows ]" role="list">
-            {pings.map(ping =>
-                <li class="[ manage-panel__row ]">
-                    <span class="[ manage-panel__muted ]">{when(ping.created_at)} EVE</span>
-                    <Tag color={ping.discord_success ? 'green' : 'fleet-red'} text={ping.discord_success ? t('structure_timers_manage.pings.sent') : t('structure_timers_manage.pings.failed')} />
-                    <span>{ping.notification_type}</span>
-                    <span>{ping.summary}</span>
-                </li>
-            )}
-        </ul>
+<style lang="scss">
+    // The summary takes what is left and truncates; hover shows it whole.
+    .pings__summary {
+        width: 100%;
+        max-width: 0;
     }
-</ManagePanel>
+
+    .pings__text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pings__phone-time {
+        display: none;
+        color: var(--highlight);
+
+        @media (max-width: 48rem) {
+            display: inline;
+        }
+    }
+
+    .pings__when {
+        color: var(--highlight);
+    }
+</style>

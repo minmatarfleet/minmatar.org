@@ -1,0 +1,97 @@
+---
+/**
+ * One accepted buyback item: icon and name, category, what it pays now
+ * (the in-demand or surplus rate by its demand status, or "Not taken"),
+ * the Accepting switch that saves when flipped, and a quiet Remove.
+ * Its own <tbody>, so a switch or a removal swaps just this row.
+ */
+import type { BuybackEditorItem } from '@helpers/market_settings'
+
+interface Props {
+    item:       BuybackEditorItem;
+    removed?:   boolean;
+}
+
+const {
+    item,
+    removed = false,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_item_icon } from '@helpers/eve_image_server'
+import { share_to_percent } from '@helpers/market_settings'
+import { query_string } from '@helpers/string'
+
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/buyback_settings_component/?${query_string(values)}`)
+const row_id = `bb-item-${item.type_id}`
+const in_demand = item.demand_status !== undefined && item.demand_status !== 'surplus'
+const category = item.category_label || item.category.toUpperCase()
+const pays = item.pays_rate == null
+    ? t('manage.buyback.not_taken')
+    : `${share_to_percent(item.pays_rate)}% ${in_demand ? t('manage.buyback.in_demand') : t('manage.buyback.surplus')}`
+---
+
+<tbody id={row_id} class:list={{ 'is-dim': removed || !item.active }}>
+    <tr class="[ manage-row ]">
+        <td>
+            <span class="[ manage-who ]">
+                <img src={get_item_icon(item.type_id, 32)} alt="" width="32" height="32" loading="lazy" />
+                <span class="[ manage-who__text ]">
+                    <span class="[ manage-who__name ]">{item.name}</span>
+                    <span class="[ manage-who__sub market-phone-only ]">{removed ? t('manage.buyback.removed') : [category, pays].filter(Boolean).join(' · ')}</span>
+                </span>
+            </span>
+        </td>
+        <td class="is-wide">{category}</td>
+        <td class="num is-wide">
+            {removed
+                ? <span class="[ manage-saved ]" role="status">{t('manage.buyback.removed')}</span>
+                : item.pays_rate == null
+                    ? <span class="[ manage-muted ]">{t('manage.buyback.not_taken')}</span>
+                    : (
+                        <Fragment>
+                            {`${share_to_percent(item.pays_rate)}%`}
+                            {' '}<span class="[ market-cell-note ]">{in_demand ? t('manage.buyback.in_demand') : t('manage.buyback.surplus')}</span>
+                        </Fragment>
+                    )
+            }
+        </td>
+        <td class="act">
+            {!removed &&
+                <ManageSwitch
+                    name="active"
+                    label={t('manage.buyback.accepting_item').replace('~NAME', item.name)}
+                    hide_label={true}
+                    checked={item.active}
+                    hx-post={partial_url({ part: 'item', type_id: String(item.type_id) })}
+                    hx-trigger="change"
+                    hx-include="#bb-items-filters"
+                    hx-target={`#${row_id}`}
+                    hx-select={`#${row_id}`}
+                    hx-swap="outerHTML"
+                />
+            }
+        </td>
+        {/* Phones pause an item with the switch; removing waits for a wider screen. */}
+        <td class="act is-wide">
+            {!removed &&
+                <ConfirmAction
+                    label={t('manage.buyback.remove')}
+                    title={t('manage.buyback.remove_title').replace('~NAME', item.name)}
+                    consequence={t('manage.buyback.remove_consequence').replace('~NAME', item.name)}
+                    confirm_label={t('manage.buyback.remove')}
+                    url={partial_url({ part: 'item', type_id: String(item.type_id) })}
+                    vals={{ action: 'remove', name: item.name, category_label: item.category_label ?? '' }}
+                    target={`#${row_id}`}
+                    select={`#${row_id}`}
+                    narrow={true}
+                />
+            }
+        </td>
+    </tr>
+</tbody>

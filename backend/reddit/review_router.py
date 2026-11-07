@@ -66,6 +66,7 @@ class RedditReviewDecision(Schema):
 class RedditRotationPost(Schema):
     post_id: int
     template_id: int
+    corporation_id: Optional[int] = None
     corporation_name: str
     corporation_ticker: str
     title: str
@@ -210,6 +211,7 @@ def approve_change(request, change_id: int):
     "/changes/{change_id}/reject",
     response={
         200: RedditReviewDecision,
+        400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
     },
@@ -227,6 +229,8 @@ def reject_change(request, change_id: int, payload: RedditRejectRequest):
     if change is None:
         return 404, ErrorResponse(detail="Change not found")
     note = payload.note.strip()
+    if not note:
+        return 400, ErrorResponse(detail="Give the CEO a reason.")
     changed = approval.reject(change, request.user, note)
     notified = _notify(change.template, False, note) if changed else False
     return {"changed": changed, "notified": notified}
@@ -271,6 +275,7 @@ def _post_row(post: RedditPost) -> dict:
     return {
         "post_id": post.id,
         "template_id": template.id,
+        "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.name,
         "corporation_ticker": corporation.ticker or "",
         "title": post.title or template.title,
