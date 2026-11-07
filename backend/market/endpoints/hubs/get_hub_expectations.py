@@ -46,6 +46,7 @@ def get_hub_expectations(request, location_id: int):
             fitting_id=row["fitting_id"],
             fitting_name=row["fitting_name"],
             tracked=row["quantity"] is not None,
+            ship_id=row.get("ship_id"),
         )
         for row in build_fitting_expectation_rows(location)
     ]
@@ -55,6 +56,8 @@ def get_hub_expectations(request, location_id: int):
             fitting_name=row["fitting_name"],
             tracked=row["quantity"] is not None,
             current=row["current"],
+            ship_id=row.get("ship_id"),
+            doctrine_ids=row.get("doctrine_ids", []),
         )
         for row in build_contract_expectation_rows(location)
     ]
