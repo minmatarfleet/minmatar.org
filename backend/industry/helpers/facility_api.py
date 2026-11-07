@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from industry.helpers.cost_indices import fetch_system_cost_indices
+from industry.helpers.cost_indices import (
+    fetch_system_cost_indices,
+    fetch_system_science_indices,
+)
 from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_NAME,
     AUNER_SYSTEM_NAME,
@@ -34,6 +37,8 @@ _JOB_CLASS_LABEL = {
     JobClass.SHIP_MANUFACTURING: "Ship manufacturing",
     JobClass.COMPONENT_MANUFACTURING: "Component manufacturing",
     JobClass.REACTION: "Reaction",
+    JobClass.EQUIPMENT_MANUFACTURING: "Module, ammo and drone manufacturing",
+    JobClass.SCIENCE: "Invention and copying",
 }
 
 
@@ -228,12 +233,15 @@ def facility_detail(key: str) -> Dict[str, Any]:
             }
         )
     mfg, rxn = fetch_system_cost_indices(summary["system_id"])
+    inv, copy = fetch_system_science_indices(summary["system_id"])
     return {
         **summary,
         "job_classes": job_classes,
         "cost_indices": {
             "manufacturing": mfg,
             "reaction": rxn,
+            "invention": inv,
+            "copying": copy,
         },
         "indices_from_esi": True,
     }

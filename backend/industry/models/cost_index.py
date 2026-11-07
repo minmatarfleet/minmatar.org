@@ -6,13 +6,16 @@ class IndustrySystemCostIndex(models.Model):
     """
     Cached ESI industry cost indices per solar system.
 
-    Populated by Celery from GET /industry/systems/ (manufacturing + reaction).
+    Populated by Celery from GET /industry/systems/ (manufacturing, reaction,
+    invention and copying).
     Planner job-install costs read this table instead of calling ESI per request.
     """
 
     solar_system_id = models.BigIntegerField(primary_key=True)
     manufacturing = models.FloatField(default=0.0)
     reaction = models.FloatField(default=0.0)
+    invention = models.FloatField(default=0.0)
+    copying = models.FloatField(default=0.0)
     updated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

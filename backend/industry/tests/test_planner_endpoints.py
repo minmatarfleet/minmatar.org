@@ -152,16 +152,47 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
             )
             self.assertAlmostEqual(park["reprocessing"]["facility_tax"], 0.025)
 
+    @patch("industry.helpers.facility_api.fetch_system_science_indices")
     @patch("industry.helpers.facility_api.fetch_system_cost_indices")
-    def test_facility_detail_includes_live_indexes(self, fetch_indices):
+    def test_facility_detail_includes_live_indexes(
+        self, fetch_indices, fetch_science
+    ):
         fetch_indices.return_value = (0.1238, 0.1155)
+        fetch_science.return_value = (0.1068, 0.0955)
         response = self.client.get(f"{BASE}/facilities/amamake", **self.auth)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data["indices_from_esi"])
         self.assertAlmostEqual(data["cost_indices"]["manufacturing"], 0.1238)
         self.assertAlmostEqual(data["cost_indices"]["reaction"], 0.1155)
-        self.assertEqual(len(data["job_classes"]), 3)
+        self.assertAlmostEqual(data["cost_indices"]["invention"], 0.1068)
+        self.assertAlmostEqual(data["cost_indices"]["copying"], 0.0955)
+        self.assertEqual(
+            {jc["job_class"] for jc in data["job_classes"]},
+            {
+                "ship_manufacturing",
+                "component_manufacturing",
+                "reaction",
+                "equipment_manufacturing",
+                "science",
+            },
+        )
+        science = next(
+            jc for jc in data["job_classes"] if jc["job_class"] == "science"
+        )
+        # Sotiyo -30% time, XL Laboratory Optimization I -20% x 1.9 lowsec.
+        self.assertAlmostEqual(science["role_te"], 0.30)
+        self.assertAlmostEqual(science["rig_te"], 0.38)
+        self.assertEqual(science["rig_type_id"], 37183)
+        # Hull -5% and rig -10% x 1.9 stack: 1 - 0.95 x 0.81.
+        self.assertAlmostEqual(science["structure_isk_bonus"], 0.2305)
+        equipment = next(
+            jc
+            for jc in data["job_classes"]
+            if jc["job_class"] == "equipment_manufacturing"
+        )
+        self.assertAlmostEqual(equipment["rig_me"], 0.0)
+        self.assertAlmostEqual(equipment["role_me"], 0.01)
         ship = next(
             jc
             for jc in data["job_classes"]

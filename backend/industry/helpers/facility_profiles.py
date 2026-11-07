@@ -40,6 +40,11 @@ class JobClass(str, Enum):
     SHIP_MANUFACTURING = "ship_manufacturing"
     COMPONENT_MANUFACTURING = "component_manufacturing"
     REACTION = "reaction"
+    # Modules, charges, drones, fighters, implants, deployables: the SDE
+    # Equipment / Charges / Drones rig filters. No freeport fits those rigs.
+    EQUIPMENT_MANUFACTURING = "equipment_manufacturing"
+    # Invention and blueprint copying (laboratory rigs).
+    SCIENCE = "science"
 
 
 @dataclass(frozen=True)
@@ -243,6 +248,11 @@ _THUKKER_RIG_ME_BASE = 0.02
 _THUKKER_RIG_TE_BASE = 0.20
 _THUKKER_CAPITAL_ME_BASE = 0.037
 
+# Standup XL-Set Laboratory Optimization I (attr 2593 time -20, 2595 cost -10):
+# copying, invention, ME and TE research.
+_LAB_RIG_TE_BASE = 0.20
+_LAB_RIG_COST_BASE = 0.10
+
 # Standup L-Set Reactor Efficiency II
 _REACTOR_RIG_ME_BASE = 0.024
 _REACTOR_RIG_TE_BASE = 0.24
@@ -387,6 +397,8 @@ def _lowsec_freeport_bonuses(
     thukker_te = _THUKKER_RIG_TE_BASE * _LOWSEC_ENGINEERING_MULT
     reactor_me = _REACTOR_RIG_ME_BASE * _LOWSEC_REACTOR_MULT
     reactor_te = _REACTOR_RIG_TE_BASE * _LOWSEC_REACTOR_MULT
+    lab_te = _LAB_RIG_TE_BASE * _LOWSEC_ENGINEERING_MULT
+    lab_cost = _LAB_RIG_COST_BASE * _LOWSEC_ENGINEERING_MULT
 
     return {
         JobClass.SHIP_MANUFACTURING: FacilityBonuses(
@@ -430,6 +442,34 @@ def _lowsec_freeport_bonuses(
             structure_type_id=TATARA_TYPE_ID,
             rig_name=RIG_L_REACTOR_EFF.name,
             rig_type_id=RIG_L_REACTOR_EFF.type_id,
+        ),
+        JobClass.EQUIPMENT_MANUFACTURING: FacilityBonuses(
+            structure_name=sotiyo_name,
+            role_me=_SOTIYO_ROLE_ME,
+            role_te=_SOTIYO_ROLE_TE,
+            rig_me=0.0,
+            rig_te=0.0,
+            structure_isk_bonus=_SOTIYO_ISK_BONUS,
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="sotiyo",
+            structure_type_id=SOTIYO_TYPE_ID,
+        ),
+        JobClass.SCIENCE: FacilityBonuses(
+            structure_name=sotiyo_name,
+            role_me=0.0,
+            role_te=_SOTIYO_ROLE_TE,
+            rig_me=0.0,
+            rig_te=lab_te,
+            # Hull and rig cost bonuses stack multiplicatively.
+            structure_isk_bonus=1.0
+            - (1.0 - _SOTIYO_ISK_BONUS) * (1.0 - lab_cost),
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="sotiyo",
+            structure_type_id=SOTIYO_TYPE_ID,
+            rig_name=RIG_XL_LAB.name,
+            rig_type_id=RIG_XL_LAB.type_id,
         ),
     }
 
@@ -490,6 +530,30 @@ def _hydra_freeport_bonuses(
             structure_type_id=ATHANOR_TYPE_ID,
             rig_name=RIG_M_BIOCHEMICAL_REACTOR.name,
             rig_type_id=RIG_M_BIOCHEMICAL_REACTOR.type_id,
+        ),
+        JobClass.EQUIPMENT_MANUFACTURING: FacilityBonuses(
+            structure_name=azbel_name,
+            role_me=_AZBEL_ROLE_ME,
+            role_te=_AZBEL_ROLE_TE,
+            rig_me=0.0,
+            rig_te=0.0,
+            structure_isk_bonus=_AZBEL_ISK_BONUS,
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="azbel",
+            structure_type_id=AZBEL_TYPE_ID,
+        ),
+        JobClass.SCIENCE: FacilityBonuses(
+            structure_name=azbel_name,
+            role_me=0.0,
+            role_te=_AZBEL_ROLE_TE,
+            rig_me=0.0,
+            rig_te=0.0,
+            structure_isk_bonus=_AZBEL_ISK_BONUS,
+            facility_tax=facility_tax,
+            system_cost_bonus=system_cost_bonus,
+            structure_kind="azbel",
+            structure_type_id=AZBEL_TYPE_ID,
         ),
     }
 

@@ -51,6 +51,13 @@ DEFAULT_PRODUCT_TYPE_ID = 644  # Typhoon
 
 # Eve group / category hints for job classification
 CATEGORY_SHIP = 6
+CATEGORY_SUBSYSTEM = 32
+# SDE rig target filters "Ships" (Ship + Subsystem) and "Equipment" /
+# "Charges" / "Drones/Fighters" (Module, Implant, Deployable, Charge, Drone,
+# Fighter). Freeport ship rigs cover the first set; no freeport fits a rig
+# for the second.
+SHIP_RIG_CATEGORIES = frozenset({CATEGORY_SHIP, CATEGORY_SUBSYSTEM})
+EQUIPMENT_CATEGORIES = frozenset({7, 8, 18, 20, 22, 87})
 GROUP_CONSTRUCTION_COMPONENTS = 334
 GROUP_FUEL_BLOCK = 1136
 # Composite / hybrid / biochemical reaction intermediates
@@ -108,6 +115,20 @@ class JobPlan:
     remainder_runs: int = 0
 
 
+@dataclass(frozen=True)
+class RootBlueprint:
+    """Blueprint used for the root product only (an invented or supplied copy).
+
+    ``me``/``te`` are fractions. ``runs_per_copy`` caps each root job at the
+    copy's runs, because blueprint copies can't be merged into one job.
+    Every other job in the tree keeps the plan's ``blueprint_me/te``.
+    """
+
+    me: float
+    te: float
+    runs_per_copy: Optional[int] = None
+
+
 @dataclass
 class BuildPlan:
     product_type_id: int
@@ -122,6 +143,10 @@ class BuildPlan:
     indices_from_esi: bool = True
     jobs: List[JobPlan] = field(default_factory=list)
     leaf_materials: Dict[int, Tuple[str, int]] = field(default_factory=dict)
+    # Set when the root is built from a copy, not the tree's BPOs.
+    root_blueprint: Optional[RootBlueprint] = None
+    # industry.helpers.invention.InventionPlan for invented T2/T3 roots.
+    invention: Optional[Any] = None
 
     @property
     def total_duration_seconds(self) -> float:
@@ -228,25 +253,37 @@ def get_recipe(product_type_id: int) -> Optional[Recipe]:
     return _get_recipe(product_type_id)
 
 
-def _classify_job_class(recipe: Recipe, root_type_id: int) -> JobClass:
-    if recipe.activity_id == ACTIVITY_REACTION:
-        return JobClass.REACTION
-    if recipe.product_type_id == root_type_id:
-        return JobClass.SHIP_MANUFACTURING
-    eve_type = (
-        EveType.objects.select_related("eve_group", "eve_group__eve_category")
-        .filter(id=recipe.product_type_id)
+def _product_category_id(type_id: int) -> Optional[int]:
+    return (
+        EveType.objects.filter(id=type_id)
+        .values_list("eve_group__eve_category_id", flat=True)
         .first()
     )
-    if eve_type is not None and eve_type.eve_group is not None:
-        category_id = (
-            eve_type.eve_group.eve_category_id
-            if eve_type.eve_group.eve_category_id
-            else None
-        )
-        if category_id == CATEGORY_SHIP:
-            return JobClass.SHIP_MANUFACTURING
+
+
+def _classify_job_class(recipe: Recipe, root_type_id: int) -> JobClass:
+    """Which freeport rig set a job uses, from the SDE rig target filters.
+
+    Ships and subsystems use the ship rig; modules, charges, drones and the
+    rest of the Equipment filters use no rig. Any other root (fuel blocks,
+    structures, components) keeps the ship profile it always had; every
+    other job is component manufacturing.
+    """
+    if recipe.activity_id == ACTIVITY_REACTION:
+        return JobClass.REACTION
+    category_id = _product_category_id(recipe.product_type_id)
+    if category_id in SHIP_RIG_CATEGORIES:
+        return JobClass.SHIP_MANUFACTURING
+    if category_id in EQUIPMENT_CATEGORIES:
+        return JobClass.EQUIPMENT_MANUFACTURING
+    if recipe.product_type_id == root_type_id:
+        return JobClass.SHIP_MANUFACTURING
     return JobClass.COMPONENT_MANUFACTURING
+
+
+def classify_job_class(recipe: Recipe, root_type_id: int) -> JobClass:
+    """Public alias of the planner's job-class rule (invention quotes use it)."""
+    return _classify_job_class(recipe, root_type_id)
 
 
 def _is_advanced_component(type_id: int) -> bool:
@@ -308,6 +345,11 @@ def _adjusted_prices(type_ids: Iterable[int]) -> Dict[int, float]:
     }
 
 
+def adjusted_prices(type_ids: Iterable[int]) -> Dict[int, float]:
+    """ESI adjusted prices for job-install EIV (public for invention fees)."""
+    return _adjusted_prices(type_ids)
+
+
 def _assign_buckets(
     jobs_meta: Dict[int, Tuple[Recipe, int, JobClass]],
     root_type_id: int,
@@ -359,6 +401,7 @@ def _stabilize_demand(
     is_buildable,
     recipe_for,
     max_runs_per_job: Optional[int] = None,
+    root_blueprint: Optional[RootBlueprint] = None,
 ) -> Tuple[Dict[int, int], Dict[int, Tuple[Recipe, int, JobClass]]]:
     """Iterate until run counts stabilize (ME can change upstream demand)."""
     demand: Dict[int, int] = defaultdict(int)
@@ -379,10 +422,14 @@ def _stabilize_demand(
             runs = ceil(needed / recipe.product_quantity)
             job_class = _classify_job_class(recipe, root_id)
             bonuses = profile[job_class]
-            bp_me = (
-                0.0
-                if recipe.activity_id == ACTIVITY_REACTION
-                else blueprint_me
+            bp_me, _, job_runs_cap = _job_blueprint(
+                type_id=type_id,
+                recipe=recipe,
+                root_id=root_id,
+                blueprint_me=blueprint_me,
+                blueprint_te=0.0,
+                max_runs_per_job=max_runs_per_job,
+                root_blueprint=root_blueprint,
             )
             me_total = material_efficiency_total(
                 bp_me, bonuses.role_me, bonuses.rig_me
@@ -390,7 +437,7 @@ def _stabilize_demand(
             next_jobs[type_id] = (recipe, runs, job_class)
             for mid, _, base_qty in recipe.materials:
                 new_demand[mid] += batched_material_quantity(
-                    runs, base_qty, me_total, max_runs_per_job
+                    runs, base_qty, me_total, job_runs_cap
                 )
 
         if next_jobs == jobs_meta and new_demand == demand:
@@ -401,6 +448,29 @@ def _stabilize_demand(
         logger.warning("Build plan demand did not fully stabilize")
 
     return demand, jobs_meta
+
+
+def _job_blueprint(
+    *,
+    type_id: int,
+    recipe: Recipe,
+    root_id: int,
+    blueprint_me: float,
+    blueprint_te: float,
+    max_runs_per_job: Optional[int],
+    root_blueprint: Optional[RootBlueprint],
+) -> Tuple[float, float, Optional[int]]:
+    """(ME, TE, runs cap) for one job: reactions 0/0, root copy, else BPO."""
+    if recipe.activity_id == ACTIVITY_REACTION:
+        return 0.0, 0.0, max_runs_per_job
+    if root_blueprint is not None and type_id == root_id:
+        cap = (
+            root_blueprint.runs_per_copy
+            if root_blueprint.runs_per_copy
+            else max_runs_per_job
+        )
+        return root_blueprint.me, root_blueprint.te, cap
+    return blueprint_me, blueprint_te, max_runs_per_job
 
 
 def _build_job_plan(
@@ -418,11 +488,20 @@ def _build_job_plan(
     manufacturing_index: float,
     reaction_index: float,
     max_runs_per_job: Optional[int] = None,
+    root_id: int = 0,
+    root_blueprint: Optional[RootBlueprint] = None,
 ) -> JobPlan:
     bonuses = profile[job_class]
     is_reaction = recipe.activity_id == ACTIVITY_REACTION
-    bp_me = 0.0 if is_reaction else blueprint_me
-    bp_te = 0.0 if is_reaction else blueprint_te
+    bp_me, bp_te, max_runs_per_job = _job_blueprint(
+        type_id=type_id,
+        recipe=recipe,
+        root_id=root_id,
+        blueprint_me=blueprint_me,
+        blueprint_te=blueprint_te,
+        max_runs_per_job=max_runs_per_job,
+        root_blueprint=root_blueprint,
+    )
     me_total = material_efficiency_total(
         bp_me, bonuses.role_me, bonuses.rig_me
     )
@@ -619,6 +698,7 @@ def plan_build(
     build_fuel_blocks: bool = True,
     exclude_type_ids: Optional[Iterable[int]] = None,
     max_runs_per_job: Optional[int] = None,
+    root_blueprint: Optional[RootBlueprint] = None,
 ) -> BuildPlan:
     """
     Expand `product` into a full job tree at the given facility profile.
@@ -639,6 +719,10 @@ def plan_build(
 
     ``max_runs_per_job`` splits every job into blueprint-copy sized batches
     before material and install-cost rounding. Omit it for one job.
+
+    ``root_blueprint`` builds the root from a copy (an invented or supplied
+    T2/T3 BPC): its ME/TE replace ``blueprint_me/te`` for the root job only,
+    and its runs cap the root's jobs. Omit it to keep one blueprint for all.
     """
     if quantity <= 0:
         raise ValueError("quantity must be positive")
@@ -692,6 +776,7 @@ def plan_build(
         is_buildable=is_buildable,
         recipe_for=recipe_for,
         max_runs_per_job=max_runs_per_job,
+        root_blueprint=root_blueprint,
     )
     buckets = _assign_buckets(jobs_meta, root.id)
 
@@ -715,6 +800,8 @@ def plan_build(
             manufacturing_index=manufacturing_index,
             reaction_index=reaction_index,
             max_runs_per_job=max_runs_per_job,
+            root_id=root_id,
+            root_blueprint=root_blueprint,
         )
         for type_id, (recipe, runs, job_class) in sorted(
             jobs_meta.items(), key=lambda item: item[1][0].product_name
@@ -734,6 +821,7 @@ def plan_build(
         indices_from_esi=not indices_overridden,
         jobs=job_plans,
         leaf_materials=_collect_leaf_materials(demand, is_buildable),
+        root_blueprint=root_blueprint,
     )
 
 

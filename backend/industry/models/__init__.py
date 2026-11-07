@@ -4,6 +4,7 @@
 
 from industry.models.contract_association import IndustryContractAssociation
 from industry.models.cost_index import IndustrySystemCostIndex
+from industry.models.invention import InventionDecryptor, InventionOutcome
 from industry.models.lp_store import (
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointAccount,
@@ -49,5 +50,7 @@ __all__ = [
     "IndustryOrderPiCoordinator",
     "IndustryProduct",
     "IndustrySystemCostIndex",
+    "InventionDecryptor",
+    "InventionOutcome",
     "Strategy",
 ]

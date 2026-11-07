@@ -11,6 +11,7 @@ from industry.helpers.contract_associations import (
     reconcile_open_order_contract_associations,
 )
 from industry.helpers.cost_indices import sync_industry_system_cost_indices
+from industry.helpers.invention_sde import refresh_if_new
 from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     sync_loyalty_store_offers,
@@ -451,3 +452,9 @@ def refresh_product_insights_task() -> int:
     )
 
     return refresh_product_insights()
+
+
+@app.task(exclusive=60 * 60, cooldown=60 * 60)
+def refresh_invention_data_task():
+    """Daily: reload invention recipes and decryptors when CCP ships a new SDE."""
+    return refresh_if_new()
