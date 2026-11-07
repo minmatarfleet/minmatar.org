@@ -54,6 +54,8 @@ import Tippy from '@components/blocks/Tippy.astro';
     {!title &&
         <slot />
     }
+    {/* A count over the icon's corner, e.g. a lazy partial (the Manage queue total). */}
+    <slot name="badge" />
 </StylessButton>
 
 <style lang="scss">

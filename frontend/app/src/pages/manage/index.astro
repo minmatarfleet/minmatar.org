@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { ManageSummary } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_manage_summary } from '@helpers/api.minmatar.org/manage'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+// The API decides which screens this user reaches (the same gates and API
+// checks as the screens themselves); no screen means no hub.
+let summary: ManageSummary | null = null
+let error: Error | null = null
+try {
+    summary = await get_manage_summary(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+if (summary && summary.screens.length === 0) return HTTP_403_Forbidden()
+
+const page_title = t('manage.page_title')
+const screen_count = summary?.screens.length ?? 0
+const fact = summary
+    ? (screen_count === 1 ? t('manage.screen_count_one') : t('manage.screen_count').replace('~COUNT', String(screen_count)))
+    : undefined
+const role = summary
+    ? (summary.role === 'superuser' ? t('manage.role_superuser') : t('manage.role_manager'))
+    : undefined
+
+const breadcrumbs = [
+    {
+        page_title,
+        accumulated_path: translatePath('/manage/'),
+    },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageHubBody from '@components/blocks/manage/ManageHubBody.astro'
+---
+
+<Viewport title={page_title} meta_description={t('manage.description')}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-2xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} role={role} fact={fact} />
+        </Flexblock>
+
+        {summary
+            ? <ManageHubBody summary={summary} />
+            : (
+                <div>
+                    <ErrorRefetch args={{
+                        partial: translatePath('/partials/manage_hub_component/'),
+                        error: error ?? new Error('Error fetching the manage summary'),
+                        delay: 0,
+                    }} />
+                </div>
+            )
+        }
+    </Flexblock>
+</PageLanding>
+</Viewport>
