@@ -5253,6 +5253,11 @@
             "title": "Status",
             "type": "string"
           },
+          "submit_note": {
+            "default": "",
+            "title": "Submit Note",
+            "type": "string"
+          },
           "submitted_at": {
             "title": "Submitted At",
             "type": "string"
@@ -10693,6 +10698,11 @@
             "title": "Name",
             "type": "string"
           },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
           "preview": {
             "default": false,
             "title": "Preview",
@@ -10714,6 +10724,14 @@
       },
       "DoctrineCompositionRequest": {
         "properties": {
+          "capitals": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Capitals",
+            "type": "array"
+          },
           "primary": {
             "default": [],
             "items": {
@@ -10795,6 +10813,13 @@
       "DoctrineResponse": {
         "description": "Doctrines API Response",
         "properties": {
+          "capitals_fittings": {
+            "items": {
+              "$ref": "#/components/schemas/FittingResponse"
+            },
+            "title": "Capitals Fittings",
+            "type": "array"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -10875,6 +10900,7 @@
           "secondary_fittings",
           "support_fittings",
           "utility_fittings",
+          "capitals_fittings",
           "sig_ids",
           "location_ids"
         ],

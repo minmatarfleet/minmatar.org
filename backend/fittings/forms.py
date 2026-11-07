@@ -283,6 +283,12 @@ class EveDoctrineForm(forms.ModelForm):
         required=False,
         help_text="Cynos, boosters, scouts and other one-off utility ships.",
     )
+    capitals_fittings = forms.ModelMultipleChoiceField(
+        queryset=EveFitting.objects.all(),
+        widget=FilteredSelectMultiple("Capitals Fittings", is_stacked=False),
+        required=False,
+        help_text="Dreadnoughts, carriers and FAX the doctrine brings.",
+    )
     locations = forms.ModelMultipleChoiceField(
         queryset=EveLocation.objects.all(),
         widget=FilteredSelectMultiple("Locations", is_stacked=False),
@@ -320,6 +326,12 @@ class EveDoctrineForm(forms.ModelForm):
                 doctrine_fitting.fitting
                 for doctrine_fitting in EveDoctrineFitting.objects.filter(
                     doctrine_id=doctrine_id, role="utility"
+                )
+            ]
+            self.fields["capitals_fittings"].initial = [
+                doctrine_fitting.fitting
+                for doctrine_fitting in EveDoctrineFitting.objects.filter(
+                    doctrine_id=doctrine_id, role="capitals"
                 )
             ]
             self.fields["locations"].initial = self.instance.locations.all()

@@ -28,4 +28,6 @@ export function volunteers_for(entry:FleetCompositionEntry, volunteers:FleetShip
 
 export const ship_row_id = (entry:FleetCompositionEntry) => `fleet-ship-${entry.key.replace(':', '-')}`
 
-export const is_capital_entry = (entry:FleetCompositionEntry) => is_capital_group(entry.ship_group)
+// A capital hull, or a ship the doctrine lists under its Capitals role.
+export const is_capital_entry = (entry:FleetCompositionEntry) =>
+    entry.role === 'capitals' || is_capital_group(entry.ship_group)

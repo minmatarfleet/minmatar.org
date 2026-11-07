@@ -11333,6 +11333,11 @@ export interface components {
             reviewed_by: string | null;
             /** Status */
             status: string;
+            /**
+             * Submit Note
+             * @default
+             */
+            submit_note?: string;
             /** Submitted At */
             submitted_at: string;
             /** Submitted By */
@@ -13491,6 +13496,11 @@ export interface components {
             /** Name */
             name: string;
             /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /**
              * Preview
              * @default false
              */
@@ -13500,6 +13510,11 @@ export interface components {
         };
         /** DoctrineCompositionRequest */
         DoctrineCompositionRequest: {
+            /**
+             * Capitals
+             * @default []
+             */
+            capitals?: number[];
             /**
              * Primary
              * @default []
@@ -13545,6 +13560,8 @@ export interface components {
          * @description Doctrines API Response
          */
         DoctrineResponse: {
+            /** Capitals Fittings */
+            capitals_fittings: components["schemas"]["FittingResponse"][];
             /**
              * Created At
              * Format: date-time

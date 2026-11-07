@@ -1,5 +1,5 @@
 ---
-// no-error-refetch: a mutation partial that shows the API error inline in the form result
+// no-error-refetch: a mutation partial that shows the API error inline in the dialog
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -12,63 +12,228 @@ if (!user)
     return HTTP_403_Forbidden()
 
 import { get_gates } from '@helpers/gates'
-import { can_edit_doctrines } from '@helpers/doctrine_editor'
+import {
+    can_edit_doctrines,
+    composition_changes,
+    DOCTRINE_ROLES,
+    type CompositionChange,
+    type DoctrineComposition,
+    type DoctrineRole,
+} from '@helpers/doctrine_editor'
 
 const gates = await get_gates(Astro)
 
 if (!await can_edit_doctrines(gates))
     return HTTP_403_Forbidden()
 
-import type { DoctrineChangePreview } from '@dtypes/api.minmatar.org'
-import { submit_doctrine_change } from '@helpers/api.minmatar.org/doctrine_changes'
+import type { Doctrine, Fitting } from '@dtypes/api.minmatar.org'
+import { get_doctrine_by_id } from '@helpers/api.minmatar.org/doctrines'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import { review_change_request, submit_doctrine_change } from '@helpers/api.minmatar.org/doctrine_changes'
 
 const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0')
+const intent = Astro.url.searchParams.get('intent') ?? 'review'
 
-let result:DoctrineChangePreview | null = null
+const ROLE_LABELS:Record<DoctrineRole, string> = {
+    primary: t('doctrine_changes.role_primary'),
+    secondary: t('doctrine_changes.role_academy'),
+    support: t('doctrine_changes.role_support'),
+    utility: t('doctrine_changes.role_utility'),
+    capitals: t('doctrine_changes.role_capitals'),
+}
+
+interface ChangeRow {
+    ship_id: number | null
+    name:    string
+    what:    string
+    kind:    CompositionChange['kind'] | 'detail'
+}
+
 let error_message:string | false = false
+let rows:ChangeRow[] = []
+let doctrine:Doctrine | null = null
 
 if (Astro.request.method === 'POST') {
-    const form = await Astro.request.formData()
-    const preview = form.get('intent') !== 'submit'
-    const ids = (key:string) => form.getAll(key).map((value) => parseInt(String(value))).filter((id) => !isNaN(id))
-
     try {
-        result = await submit_doctrine_change(auth_token as string, doctrine_id, {
+        if (intent === 'withdraw') {
+            const request_id = parseInt(Astro.url.searchParams.get('request_id') ?? '0')
+            await review_change_request(auth_token as string, 'doctrine', request_id, 'cancel')
+            // The page reloads into the editor.
+            return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
+        }
+
+        const form = await Astro.request.formData()
+        const ids = (key:string) => form.getAll(key).map((value) => parseInt(String(value))).filter((id) => !isNaN(id))
+        const composition = Object.fromEntries(DOCTRINE_ROLES.map((role) => [role, ids(role)])) as DoctrineComposition
+        const body = {
             name: String(form.get('name') ?? ''),
             type: String(form.get('type') ?? ''),
             description: String(form.get('description') ?? ''),
-            composition: {
-                primary: ids('primary'),
-                secondary: ids('secondary'),
-                support: ids('support'),
-                utility: ids('utility'),
-            },
-            preview,
-        })
+            composition,
+            note: String(form.get('note') ?? ''),
+        }
+
+        if (intent === 'submit') {
+            await submit_doctrine_change(auth_token as string, doctrine_id, { ...body, preview: false })
+            // The page reloads into its pending (or applied) state.
+            return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
+        }
+
+        // Review: the API validates the edit, then the dialog lists it per ship.
+        await submit_doctrine_change(auth_token as string, doctrine_id, { ...body, preview: true })
+        const [live, fittings] = await Promise.all([get_doctrine_by_id(doctrine_id), get_fittings()])
+        doctrine = live
+        const by_id = new Map<number, Fitting>(fittings.map((fitting) => [fitting.id, fitting]))
+        const current:DoctrineComposition = {
+            primary: live.primary_fittings.map((fitting) => fitting.id),
+            secondary: live.secondary_fittings.map((fitting) => fitting.id),
+            support: live.support_fittings.map((fitting) => fitting.id),
+            utility: (live.utility_fittings ?? []).map((fitting) => fitting.id),
+            capitals: (live.capitals_fittings ?? []).map((fitting) => fitting.id),
+        }
+
+        if (body.name.trim() !== live.name)
+            rows.push({ ship_id: null, name: t('doctrine_changes.name'), what: body.name.trim(), kind: 'detail' })
+        if (body.description !== live.description)
+            rows.push({ ship_id: null, name: t('doctrine_changes.description'), what: t('doctrine_changes.edited'), kind: 'detail' })
+
+        for (const change of composition_changes(current, composition)) {
+            const fitting = by_id.get(change.fitting_id)
+            const what = change.kind === 'added'
+                ? t('doctrine_changes.added_to').replace('{role}', ROLE_LABELS[change.to!])
+                : change.kind === 'moved'
+                ? t('doctrine_changes.moved_to').replace('{role}', ROLE_LABELS[change.to!])
+                : t('doctrine_changes.removed_from').replace('{role}', ROLE_LABELS[change.from!])
+            rows.push({ ship_id: fitting?.ship_id ?? null, name: fitting?.name ?? `#${change.fitting_id}`, what, kind: change.kind })
+        }
     } catch (error) {
         error_message = error instanceof Error ? error.message : t('doctrine_changes.action_failed')
     }
 }
 
-import ChangeDiff from '@components/blocks/ChangeDiff.astro'
+const FORM_PARTIAL_URL = translatePath(`/partials/doctrine_change_form_component/?doctrine_id=${doctrine_id}`)
+const doctrine_type = String(doctrine?.type ?? '')
+const reviewer_line = doctrine_type === 'experimental'
+    ? t('doctrine_changes.applies_now')
+    : doctrine_type === 'non_strategic'
+    ? t('doctrine_changes.reviewer_non_strategic')
+    : t('doctrine_changes.reviewer_strategic')
+const title = (rows.length === 1 ? t('doctrine_changes.send_title_one') : t('doctrine_changes.send_title'))
+    .replace('{count}', String(rows.length))
+
+import Button from '@components/blocks/Button.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
-<Flexblock gap="var(--space-s)">
-    {error_message && <p role="alert">⚠️ {error_message}</p>}
-    {result &&
-        <>
-            {result.applied ?
-                <p>✅ {t('doctrine_changes.applied')}</p>
-                : result.request ?
-                <p>
-                    ✅ {t('doctrine_changes.submitted')}
-                    <a href={translatePath('/ships/doctrines/review/')}>{t('doctrine_changes.review_queue')}</a>
-                </p>
-                :
-                <strong>{t('doctrine_changes.preview_title')}</strong>
-            }
-            <ChangeDiff diffs={result.diffs} />
-        </>
+<Flexblock gap="var(--space-s)" class="[ doctrine-review ]">
+    {error_message ?
+        <Flexblock gap="var(--space-s)">
+            <h2>{t('doctrine_changes.review_failed')}</h2>
+            <p role="alert">{error_message}</p>
+            <FlexInline justification="flex-end">
+                <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</button>
+            </FlexInline>
+        </Flexblock>
+        :
+        <Flexblock gap="var(--space-s)">
+            <h2>{title}</h2>
+            <ul class="[ doctrine-review__rows ]">
+                {rows.map((row) =>
+                    <li class="[ doctrine-review__row ]">
+                        {row.ship_id
+                            ? <img src={`https://images.evetech.net/types/${row.ship_id}/icon?size=64`} alt="" width="32" height="32" loading="lazy" />
+                            : <span class="[ doctrine-review__spacer ]" aria-hidden="true"></span>
+                        }
+                        <span class="[ doctrine-review__name ]">{row.name}</span>
+                        <small class="[ doctrine-review__what ]" data-kind={row.kind}>{row.what}</small>
+                    </li>
+                )}
+            </ul>
+            <Flexblock gap="var(--space-3xs)">
+                <label for="doctrine-review-note">
+                    {t('doctrine_changes.note_label')} <small class="[ doctrine-review__muted ]">{t('doctrine_changes.optional')}</small>
+                </label>
+                <textarea id="doctrine-review-note" name="note" rows="3" class="[ doctrine-review__note ]"></textarea>
+            </Flexblock>
+            <small class="[ doctrine-review__muted ]">{reviewer_line}</small>
+            <FlexInline justification="flex-end" gap="var(--space-s)">
+                <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</button>
+                <Button
+                    type="button"
+                    color="fleet-red"
+                    hx-post={`${FORM_PARTIAL_URL}&intent=submit`}
+                    hx-include="#doctrine-form, #doctrine-review-note"
+                    hx-target="#doctrine-review"
+                    hx-swap="innerHTML"
+                >
+                    {t('doctrine_changes.send_for_review')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
     }
 </Flexblock>
+
+<style lang="scss">
+    .doctrine-review__rows {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .doctrine-review__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: 3.25rem;
+        border-top: 1px solid var(--hairline);
+
+        img,
+        .doctrine-review__spacer {
+            flex: none;
+            width: 2rem;
+            height: 2rem;
+        }
+    }
+
+    .doctrine-review__name {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .doctrine-review__what {
+        flex: none;
+        font-weight: 600;
+        color: var(--text-muted);
+
+        &[data-kind="added"] {
+            color: var(--green);
+        }
+
+        &[data-kind="moved"] {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .doctrine-review__muted {
+        color: var(--text-muted);
+    }
+
+    .doctrine-review__note {
+        padding: var(--space-2xs) var(--space-xs);
+        background: var(--surface-sunken);
+        border: 1px solid var(--border-color);
+        color: var(--highlight);
+        resize: vertical;
+    }
+
+    .doctrine-review__link {
+        min-height: 2.75rem;
+        background: none;
+        border: 0;
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+</style>

@@ -42,7 +42,14 @@ TRIAL_SCALE_DAYS = 90
 OFF_DOCTRINE = "off_doctrine"
 # Best first: a pilot whose alts brought two hulls to one fleet is counted
 # by the more useful one.
-ROLE_ORDER = ("primary", "support", "utility", ACADEMY_ROLE, OFF_DOCTRINE)
+ROLE_ORDER = (
+    "primary",
+    "support",
+    "utility",
+    "capitals",
+    ACADEMY_ROLE,
+    OFF_DOCTRINE,
+)
 RECENT_FLEETS = 10
 
 
@@ -56,9 +63,9 @@ def latest_payload() -> Optional[dict]:
 
 
 def helpful_role(role: Optional[str], academy: bool) -> bool:
-    """Primary, support and utility help a fleet; Academy fits only from
-    Academy pilots; off-doctrine hulls never."""
-    if role in ("primary", "support", "utility"):
+    """Primary, support, utility and capitals help a fleet; Academy fits
+    only from Academy pilots; off-doctrine hulls never."""
+    if role in ("primary", "support", "utility", "capitals"):
         return True
     return role == ACADEMY_ROLE and academy
 

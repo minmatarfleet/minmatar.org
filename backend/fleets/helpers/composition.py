@@ -12,7 +12,13 @@ from fittings.models import ACADEMY_ROLE, EveDoctrineFitting, EveFitting
 from fleets.helpers.eft_items import module_slots_for
 from fleets.helpers.fit_roles import FitRoles, fit_roles
 
-ROLE_ORDER = {"primary": 0, "secondary": 1, "support": 2, "utility": 3}
+ROLE_ORDER = {
+    "primary": 0,
+    "secondary": 1,
+    "support": 2,
+    "utility": 3,
+    "capitals": 4,
+}
 
 
 @dataclass

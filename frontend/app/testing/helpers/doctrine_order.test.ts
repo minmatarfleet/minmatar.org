@@ -33,6 +33,7 @@ function doctrine(
         secondary_fittings: [],
         support_fittings: [],
         utility_fittings: [],
+        capitals_fittings: [],
         location_ids: [],
     }
 }
