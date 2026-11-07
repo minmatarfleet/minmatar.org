@@ -98,32 +98,90 @@ const target_by_id = new Map(targets.map(target => [target.id, target]))
 const line_by_ship = new Map(hangar.lines_by_ship.map(row => [row.ship_type_id, target_by_id.get(row.target_id)]))
 const owned_by_character = new Map(hangar.hangars.map(row => [row.character_id, new Set(row.ship_type_ids)]))
 
-const option_label = (entry:FleetCompositionEntry) => {
-    const line = line_by_ship.get(entry.ship_id)
-    if (!line) return entry.name
-    return t(line.short > 0 ? 'fleets.targets.option_needed' : 'fleets.targets.option_met')
-        .replace('{ship}', entry.name)
-        .replace('{line}', line.name)
+// Which ship target line each picker value fills, so "Still needed" can
+// count the picks live. Off-doctrine hulls count toward a line too.
+const line_for_ship = (ship_type_id:number) =>
+    line_by_ship.get(ship_type_id) ?? targets.find(target => target.ship_type_ids.includes(ship_type_id))
+const line_of_key:Record<string, number> = {}
+for (const entry of composition) {
+    const line = line_for_ship(entry.ship_id)
+    if (line) line_of_key[entry.key] = line.id
 }
-const owned_entries = (pilot:MyFleetPilot) => {
-    const owned = owned_by_character.get(pilot.character_id)
-    return owned ? composition.filter(entry => owned.has(entry.ship_id)) : []
+
+const saved_key = (pilot:MyFleetPilot) => {
+    const pick = pilot.selection
+    if (!pick) return ''
+    if (pick.ship_type_id) return `s:${pick.ship_type_id}`
+    return pick.fitting_id ? `f:${pick.fitting_id}` : pick.fleet_fitting_id ? `m:${pick.fleet_fitting_id}` : ''
 }
-const pilot_groups = (pilot:MyFleetPilot) => {
-    const owned = owned_entries(pilot)
-    const keys = new Set(owned.map(entry => entry.key))
-    return [
-        ...(owned.length ? [{ title: t('fleets.targets.in_hangar'), entries: owned }] : []),
-        ...groups
-            .map(group => ({ ...group, entries: group.entries.filter(entry => !keys.has(entry.key)) }))
-            .filter(group => group.entries.length > 0),
-    ]
+for (const pilot of pilots) {
+    const type_id = pilot.selection?.ship_type_id
+    const line = type_id ? line_for_ship(type_id) : undefined
+    if (type_id && line) line_of_key[`s:${type_id}`] = line.id
 }
+
+// `have` already counts this user's saved ships; take them out so the bar
+// can show the picks in this form as "Your picks" instead.
+const saved_mine = (line_id:number) => pilots.filter(pilot => line_of_key[saved_key(pilot)] === line_id).length
+const lines = [...targets]
+    .sort((a, b) => b.short - a.short || a.name.localeCompare(b.name))
+    .map(target => ({
+        id: target.id,
+        name: target.name,
+        target: target.target,
+        base: Math.max(target.have - saved_mine(target.id), 0),
+        met_at_load: target.short === 0,
+    }))
+const line_index = new Map(lines.map((line, index) => [line.id, index]))
+const lines_open = lines.filter(line => !line.met_at_load)
+const lines_met = lines.filter(line => line.met_at_load)
+
+// What the picker button shows for each value: hull icon, hull name and the
+// line it fills. A hull listed twice also shows the fit's name.
+const hull_count = new Map<number, number>()
+composition.forEach(entry => hull_count.set(entry.ship_id, (hull_count.get(entry.ship_id) ?? 0) + 1))
+const fit_name = (entry:FleetCompositionEntry) => (hull_count.get(entry.ship_id) ?? 0) > 1 ? entry.name : ''
+const ship_name = (entry:FleetCompositionEntry) => entry.ship_name || entry.name
+const line_name = (key:string) => lines.find(line => line.id === line_of_key[key])?.name ?? ''
+
+const ships:Record<string, { name:string, fit:string, line:string, icon:string }> = {
+    other: { name: t('pick_ships_other_ship'), fit: '', line: '', icon: '' },
+}
+for (const entry of composition)
+    ships[entry.key] = { name: ship_name(entry), fit: fit_name(entry), line: line_name(entry.key), icon: get_item_icon(entry.ship_id, 64) }
+for (const pilot of pilots) {
+    const hull = off_doctrine_hull(pilot)
+    if (hull) ships[hull.key] = { name: hull.name, fit: '', line: line_name(hull.key), icon: get_item_icon(pilot.selection!.ship_type_id!, 64) }
+}
+
+// The ship menu: one group per target line, most needed first, then the
+// doctrine's other ships by role. Hulls a character owns say "In hangar".
+interface MenuGroup {
+    title:      string;
+    line_index?: number;
+    entries:    FleetCompositionEntry[];
+}
+const menu_groups:MenuGroup[] = [
+    ...lines.map(line => ({
+        title: line.name,
+        line_index: line_index.get(line.id),
+        entries: composition.filter(entry => line_of_key[entry.key] === line.id),
+    })),
+    ...groups.map(group => ({
+        title: group.title,
+        entries: group.entries.filter(entry => line_of_key[entry.key] === undefined),
+    })),
+].filter(group => group.entries.length > 0)
+
+const owns = (pilot:MyFleetPilot, entry:FleetCompositionEntry) =>
+    owned_by_character.get(pilot.character_id)?.has(entry.ship_id) ?? false
+const owned_entries = (pilot:MyFleetPilot) => composition.filter(entry => owns(pilot, entry))
 const hangar_hint = (pilot:MyFleetPilot) => {
     const entry = owned_entries(pilot).find(entry => (line_by_ship.get(entry.ship_id)?.short ?? 0) > 0)
     if (!entry) return null
     return { entry, line: line_by_ship.get(entry.ship_id)! }
 }
+const search_terms = (entry:FleetCompositionEntry) => `${ship_name(entry)} ${entry.name}`.toLowerCase()
 
 const suggested_label = (pilot:MyFleetPilot) => {
     const { ship_name, fleets } = pilot.suggestion!
@@ -132,14 +190,20 @@ const suggested_label = (pilot:MyFleetPilot) => {
         .replace('{count}', fleets.toString())
 }
 
-// Links fits: the pilot picks which fitted bursts run online. The form
-// starts from their saved pick, else the doctrine's online bursts.
+// Links fits: one dropdown per burst the hull runs at once. The form starts
+// from the pilot's saved pick, else the doctrine's online bursts, and posts
+// per-kind counts as before.
 const links_entries = composition.filter(entry => entry.fit_roles?.links)
 
 const burst_label = (kind:BurstKind) => t(t_key('burst_kind_', kind))
 
 const fitted_kinds = (entry:FleetCompositionEntry):BurstKind[] =>
     BURST_KINDS.filter(kind => (entry.fit_roles.bursts_fitted[kind] ?? 0) > 0)
+
+const slot_count = (entry:FleetCompositionEntry) => Math.min(
+    entry.fit_roles.burst_slots,
+    fitted_kinds(entry).reduce((sum, kind) => sum + (entry.fit_roles.bursts_fitted[kind] ?? 0), 0),
+)
 
 const initial_counts = (pilot:MyFleetPilot, entry:FleetCompositionEntry) => {
     const saved = selected_key(pilot) === entry.key && (pilot.selection?.bursts?.length ?? 0) > 0
@@ -149,9 +213,41 @@ const initial_counts = (pilot:MyFleetPilot, entry:FleetCompositionEntry) => {
     return Object.fromEntries(fitted_kinds(entry).map(kind => [kind, counts[kind] ?? 0]))
 }
 
-const links_prompt = (entry:FleetCompositionEntry) => t('pick_ships_links_prompt')
-    .replace('{ship}', entry.ship_name || entry.name)
-    .replace('{slots}', entry.fit_roles.burst_slots.toString())
+const initial_slots = (pilot:MyFleetPilot, entry:FleetCompositionEntry) => {
+    const counts = initial_counts(pilot, entry)
+    const picked = fitted_kinds(entry).flatMap(kind => Array(counts[kind] ?? 0).fill(kind))
+    return Array.from({ length: slot_count(entry) }, (_, index) => picked[index] ?? '')
+}
+
+const picks = Object.fromEntries(pilots.map(pilot => [pilot.character_id, selected_key(pilot)]))
+const initial_flying = Object.values(picks).filter(key => key).length
+
+const NEEDED = t('fleets.targets.needed')
+const MET = t('pick_ships_met')
+const FLYING = t('pick_ships_flying')
+const FLYING_ONE = t('pick_ships_flying_one')
+const NOT_FLYING = t('pick_ships_not_flying')
+
+const form_state = `{
+    show_all: ${show_all_by_default},
+    picks: ${JSON.stringify(picks)},
+    lines: ${JSON.stringify(lines)},
+    line_of: ${JSON.stringify(line_of_key)},
+    ships: ${JSON.stringify(ships)},
+    mine(line) { return Object.values(this.picks).filter(key => this.line_of[key] === line.id).length },
+    needed(line) { return Math.max(line.target - line.base - this.mine(line), 0) },
+    needed_text(line) { const n = this.needed(line); return n > 0 ? ${JSON.stringify(NEEDED)}.replace('{count}', n) : ${JSON.stringify(MET)} },
+    base_width(line) { return Math.min(100, 100 * line.base / Math.max(line.target, 1)) },
+    mine_width(line) { return Math.min(100 - this.base_width(line), 100 * this.mine(line) / Math.max(line.target, 1)) },
+    get met_names() { return this.lines.filter(line => line.met_at_load && this.needed(line) === 0).map(line => line.name).join(', ') },
+    get flying() { return Object.values(this.picks).filter(key => key).length },
+    get flying_text() { return this.flying === 1 ? ${JSON.stringify(FLYING_ONE)} : ${JSON.stringify(FLYING)}.replace('{count}', this.flying) },
+}`
+
+const pick_label = (pilot:MyFleetPilot) => {
+    const key = selected_key(pilot)
+    return key ? ships[key] : null
+}
 
 const SAVE_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}?${query_string({
     fleet_id: fleet_id,
@@ -165,13 +261,12 @@ const SIGNED_UP = "window.capture_event && window.capture_event('fleet_signed_up
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
 import Input from '@components/blocks/Input.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
-import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
+import CaretIcon from '@components/icons/CaretIcon.astro'
 ---
 
 {fetch_error ?
@@ -186,22 +281,46 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         hx-indicator=".loader"
         hx-on--after-request={CLOSE_MODAL}
         hx-on:fleet-ships-picked={SIGNED_UP}
-        x-data={`{ show_all: ${show_all_by_default} }`}
+        x-data={form_state}
     >
-        <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-m)' class="[ pick-ships__body ]">
             <Flexblock gap='var(--space-3xs)' class="[ pick-ships__header ]">
                 <h3 class="[ pick-ships__title ]">{t('pick_ships_title')}</h3>
                 <small>{t(has_suggestions ? 'pick_ships_suggested_subtitle' : 'pick_ships_subtitle')}</small>
             </Flexblock>
 
-            {targets.length > 0 &&
+            {lines.length > 0 &&
                 <section class="[ pick-ships__needed ]" aria-labelledby={`pick-ships-needed-${fleet_id}`}>
-                    <b id={`pick-ships-needed-${fleet_id}`}>{t('fleets.targets.still_needed')}</b>
-                    <div class="[ pick-ships__meters ]">
-                        {targets.map(target =>
-                            <ShipTargetMeter name={target.name} have={target.have} target={target.target} compact={true} />
+                    <div class="[ pick-ships__needed-head ]">
+                        <b id={`pick-ships-needed-${fleet_id}`}>{t('fleets.targets.still_needed')}</b>
+                        <span class="[ pick-ships__legend ]"><span aria-hidden="true"></span>{t('pick_ships_your_picks')}</span>
+                    </div>
+                    <div class="[ pick-ships__lines ]">
+                        {lines.map((line, index) =>
+                            <div
+                                class="[ pick-ships__line ]"
+                                x-show={line.met_at_load ? `needed(lines[${index}]) > 0` : undefined}
+                                x-cloak={line.met_at_load ? true : undefined}
+                            >
+                                <b title={line.name}>{line.name}</b>
+                                <span class="[ pick-ships__track ]" role="img" x-bind:aria-label={`lines[${index}].name + ': ' + needed_text(lines[${index}])`}>
+                                    <span class="[ pick-ships__base ]" x-bind:style={`{ width: base_width(lines[${index}]) + '%' }`}></span>
+                                    <span class="[ pick-ships__mine ]" x-bind:style={`{ width: mine_width(lines[${index}]) + '%' }`}></span>
+                                </span>
+                                <span
+                                    class="[ pick-ships__need ]"
+                                    x-bind:class={`{ 'is-met': needed(lines[${index}]) === 0 }`}
+                                    x-text={`needed_text(lines[${index}])`}
+                                ></span>
+                            </div>
                         )}
                     </div>
+                    {lines_met.length > 0 &&
+                        <p class="[ pick-ships__met ]" x-show="met_names">
+                            <b>{MET}</b>
+                            <span x-text="met_names">{lines_met.map(line => line.name).join(', ')}</span>
+                        </p>
+                    }
                 </section>
             }
 
@@ -211,13 +330,14 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                 <datalist id={HULLS_LIST_ID}>
                     {hulls.map(hull => <option value={hull.name} />)}
                 </datalist>
-                <div class="[ pick-ships__rows ]">
+                <div class="[ pick-ships__rows ]" role="list">
                     {pilots.map(pilot =>
                         <div
+                            role="listitem"
                             class="[ pick-ships__row ]"
                             x-show={pilot.recent_fleets ? 'true' : 'show_all'}
                             x-cloak={!pilot.recent_fleets && !show_all_by_default ? true : undefined}
-                            x-data={`{ ship: ${JSON.stringify(selected_key(pilot))} }`}
+                            x-data={`{ cid: ${pilot.character_id}, open: false, search: '' }`}
                         >
                             <PilotBadge
                                 character_id={pilot.character_id}
@@ -226,40 +346,149 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                                 icon_quality={64}
                                 inert={true}
                             >
-                                {pilot.suggestion ?
-                                    <small>{suggested_label(pilot)}</small> :
-                                pilot.recent_fleets ?
-                                    <small>{t('pick_ships_recent')}</small> :
-                                    <small class="[ pick-ships__quiet ]">{t('pick_ships_no_recent')}</small>
-                                }
+                                <small class="[ pick-ships__quiet ]">
+                                    {pilot.suggestion ? suggested_label(pilot) :
+                                        pilot.recent_fleets ? t('pick_ships_recent') : t('pick_ships_no_recent')}
+                                </small>
                             </PilotBadge>
-                            <Select name={`ship_${pilot.character_id}`} size='sm' x-model="ship">
-                                <option value="" selected={selected_key(pilot) === ''}>{t('pick_ships_not_flying')}</option>
-                                {pilot_groups(pilot).map(group =>
-                                    <optgroup label={group.title}>
-                                        {group.entries.map(entry =>
-                                            <option value={entry.key} selected={selected_key(pilot) === entry.key}>{option_label(entry)}</option>
+
+                            <div
+                                class="[ pick-ships__picker ]"
+                                x-on:keydown.escape.stop="open = false"
+                                x-on:click.outside="open = false"
+                            >
+                                <input type="hidden" name={`ship_${pilot.character_id}`} value={selected_key(pilot)} x-bind:value="picks[cid]" />
+                                <button
+                                    type="button"
+                                    class="[ pick-ships__trigger ]"
+                                    x-ref="trigger"
+                                    aria-haspopup="listbox"
+                                    x-bind:aria-expanded="open.toString()"
+                                    aria-label={t('pick_ships_ship_for').replace('{name}', pilot.character_name)}
+                                    x-on:click="open = !open; if (open) { search = ''; $nextTick(() => $refs.search.focus()) }"
+                                >
+                                    <img
+                                        src={pick_label(pilot)?.icon || undefined}
+                                        x-bind:src="ships[picks[cid]]?.icon || ''"
+                                        x-show="ships[picks[cid]]?.icon"
+                                        alt=""
+                                        width="36"
+                                        height="36"
+                                        loading="lazy"
+                                    />
+                                    <span class="[ pick-ships__value ]">
+                                        <span
+                                            x-bind:class="{ 'pick-ships__quiet': !picks[cid] }"
+                                            x-text={`picks[cid] ? ships[picks[cid]]?.name ?? '' : ${JSON.stringify(NOT_FLYING)}`}
+                                        >{pick_label(pilot)?.name ?? NOT_FLYING}</span>
+                                        <small x-show="ships[picks[cid]]?.line" x-text="ships[picks[cid]]?.line ?? ''">{pick_label(pilot)?.line}</small>
+                                    </span>
+                                    <CaretIcon aria-hidden="true" />
+                                </button>
+
+                                <div
+                                    class="[ pick-ships__menu ]"
+                                    x-show="open"
+                                    x-cloak
+                                    x-anchor.fixed.bottom-end.offset.4="$refs.trigger"
+                                >
+                                    <label class="[ pick-ships__search ]">
+                                        <span class="[ visually-hidden ]">{t('pick_ships_search')}</span>
+                                        <input
+                                            type="search"
+                                            x-ref="search"
+                                            x-model="search"
+                                            placeholder={t('pick_ships_search')}
+                                            autocomplete="off"
+                                            x-on:keydown.enter.prevent
+                                        />
+                                    </label>
+                                    <div class="[ pick-ships__options ]" role="listbox" aria-label={t('pick_ships_ship_for').replace('{name}', pilot.character_name)}>
+                                        <button
+                                            type="button"
+                                            role="option"
+                                            class="[ pick-ships__option ]"
+                                            x-show="!search"
+                                            x-bind:aria-selected="(picks[cid] === '').toString()"
+                                            x-on:click="picks[cid] = ''; open = false"
+                                        >
+                                            <span class="[ pick-ships__quiet ]">{NOT_FLYING}</span>
+                                        </button>
+                                        {menu_groups.map(group =>
+                                            <div
+                                                class="[ pick-ships__group ]"
+                                                role="group"
+                                                aria-label={group.title}
+                                                x-show={`${JSON.stringify(group.entries.map(search_terms))}.some(term => term.includes(search.toLowerCase()))`}
+                                            >
+                                                <div class="[ pick-ships__group-head ]" aria-hidden="true">
+                                                    <span>{group.title}</span>
+                                                    {group.line_index !== undefined &&
+                                                        <span
+                                                            class="[ pick-ships__need ]"
+                                                            x-bind:class={`{ 'is-met': needed(lines[${group.line_index}]) === 0 }`}
+                                                            x-text={`needed_text(lines[${group.line_index}])`}
+                                                        ></span>
+                                                    }
+                                                </div>
+                                                {group.entries.map(entry =>
+                                                    <button
+                                                        type="button"
+                                                        role="option"
+                                                        class="[ pick-ships__option ]"
+                                                        x-show={`${JSON.stringify(search_terms(entry))}.includes(search.toLowerCase())`}
+                                                        x-bind:aria-selected={`(picks[cid] === ${JSON.stringify(entry.key)}).toString()`}
+                                                        x-on:click={`picks[cid] = ${JSON.stringify(entry.key)}; open = false`}
+                                                    >
+                                                        <img src={get_item_icon(entry.ship_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                                                        <span class="[ pick-ships__value ]">
+                                                            <span>{ship_name(entry)}</span>
+                                                            {fit_name(entry) && <small>{fit_name(entry)}</small>}
+                                                        </span>
+                                                        {owns(pilot, entry) && <small class="[ pick-ships__hangar ]">{t('pick_ships_in_hangar')}</small>}
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
-                                    </optgroup>
-                                )}
-                                <optgroup label={t('pick_ships_off_doctrine')}>
-                                    {off_doctrine_hull(pilot) &&
-                                        <option value={off_doctrine_hull(pilot)!.key} selected>{off_doctrine_hull(pilot)!.name}</option>
-                                    }
-                                    <option value="other">{t('pick_ships_other_ship')}</option>
-                                </optgroup>
-                            </Select>
+                                        <div class="[ pick-ships__group ]" role="group" aria-label={t('pick_ships_off_doctrine')} x-show="!search">
+                                            <div class="[ pick-ships__group-head ]" aria-hidden="true"><span>{t('pick_ships_off_doctrine')}</span></div>
+                                            {off_doctrine_hull(pilot) &&
+                                                <button
+                                                    type="button"
+                                                    role="option"
+                                                    class="[ pick-ships__option ]"
+                                                    x-bind:aria-selected={`(picks[cid] === ${JSON.stringify(off_doctrine_hull(pilot)!.key)}).toString()`}
+                                                    x-on:click={`picks[cid] = ${JSON.stringify(off_doctrine_hull(pilot)!.key)}; open = false`}
+                                                >
+                                                    <img src={get_item_icon(pilot.selection!.ship_type_id!, 64)} alt="" width="32" height="32" loading="lazy" />
+                                                    <span>{off_doctrine_hull(pilot)!.name}</span>
+                                                </button>
+                                            }
+                                            <button
+                                                type="button"
+                                                role="option"
+                                                class="[ pick-ships__option ]"
+                                                x-bind:aria-selected="(picks[cid] === 'other').toString()"
+                                                x-on:click="picks[cid] = 'other'; open = false"
+                                            >
+                                                <span>{t('pick_ships_other_ship')}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {hangar_hint(pilot) &&
-                                <p class="[ pick-ships__hint ]" x-show="ship === ''" x-cloak={selected_key(pilot) !== '' ? true : undefined}>
+                                <p class="[ pick-ships__hint ]" x-show="picks[cid] === ''" x-cloak={selected_key(pilot) !== '' ? true : undefined}>
                                     <img src={get_item_icon(hangar_hint(pilot)!.entry.ship_id, 32)} alt="" width="24" height="24" loading="lazy" />
                                     <span>
                                         {t('fleets.targets.has_hull').replace('{ship}', hangar_hint(pilot)!.entry.ship_name || hangar_hint(pilot)!.entry.name)}
                                         {' '}<b>{t('fleets.targets.line_needs_it').replace('{name}', hangar_hint(pilot)!.line.name)}</b>
                                     </span>
-                                    <button type="button" x-on:click={`ship = ${JSON.stringify(hangar_hint(pilot)!.entry.key)}`}>{t('fleets.targets.bring_it')}</button>
+                                    <button type="button" x-on:click={`picks[cid] = ${JSON.stringify(hangar_hint(pilot)!.entry.key)}`}>{t('fleets.targets.bring_it')}</button>
                                 </p>
                             }
-                            <label class="[ pick-ships__other ]" x-show="ship === 'other'" x-cloak>
+                            <label class="[ pick-ships__other ]" x-show="picks[cid] === 'other'" x-cloak>
                                 <span class="[ visually-hidden ]">{t('pick_ships_other_ship_label')}</span>
                                 <Input
                                     size="sm"
@@ -268,84 +497,365 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                                     list={HULLS_LIST_ID}
                                     autocomplete="off"
                                     placeholder={t('pick_ships_other_ship_placeholder')}
-                                    x-bind:disabled="ship !== 'other'"
-                                    x-bind:required="ship === 'other'"
+                                    x-bind:disabled="picks[cid] !== 'other'"
+                                    x-bind:required="picks[cid] === 'other'"
                                     disabled
                                 />
                                 <small>{t('pick_ships_other_ship_hint')}</small>
                             </label>
                             {links_entries.map(entry =>
-                                <fieldset
+                                <div
                                     class="[ pick-ships__links ]"
-                                    x-show={`ship === ${JSON.stringify(entry.key)}`}
+                                    x-show={`picks[cid] === ${JSON.stringify(entry.key)}`}
                                     x-cloak={selected_key(pilot) !== entry.key ? true : undefined}
-                                    x-data={`{
-                                        counts: ${JSON.stringify(initial_counts(pilot, entry))},
-                                        slots: ${entry.fit_roles.burst_slots},
-                                        get total() { return Object.values(this.counts).reduce((sum, n) => sum + (Number(n) || 0), 0) },
-                                    }`}
+                                    x-data={`{ slots: ${JSON.stringify(initial_slots(pilot, entry))} }`}
                                 >
-                                    <legend><small>{links_prompt(entry)}</small></legend>
-                                    <div class="[ pick-ships__bursts ]">
-                                        {fitted_kinds(entry).map(kind =>
-                                            <label class="[ pick-ships__burst ]">
-                                                <span>{burst_label(kind)}</span>
-                                                <input
-                                                    type="number"
-                                                    name={`bursts_${pilot.character_id}_${kind}`}
-                                                    min="0"
-                                                    max={entry.fit_roles.bursts_fitted[kind]}
-                                                    value={initial_counts(pilot, entry)[kind]}
-                                                    x-model.number={`counts.${kind}`}
-                                                    x-bind:disabled={`ship !== ${JSON.stringify(entry.key)}`}
-                                                />
-                                                <small>/ {entry.fit_roles.bursts_fitted[kind]}</small>
-                                            </label>
+                                    <span class="[ pick-ships__links-label ]" id={`links-${pilot.character_id}-${entry.key.replace(':', '-')}`}>{t('pick_ships_links')}</span>
+                                    <div class="[ pick-ships__slots ]" role="group" aria-labelledby={`links-${pilot.character_id}-${entry.key.replace(':', '-')}`}>
+                                        {initial_slots(pilot, entry).map((kind, index) =>
+                                            <Select
+                                                size="sm"
+                                                x-model={`slots[${index}]`}
+                                                aria-label={t('pick_ships_link_slot').replace('{n}', (index + 1).toString())}
+                                                x-bind:disabled={`picks[cid] !== ${JSON.stringify(entry.key)}`}
+                                            >
+                                                <option value="" selected={kind === ''}>{t('pick_ships_link_off')}</option>
+                                                {fitted_kinds(entry).map(option =>
+                                                    <option
+                                                        value={option}
+                                                        selected={kind === option}
+                                                        x-bind:disabled={`slots.filter((slot, other) => other !== ${index} && slot === '${option}').length >= ${entry.fit_roles.bursts_fitted[option]}`}
+                                                    >{burst_label(option)}</option>
+                                                )}
+                                            </Select>
                                         )}
                                     </div>
-                                    <small class="[ pick-ships__over ]" x-show="total > slots" x-cloak>
-                                        {t('pick_ships_links_over').replace('{slots}', entry.fit_roles.burst_slots.toString())}
-                                    </small>
-                                </fieldset>
+                                    {fitted_kinds(entry).map(kind =>
+                                        <input
+                                            type="hidden"
+                                            name={`bursts_${pilot.character_id}_${kind}`}
+                                            value={initial_counts(pilot, entry)[kind]}
+                                            x-bind:value={`slots.filter(slot => slot === '${kind}').length`}
+                                            x-bind:disabled={`picks[cid] !== ${JSON.stringify(entry.key)}`}
+                                            disabled={selected_key(pilot) !== entry.key}
+                                        />
+                                    )}
+                                </div>
                             )}
                         </div>
                     )}
+                    {others.length > 0 && !show_all_by_default &&
+                        <div class="[ pick-ships__more ]">
+                            <button type="button" class="[ pick-ships__toggle ]" x-on:click="show_all = !show_all" x-bind:aria-expanded="show_all.toString()">
+                                <span x-show="!show_all">{t('pick_ships_show_all').replace('{count}', others.length.toString())}</span>
+                                <span x-show="show_all" x-cloak>{t('pick_ships_show_recent')}</span>
+                                <CaretIcon aria-hidden="true" x-bind:class="{ 'is-open': show_all }" />
+                            </button>
+                        </div>
+                    }
                 </div>
             }
 
-            <FlexInline justification='space-between' class="[ items-center ]">
-                {others.length > 0 && !show_all_by_default ?
-                    <button type="button" class="[ pick-ships__toggle ]" x-on:click="show_all = !show_all">
-                        <span x-show="!show_all">{t('pick_ships_show_all').replace('{count}', others.length.toString())}</span>
-                        <span x-show="show_all" x-cloak>{t('pick_ships_show_recent')}</span>
-                    </button>
-                    :
-                    <span></span>
-                }
+            <div class="[ pick-ships__footer ]">
+                <span class="[ pick-ships__flying ]" x-text="flying_text">
+                    {initial_flying === 1 ? FLYING_ONE : FLYING.replace('{count}', initial_flying.toString())}
+                </span>
+                <Button size='sm' type="button" color='transparent' onclick="document.querySelector('.modal-backdrop')?.click()">{t('cancel')}</Button>
                 {composition.length > 0 &&
-                    <Button size='sm' type="submit" color='green'>{t('save')}</Button>
+                    <Button size='sm' type="submit">{t('save')}</Button>
                 }
-            </FlexInline>
+            </div>
         </Flexblock>
     </form>
     </Wrapper>
 }
 
 <style lang="scss">
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .pick-ships__header {
+        padding-right: var(--space-xl);
+    }
+
+    .pick-ships__title {
+        font-size: var(--step-1);
+    }
+
+    .pick-ships__quiet {
+        color: var(--text-muted);
+    }
+
     .pick-ships__needed {
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xs);
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        background-color: var(--surface-sunken);
+        border: solid 1px var(--border-color);
+    }
+
+    .pick-ships__needed-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
 
         > b {
             color: var(--highlight);
         }
     }
 
-    .pick-ships__meters {
+    .pick-ships__legend {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        color: var(--text-muted);
+        font-size: var(--step--2);
+
+        span {
+            width: var(--space-s);
+            height: var(--space-3xs);
+            background-color: var(--highlight);
+        }
+    }
+
+    .pick-ships__lines {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-        gap: var(--space-xs) var(--space-m);
+        grid-template-columns: minmax(0, max-content) minmax(var(--space-xl), 1fr) max-content;
+        gap: var(--space-2xs) var(--space-s);
+        align-items: center;
+    }
+
+    .pick-ships__line {
+        display: contents;
+
+        > b {
+            min-width: 0;
+            color: var(--highlight);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .pick-ships__track {
+        display: flex;
+        height: var(--space-3xs);
+        background-color: var(--hairline-medium);
+    }
+
+    .pick-ships__base {
+        background-color: color-mix(in srgb, var(--highlight) 45%, transparent);
+    }
+
+    .pick-ships__mine {
+        background-color: var(--highlight);
+    }
+
+    .pick-ships__base,
+    .pick-ships__mine {
+        height: 100%;
+        transition: width var(--fast-transition);
+    }
+
+    .pick-ships__need {
+        color: var(--fleet-yellow);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
+
+        &.is-met {
+            color: var(--green);
+        }
+    }
+
+    .pick-ships__met {
+        display: flex;
+        gap: var(--space-2xs);
+        margin: 0;
+        font-size: var(--step--1);
+
+        b {
+            color: var(--green);
+        }
+
+        span {
+            color: var(--text-muted);
+        }
+    }
+
+    // The dialog doesn't scroll, so the picker fits the viewport: only the
+    // character list scrolls and Save stays on screen.
+    .pick-ships__body {
+        max-height: calc(100dvh - 10rem);
+
+        > :global(*) {
+            flex: none;
+        }
+    }
+
+    .pick-ships__rows {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto !important;
+        min-height: 10rem;
+        overflow-y: auto;
+        border-top: solid 1px var(--border-color);
+    }
+
+    .pick-ships__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(16rem, 26rem);
+        gap: var(--space-xs) var(--space-s);
+        align-items: center;
+        padding: var(--space-xs) 0;
+        border-bottom: solid 1px var(--border-color);
+
+        @media screen and (max-width: 640px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .pick-ships__picker {
+        position: relative;
+        min-width: 0;
+    }
+
+    .pick-ships__trigger,
+    .pick-ships__option {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        width: 100%;
+        min-height: 2.75rem;
+        padding: var(--space-3xs) var(--space-xs);
+        background: none;
+        border: 0;
+        color: var(--highlight);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+
+        img {
+            flex: none;
+            background-color: var(--background);
+        }
+    }
+
+    .pick-ships__trigger {
+        min-height: 3.5rem;
+        background-color: var(--background);
+        border: solid 1px var(--border-color);
+        transition: border-color var(--fast-transition);
+
+        &:hover,
+        &[aria-expanded="true"] {
+            border-color: var(--border-color-hover);
+        }
+
+        svg {
+            flex: none;
+            transition: transform var(--fast-transition);
+        }
+
+        &[aria-expanded="true"] svg {
+            transform: rotate(180deg);
+        }
+    }
+
+    .pick-ships__value {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        line-height: 1.3;
+
+        > span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--2);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .pick-ships__menu {
+        position: fixed;
+        z-index: var(--dialog-z-index);
+        display: flex;
+        flex-direction: column;
+        width: min(26rem, calc(100vw - var(--space-m) * 2));
+        max-height: min(28rem, 60vh);
+        background-color: var(--background);
+        border: solid 1px var(--border-color-hover);
+        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) 80%, transparent);
+    }
+
+    .pick-ships__search {
+        padding: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+
+        input {
+            width: 100%;
+            min-height: 2.75rem;
+            padding: 0 var(--space-xs);
+            background-color: var(--surface-sunken);
+            border: solid 1px var(--border-color);
+            color: var(--highlight);
+            font: inherit;
+        }
+    }
+
+    .pick-ships__options {
+        overflow-y: auto;
+        padding-bottom: var(--space-3xs);
+    }
+
+    .pick-ships__group {
+        border-top: solid 1px var(--hairline);
+    }
+
+    .pick-ships__group-head {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-xs) var(--space-3xs);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+
+        .pick-ships__need {
+            text-transform: none;
+            letter-spacing: 0;
+        }
+    }
+
+    .pick-ships__option {
+        &:hover,
+        &:focus-visible {
+            background-color: var(--hairline);
+        }
+
+        &[aria-selected="true"] {
+            background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        }
+    }
+
+    .pick-ships__hangar {
+        flex: none;
+        color: var(--text-muted);
+        font-size: var(--step--2);
     }
 
     .pick-ships__hint {
@@ -354,7 +864,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         align-items: center;
         gap: 0 var(--space-2xs);
         grid-column: 1 / -1;
-        padding-inline-start: var(--space-xl);
+        margin: 0;
         color: var(--foreground);
         font-size: var(--step--1);
 
@@ -379,91 +889,59 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         }
     }
 
-    [x-cloak] {
-        display: none !important;
-    }
-
-    .pick-ships__header {
-        padding-right: var(--space-xl);
-    }
-
-    .pick-ships__title {
-        font-size: var(--step-1);
-    }
-
-    .pick-ships__rows {
+    .pick-ships__other {
+        grid-column: 1 / -1;
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
-        max-height: 55vh;
-        overflow-y: auto;
     }
 
-    .pick-ships__row {
+    .pick-ships__links {
+        grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(220px, 1fr);
-        gap: var(--space-s);
+        grid-template-columns: minmax(0, 1fr) minmax(16rem, 26rem);
+        gap: var(--space-xs) var(--space-s);
         align-items: center;
-        padding: var(--space-3xs) 0;
-        border-bottom: solid 1px var(--border-color);
 
         @media screen and (max-width: 640px) {
             grid-template-columns: minmax(0, 1fr);
         }
     }
 
-    .pick-ships__other {
-        grid-column: 1 / -1;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
+    .pick-ships__links-label {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        text-align: right;
 
-    }
-
-    .pick-ships__links {
-        grid-column: 1 / -1;
-        border: solid 1px var(--border-color);
-        padding: var(--space-2xs) var(--space-xs);
-        margin: 0;
-
-        legend {
-            padding: 0 var(--space-3xs);
+        @media screen and (max-width: 640px) {
+            text-align: left;
         }
     }
 
-    .pick-ships__bursts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-xs) var(--space-m);
-        margin-top: var(--space-3xs);
-    }
+    .pick-ships__slots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+        gap: var(--space-2xs);
 
-    .pick-ships__burst {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
+        :global(select) {
+            padding-inline: var(--space-2xs) var(--space-m);
+            font-size: var(--step--1);
+        }
 
-        input {
-            width: 4ch;
-            text-align: center;
-            background: var(--background);
-            color: var(--highlight);
-            border: solid 1px var(--border-color-hover);
-            font-variant-numeric: tabular-nums;
+        :global(svg) {
+            right: var(--space-2xs);
         }
     }
 
-    .pick-ships__over {
-        display: block;
-        margin-top: var(--space-3xs);
-        color: var(--fleet-red);
-    }
-
-    .pick-ships__quiet {
-        opacity: 0.6;
+    .pick-ships__more {
+        padding: var(--space-3xs) 0;
     }
 
     .pick-ships__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: 2.75rem;
         background: transparent;
         border: none;
         color: var(--highlight);
@@ -475,6 +953,26 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 
         &:hover {
             text-decoration: underline;
+        }
+
+        svg {
+            transition: transform var(--fast-transition);
+        }
+
+        svg.is-open {
+            transform: rotate(180deg);
+        }
+    }
+
+    .pick-ships__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+
+        .pick-ships__flying {
+            flex: 1;
+            color: var(--text-muted);
         }
     }
 </style>
