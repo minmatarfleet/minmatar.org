@@ -5281,6 +5281,17 @@
             "title": "Target Name",
             "type": "string"
           },
+          "target_ship_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Ship Id"
+          },
           "tier": {
             "title": "Tier",
             "type": "string"
@@ -28441,6 +28452,92 @@
           "depth"
         ],
         "title": "NestedBreakdownNode",
+        "type": "object"
+      },
+      "NewFittingRequest": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "eft_format": {
+            "title": "Eft Format",
+            "type": "string"
+          },
+          "preview": {
+            "default": false,
+            "title": "Preview",
+            "type": "boolean"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "eft_format"
+        ],
+        "title": "NewFittingRequest",
+        "type": "object"
+      },
+      "NewFittingResponse": {
+        "description": "What the pasted EFT reads as; fitting_id and request once submitted.",
+        "properties": {
+          "fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
+          },
+          "item_lines": {
+            "title": "Item Lines",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChangeRequestResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ship_group": {
+            "title": "Ship Group",
+            "type": "string"
+          },
+          "ship_id": {
+            "title": "Ship Id",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "ship_id",
+          "ship_name",
+          "ship_group",
+          "item_lines"
+        ],
+        "title": "NewFittingResponse",
         "type": "object"
       },
       "NotificationTypeSchema": {
@@ -52566,6 +52663,73 @@
           }
         },
         "summary": "Get Fittings",
+        "tags": [
+          "Ships"
+        ]
+      }
+    },
+    "/api/fittings/new/change-requests": {
+      "post": {
+        "operationId": "fittings_endpoints_eve_fittings_post_new_fitting_change_request_post_new_fitting_change_request",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewFittingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewFittingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post New Fitting Change Request",
         "tags": [
           "Ships"
         ]

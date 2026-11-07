@@ -16,9 +16,13 @@ import {
     can_edit_doctrines,
     composition_changes,
     DOCTRINE_ROLES,
+    editor_fitting,
+    is_doctrine_role,
+    ship_icon,
     type CompositionChange,
     type DoctrineComposition,
     type DoctrineRole,
+    type EditorFitting,
 } from '@helpers/doctrine_editor'
 
 const gates = await get_gates(Astro)
@@ -26,10 +30,16 @@ const gates = await get_gates(Astro)
 if (!await can_edit_doctrines(gates))
     return HTTP_403_Forbidden()
 
-import type { Doctrine, Fitting } from '@dtypes/api.minmatar.org'
+import type { Doctrine, NewFittingResult } from '@dtypes/api.minmatar.org'
 import { get_doctrine_by_id } from '@helpers/api.minmatar.org/doctrines'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
-import { review_change_request, submit_doctrine_change } from '@helpers/api.minmatar.org/doctrine_changes'
+import {
+    get_change_requests,
+    review_change_request,
+    submit_doctrine_change,
+    submit_new_fitting,
+} from '@helpers/api.minmatar.org/doctrine_changes'
+import { is_capital_group } from '@helpers/ship_groups'
 
 const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0')
 const intent = Astro.url.searchParams.get('intent') ?? 'review'
@@ -52,6 +62,10 @@ interface ChangeRow {
 let error_message:string | false = false
 let rows:ChangeRow[] = []
 let doctrine:Doctrine | null = null
+// Pasted EFT: what it reads as (read_fit), or the fitting it created (create_fit).
+let read:NewFittingResult | null = null
+let created:EditorFitting | null = null
+let created_role:DoctrineRole = 'primary'
 
 if (Astro.request.method === 'POST') {
     try {
@@ -63,6 +77,32 @@ if (Astro.request.method === 'POST') {
         }
 
         const form = await Astro.request.formData()
+
+        if (intent === 'read_fit' || intent === 'create_fit') {
+            const eft_format = String(form.get('eft_format') ?? '').trim()
+            if (intent === 'read_fit' && !eft_format) {
+                read = null
+            } else {
+                read = await submit_new_fitting(auth_token as string, {
+                    eft_format,
+                    preview: intent === 'read_fit',
+                })
+            }
+            if (intent === 'create_fit' && read?.fitting_id) {
+                const role = String(form.get('role') ?? 'primary')
+                created_role = is_doctrine_role(role) ? role : 'primary'
+                created = editor_fitting(
+                    { id: read.fitting_id, name: read.name, ship_id: read.ship_id },
+                    read.ship_name,
+                    read.ship_group,
+                    is_capital_group,
+                )
+                // The editor picks the new fit in that role and closes the dialog.
+                Astro.response.headers.set('HX-Trigger', JSON.stringify({
+                    'doctrine-fit-created': { id: created.id, role: created_role },
+                }))
+            }
+        }
         const ids = (key:string) => form.getAll(key).map((value) => parseInt(String(value))).filter((id) => !isNaN(id))
         const composition = Object.fromEntries(DOCTRINE_ROLES.map((role) => [role, ids(role)])) as DoctrineComposition
         const body = {
@@ -79,32 +119,44 @@ if (Astro.request.method === 'POST') {
             return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
         }
 
-        // Review: the API validates the edit, then the dialog lists it per ship.
-        await submit_doctrine_change(auth_token as string, doctrine_id, { ...body, preview: true })
-        const [live, fittings] = await Promise.all([get_doctrine_by_id(doctrine_id), get_fittings()])
-        doctrine = live
-        const by_id = new Map<number, Fitting>(fittings.map((fitting) => [fitting.id, fitting]))
-        const current:DoctrineComposition = {
-            primary: live.primary_fittings.map((fitting) => fitting.id),
-            secondary: live.secondary_fittings.map((fitting) => fitting.id),
-            support: live.support_fittings.map((fitting) => fitting.id),
-            utility: (live.utility_fittings ?? []).map((fitting) => fitting.id),
-            capitals: (live.capitals_fittings ?? []).map((fitting) => fitting.id),
-        }
+        if (intent === 'review') {
+            // Review: the API validates the edit, then the dialog lists it per ship.
+            await submit_doctrine_change(auth_token as string, doctrine_id, { ...body, preview: true })
+            const [live, fittings, requests] = await Promise.all([
+                get_doctrine_by_id(doctrine_id),
+                get_fittings(),
+                get_change_requests(auth_token as string),
+            ])
+            doctrine = live
+            const by_id = new Map<number, { name:string, ship_id:number | null }>(
+                fittings.map((fitting) => [fitting.id, { name: fitting.name, ship_id: fitting.ship_id }])
+            )
+            // New fittings waiting for review are not in the catalog yet.
+            for (const row of requests)
+                if (row.kind === 'fitting' && row.change_kind === 'fitting_create' && !by_id.has(row.target_id))
+                    by_id.set(row.target_id, { name: row.target_name, ship_id: row.target_ship_id ?? null })
+            const current:DoctrineComposition = {
+                primary: live.primary_fittings.map((fitting) => fitting.id),
+                secondary: live.secondary_fittings.map((fitting) => fitting.id),
+                support: live.support_fittings.map((fitting) => fitting.id),
+                utility: (live.utility_fittings ?? []).map((fitting) => fitting.id),
+                capitals: (live.capitals_fittings ?? []).map((fitting) => fitting.id),
+            }
 
-        if (body.name.trim() !== live.name)
-            rows.push({ ship_id: null, name: t('doctrine_changes.name'), what: body.name.trim(), kind: 'detail' })
-        if (body.description !== live.description)
-            rows.push({ ship_id: null, name: t('doctrine_changes.description'), what: t('doctrine_changes.edited'), kind: 'detail' })
+            if (body.name.trim() !== live.name)
+                rows.push({ ship_id: null, name: t('doctrine_changes.name'), what: body.name.trim(), kind: 'detail' })
+            if (body.description !== live.description)
+                rows.push({ ship_id: null, name: t('doctrine_changes.description'), what: t('doctrine_changes.edited'), kind: 'detail' })
 
-        for (const change of composition_changes(current, composition)) {
-            const fitting = by_id.get(change.fitting_id)
-            const what = change.kind === 'added'
-                ? t('doctrine_changes.added_to').replace('{role}', ROLE_LABELS[change.to!])
-                : change.kind === 'moved'
-                ? t('doctrine_changes.moved_to').replace('{role}', ROLE_LABELS[change.to!])
-                : t('doctrine_changes.removed_from').replace('{role}', ROLE_LABELS[change.from!])
-            rows.push({ ship_id: fitting?.ship_id ?? null, name: fitting?.name ?? `#${change.fitting_id}`, what, kind: change.kind })
+            for (const change of composition_changes(current, composition)) {
+                const fitting = by_id.get(change.fitting_id)
+                const what = change.kind === 'added'
+                    ? t('doctrine_changes.added_to').replace('{role}', ROLE_LABELS[change.to!])
+                    : change.kind === 'moved'
+                    ? t('doctrine_changes.moved_to').replace('{role}', ROLE_LABELS[change.to!])
+                    : t('doctrine_changes.removed_from').replace('{role}', ROLE_LABELS[change.from!])
+                rows.push({ ship_id: fitting?.ship_id ?? null, name: fitting?.name ?? `#${change.fitting_id}`, what, kind: change.kind })
+            }
         }
     } catch (error) {
         error_message = error instanceof Error ? error.message : t('doctrine_changes.action_failed')
@@ -122,10 +174,60 @@ const title = (rows.length === 1 ? t('doctrine_changes.send_title_one') : t('doc
     .replace('{count}', String(rows.length))
 
 import Button from '@components/blocks/Button.astro'
+import DoctrineEditorResult from '@components/blocks/DoctrineEditorResult.astro'
+import DoctrineEditorRow from '@components/blocks/DoctrineEditorRow.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
+{(intent === 'read_fit' || intent === 'create_fit') ?
+    <Flexblock gap="var(--space-s)">
+        {error_message ?
+            <p role="alert" class="[ doctrine-paste__error ]">{error_message}</p>
+            : created ?
+            <>
+                <EmptyState title={t('doctrine_changes.paste_empty')} />
+                {DOCTRINE_ROLES.map((role) =>
+                    <div hx-swap-oob={`beforeend:#doctrine-rows-${role}`}>
+                        <DoctrineEditorRow role={role} fitting={created!} role_labels={ROLE_LABELS} />
+                    </div>
+                )}
+                <div hx-swap-oob="afterbegin:#doctrine-add-results">
+                    <DoctrineEditorResult fitting={created} />
+                </div>
+            </>
+            : read ?
+            <>
+                <div class="[ doctrine-paste__read ]">
+                    <img src={ship_icon(read.ship_id)} alt="" width="36" height="36" />
+                    <span class="[ doctrine-row__text ]">
+                        <span>{read.name}</span>
+                        <small>
+                            {[read.ship_name, read.ship_group].filter(Boolean).join(' · ')} · {t('doctrine_changes.paste_lines').replace('{count}', String(read.item_lines))}
+                        </small>
+                    </span>
+                </div>
+                <small class="[ doctrine-review__muted ]">{t('doctrine_changes.paste_reviewed_with')}</small>
+                <FlexInline justification="flex-end" gap="var(--space-s)">
+                    <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.cancel_paste')}</button>
+                    <Button
+                        type="button"
+                        color="fleet-red"
+                        hx-post={`${FORM_PARTIAL_URL}&intent=create_fit`}
+                        hx-include="#doctrine-paste-form"
+                        hx-target="#doctrine-paste-result"
+                        hx-swap="innerHTML"
+                    >
+                        {t('doctrine_changes.paste_add')}
+                    </Button>
+                </FlexInline>
+            </>
+            :
+            <EmptyState title={t('doctrine_changes.paste_empty')} />
+        }
+    </Flexblock>
+    :
 <Flexblock gap="var(--space-s)" class="[ doctrine-review ]">
     {error_message ?
         <Flexblock gap="var(--space-s)">
@@ -173,6 +275,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         </Flexblock>
     }
 </Flexblock>
+}
 
 <style lang="scss">
     .doctrine-review__rows {
@@ -225,6 +328,25 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         border: 1px solid var(--border-color);
         color: var(--highlight);
         resize: vertical;
+    }
+
+    .doctrine-paste__read {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-2xs) var(--space-xs);
+        border: 1px solid color-mix(in srgb, var(--green) 45%, transparent);
+        background: color-mix(in srgb, var(--green) 8%, transparent);
+
+        img {
+            flex: none;
+            width: 2.25rem;
+            height: 2.25rem;
+        }
+    }
+
+    .doctrine-paste__error {
+        color: var(--fleet-yellow);
     }
 
     .doctrine-review__link {

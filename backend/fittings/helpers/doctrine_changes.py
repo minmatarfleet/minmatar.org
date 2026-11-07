@@ -15,6 +15,7 @@ from fittings.models import (
     composition_snapshot_for_doctrine,
     location_ids_for_doctrine,
 )
+from fittings.helpers.fitting_changes import approve_new_fittings_in
 from fittings.helpers.permissions import (
     can_propose_doctrine_change,
     protection_tier_for_doctrine,
@@ -196,6 +197,12 @@ def approve_doctrine_change_request(
     _require_pending_change_request(change_request)
     validate_payload_matches_request_tier(
         change_request.payload, change_request.tier
+    )
+    # New fittings pasted into this change are reviewed with it.
+    approve_new_fittings_in(
+        change_request.payload.get("composition") or {},
+        user,
+        f"Approved with doctrine change #{change_request.pk}.",
     )
     apply_doctrine_payload(change_request.doctrine, change_request.payload)
     change_request.status = ChangeRequestStatus.APPROVED

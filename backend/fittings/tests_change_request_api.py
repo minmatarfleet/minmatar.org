@@ -2,6 +2,7 @@
 
 from django.contrib.auth.models import User
 from django.test import Client
+from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
 from app.testing import make_token
@@ -349,3 +350,90 @@ class ChangeRequestApiTestCase(TestCase):
             "/api/change-requests/?status=all", **self._auth()
         )
         self.assertEqual(1, len(history.json()))
+
+    def _seed_naglfar(self):
+        category, _ = EveCategory.objects.get_or_create(
+            id=6, defaults={"name": "Ship", "published": True}
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=485,
+            defaults={
+                "name": "Dreadnought",
+                "published": True,
+                "eve_category": category,
+            },
+        )
+        EveType.objects.get_or_create(
+            id=19722,
+            defaults={
+                "name": "Naglfar",
+                "published": True,
+                "eve_group": group,
+            },
+        )
+
+    def test_pasted_fit_joins_a_doctrine_change_and_is_approved_with_it(self):
+        self._seed_naglfar()
+        self._grant(
+            "change_doctrine_strategic",
+            "change_doctrine_fitting_non_strategic",
+        )
+        eft = "[Naglfar, Anti-Cap Naglfar]\nSiege Module II\n\nCapital Armor Repairer II"
+        preview = self._post(
+            "fittings/new/change-requests",
+            {"eft_format": eft, "preview": True},
+        )
+        self.assertEqual(200, preview.status_code)
+        self.assertEqual("Anti-Cap Naglfar", preview.json()["name"])
+        self.assertEqual("Dreadnought", preview.json()["ship_group"])
+        self.assertEqual(2, preview.json()["item_lines"])
+        self.assertIsNone(preview.json()["fitting_id"])
+        self.assertFalse(
+            EveFitting.all_objects.filter(name="Anti-Cap Naglfar").exists()
+        )
+
+        response = self._post(
+            "fittings/new/change-requests", {"eft_format": eft}
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        created = response.json()
+        new_id = created["fitting_id"]
+        self.assertEqual(19722, created["request"]["target_ship_id"])
+        self.assertFalse(EveFitting.objects.filter(pk=new_id).exists())
+        again = self._post("fittings/new/change-requests", {"eft_format": eft})
+        self.assertEqual(400, again.status_code)
+
+        body = self._doctrine_body()
+        body["composition"]["capitals"] = [new_id]
+        sent = self._post(
+            f"doctrines/{self.strategic.id}/change-requests", body
+        )
+        self.assertEqual(200, sent.status_code)
+
+        approver = User.objects.create(username="approver")
+        self._grant("approve_doctrine_strategic", user=approver)
+        approved = self._post(
+            f"change-requests/doctrine/{sent.json()['request']['id']}/review",
+            {"action": "approve"},
+            user=approver,
+        )
+        self.assertEqual(200, approved.status_code)
+        self.assertTrue(EveFitting.objects.filter(pk=new_id).exists())
+        self.assertTrue(
+            EveFitting.objects.get(pk=new_id)
+            .change_requests.filter(status=ChangeRequestStatus.APPROVED)
+            .exists()
+        )
+        self.assertTrue(
+            EveDoctrineFitting.objects.filter(
+                doctrine=self.strategic, fitting_id=new_id, role="capitals"
+            ).exists()
+        )
+
+    def test_pasted_fit_with_an_unknown_ship_is_refused(self):
+        self._grant("change_doctrine_strategic")
+        response = self._post(
+            "fittings/new/change-requests",
+            {"eft_format": "[Notaship, Nope]\nDamage Control II"},
+        )
+        self.assertEqual(400, response.status_code)

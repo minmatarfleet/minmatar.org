@@ -1,0 +1,229 @@
+---
+/**
+ * One fitting in one role of the doctrine editor. Rendered for every fitting
+ * in every role; Alpine (the editor form's x-data) shows it when the fitting
+ * is in that role, or was and has been removed. The hidden input sends it.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { alpine_string, DOCTRINE_ROLES, ship_icon, type DoctrineRole, type EditorFitting } from '@helpers/doctrine_editor'
+
+interface Props {
+    role:        DoctrineRole;
+    fitting:     EditorFitting;
+    role_labels: Record<DoctrineRole, string>;
+    [propName: string]: any;
+}
+
+const { role, fitting, role_labels } = Astro.props
+const call = (fn:string) => `${fn}('${role}', ${fitting.id})`
+---
+
+<template x-if={call('shown')}>
+    <li class="[ doctrine-row ]" x-bind:class={`{ 'doctrine-row--removed': ${call('removed')} }`}>
+        <input type="hidden" name={role} value={fitting.id} x-bind:disabled={`!${call('has')}`} />
+        <img src={ship_icon(fitting.ship_id)} alt="" width="36" height="36" loading="lazy" />
+        <span class="[ doctrine-row__text ]">
+            <span>{fitting.name}</span>
+            <small>{fitting.hull}</small>
+        </span>
+        <small class="[ doctrine-tag doctrine-tag--new ]" x-show={call('is_new')}>{t('doctrine_changes.tag_new')}</small>
+        <small
+            class="[ doctrine-tag doctrine-tag--moved ]"
+            x-show={call('moved_from')}
+            x-text={`'${alpine_string(t('doctrine_changes.tag_from'))}'.replace('{role}', ${call('moved_from')})`}
+        ></small>
+        <template x-if={call('removed')}>
+            <span class="[ doctrine-row__actions ]">
+                <small class="[ doctrine-tag ]">{t('doctrine_changes.tag_removed')}</small>
+                <button type="button" class="[ doctrine-link-button ]" x-on:click={call('undo')}>{t('doctrine_changes.undo')}</button>
+            </span>
+        </template>
+        <template x-if={`!${call('removed')}`}>
+            <span class="[ doctrine-row__actions ]">
+                <label class="[ visually-hidden ]" for={`role-${role}-${fitting.id}`}>{t('doctrine_changes.role_for').replace('{name}', fitting.name)}</label>
+                <select
+                    id={`role-${role}-${fitting.id}`}
+                    class="[ doctrine-role-select ]"
+                    x-on:change={`set_role('${role}', ${fitting.id}, $event.target.value)`}
+                >
+                    {DOCTRINE_ROLES.map((option) =>
+                        <option value={option} selected={option === role}>{role_labels[option]}</option>
+                    )}
+                </select>
+                <button
+                    type="button"
+                    class="[ doctrine-icon-button ]"
+                    aria-label={t('doctrine_changes.remove_named').replace('{name}', fitting.name)}
+                    x-on:click={call('remove')}
+                >
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+            </span>
+        </template>
+    </li>
+</template>
+
+<style lang="scss" is:global>
+    /* Shared by the editor page, its read-only pending view and the
+       partial that adds a pasted fit, so these classes are global. */
+    .doctrine-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: 3.5rem;
+        padding-block: var(--space-3xs);
+        border-top: 1px solid var(--hairline);
+
+        img {
+            flex: none;
+            width: 2.25rem;
+            height: 2.25rem;
+        }
+    }
+
+    .doctrine-row__text {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .doctrine-row--removed {
+        .doctrine-row__text > span {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        img {
+            opacity: 0.4;
+        }
+    }
+
+    .doctrine-row__actions {
+        display: flex;
+        flex: none;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .doctrine-tag {
+        flex: none;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .doctrine-tag--new {
+        color: var(--green);
+    }
+
+    .doctrine-tag--moved {
+        color: var(--fleet-yellow);
+    }
+
+    .doctrine-role-select {
+        width: 9rem;
+        min-height: 2.75rem;
+        padding: 0 var(--space-2xs);
+        background: var(--hairline);
+        border: 1px solid transparent;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .doctrine-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        background: transparent;
+        border: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--fleet-red);
+        }
+    }
+
+    .doctrine-link-button {
+        min-height: 2.75rem;
+        padding: 0 var(--space-3xs);
+        background: none;
+        border: 0;
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .doctrine-result {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        width: 100%;
+        min-height: 3rem;
+        padding: var(--space-3xs) var(--space-s);
+        background: none;
+        border: 0;
+        color: inherit;
+        text-align: start;
+        cursor: pointer;
+
+        &:hover:not(:disabled),
+        &:focus-visible {
+            background: var(--hairline);
+        }
+
+        &:disabled {
+            cursor: default;
+            color: var(--text-muted);
+
+            img {
+                opacity: 0.45;
+            }
+        }
+
+        img {
+            flex: none;
+            width: 2rem;
+            height: 2rem;
+        }
+    }
+
+    .doctrine-result__end {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .doctrine-result:disabled .doctrine-result__end {
+        color: var(--text-muted);
+    }
+
+    /* Phones: the role picker and remove button get their own line. */
+    @media (max-width: 48rem) {
+        .doctrine-row {
+            flex-wrap: wrap;
+        }
+
+        .doctrine-row__text {
+            flex-basis: calc(100% - 2.25rem - var(--space-xs));
+        }
+
+        .doctrine-row__actions {
+            flex: 1 1 100%;
+            justify-content: flex-end;
+        }
+
+        .doctrine-role-select {
+            flex: 1 1 auto;
+        }
+    }
+</style>

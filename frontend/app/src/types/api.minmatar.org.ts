@@ -2197,6 +2197,8 @@ export type DoctrineChangePreview = ApiResponse<'ChangePreviewResponse'>
 export type DoctrineChangeDiff = ApiResponse<'FieldDiffResponse'>
 export type FittingChangeBody = ApiRequest<'FittingChangeRequest'>
 export type DoctrineChangeBody = ApiRequest<'DoctrineChangeRequestBody'>
+export type NewFittingBody = ApiRequest<'NewFittingRequest'>
+export type NewFittingResult = ApiResponse<'NewFittingResponse'>
 
 export interface KillmailResolve {
     killmail_time:                  Date;

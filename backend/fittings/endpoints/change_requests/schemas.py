@@ -21,6 +21,8 @@ class ChangeRequestResponse(BaseModel):
     id: int
     target_id: int
     target_name: str
+    # The hull of a fitting request's fitting; None for doctrines.
+    target_ship_id: int | None = None
     status: str
     tier: str
     change_kind: str
@@ -70,3 +72,22 @@ class DoctrineChangeRequestBody(BaseModel):
 class ReviewRequest(BaseModel):
     action: str
     review_note: str = ""
+
+
+class NewFittingRequest(BaseModel):
+    eft_format: str
+    description: str = ""
+    tags: List[str] = []
+    preview: bool = False
+
+
+class NewFittingResponse(BaseModel):
+    """What the pasted EFT reads as; fitting_id and request once submitted."""
+
+    name: str
+    ship_id: int
+    ship_name: str
+    ship_group: str
+    item_lines: int
+    fitting_id: int | None = None
+    request: ChangeRequestResponse | None = None

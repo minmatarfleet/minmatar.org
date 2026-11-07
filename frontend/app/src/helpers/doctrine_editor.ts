@@ -85,3 +85,35 @@ export function hull_filters_for(group:string | null | undefined, is_capital:(gr
     if (RECON_GROUPS.includes(group)) filters.push('recon')
     return filters
 }
+
+/** A fitting as the editor lists it: hull line, search text, hull filters. */
+export interface EditorFitting {
+    id:      number
+    name:    string
+    ship_id: number
+    hull:    string
+    search:  string
+    filters: string
+}
+
+export function editor_fitting(
+    fitting:{ id:number, name:string, ship_id:number },
+    hull_name:string | undefined,
+    group:string | undefined,
+    is_capital:(group:string) => boolean,
+):EditorFitting {
+    const hull = [hull_name, group].filter(Boolean).join(' · ')
+    return {
+        id: fitting.id,
+        name: fitting.name,
+        ship_id: fitting.ship_id,
+        hull,
+        search: `${fitting.name} ${hull}`.toLowerCase(),
+        filters: hull_filters_for(group, is_capital).join(' '),
+    }
+}
+
+/** Text placed inside a single-quoted string in an Alpine expression. */
+export const alpine_string = (text:string) => text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+
+export const ship_icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/icon?size=64`

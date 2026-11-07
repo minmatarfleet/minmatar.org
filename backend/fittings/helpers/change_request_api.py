@@ -160,6 +160,7 @@ def serialize_request(user, kind: str, change_request) -> dict:
         "id": change_request.pk,
         "target_id": target.pk,
         "target_name": target.name,
+        "target_ship_id": target.ship_id if kind == "fitting" else None,
         "status": change_request.status,
         "tier": change_request.tier,
         "change_kind": change_request.change_kind,

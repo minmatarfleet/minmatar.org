@@ -2642,6 +2642,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fittings/new/change-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post New Fitting Change Request */
+        post: operations["fittings_endpoints_eve_fittings_post_new_fitting_change_request_post_new_fitting_change_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fittings/{fitting_id}": {
         parameters: {
             query?: never;
@@ -11346,6 +11363,8 @@ export interface components {
             target_id: number;
             /** Target Name */
             target_name: string;
+            /** Target Ship Id */
+            target_ship_id?: number | null;
             /** Tier */
             tier: string;
         };
@@ -20356,6 +20375,45 @@ export interface components {
             source: string;
             /** Type Id */
             type_id: number;
+        };
+        /** NewFittingRequest */
+        NewFittingRequest: {
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Eft Format */
+            eft_format: string;
+            /**
+             * Preview
+             * @default false
+             */
+            preview?: boolean;
+            /**
+             * Tags
+             * @default []
+             */
+            tags?: string[];
+        };
+        /**
+         * NewFittingResponse
+         * @description What the pasted EFT reads as; fitting_id and request once submitted.
+         */
+        NewFittingResponse: {
+            /** Fitting Id */
+            fitting_id?: number | null;
+            /** Item Lines */
+            item_lines: number;
+            /** Name */
+            name: string;
+            request?: components["schemas"]["ChangeRequestResponse"] | null;
+            /** Ship Group */
+            ship_group: string;
+            /** Ship Id */
+            ship_id: number;
+            /** Ship Name */
+            ship_name: string;
         };
         /** NotificationTypeSchema */
         NotificationTypeSchema: {
@@ -32803,6 +32861,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FittingResponse"][];
+                };
+            };
+        };
+    };
+    fittings_endpoints_eve_fittings_post_new_fitting_change_request_post_new_fitting_change_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewFittingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewFittingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

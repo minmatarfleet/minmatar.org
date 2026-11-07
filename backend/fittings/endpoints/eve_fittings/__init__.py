@@ -2,7 +2,10 @@
 
 from ninja import Router
 
-from fittings.endpoints.eve_fittings import post_fitting_change_request
+from fittings.endpoints.eve_fittings import (
+    post_fitting_change_request,
+    post_new_fitting_change_request,
+)
 
 from fittings.endpoints.eve_fittings.get_fitting import (
     PATH as get_fitting_path,
@@ -20,6 +23,12 @@ from fittings.endpoints.eve_fittings.get_fittings import (
 router = Router(tags=["Ships"])
 
 _ROUTES = (
+    (
+        post_new_fitting_change_request.METHOD,
+        post_new_fitting_change_request.PATH,
+        post_new_fitting_change_request.ROUTE_SPEC,
+        post_new_fitting_change_request.post_new_fitting_change_request,
+    ),
     (get_fittings_method, get_fittings_path, get_fittings_spec, get_fittings),
     (get_fitting_method, get_fitting_path, get_fitting_spec, get_fitting),
     (

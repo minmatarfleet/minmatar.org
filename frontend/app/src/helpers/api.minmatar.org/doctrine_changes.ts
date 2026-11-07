@@ -3,6 +3,8 @@ import type {
     DoctrineChangePreview,
     DoctrineChangeRequestRow,
     FittingChangeBody,
+    NewFittingBody,
+    NewFittingResult,
 } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
 
@@ -47,5 +49,15 @@ export async function submit_doctrine_change(access_token:string, doctrine_id:nu
         token: access_token,
         body,
         error: 'Error submitting doctrine change',
+    })
+}
+
+/** Read pasted EFT (preview), or submit it as a new fitting waiting for review. */
+export async function submit_new_fitting(access_token:string, body:NewFittingBody) {
+    return await api_request<NewFittingResult>(`${API_URL}/api/fittings/new/change-requests`, {
+        method: 'POST',
+        token: access_token,
+        body,
+        error: 'Error reading the fitting',
     })
 }

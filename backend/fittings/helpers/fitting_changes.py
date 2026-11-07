@@ -286,3 +286,62 @@ def cancel_fitting_change_request(
     change_request.reviewed_by = user
     change_request.reviewed_at = timezone.now()
     change_request.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+
+
+def pending_create_fitting_ids(fitting_ids) -> set[int]:
+    """The ids among fitting_ids that are new fittings waiting for review."""
+    return set(
+        EveFitting.all_objects.filter(
+            pk__in=list(fitting_ids),
+            deleted__isnull=False,
+            change_requests__status=ChangeRequestStatus.PENDING,
+            change_requests__change_kind="fitting_create",
+        ).values_list("pk", flat=True)
+    )
+
+
+def fitting_name_taken(name: str) -> bool:
+    """A live fitting or a pending create already uses this name."""
+    if EveFitting.objects.filter(name=name).exists():
+        return True
+    return EveFitting.all_objects.filter(
+        name=name,
+        deleted__isnull=False,
+        change_requests__status=ChangeRequestStatus.PENDING,
+        change_requests__change_kind="fitting_create",
+    ).exists()
+
+
+@transaction.atomic
+def submit_new_fitting(
+    *, name: str, ship_id: int, eft: str, description: str, tags, user
+) -> tuple[EveFitting, EveFittingChangeRequest]:
+    """Create a fitting held soft-deleted until its create request is
+    approved, the same way the admin does it."""
+    fitting = EveFitting(
+        name=name, ship_id=ship_id, eft_format=eft, description=description
+    )
+    fitting.save()
+    payload = build_fitting_payload_from_instance(fitting)
+    payload["tags"] = list(tags)
+    EveFitting.objects.get(pk=fitting.pk).delete()
+    fitting = EveFitting.all_objects.get(pk=fitting.pk)
+    change_request = submit_fitting_change_request(
+        fitting,
+        change_kind="fitting_create",
+        payload=payload,
+        user=user,
+    )
+    return fitting, change_request
+
+
+def approve_new_fittings_in(composition: dict, user, note: str) -> None:
+    """Approve the pending creates a doctrine change brings with it."""
+    ids = {i for ids in composition.values() for i in (ids or [])}
+    pending = EveFittingChangeRequest.objects.filter(
+        fitting_id__in=ids,
+        status=ChangeRequestStatus.PENDING,
+        change_kind="fitting_create",
+    )
+    for change_request in pending:
+        approve_fitting_change_request(change_request, user, review_note=note)

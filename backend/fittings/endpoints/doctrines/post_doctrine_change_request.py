@@ -16,6 +16,7 @@ from fittings.helpers.doctrine_changes import (
     pending_doctrine_request_exists,
     submit_doctrine_change_request,
 )
+from fittings.helpers.fitting_changes import pending_create_fitting_ids
 from fittings.helpers.permissions import (
     protection_tier_for_doctrine,
     protection_tier_for_doctrine_type,
@@ -68,7 +69,11 @@ def _validation_problem(doctrine: EveDoctrine, proposed: dict) -> str | None:
     if taken.exclude(pk=doctrine.pk).exists():
         return "A doctrine with that name already exists."
     all_ids = {i for ids in proposed["composition"].values() for i in ids}
-    if EveFitting.objects.filter(pk__in=all_ids).count() != len(all_ids):
+    live = set(
+        EveFitting.objects.filter(pk__in=all_ids).values_list("pk", flat=True)
+    )
+    # A new fitting waiting for review may join the composition.
+    if live | pending_create_fitting_ids(all_ids - live) != all_ids:
         return "Unknown fitting in the composition."
     if not doctrine_state_changed(doctrine, proposed):
         return "Nothing changed."

@@ -12,11 +12,14 @@ if (!user) return login_redirect(Astro)
 import { get_gates } from '@helpers/gates'
 import {
     can_edit_doctrines,
+    alpine_string,
     DOCTRINE_ROLES,
+    editor_fitting,
     HULL_FILTERS,
-    hull_filters_for,
+    ship_icon,
     type DoctrineComposition,
     type DoctrineRole,
+    type EditorFitting,
 } from '@helpers/doctrine_editor'
 
 const gates = await get_gates(Astro)
@@ -37,6 +40,7 @@ const doctrine_id = parseInt(Astro.params.doctrine_id ?? '0')
 let doctrine:Doctrine | null = null
 let fittings:Fitting[] = []
 let pending:DoctrineChangeRequestRow | null = null
+let open_requests:DoctrineChangeRequestRow[] = []
 let fetch_error:Error | false = false
 
 try {
@@ -49,40 +53,28 @@ try {
 }
 
 try {
-    pending = (await get_change_requests(auth_token as string))
-        .find((row) => row.kind === 'doctrine' && row.target_id === doctrine_id) ?? null
+    open_requests = await get_change_requests(auth_token as string)
+    pending = open_requests.find((row) => row.kind === 'doctrine' && row.target_id === doctrine_id) ?? null
 } catch {
     // The editor still works; submitting reports a pending request itself.
     pending = null
 }
 
-const ship_ids = [...new Set(fittings.map((fitting) => fitting.ship_id))]
+// New fittings waiting for review can join a doctrine change too.
+const new_fits = open_requests
+    .filter((row) => row.kind === 'fitting' && row.change_kind === 'fitting_create' && row.target_ship_id)
+    .map((row) => ({ id: row.target_id, name: row.target_name, ship_id: row.target_ship_id as number }))
+const catalog = [...fittings, ...new_fits.filter((fit) => !fittings.some((fitting) => fitting.id === fit.id))]
+
+const ship_ids = [...new Set(catalog.map((fitting) => fitting.ship_id))]
 const [ship_types, hull_names] = ship_ids.length
     ? await Promise.all([get_ships_type(ship_ids), get_type_names(ship_ids)])
     : [[], new Map<number, string>()]
 const hull_group = new Map(ship_types.map((ship) => [ship.ship_id, ship.type]))
 
-interface EditorFitting {
-    id:      number
-    name:    string
-    ship_id: number
-    hull:    string
-    search:  string
-    filters: string
-}
-
-const editor_fittings:EditorFitting[] = fittings.map((fitting) => {
-    const group = hull_group.get(fitting.ship_id) ?? ''
-    const hull = [hull_names.get(fitting.ship_id), group].filter(Boolean).join(' · ')
-    return {
-        id: fitting.id,
-        name: fitting.name,
-        ship_id: fitting.ship_id,
-        hull,
-        search: `${fitting.name} ${hull}`.toLowerCase(),
-        filters: hull_filters_for(group, is_capital_group).join(' '),
-    }
-})
+const editor_fittings:EditorFitting[] = catalog.map((fitting) =>
+    editor_fitting(fitting, hull_names.get(fitting.ship_id), hull_group.get(fitting.ship_id), is_capital_group)
+)
 
 const ROLE_FIELDS:Record<DoctrineRole, keyof Doctrine> = {
     primary: 'primary_fittings',
@@ -142,6 +134,7 @@ const editor_state = {
     filter: 'all',
     open: false,
     review_open: false,
+    paste_open: false,
 }
 
 // Local form state only: which role each fitting is in before the editor
@@ -203,11 +196,17 @@ const editor_methods = `
         this.review_open = true
         this.$dispatch('doctrine-review')
     },
-    close_dialog() { this.review_open = false },
+    close_dialog() {
+        this.review_open = false
+        this.paste_open = false
+    },
+    fit_created(detail) {
+        if (!this.picks[detail.role].includes(detail.id)) this.picks[detail.role].push(detail.id)
+        this.paste_open = false
+        if (this.$refs.paste_eft) this.$refs.paste_eft.value = ''
+    },
 `
 const x_data = `{ ...${JSON.stringify(editor_state)}, ${editor_methods} }`
-// Alpine expressions put these inside single quotes.
-const js = (text:string) => text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -226,9 +225,10 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import DoctrineEditorRow from '@components/blocks/DoctrineEditorRow.astro'
+import DoctrineEditorResult from '@components/blocks/DoctrineEditorResult.astro'
 
 const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doctrine.name}` : ''}`
-const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/icon?size=64`
 ---
 
 <Viewport title={page_title}>
@@ -306,7 +306,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                     <ul class="[ doctrine-rows ]">
                                         {live_rows(role).map((fitting) =>
                                             <li class="[ doctrine-row ]">
-                                                <img src={icon(fitting.ship_id)} alt="" width="36" height="36" loading="lazy" />
+                                                <img src={ship_icon(fitting.ship_id)} alt="" width="36" height="36" loading="lazy" />
                                                 <span class="[ doctrine-row__text ]">
                                                     <span>{fitting.name}</span>
                                                     <small>{fitting.hull}</small>
@@ -321,7 +321,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                 </ComponentBlock>
             </Flexblock>
             :
-            <form id="doctrine-form" x-data={x_data} x-on:submit.prevent>
+            <form id="doctrine-form" x-data={x_data} x-on:submit.prevent x-on:doctrine-fit-created.window="fit_created($event.detail)">
                 <Flexblock gap="var(--space-m)">
                     <input type="hidden" name="type" value={doctrine.type} />
 
@@ -387,31 +387,13 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                             )}
                                         </div>
                                         <ul id="doctrine-add-results" class="[ doctrine-results ]" x-ref="results" role="listbox">
-                                            {editor_fittings.map((fitting) =>
-                                                <li
-                                                    data-search={fitting.search}
-                                                    data-filters={fitting.filters}
-                                                    x-show="matches($el)"
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        role="option"
-                                                        x-on:click={`add(${fitting.id})`}
-                                                        x-bind:disabled={`anywhere(${fitting.id})`}
-                                                    >
-                                                        <img src={icon(fitting.ship_id)} alt="" width="32" height="32" loading="lazy" />
-                                                        <span class="[ doctrine-row__text ]">
-                                                            <span>{fitting.name}</span>
-                                                            <small>{fitting.hull}</small>
-                                                        </span>
-                                                        <small
-                                                            class="[ doctrine-result__end ]"
-                                                            x-text={`anywhere(${fitting.id}) ? '${js(t('doctrine_changes.in_role'))}'.replace('{role}', in_role(${fitting.id})) : '${js(t('doctrine_changes.add'))}'`}
-                                                        ></small>
-                                                    </button>
-                                                </li>
-                                            )}
+                                            {editor_fittings.map((fitting) => <DoctrineEditorResult fitting={fitting} />)}
                                         </ul>
+                                        <div class="[ doctrine-popover__foot ]">
+                                            <button type="button" class="[ doctrine-link-button ]" x-on:click="open = false; paste_open = true">
+                                                {t('doctrine_changes.paste_link')}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </FlexInline>
@@ -422,52 +404,9 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                         {ROLE_LABELS[role]} <span x-text={`picks.${role}.length`}>{initial[role].length}</span>
                                         {ROLE_HINTS[role] && <small>{ROLE_HINTS[role]}</small>}
                                     </h3>
-                                    <ul class="[ doctrine-rows ]">
+                                    <ul class="[ doctrine-rows ]" id={`doctrine-rows-${role}`}>
                                         {editor_fittings.map((fitting) =>
-                                            <template x-if={`shown('${role}', ${fitting.id})`}>
-                                                <li class="[ doctrine-row ]" x-bind:class={`{ 'doctrine-row--removed': removed('${role}', ${fitting.id}) }`}>
-                                                    <input type="hidden" name={role} value={fitting.id} x-bind:disabled={`!has('${role}', ${fitting.id})`} />
-                                                    <img src={icon(fitting.ship_id)} alt="" width="36" height="36" loading="lazy" />
-                                                    <span class="[ doctrine-row__text ]">
-                                                        <span>{fitting.name}</span>
-                                                        <small>{fitting.hull}</small>
-                                                    </span>
-                                                    <small class="[ doctrine-tag doctrine-tag--new ]" x-show={`is_new('${role}', ${fitting.id})`}>{t('doctrine_changes.tag_new')}</small>
-                                                    <small
-                                                        class="[ doctrine-tag doctrine-tag--moved ]"
-                                                        x-show={`moved_from('${role}', ${fitting.id})`}
-                                                        x-text={`'${js(t('doctrine_changes.tag_from'))}'.replace('{role}', moved_from('${role}', ${fitting.id}))`}
-                                                    ></small>
-                                                    <template x-if={`removed('${role}', ${fitting.id})`}>
-                                                        <span class="[ doctrine-row__actions ]">
-                                                            <small class="[ doctrine-tag ]">{t('doctrine_changes.tag_removed')}</small>
-                                                            <button type="button" class="[ doctrine-link-button ]" x-on:click={`undo('${role}', ${fitting.id})`}>{t('doctrine_changes.undo')}</button>
-                                                        </span>
-                                                    </template>
-                                                    <template x-if={`!removed('${role}', ${fitting.id})`}>
-                                                        <span class="[ doctrine-row__actions ]">
-                                                            <label class="[ visually-hidden ]" for={`role-${role}-${fitting.id}`}>{t('doctrine_changes.role_for').replace('{name}', fitting.name)}</label>
-                                                            <select
-                                                                id={`role-${role}-${fitting.id}`}
-                                                                class="[ doctrine-role-select ]"
-                                                                x-on:change={`set_role('${role}', ${fitting.id}, $event.target.value)`}
-                                                            >
-                                                                {DOCTRINE_ROLES.map((option) =>
-                                                                    <option value={option} selected={option === role}>{ROLE_LABELS[option]}</option>
-                                                                )}
-                                                            </select>
-                                                            <button
-                                                                type="button"
-                                                                class="[ doctrine-icon-button ]"
-                                                                aria-label={t('doctrine_changes.remove_named').replace('{name}', fitting.name)}
-                                                                x-on:click={`remove('${role}', ${fitting.id})`}
-                                                            >
-                                                                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-                                                            </button>
-                                                        </span>
-                                                    </template>
-                                                </li>
-                                            </template>
+                                            <DoctrineEditorRow role={role} fitting={fitting} role_labels={ROLE_LABELS} />
                                         )}
                                     </ul>
                                     <div x-show={`is_empty('${role}')`}>
@@ -479,7 +418,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                     </ComponentBlock>
 
                     <div class="[ doctrine-bar ]" x-show="change_count() > 0" x-cloak>
-                        <strong x-text={`'${js(t('doctrine_changes.change_count'))}'.replace('{count}', change_count())`}></strong>
+                        <strong x-text={`'${alpine_string(t('doctrine_changes.change_count'))}'.replace('{count}', change_count())`}></strong>
                         <FlexInline gap="var(--space-s)">
                             <button type="button" class="[ doctrine-link-button ]" x-on:click="discard()">{t('doctrine_changes.discard')}</button>
                             <Button type="button" color="fleet-red" x-on:click="open_review()">{t('doctrine_changes.review_and_send')}</Button>
@@ -512,6 +451,47 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                             aria-live="polite"
                         >
                             <p class="[ doctrine-muted ]">{t('doctrine_changes.loading')}</p>
+                        </div>
+                    </Dialog>
+                </template>
+
+                <template x-teleport="body">
+                    <Dialog
+                        breakout={true}
+                        non_centered={true}
+                        class:list={['flex button-dialog w-full component overflow-y-auto']}
+                        x-bind:class="(paste_open ? 'open' : '')"
+                        x-bind:aria-hidden="paste_open == false"
+                        x-trap="paste_open"
+                        x-bind:inert="!paste_open"
+                        x-on:mousedown.outside="paste_open && close_dialog()"
+                        style="--dialog-max-width: 640px"
+                        x-init="htmx.process($el)"
+                        tabindex="-1"
+                    >
+                        <div id="doctrine-paste-form" class="[ doctrine-paste ]">
+                            <Flexblock gap="var(--space-s)">
+                                <h2>{t('doctrine_changes.paste_title')}</h2>
+                                <Flexblock gap="var(--space-3xs)">
+                                    <label for="doctrine-paste-eft">{t('doctrine_changes.paste_eft')}</label>
+                                    <textarea
+                                        id="doctrine-paste-eft"
+                                        x-ref="paste_eft"
+                                        name="eft_format"
+                                        rows="9"
+                                        class="[ doctrine-paste__eft ]"
+                                        placeholder="[Naglfar, [FL33T] Naglfar]"
+                                        hx-post={`${FORM_PARTIAL_URL}&intent=read_fit`}
+                                        hx-trigger="input changed delay:400ms"
+                                        hx-target="#doctrine-paste-result"
+                                        hx-swap="innerHTML"
+                                    ></textarea>
+                                </Flexblock>
+                                <input type="hidden" name="role" x-bind:value="add_as" />
+                                <div id="doctrine-paste-result" aria-live="polite">
+                                    <EmptyState title={t('doctrine_changes.paste_empty')} />
+                                </div>
+                            </Flexblock>
                         </div>
                     </Dialog>
                 </template>
@@ -609,43 +589,6 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         margin: 0;
         padding: 0 0 var(--space-2xs);
         list-style: none;
-
-        button {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-            width: 100%;
-            min-height: 3rem;
-            padding: var(--space-3xs) var(--space-s);
-            background: none;
-            border: 0;
-            color: inherit;
-            text-align: start;
-            cursor: pointer;
-
-            &:hover:not(:disabled),
-            &:focus-visible {
-                background: var(--hairline);
-            }
-
-            &:disabled {
-                cursor: default;
-                color: var(--text-muted);
-
-                img {
-                    opacity: 0.45;
-                }
-            }
-        }
-    }
-
-    .doctrine-result__end {
-        color: var(--highlight);
-        font-weight: 600;
-    }
-
-    button:disabled .doctrine-result__end {
-        color: var(--text-muted);
     }
 
     .doctrine-role {
@@ -671,69 +614,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         list-style: none;
     }
 
-    .doctrine-row {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        min-height: 3.5rem;
-        padding-block: var(--space-3xs);
-        border-top: 1px solid var(--hairline);
-
-        img {
-            flex: none;
-            width: 2.25rem;
-            height: 2.25rem;
-        }
-    }
-
-    .doctrine-row__text {
-        display: flex;
-        flex: 1 1 auto;
-        flex-direction: column;
-        min-width: 0;
-
-        small {
-            color: var(--text-muted);
-        }
-    }
-
-    .doctrine-row--removed {
-        .doctrine-row__text > span {
-            text-decoration: line-through;
-            color: var(--text-muted);
-        }
-
-        img {
-            opacity: 0.4;
-        }
-    }
-
-    .doctrine-row__actions {
-        display: flex;
-        flex: none;
-        align-items: center;
-        gap: var(--space-2xs);
-    }
-
-    // Phones: the role picker and remove button get their own line under the name.
     @media (max-width: 48rem) {
-        .doctrine-row {
-            flex-wrap: wrap;
-        }
-
-        .doctrine-row__text {
-            flex-basis: calc(100% - 2.25rem - var(--space-xs));
-        }
-
-        .doctrine-row__actions {
-            flex: 1 1 100%;
-            justify-content: flex-end;
-        }
-
-        .doctrine-role-select {
-            flex: 1 1 auto;
-        }
-
         .doctrine-search {
             flex: 1 1 100%;
         }
@@ -743,56 +624,21 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         }
     }
 
-    .doctrine-tag {
-        flex: none;
-        font-weight: 600;
-        color: var(--text-muted);
+    .doctrine-popover__foot {
+        display: flex;
+        justify-content: flex-end;
+        padding: var(--space-3xs) var(--space-s);
+        border-top: 1px solid var(--hairline);
     }
 
-    .doctrine-tag--new {
-        color: var(--green);
-    }
-
-    .doctrine-tag--moved {
-        color: var(--fleet-yellow);
-    }
-
-    .doctrine-role-select {
-        width: 9rem;
-        min-height: 2.75rem;
-        padding: 0 var(--space-2xs);
-        background: var(--hairline);
-        border: 1px solid transparent;
+    .doctrine-paste__eft {
+        padding: var(--space-2xs) var(--space-xs);
+        background: var(--surface-sunken);
+        border: 1px solid var(--border-color);
         color: var(--highlight);
+        font-family: monospace;
         font-size: var(--step--1);
-    }
-
-    .doctrine-icon-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.75rem;
-        height: 2.75rem;
-        background: transparent;
-        border: 0;
-        color: var(--text-muted);
-        cursor: pointer;
-
-        &:hover {
-            color: var(--fleet-red);
-        }
-    }
-
-    .doctrine-link-button {
-        min-height: 2.75rem;
-        padding: 0 var(--space-3xs);
-        background: none;
-        border: 0;
-        color: var(--highlight);
-        font-size: var(--step--1);
-        font-weight: 600;
-        text-decoration: underline;
-        cursor: pointer;
+        resize: vertical;
     }
 
     .doctrine-bar {
