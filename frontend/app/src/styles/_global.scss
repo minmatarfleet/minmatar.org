@@ -570,3 +570,28 @@ hr {
         }
     }
 }
+// Set by FooterScripts while a ClientRouter navigation loads, so a slow page
+// shows its click was taken (repeat clicks on the link are ignored meanwhile).
+html[data-navigating],
+html[data-navigating] a {
+    cursor: progress;
+}
+
+[data-navigation-pending] {
+    animation: navigation-pending 1s ease-in-out infinite alternate;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        opacity: 0.6;
+    }
+}
+
+@keyframes navigation-pending {
+    from {
+        opacity: 0.5;
+    }
+
+    to {
+        opacity: 0.85;
+    }
+}
