@@ -12,8 +12,17 @@ import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/learning/manage`
 
+// admin-redesign: the API names each guide's certificate and step; drop
+// this once openapi.json and api.d.ts are regenerated and carry the fields.
+export type LearningManageGuideRow = LearningManageGuide & {
+    certificate_slug?: string
+    certificate_title?: string
+    certificate_step?: number | null
+    certificate_count?: number
+}
+
 export const get_manage_guides = (token: string) =>
-    api_request<LearningManageGuide[]>(`${API_ENDPOINT}/guides`, { token })
+    api_request<LearningManageGuideRow[]>(`${API_ENDPOINT}/guides`, { token })
 
 export const save_manage_guide = (token: string, slug: string | null, body: LearningManageGuideWrite) =>
     api_request<LearningManageGuide>(`${API_ENDPOINT}/guides${slug ? `/${encodeURIComponent(slug)}` : ''}`, {
@@ -34,6 +43,14 @@ export const save_manage_certificate = (
         `${API_ENDPOINT}/certificates${slug ? `/${encodeURIComponent(slug)}` : ''}`,
         { method: slug ? 'PUT' : 'POST', token, body },
     )
+
+/** Put certificates in this order, first to last. */
+export const order_manage_certificates = (token: string, slugs: string[]) =>
+    api_request<LearningManageCertificate[]>(`${API_ENDPOINT}/certificates/order`, {
+        method: 'POST',
+        token,
+        body: { slugs },
+    })
 
 export const change_manage_award = (token: string, revoke: boolean, body: LearningManageAward) =>
     api_request<unknown>(`${API_ENDPOINT}/awards${revoke ? '/revoke' : ''}`, { method: 'POST', token, body })

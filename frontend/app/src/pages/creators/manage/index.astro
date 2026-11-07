@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -12,18 +12,34 @@ if (!can(await get_gates(Astro), 'creators.moderate')) return HTTP_403_Forbidden
 
 const page_title = t('creators_moderation.page_title')
 
+const breadcrumbs = [
+    { page_title: t('creators_manage.crumb_creators'), accumulated_path: translatePath('/creators/') },
+    { page_title: t('creators_manage.crumb_moderation'), accumulated_path: translatePath('/creators/manage/') },
+]
+
 import Viewport from '@layouts/Viewport.astro'
-import PageDefault from '@components/page/PageDefault.astro'
-import PageTitle from '@components/page/PageTitle.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('creators_moderation.description')}>
-    <PageDefault>
-        <PageTitle slot="header">{page_title}</PageTitle>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero
+                title={t('creators_manage.title')}
+                role={t('creators_manage.role')}
+                fact={t('creators_manage.fact')}
+            />
+        </Flexblock>
 
         <LazyPartial url={translatePath('/partials/creators_moderation_component/')} swap="outerHTML">
             <p class="[ loading ]">{t('loading')}</p>
         </LazyPartial>
-    </PageDefault>
+    </Flexblock>
+</PageLanding>
 </Viewport>

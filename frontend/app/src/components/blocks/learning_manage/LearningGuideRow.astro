@@ -1,0 +1,62 @@
+---
+/**
+ * One guide in Manage learning's Guides table: title, the certificate it
+ * is a step of, and a status dot. It opens in place on the guide's form,
+ * loaded from `url`, or given in the `detail` slot (after a save, and for a
+ * new guide). The partial answers a save with this row inside a <table>.
+ */
+import type { LearningManageGuideRow } from '@helpers/api.minmatar.org/learning_manage'
+
+interface Props {
+    /** null: the new guide row. */
+    guide:      LearningManageGuideRow | null;
+    row_id:     string;
+    url?:       string;
+    open?:      boolean;
+    [propName: string]: any;
+}
+
+const {
+    guide,
+    row_id,
+    url,
+    open = false,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageStatusDot from '@components/blocks/manage/ManageStatusDot.astro'
+
+const title = guide?.title || t('learning_manage.guides_new')
+const certificate = guide?.certificate_title
+    ? (guide.certificate_step
+        ? t('learning_admin.certificate_step').replace('~NAME', guide.certificate_title).replace('~STEP', String(guide.certificate_step))
+        : guide.certificate_title)
+    : ''
+const more = Math.max(0, (guide?.certificate_count ?? 0) - 1)
+---
+
+<ExpandRow id={row_id} colspan={4} label={t('learning_admin.open').replace('~NAME', title)} url={url} open={open}>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{title}</span>
+            </span>
+        </button>
+    </td>
+    <td class="[ is-wide ]">
+        {certificate
+            ? <span>{certificate}{more > 0 && <span class="[ manage-muted ]"> {t('learning_admin.and_more').replace('~COUNT', String(more))}</span>}</span>
+            : <span class="[ manage-muted ]">{guide ? t('learning_admin.no_certificate') : '—'}</span>
+        }
+    </td>
+    <td>
+        <ManageStatusDot
+            tone={guide?.published ? 'good' : 'quiet'}
+            text={guide?.published ? t('learning_manage.published') : t('learning_manage.draft')}
+        />
+    </td>
+    <Fragment slot="detail"><slot name="detail" /></Fragment>
+</ExpandRow>

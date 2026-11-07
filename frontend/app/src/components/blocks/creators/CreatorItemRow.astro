@@ -1,0 +1,86 @@
+---
+/**
+ * One item in an open creator row: its title, and Featured and Shown
+ * switches that save when flipped (creators_moderation_component
+ * part=item). The answer swaps the chip counts, the "Saved" note and the
+ * creator's featured count out of band; a refused save flips the switch back.
+ */
+import type { CreatorModerationItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    item:           CreatorModerationItem;
+    account_id:     number;
+    /** part=item URL for this creator. */
+    post_url:       string;
+    /** The item filter form's id: its view and search go with each save. */
+    filters_id:     string;
+    saved_id:       string;
+    [propName: string]: any;
+}
+
+const {
+    item,
+    account_id,
+    post_url,
+    filters_id,
+    saved_id,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+
+const title = item.title || item.url
+const revert = { 'x-data': '', 'x-on:htmx:after-request': 'if (!$event.detail.successful) $el.checked = !$el.checked' }
+const switches = [
+    {
+        field: 'featured',
+        checked: item.featured,
+        label: t('creators_manage.featured_switch').replace('~TITLE', title),
+        oob: `#${filters_id}-views,#${saved_id},#creator-${account_id}-featured-count`,
+    },
+    {
+        field: 'shown',
+        checked: !item.hidden,
+        label: t('creators_manage.shown_switch').replace('~TITLE', title),
+        oob: `#${filters_id}-views,#${saved_id}`,
+    },
+]
+---
+
+<tr class:list={['[ manage-row ]', { 'is-hidden-item': item.hidden }]}>
+    <td><a href={item.url} target="_blank" rel="noreferrer noopener" class="[ creator-item__title ]">{title}</a></td>
+    {switches.map((toggle) => (
+        <td class="act">
+            <ManageSwitch
+                name="value"
+                hide_label={true}
+                label={toggle.label}
+                checked={toggle.checked}
+                hx-post={post_url}
+                hx-vals={JSON.stringify({ item_id: item.id, field: toggle.field })}
+                hx-include={`#${filters_id}`}
+                hx-trigger="change"
+                hx-swap="none"
+                hx-select-oob={toggle.oob}
+                {...revert}
+            />
+        </td>
+    ))}
+</tr>
+
+<style lang="scss">
+    .creator-item__title {
+        color: var(--highlight);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    .is-hidden-item .creator-item__title {
+        color: var(--text-muted);
+    }
+</style>

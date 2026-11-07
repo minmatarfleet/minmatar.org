@@ -1,125 +1,201 @@
 ---
-// no-error-refetch: an author form; a failed save shows inline above the form.
+/**
+ * Manage learning: Guides.
+ *
+ * part=list  chips (All, Published, Drafts), search, the guides table (GET);
+ *            new=1 adds an open blank guide row at the top
+ * part=edit  an open row's form (GET, slug=)
+ * part=save  save a guide (POST): the row, open, inside a <table>
+ *
+ * Writes go through the learning manage API, which writes the audit log.
+ * Order is not a guide's: certificates order their guides.
+ */
 import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 import { get_manage_guides, save_manage_guide } from '@helpers/api.minmatar.org/learning_manage'
-import type { LearningManageGuide } from '@dtypes/api.minmatar.org'
+import type { LearningManageGuideRow } from '@helpers/api.minmatar.org/learning_manage'
+import type { LearningManageGuideWrite } from '@dtypes/api.minmatar.org'
 import { error_text, form_flag, form_int, form_text } from '@helpers/manage_forms'
-import type { ManageFlashState } from '@helpers/manage_forms'
+import { guide_url } from '@helpers/learning_manage'
+import { query_string } from '@helpers/string'
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Button from '@components/blocks/Button.astro'
-import Input from '@components/blocks/Input.astro'
-import Select from '@components/blocks/Select.astro'
-import Textarea from '@components/blocks/Textarea.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ManageFlash from '@components/blocks/ManageFlash.astro'
-
-const { t, translatePath } = i18n(Astro.url)
-const ROOT_ID = 'learning-manage-guides'
-const PARTIAL_URL = translatePath('/partials/learning_manage_guides_component/')
-const KINDS = ['guide', 'blog', 'page', 'youtube', 'external', 'other']
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import LearningGuideRow from '@components/blocks/learning_manage/LearningGuideRow.astro'
+import LearningGuideForm from '@components/blocks/learning_manage/LearningGuideForm.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 if (!can(await get_gates(Astro), 'learning.manage')) return HTTP_403_Forbidden()
 
-let flash: ManageFlashState | null = null
-// A guide the author changed shows as a preview card until they publish it.
-let previewed: LearningManageGuide | null = null
+const PAGE_SIZE = 50
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'list'
+const partial_url = (values: Record<string, string>) =>
+    translatePath(`/partials/learning_manage_guides_component/?${query_string(values)}`)
+const save_url = partial_url({ part: 'save' })
+const row_id_of = (slug: string) => `guide-${slug}`
 
-if (Astro.request.method === 'POST') {
+// part=save
+let saved_slug: string | null = null
+let save_error: string | null = null
+let posted: LearningManageGuideWrite | null = null
+let posted_original: string | null = null
+let posted_row_id = ''
+if (part === 'save' && Astro.request.method === 'POST') {
     const form = await Astro.request.formData()
-    const original_slug = form_text(form, 'original_slug') || null
-    const payload = {
-        slug: form_text(form, 'slug'),
+    posted_original = form_text(form, 'original_slug') || null
+    posted_row_id = form_text(form, 'row_id') || (posted_original ? row_id_of(posted_original) : 'guide-new')
+    const slug = form_text(form, 'slug')
+    const content_kind = form_text(form, 'content_kind') || 'guide'
+    posted = {
+        slug,
         title: form_text(form, 'title'),
         summary: form_text(form, 'summary'),
-        url: form_text(form, 'url'),
-        content_kind: form_text(form, 'content_kind') || 'guide',
+        // A guide-kind page's link follows its address.
+        url: content_kind === 'guide' ? guide_url(slug) : form_text(form, 'url'),
+        content_kind,
         thumbnail_url: form_text(form, 'thumbnail_url'),
         estimated_minutes: form_int(form, 'estimated_minutes'),
         published: form_flag(form, 'published'),
     }
     try {
-        if (form_text(form, 'action') === 'preview') {
-            previewed = { id: 0, ...payload }
-        } else {
-            await save_manage_guide(auth_token, original_slug, payload)
-            flash = { kind: 'success', message: t('learning_manage.saved') }
-        }
+        await save_manage_guide(auth_token, posted_original, posted)
+        saved_slug = slug
     } catch (error) {
-        flash = { kind: 'error', message: error_text(error, t('learning_manage.error_save')) }
+        save_error = error_text(error, t('learning_manage.error_save'))
     }
 }
 
-const guides = await get_manage_guides(auth_token)
-const rows: (LearningManageGuide | null)[] = [...guides, null]
+let guides: LearningManageGuideRow[] = []
+let error: Error | null = null
+try {
+    guides = await get_manage_guides(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+
+// part=list
+const view = params.get('view') === 'published' || params.get('view') === 'drafts' ? params.get('view') as string : 'all'
+const query = (params.get('q') ?? '').trim().toLowerCase()
+const page = Math.max(1, parseInt(params.get('page') ?? '1') || 1)
+const searched = guides.filter((guide) =>
+    !query || [guide.title, guide.slug, guide.certificate_title ?? ''].some((text) => text.toLowerCase().includes(query)))
+const rows = searched.filter((guide) => view === 'all' || (view === 'published') === guide.published)
+const total_pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+const page_rows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+const show_new = params.get('new') === '1'
+
+const COLUMNS = [
+    { label: t('learning_admin.col_guide') },
+    { label: t('learning_admin.col_certificate'), phone: false },
+    { label: t('learning_admin.col_status') },
+]
+const BLANK: LearningManageGuideWrite = {
+    slug: '', title: '', summary: '', url: '', content_kind: 'guide', thumbnail_url: '', estimated_minutes: null, published: false,
+}
+const values_of = (guide: LearningManageGuideRow): LearningManageGuideWrite => ({
+    slug: guide.slug,
+    title: guide.title,
+    summary: guide.summary,
+    url: guide.url,
+    content_kind: guide.content_kind,
+    thumbnail_url: guide.thumbnail_url,
+    estimated_minutes: guide.estimated_minutes,
+    published: guide.published,
+})
+
+// part=edit
+const edit_guide = part === 'edit' ? guides.find((guide) => guide.slug === params.get('slug')) ?? null : null
+
+// part=save: the saved guide as stored, or (on error) the guide as it was.
+const saved_guide = saved_slug ? guides.find((guide) => guide.slug === saved_slug) ?? null : null
+const row_guide = saved_guide ?? (posted_original ? guides.find((guide) => guide.slug === posted_original) ?? null : null)
 ---
 
-<div id={ROOT_ID}>
-    <Flexblock gap="var(--space-l)">
-        <ManageFlash flash={flash} />
-
-        <p>{t('learning_manage.guides_lead')}</p>
-
-        {previewed &&
-            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
-                <Flexblock gap="var(--space-xs)">
-                    <small>{t('learning_manage.preview')}</small>
-                    <h3>{previewed.title}</h3>
-                    <p>{previewed.summary}</p>
-                    <a href={previewed.url} target="_blank" rel="noreferrer noopener">{previewed.url}</a>
-                    <small>{previewed.published ? t('learning_manage.published') : t('learning_manage.draft')}</small>
-                </Flexblock>
-            </ComponentBlock>
-        }
-
-        {rows.map((guide) =>
-            <ComponentBlock padding_inline="var(--space-s)" padding_block="var(--space-s)">
-                <form
-                    method="post"
-                    action={PARTIAL_URL}
-                    hx-post={PARTIAL_URL}
-                    hx-target={`#${ROOT_ID}`}
-                    hx-swap="outerHTML"
+{part === 'list' && (
+    error
+        ? <div id="learning-manage-guides"><ErrorRefetch args={{ partial: partial_url({ part: 'list' }), error, delay: 0 }} /></div>
+        : (
+            <div id="learning-manage-guides" class="[ manage-list ]">
+                <ViewChips
+                    id="guides-filters"
+                    url={partial_url({ part: 'list' })}
+                    target="guides-list"
+                    selected={view}
+                    search_id="guides-search"
+                    legend={t('learning_admin.guide_views')}
+                    views={[
+                        { value: 'all', label: t('learning_admin.view_all'), count: searched.length },
+                        { value: 'published', label: t('learning_manage.published'), count: searched.filter((guide) => guide.published).length },
+                        { value: 'drafts', label: t('learning_admin.drafts'), count: searched.filter((guide) => !guide.published).length },
+                    ]}
                 >
-                    <Flexblock gap="var(--space-s)">
-                        <FlexInline gap="var(--space-xs)" justification="space-between">
-                            <h3>{guide ? guide.title : t('learning_manage.guides_new')}</h3>
-                            {guide && !guide.published && <small>{t('learning_manage.draft')}</small>}
-                        </FlexInline>
-                        <input type="hidden" name="original_slug" value={guide?.slug ?? ''} />
-                        <Input name="title" placeholder={t('learning_manage.title')} aria-label={t('learning_manage.title')} value={guide?.title ?? ''} required />
-                        <Input name="slug" placeholder={t('learning_manage.slug')} aria-label={t('learning_manage.slug')} value={guide?.slug ?? ''} required />
-                        <Input name="url" placeholder={t('learning_manage.url')} aria-label={t('learning_manage.url')} value={guide?.url ?? ''} required />
-                        <Textarea name="summary" rows="3" aria-label={t('learning_manage.summary')} placeholder={t('learning_manage.summary')}>{guide?.summary ?? ''}</Textarea>
-                        <Select name="content_kind" aria-label={t('learning_manage.kind')}>
-                            {KINDS.map((kind) => <option value={kind} selected={(guide?.content_kind ?? 'guide') === kind}>{kind}</option>)}
-                        </Select>
-                        <Input name="thumbnail_url" type="url" placeholder={t('learning_manage.thumbnail')} aria-label={t('learning_manage.thumbnail')} value={guide?.thumbnail_url ?? ''} />
-                        <Input name="estimated_minutes" type="number" min="1" placeholder={t('learning_manage.minutes')} aria-label={t('learning_manage.minutes')} value={guide?.estimated_minutes ? String(guide.estimated_minutes) : ''} />
-                        <label>
-                            <input type="checkbox" name="published" checked={guide?.published ?? true} />
-                            {t('learning_manage.published')}
-                        </label>
-                        <FlexInline gap="var(--space-s)">
-                            <Button type="submit" name="action" value="save" color="fleet-red" size="sm" off_disable={true}>{t('learning_manage.save')}</Button>
-                            <Button type="submit" name="action" value="preview" color="transparent" size="sm" narrow={true} off_disable={true}>{t('learning_manage.preview_action')}</Button>
-                        </FlexInline>
-                    </Flexblock>
-                </form>
-            </ComponentBlock>
-        )}
-    </Flexblock>
-</div>
+                    <div class="[ manage-toolbar ]">
+                        <ManageSearch id="guides-search" value={params.get('q') ?? ''} label={t('learning_admin.guide_search')} placeholder={t('learning_admin.guide_search')} />
+                    </div>
+                </ViewChips>
+                <div id="guides-list" class="[ manage-list ]" aria-live="polite">
+                    {page_rows.length === 0 && !show_new
+                        ? <EmptyState title={t('learning_admin.no_guides')} />
+                        : (
+                            <ManageTable caption={t('learning_admin.guides_caption')} columns={COLUMNS}>
+                                {show_new &&
+                                    <LearningGuideRow guide={null} row_id="guide-new" open={true}>
+                                        <LearningGuideForm slot="detail" values={BLANK} original_slug={null} row_id="guide-new" post_url={save_url} />
+                                    </LearningGuideRow>
+                                }
+                                {page_rows.map((guide) => (
+                                    <LearningGuideRow
+                                        guide={guide}
+                                        row_id={row_id_of(guide.slug)}
+                                        url={partial_url({ part: 'edit', slug: guide.slug })}
+                                    />
+                                ))}
+                            </ManageTable>
+                        )
+                    }
+                    <HtmxPager
+                        page={page}
+                        total_pages={total_pages}
+                        url_for={(to) => partial_url({ part: 'list', page: String(to) })}
+                        request={{ 'hx-target': '#guides-list', 'hx-select': '#guides-list', 'hx-swap': 'outerHTML', 'hx-include': '#guides-filters' }}
+                    />
+                </div>
+            </div>
+        )
+)}
 
-<style lang="scss">
-    h3 {
-        font-size: var(--step-0);
-        margin-block-end: 0;
-    }
-</style>
+{part === 'edit' && (
+    edit_guide
+        ? <LearningGuideForm values={values_of(edit_guide)} original_slug={edit_guide.slug} row_id={row_id_of(edit_guide.slug)} post_url={save_url} />
+        : error
+            ? <ErrorRefetch args={{ partial: partial_url({ part: 'edit', slug: params.get('slug') ?? '' }), error, delay: 0 }} />
+            : <EmptyState title={t('learning_admin.guide_gone')} />
+)}
+
+{part === 'save' && posted &&
+    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
+    // The row keeps its id (a new guide stays "guide-new") so later saves find it.
+    <table>
+        <LearningGuideRow guide={row_guide} row_id={posted_row_id} open={true}>
+            <LearningGuideForm
+                slot="detail"
+                values={saved_guide ? values_of(saved_guide) : posted}
+                original_slug={saved_guide ? saved_guide.slug : posted_original}
+                row_id={posted_row_id}
+                post_url={save_url}
+                saved={saved_slug !== null}
+                error={save_error}
+            />
+        </LearningGuideRow>
+    </table>
+}
