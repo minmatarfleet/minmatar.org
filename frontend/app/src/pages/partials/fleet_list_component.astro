@@ -25,6 +25,7 @@ import {
     type FleetSchedule as FleetScheduleData,
     type FleetHistory,
 } from '@helpers/fetching/fleet_schedule'
+import { parse_host_filter } from '@helpers/fleet_hosts'
 
 let fetch_fleets_error: Error | false = false
 let schedule: FleetScheduleData | null = null
@@ -33,10 +34,12 @@ let history: FleetHistory | null = null
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 const group_param = parseInt(Astro.url.searchParams.get('group') ?? '')
 const host_group_id = Number.isFinite(group_param) ? group_param : null
+// The upcoming list's host filter (All · Alliance · Tribe fleets · My groups).
+const host_param = Astro.url.searchParams.get('host') ?? ''
 
 try {
     if (upcoming)
-        schedule = await fetch_fleet_schedule(auth_token as string)
+        schedule = await fetch_fleet_schedule(auth_token as string, parse_host_filter(host_param))
     else
         history = await fetch_fleet_history(auth_token as string, host_group_id)
 } catch (error) {
@@ -53,7 +56,7 @@ else
     count_text = t(fleets.length !== 1 ? 'fleets_in_the_past_30_days_plural' : 'fleets_in_the_past_30_days_singular')
         .replace('{count}', String(fleets.length))
 
-const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}${host_group_id ? `&group=${host_group_id}` : ''}`)
+const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}${host_group_id ? `&group=${host_group_id}` : ''}${upcoming && host_param ? `&host=${encodeURIComponent(host_param)}` : ''}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 

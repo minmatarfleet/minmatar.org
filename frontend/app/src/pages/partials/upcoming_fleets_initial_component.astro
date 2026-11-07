@@ -1,0 +1,78 @@
+---
+/**
+ * The first load of /fleets/upcoming/'s schedule, behind its skeleton: the
+ * page shell answers without waiting for the schedule, then swaps this in.
+ *
+ * - Renders the schedule exactly as the page used to render it inline.
+ *   The 240s refresh (upcoming_fleets_component) is unchanged.
+ * - When a fleet is live, fades the page cover to that fleet's location, as
+ *   the page used to render it. fleet_cover answers 400 (no swap) when that
+ *   cover is already showing.
+ * - On failure, ErrorRefetch retries this partial with the same host filter.
+ */
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'fleets.view'))
+    return HTTP_403_Forbidden()
+
+import { fetch_fleet_schedule, type FleetSchedule as FleetScheduleData } from '@helpers/fetching/fleet_schedule'
+import { parse_host_filter } from '@helpers/fleet_hosts'
+import { get_location_cover, get_location_video_cover } from '@helpers/covers'
+
+const host_param = Astro.url.searchParams.get('host') ?? ''
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let schedule: FleetScheduleData | null = null
+let fetch_fleets_error: Error | false = false
+
+try {
+    schedule = await fetch_fleet_schedule(auth_token as string, parse_host_filter(host_param))
+} catch (error) {
+    fetch_fleets_error = error
+}
+
+const PARTIAL_URL = translatePath(`/partials/upcoming_fleets_initial_component/${host_param ? `?host=${encodeURIComponent(host_param)}` : ''}`)
+
+const live_location = schedule?.live[0]?.location ?? null
+const live_cover_url = live_location && (get_location_cover(live_location) || get_location_video_cover(live_location))
+    ? translatePath(`/partials/fleet_cover?location_name=${encodeURIComponent(live_location)}`)
+    : null
+
+import FleetSchedule from '@components/blocks/FleetSchedule.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_fleets_error ?
+    <ErrorRefetch
+        args={{
+            partial: PARTIAL_URL,
+            error: fetch_fleets_error,
+            delay: delay,
+        }}
+    />
+    :
+    <FleetSchedule schedule={schedule as FleetScheduleData} />
+}
+{live_cover_url &&
+    <div
+        hidden
+        hx-get={live_cover_url}
+        hx-trigger="load"
+        hx-target="#viewport-cover-oob"
+        hx-swap="outerHTML transition:true"
+        hx-indicator=".loader"
+        hx-on--after-request="this.remove()"
+    ></div>
+}
