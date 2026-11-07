@@ -3,8 +3,14 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { RedditRotationMonth } from '@dtypes/api.minmatar.org'
+import type { ManageColumn } from '@dtypes/layout_components'
 
-/** The Reddit rotation: upcoming posts by month, regenerate, publish, manual submit and link to Discord. reddit_review_component runs the action and answers with this panel again. */
+/**
+ * The Reddit rotation: each month's posts in a manage table, with
+ * regenerate and publish on a draft month and submit / link to Discord on a
+ * post. reddit_review_component runs the action and answers with this panel
+ * again.
+ */
 interface Props {
     months:             RedditRotationMonth[];
     error?:             string | null;
@@ -17,13 +23,23 @@ const { months, error = null, notice = null } = Astro.props
 const PARTIAL_URL = translatePath('/partials/reddit_review_component')
 
 const month_label = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-const slot_label = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+const slot_label = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+const GOOD_STATUSES = ['posted', 'confirmed']
+const WARN_STATUSES = ['failed', 'reminded']
+
+const COLUMNS: ManageColumn[] = [
+    { label: t('admin_content.rotation.when'), sort: 'ascending' },
+    { label: t('admin_content.rotation.post'), phone: false },
+    { label: t('admin_content.rotation.status'), phone: false },
+    { label: t('admin_content.rotation.actions'), align: 'act', hidden: true },
+]
+
+import { get_corporation_logo } from '@helpers/eve_image_server'
 
 import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import ManagePanel from '@components/blocks/ManagePanel.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import Tag from '@components/blocks/Tag.astro'
 
 const attrs = {
     'hx-post': PARTIAL_URL,
@@ -33,61 +49,131 @@ const attrs = {
 }
 ---
 
-<ManagePanel id="reddit-review-rotation">
-    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
-    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+<section id="reddit-review-rotation" class="[ reddit-rotation ]" aria-live="polite">
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-saved ]" role="status">{notice}</p>}
 
     {months.length === 0 ?
         <EmptyState title={t('reddit_review.rotation.empty')} />
         :
         months.map(month =>
-            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
-                <Flexblock gap="var(--space-xs)">
-                    <div class="[ manage-panel__row ]">
-                        <h2 class="[ manage-panel__heading ]">{month_label(month.month)} · {t(t_key('reddit_review.rotation.status.', month.status))}</h2>
-                        {month.status === 'draft' &&
-                            <Fragment>
-                                <form class="[ manage-panel__form ]" {...attrs}>
-                                    <input type="hidden" name="action" value="schedule_regenerate" />
-                                    <input type="hidden" name="id" value={month.schedule_id} />
-                                    <Button type="submit" size="sm" color="transparent">{t('reddit_review.rotation.regenerate')}</Button>
-                                </form>
-                                <form class="[ manage-panel__form ]" {...attrs}>
-                                    <input type="hidden" name="action" value="schedule_publish" />
-                                    <input type="hidden" name="id" value={month.schedule_id} />
-                                    <Button type="submit" size="sm" color="green">{t('reddit_review.rotation.publish')}</Button>
-                                </form>
-                            </Fragment>
-                        }
-                    </div>
-                    {month.posts.length === 0 ?
-                        <EmptyState title={t('reddit_review.rotation.no_posts')} />
-                        :
-                        <ul class="[ manage-panel__rows ]" role="list">
-                            {month.posts.map(post =>
-                                <li class="[ manage-panel__row ]">
-                                    <span>{slot_label(post.scheduled_for)}</span>
-                                    <strong>{post.corporation_name}</strong>
-                                    <span class="[ manage-panel__muted ]">{t(t_key('reddit_review.rotation.post_status.', post.status))}</span>
-                                    {post.reddit_url && <a href={post.reddit_url} target="_blank" rel="noopener noreferrer">{t('reddit_review.rotation.open')}</a>}
-                                    <form class="[ manage-panel__form ]" {...attrs}>
-                                        <input type="hidden" name="action" value="template_submit" />
-                                        <input type="hidden" name="id" value={post.template_id} />
-                                        <Button type="submit" size="sm" color="transparent">{t('reddit_review.rotation.submit')}</Button>
-                                    </form>
-                                    {post.can_link_to_discord &&
-                                        <form class="[ manage-panel__form ]" {...attrs}>
-                                            <input type="hidden" name="action" value="template_link_discord" />
-                                            <input type="hidden" name="id" value={post.template_id} />
-                                            <Button type="submit" size="sm" color="transparent">{t('reddit_review.rotation.link_discord')}</Button>
-                                        </form>
-                                    }
-                                </li>
-                            )}
-                        </ul>
+            <section class="[ reddit-rotation__month ]">
+                <header class="[ reddit-rotation__head ]">
+                    <h2 class="[ reddit-rotation__title ]">{month_label(month.month)}</h2>
+                    <Tag color={month.status === 'draft' ? 'fleet-yellow' : 'alliance-blue'} text={t(t_key('reddit_review.rotation.status.', month.status))} />
+                    <span class="[ manage-muted ]">
+                        {month.posts.length === 1 ? t('admin_content.rotation.posts_one') : t('admin_content.rotation.posts_many').replace('~COUNT', String(month.posts.length))}
+                    </span>
+                    {month.status === 'draft' &&
+                        <div class="[ reddit-rotation__actions ]">
+                            <form {...attrs}>
+                                <input type="hidden" name="action" value="schedule_regenerate" />
+                                <input type="hidden" name="id" value={month.schedule_id} />
+                                <Button type="submit" size="sm" color="transparent">{t('reddit_review.rotation.regenerate')}</Button>
+                            </form>
+                            <form {...attrs}>
+                                <input type="hidden" name="action" value="schedule_publish" />
+                                <input type="hidden" name="id" value={month.schedule_id} />
+                                <Button type="submit" size="sm">{t('reddit_review.rotation.publish')}</Button>
+                            </form>
+                        </div>
                     }
-                </Flexblock>
-            </ComponentBlock>
+                </header>
+                {month.posts.length === 0 ?
+                    <EmptyState title={t('reddit_review.rotation.no_posts')} />
+                    :
+                    <ManageTable caption={month_label(month.month)} columns={COLUMNS} expandable={false} min_width="36rem">
+                        {month.posts.map(post =>
+                            <tbody>
+                                <tr class="[ manage-row ]">
+                                    <td>
+                                        <span class="[ manage-who ]">
+                                            {post.corporation_id && <img src={get_corporation_logo(post.corporation_id, 64)} alt="" width="32" height="32" />}
+                                            <span class="[ manage-who__text ]">
+                                                <span class="[ manage-who__name ]">{slot_label(post.scheduled_for)}</span>
+                                                <span class="[ manage-who__sub ]">{post.corporation_name}</span>
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td class="[ is-wide ]">{post.title}</td>
+                                    <td class:list={['is-wide', { 'manage-good': GOOD_STATUSES.includes(post.status), 'manage-warn': WARN_STATUSES.includes(post.status) }]}>
+                                        {t(t_key('reddit_review.rotation.post_status.', post.status))}
+                                    </td>
+                                    <td class="[ act ]">
+                                        <div class="[ reddit-rotation__actions ]">
+                                            {post.reddit_url && <Button size="sm" color="transparent" href={post.reddit_url} target="_blank" rel="noopener noreferrer">{t('reddit_review.rotation.open')}</Button>}
+                                            <form {...attrs}>
+                                                <input type="hidden" name="action" value="template_submit" />
+                                                <input type="hidden" name="id" value={post.template_id} />
+                                                <Button type="submit" size="sm" color="transparent">{t('reddit_review.rotation.submit')}</Button>
+                                            </form>
+                                            {post.can_link_to_discord &&
+                                                <form {...attrs}>
+                                                    <input type="hidden" name="action" value="template_link_discord" />
+                                                    <input type="hidden" name="id" value={post.template_id} />
+                                                    <Button type="submit" size="sm" color="transparent">{t('reddit_review.rotation.link_discord')}</Button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        )}
+                    </ManageTable>
+                }
+            </section>
         )
     }
-</ManagePanel>
+</section>
+
+<style lang="scss" is:global>
+    .reddit-rotation {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .reddit-rotation__month {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .reddit-rotation__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .reddit-rotation__title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .reddit-rotation__head .reddit-rotation__actions {
+        margin-inline-start: auto;
+    }
+
+    .reddit-rotation__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-3xs) var(--space-2xs);
+
+        form {
+            display: contents;
+        }
+    }
+
+    @media (min-width: 48rem) {
+        td .reddit-rotation__actions {
+            flex-wrap: nowrap;
+        }
+    }
+</style>
