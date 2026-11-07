@@ -5490,6 +5490,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/industry/planner/invention/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invention sources (T1 blueprint or relic grades) and decryptors for a T2/T3 product; 404 when the product isn't invented */
+        get: operations["industry_endpoints_planner_get_invention_get_invention"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/planner/invention/{type_id}/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quote invention for a T2/T3 product at a freeport: chance, copies, expected and buy-list attempts, cost per unit, and the alternatives */
+        get: operations["industry_endpoints_planner_get_invention_quote_get_invention_quote"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/industry/planner/plans": {
         parameters: {
             query?: never;
@@ -13128,6 +13162,10 @@ export interface components {
         CorporationType: "alliance" | "associate" | "militia" | "public";
         /** CostIndicesSchema */
         CostIndicesSchema: {
+            /** Copying */
+            copying?: number | null;
+            /** Invention */
+            invention?: number | null;
             /** Manufacturing */
             manufacturing: number;
             /** Reaction */
@@ -21851,6 +21889,21 @@ export interface components {
             freight_volume_m3?: number;
             /** Grand Total Isk */
             grand_total_isk: number;
+            /**
+             * Invention Isk
+             * @default 0
+             */
+            invention_isk?: number;
+            /**
+             * Invention Job Costs Isk
+             * @default 0
+             */
+            invention_job_costs_isk?: number;
+            /**
+             * Invention Materials Isk
+             * @default 0
+             */
+            invention_materials_isk?: number;
             /** Line Items */
             line_items: components["schemas"]["PlanCostLineItemSchema"][];
             /** Manufacturing Job Costs Isk */
@@ -21892,6 +21945,117 @@ export interface components {
             name: string;
             /** Quantity */
             quantity: number;
+        };
+        /** PlanInventionInputSchema */
+        PlanInventionInputSchema: {
+            /** Buy Quantity */
+            buy_quantity: number;
+            /** Expected Quantity */
+            expected_quantity: number;
+            /** Name */
+            name: string;
+            /** Quantity Per Attempt */
+            quantity_per_attempt: number;
+            /** Type Id */
+            type_id: number;
+            /** Unit Price */
+            unit_price: number;
+        };
+        /** PlanInventionOptionSchema */
+        PlanInventionOptionSchema: {
+            /** Chance */
+            chance: number;
+            /** Copy Me */
+            copy_me: number;
+            /** Copy Te */
+            copy_te: number;
+            /** Decryptor Name */
+            decryptor_name: string;
+            /** Decryptor Type Id */
+            decryptor_type_id?: number | null;
+            /** Invention Per Unit Isk */
+            invention_per_unit_isk: number;
+            /** Per Unit Isk */
+            per_unit_isk: number;
+            /** Runs Per Copy */
+            runs_per_copy: number;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Name */
+            source_name: string;
+            /** Source Type Id */
+            source_type_id: number;
+        };
+        /** PlanInventionSchema */
+        PlanInventionSchema: {
+            /** Alternatives */
+            alternatives: components["schemas"]["PlanInventionOptionSchema"][];
+            /** Attempt Isk */
+            attempt_isk: number;
+            /** Attempts P90 */
+            attempts_p90: number;
+            /** Buy Attempts */
+            buy_attempts: number;
+            /** Chance */
+            chance: number;
+            /** Copies Needed */
+            copies_needed: number;
+            /** Copy Me */
+            copy_me: number;
+            /** Copy Te */
+            copy_te: number;
+            /** Decryptor Name */
+            decryptor_name: string;
+            /** Decryptor Type Id */
+            decryptor_type_id?: number | null;
+            /** Expected Attempts */
+            expected_attempts: number;
+            /** Inputs */
+            inputs: components["schemas"]["PlanInventionInputSchema"][];
+            /** Invention Isk */
+            invention_isk: number;
+            /** Invention Job Costs Isk */
+            invention_job_costs_isk: number;
+            /** Invention Materials Isk */
+            invention_materials_isk: number;
+            /** Invention Per Unit Isk */
+            invention_per_unit_isk: number;
+            /** Kind */
+            kind: string;
+            /** Per Unit Isk */
+            per_unit_isk: number;
+            /** Runs Needed */
+            runs_needed: number;
+            /** Runs Per Copy */
+            runs_per_copy: number;
+            /** Science Seconds */
+            science_seconds: number;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Name */
+            source_name: string;
+            /** Source Type Id */
+            source_type_id: number;
+            /** Units */
+            units: number;
+        };
+        /** PlanInventionSkillsSchema */
+        PlanInventionSkillsSchema: {
+            /**
+             * Encryption
+             * @default 4
+             */
+            encryption?: number;
+            /**
+             * Science 1
+             * @default 5
+             */
+            science_1?: number;
+            /**
+             * Science 2
+             * @default 5
+             */
+            science_2?: number;
         };
         /** PlanJobSchema */
         PlanJobSchema: {
@@ -22003,8 +22167,14 @@ export interface components {
         PlanRequestSchema: {
             /** Blueprint Me */
             blueprint_me?: number | null;
+            /** Blueprint Source */
+            blueprint_source?: string | null;
             /** Blueprint Te */
             blueprint_te?: number | null;
+            /** Bpc Me */
+            bpc_me?: number | null;
+            /** Bpc Te */
+            bpc_te?: number | null;
             /**
              * Build Fuel Blocks
              * @default false
@@ -22017,6 +22187,8 @@ export interface components {
              * @default false
              */
             compressed?: boolean;
+            /** Decryptor */
+            decryptor?: string | null;
             /** Exclude Type Ids */
             exclude_type_ids?: number[] | null;
             /**
@@ -22024,6 +22196,9 @@ export interface components {
              * @default amamake
              */
             facility_key?: string;
+            invention_skills?: components["schemas"]["PlanInventionSkillsSchema"] | null;
+            /** Invention Source Type Id */
+            invention_source_type_id?: number | null;
             /** Isk Per Lp */
             isk_per_lp?: number | null;
             /** Max Runs Per Job */
@@ -22049,6 +22224,11 @@ export interface components {
         PlanResponseSchema: {
             /** Blueprint Me */
             blueprint_me: number;
+            /**
+             * Blueprint Source
+             * @default bpo
+             */
+            blueprint_source?: string;
             /** Blueprint Te */
             blueprint_te: number;
             /** Bucket Durations */
@@ -22058,6 +22238,16 @@ export interface components {
             compressed_ore?: components["schemas"]["PlanCompressedOreSchema"] | null;
             cost_breakdown?: components["schemas"]["PlanCostBreakdownSchema"] | null;
             /**
+             * Default Blueprint Me
+             * @default 10
+             */
+            default_blueprint_me?: number;
+            /**
+             * Default Blueprint Te
+             * @default 20
+             */
+            default_blueprint_te?: number;
+            /**
              * Estimated Materials Buy Isk
              * @default 0
              */
@@ -22066,6 +22256,7 @@ export interface components {
             facility: string;
             /** Indices From Esi */
             indices_from_esi: boolean;
+            invention?: components["schemas"]["PlanInventionSchema"] | null;
             /** Jobs */
             jobs: components["schemas"]["PlanJobSchema"][];
             /** Leaf Materials */
@@ -22081,6 +22272,12 @@ export interface components {
             product: components["schemas"]["PlanProductSchema"];
             /** Reaction Index */
             reaction_index: number;
+            /** Root Blueprint Me */
+            root_blueprint_me?: number | null;
+            /** Root Blueprint Te */
+            root_blueprint_te?: number | null;
+            /** Root Runs Per Copy */
+            root_runs_per_copy?: number | null;
             /**
              * Step Savings
              * @default []
@@ -22160,6 +22357,47 @@ export interface components {
             planet_type: string;
             /** Solar System Id */
             solar_system_id: number;
+        };
+        /** PlannerDecryptorSchema */
+        PlannerDecryptorSchema: {
+            /** Me Modifier */
+            me_modifier: number;
+            /** Name */
+            name: string;
+            /** Probability Multiplier */
+            probability_multiplier: number;
+            /** Runs Modifier */
+            runs_modifier: number;
+            /** Te Modifier */
+            te_modifier: number;
+            /** Type Id */
+            type_id: number;
+        };
+        /** PlannerInventionInfoSchema */
+        PlannerInventionInfoSchema: {
+            /** Decryptors */
+            decryptors: components["schemas"]["PlannerDecryptorSchema"][];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Sources */
+            sources: components["schemas"]["PlannerInventionSourceSchema"][];
+            /** Type Id */
+            type_id: number;
+        };
+        /** PlannerInventionSourceSchema */
+        PlannerInventionSourceSchema: {
+            /** Base Chance */
+            base_chance: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Runs */
+            runs: number;
+            /** Type Id */
+            type_id: number;
         };
         /**
          * PostOrderItemAssignmentRequest
@@ -22246,6 +22484,9 @@ export interface components {
             activity: string;
             /** Blueprint Type Id */
             blueprint_type_id: number;
+            invention?: components["schemas"]["ProductBuildInvention"] | null;
+            /** Invention Cost */
+            invention_cost?: number | null;
             /** Margin */
             margin?: number | null;
             /** Material Cost */
@@ -22274,6 +22515,51 @@ export interface components {
              * @default 0
              */
             time_seconds?: number;
+            /** Type Id */
+            type_id: number;
+        };
+        /**
+         * ProductBuildInvention
+         * @description How the blueprint copy is invented (T2/T3 products only).
+         */
+        ProductBuildInvention: {
+            /** Chance */
+            chance?: number | null;
+            /** Copy Me */
+            copy_me?: number | null;
+            /** Copy Te */
+            copy_te?: number | null;
+            /** Cost Per Unit */
+            cost_per_unit?: number | null;
+            /** Decryptor Name */
+            decryptor_name?: string | null;
+            /** Kind */
+            kind: string;
+            /** Runs Per Copy */
+            runs_per_copy?: number | null;
+            /** Source Name */
+            source_name?: string | null;
+            /**
+             * Sources
+             * @default []
+             */
+            sources?: components["schemas"]["ProductBuildInventionSource"][];
+        };
+        /** ProductBuildInventionSource */
+        ProductBuildInventionSource: {
+            /** Base Chance */
+            base_chance: number;
+            /**
+             * Datacores
+             * @default []
+             */
+            datacores?: components["schemas"]["ProductBuildMaterial"][];
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Runs */
+            runs: number;
             /** Type Id */
             type_id: number;
         };
@@ -39945,6 +40231,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FacilityDetailSchema"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_planner_get_invention_get_invention: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannerInventionInfoSchema"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_planner_get_invention_quote_get_invention_quote: {
+        parameters: {
+            query?: {
+                quantity?: number;
+                facility_key?: string;
+                decryptor?: string;
+                source_type_id?: number | null;
+                science_1?: number;
+                science_2?: number;
+                encryption?: number;
+            };
+            header?: never;
+            path: {
+                type_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanInventionSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Not Found */

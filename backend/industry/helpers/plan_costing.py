@@ -23,7 +23,7 @@ from industry.helpers.blueprint_efficiency import (
     default_blueprint_me_te_percent,
     is_faction_navy_hull,
 )
-from industry.helpers.build_planner import BuildPlan, plan_build
+from industry.helpers.build_planner import BuildPlan, RootBlueprint, plan_build
 from industry.helpers.compressed_ore import (
     CompressedOrePlan,
     build_compressed_ore_plan,
@@ -36,6 +36,7 @@ from industry.helpers.cost_breakdown import (
     _prices_by_name,
 )
 from industry.helpers.facility_profiles import get_facility_reprocessing_tax
+from industry.helpers.invention import BASE_COPY_ME, BASE_COPY_TE
 from industry.helpers.freight_costs import (
     FreightEstimate,
     estimate_plan_freight,
@@ -143,6 +144,13 @@ class PlanCostOptions(BaseModel):
     build_fuel_blocks: bool = False
     exclude_type_ids: List[int] = Field(default_factory=list)
     include_navy_bpc: bool = True
+    # T2/T3 roots: invent the copy and add its cost (like the navy BPC).
+    # False = the builder is handed a copy at ``bpc_me``/``bpc_te``.
+    include_invention: bool = True
+    invention_decryptor: str = "auto"
+    invention_source_type_id: Optional[int] = None
+    bpc_me: Optional[float] = None
+    bpc_te: Optional[float] = None
     isk_per_lp: Optional[float] = None
     use_production_lp: bool = True
     input_freight: FreightOptions = Field(
@@ -176,6 +184,7 @@ class PlanCostOptions(BaseModel):
                 "output_freight": FreightOptions.red_frog_jita_amo(),
                 "sales_tax": SalesTaxOptions.accounting_v(),
                 "include_navy_bpc": False,
+                "include_invention": False,
                 **kwargs,
             }
         )
@@ -205,7 +214,7 @@ class ItemPlanCost(BaseModel):
 
     type_id: int
     name: str
-    kind: str = ""  # "Navy" | "T1" | ""
+    kind: str = ""  # "Navy" | "T1" | "T2" | "T3" | ""
     output_quantity: int = 1
     materials_jita_sell_isk: int = 0
     manufacturing_job_costs_isk: int = 0
@@ -216,8 +225,13 @@ class ItemPlanCost(BaseModel):
     reprocessing_tax_isk: int = 0
     taxes_isk: int = 0
     navy_bpc_isk: int = 0
+    # Expected cost of inventing the root's copies (T2/T3): datacores,
+    # decryptors and relics, plus invention and copy job installs.
+    invention_isk: int = 0
+    invention_materials_isk: int = 0
+    invention_job_costs_isk: int = 0
     input_freight: FreightCost = Field(default_factory=FreightCost)
-    # Materials + jobs + taxes + input freight (excludes navy BPC).
+    # Materials + jobs + taxes + input freight (excludes navy BPC/invention).
     manufacturing_isk: int = 0
     grand_total_isk: int = 0
     per_unit_isk: float = 0.0
@@ -248,6 +262,9 @@ class ItemPlanCost(BaseModel):
             "freight_route_id": freight.route_id,
             "freight_route_label": freight.route_label,
             "navy_bpc_isk": self.navy_bpc_isk,
+            "invention_isk": self.invention_isk,
+            "invention_materials_isk": self.invention_materials_isk,
+            "invention_job_costs_isk": self.invention_job_costs_isk,
             "grand_total_isk": self.grand_total_isk,
             "per_unit_isk": self.per_unit_isk,
             "output_quantity": self.output_quantity,
@@ -410,9 +427,14 @@ def cost_build_plan(
     jita_sell_isk: int = 0,
     isk_per_lp: Optional[float] = None,
     note: Optional[str] = None,
+    include_invention: bool = True,
 ) -> ItemPlanCost:
     """
     Cost an existing ``BuildPlan`` (+ optional compressed Multibuy).
+
+    An invented root (``plan.invention`` set) adds the expected invention
+    cost to the grand total, outside ``manufacturing_isk``, like the navy
+    BPC. ``include_invention=False`` leaves it out.
 
     This is the shared core used by ``plan_item_cost`` and the planner
     endpoint (which already has a ``BuildPlan``).
@@ -421,6 +443,13 @@ def cost_build_plan(
     mfg_gross, rxn_gross, facility_tax_isk, scc_tax_isk = _job_tax_totals(plan)
     total_job_costs = mfg_gross + rxn_gross
     navy = max(int(navy_bpc_isk), 0)
+    invention_materials = 0
+    invention_jobs = 0
+    if include_invention and plan.invention is not None:
+        best = plan.invention.best
+        invention_materials = int(round(best.invention_materials_isk))
+        invention_jobs = int(round(best.invention_job_costs_isk))
+    invention = invention_materials + invention_jobs
 
     type_qtys: Optional[List[Tuple[int, int]]] = None
     named_qtys: Optional[Dict[str, int]] = None
@@ -459,7 +488,7 @@ def cost_build_plan(
     manufacturing_isk = (
         materials_isk + total_job_costs + taxes_isk + freight.isk
     )
-    grand_total = manufacturing_isk + navy
+    grand_total = manufacturing_isk + navy + invention
     output_qty = max(int(plan.quantity), 1)
     per_unit = grand_total / output_qty
     cost_per = int(round(grand_total / output_qty))
@@ -526,6 +555,21 @@ def cost_build_plan(
                     amount_isk=navy,
                 )
             )
+        if invention > 0:
+            line_items.extend(
+                [
+                    CostLineItemModel(
+                        key="invention_materials",
+                        label="Invention: datacores, decryptors, relics",
+                        amount_isk=invention_materials,
+                    ),
+                    CostLineItemModel(
+                        key="invention_jobs",
+                        label="Invention + copy job installs",
+                        amount_isk=invention_jobs,
+                    ),
+                ]
+            )
 
     resolved_type_id = int(
         type_id if type_id is not None else plan.product_type_id
@@ -546,6 +590,9 @@ def cost_build_plan(
         reprocessing_tax_isk=reprocessing_tax_isk,
         taxes_isk=taxes_isk,
         navy_bpc_isk=navy,
+        invention_isk=invention,
+        invention_materials_isk=invention_materials,
+        invention_job_costs_isk=invention_jobs,
         input_freight=freight,
         manufacturing_isk=manufacturing_isk,
         grand_total_isk=grand_total,
@@ -637,6 +684,17 @@ def plan_item_cost(
     bom_type_id, bpc_override, note = bom_and_bpc_overrides(resolved_id)
     is_navy = is_faction_navy_hull(eve_type)
     kind = "Navy" if is_navy else "T1"
+    # Lazy: cost_breakdown imports this module at load time.
+    from industry.helpers.invention_planner import (  # pylint: disable=import-outside-toplevel
+        InventionRequest,
+        invention_outcomes,
+        plan_invented_build,
+        tech_kind,
+    )
+
+    outcomes = [] if is_navy else invention_outcomes(bom_type_id)
+    if outcomes:
+        kind = tech_kind(outcomes)
 
     if bom_type_id != resolved_id:
         bom_eve = EveType.objects.filter(id=bom_type_id).first()
@@ -660,15 +718,42 @@ def plan_item_cost(
         else default_te / 100.0
     )
 
-    plan = plan_build(
-        plan_eve,
-        quantity=batch,
-        blueprint_me=me,
-        blueprint_te=te,
-        facility=opts.facility,
-        build_fuel_blocks=opts.build_fuel_blocks,
-        exclude_type_ids=list(opts.exclude_type_ids or []),
-    )
+    plan_kwargs = {
+        "quantity": batch,
+        "blueprint_me": me,
+        "blueprint_te": te,
+        "facility": opts.facility,
+        "build_fuel_blocks": opts.build_fuel_blocks,
+        "exclude_type_ids": list(opts.exclude_type_ids or []),
+    }
+    if outcomes and opts.include_invention:
+        plan = plan_invented_build(
+            plan_eve,
+            request=InventionRequest(
+                decryptor=opts.invention_decryptor,
+                source_type_id=opts.invention_source_type_id,
+            ),
+            **plan_kwargs,
+        )
+    elif outcomes:
+        plan = plan_build(
+            plan_eve,
+            root_blueprint=RootBlueprint(
+                me=(
+                    float(opts.bpc_me)
+                    if opts.bpc_me is not None
+                    else BASE_COPY_ME / 100.0
+                ),
+                te=(
+                    float(opts.bpc_te)
+                    if opts.bpc_te is not None
+                    else BASE_COPY_TE / 100.0
+                ),
+            ),
+            **plan_kwargs,
+        )
+    else:
+        plan = plan_build(plan_eve, **plan_kwargs)
 
     requested_lp: Optional[float] = None
     navy_isk = 0

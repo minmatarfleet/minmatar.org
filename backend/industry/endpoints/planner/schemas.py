@@ -62,6 +62,9 @@ class JobClassBonusSchema(Schema):
 class CostIndicesSchema(Schema):
     manufacturing: float
     reaction: float
+    # Science indices (invention + copying). Omitted where not looked up.
+    invention: Optional[float] = None
+    copying: Optional[float] = None
 
 
 class FacilityDetailSchema(FacilitySummarySchema):
@@ -77,6 +80,12 @@ class SystemIndustrySchema(Schema):
     facility: Optional[FacilitySummarySchema] = None
     cost_indices: CostIndicesSchema
     indices_from_esi: bool
+
+
+class PlanInventionSkillsSchema(Schema):
+    science_1: int = 5
+    science_2: int = 5
+    encryption: int = 4
 
 
 class PlanRequestSchema(Schema):
@@ -105,6 +114,17 @@ class PlanRequestSchema(Schema):
     # Cap each job at this many runs (blueprint copy limit). Omit for one job.
     # Materials and install cost are rounded per job, then summed.
     max_runs_per_job: Optional[int] = None
+    # T2/T3 products only. "invent" (default) prices inventing the copy;
+    # "supplied_bpc" builds from a copy you already have at bpc_me/bpc_te.
+    # blueprint_me/te stay the BPOs for the rest of the tree.
+    blueprint_source: Optional[str] = None
+    # "auto" (cheapest per unit, default), "none", or a decryptor type id.
+    decryptor: Optional[str] = None
+    # Pick the T1 blueprint or relic grade to invent from (default cheapest).
+    invention_source_type_id: Optional[int] = None
+    bpc_me: Optional[float] = None
+    bpc_te: Optional[float] = None
+    invention_skills: Optional[PlanInventionSkillsSchema] = None
 
 
 class PlanProductSchema(Schema):
@@ -231,6 +251,73 @@ class PlanCostLineItemSchema(Schema):
     amount_isk: int
 
 
+class PlanInventionInputSchema(Schema):
+    type_id: int
+    name: str
+    quantity_per_attempt: int
+    unit_price: float
+    # Expected use (fractional) vs whole attempts to buy for.
+    expected_quantity: float
+    buy_quantity: int
+
+
+class PlanInventionOptionSchema(Schema):
+    source_type_id: int
+    source_name: str
+    source_kind: str
+    decryptor_type_id: Optional[int] = None
+    decryptor_name: str
+    chance: float
+    runs_per_copy: int
+    copy_me: int
+    copy_te: int
+    invention_per_unit_isk: float
+    # Invention plus the root build job, per unit; the ranking key.
+    per_unit_isk: float
+
+
+class PlanInventionSchema(PlanInventionOptionSchema):
+    kind: str
+    units: int
+    runs_needed: int
+    copies_needed: float
+    expected_attempts: float
+    buy_attempts: int
+    attempts_p90: int
+    attempt_isk: float
+    invention_materials_isk: float
+    invention_job_costs_isk: float
+    invention_isk: float
+    science_seconds: float
+    inputs: List[PlanInventionInputSchema]
+    alternatives: List[PlanInventionOptionSchema]
+
+
+class PlannerInventionSourceSchema(Schema):
+    type_id: int
+    name: str
+    kind: str  # "t1_blueprint" | "relic"
+    base_chance: float
+    runs: int
+
+
+class PlannerDecryptorSchema(Schema):
+    type_id: int
+    name: str
+    probability_multiplier: float
+    runs_modifier: int
+    me_modifier: int
+    te_modifier: int
+
+
+class PlannerInventionInfoSchema(Schema):
+    type_id: int
+    name: str
+    kind: str  # "T2" | "T3"
+    sources: List[PlannerInventionSourceSchema]
+    decryptors: List[PlannerDecryptorSchema]
+
+
 class PlanCostBreakdownSchema(Schema):
     materials_jita_sell_isk: int
     manufacturing_job_costs_isk: int
@@ -246,6 +333,9 @@ class PlanCostBreakdownSchema(Schema):
     freight_route_id: Optional[int] = None
     freight_route_label: Optional[str] = None
     navy_bpc_isk: int = 0
+    invention_isk: int = 0
+    invention_materials_isk: int = 0
+    invention_job_costs_isk: int = 0
     grand_total_isk: int
     per_unit_isk: float
     output_quantity: int
@@ -283,6 +373,16 @@ class PlanResponseSchema(Schema):
     product: PlanProductSchema
     blueprint_me: float
     blueprint_te: float
+    # "bpo", "navy_bpc", "invent" or "supplied_bpc" for the root product.
+    blueprint_source: str = "bpo"
+    # Product-aware BPO defaults (percent) for the tree, so clients don't
+    # repeat the navy rule: 10/20, or 0/0 for faction hulls.
+    default_blueprint_me: float = 10.0
+    default_blueprint_te: float = 20.0
+    # ME/TE (percent) of the copy the root is built from, when it is one.
+    root_blueprint_me: Optional[float] = None
+    root_blueprint_te: Optional[float] = None
+    root_runs_per_copy: Optional[int] = None
     facility: str
     system_id: int
     manufacturing_index: float
@@ -298,6 +398,7 @@ class PlanResponseSchema(Schema):
     compressed_ore: Optional[PlanCompressedOreSchema] = None
     cost_breakdown: Optional[PlanCostBreakdownSchema] = None
     navy_bpc: Optional[PlanNavyBpcSchema] = None
+    invention: Optional[PlanInventionSchema] = None
     stock_applied: List[PlanStockAppliedSchema] = []
     stock_unresolved: List[str] = []
     # Every intermediate the product can use, whether ticked or not.

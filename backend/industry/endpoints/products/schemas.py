@@ -208,6 +208,30 @@ class ProductBuildMaterial(BaseModel):
     industry_product_id: Optional[int] = None
 
 
+class ProductBuildInventionSource(BaseModel):
+    type_id: int
+    name: str
+    kind: str  # "t1_blueprint" | "relic"
+    base_chance: float
+    runs: int
+    datacores: List[ProductBuildMaterial] = []
+
+
+class ProductBuildInvention(BaseModel):
+    """How the blueprint copy is invented (T2/T3 products only)."""
+
+    kind: str  # "T2" | "T3"
+    sources: List[ProductBuildInventionSource] = []
+    # Cheapest way for one unit at Amamake (None when it can't be priced).
+    decryptor_name: Optional[str] = None
+    source_name: Optional[str] = None
+    chance: Optional[float] = None
+    runs_per_copy: Optional[int] = None
+    copy_me: Optional[int] = None
+    copy_te: Optional[int] = None
+    cost_per_unit: Optional[float] = None
+
+
 class ProductBuild(BaseModel):
     """One run of the product's blueprint or reaction at average prices.
 
@@ -223,7 +247,11 @@ class ProductBuild(BaseModel):
     time_seconds: int = 0
     sell_price: Optional[float] = None
     material_cost: Optional[float] = None
-    # Run value minus materials; None unless every material has a price.
+    # Run value minus materials (and invention for T2/T3); None unless
+    # every material has a price.
     margin: Optional[float] = None
     prices_complete: bool = False
     materials: List[ProductBuildMaterial] = []
+    invention: Optional[ProductBuildInvention] = None
+    # Expected invention cost of one run's copies (T2/T3), in ISK.
+    invention_cost: Optional[float] = None
