@@ -75,6 +75,8 @@ export interface NewsletterVideo {
     cta: NewsletterCta
     /** Discord username to copy, shown under the text. */
     copy_username?: { label: string; username: string }
+    /** Not published yet: no link, play badge or buttons, and a Placeholder tag. */
+    placeholder?: boolean
 }
 
 export interface NewsletterStat {
@@ -123,6 +125,12 @@ interface NewsletterSectionBase {
 
 export interface NewsletterFeatureSection extends NewsletterSectionBase {
     kind: 'feature'
+    /**
+     * split: screenshot beside the list (split-reverse puts it on the right).
+     * story: panel beside the list, then the screenshots full width.
+     * wide: screenshots full width, then the list in a row of columns.
+     */
+    layout?: 'split' | 'split-reverse' | 'story' | 'wide'
     lede?: string
     panel?: NewsletterPanel
     callout?: NewsletterCallout
