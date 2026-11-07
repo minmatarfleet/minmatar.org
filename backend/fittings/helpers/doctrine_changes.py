@@ -17,8 +17,8 @@ from fittings.models import (
 )
 from fittings.helpers.permissions import (
     can_propose_doctrine_change,
-    protection_tier_for_doctrine,
-    protection_tier_for_doctrine_type,
+    doctrine_change_tier,
+    tier_covers,
 )
 
 
@@ -27,6 +27,7 @@ def build_doctrine_payload_from_form(cleaned_data) -> dict:
         "name": cleaned_data["name"],
         "type": cleaned_data["type"],
         "description": cleaned_data["description"],
+        "retired": bool(cleaned_data.get("retired")),
         "composition": {
             role: sorted(
                 f.pk for f in cleaned_data.get(f"{role}_fittings", [])
@@ -45,12 +46,21 @@ def _normalized_composition(comp: dict) -> dict:
     }
 
 
+def _retired_changed(doctrine: EveDoctrine, payload: dict) -> bool:
+    # Payloads from before retiring existed carry no key: keep the state.
+    if "retired" not in payload:
+        return False
+    return bool(payload["retired"]) != doctrine.retired
+
+
 def doctrine_state_changed(doctrine: EveDoctrine, payload: dict) -> bool:
     if (doctrine.name, doctrine.type, doctrine.description) != (
         payload["name"],
         payload["type"],
         payload["description"],
     ):
+        return True
+    if _retired_changed(doctrine, payload):
         return True
     if _normalized_composition(
         composition_snapshot_for_doctrine(doctrine)
@@ -63,30 +73,55 @@ def doctrine_state_changed(doctrine: EveDoctrine, payload: dict) -> bool:
     return False
 
 
+def _stored_doctrine(doctrine: EveDoctrine) -> EveDoctrine | None:
+    """
+    The saved row. The admin hands over an instance that already carries
+    the form's values, so history and tiers must read the database.
+    """
+    if not doctrine.pk:
+        return None
+    return EveDoctrine.objects.filter(pk=doctrine.pk).first()
+
+
 def _write_doctrine_history_if_needed(doctrine: EveDoctrine, payload: dict):
-    if not doctrine.pk or not doctrine.latest_version:
+    stored = _stored_doctrine(doctrine)
+    if stored is None or not stored.latest_version:
         return
-    if not doctrine_state_changed(doctrine, payload):
+    if not doctrine_state_changed(stored, payload):
         return
     EveDoctrineHistory.objects.create(
-        doctrine=doctrine,
-        superseded_version_id=doctrine.latest_version,
-        name=doctrine.name,
-        type=doctrine.type,
-        description=doctrine.description,
-        composition=composition_snapshot_for_doctrine(doctrine),
-        location_ids=location_ids_for_doctrine(doctrine),
+        doctrine=stored,
+        superseded_version_id=stored.latest_version,
+        name=stored.name,
+        type=stored.type,
+        description=stored.description,
+        composition=composition_snapshot_for_doctrine(stored),
+        location_ids=location_ids_for_doctrine(stored),
     )
     doctrine.latest_version = str(uuid.uuid4())
 
 
-def validate_payload_matches_request_tier(payload: dict, tier: str) -> None:
-    """Ensure approved payload cannot downgrade protection tier (SEC-2)."""
-    payload_tier = protection_tier_for_doctrine_type(payload.get("type", ""))
-    if payload_tier != tier:
+def change_tier_for(doctrine: EveDoctrine, payload: dict) -> str | None:
+    """Review tier for applying payload to doctrine (None = applies now)."""
+    stored = _stored_doctrine(doctrine)
+    return doctrine_change_tier(
+        stored.type if stored else None, payload.get("type", "")
+    )
+
+
+def validate_payload_matches_request_tier(
+    doctrine: EveDoctrine, payload: dict, tier: str
+) -> None:
+    """
+    A request can only be approved at a tier that covers both the live type
+    and the proposed one (SEC-2): a lower-tier approver never publishes a
+    change to, or out of, a more protected category.
+    """
+    needed = change_tier_for(doctrine, payload)
+    if not tier_covers(tier, needed):
         raise ValueError(
-            f"Payload doctrine type '{payload.get('type')}' does not match "
-            f"request tier '{tier}'."
+            f"Payload doctrine type '{payload.get('type')}' needs a "
+            f"'{needed}' review, not '{tier}'."
         )
 
 
@@ -105,6 +140,11 @@ def apply_doctrine_payload(doctrine: EveDoctrine, payload: dict):
     doctrine.name = payload["name"]
     doctrine.type = payload["type"]
     doctrine.description = payload["description"]
+    if "retired" in payload:
+        if payload["retired"] and doctrine.retired_at is None:
+            doctrine.retired_at = timezone.now()
+        elif not payload["retired"]:
+            doctrine.retired_at = None
     if not doctrine.latest_version:
         doctrine.latest_version = str(uuid.uuid4())
     doctrine.save_without_versioning()
@@ -149,7 +189,7 @@ def submit_doctrine_change_request(
     ensure_doctrine_row: bool = False,
     note: str = "",
 ) -> EveDoctrineChangeRequest | None:
-    tier = protection_tier_for_doctrine(doctrine)
+    tier = change_tier_for(doctrine, payload)
     if tier is None:
         apply_doctrine_payload(doctrine, payload)
         return None
@@ -195,7 +235,7 @@ def approve_doctrine_change_request(
     )
     _require_pending_change_request(change_request)
     validate_payload_matches_request_tier(
-        change_request.payload, change_request.tier
+        change_request.doctrine, change_request.payload, change_request.tier
     )
     apply_doctrine_payload(change_request.doctrine, change_request.payload)
     change_request.status = ChangeRequestStatus.APPROVED

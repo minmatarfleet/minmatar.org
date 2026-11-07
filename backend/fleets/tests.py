@@ -698,6 +698,52 @@ class FleetRouterTestCase(TestCase):
         refresh_mock.assert_called_once()
         self.assertEqual(fleet.id, refresh_mock.call_args[0][0].id)
 
+    def test_retired_doctrine_cannot_be_picked(self):
+        setup_fc(self.user)
+        self.user.is_superuser = True
+        self.user.save()
+        retired = EveDoctrine.objects.create(
+            name="Old Doctrine",
+            type="non_strategic",
+            description="",
+            retired_at=timezone.now(),
+        )
+        audience = EveFleetAudience.objects.first()
+        response = self.client.post(
+            f"{BASE_URL}",
+            {
+                "type": "training",
+                "description": "Test fleet",
+                "start_time": timezone.now().isoformat(),
+                "audience_id": audience.id,
+                "doctrine_id": retired.id,
+            },
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code, response.content)
+        self.assertIn("retired", response.json()["detail"])
+
+        fleet = make_test_fleet("Test fleet", self.user)
+        response = self.client.patch(
+            f"{BASE_URL}/{fleet.id}",
+            {"doctrine_id": retired.id},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code, response.content)
+
+        # A fleet already on it keeps it when the form is saved again.
+        fleet.doctrine = retired
+        fleet.save()
+        response = self.client.patch(
+            f"{BASE_URL}/{fleet.id}",
+            {"doctrine_id": retired.id, "description": "Re-saved"},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code, response.content)
+
     def test_fixup_fleet_status(self):
         self.assertEqual(None, fixup_fleet_status(None, None))
         fleet = make_test_fleet("Test", self.user)

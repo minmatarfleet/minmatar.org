@@ -12,13 +12,10 @@ from fittings.helpers.change_request_api import (
     serialize_request,
 )
 from fittings.helpers.doctrine_changes import (
+    change_tier_for,
     doctrine_state_changed,
     pending_doctrine_request_exists,
     submit_doctrine_change_request,
-)
-from fittings.helpers.permissions import (
-    protection_tier_for_doctrine,
-    protection_tier_for_doctrine_type,
 )
 from fittings.models import (
     DOCTRINE_FITTING_ROLES,
@@ -50,6 +47,9 @@ def _doctrine_payload(doctrine: EveDoctrine, body: DoctrineChangeRequestBody):
         "name": body.name.strip(),
         "type": body.type,
         "description": body.description,
+        "retired": (
+            doctrine.retired if body.retired is None else body.retired
+        ),
         "composition": composition,
         "location_ids": location_ids_for_doctrine(doctrine),
     }
@@ -60,10 +60,6 @@ def _validation_problem(doctrine: EveDoctrine, proposed: dict) -> str | None:
         return "Name is required."
     if proposed["type"] not in dict(EveDoctrine.type_choices):
         return "Unknown doctrine type."
-    if protection_tier_for_doctrine_type(
-        proposed["type"]
-    ) != protection_tier_for_doctrine(doctrine):
-        return "The doctrine type cannot move between protection tiers here."
     taken = EveDoctrine.objects.filter(name=proposed["name"])
     if taken.exclude(pk=doctrine.pk).exists():
         return "A doctrine with that name already exists."
@@ -92,8 +88,8 @@ def post_doctrine_change_request(
     diffs = doctrine_diffs(doctrine, proposed)
     if payload.preview:
         return {"diffs": diffs}
-    if protection_tier_for_doctrine(
-        doctrine
+    if change_tier_for(
+        doctrine, proposed
     ) is not None and pending_doctrine_request_exists(doctrine):
         return 409, {"detail": "A pending change request already exists."}
     try:

@@ -42,6 +42,9 @@ const ROLE_LABELS:Record<DoctrineRole, string> = {
     capitals: t('doctrine_changes.role_capitals'),
 }
 
+import { doctrine_types } from '@dtypes/layout_components'
+const TYPE_LABELS:Record<string, string> = Object.fromEntries(doctrine_types.map((type) => [type, t(type)]))
+
 interface ChangeRow {
     ship_id: number | null
     name:    string
@@ -52,6 +55,7 @@ interface ChangeRow {
 let error_message:string | false = false
 let rows:ChangeRow[] = []
 let doctrine:Doctrine | null = null
+let proposed_type = ''
 
 if (Astro.request.method === 'POST') {
     try {
@@ -69,9 +73,13 @@ if (Astro.request.method === 'POST') {
             name: String(form.get('name') ?? ''),
             type: String(form.get('type') ?? ''),
             description: String(form.get('description') ?? ''),
+            // Absent (an older page) keeps the doctrine's current state.
+            ...(form.has('retired') ? { retired: form.get('retired') === 'true' } : {}),
             composition,
             note: String(form.get('note') ?? ''),
         }
+
+        proposed_type = body.type
 
         if (intent === 'submit') {
             await submit_doctrine_change(auth_token as string, doctrine_id, { ...body, preview: false })
@@ -96,6 +104,15 @@ if (Astro.request.method === 'POST') {
             rows.push({ ship_id: null, name: t('doctrine_changes.name'), what: body.name.trim(), kind: 'detail' })
         if (body.description !== live.description)
             rows.push({ ship_id: null, name: t('doctrine_changes.description'), what: t('doctrine_changes.edited'), kind: 'detail' })
+        if (body.type !== live.type)
+            rows.push({ ship_id: null, name: t('doctrine_changes.category'), what: TYPE_LABELS[body.type] ?? body.type, kind: 'detail' })
+        if ('retired' in body && body.retired !== live.retired)
+            rows.push({
+                ship_id: null,
+                name: t('doctrine_changes.retired'),
+                what: body.retired ? t('doctrine_changes.retire_row') : t('doctrine_changes.restore_row'),
+                kind: 'detail',
+            })
 
         for (const change of composition_changes(current, composition)) {
             const fitting = by_id.get(change.fitting_id)
@@ -112,10 +129,12 @@ if (Astro.request.method === 'POST') {
 }
 
 const FORM_PARTIAL_URL = translatePath(`/partials/doctrine_change_form_component/?doctrine_id=${doctrine_id}`)
-const doctrine_type = String(doctrine?.type ?? '')
-const reviewer_line = doctrine_type === 'experimental'
+// A category move is reviewed at the stricter of the live and new category.
+const review_tier = (type:string) => type === 'experimental' ? 0 : type === 'non_strategic' ? 1 : 2
+const tier = Math.max(review_tier(String(doctrine?.type ?? '')), review_tier(proposed_type))
+const reviewer_line = tier === 0
     ? t('doctrine_changes.applies_now')
-    : doctrine_type === 'non_strategic'
+    : tier === 1
     ? t('doctrine_changes.reviewer_non_strategic')
     : t('doctrine_changes.reviewer_strategic')
 const title = (rows.length === 1 ? t('doctrine_changes.send_title_one') : t('doctrine_changes.send_title'))

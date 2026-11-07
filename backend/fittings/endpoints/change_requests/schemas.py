@@ -63,6 +63,8 @@ class DoctrineChangeRequestBody(BaseModel):
     type: str
     description: str
     composition: DoctrineCompositionRequest
+    # None keeps the doctrine's current state (older clients send nothing).
+    retired: bool | None = None
     note: str = ""
     preview: bool = False
 

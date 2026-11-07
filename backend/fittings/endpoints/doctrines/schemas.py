@@ -22,6 +22,8 @@ class DoctrineResponse(BaseModel):
     capitals_fittings: List[FittingResponse]
     sig_ids: List[int]
     location_ids: List[int]
+    retired: bool = False
+    retired_at: datetime | None = None
 
 
 class DoctrineFittingResponse(BaseModel):

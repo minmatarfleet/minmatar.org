@@ -10972,6 +10972,17 @@
             "title": "Preview",
             "type": "boolean"
           },
+          "retired": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retired"
+          },
           "type": {
             "title": "Type",
             "type": "string"
@@ -11114,6 +11125,23 @@
             },
             "title": "Primary Fittings",
             "type": "array"
+          },
+          "retired": {
+            "default": false,
+            "title": "Retired",
+            "type": "boolean"
+          },
+          "retired_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retired At"
           },
           "secondary_fittings": {
             "items": {
@@ -51873,7 +51901,18 @@
     "/api/doctrines/": {
       "get": {
         "operationId": "fittings_endpoints_doctrines_get_doctrines_get_doctrines",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_retired",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Retired",
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {

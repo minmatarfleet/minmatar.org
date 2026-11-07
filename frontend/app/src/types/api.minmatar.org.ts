@@ -865,6 +865,8 @@ export interface Doctrine {
     capitals_fittings?: Fitting[];
     sig_ids:            number[];
     location_ids:       number[];
+    retired?:           boolean;
+    retired_at?:        string | null;
 }
 
 export const fleet_status = ['active', 'upcoming', 'recent'] as const

@@ -700,6 +700,13 @@ class EveDoctrine(models.Model):
     description = models.TextField()
     locations = models.ManyToManyField(EveLocation, blank=True)
     latest_version = models.CharField(max_length=255, blank=True)
+    # Retired doctrines drop out of the doctrine list and fleet pickers but
+    # keep their page, so past fleets still link somewhere.
+    retired_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def retired(self) -> bool:
+        return self.retired_at is not None
 
     class Meta:
         permissions = [

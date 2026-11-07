@@ -7,6 +7,7 @@ from app.test import TestCase
 from app.testing import make_token
 from fittings.models import (
     DOCTRINE_TYPE_EXPERIMENTAL,
+    DOCTRINE_TYPE_NON_STRATEGIC,
     DOCTRINE_TYPE_STRATEGIC,
     ChangeRequestStatus,
     EveDoctrine,
@@ -317,7 +318,6 @@ class ChangeRequestApiTestCase(TestCase):
         unknown_fit = self._doctrine_body()
         unknown_fit["composition"]["support"] = [99999]
         cases = {
-            "tier move": self._doctrine_body(type=DOCTRINE_TYPE_EXPERIMENTAL),
             "unknown type": self._doctrine_body(type="weird"),
             "unknown fitting": unknown_fit,
             "no change": self._doctrine_body(
@@ -349,3 +349,67 @@ class ChangeRequestApiTestCase(TestCase):
             "/api/change-requests/?status=all", **self._auth()
         )
         self.assertEqual(1, len(history.json()))
+
+    def test_change_category_across_tiers(self):
+        self._grant("change_doctrine_strategic")
+        response = self._post(
+            f"doctrines/{self.strategic.id}/change-requests",
+            self._doctrine_body(type=DOCTRINE_TYPE_EXPERIMENTAL),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        request = response.json()["request"]
+        self.assertEqual("strategic", request["tier"])
+        type_diff = next(d for d in request["diffs"] if d["field"] == "type")
+        self.assertIn(
+            "Experimental", [line["text"] for line in type_diff["lines"]]
+        )
+        self.strategic.refresh_from_db()
+        self.assertEqual(DOCTRINE_TYPE_STRATEGIC, self.strategic.type)
+
+    def test_leaving_experimental_is_reviewed(self):
+        self._grant("change_doctrine_non_strategic")
+        experimental = EveDoctrine.objects.create(
+            name="Exp", type=DOCTRINE_TYPE_EXPERIMENTAL, description="d"
+        )
+        response = self._post(
+            f"doctrines/{experimental.id}/change-requests",
+            self._doctrine_body(name="Exp", type=DOCTRINE_TYPE_NON_STRATEGIC),
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        # Leaving Experimental for a reviewed category is itself reviewed.
+        self.assertEqual("non_strategic", response.json()["request"]["tier"])
+        experimental.refresh_from_db()
+        self.assertEqual(DOCTRINE_TYPE_EXPERIMENTAL, experimental.type)
+
+    def test_retire_experimental_doctrine(self):
+        self._grant("change_doctrine_strategic")
+        experimental = EveDoctrine.objects.create(
+            name="Exp", type=DOCTRINE_TYPE_EXPERIMENTAL, description="d"
+        )
+        path = f"doctrines/{experimental.id}/change-requests"
+        body = self._doctrine_body(
+            name="Exp", type=DOCTRINE_TYPE_EXPERIMENTAL, retired=True
+        )
+        body["composition"] = {"primary": [], "secondary": []}
+        response = self._post(path, body)
+        self.assertEqual(200, response.status_code, response.content)
+        self.assertTrue(response.json()["applied"])
+        experimental.refresh_from_db()
+        self.assertTrue(experimental.retired)
+
+        listed = self.client.get("/api/doctrines/").json()
+        self.assertNotIn(experimental.id, [d["id"] for d in listed])
+        everything = self.client.get(
+            "/api/doctrines/?include_retired=true"
+        ).json()
+        row = next(d for d in everything if d["id"] == experimental.id)
+        self.assertTrue(row["retired"])
+        single = self.client.get(f"/api/doctrines/{experimental.id}").json()
+        self.assertTrue(single["retired"])
+
+        # Leaving retired out keeps it retired (older clients).
+        body.pop("retired")
+        body["description"] = "edited"
+        self._post(path, body)
+        experimental.refresh_from_db()
+        self.assertTrue(experimental.retired)

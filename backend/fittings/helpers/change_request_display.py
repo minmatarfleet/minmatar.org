@@ -396,6 +396,14 @@ def format_doctrine_change_request_html(change_request) -> str:
             _doctrine_type_label(payload.get("type", "")),
         ),
     ]
+    if "retired" in payload:
+        rows.append(
+            (
+                "Status",
+                "Retired" if doctrine.retired else "Active",
+                "Retired" if payload["retired"] else "Active",
+            )
+        )
 
     table_rows = []
     for label, current, proposed in rows:

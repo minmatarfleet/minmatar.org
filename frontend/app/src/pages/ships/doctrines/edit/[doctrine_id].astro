@@ -31,6 +31,7 @@ import { get_change_requests } from '@helpers/api.minmatar.org/doctrine_changes'
 import { get_ships_type } from '@helpers/sde/ships'
 import { get_type_names } from '@helpers/sde/items'
 import { is_capital_group } from '@helpers/ship_groups'
+import { doctrine_types } from '@dtypes/layout_components'
 
 const doctrine_id = parseInt(Astro.params.doctrine_id ?? '0')
 
@@ -135,8 +136,12 @@ const editor_state = {
     picks: structuredClone(initial),
     name0: doctrine?.name ?? '',
     description0: doctrine?.description ?? '',
+    type0: doctrine?.type ?? '',
+    retired0: doctrine?.retired ?? false,
     name: doctrine?.name ?? '',
     description: doctrine?.description ?? '',
+    type: doctrine?.type ?? '',
+    retired: doctrine?.retired ?? false,
     query: '',
     add_as: 'primary',
     filter: 'all',
@@ -192,12 +197,16 @@ const editor_methods = `
             if (this.roles.some((role) => this.has(role, id) !== this.was(role, id))) count += 1
         if (this.name.trim() !== this.name0) count += 1
         if (this.description !== this.description0) count += 1
+        if (this.type !== this.type0) count += 1
+        if (this.retired !== this.retired0) count += 1
         return count
     },
     discard() {
         this.picks = JSON.parse(JSON.stringify(this.initial))
         this.name = this.name0
         this.description = this.description0
+        this.type = this.type0
+        this.retired = this.retired0
     },
     open_review() {
         this.review_open = true
@@ -225,6 +234,8 @@ import Dialog from '@components/blocks/Dialog.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 
 const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doctrine.name}` : ''}`
@@ -323,7 +334,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
             :
             <form id="doctrine-form" x-data={x_data} x-on:submit.prevent>
                 <Flexblock gap="var(--space-m)">
-                    <input type="hidden" name="type" value={doctrine.type} />
+                    <input type="hidden" name="retired" x-bind:value="retired ? 'true' : 'false'" />
 
                     <ComponentBlock>
                         <Flexblock gap="var(--space-s)">
@@ -336,6 +347,21 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                 <label for="description">{t('doctrine_changes.description')}</label>
                                 <Textarea id="description" name="description" rows="3" x-model="description"></Textarea>
                             </Flexblock>
+                            <Flexblock gap="var(--space-3xs)">
+                                <label for="type">{t('doctrine_changes.category')}</label>
+                                <Select id="type" name="type" x-model="type">
+                                    {doctrine_types.map((type) =>
+                                        <option value={type} selected={type === String(doctrine.type)}>{t(type)}</option>
+                                    )}
+                                </Select>
+                                <small class="[ doctrine-muted ]" x-show="type !== type0" x-cloak>{t('doctrine_changes.category_hint')}</small>
+                            </Flexblock>
+                            <Switch x-model="retired">
+                                <Flexblock gap="0">
+                                    <span>{t('doctrine_changes.retired')}</span>
+                                    <small class="[ doctrine-muted ]">{t('doctrine_changes.retired_hint')}</small>
+                                </Flexblock>
+                            </Switch>
                         </Flexblock>
                     </ComponentBlock>
 
