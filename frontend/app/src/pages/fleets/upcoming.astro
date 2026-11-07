@@ -20,22 +20,17 @@ if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
 import type { Alert } from '@dtypes/layout_components'
-import { fetch_fleet_schedule, type FleetSchedule as FleetScheduleData } from '@helpers/fetching/fleet_schedule'
 import { parse_host_filter } from '@helpers/fleet_hosts'
 
 const host_filter = parse_host_filter(Astro.url.searchParams.get('host'))
 
-let fetch_fleets_error: Error | false = false
-let schedule: FleetScheduleData | null = null
+import { get_audiences } from '@helpers/api.minmatar.org/fleets'
+import type { Audience } from '@dtypes/api.minmatar.org'
 
-try {
-    schedule = await fetch_fleet_schedule(auth_token as string, host_filter)
-} catch (error) {
-    fetch_fleets_error = error
-}
-
-const fleets = schedule?.fleets ?? []
-const active_fleets = schedule?.live ?? []
+// Audiences are only used by the flash-form button, which only fleet creators
+// see, so nobody else waits for them.
+const audiences_promise = can_add_fleets ? get_audiences(auth_token as string) : null
+audiences_promise?.catch(() => null)
 
 const flash_form_error = Astro.cookies.has('flash_form_error') ? Astro.cookies.get('flash_form_error')?.value : false
 if (Astro.cookies.has('flash_form_error')) Astro.cookies.delete('flash_form_error', { path: '/' })
@@ -45,18 +40,18 @@ const alert = !flash_form_error ? false : {
     content: flash_form_error
 } as Alert
 
-import { get_audiences } from '@helpers/api.minmatar.org/fleets'
-import type { Audience } from '@dtypes/api.minmatar.org'
 let audiences:Audience[] = []
 let fetch_audiences_error: Error | false = false
 
 try {
-    audiences = await get_audiences(auth_token as string)
+    audiences = audiences_promise ? await audiences_promise : []
 } catch (error) {
     fetch_audiences_error = error
 }
 
-const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
+// The schedule loads after the page, behind a skeleton: the shell no longer
+// waits for it. The partial also fades the cover to a live fleet's location.
+const SCHEDULE_PARTIAL_URL = translatePath(`/partials/upcoming_fleets_initial_component/${host_filter !== 'all' ? `?host=${host_filter}` : ''}`)
 
 const AUTH_REDIRECT_URL = login_url(Astro)
 
@@ -66,17 +61,9 @@ const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) 
         'AUTH_LINK', AUTH_REDIRECT_URL
     )
 
-import {
-    get_location_video_cover,
-    get_location_video_cover_thumb,
-    get_location_cover,
-    get_location_cover_990,
-} from '@helpers/covers'
-
-
-const is_video_cover = active_fleets.length > 0 ?
-    Boolean(get_location_video_cover(active_fleets[0]?.location ?? '')) :
-    false
+// The default cover; when a fleet is live, the schedule partial fades it to
+// that fleet's location cover once the list has loaded.
+const DEFAULT_COVER = '/images/fleets-cover.jpg'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -88,9 +75,9 @@ import PageActions from '@components/page/PageActions.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import FleetSchedule from '@components/blocks/FleetSchedule.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
+import FleetScheduleSkeleton from '@components/blocks/FleetScheduleSkeleton.astro';
 import Button from '@components/blocks/Button.astro';
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 import FlashFormButton from '@components/blocks/FlashFormButton.astro'
 import UpcomingFleetsUpdater from '@components/blocks/UpcomingFleetsUpdater.astro'
@@ -112,18 +99,18 @@ const page_title = t('fleets.upcoming.page_title');
 >
     <PageWide
         cover={{
-            video: get_location_video_cover(active_fleets[0]?.location ?? '') ?? undefined,
-            video_thumb: get_location_video_cover_thumb(active_fleets[0]?.location ?? '') ?? undefined,
-            image: get_location_cover(active_fleets[0]?.location ?? '') ?? '/images/fleets-cover.jpg',
-            image_990: get_location_cover_990(active_fleets[0]?.location ?? '') ?? '/images/fleets-cover.jpg',
+            video: undefined,
+            video_thumb: undefined,
+            image: DEFAULT_COVER,
+            image_990: DEFAULT_COVER,
             animated: false,
             scrollable: true,
             overlay: true,
-            align: is_video_cover ? 'right' : 'left',
+            align: 'left',
         }}
         x-data={`{
 			show_fc_ranking: false,
-            fleets_count: ${fleets.length},
+            fleets_count: 0,
         }`}
         breadcrumbs={[{
             accumulated_path: '/fleets/upcoming/',
@@ -154,21 +141,11 @@ const page_title = t('fleets.upcoming.page_title');
         <UpcomingFleetsUpdater
             id="upcoming-fleets"
             refresh_rate_seconds={240}
-            current_cover={get_location_cover(active_fleets[0]?.location ?? '') ?? '/images/fleets-cover.jpg'}
+            current_cover={DEFAULT_COVER}
         >
-            {fetch_fleets_error ?
-                <ErrorRefetch
-                    args={{
-                        partial: FLEET_LIST_PARTIAL_URL,
-                        error: fetch_fleets_error,
-                        delay: 0,
-                    }}
-                />
-                :
-                <FleetSchedule
-                    schedule={schedule as FleetScheduleData}
-                />
-            }
+            <LazyPartial url={SCHEDULE_PARTIAL_URL} swap="outerHTML">
+                <FleetScheduleSkeleton />
+            </LazyPartial>
         </UpcomingFleetsUpdater>
 	</PageWide>
 </Viewport>

@@ -6,6 +6,12 @@ import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
 import { login_url, status_page_rewrite } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
+import {
+    api_timing_enabled,
+    log_api_timing_on_finish,
+    new_api_timing_store,
+    run_with_api_timing,
+} from '@helpers/api_timing'
 
 const ONE_DAY_IN_MS = 24*60*60*1000
 
@@ -22,7 +28,7 @@ function should_rewrite_login_redirect(request: Request, response: Response): bo
     return is_auth_init_redirect(location, url.origin)
 }
 
-export const onRequest = async ({ locals, cookies, request, rewrite }, next) => {
+const handle_request = async ({ locals, cookies, request, rewrite }, next) => {
     const { t, translatePath } = i18n(new URL(request.url))
 
     locals.clientIP =
@@ -84,3 +90,18 @@ export const onRequest = async ({ locals, cookies, request, rewrite }, next) => 
 
     return response
 };
+
+/**
+ * With API_TIMING_LOG=1, every request runs inside an API timing store and
+ * logs its backend calls once the body has streamed (helpers/api_timing.ts).
+ */
+export const onRequest = async (context, next) => {
+    if (!api_timing_enabled())
+        return handle_request(context, next)
+
+    const store = new_api_timing_store()
+    const url = new URL(context.request.url)
+    const response = await run_with_api_timing(store, () => handle_request(context, next))
+
+    return log_api_timing_on_finish(response, context.request.method, `${url.pathname}${url.search}`, store)
+}

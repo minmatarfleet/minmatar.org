@@ -1,0 +1,131 @@
+---
+/**
+ * Loading state for FleetSchedule: the spotlight card for the next fleet, the
+ * fleet-type chips and two days of rows, at the sizes the schedule renders.
+ */
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    [propName: string]: any;
+}
+
+const attributes = { ...Astro.props }
+delete attributes.class
+
+const chip_widths = ['5rem', '9rem', '11rem', '9rem', '7rem']
+---
+
+<Flexblock gap='var(--space-l)' class:list={['[ fleet-schedule-skeleton ]', Astro.props.class]} aria-hidden="true" {...attributes}>
+    <section class="[ skel-spotlight ][ component ]">
+        <div class="[ skel skel-portrait ]"></div>
+        <Flexblock gap='var(--space-2xs)' class="[ skel-spotlight__time ]">
+            <div class="[ skel skel-line skel-line--short ]"></div>
+            <div class="[ skel skel-countdown ]"></div>
+            <div class="[ skel skel-line ]"></div>
+        </Flexblock>
+        <Flexblock gap='var(--space-2xs)' class="[ skel-spotlight__body ]">
+            <div class="[ skel skel-title ]"></div>
+            <div class="[ skel skel-line ]"></div>
+        </Flexblock>
+        <div class="[ skel skel-button ]"></div>
+    </section>
+
+    <FlexInline gap='var(--space-2xs)' class="[ skel-chips ]">
+        {chip_widths.map((width) => <div class="[ skel skel-chip ]" style={`width: ${width}`}></div>)}
+    </FlexInline>
+
+    {[0, 1].map(() =>
+        <Flexblock gap='var(--space-xs)'>
+            <div class="[ skel skel-day ]"></div>
+            <div class="[ skel skel-row ]"></div>
+        </Flexblock>
+    )}
+</Flexblock>
+
+<style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
+    .fleet-schedule-skeleton .skel {
+        border-radius: 2px;
+        @include skeleton.shimmer;
+    }
+
+    // FleetSpotlight: portrait, countdown, title and action in one row;
+    // stacked on phones.
+    .skel-spotlight {
+        display: grid;
+        grid-template-columns: auto minmax(0, 14rem) minmax(0, 1fr) 13rem;
+        align-items: center;
+        gap: var(--space-l);
+        min-height: 10.875rem;
+        padding: var(--space-m) var(--space-l);
+        border: 1px solid var(--border-color);
+
+        @media (max-width: 48rem) {
+            grid-template-columns: auto minmax(0, 1fr);
+            min-height: 17rem;
+            padding: var(--space-s);
+            gap: var(--space-s);
+        }
+    }
+
+    .skel-portrait {
+        width: 7rem;
+        aspect-ratio: 1;
+
+        @media (max-width: 48rem) {
+            width: 4.5rem;
+        }
+    }
+
+    .skel-spotlight__body,
+    .skel-button {
+        @media (max-width: 48rem) {
+            grid-column: 1 / -1;
+        }
+    }
+
+    .skel-line {
+        height: var(--step--1);
+        width: 100%;
+    }
+
+    .skel-line--short {
+        width: 60%;
+    }
+
+    .skel-countdown {
+        height: var(--step-3);
+        width: 80%;
+    }
+
+    .skel-title {
+        height: var(--step-4);
+        width: 50%;
+    }
+
+    .skel-button {
+        height: 4.125rem;
+    }
+
+    // The chips stay on one line; on phones the real row scrolls sideways.
+    .skel-chips {
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+
+    .skel-chip {
+        flex-shrink: 0;
+        height: 2.5rem;
+    }
+
+    .skel-day {
+        height: var(--step-1);
+        width: 14rem;
+    }
+
+    .skel-row {
+        height: 5.8rem;
+    }
+</style>

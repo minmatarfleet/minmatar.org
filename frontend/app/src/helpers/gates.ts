@@ -3,6 +3,8 @@ import type { GateSource, LedCorporation, UserGates } from '@dtypes/api.minmatar
 import { get_user_gates } from '@helpers/api.minmatar.org/gates'
 import { get_request_user } from '@helpers/request_user'
 import feature_gates from '@json/feature_gates.json'
+import { createHash } from 'node:crypto'
+import { create_memo_cache, ttl_ms_from_env } from '@helpers/memo_cache'
 
 /**
  * Site gates. Each gate names the pilot feature that owns it and the
@@ -82,13 +84,45 @@ export function get_gates(astro: AstroLike): Promise<GateContext> {
     return astro.locals[LOCALS_KEY]
 }
 
+/**
+ * The backend's gates response per token, shared across requests for
+ * GATES_CACHE_TTL_SECONDS (60 by default, 0 turns it off). A page and the
+ * partials it loads at the same time share one call. Only successful responses
+ * are cached. The backend still checks permissions on every API call, so a
+ * stale entry only affects what the site shows, for at most the TTL.
+ * See docs/auth/frontend-feature-gating.md.
+ */
+const gates_cache = create_memo_cache<UserGates>()
+let gates_cache_ttl_ms: number | null = null
+
+function gates_ttl_ms(): number {
+    if (gates_cache_ttl_ms === null)
+        gates_cache_ttl_ms = ttl_ms_from_env('GATES_CACHE_TTL_SECONDS', 60)
+    return gates_cache_ttl_ms
+}
+
+/** Tests: empty the cache. */
+export function clear_gates_cache() {
+    gates_cache.clear()
+}
+
+/** Tests: set the TTL in ms (null re-reads the env). */
+export function set_gates_cache_ttl(ttl_ms: number | null) {
+    gates_cache_ttl_ms = ttl_ms
+}
+
+function cached_user_gates(auth_token: string): Promise<UserGates> {
+    const key = createHash('sha256').update(auth_token).digest('hex')
+    return gates_cache.get(key, gates_ttl_ms(), () => get_user_gates(auth_token))
+}
+
 async function load_gates(astro: AstroLike): Promise<GateContext> {
     const { auth_token, user } = get_request_user(astro)
     if (!auth_token || !user) return ANONYMOUS_GATES
 
     let gates: UserGates | null = null
     try {
-        gates = await get_user_gates(auth_token)
+        gates = await cached_user_gates(auth_token)
     } catch (error) {
         // Same as the old profile fetch failing: no permissions, superuser
         // claim still honoured by legacy expressions.

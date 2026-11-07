@@ -1,0 +1,78 @@
+---
+/**
+ * Loading state for CampaignList: the same three sections, headings and card
+ * grid, with shimmering cards in place of the campaigns.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    [propName: string]: any;
+}
+
+const attributes = { ...Astro.props }
+delete attributes.class
+
+const sections = [
+    { title: t('campaigns.live_section_title'), cards: 2 },
+    { title: t('campaigns.upcoming_section_title'), cards: 0 },
+    { title: t('campaigns.past_section_title'), cards: 3 },
+]
+---
+
+<Flexblock gap='var(--space-2xl)' class:list={['[ campaign-list-skeleton ]', Astro.props.class]} aria-hidden="true" {...attributes}>
+    {sections.map((section) =>
+        <Flexblock gap='var(--space-m)'>
+            <h2>{section.title}</h2>
+            {section.cards === 0 ?
+                <div class="[ skel skel-line ]"></div>
+                :
+                <Grid
+                    class="grid-fill"
+                    min_item_width='18rem'
+                    row_gap='var(--space-m)'
+                    column_gap='var(--space-m)'
+                >
+                    {Array.from({ length: section.cards }, () => <div class="[ skel skel-card ]"></div>)}
+                </Grid>
+            }
+        </Flexblock>
+    )}
+</Flexblock>
+
+<style lang="scss">
+    @use '../../styles/mixins/skeleton';
+
+    h2 {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+
+    .campaign-list-skeleton .skel {
+        border-radius: 2px;
+        @include skeleton.shimmer;
+    }
+
+    // CampaignCard and CampaignPostCard render 3:4 in the 18rem grid; on
+    // phones they become a thumbnail row about 10rem tall.
+    .skel-card {
+        aspect-ratio: 3 / 4;
+        border: 1px solid var(--border-color);
+
+        @media (max-width: 48rem) {
+            aspect-ratio: auto;
+            height: 10rem;
+        }
+    }
+
+    .skel-line {
+        height: var(--step-0);
+        width: 16rem;
+        max-width: 100%;
+    }
+</style>

@@ -25,6 +25,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [architecture/celery-queues.md](architecture/celery-queues.md) | current | Celery queues and workers, task standards (dedupe, routing, fast lane), Sentry queue monitoring |
 | [architecture/cached-aggregates.md](architecture/cached-aggregates.md) | current | Heavy aggregates: computed by Celery, read from the cache (`CachedRollup`), Redis-tolerant |
 | [architecture/deploys.md](architecture/deploys.md) | current | Production deploys without downtime: `docker rollout`, the Traefik `edge` proxy, healthchecks, migration rules |
+| [architecture/nav-click-latency-plan.md](architecture/nav-click-latency-plan.md) | current | Faster nav clicks: gates cache, parallel backend calls, Campaigns and Fleets skeletons, and what was measured |
 | [market-pricing.md](market-pricing.md) | current | Which market price source to use where |
 | [industry/lp-buyback.md](industry/lp-buyback.md) | current | LP buyback orders: tiers, states, timers, Discord threads |
 | [capabilities/capability-engine-design.md](capabilities/capability-engine-design.md) | current | Character capability engine: computed skill requirements per doctrine fitting, the fit check, readiness, accounts, SDE updates |

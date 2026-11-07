@@ -13,6 +13,7 @@
  *   callers keep their `Error fetching fleet: ...` style messages.
  */
 import { parse_error_message } from '@helpers/string'
+import { start_api_timing } from '@helpers/api_timing'
 
 export type ApiToken = string | false | null | undefined
 
@@ -107,15 +108,25 @@ async function send(url:string, options:ApiOptions) {
 
     console.log(`Requesting ${method}: ${url}`)
 
-    const response = await fetch(url, {
-        method: method,
-        headers: { ...api_headers(options.token, options.content_type), ...options.headers },
-        ...(options.raw_body !== undefined ?
-            { body: options.raw_body } :
-            options.body !== undefined && { body: JSON.stringify(options.body) }
-        ),
-        ...(options.signal && { signal: options.signal }),
-    })
+    const record_timing = start_api_timing(url)
+
+    let response:Response
+    try {
+        response = await fetch(url, {
+            method: method,
+            headers: { ...api_headers(options.token, options.content_type), ...options.headers },
+            ...(options.raw_body !== undefined ?
+                { body: options.raw_body } :
+                options.body !== undefined && { body: JSON.stringify(options.body) }
+            ),
+            ...(options.signal && { signal: options.signal }),
+        })
+    } catch (error) {
+        record_timing(null)
+        throw error
+    }
+
+    record_timing(response.status)
 
     if (!response.ok && !options.allow?.includes(response.status)) {
         console.warn(`${method} ${url} failed with status ${response.status}`)
