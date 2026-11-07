@@ -1,13 +1,16 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
+import { query_string } from '@helpers/string'
+import { get_buyback_manage_settings } from '@helpers/api.minmatar.org/buyback_settings'
+import { buyback_summaries, type BuybackEditorSettings } from '@helpers/market_settings'
 
-const { user } = get_request_user(Astro)
-if (!user) return login_redirect(Astro)
+const { user, auth_token } = get_request_user(Astro)
+if (!user || !auth_token) return login_redirect(Astro)
 
 let can_manage = false
 try {
@@ -17,40 +20,69 @@ try {
 }
 if (!can_manage) return HTTP_404_Not_Found()
 
-const SETTINGS_PARTIAL = translatePath('/partials/buyback_settings_component/')
+// The section headers show the current values; the bodies load on their own.
+let settings: BuybackEditorSettings | null = null
+let fetching_error: Error | false = false
+try {
+    settings = (await get_buyback_manage_settings(auth_token)) as BuybackEditorSettings | null
+} catch (error) {
+    fetching_error = error as Error
+}
+const summaries = settings ? buyback_summaries(settings, t) : null
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/buyback_settings_component/?${query_string(values)}`)
 
 import Viewport from '@layouts/Viewport.astro'
-import PageDefault from '@components/page/PageDefault.astro'
-import PageTitle from '@components/page/PageTitle.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import LazyPartial from '@components/blocks/LazyPartial.astro'
 import Button from '@components/blocks/Button.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 
 const page_title = t('buyback.settings.page_title')
 const breadcrumbs = [
-    { page_title: t('market.page_title'), accumulated_path: '/market/' },
+    { page_title: t('market.page_title'), accumulated_path: translatePath('/market/') },
     { page_title: t('buyback.page_title'), accumulated_path: translatePath('/market/buyback/') },
-    { page_title: page_title, accumulated_path: Astro.url.pathname },
+    { page_title: t('manage.buyback.crumb'), accumulated_path: Astro.url.pathname },
 ]
 ---
 
 <Viewport title={page_title} meta_description={t('buyback.settings.meta_description')}>
-    <PageDefault breadcrumbs={breadcrumbs}>
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <PageTitle>{page_title}</PageTitle>
-        </FlexInline>
-
-        <Flexblock gap="var(--space-l)">
-            <p>{t('buyback.settings.leading_text')}</p>
-            <LazyPartial url={SETTINGS_PARTIAL}>
-                <p>{t('loading')}</p>
-            </LazyPartial>
-            <div>
-                <Button href={translatePath('/market/buyback/')} color="transparent" size="sm" narrow={true}>
-                    {t('buyback.settings.back')}
-                </Button>
-            </div>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} role={t('manage.buyback.role')} fact={t('manage.buyback.fact')}>
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/market/buyback/')}>{t('buyback.settings.back')}</Button>
+                </Fragment>
+            </ManageHero>
         </Flexblock>
-    </PageDefault>
+
+        {fetching_error !== false || !settings || !summaries
+            ? <p class="[ manage-warn ]" role="alert">{fetching_error ? fetching_error.message : t('manage.kit.confirm_failed')}</p>
+            : (
+                <Flexblock gap="var(--space-s)">
+                    <SettingsSection id="bb-open" title={t('manage.buyback.section_open')} summary={summaries.open}>
+                        <ManageSwitch
+                            slot="switch"
+                            name="active"
+                            label={t('manage.buyback.section_open')}
+                            hide_label={true}
+                            checked={settings.active}
+                            hx-post={partial_url({ part: 'active' })}
+                            hx-trigger="change"
+                            hx-swap="none"
+                        />
+                    </SettingsSection>
+                    <SettingsSection id="bb-rates" title={t('manage.buyback.section_rates')} summary={summaries.rates} url={partial_url({ part: 'rates' })} load="open" />
+                    <SettingsSection id="bb-location" title={t('manage.buyback.section_location')} summary={summaries.location} url={partial_url({ part: 'location' })} load="open" />
+                    <SettingsSection id="bb-items" title={t('manage.buyback.section_items')} summary={summaries.items} url={partial_url({ part: 'items' })} expanded={true} />
+                </Flexblock>
+            )
+        }
+    </Flexblock>
+</PageLanding>
 </Viewport>

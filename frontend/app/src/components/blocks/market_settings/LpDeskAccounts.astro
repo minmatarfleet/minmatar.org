@@ -1,0 +1,93 @@
+---
+/**
+ * The account tiles of an open LP desk row, each with Edit, and the slot an
+ * account form opens in (Edit, or the row's "Add account"). Saving an
+ * account swaps this block and, out of band, the row's account count.
+ */
+import type { LoyaltyDeskCorp } from '@helpers/market_settings'
+
+interface Props {
+    corp:           LoyaltyDeskCorp;
+    /** The account form to show open: an account id, or 'new'. */
+    form?:          number | 'new' | null;
+    saved?:         boolean;
+    error?:         string;
+    /** Also swap the row's account count (after an account save). */
+    oob_count?:     boolean;
+}
+
+const {
+    corp,
+    form = null,
+    saved = false,
+    error,
+    oob_count = false,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { loyalty_active_accounts } from '@helpers/market_settings'
+import { query_string } from '@helpers/string'
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import LpAccountForm from '@components/blocks/market_settings/LpAccountForm.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/loyalty_settings_component/?${query_string(values)}`)
+const id = corp.id
+const count = loyalty_active_accounts(corp)
+const role_label = (role: string) => t(t_key('industry.loyalty.settings.role_', role === 'stockpile' ? 'stockpile' : 'seller'))
+
+function account_sub(account: LoyaltyDeskCorp['accounts'][number]): string {
+    const contacts = account.contacts
+        .filter((contact) => contact.is_active)
+        .map((contact) => contact.discord_username ? `${contact.character_name} (@${contact.discord_username})` : contact.character_name)
+    const detail = contacts.length > 0
+        ? contacts.join(', ')
+        : account.isk_per_lp === null ? t('manage.lp.standard_rate') : ''
+    return [role_label(account.role), detail, account.is_active ? '' : t('manage.lp.account_off')].filter(Boolean).join(' · ')
+}
+---
+
+<div id={`lp-accounts-${id}`} class="[ manage-form ]">
+    {corp.accounts.length === 0
+        ? <EmptyState title={t('industry.loyalty.settings.no_accounts')} />
+        : (
+            <ul class="[ manage-tiles market-accounts ]" role="list">
+                {corp.accounts.map((account) => (
+                    <li class:list={['[ manage-tile market-account ]', { 'manage-muted': !account.is_active }]}>
+                        <span class="[ manage-who__text ]">
+                            <span class="[ manage-who__name ]">
+                                {account.isk_per_lp === null ? account.name : `${account.name} · ${account.isk_per_lp}`}
+                            </span>
+                            <span class="[ manage-who__sub ]">{account_sub(account)}</span>
+                        </span>
+                        <button
+                            type="button"
+                            class="[ market-account__edit ]"
+                            aria-label={t('manage.lp.edit_account').replace('~NAME', account.name)}
+                            hx-get={partial_url({ part: 'account_form', id: String(id), account: String(account.id) })}
+                            hx-target={`#lp-account-slot-${id}`}
+                            hx-swap="innerHTML"
+                        >
+                            {t('manage.lp.edit')}
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        )
+    }
+    {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+    <div id={`lp-account-slot-${id}`}>
+        {form !== null &&
+            <LpAccountForm
+                corp_id={id}
+                account={form === 'new' ? null : corp.accounts.find((account) => account.id === form) ?? null}
+                error={error}
+            />
+        }
+    </div>
+    {oob_count &&
+        <span id={`lp-count-${id}`} hx-swap-oob="true" class:list={{ 'manage-warn': count === 0 }}>{count}</span>
+    }
+</div>

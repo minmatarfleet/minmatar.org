@@ -1,0 +1,65 @@
+---
+/**
+ * An open freight route: the pricing mode toggle and that mode's boxes,
+ * the days, the server's "fee never applies" warning and sample quote
+ * (refreshed as the boxes change), and one Save that swaps the row.
+ */
+import type { FreightEditorRoute } from '@helpers/market_settings'
+
+interface Props {
+    route:      FreightEditorRoute;
+    saved?:     boolean;
+    error?:     string;
+}
+
+const {
+    route,
+    saved = false,
+    error,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { query_string } from '@helpers/string'
+
+import Button from '@components/blocks/Button.astro'
+import FreightPricingFields from '@components/blocks/market_settings/FreightPricingFields.astro'
+import FreightQuote from '@components/blocks/market_settings/FreightQuote.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/freight_routes_component/?${query_string(values)}`)
+const id = String(route.route_id)
+const key = `freight-${id}`
+const row_target = `#freight-row-${id}`
+const quote = route.quote ?? null
+---
+
+<form
+    class="[ manage-form ]"
+    hx-post={partial_url({ part: 'row', id })}
+    hx-target={row_target}
+    hx-select={row_target}
+    hx-swap="outerHTML"
+    hx-include="#freight-filters"
+>
+    <FreightPricingFields key={key} route={route} />
+    {/* The server prices the unsaved boxes as they change. */}
+    <div
+        hx-post={partial_url({ part: 'quote', id })}
+        hx-trigger="input delay:400ms from:closest form, change from:closest form"
+        hx-include="closest form"
+        hx-target={`#${key}-warning`}
+        hx-select={`#${key}-warning`}
+        hx-swap="outerHTML"
+        hx-sync="this:replace"
+    >
+        <FreightQuote route_key={key} part="warning" quote={quote} xl_fee={route.xl_fee_millions * 1e6} />
+    </div>
+    <div class="[ manage-actions ]">
+        <Button type="submit" size="sm">{t('manage.kit.save')}</Button>
+        <Button type="button" size="sm" color="transparent" x-on:click="$el.closest('form').reset(); open = false">{t('cancel')}</Button>
+        {saved && <span class="[ manage-saved ]" role="status">{t('manage.kit.saved')}</span>}
+        {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+        <FreightQuote route_key={key} part="quote" quote={quote} />
+    </div>
+</form>

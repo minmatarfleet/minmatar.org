@@ -1,0 +1,63 @@
+---
+/**
+ * An open freight route's live checks, priced by the server from the
+ * unsaved boxes: the "fee never applies" warning (`part="warning"`) and
+ * the sample quote line (`part="quote"`). The partial answers a box change
+ * with the warning and the quote out of band.
+ */
+import type { FreightRouteQuote } from '@helpers/market_settings'
+
+interface Props {
+    route_key:  string;
+    part:       'warning' | 'quote';
+    quote:      FreightRouteQuote | null;
+    /** XL fee in ISK, for the warning text. */
+    xl_fee?:    number;
+    /** A box that is not an amount: its label. */
+    invalid?:   string;
+    oob?:       boolean;
+}
+
+const {
+    route_key,
+    part,
+    quote,
+    xl_fee = 0,
+    invalid,
+    oob = false,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { FREIGHT_STANDARD_MAX_M3, isk_input_text } from '@helpers/market_settings'
+import { format_isk_full, number_thousand_separator } from '@helpers/numbers'
+
+const swap = oob ? { 'hx-swap-oob': 'true' } : {}
+---
+
+{part === 'warning'
+    ? (
+        <p id={`${route_key}-warning`} class="[ manage-warn market-warning ]" role="status" {...swap}>
+            {invalid
+                ? t('manage.freight.not_an_amount').replace('~FIELD', invalid)
+                : quote?.fee_never_applies
+                    ? t('manage.freight.fee_never_warning')
+                        .replace('~FEE', isk_input_text(xl_fee))
+                        .replaceAll('~M3', number_thousand_separator(FREIGHT_STANDARD_MAX_M3))
+                    : ''}
+        </p>
+    )
+    : (
+        <span id={`${route_key}-quote`} class="[ manage-actions__end market-note ]" aria-live="polite" {...swap}>
+            {quote && !invalid &&
+                <Fragment>
+                    {t('manage.freight.quote')
+                        .replace('~M3', number_thousand_separator(quote.m3))
+                        .replace('~COLLATERAL', isk_input_text(quote.collateral))}
+                    {' '}<b>{`${format_isk_full(quote.cost)} ${t('manage.freight.unit_isk')}`}</b>
+                </Fragment>
+            }
+        </span>
+    )
+}

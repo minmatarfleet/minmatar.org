@@ -9,6 +9,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from app.errors import ErrorResponse
+from freight.helpers.pricing import sample_quote, xl_fee_never_applies
 from freight.models import EveFreightRoute
 from groups.helpers.feature_access import can_use_feature
 
@@ -45,6 +46,15 @@ class RouteLocation(BaseModel):
     short_name: str
 
 
+class RouteQuote(BaseModel):
+    """What a sample haul costs on a route, and whether its XL fee is dead."""
+
+    m3: int
+    collateral: int
+    cost: int
+    fee_never_applies: bool
+
+
 class ManageRoute(BaseModel):
     route_id: int
     origin: Optional[RouteLocation]
@@ -59,6 +69,9 @@ class ManageRoute(BaseModel):
     expiration_days: int
     days_to_complete: int
     active: bool
+    # Fixed route with an XL fee that its max volume never reaches.
+    fee_never_applies: bool = False
+    quote: Optional[RouteQuote] = None
 
 
 class ManageRoutes(BaseModel):
@@ -79,6 +92,18 @@ class RouteCreateRequest(BaseModel):
     expiration_days: int = Field(default=3, ge=1)
     days_to_complete: int = Field(default=3, ge=1)
     active: bool = True
+
+
+class RouteQuoteRequest(BaseModel):
+    """Unsaved editor values, priced as the route would price them."""
+
+    route_type: str = "rate"
+    isk_per_m3: int = Field(default=0, ge=0)
+    collateral_modifier: float = Field(default=0, ge=0)
+    fixed_fee_millions: float = Field(default=0, ge=0)
+    xl_fee_millions: float = Field(default=0, ge=0)
+    max_m3: Optional[int] = Field(default=None, ge=0)
+    max_collateral: Optional[int] = Field(default=None, ge=0)
 
 
 class RoutePatchRequest(BaseModel):
@@ -104,6 +129,16 @@ def _location(location) -> Optional[RouteLocation]:
     )
 
 
+def quote_schema(route: EveFreightRoute) -> RouteQuote:
+    m3, collateral, cost = sample_quote(route)
+    return RouteQuote(
+        m3=m3,
+        collateral=collateral,
+        cost=cost,
+        fee_never_applies=xl_fee_never_applies(route),
+    )
+
+
 def route_schema(route: EveFreightRoute) -> ManageRoute:
     return ManageRoute(
         route_id=route.id,
@@ -119,4 +154,6 @@ def route_schema(route: EveFreightRoute) -> ManageRoute:
         expiration_days=route.expiration_days,
         days_to_complete=route.days_to_complete,
         active=route.active,
+        fee_never_applies=xl_fee_never_applies(route),
+        quote=quote_schema(route),
     )

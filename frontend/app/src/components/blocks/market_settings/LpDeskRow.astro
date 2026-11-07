@@ -1,0 +1,84 @@
+---
+/**
+ * One LP corporation on the LP desk settings table: logo and orders, the
+ * standard and express rates, enabled accounts, and the "Desk open" switch
+ * that saves when flipped. Opens in place to LpDeskDetail.
+ *
+ * `detail` renders the detail inline (after a save, open); otherwise the
+ * row loads it from the partial on first open.
+ */
+import type { LoyaltyDeskCorp } from '@helpers/market_settings'
+
+interface Props {
+    corp:       LoyaltyDeskCorp;
+    open?:      boolean;
+    /** Render the detail now (with this save state) instead of lazily. */
+    detail?:    { saved?: boolean, error?: string } | null;
+}
+
+const {
+    corp,
+    open = false,
+    detail = null,
+} = Astro.props
+
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import { LP_DESK_COLSPAN, loyalty_active_accounts, loyalty_orders_key } from '@helpers/market_settings'
+import { query_string } from '@helpers/string'
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import LpDeskDetail from '@components/blocks/market_settings/LpDeskDetail.astro'
+
+const partial_url = (values: Record<string, string>) => translatePath(`/partials/loyalty_settings_component/?${query_string(values)}`)
+const accounts = loyalty_active_accounts(corp)
+---
+
+<ExpandRow
+    id={`lp-row-${corp.id}`}
+    colspan={LP_DESK_COLSPAN}
+    label={t('manage.lp.open_row').replace('~NAME', corp.name)}
+    url={detail ? undefined : partial_url({ part: 'row', id: String(corp.id) })}
+    open={open}
+    dim={!corp.is_active}
+>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <img src={get_corporation_logo(corp.corporation_id, 64)} alt="" width="40" height="40" loading="lazy" />
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">{corp.name}</span>
+                <span class="[ manage-who__sub ]">
+                    {t(t_key('manage.lp.orders_', loyalty_orders_key(corp)))}<span class="[ market-phone-only ]">{` · ${corp.default_isk_per_lp} ${t('manage.lp.isk_per_lp')}`}</span>
+                </span>
+            </span>
+        </button>
+    </td>
+    <td class="num is-wide">{corp.default_isk_per_lp}</td>
+    <td class:list={['num is-wide', { 'manage-muted': corp.express_isk_per_lp === null }]}>
+        {corp.express_isk_per_lp ?? t('manage.lp.off')}
+    </td>
+    <td class="num is-wide">
+        <span id={`lp-count-${corp.id}`} class:list={{ 'manage-warn': accounts === 0 }}>{accounts}</span>
+    </td>
+    <td class="act">
+        <ManageSwitch
+            name="is_active"
+            label={t('manage.lp.desk_open_for').replace('~NAME', corp.name)}
+            hide_label={true}
+            checked={corp.is_active}
+            hx-post={partial_url({ part: 'switch', id: String(corp.id) })}
+            hx-trigger="change"
+            hx-swap="none"
+            x-on:change="$root.classList.toggle('is-dim', !$event.target.checked)"
+            {...{ 'x-on:htmx:after-request': "if (!$event.detail.successful) { $el.checked = !$el.checked; $root.classList.toggle('is-dim', !$el.checked) }" }}
+        />
+    </td>
+    {detail &&
+        <div slot="detail">
+            <LpDeskDetail corp={corp} saved={detail.saved} error={detail.error} />
+        </div>
+    }
+</ExpandRow>

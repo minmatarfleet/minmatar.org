@@ -166,3 +166,56 @@ class LoyaltySettingsTestCase(TestCase):
         )
         self.assertFalse(retired.json()["is_active"])
         self.assertGreaterEqual(AuditEntry.objects.count(), 5)
+
+    def test_list_counts_active_accounts_and_shows_last_change(self):
+        IndustryLoyaltyPointAccount.objects.create(
+            loyalty_point=self.currency, name="On"
+        )
+        IndustryLoyaltyPointAccount.objects.create(
+            loyalty_point=self.currency, name="Off", is_active=False
+        )
+        mine = next(
+            c
+            for c in self._call("get", "", self.manager).json()
+            if c["id"] == self.currency.id
+        )
+        self.assertEqual(mine["active_account_count"], 1)
+        self.assertIsNone(mine["last_change"])
+
+        self._call(
+            "patch",
+            f"/currencies/{self.currency.id}",
+            self.manager,
+            {"express_isk_per_lp": 900},
+        )
+        mine = next(
+            c
+            for c in self._call("get", "", self.manager).json()
+            if c["id"] == self.currency.id
+        )
+        self.assertEqual(mine["last_change"]["tier"], "express")
+        self.assertEqual(mine["last_change"]["new_isk_per_lp"], 900)
+        self.assertEqual(mine["last_change"]["changed_by"], "lp_manager")
+
+    def test_history_lists_changes_newest_first(self):
+        path = f"/currencies/{self.currency.id}/history"
+        self.assertEqual(self._call("get", path, self.user).status_code, 403)
+        self.assertEqual(
+            self._call(
+                "get", "/currencies/999999/history", self.manager
+            ).status_code,
+            404,
+        )
+        for price in (810, 820):
+            self._call(
+                "patch",
+                f"/currencies/{self.currency.id}",
+                self.manager,
+                {"default_isk_per_lp": price},
+            )
+        response = self._call("get", path, self.manager)
+        self.assertEqual(response.status_code, 200)
+        rows = response.json()
+        self.assertEqual([r["new_isk_per_lp"] for r in rows], [820, 810])
+        self.assertEqual(rows[0]["tier"], "standard")
+        self.assertIsNone(rows[0]["account_name"])
