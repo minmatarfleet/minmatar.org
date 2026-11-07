@@ -87,3 +87,36 @@ def route_cost_isk(
         return reward + collateral_fee
 
     return int(route.isk_per_m3) * volume + collateral_fee
+
+
+def xl_fee_never_applies(route: EveFreightRoute) -> bool:
+    """
+    A fixed route whose XL fee can never be charged.
+
+    The XL fee starts above STANDARD_MAX_M3, so a max volume at or below it
+    stops every contract before the fee applies.
+    """
+    return (
+        route.route_type == EveFreightRoute.RouteType.FIXED
+        and float(route.xl_fee_millions or 0) > 0
+        and route.max_m3 is not None
+        and route.max_m3 <= STANDARD_MAX_M3
+    )
+
+
+# The editor's sample quote: a typical large haul, cut to the route's limits.
+QUOTE_SAMPLE_M3 = 200_000
+QUOTE_SAMPLE_COLLATERAL = 2_000_000_000
+
+
+def sample_quote(route: EveFreightRoute) -> tuple[int, int, int]:
+    """(m3, collateral, reward) for the sample haul on this route."""
+    max_m3 = route_max_m3(route)
+    max_collateral = route_max_collateral(route)
+    m3 = QUOTE_SAMPLE_M3 if max_m3 is None else min(QUOTE_SAMPLE_M3, max_m3)
+    collateral = (
+        QUOTE_SAMPLE_COLLATERAL
+        if max_collateral is None
+        else min(QUOTE_SAMPLE_COLLATERAL, max_collateral)
+    )
+    return m3, collateral, route_cost_isk(route, m3, collateral)

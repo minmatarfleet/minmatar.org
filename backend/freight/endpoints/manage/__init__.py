@@ -14,6 +14,12 @@ from freight.endpoints.manage.post_manage_route import (
     ROUTE_SPEC as post_manage_route_spec,
     post_manage_route,
 )
+from freight.endpoints.manage.post_manage_route_quote import (
+    METHOD as post_manage_route_quote_method,
+    PATH as post_manage_route_quote_path,
+    ROUTE_SPEC as post_manage_route_quote_spec,
+    post_manage_route_quote,
+)
 from freight.endpoints.manage.patch_manage_route import (
     METHOD as patch_manage_route_method,
     PATH as patch_manage_route_path,
@@ -35,6 +41,12 @@ _ROUTES = (
         post_manage_route_path,
         post_manage_route_spec,
         post_manage_route,
+    ),
+    (
+        post_manage_route_quote_method,
+        post_manage_route_quote_path,
+        post_manage_route_quote_spec,
+        post_manage_route_quote,
     ),
     (
         patch_manage_route_method,

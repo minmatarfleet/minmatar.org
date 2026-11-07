@@ -80,6 +80,12 @@ from industry.endpoints.loyalty.get_settings import (
     get_settings,
     METHOD as get_settings_method,
 )
+from industry.endpoints.loyalty.get_settings_history import (
+    PATH as get_settings_history_path,
+    ROUTE_SPEC as get_settings_history_spec,
+    get_settings_history,
+    METHOD as get_settings_history_method,
+)
 from industry.endpoints.loyalty.post_settings_currency import (
     PATH as post_settings_currency_path,
     ROUTE_SPEC as post_settings_currency_spec,
@@ -164,6 +170,12 @@ _ROUTES = (
     ),
     (patch_order_method, patch_order_path, patch_order_spec, patch_order),
     (get_settings_method, get_settings_path, get_settings_spec, get_settings),
+    (
+        get_settings_history_method,
+        get_settings_history_path,
+        get_settings_history_spec,
+        get_settings_history,
+    ),
     (
         post_settings_currency_method,
         post_settings_currency_path,

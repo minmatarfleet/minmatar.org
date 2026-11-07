@@ -131,3 +131,77 @@ class FreightManageTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertFalse(EveFreightRoute.objects.exists())
+
+    def test_fixed_route_flags_an_xl_fee_that_never_applies(self):
+        created = self._call(
+            "post",
+            "",
+            self.manager,
+            {
+                "origin_location_id": 1,
+                "destination_location_id": 2,
+                "route_type": "fixed",
+                "fixed_fee_millions": 95,
+                "xl_fee_millions": 40,
+                "max_m3": 350_000,
+                "max_collateral": 5_000_000_000,
+            },
+        )
+        self.assertEqual(created.status_code, 200, created.content)
+        body = created.json()
+        self.assertTrue(body["fee_never_applies"])
+        self.assertEqual(
+            body["quote"],
+            {
+                "m3": 200_000,
+                "collateral": 2_000_000_000,
+                "cost": 95_000_000,
+                "fee_never_applies": True,
+            },
+        )
+        raised = self._call(
+            "patch", f"/{body['route_id']}", self.manager, {"max_m3": 900_000}
+        )
+        self.assertFalse(raised.json()["fee_never_applies"])
+
+    def test_quote_prices_unsaved_values(self):
+        payload = {
+            "route_type": "rate",
+            "isk_per_m3": 420,
+            "collateral_modifier": 0.012,
+        }
+        self.assertEqual(
+            self._call("post", "/quote", self.user, payload).status_code, 403
+        )
+        response = self._call("post", "/quote", self.manager, payload)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            response.json(),
+            {
+                "m3": 200_000,
+                "collateral": 2_000_000_000,
+                "cost": 420 * 200_000 + 24_000_000,
+                "fee_never_applies": False,
+            },
+        )
+        # A small cap cuts the sample to the route's limits.
+        capped = self._call(
+            "post",
+            "/quote",
+            self.manager,
+            {
+                "route_type": "fixed",
+                "fixed_fee_millions": 10,
+                "max_m3": 60_000,
+                "max_collateral": 1_000_000_000,
+            },
+        ).json()
+        self.assertEqual(
+            (capped["m3"], capped["collateral"], capped["cost"]),
+            (60_000, 1_000_000_000, 10_000_000),
+        )
+        bad = self._call(
+            "post", "/quote", self.manager, {"route_type": "teleport"}
+        )
+        self.assertEqual(bad.status_code, 400)
+        self.assertFalse(EveFreightRoute.objects.exists())
