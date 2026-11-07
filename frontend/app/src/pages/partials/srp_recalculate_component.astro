@@ -1,5 +1,12 @@
 ---
-// no-error-refetch: a preview/confirm partial that shows the API error inline
+/**
+ * An open "Filed at an old amount" row on SRP amounts: the hull's open
+ * requests filed at an amount it no longer pays (pilot, filed, filed at,
+ * new amount), with "Pay N at <amount>" and "Keep filed amounts". Both post
+ * to srp_programs_component, which answers with the grid again.
+ *
+ * GET ?ship_type_id=
+ */
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
@@ -8,7 +15,7 @@ import { get_request_user } from '@helpers/request_user'
 
 const { auth_token, user } = get_request_user(Astro)
 
-if (!user)
+if (!user || !auth_token)
     return HTTP_403_Forbidden()
 
 import { get_gates, can } from '@helpers/gates'
@@ -17,104 +24,124 @@ const gates = await get_gates(Astro)
 if (!can(gates, 'srp.programs.manage'))
     return HTTP_403_Forbidden()
 
-import type { SRPRecalculationPreview, SRPRecalculationResult } from '@dtypes/api.minmatar.org'
-import { get_srp_recalculation_preview, recalculate_outstanding_srp } from '@helpers/api.minmatar.org/srp'
+import type { SRPRecalculationPreview } from '@dtypes/api.minmatar.org'
+import { get_srp_hull_recalculation_preview } from '@helpers/api.minmatar.org/srp'
+import { format_isk_shorthand } from '@helpers/isk_shorthand'
 import { number_thousand_separator } from '@helpers/numbers'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { query_string } from '@helpers/string'
 
-const RECALCULATE_PARTIAL_URL = translatePath('/partials/srp_recalculate_component/')
+// character_id and created_at are new on the API; the generated types catch
+// up when the schema is regenerated.
+type Change = SRPRecalculationPreview['changes'][number] & { character_id?: number, created_at?: string | null }
 
-let preview:SRPRecalculationPreview | null = null
-let result:SRPRecalculationResult | null = null
-let error_message:string | false = false
+const ship_type_id = parseInt(Astro.url.searchParams.get('ship_type_id') ?? '0') || 0
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const SELF_URL = translatePath(`/partials/srp_recalculate_component/?${query_string({ ship_type_id: String(ship_type_id) })}`)
+const PROGRAMS_PARTIAL_URL = translatePath('/partials/srp_programs_component/')
+const BODY_ID = `srp-recalc-${ship_type_id}`
 
+let preview: SRPRecalculationPreview | null = null
+let fetch_error: Error | false = false
 try {
-    if (Astro.request.method === 'POST')
-        result = await recalculate_outstanding_srp(auth_token as string)
-    else if (Astro.url.searchParams.get('preview') === '1')
-        preview = await get_srp_recalculation_preview(auth_token as string)
+    preview = await get_srp_hull_recalculation_preview(auth_token, ship_type_id)
 } catch (error) {
-    error_message = error instanceof Error ? error.message : t('srp_programs.recalculate_failed')
+    fetch_error = error as Error
 }
 
-const format = (value:number) => number_thousand_separator(value, lang)
+const changes = (preview?.changes ?? []) as Change[]
+const new_amount = changes[0]?.new_amount ?? 0
+const difference = (preview?.new_total ?? 0) - (preview?.current_total ?? 0)
+const format_full = (value: number) => number_thousand_separator(value, lang)
+// Amounts show whole ISK, or the shorthand at phone width (srp-recalc__short).
+const filed_on = (iso: string | null | undefined) => iso
+    ? new Date(iso).toLocaleDateString(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    : '—'
+const action = (part: 'pay' | 'keep') => ({
+    'hx-post': `${PROGRAMS_PARTIAL_URL}?${query_string({ part, ship_type_id: String(ship_type_id) })}`,
+    'hx-target': '#srp-programs',
+    'hx-select': '#srp-programs',
+    'hx-swap': 'outerHTML',
+    // The row sits inside the amounts form: send none of its fields.
+    'hx-params': 'none',
+})
 
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-<Flexblock gap="var(--space-s)">
-    {error_message && <p role="alert">⚠️ {error_message}</p>}
-
-    {result &&
-        <p role="status">
-            ✅ {t('srp_programs.recalculated')} {format(result.updated)}
-            {result.errors > 0 && ` · ${t('srp_programs.recalculate_errors')} ${format(result.errors)}`}
-        </p>
-    }
-
-    {preview ?
-        <>
-            <p>
-                {t('srp_programs.outstanding')} {format(preview.outstanding_count)} ·
-                {t('srp_programs.changed')} {format(preview.changed_count)} ·
-                {t('srp_programs.total_before')} {format(preview.current_total)} →
-                {t('srp_programs.total_after')} {format(preview.new_total)}
-            </p>
-            {preview.changed_count === 0 ?
-                <EmptyState title={t('srp_programs.nothing_to_change')} />
-                :
-                <>
-                    <XFadeScroll>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{t('srp_programs.ship')}</th>
-                                    <th scope="col">{t('srp_programs.pilot')}</th>
-                                    <th scope="col">{t('srp_programs.current')}</th>
-                                    <th scope="col">{t('srp_programs.new_amount')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {preview.changes.map((change) =>
-                                    <tr>
-                                        <td>{change.ship_name}</td>
-                                        <td>{change.character_name}</td>
-                                        <td>{format(change.current_amount)}</td>
-                                        <td>{format(change.new_amount)}</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </XFadeScroll>
-                    <FlexInline gap="var(--space-xs)">
-                        <Button
-                            color="green"
-                            hx-post={RECALCULATE_PARTIAL_URL}
-                            hx-target="#srp-recalculate"
-                            hx-swap="innerHTML"
-                            hx-confirm={t('srp_programs.confirm_recalculate')}
-                        >
-                            {t('srp_programs.confirm')}
-                        </Button>
-                    </FlexInline>
-                </>
-            }
-        </>
+<div id={BODY_ID} class="[ srp-recalc ]">
+    {fetch_error ?
+        <ErrorRefetch args={{ partial: SELF_URL, target: `#${BODY_ID}`, error: fetch_error, delay }} />
+        : changes.length === 0 ?
+        <EmptyState title={t('admin_srp.nothing_filed_old')} />
         :
-        !result &&
-        <FlexInline>
-            <Button
-                color="alliance-blue"
-                hx-get={`${RECALCULATE_PARTIAL_URL}?preview=1`}
-                hx-target="#srp-recalculate"
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-            >
-                {t('srp_programs.recalculate')}
-            </Button>
-        </FlexInline>
+        <>
+            <table class="[ manage-table srp-recalc__table ]" style="--manage_table_min_width: 0">
+                <caption class="[ visually-hidden ]">{t('admin_srp.filed_old')}</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">{t('admin_srp.pilot')}</th>
+                        <th scope="col" class="[ is-wide ]">{t('admin_srp.filed')}</th>
+                        <th scope="col" class="num">{t('admin_srp.filed_at')}</th>
+                        <th scope="col" class="num">{t('admin_srp.at_amount').replace('~AMOUNT', format_isk_shorthand(new_amount, lang))}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {changes.map((change) => (
+                        <tr>
+                            <td>
+                                <span class="[ manage-who ]">
+                                    {change.character_id ? <img src={get_player_icon(change.character_id)} alt="" width="40" height="40" loading="lazy" /> : null}
+                                    <span class="[ manage-who__text ]">
+                                        <span class="[ manage-who__name ]">{change.character_name}</span>
+                                    </span>
+                                </span>
+                            </td>
+                            <td class="[ is-wide ]">{filed_on(change.created_at)}</td>
+                            <td class="[ num manage-muted ]"><span class="[ srp-recalc__full ]">{format_full(change.current_amount)}</span><span class="[ srp-recalc__short ]">{format_isk_shorthand(change.current_amount, lang)}</span></td>
+                            <td class="num"><span class="[ srp-recalc__full ]">{format_full(change.new_amount)}</span><span class="[ srp-recalc__short ]">{format_isk_shorthand(change.new_amount, lang)}</span></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" {...action('pay')}>
+                    {t('admin_srp.pay_count').replace('~COUNT', String(preview?.changed_count ?? changes.length)).replace('~AMOUNT', format_isk_shorthand(new_amount, lang))}
+                </Button>
+                <Button type="button" size="sm" color="transparent" {...action('keep')}>{t('admin_srp.keep')}</Button>
+                <span class="[ manage-actions__end manage-muted ]">
+                    {(difference >= 0 ? t('admin_srp.adds') : t('admin_srp.saves'))
+                        .replace('~AMOUNT', format_isk_shorthand(Math.abs(difference), lang))}
+                </span>
+            </div>
+        </>
     }
-</Flexblock>
+</div>
+
+<style lang="scss">
+    .srp-recalc {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .srp-recalc__table {
+        width: 100%;
+    }
+
+    .srp-recalc__short {
+        display: none;
+    }
+
+    @media (max-width: 48rem) {
+        .srp-recalc__full {
+            display: none;
+        }
+
+        .srp-recalc__short {
+            display: inline;
+        }
+    }
+</style>

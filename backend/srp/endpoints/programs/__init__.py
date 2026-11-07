@@ -6,6 +6,8 @@ from srp.endpoints.programs import (
     get_program_history,
     get_programs,
     get_recalculation_preview,
+    post_keep_filed_amounts,
+    post_program,
     post_program_amount,
     post_recalculate_outstanding,
 )
@@ -42,6 +44,18 @@ _ROUTES = (
         post_recalculate_outstanding.PATH,
         post_recalculate_outstanding.ROUTE_SPEC,
         post_recalculate_outstanding.post_recalculate_outstanding,
+    ),
+    (
+        post_keep_filed_amounts.METHOD,
+        post_keep_filed_amounts.PATH,
+        post_keep_filed_amounts.ROUTE_SPEC,
+        post_keep_filed_amounts.post_keep_filed_amounts,
+    ),
+    (
+        post_program.METHOD,
+        post_program.PATH,
+        post_program.ROUTE_SPEC,
+        post_program.post_program,
     ),
 )
 for method, path, spec, view in _ROUTES:

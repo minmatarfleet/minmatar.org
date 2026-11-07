@@ -55,6 +55,10 @@ class FittingExpectationRow(BaseModel):
     fitting_name: str
     tracked: bool
     current: Optional[int] = None
+    # The hull's type id, for its icon.
+    ship_id: Optional[int] = None
+    # Doctrines the fitting is in (contract rows), for a doctrine filter.
+    doctrine_ids: list[int] = []
 
 
 class ItemExpectationRow(BaseModel):

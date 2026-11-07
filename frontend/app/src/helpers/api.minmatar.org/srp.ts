@@ -119,3 +119,39 @@ export async function recalculate_outstanding_srp(access_token:string) {
         error: 'Error recalculating SRP',
     })
 }
+
+/** One hull's outstanding requests filed at an amount it no longer pays. */
+export async function get_srp_hull_recalculation_preview(access_token:string, ship_type_id:number) {
+    return await api_request<SRPRecalculationPreview>(`${API_ENDPOINT}/programs/recalculate?${query_string({ ship_type_id: String(ship_type_id) })}`, {
+        token: access_token,
+        error: 'Error previewing SRP recalculation',
+    })
+}
+
+/** Pay one hull's requests filed at an old amount at the current amount. */
+export async function recalculate_srp_hull(access_token:string, ship_type_id:number) {
+    return await api_request<SRPRecalculationResult>(`${API_ENDPOINT}/programs/recalculate?${query_string({ ship_type_id: String(ship_type_id) })}`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error recalculating SRP',
+    })
+}
+
+/** Keep one hull's requests at the amounts they were filed at. */
+export async function keep_srp_filed_amounts(access_token:string, ship_type_id:number) {
+    return await api_request<SRPRecalculationResult>(`${API_ENDPOINT}/programs/recalculate/keep?${query_string({ ship_type_id: String(ship_type_id) })}`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error keeping SRP amounts',
+    })
+}
+
+/** Add a hull to SRP with its first amount. */
+export async function add_srp_program(access_token:string, eve_type_id:number, srp_value:number) {
+    return await api_request<SRPProgramAmount>(`${API_ENDPOINT}/programs`, {
+        method: 'POST',
+        token: access_token,
+        body: { eve_type_id, srp_value },
+        error: 'Error adding the hull',
+    })
+}
