@@ -264,6 +264,21 @@ class PlanNavyBpcSchema(Schema):
     total_isk: int
 
 
+class PlanStepSavingSchema(Schema):
+    """Build vs buy for one intermediate step, with its inputs bought."""
+
+    type_id: int
+    name: str
+    # Units the parent jobs consume.
+    quantity: int
+    # Inputs at Jita sell + freight, plus install cost and taxes.
+    build_isk: int
+    # Jita sell + freight for ``quantity``; null when the step has no price.
+    buy_isk: Optional[int] = None
+    # buy_isk - build_isk: what building this step saves. Null without a price.
+    saving_isk: Optional[int] = None
+
+
 class PlanResponseSchema(Schema):
     product: PlanProductSchema
     blueprint_me: float
@@ -285,3 +300,5 @@ class PlanResponseSchema(Schema):
     navy_bpc: Optional[PlanNavyBpcSchema] = None
     stock_applied: List[PlanStockAppliedSchema] = []
     stock_unresolved: List[str] = []
+    # Every intermediate the product can use, whether ticked or not.
+    step_savings: List[PlanStepSavingSchema] = []

@@ -31679,6 +31679,14 @@
             "title": "Reaction Index",
             "type": "number"
           },
+          "step_savings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PlanStepSavingSchema"
+            },
+            "title": "Step Savings",
+            "type": "array"
+          },
           "stock_applied": {
             "default": [],
             "items": {
@@ -31752,6 +31760,57 @@
           "days"
         ],
         "title": "PlanStepResponse",
+        "type": "object"
+      },
+      "PlanStepSavingSchema": {
+        "description": "Build vs buy for one intermediate step, with its inputs bought.",
+        "properties": {
+          "build_isk": {
+            "title": "Build Isk",
+            "type": "integer"
+          },
+          "buy_isk": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buy Isk"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "saving_isk": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saving Isk"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "quantity",
+          "build_isk"
+        ],
+        "title": "PlanStepSavingSchema",
         "type": "object"
       },
       "PlanStockAppliedSchema": {
