@@ -1,0 +1,228 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_planner_invention_quote } from '@helpers/api.minmatar.org/industry'
+import type { PlannerInvention } from '@dtypes/api.minmatar.org'
+import { format_isk, ISK_COMPACT_PRECISE, number_thousand_separator } from '@helpers/numbers'
+import { query_string } from '@helpers/string'
+
+const params = Astro.url.searchParams
+const type_id = parseInt(params.get('type_id') ?? '0') || 0
+const quantity = Math.max(1, parseInt(params.get('quantity') ?? '1') || 1)
+const facility_key = params.get('facility_key') || 'amamake'
+const decryptor = params.get('decryptor') || 'auto'
+const source_type_id = parseInt(params.get('source_type_id') ?? '') || null
+const delay = parseInt(params.get('delay') ?? '0') || 0
+
+let quote: PlannerInvention | null = null
+let fetching_error: Error | false = false
+
+try {
+    if (!type_id)
+        throw new Error('Invalid type id', { cause: 400 })
+    quote = await get_planner_invention_quote(type_id, { quantity, facility_key, decryptor, source_type_id })
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const partial_url = translatePath(`/partials/planner_invention_component?${query_string({
+    type_id,
+    quantity,
+    facility_key,
+    decryptor,
+    ...(source_type_id ? { source_type_id } : {}),
+})}`)
+
+const n = (value: number, digits = 0) => number_thousand_separator(Number(value.toFixed(digits)))
+const pct = (value: number) => `${Math.round(value * 100)}%`
+const isk = (value: number) => format_isk(value, { format: ISK_COMPACT_PRECISE })
+
+const headline = quote
+    ? t('industry.orders.planner.invention_headline')
+        .replace('{decryptor}', quote.decryptor_name)
+        .replace('{chance}', pct(quote.chance))
+        .replace('{attempts}', quote.expected_attempts.toFixed(1))
+        .replace('{isk}', isk(quote.invention_per_unit_isk))
+    : ''
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+---
+
+{fetching_error !== false || !quote ?
+    <ErrorRefetch args={{
+        partial: partial_url,
+        error: fetching_error || new Error(t('industry.orders.planner.invention_error')),
+        delay,
+    }} />
+    :
+    <details class="[ invention-card ]">
+        <summary>
+            <strong>{headline}</strong>
+            <small>
+                {t('industry.orders.planner.invention_copy')
+                    .replace('{runs}', n(quote.runs_per_copy))
+                    .replace('{me}', n(quote.copy_me))
+                    .replace('{te}', n(quote.copy_te))
+                    .replace('{source}', quote.source_name)}
+            </small>
+        </summary>
+
+        <div class="[ invention-body ]">
+            <p class="[ invention-risk ]">
+                {t('industry.orders.planner.invention_buy')
+                    .replace('{buy}', n(quote.buy_attempts))
+                    .replace('{p90}', n(quote.attempts_p90))}
+            </p>
+
+            <XFadeScroll>
+                <table class="[ invention-table ]">
+                    <thead>
+                        <tr>
+                            <th scope="col">{t('industry.orders.planner.invention_input')}</th>
+                            <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_per_attempt')}</th>
+                            <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_to_buy')}</th>
+                            <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_unit_price')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {quote.inputs.map(input =>
+                            <tr>
+                                <th scope="row">
+                                    <span class="[ item ]">
+                                        <ItemPicture item_id={input.type_id} size={32} icon_quality={64} />
+                                        <span>{input.name}</span>
+                                    </span>
+                                </th>
+                                <td class="[ num ]">{n(input.quantity_per_attempt)}</td>
+                                <td class="[ num ]">{n(input.buy_quantity)}</td>
+                                <td class="[ num ]">{isk(input.unit_price)}</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </XFadeScroll>
+
+            {quote.alternatives.length > 0 &&
+                <XFadeScroll>
+                    <table class="[ invention-table ]">
+                        <caption>{t('industry.orders.planner.invention_compare')}</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">{t('industry.orders.planner.decryptor')}</th>
+                                <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_chance')}</th>
+                                <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_copy_col')}</th>
+                                <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_unit_cost')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="[ is-best ]">
+                                <th scope="row">{quote.decryptor_name}</th>
+                                <td class="[ num ]">{pct(quote.chance)}</td>
+                                <td class="[ num ]">{`${n(quote.runs_per_copy)} · ME ${n(quote.copy_me)}`}</td>
+                                <td class="[ num ]">{isk(quote.per_unit_isk)}</td>
+                            </tr>
+                            {quote.alternatives.map(option =>
+                                <tr>
+                                    <th scope="row">
+                                        {option.decryptor_name}
+                                        {option.source_type_id !== quote.source_type_id &&
+                                            <small>{option.source_name}</small>
+                                        }
+                                    </th>
+                                    <td class="[ num ]">{pct(option.chance)}</td>
+                                    <td class="[ num ]">{`${n(option.runs_per_copy)} · ME ${n(option.copy_me)}`}</td>
+                                    <td class="[ num ]">{isk(option.per_unit_isk)}</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </XFadeScroll>
+            }
+        </div>
+    </details>
+}
+
+<style lang="scss">
+    .invention-card {
+        border: solid 1px var(--border-color);
+        background: var(--component-background);
+
+        summary {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-s);
+            cursor: pointer;
+
+            strong {
+                font-family: var(--heading-font);
+                color: var(--highlight);
+            }
+
+            small {
+                color: var(--foreground);
+            }
+        }
+    }
+
+    .invention-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: 0 var(--space-s) var(--space-s);
+    }
+
+    .invention-risk {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .invention-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        caption {
+            padding-block-end: var(--space-2xs);
+            text-align: start;
+            color: var(--foreground);
+        }
+
+        th,
+        td {
+            padding: var(--space-3xs) var(--space-2xs);
+            border-block-end: solid 1px var(--hairline);
+            text-align: start;
+            font-weight: normal;
+        }
+
+        thead th {
+            color: var(--foreground);
+        }
+
+        tbody th small {
+            display: block;
+            color: var(--text-muted);
+        }
+
+        .num {
+            text-align: end;
+            white-space: nowrap;
+        }
+
+        .is-best th,
+        .is-best td {
+            color: var(--highlight);
+        }
+    }
+
+    .item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+</style>

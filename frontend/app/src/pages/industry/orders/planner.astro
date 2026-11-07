@@ -9,12 +9,13 @@ import { get_request_user } from '@helpers/request_user'
 const { auth_token, user } = get_request_user(Astro)
 const is_logged_in = !!(user && auth_token)
 
-import { get_order_by_id, get_planner_facilities } from '@helpers/api.minmatar.org/industry'
+import { get_order_by_id, get_planner_facilities, get_planner_invention } from '@helpers/api.minmatar.org/industry'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_ship_info } from '@helpers/sde/ships'
 import { get_item_name } from '@helpers/sde/items'
 import type { IndustrySingleOrder, RootSingleItem, Character } from '@dtypes/api.minmatar.org'
 import type { PlannerFacility } from '@helpers/api.minmatar.org/industry'
+import type { PlannerInventionInfo } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
 
 type PlannerProduct = {
@@ -96,6 +97,17 @@ if (product) {
         }
     }
 }
+
+// T2/T3 products: the root is built from an invented copy (or one you have).
+let invention_info: PlannerInventionInfo | null = null
+if (product && !is_navy_hull) {
+    try {
+        invention_info = await get_planner_invention(product.type_id)
+    } catch {
+        invention_info = null
+    }
+}
+const is_invented = !!invention_info
 
 import { query_string } from '@helpers/string'
 import { number_thousand_separator } from '@helpers/numbers'
@@ -266,6 +278,12 @@ const planner_copy = JSON.stringify({
                             character_id: '',
                             use_reprocessing_implants: false,
                             is_navy_hull: ${is_navy_hull ? 'true' : 'false'},
+                            is_invented: ${is_invented ? 'true' : 'false'},
+                            blueprint_source: 'invent',
+                            decryptor: 'auto',
+                            invention_source_type_id: '',
+                            bpc_me: 2,
+                            bpc_te: 4,
                             isk_per_lp: '',
                             build_fuel_blocks: false,
                             loading: false,
@@ -327,6 +345,11 @@ const planner_copy = JSON.stringify({
                                     this.compressed,
                                     this.use_reprocessing_implants,
                                     this.isk_per_lp,
+                                    this.blueprint_source,
+                                    this.decryptor,
+                                    this.invention_source_type_id,
+                                    this.bpc_me,
+                                    this.bpc_te,
                                     this.build_fuel_blocks,
                                     this.stock_paste,
                                     toggle_entries.join(','),
@@ -924,6 +947,18 @@ const planner_copy = JSON.stringify({
                                         if (rate > 0)
                                             body.isk_per_lp = rate
                                     }
+                                    if (this.is_invented) {
+                                        body.blueprint_source = this.blueprint_source
+                                        if (this.blueprint_source === 'supplied_bpc') {
+                                            body.bpc_me = Math.max(0, parseInt(this.bpc_me) || 0)
+                                            body.bpc_te = Math.max(0, parseInt(this.bpc_te) || 0)
+                                        } else {
+                                            body.decryptor = this.decryptor
+                                            const source = parseInt(this.invention_source_type_id)
+                                            if (source > 0)
+                                                body.invention_source_type_id = source
+                                        }
+                                    }
                                     if (this.stock_paste && String(this.stock_paste).trim())
                                         body.stock_paste = this.stock_paste
                                     const runs_per_job = parseInt(this.max_runs_per_job)
@@ -960,6 +995,9 @@ const planner_copy = JSON.stringify({
                                     this.step_savings = Object.fromEntries(
                                         (data.step_savings || []).map(row => [row.type_id, row])
                                     )
+                                    // The invention card is an htmx partial; it reloads itself.
+                                    if (this.is_invented && this.blueprint_source === 'invent')
+                                        this.$dispatch('planner-invention-refresh')
                                     this.materials_tsv = data.materials_tsv || ''
                                     this.stock_applied_count = (data.stock_applied || []).length
                                     this.stock_unresolved_count = (data.stock_unresolved || []).length
@@ -1125,6 +1163,96 @@ const planner_copy = JSON.stringify({
                                                 </Select>
                                             </div>
                                         </Flexblock>
+
+                                        {invention_info &&
+                                            <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field ]">
+                                                <label for="planner-blueprint-source">
+                                                    <span
+                                                        class="[ planner-tip ]"
+                                                        data-tippy-content={t('industry.orders.planner.blueprint_source_tip')}
+                                                    >{t('industry.orders.planner.blueprint_source')}</span>
+                                                </label>
+                                                <div class="[ planner-settings-control ]">
+                                                    <Select
+                                                        id="planner-blueprint-source"
+                                                        size="sm"
+                                                        width="100%"
+                                                        x-model="blueprint_source"
+                                                    >
+                                                        <option value="invent">{t('industry.orders.planner.blueprint_source_invent')}</option>
+                                                        <option value="supplied_bpc">{t('industry.orders.planner.blueprint_source_supplied')}</option>
+                                                    </Select>
+                                                </div>
+                                            </Flexblock>
+                                        }
+
+                                        {invention_info &&
+                                            <Flexblock
+                                                gap='var(--space-3xs)'
+                                                class="[ planner-settings-field ]"
+                                                x-show="blueprint_source === 'invent'"
+                                            >
+                                                <label for="planner-decryptor">{t('industry.orders.planner.decryptor')}</label>
+                                                <div class="[ planner-settings-control ]">
+                                                    <Select
+                                                        id="planner-decryptor"
+                                                        size="sm"
+                                                        width="100%"
+                                                        x-model="decryptor"
+                                                    >
+                                                        <option value="auto">{t('industry.orders.planner.decryptor_auto')}</option>
+                                                        <option value="none">{t('industry.orders.planner.decryptor_none')}</option>
+                                                        {invention_info.decryptors.map(decryptor =>
+                                                            <option value={String(decryptor.type_id)}>{decryptor.name}</option>
+                                                        )}
+                                                    </Select>
+                                                </div>
+                                            </Flexblock>
+                                        }
+
+                                        {invention_info && invention_info.sources.length > 1 &&
+                                            <Flexblock
+                                                gap='var(--space-3xs)'
+                                                class="[ planner-settings-field ]"
+                                                x-show="blueprint_source === 'invent'"
+                                            >
+                                                <label for="planner-invention-source">{t('industry.orders.planner.invention_source')}</label>
+                                                <div class="[ planner-settings-control ]">
+                                                    <Select
+                                                        id="planner-invention-source"
+                                                        size="sm"
+                                                        width="100%"
+                                                        x-model="invention_source_type_id"
+                                                    >
+                                                        <option value="">{t('industry.orders.planner.invention_source_auto')}</option>
+                                                        {invention_info.sources.map(source =>
+                                                            <option value={String(source.type_id)}>{source.name}</option>
+                                                        )}
+                                                    </Select>
+                                                </div>
+                                            </Flexblock>
+                                        }
+
+                                        {invention_info && [
+                                            ['planner-bpc-me', 'bpc_me', t('industry.orders.planner.bpc_me'), [0, 1, 2, 3, 4, 5]],
+                                            ['planner-bpc-te', 'bpc_te', t('industry.orders.planner.bpc_te'), [0, 2, 4, 6, 8, 10, 12, 14]],
+                                        ].map(([id, model, label, levels]) =>
+                                            <Flexblock
+                                                gap='var(--space-3xs)'
+                                                class="[ planner-settings-field planner-settings-field--compact ]"
+                                                x-show="blueprint_source === 'supplied_bpc'"
+                                                x-cloak
+                                            >
+                                                <label for={id as string}>{label}</label>
+                                                <div class="[ planner-settings-control ]">
+                                                    <Select id={id as string} size="sm" width="100%" x-model={model as string}>
+                                                        {(levels as number[]).map(level =>
+                                                            <option value={level}>{level}</option>
+                                                        )}
+                                                    </Select>
+                                                </div>
+                                            </Flexblock>
+                                        )}
 
                                         <Flexblock
                                             gap='var(--space-3xs)'
@@ -1613,8 +1741,42 @@ const planner_copy = JSON.stringify({
                                                     ></span>
                                                 </TextGroup>
                                             </div>
+                                            <div
+                                                class="[ planner-cost-summary__cell ]"
+                                                x-show="cost_breakdown?.invention_isk > 0"
+                                                x-cloak
+                                            >
+                                                <TextGroup title={t('industry.orders.planner.invention_cost')}>
+                                                    <span
+                                                        class="[ planner-tip ]"
+                                                        data-tippy-content={t('industry.orders.planner.invention_cost_tip')}
+                                                        x-text="formatIsk(cost_breakdown?.invention_isk) + ' ISK'"
+                                                    ></span>
+                                                </TextGroup>
+                                            </div>
                                         </div>
                                     </Flexblock>
+
+                                    {invention_info &&
+                                        <Fragment>
+                                            <div id="planner-invention-params" hidden>
+                                                <input type="hidden" name="type_id" x-bind:value="product_type_id" />
+                                                <input type="hidden" name="quantity" x-bind:value="Math.max(1, parseInt(quantity) || 1)" />
+                                                <input type="hidden" name="facility_key" x-bind:value="facility_key" />
+                                                <input type="hidden" name="decryptor" x-bind:value="decryptor" />
+                                                <input type="hidden" name="source_type_id" x-bind:value="invention_source_type_id" />
+                                            </div>
+                                            <div
+                                                class="[ planner-invention ]"
+                                                x-show="blueprint_source === 'invent' && cost_breakdown"
+                                                x-cloak
+                                                hx-get={translatePath('/partials/planner_invention_component')}
+                                                hx-include="#planner-invention-params"
+                                                hx-trigger="planner-invention-refresh from:body"
+                                                hx-swap="innerHTML"
+                                            ></div>
+                                        </Fragment>
+                                    }
 
                                     <textarea
                                         class="[ planner-tsv ]"

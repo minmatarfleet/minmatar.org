@@ -116,5 +116,7 @@ export const build = (overrides: Partial<ProductBuild> = {}): ProductBuild => ({
         { type_id: 34, name: "Tritanium", quantity: 9_000_000, unit_price: 3.64, line_cost: 32_760_000, strategy: "harvested", industry_product_id: 92 },
         { type_id: 57479, name: "Core Temperature Regulator", quantity: 3, unit_price: 3_352_945, line_cost: 10_058_835, strategy: null, industry_product_id: null },
     ],
+    invention: null,
+    invention_cost: null,
     ...overrides,
 });

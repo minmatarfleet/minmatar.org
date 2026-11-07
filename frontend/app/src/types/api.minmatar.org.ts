@@ -1388,30 +1388,18 @@ export interface ProductRunningJob {
     ends_at:            string;
 }
 
-export interface ProductBuildMaterial {
-    type_id:                number;
-    name:                   string;
-    quantity:               number;
-    unit_price:             number | null;
-    line_cost:              number | null;
-    strategy:               string | null;
-    industry_product_id:    number | null;
-}
-
+export type ProductBuildMaterial = ApiResponse<'ProductBuildMaterial'>
+export type ProductBuildInventionSource = ApiResponse<'ProductBuildInventionSource'>
+/** How a T2/T3 product's blueprint copy is invented (Build tab). */
+export type ProductBuildInvention = ApiResponse<'ProductBuildInvention'>
 /** One run at average prices: base SDE quantities and time, no ME/TE. */
-export interface ProductBuild {
-    product_id:         number;
-    type_id:            number;
-    blueprint_type_id:  number;
-    activity:           'manufacturing' | 'reaction';
-    products_per_run:   number;
-    time_seconds:       number;
-    sell_price:         number | null;
-    material_cost:      number | null;
-    margin:             number | null;
-    prices_complete:    boolean;
-    materials:          ProductBuildMaterial[];
-}
+export type ProductBuild = ApiResponse<'ProductBuild'>
+
+/** Invention sources and decryptors for a T2/T3 product (planner). */
+export type PlannerInventionInfo = ApiResponse<'PlannerInventionInfoSchema'>
+/** The chosen way to invent a lot's copies, its buy list and runners-up. */
+export type PlannerInvention = ApiResponse<'PlanInventionSchema'>
+export type PlannerInventionOption = ApiResponse<'PlanInventionOptionSchema'>
 
 export interface ProductWeek {
     week_start:         string;
