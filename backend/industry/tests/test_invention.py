@@ -730,6 +730,13 @@ class InventedPlanEndpointTests(ToyHacFixture):
         )
         self.assertGreater(data["cost_breakdown"]["invention_isk"], 0)
 
+    def test_step_savings_replan_keeps_the_invented_copy(self):
+        response = self._post(exclude_type_ids=[PLATE])
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertIsNotNone(data["invention"])
+        self.assertIn(PLATE, {row["type_id"] for row in data["step_savings"]})
+
     def test_supplied_copy_skips_invention(self):
         response = self._post(
             blueprint_source="supplied_bpc", bpc_me=4, bpc_te=10
