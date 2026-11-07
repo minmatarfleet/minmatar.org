@@ -133,17 +133,27 @@ def _route_label(route: EveFreightRoute) -> str:
     return f"{origin} → {dest}"
 
 
+_LOOK_UP_ROUTE = object()
+
+
 def estimate_freight_cost(
     *,
     facility_key: str,
     volume_m3: float,
     collateral_isk: int,
+    route=_LOOK_UP_ROUTE,
 ) -> FreightEstimate:
-    """Apply route pricing to a cargo volume + collateral, or zero if no route."""
+    """
+    Apply route pricing to a cargo volume + collateral, or zero if no route.
+
+    Pass ``route`` (an ``EveFreightRoute`` or None) when pricing many cargoes
+    into the same facility, so the route is looked up once.
+    """
     volume = max(0.0, float(volume_m3))
     billable = int(math.ceil(volume)) if volume > 0 else 0
     collateral = max(0, int(collateral_isk))
-    route = find_inbound_freight_route(facility_key)
+    if route is _LOOK_UP_ROUTE:
+        route = find_inbound_freight_route(facility_key)
     if route is None:
         return FreightEstimate(
             volume_m3=volume,

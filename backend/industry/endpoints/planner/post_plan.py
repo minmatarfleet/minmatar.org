@@ -1,7 +1,10 @@
 """POST /plans - calculate a full manufacture/reaction job plan for a product."""
 
+from dataclasses import asdict
+
 from eveuniverse.models import EveType
 
+from app.cache import cache_get, cache_set
 from app.errors import ErrorResponse
 from authentication import AuthOptional
 from buyback.helpers.purchase_refine import build_purchase_refine
@@ -37,6 +40,7 @@ from industry.helpers.loyalty_store import (
     navy_bpc_cost_for_plan,
     resolve_isk_per_lp,
 )
+from industry.helpers import plan_step_savings
 from industry.helpers.plan_stock import (
     apply_stock_to_compressed_ore_plan,
     apply_stock_to_leaf_materials,
@@ -303,6 +307,7 @@ def _plan_response_body(
     navy_bpc=None,
     stock_applied=None,
     stock_unresolved=None,
+    step_savings=None,
 ):
     navy_bpc_isk = navy_bpc.total_isk if navy_bpc is not None else 0
     cost_breakdown = cost_build_plan(
@@ -368,6 +373,17 @@ def _plan_response_body(
         "navy_bpc": navy_bpc.to_dict() if navy_bpc is not None else None,
         "stock_applied": _stock_applied_payload(stock_applied or []),
         "stock_unresolved": list(stock_unresolved or []),
+        "step_savings": [
+            {
+                "type_id": row.type_id,
+                "name": row.name,
+                "quantity": row.quantity,
+                "build_isk": row.build_isk,
+                "buy_isk": row.buy_isk,
+                "saving_isk": row.saving_isk,
+            }
+            for row in (step_savings or [])
+        ],
     }
 
 
@@ -489,6 +505,52 @@ def _execute_plan_build(eve_type, payload, key, me, te, exclude_type_ids):
         return 400, ErrorResponse(detail=msg)
 
 
+# Ticking a step replans with the same full tree, so the savings are cached
+# briefly rather than expanding the whole tree again on every toggle.
+STEP_SAVINGS_TTL_SECONDS = 600
+
+
+def _step_savings_cache_key(payload, key, me, te) -> str:
+    parts = [
+        payload.product_type_id,
+        payload.quantity,
+        me,
+        te,
+        key,
+        int(bool(payload.build_fuel_blocks)),
+        payload.max_runs_per_job or 0,
+    ]
+    return "industry_plan_step_savings:v1:" + ":".join(str(p) for p in parts)
+
+
+def _step_savings(plan, eve_type, payload, key, me, te, exclude_type_ids):
+    """
+    Build-vs-buy saving for every intermediate, ticked or not.
+
+    Bought steps have no job in ``plan``, so this values the steps from the
+    fully expanded plan (same settings, nothing excluded). A step's own job
+    and the units its parents consume are the same in any plan that builds
+    it.
+    """
+    cache_key = _step_savings_cache_key(payload, key, me, te)
+    if exclude_type_ids:
+        cached = cache_get(cache_key)
+        if cached is not None:
+            return [plan_step_savings.StepSaving(**row) for row in cached]
+        full_plan = _execute_plan_build(eve_type, payload, key, me, te, [])
+        if isinstance(full_plan, tuple):
+            return []
+    else:
+        full_plan = plan
+    savings = plan_step_savings.plan_step_savings(full_plan)
+    cache_set(
+        cache_key,
+        [asdict(row) for row in savings],
+        STEP_SAVINGS_TTL_SECONDS,
+    )
+    return savings
+
+
 def post_plan(request, payload: PlanRequestSchema):
     resolved, error = _resolve_plan_request(request, payload)
     if error is not None:
@@ -500,6 +562,9 @@ def post_plan(request, payload: PlanRequestSchema):
     )
     if isinstance(plan, tuple):
         return plan
+    step_savings = _step_savings(
+        plan, eve_type, payload, key, me, te, exclude_type_ids
+    )
 
     stock_applied_rows = []
     stock_unresolved = []
@@ -539,4 +604,5 @@ def post_plan(request, payload: PlanRequestSchema):
         navy_bpc=navy_bpc,
         stock_applied=stock_applied_rows,
         stock_unresolved=stock_unresolved,
+        step_savings=step_savings,
     )

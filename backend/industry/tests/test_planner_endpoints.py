@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import Client, SimpleTestCase, TestCase
 from eveuniverse.models import (
     EveCategory,
@@ -870,6 +871,90 @@ class PlannerPlanEndpointTestCase(TestCase):
         self.assertNotIn(adv.id, trimmed_jobs)
         leaf_ids = {m["type_id"] for m in data["leaf_materials"]}
         self.assertIn(adv.id, leaf_ids)
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_post_plan_step_savings_cover_bought_steps(self, resolve_indices):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        cache.clear()
+        cat, _ = EveCategory.objects.get_or_create(
+            id=17, defaults={"name": "Commodity", "published": True}
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=334,
+            defaults={
+                "name": "Construction Components",
+                "published": True,
+                "eve_category": cat,
+            },
+        )
+        adv = EveType.objects.create(
+            id=900220, name="Saving Adv", published=True, eve_group=group
+        )
+        bp_adv = EveType.objects.create(
+            id=900221,
+            name="Saving Adv Blueprint",
+            published=True,
+            eve_group=group,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp_adv, activity_id=1, product_eve_type=adv, quantity=1
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp_adv, activity_id=1, time=1000
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp_adv,
+            activity_id=1,
+            material_eve_type=self.trit,
+            quantity=50,
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=EveType.objects.get(id=900201),
+            activity_id=1,
+            material_eve_type=adv,
+            quantity=3,
+        )
+        EveMarketPrice.objects.create(
+            eve_type=adv, adjusted_price=900.0, average_price=1_000.0
+        )
+
+        def savings(exclude):
+            response = self.client.post(
+                f"{BASE}/plans",
+                data={
+                    "product_type_id": self.hull.id,
+                    "quantity": 1,
+                    "blueprint_me": 0,
+                    "blueprint_te": 0,
+                    "facility_key": "amamake",
+                    "exclude_type_ids": exclude,
+                },
+                content_type="application/json",
+                **self.auth,
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+            return {
+                row["type_id"]: row for row in response.json()["step_savings"]
+            }
+
+        built = savings([])
+        with patch(
+            "industry.helpers.plan_step_savings.plan_step_savings"
+        ) as recompute:
+            bought = savings([adv.id])
+        # Toggling a step reuses the cached full-tree savings.
+        recompute.assert_not_called()
+        # The bought step is still valued, the same as when it is built.
+        self.assertEqual(set(built), {adv.id})
+        self.assertEqual(bought, built)
+        row = built[adv.id]
+        self.assertEqual(row["quantity"], 3)
+        self.assertEqual(row["buy_isk"], 3_000)
+        self.assertGreaterEqual(row["build_isk"], 3 * 50 * 6)
+        self.assertEqual(row["saving_isk"], row["buy_isk"] - row["build_isk"])
+
+        cache.clear()
+        self.assertEqual(savings([adv.id]), built)
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
     def test_post_plan_stock_paste_reduces_leaf_materials(

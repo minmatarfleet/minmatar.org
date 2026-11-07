@@ -190,6 +190,14 @@ const planner_copy = JSON.stringify({
     refine_per_ore: t('industry.orders.planner.refine_per_ore'),
     error: t('industry.orders.planner.error'),
     subitem_import: t('industry.orders.planner.subitem_import').trim(),
+    step_saving_total: t('industry.orders.planner.step_saving_total'),
+    step_saving_total_loss: t('industry.orders.planner.step_saving_total_loss'),
+    step_saving_total_tip: t('industry.orders.planner.step_saving_total_tip'),
+    step_saves: t('industry.orders.planner.step_saves'),
+    step_costs_more: t('industry.orders.planner.step_costs_more'),
+    step_buy: t('industry.orders.planner.step_buy'),
+    step_build: t('industry.orders.planner.step_build'),
+    step_inputs_note: t('industry.orders.planner.step_inputs_note'),
 })
 ---
 
@@ -280,6 +288,7 @@ const planner_copy = JSON.stringify({
                             build_toggles: {},
                             product_type_id: ${product.type_id},
                             cost_breakdown: null,
+                            step_savings: {},
                             _replan_timer: null,
                             _suspend_watch: false,
                             _plan_generation: 0,
@@ -429,6 +438,94 @@ const planner_copy = JSON.stringify({
                             },
                             formatIsk(v) {
                                 return Number(v || 0).toLocaleString()
+                            },
+                            formatIskShort(v) {
+                                const abs = Math.abs(Number(v) || 0)
+                                const tiers = [[1e12, 'T', 2], [1e9, 'B', 1], [1e6, 'M', 1], [1e3, 'K', 0]]
+                                for (const [min, suffix, digits] of tiers) {
+                                    if (abs >= min)
+                                        return (abs / min).toFixed(digits) + suffix
+                                }
+                                return String(Math.round(abs))
+                            },
+                            // Build-vs-buy saving per sub-step (backend step_savings).
+                            // Each step is valued with its own inputs bought.
+                            stepSaving(type_id) {
+                                const row = this.step_savings[type_id]
+                                if (!row || row.saving_isk === null || row.saving_isk === undefined)
+                                    return null
+                                return row
+                            },
+                            signedIskShort(v) {
+                                const sign = v > 0 ? '+' : (v < 0 ? '−' : '')
+                                return sign + this.formatIskShort(v)
+                            },
+                            stepSavingText(type_id) {
+                                const row = this.stepSaving(type_id)
+                                return row ? this.signedIskShort(row.saving_isk) : ''
+                            },
+                            stepSavingTipHtml(type_id) {
+                                const row = this.stepSaving(type_id)
+                                if (!row)
+                                    return ''
+                                const n = this.formatIsk(row.quantity)
+                                const isk = this.formatIsk(Math.abs(row.saving_isk))
+                                const headline = row.saving_isk >= 0
+                                    ? this.copy.step_saves
+                                    : this.copy.step_costs_more
+                                return [
+                                    '<strong>'
+                                        + this.escapeHtml(headline.replace('{n}', n).replace('{isk}', isk))
+                                        + '</strong>',
+                                    this.escapeHtml(this.copy.step_buy) + ': '
+                                        + this.formatIsk(row.buy_isk) + ' ISK',
+                                    this.escapeHtml(this.copy.step_build) + ': '
+                                        + this.formatIsk(row.build_isk) + ' ISK',
+                                    '',
+                                    this.escapeHtml(this.copy.step_inputs_note),
+                                ].join('<br>')
+                            },
+                            checkedStepSavings() {
+                                let total = 0
+                                let any = false
+                                for (const [id, on] of Object.entries(this.build_toggles)) {
+                                    if (!on)
+                                        continue
+                                    const row = this.stepSaving(id)
+                                    if (!row)
+                                        continue
+                                    total += row.saving_isk
+                                    any = true
+                                }
+                                return any ? total : null
+                            },
+                            checkedStepSavingsText() {
+                                const total = this.checkedStepSavings()
+                                if (total === null)
+                                    return ''
+                                const template = total < 0
+                                    ? this.copy.step_saving_total_loss
+                                    : this.copy.step_saving_total
+                                return template.replace('{isk}', this.formatIskShort(total))
+                            },
+                            bindTip($el, content) {
+                                if (!$el || typeof tippy === 'undefined')
+                                    return
+                                if (!content) {
+                                    if ($el._tippy)
+                                        $el._tippy.destroy()
+                                    return
+                                }
+                                if ($el._tippy) {
+                                    $el._tippy.setContent(content)
+                                } else {
+                                    tippy($el, {
+                                        delay: [100, 200],
+                                        arrow: true,
+                                        allowHTML: true,
+                                        content,
+                                    })
+                                }
                             },
                             costBreakdownTipHtml(mode) {
                                 const breakdown = this.cost_breakdown
@@ -860,6 +957,9 @@ const planner_copy = JSON.stringify({
                                         return
                                     }
                                     this.cost_breakdown = data.cost_breakdown || null
+                                    this.step_savings = Object.fromEntries(
+                                        (data.step_savings || []).map(row => [row.type_id, row])
+                                    )
                                     this.materials_tsv = data.materials_tsv || ''
                                     this.stock_applied_count = (data.stock_applied || []).length
                                     this.stock_unresolved_count = (data.stock_unresolved || []).length
@@ -877,6 +977,7 @@ const planner_copy = JSON.stringify({
                                     this.error = e.message || this.copy.error
                                     this.materials_tsv = ''
                                     this.cost_breakdown = null
+                                    this.step_savings = {}
                                     this.stock_applied_count = 0
                                     this.stock_unresolved_count = 0
                                 } finally {
@@ -1300,7 +1401,17 @@ const planner_copy = JSON.stringify({
 
                             <ComponentBlock x-show="subitemBuckets().length > 0" x-cloak>
                                 <Flexblock gap='var(--space-s)'>
-                                    <h2>{t('industry.orders.planner.subitems')}</h2>
+                                    <FlexInline justification='space-between' gap='var(--space-s)' class="[ w-full flex-wrap items-baseline ]">
+                                        <h2>{t('industry.orders.planner.subitems')}</h2>
+                                        <span
+                                            class="[ planner-saving planner-saving--total ]"
+                                            x-show="checkedStepSavingsText()"
+                                            x-cloak
+                                            x-text="checkedStepSavingsText()"
+                                            x-bind:class="(checkedStepSavings() ?? 0) < 0 ? 'planner-saving--loss' : 'planner-saving--gain'"
+                                            x-effect="bindTip($el, checkedStepSavingsText() ? copy.step_saving_total_tip : '')"
+                                        ></span>
+                                    </FlexInline>
                                     <p class="[ text-gray planner-section-hint ]">{t('industry.orders.planner.subitems_hint')}</p>
                                     <template x-for="group in subitemBuckets()" :key="group.key">
                                         <Flexblock gap='var(--space-2xs)' class="[ planner-bucket ]">
@@ -1346,6 +1457,17 @@ const planner_copy = JSON.stringify({
                                                         x-text="build_toggles[String(job.product_type_id)]
                                                             ? jobRunLabel(job)
                                                             : copy.subitem_import"
+                                                    ></small>
+                                                    <small
+                                                        class="[ planner-saving ]"
+                                                        x-show="stepSavingText(job.product_type_id)"
+                                                        x-text="stepSavingText(job.product_type_id)"
+                                                        x-bind:class="{
+                                                            'planner-saving--loss': (stepSaving(job.product_type_id)?.saving_isk ?? 0) < 0,
+                                                            'planner-saving--gain': (stepSaving(job.product_type_id)?.saving_isk ?? 0) >= 0,
+                                                            'planner-saving--off': !build_toggles[String(job.product_type_id)],
+                                                        }"
+                                                        x-effect="bindTip($el, stepSavingTipHtml(job.product_type_id))"
                                                     ></small>
                                                 </label>
                                             </template>
@@ -1762,6 +1884,30 @@ const planner_copy = JSON.stringify({
         gap: var(--space-2xs);
         cursor: pointer;
         padding-block: 0.15rem;
+    }
+
+    .planner-saving {
+        margin-inline-start: auto;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        transition: opacity var(--fast-transition);
+    }
+
+    .planner-saving--total {
+        margin-inline-start: 0;
+        font-size: var(--step-0);
+    }
+
+    .planner-saving--gain {
+        color: var(--green);
+    }
+
+    .planner-saving--loss {
+        color: var(--fleet-red);
+    }
+
+    .planner-saving--off {
+        opacity: 0.6;
     }
 
     .planner-subitem-icon {

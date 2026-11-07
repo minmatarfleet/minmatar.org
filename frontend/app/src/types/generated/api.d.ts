@@ -22082,6 +22082,11 @@ export interface components {
             /** Reaction Index */
             reaction_index: number;
             /**
+             * Step Savings
+             * @default []
+             */
+            step_savings?: components["schemas"]["PlanStepSavingSchema"][];
+            /**
              * Stock Applied
              * @default []
              */
@@ -22108,6 +22113,24 @@ export interface components {
             name: string;
             /** Skill Id */
             skill_id: number;
+        };
+        /**
+         * PlanStepSavingSchema
+         * @description Build vs buy for one intermediate step, with its inputs bought.
+         */
+        PlanStepSavingSchema: {
+            /** Build Isk */
+            build_isk: number;
+            /** Buy Isk */
+            buy_isk?: number | null;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Saving Isk */
+            saving_isk?: number | null;
+            /** Type Id */
+            type_id: number;
         };
         /** PlanStockAppliedSchema */
         PlanStockAppliedSchema: {
