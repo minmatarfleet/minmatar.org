@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from discord.models import DiscordChannel
 from groups.helpers.feature_access import can_use_feature
 from help_tickets.models import HelpRequestCategory, HelpTicketPanel
 from tribes.models import TribeGroup
@@ -48,6 +49,8 @@ class HelpPanelResponse(BaseModel):
     # Discord snowflakes do not fit in a JavaScript number, so they travel as strings.
     channel_id: str
     message_id: Optional[str] = None
+    # The channel's name from the synced Discord channels, when known.
+    channel_name: Optional[str] = None
 
 
 class HelpSettingsResponse(BaseModel):
@@ -92,9 +95,17 @@ def _snowflake(value: int | None) -> str | None:
 
 
 def _panel_row(panel: HelpTicketPanel) -> dict:
+    channel = (
+        DiscordChannel.objects.filter(channel_id=panel.channel_id)
+        .values_list("name", flat=True)
+        .first()
+        if panel.channel_id
+        else None
+    )
     return {
         "channel_id": str(panel.channel_id),
         "message_id": _snowflake(panel.message_id),
+        "channel_name": channel,
     }
 
 

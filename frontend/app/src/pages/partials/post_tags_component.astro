@@ -6,8 +6,11 @@ import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_response
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 
-// no-error-refetch: a form save; a failed save shows in the panel it swaps back.
-// POST creates, renames or merges a post tag; GET (a refetch) just lists. Both answer with the tag panel.
+// GET lists the tags (the page's retry) or, with ?part=preview, renders a
+// merge's consequence in post counts. POST creates, renames or merges a tag
+// and answers with the tag panel; a rename's row picks itself out with
+// hx-select. A failed create or merge answers 400 with the message, which
+// the dialog that posted it shows.
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
@@ -15,47 +18,100 @@ const gates = await get_gates(Astro)
 if (!can(gates, 'posts.tags.manage')) return HTTP_403_Forbidden()
 
 const is_post = Astro.request.method === 'POST'
+const params = Astro.url.searchParams
 
-import type { PostTag } from '@dtypes/api.minmatar.org'
-import { create_post_tag, get_posts_tags, merge_post_tag, rename_post_tag } from '@helpers/api.minmatar.org/posts'
+import type { PostTagCount, PostTagMergePreview } from '@dtypes/api.minmatar.org'
+import {
+    create_post_tag,
+    get_post_tag_counts,
+    get_post_tag_merge_preview,
+    merge_post_tag,
+    rename_post_tag,
+} from '@helpers/api.minmatar.org/posts'
 
 const form = is_post ? await Astro.request.formData() : new FormData()
 const text = (key: string) => ((form.get(key) as string | null) ?? '').trim()
 const action = text('action')
-const tag_id = parseInt(text('tag_id'))
-const into_tag_id = parseInt(text('into_tag_id'))
+const tag_id = parseInt(is_post ? text('tag_id') : (params.get('tag_id') ?? ''))
+const into_tag_id = parseInt(is_post ? text('into_tag_id') : (params.get('into_tag_id') ?? ''))
+const is_preview = !is_post && params.get('part') === 'preview'
 
+const posts_text = (count: number) => count === 1 ? t('admin_content.tags.posts_one') : t('admin_content.tags.posts_many').replace('~COUNT', String(count))
+const failed = (message: string) => new Response(message, { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+
+let preview: PostTagMergePreview | null = null
+let preview_error: string | null = null
 let error: string | null = null
 let notice: string | null = null
+let saved_id: number | null = null
+let row_error: { tag_id: number, message: string, value: string } | null = null
 
-try {
-    if (!is_post) {
-        // nothing to save
-    } else if (action === 'create') {
-        const tag = await create_post_tag(auth_token, text('tag'))
-        notice = t('post_tags.manage.created').replace('{tag}', tag.tag)
-    } else if (action === 'rename' && tag_id) {
-        const tag = await rename_post_tag(auth_token, tag_id, text('tag'))
-        notice = t('post_tags.manage.renamed').replace('{tag}', tag.tag)
-    } else if (action === 'merge' && tag_id && into_tag_id) {
-        const tag = await merge_post_tag(auth_token, tag_id, into_tag_id)
-        notice = t('post_tags.manage.merged').replace('{tag}', tag.tag)
-    } else {
-        return HTTP_400_Bad_Request()
+if (is_preview) {
+    if (!tag_id || !into_tag_id) return HTTP_400_Bad_Request()
+    try {
+        preview = await get_post_tag_merge_preview(auth_token, tag_id, into_tag_id)
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        preview_error = (failure as Error).message
     }
-} catch (failure) {
-    if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
-    error = (failure as Error).message
+} else if (is_post) {
+    try {
+        if (action === 'create') {
+            const tag = await create_post_tag(auth_token, text('tag'))
+            notice = t('post_tags.manage.created').replace('{tag}', tag.tag)
+        } else if (action === 'rename' && tag_id) {
+            try {
+                await rename_post_tag(auth_token, tag_id, text('tag'))
+                saved_id = tag_id
+            } catch (failure) {
+                if ((failure as Error).cause === 403) throw failure
+                row_error = { tag_id, message: (failure as Error).message, value: text('tag') }
+            }
+        } else if (action === 'merge' && tag_id && into_tag_id) {
+            const tag = await merge_post_tag(auth_token, tag_id, into_tag_id)
+            notice = t('post_tags.manage.merged').replace('{tag}', tag.tag)
+        } else {
+            return HTTP_400_Bad_Request()
+        }
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        return failed((failure as Error).message)
+    }
 }
 
-let tags: PostTag[] = []
-try {
-    tags = await get_posts_tags()
-} catch (failure) {
-    error = error ?? (failure as Error).message
+let tags: PostTagCount[] = []
+if (!is_preview) {
+    try {
+        tags = await get_post_tag_counts(auth_token)
+    } catch (failure) {
+        if ((failure as Error).cause === 403) return HTTP_403_Forbidden()
+        error = (failure as Error).message
+    }
 }
 
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import PostTagsManager from '@components/blocks/PostTagsManager.astro'
 ---
 
-<PostTagsManager tags={tags} error={error} notice={notice} />
+{is_preview ?
+    <span data-merge-consequence>
+        {preview ?
+            <Fragment>
+                {preview.moving === 0
+                    ? t('admin_content.tags.merge_none').replace('~INTO', preview.into_tag)
+                    : t('admin_content.tags.merge_moves')
+                        .replace('~POSTS', posts_text(preview.moving))
+                        .replace('~INTO', preview.into_tag)
+                        .replace('~TOTAL', String(preview.into_total))}
+                {' '}
+                {t('admin_content.tags.merge_deleted').replace('~NAME', preview.tag)}
+            </Fragment>
+            :
+            <span class="[ manage-field__error ]">{preview_error}</span>
+        }
+    </span>
+    : error && tags.length === 0 ?
+    <ErrorRefetch args={{ partial: Astro.url.pathname, error: new Error(error), delay: 0 }} />
+    :
+    <PostTagsManager tags={tags} saved_id={saved_id} row_error={row_error} error={error} notice={notice} />
+}

@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, translatePath, lang } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
@@ -42,12 +42,13 @@ const tabs = [
 const page_title = t('reddit_review.page_title')
 
 import Viewport from '@layouts/Viewport.astro'
-import PageWide from '@components/page/PageWide.astro'
-import PageTitle from '@components/page/PageTitle.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
 import RedditReviewQueue from '@components/blocks/RedditReviewQueue.astro'
 import RedditRotationPanel from '@components/blocks/RedditRotationPanel.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
@@ -55,30 +56,25 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('page_finder.reddit_review.description')}>
-    <PageWide
-        cover={{
-            image: '/images/propaganda-cover.jpg',
-            image_990: '/images/propaganda-cover.jpg',
-            overlay: true,
-            scrollable: true,
-        }}
-    >
-        <PageTitle slot="header">{page_title}</PageTitle>
-
-        <Flexblock gap="var(--space-l)">
-            <p>{t('reddit_review.leading_text')}</p>
-            {data_fetching_error ?
-                <ErrorRefetch args={{ partial: translatePath('/partials/reddit_review_component'), error: data_fetching_error, delay: 0 }} />
-                :
-                <SectionTabs aria_label={t('reddit_review.tabs_label')} id_prefix="reddit-review" tabs={tabs}>
-                    <SectionTabPanel id="queue" id_prefix="reddit-review" is_default={true}>
-                        <RedditReviewQueue items={items} />
-                    </SectionTabPanel>
-                    <SectionTabPanel id="rotation" id_prefix="reddit-review">
-                        <RedditRotationPanel months={months} />
-                    </SectionTabPanel>
-                </SectionTabs>
-            }
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} />
+            <ManageHero title={page_title} role={t('admin_content.reddit.role')} fact={t('admin_content.reddit.fact')} />
         </Flexblock>
-    </PageWide>
+
+        {data_fetching_error ?
+            <ErrorRefetch args={{ partial: translatePath('/partials/reddit_review_component'), error: data_fetching_error, delay: 0 }} />
+            :
+            <SectionTabs aria_label={t('reddit_review.tabs_label')} id_prefix="reddit-review" tabs={tabs}>
+                <SectionTabPanel id="queue" id_prefix="reddit-review" is_default={true}>
+                    <RedditReviewQueue items={items} />
+                </SectionTabPanel>
+                <SectionTabPanel id="rotation" id_prefix="reddit-review">
+                    <RedditRotationPanel months={months} />
+                </SectionTabPanel>
+            </SectionTabs>
+        }
+    </Flexblock>
+</PageLanding>
 </Viewport>

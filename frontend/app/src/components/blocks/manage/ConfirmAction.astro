@@ -9,6 +9,10 @@
  * The dialog is teleported to <body>, so `target` must be an id selector,
  * not `closest ...`. Reversible actions skip the confirm.
  *
+ * Slots: `fields` (inputs posted with the confirm, above the consequence,
+ * e.g. the merge target select) and `consequence` (markup that replaces the
+ * `consequence` text, e.g. a span an htmx select re-renders).
+ *
  *   <ConfirmAction
  *       label={t('...delete_timer')} title={t('...delete_title').replace('~NAME', name)}
  *       consequence={t('...delete_consequence')} confirm_label={t('...delete')}
@@ -89,13 +93,16 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         hx-include={include}
         x-data="{ submitting: false }"
         {...{
-            'x-on:htmx:before-request': 'submitting = true',
-            'x-on:htmx:after-request': `submitting = false; if ($event.detail.successful) close_dialog(); else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
+            // Only the confirm's own request: a field's htmx (a select that
+            // re-renders the consequence) bubbles here too.
+            'x-on:htmx:before-request': 'if ($event.detail.elt === $el) submitting = true',
+            'x-on:htmx:after-request': `if ($event.detail.elt !== $el) return; submitting = false; if ($event.detail.successful) close_dialog(); else $refs.error.textContent = $event.detail.xhr.responseText.replace(/<[^>]*>/g, '').trim() || ${JSON.stringify(t('manage.kit.confirm_failed'))}`,
         }}
     >
         {Object.entries(vals).map(([name, value]) => <input type="hidden" name={name} value={String(value)} />)}
         <h3>{title}</h3>
-        <p class="[ manage-confirm__consequence ]">{consequence}</p>
+        <slot name="fields" />
+        <p class="[ manage-confirm__consequence ]"><slot name="consequence">{consequence}</slot></p>
         <p class="[ manage-confirm__error manage-field__error ]" role="alert" x-ref="error"></p>
         <FlexInline justification="flex-end">
             <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">

@@ -1,100 +1,335 @@
 ---
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { RedditReviewItem } from '@dtypes/api.minmatar.org'
 
-/** Pending Reddit templates and changes beside the approved text, with approve and reject. reddit_review_component saves and answers with this panel again. */
+/**
+ * The Reddit approvals queue, one request at a time: who asked, a
+ * "1 of N · Next" pager, the requested words as a word diff against the
+ * approved post (or side by side), Approve, and Reject with a reason for the
+ * CEO. reddit_review_component renders it, runs the decision and answers with
+ * this panel again.
+ */
 interface Props {
     items:              RedditReviewItem[];
+    /** Which request to show (clamped to the queue). */
+    index?:             number;
     error?:             string | null;
     notice?:            string | null;
     [propName: string]: any;
 }
 
-const { items, error = null, notice = null } = Astro.props
+const { items, index: requested_index = 0, error = null, notice = null } = Astro.props
 
 const PARTIAL_URL = translatePath('/partials/reddit_review_component')
+const index = items.length ? Math.min(Math.max(0, requested_index), items.length - 1) : 0
+const item = items[index] ?? null
+const next_index = items.length > 1 ? (index + 1) % items.length : null
+const next_item = next_index !== null ? items[next_index] : null
 
-import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import EmptyState from '@components/blocks/EmptyState.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import Grid from '@components/compositions/Grid.astro'
-import Input from '@components/blocks/Input.astro'
-import ManagePanel from '@components/blocks/ManagePanel.astro'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import { age_parts } from '@helpers/manage'
+import { word_diff } from '@helpers/word_diff'
 
-const attrs = {
+const age = age_parts(item?.submitted_at)
+const age_text = age ? t('manage.kit.time_ago').replace('~TIME', t(t_key('manage.age_', age.unit)).replace('~N', String(age.value))) : null
+const sub_line = item
+    ? [
+        item.first_approval ? t('admin_content.reddit.new_post') : t('admin_content.reddit.change'),
+        item.submitted_by,
+        age_text,
+    ].filter(Boolean).join(' · ')
+    : ''
+
+const title_diff = item && !item.first_approval ? word_diff(item.current_title, item.requested_title) : []
+const body_diff = item && !item.first_approval ? word_diff(item.current_content, item.requested_content) : []
+
+const decide = {
     'hx-post': PARTIAL_URL,
     'hx-target': '#reddit-review-queue',
     'hx-swap': 'outerHTML',
     'hx-disabled-elt': 'find button',
 }
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
 ---
 
-<ManagePanel id="reddit-review-queue">
-    {error && <p class="[ manage-panel__error ]" role="alert">{error}</p>}
-    {notice && <p class="[ manage-panel__notice ]" role="status">{notice}</p>}
+<section id="reddit-review-queue" class="[ reddit-review ]" aria-live="polite">
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+    {notice && <p class="[ manage-saved ]" role="status">{notice}</p>}
 
-    {items.length === 0 ?
-        <EmptyState title={t('reddit_review.queue.empty')} />
+    {item === null ?
+        <EmptyState title={t('reddit_review.queue.empty')} hint={t('admin_content.reddit.empty_hint')} />
         :
-        items.map(item =>
-            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)" id={item.change_id ? `change-${item.change_id}` : undefined}>
-                <Flexblock gap="var(--space-xs)">
-                    <h2 class="[ manage-panel__heading ]">
-                        {item.corporation_name} [{item.corporation_ticker}]
-                        {' · '}
-                        {item.first_approval ? t('reddit_review.queue.first') : t('reddit_review.queue.change')}
-                        {item.submitted_by && <Fragment>{' · '}{item.submitted_by}</Fragment>}
-                    </h2>
-                    <Grid min_item_width="20rem" row_gap="var(--space-s)" column_gap="var(--space-s)">
-                        {!item.first_approval &&
-                            <Flexblock gap="var(--space-3xs)">
-                                <span class="[ manage-panel__muted ]">{t('reddit_review.queue.current')}</span>
-                                <strong>{item.current_title}</strong>
-                                <pre class="[ reddit-review__text ]">{item.current_content}</pre>
-                            </Flexblock>
-                        }
-                        <Flexblock gap="var(--space-3xs)">
-                            <span class="[ manage-panel__muted ]">{t('reddit_review.queue.requested')}</span>
-                            <strong>{item.requested_title}</strong>
-                            <pre class="[ reddit-review__text ]">{item.requested_content}</pre>
-                        </Flexblock>
-                    </Grid>
-
-                    <div class="[ manage-panel__form ]">
-                        <form class="[ manage-panel__form ]" {...attrs}>
-                            <input type="hidden" name="action" value={item.change_id ? 'approve_change' : 'approve_template'} />
-                            <input type="hidden" name="id" value={item.change_id ?? item.template_id} />
-                            <Button type="submit" size="sm" color="green">{t('reddit_review.queue.approve')}</Button>
-                        </form>
-                        {item.change_id &&
-                            <form class="[ manage-panel__form ]" {...attrs}>
-                                <input type="hidden" name="action" value="reject_change" />
-                                <input type="hidden" name="id" value={item.change_id} />
-                                <label class="[ manage-panel__field ]">
-                                    <span class="[ visually-hidden ]">{t('reddit_review.queue.reason')}</span>
-                                    <Input type="text" name="note" size="sm" maxlength="500" placeholder={t('reddit_review.queue.reason')} autocomplete="off" />
-                                </label>
-                                <Button type="submit" size="sm">{t('reddit_review.queue.reject')}</Button>
-                            </form>
-                        }
+        <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+            <div class="[ reddit-review__inner ]" x-data="{ mode: 'changes', rejecting: false }">
+                <header class="[ reddit-review__head ]">
+                    <img src={get_corporation_logo(item.corporation_id, 64)} width="56" height="56" alt="" class="[ reddit-review__logo ]" />
+                    <div class="[ reddit-review__who ]">
+                        <h2 class="[ reddit-review__name ]">{item.corporation_name}</h2>
+                        <span class="[ reddit-review__sub ]">{sub_line}</span>
                     </div>
-                </Flexblock>
-            </ComponentBlock>
-        )
+                    <nav class="[ reddit-review__pager ]" aria-label={t('admin_content.reddit.pager')}>
+                        <span class="[ manage-muted ]">{t('admin_content.reddit.position').replace('~N', String(index + 1)).replace('~TOTAL', String(items.length))}</span>
+                        {next_item && next_index !== null &&
+                            <button
+                                type="button"
+                                class="[ reddit-review__next ]"
+                                hx-get={`${PARTIAL_URL}?view=queue&index=${next_index}`}
+                                hx-target="#reddit-review-queue"
+                                hx-swap="outerHTML"
+                            >
+                                {t('admin_content.reddit.next').replace('~NAME', next_item.corporation_name)}
+                            </button>
+                        }
+                    </nav>
+                </header>
+
+                {!item.first_approval &&
+                    <div class="[ reddit-review__modes ]" role="group" aria-label={t('admin_content.reddit.view')}>
+                        <button type="button" x-on:click="mode = 'changes'" x-bind:aria-pressed="mode === 'changes'" aria-pressed="true">{t('admin_content.reddit.changes')}</button>
+                        <button type="button" x-on:click="mode = 'split'" x-bind:aria-pressed="mode === 'split'" aria-pressed="false">{t('admin_content.reddit.side_by_side')}</button>
+                    </div>
+                }
+
+                {item.first_approval ?
+                    <div class="[ reddit-review__text ]">
+                        <p class="[ reddit-review__title ]">{item.requested_title}</p>
+                        <div class="[ reddit-review__body ]">{item.requested_content}</div>
+                    </div>
+                    :
+                    <Fragment>
+                        <div class="[ reddit-review__text ]" x-show="mode === 'changes'">
+                            <p class="[ reddit-review__title ]">
+                                {title_diff.map(part =>
+                                    part.kind === 'add' ? <ins>{part.text}</ins>
+                                    : part.kind === 'del' ? <del>{part.text}</del>
+                                    : part.text
+                                )}
+                            </p>
+                            <div class="[ reddit-review__body ]">
+                                {body_diff.map(part =>
+                                    part.kind === 'add' ? <ins>{part.text}</ins>
+                                    : part.kind === 'del' ? <del>{part.text}</del>
+                                    : part.text
+                                )}
+                            </div>
+                        </div>
+                        <div class="[ reddit-review__split ]" x-show="mode === 'split'" x-cloak>
+                            <div class="[ reddit-review__text ]">
+                                <span class="[ manage-eyebrow ]">{t('admin_content.reddit.approved_now')}</span>
+                                <p class="[ reddit-review__title ]">{item.current_title}</p>
+                                <div class="[ reddit-review__body ]">{item.current_content}</div>
+                            </div>
+                            <div class="[ reddit-review__text ]">
+                                <span class="[ manage-eyebrow is-red ]">{t('admin_content.reddit.requested')}</span>
+                                <p class="[ reddit-review__title ]">{item.requested_title}</p>
+                                <div class="[ reddit-review__body ]">{item.requested_content}</div>
+                            </div>
+                        </div>
+                    </Fragment>
+                }
+
+                <div class="[ manage-actions ]" x-show="!rejecting">
+                    <form {...decide}>
+                        <input type="hidden" name="action" value={item.change_id ? 'approve_change' : 'approve_template'} />
+                        <input type="hidden" name="id" value={item.change_id ?? item.template_id} />
+                        <input type="hidden" name="index" value={index} />
+                        <Button type="submit" size="sm">{t('reddit_review.queue.approve')}</Button>
+                    </form>
+                    {item.change_id &&
+                        <Button type="button" size="sm" color="transparent" x-on:click="rejecting = true; $nextTick(() => $refs.reason.focus())">
+                            {t('admin_content.reddit.reject')}
+                        </Button>
+                    }
+                    <span class="[ manage-actions__end manage-muted reddit-review__note ]">
+                        {item.first_approval ? t('admin_content.reddit.until_first') : t('admin_content.reddit.until_change')}
+                    </span>
+                </div>
+
+                {item.change_id &&
+                    <form class="[ manage-form ]" x-show="rejecting" x-cloak {...decide}>
+                        <input type="hidden" name="action" value="reject_change" />
+                        <input type="hidden" name="id" value={item.change_id} />
+                        <input type="hidden" name="index" value={index} />
+                        <ManageField label={t('reddit_review.queue.reason')} for={`reddit-reason-${item.change_id}`} hint={t('admin_content.reddit.reason_hint')}>
+                            <textarea
+                                id={`reddit-reason-${item.change_id}`}
+                                name="note"
+                                rows="3"
+                                maxlength="500"
+                                required
+                                x-ref="reason"
+                                class="[ reddit-review__reason ]"
+                            ></textarea>
+                        </ManageField>
+                        <div class="[ manage-actions ]">
+                            <Button type="submit" size="sm">{t('admin_content.reddit.send_rejection')}</Button>
+                            <Button type="button" size="sm" color="transparent" x-on:click="rejecting = false">{t('cancel')}</Button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </ComponentBlock>
     }
-</ManagePanel>
+</section>
 
 <style lang="scss" is:global>
-    .reddit-review__text {
+    .reddit-review {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .reddit-review__inner {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .reddit-review__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-s);
+    }
+
+    .reddit-review__logo {
+        width: var(--space-xl);
+        height: var(--space-xl);
+        flex: 0 0 auto;
+    }
+
+    .reddit-review__who {
+        flex: 1 1 10rem;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .reddit-review__name {
         margin: 0;
-        max-height: 20rem;
-        overflow: auto;
-        white-space: pre-wrap;
-        font-family: var(--default-font);
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .reddit-review__sub {
         font-size: var(--step--1);
         color: var(--foreground);
+    }
+
+    .reddit-review__pager {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-xs);
+        font-size: var(--step--1);
+    }
+
+    .reddit-review__next {
+        padding: 0;
+        background: none;
+        border: 0;
+        font: inherit;
+        color: var(--highlight);
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .reddit-review__modes {
+        display: inline-flex;
+        align-self: flex-start;
+        border: 1px solid var(--hairline-strong);
+
+        button {
+            padding: var(--space-3xs) var(--space-s);
+            background: transparent;
+            border: 0;
+            font: inherit;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        button[aria-pressed='true'] {
+            background: var(--hairline-medium);
+            color: var(--highlight);
+        }
+    }
+
+    .reddit-review__text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        min-width: 0;
+        padding: var(--space-s) var(--space-m);
+        background: var(--surface-sunken);
+
+        @media (max-width: 48rem) {
+            padding: var(--space-s);
+        }
+    }
+
+    .reddit-review__split {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .reddit-review__title {
+        margin: 0;
+        font-size: var(--step-1);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .reddit-review__body {
+        max-height: 32rem;
+        overflow: auto;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        color: var(--foreground);
+    }
+
+    .reddit-review__text ins {
+        text-decoration: none;
+        color: var(--highlight);
+        background: color-mix(in srgb, var(--green) 30%, transparent);
+    }
+
+    .reddit-review__text del {
+        color: var(--text-muted);
+        background: color-mix(in srgb, var(--fleet-red) 25%, transparent);
+    }
+
+    .reddit-review__note {
+        font-size: var(--step--1);
+    }
+
+    .reddit-review__reason {
+        width: 100%;
+        padding: var(--space-2xs) var(--space-xs);
+        background: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
+        color: var(--foreground);
+        font: inherit;
+        resize: vertical;
+
+        &:focus-visible {
+            outline: 1px solid var(--fleet-yellow);
+            outline-offset: 0;
+        }
     }
 </style>

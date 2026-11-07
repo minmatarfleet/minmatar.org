@@ -1,0 +1,82 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { HelpSettings } from '@dtypes/api.minmatar.org'
+
+/**
+ * What the #help panel looks like in Discord: one button per shown option,
+ * in panel order. `oob` re-renders it out of band after an option save.
+ */
+interface Props {
+    settings:   HelpSettings;
+    oob?:       boolean;
+}
+
+const { settings, oob = false } = Astro.props
+
+const shown = settings.categories.filter(category => category.is_active)
+const has_channel = Boolean(settings.panel.channel_id) && settings.panel.channel_id !== '0'
+const channel = settings.panel.channel_name
+    ? `#${settings.panel.channel_name}`
+    : has_channel ? t('admin_content.help.channel_unknown') : t('admin_content.help.preview_no_channel')
+---
+
+<div id="help-panel-preview" class="[ help-preview ]" hx-swap-oob={oob ? 'true' : undefined}>
+    <h3 class="[ manage-eyebrow ]">{t('admin_content.help.preview_title')}</h3>
+    <div class="[ help-preview__message ]">
+        <span class="[ help-preview__channel ]">{channel}</span>
+        {shown.length === 0 ?
+            <span class="[ manage-muted ]">{t('admin_content.help.preview_empty')}</span>
+            :
+            <ul class="[ help-preview__buttons ]" role="list" aria-label={t('admin_content.help.preview_title')}>
+                {shown.map(category => <li>{category.title}</li>)}
+            </ul>
+        }
+    </div>
+</div>
+
+<style lang="scss" is:global>
+    .help-preview {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    // Discord's embed: a blurple bar on a grey card. Discord's own colours, so
+    // they are mixed from tokens toward the look rather than copied.
+    .help-preview__message {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s) var(--space-m);
+        background: color-mix(in srgb, var(--alliance-blue) 8%, var(--surface-sunken));
+        border-inline-start: 4px solid color-mix(in srgb, var(--alliance-blue) 60%, var(--militia-purple));
+
+        @media (max-width: 48rem) {
+            padding: var(--space-s);
+        }
+    }
+
+    .help-preview__channel {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .help-preview__buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            padding: var(--space-3xs) var(--space-xs);
+            font-size: var(--step--1);
+            color: var(--highlight);
+            background: var(--hairline-strong);
+            border-radius: 3px;
+        }
+    }
+</style>

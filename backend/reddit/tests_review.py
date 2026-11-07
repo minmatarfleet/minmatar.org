@@ -117,6 +117,14 @@ class ReviewDecisionTestCase(ReviewApiTestCase):
             "Too many cakes", queue_dm.call_args.kwargs["messages"][0]
         )
 
+    def test_reject_needs_a_reason(self, queue_dm):
+        change = self.pending()[1]
+        response = self.post(f"/changes/{change.pk}/reject", {"note": "  "})
+        self.assertEqual(400, response.status_code)
+        change.refresh_from_db()
+        self.assertEqual(RedditPostChangeRequest.PENDING, change.status)
+        queue_dm.assert_not_called()
+
     def test_approve_a_template_with_no_change(self, queue_dm):
         post = self.make_post()
         response = self.post(f"/templates/{post.pk}/approve")
@@ -150,6 +158,10 @@ class ReviewRotationTestCase(ReviewApiTestCase):
         listed = data["months"][0]
         self.assertEqual(
             "Rattini Tribe", listed["posts"][0]["corporation_name"]
+        )
+        self.assertEqual(
+            post.corporation.corporation_id,
+            listed["posts"][0]["corporation_id"],
         )
         with patch(
             "reddit.review_router.schedule.publish", return_value=1

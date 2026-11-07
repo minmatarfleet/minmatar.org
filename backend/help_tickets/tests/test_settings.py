@@ -6,6 +6,7 @@ from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 
 from app.testing import make_token
+from discord.models import DiscordChannel, DiscordGuild
 from help_tickets.models import HelpRequestCategory, HelpTicketPanel
 from tribes.models import Tribe, TribeGroup
 
@@ -164,3 +165,20 @@ class HelpSettingsTestCase(TestCase):
             400,
             self.send("patch", "/panel", {"channel_id": "nope"}).status_code,
         )
+
+    def test_panel_names_its_channel(self):
+        self.grant()
+        snowflake = "1183401618943791186"
+        unknown = self.send("patch", "/panel", {"channel_id": snowflake})
+        self.assertIsNone(unknown.json()["channel_name"])
+        guild, _ = DiscordGuild.objects.get_or_create(
+            guild_id=1, defaults={"name": "Minmatar"}
+        )
+        DiscordChannel.objects.create(
+            channel_id=int(snowflake),
+            guild=guild,
+            name="help",
+            channel_type=DiscordChannel.TEXT,
+        )
+        data = self.send("get", "/settings").json()
+        self.assertEqual("help", data["panel"]["channel_name"])
