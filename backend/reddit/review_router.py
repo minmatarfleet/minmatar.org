@@ -66,6 +66,7 @@ class RedditReviewDecision(Schema):
 class RedditRotationPost(Schema):
     post_id: int
     template_id: int
+    corporation_id: Optional[int] = None
     corporation_name: str
     corporation_ticker: str
     title: str
@@ -274,6 +275,7 @@ def _post_row(post: RedditPost) -> dict:
     return {
         "post_id": post.id,
         "template_id": template.id,
+        "corporation_id": corporation.corporation_id,
         "corporation_name": corporation.name,
         "corporation_ticker": corporation.ticker or "",
         "title": post.title or template.title,

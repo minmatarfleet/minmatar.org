@@ -159,6 +159,10 @@ class ReviewRotationTestCase(ReviewApiTestCase):
         self.assertEqual(
             "Rattini Tribe", listed["posts"][0]["corporation_name"]
         )
+        self.assertEqual(
+            post.corporation.corporation_id,
+            listed["posts"][0]["corporation_id"],
+        )
         with patch(
             "reddit.review_router.schedule.publish", return_value=1
         ) as publish:
