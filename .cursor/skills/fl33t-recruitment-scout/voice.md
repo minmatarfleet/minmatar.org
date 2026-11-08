@@ -13,9 +13,11 @@ should go, so you just tell them, the way you would tell a friend who asked.
 
 Three things make a reply sound like a person:
 
-1. **Talk to them.** Use "you". Use "we" and "our" for the alliance and its
-   corps, because we live there. A reply with no "you" or "we" in it is a
-   listing, not a comment.
+1. **Talk to them.** Use "you". Use "we" and "our" for the alliance and for
+   your own corp, because you live there: our alliance, our Discord, our war.
+   A corp you are not in is "they", and you say it is in our alliance so the
+   reply still comes from a member. A reply with no "you", "we" or "our" in
+   it is a listing, not a comment.
 2. **Say one thing.** Pick the one reason they belong with us and say it.
    Then name the corp, or the warzone. Then stop. Do not fold their whole post
    back into the reply to prove you read it.
@@ -84,7 +86,9 @@ And when the thread is crowded, one line is a whole reply:
 > my.minmatar.org is what you're looking for.
 
 Notice what these do. They open with an opinion or a direct answer. They say
-"you", "we", "I'd". One of them quotes the poster's own line and answers it.
+"you", "we", "I'd", and "we" is the alliance or the writer's own corp, never
+a corp they are not in. One of them quotes the poster's own line and answers
+it.
 They are fine with "probably the best fit for you" once, because that is how
 people talk. Several of them are rude about wormholes. None of them restate
 the poster's post.
@@ -103,8 +107,8 @@ same disease: the poster's details stacked into a noun phrase, then "is
 Written by a person:
 
 > Soltech Armada is where I'd send you. Big EUTZ fleets out of Amamake, you
-> take the broadcast and shoot, and nobody cares if you never say a word on
-> comms. 160m SP on one character is plenty for a line seat.
+> take the broadcast and shoot, and they won't care if you never say a word
+> on comms. 160m SP on one character is plenty for a line seat.
 
 Four rewrites, four different first moves: a recommendation, an order, an
 opinion, a condition. Do not copy one of them onto every draft.
@@ -138,8 +142,9 @@ Written by a person:
 Written by a person:
 
 > If you want somewhere to send that T2 output, Minmatar Extraction Company
-> is the industry corp feeding our war. Highsec bulwark systems, Amo fleets
-> when you want company in the belt, and nobody will drag you to a gate camp.
+> is the industry corp feeding our war. They sit in highsec bulwark systems,
+> run Amo fleets when you want company in the belt, and nobody there will
+> drag you to a gate camp.
 
 ## Tells to catch before you paste
 
@@ -149,9 +154,9 @@ these:
 - **The stacked opener.** Their details as the subject of the sentence, then
   "is <corp>" or "is what <corp> flies" or "is the <corp> job". This is the
   number one tell. Open with an opinion, an answer, or the corp instead.
-- **No person in it.** No "you", "we", "our", or "I'd" anywhere.
-- **Third person about our own corps.** "They will walk you through" when
-  the corp is ours. We, not they.
+- **No person in it.** No "you", "we", "our", or "I'd" anywhere. "They" for
+  a corp you are not in is right, but then "in our alliance", "our Discord"
+  or "I'd send you" has to be somewhere, or it reads as a brochure.
 - **Template openers.** "Not sure X is the Y", "X is the usual story",
   "X is a normal start there", "X is where the fights moved". Once was fine.
   They are used up now.
