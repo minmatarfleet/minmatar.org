@@ -8,7 +8,12 @@ from eveonline.constants import (
     HOLDING_CORPORATION_TICKER,
     MINMATAR_FLEET_ALLIANCE_ID,
 )
-from eveonline.models import EveAlliance, EveCharacter, EveCorporation
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EvePlayer,
+)
 from groups.features.registry import FEATURE_DEFINITIONS
 from groups.helpers.feature_access import clear_feature_cache
 from groups.management.commands.sync_pilot_features import (
@@ -108,6 +113,51 @@ class MeGatesTestCase(TestCase):
             [
                 {"corporation_id": 98000011, "name": "Zulu Led"},
                 {"corporation_id": 98000010, "name": "Alpha Directed"},
+            ],
+        )
+
+    def test_led_corporations_puts_primary_corporation_first(self):
+        alliance = EveAlliance.objects.create(
+            alliance_id=MINMATAR_FLEET_ALLIANCE_ID,
+            name="FL33T",
+            ticker="FL33T",
+        )
+        earlier = EveCorporation.objects.create(
+            corporation_id=98000020,
+            name="Alpha Corp",
+            alliance=alliance,
+        )
+        primary_corp = EveCorporation.objects.create(
+            corporation_id=98000021,
+            name="Zulu Corp",
+            alliance=alliance,
+        )
+        main = EveCharacter.objects.create(
+            character_id=4001,
+            character_name="Main",
+            user=self.user,
+            corporation_id=primary_corp.corporation_id,
+        )
+        alt = EveCharacter.objects.create(
+            character_id=4002,
+            character_name="Alt",
+            user=self.user,
+            corporation_id=earlier.corporation_id,
+        )
+        primary_corp.ceo = main
+        primary_corp.save()
+        earlier.ceo = alt
+        earlier.save()
+        EvePlayer.objects.create(
+            nickname="pilot",
+            user=self.user,
+            primary_character=main,
+        )
+        self.assertEqual(
+            self._get().json()["led_corporations"],
+            [
+                {"corporation_id": 98000021, "name": "Zulu Corp"},
+                {"corporation_id": 98000020, "name": "Alpha Corp"},
             ],
         )
 

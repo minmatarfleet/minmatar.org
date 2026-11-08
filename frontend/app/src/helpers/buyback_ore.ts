@@ -38,13 +38,18 @@ const PI_CATEGORY_RANK: Record<string, number> = {
     p4: 3,
 }
 
-export function buyback_ore_base(name: string): string | null {
+/** Family name after Compressed, grade, and moon prefixes are removed. */
+export function ore_variant_family(name: string): string | null {
     let rest = name.startsWith('Compressed ')
         ? name.slice('Compressed '.length)
         : name
-    rest = rest.replace(GRADE_SUFFIX_RE, '')
-    rest = rest.replace(MOON_PREFIX_RE, '')
-    return BUYBACK_ORE_BASE_SET.has(rest) ? rest : null
+    rest = rest.replace(GRADE_SUFFIX_RE, '').replace(MOON_PREFIX_RE, '').trim()
+    return rest || null
+}
+
+export function buyback_ore_base(name: string): string | null {
+    const rest = ore_variant_family(name)
+    return rest && BUYBACK_ORE_BASE_SET.has(rest) ? rest : null
 }
 
 export function compressed_buyback_ore_base(name: string): string | null {
@@ -168,7 +173,8 @@ export function group_stock_items(items: StockGroupItem[]): StockGroup[] {
     const leftover_other: StockGroupItem[] = []
 
     for (const item of items) {
-        const base = buyback_ore_base(item.name)
+        const known = buyback_ore_base(item.name)
+        const base = known ?? (item.category === 'ore' ? ore_variant_family(item.name) : null)
         if (base) {
             const group = by_base.get(base) ?? []
             group.push(item)
@@ -186,9 +192,21 @@ export function group_stock_items(items: StockGroupItem[]): StockGroup[] {
         leftover_other.push(item)
     }
 
-    const ores = BUYBACK_ORE_BASES
+    for (const base of [...by_base.keys()]) {
+        const group = by_base.get(base) ?? []
+        if (BUYBACK_ORE_BASE_SET.has(base) || group.length >= 2) continue
+        leftover_ores.push(...group)
+        by_base.delete(base)
+    }
+
+    const known_ores = BUYBACK_ORE_BASES
         .filter((base) => by_base.has(base))
         .map((base) => make_ore_group(base, by_base.get(base) ?? []))
+    const extra_ores = [...by_base.keys()]
+        .filter((base) => !BUYBACK_ORE_BASE_SET.has(base))
+        .sort((a, b) => a.localeCompare(b))
+        .map((base) => make_ore_group(base, by_base.get(base) ?? []))
+    const ores = [...known_ores, ...extra_ores]
 
     leftover_ores.sort((a, b) => a.name.localeCompare(b.name))
     leftover_pi.sort(compare_pi)
