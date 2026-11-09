@@ -33,8 +33,13 @@ const {
 
 delete attributes.class
 
-const x_data = attributes['x-data'] ?? ''
-const x_data_elements = x_data ? x_data.slice(1, -1) : ''
+// A bare `x-data` is the boolean true. `x-data="{...}"` is the string form.
+// Both mean the caller wants an Alpine scope (so `x-on:click` runs). Only the
+// string form has inner expressions to keep; calling `.slice` on true throws
+// and the corporation Apply tab becomes "Internal server error".
+const raw_x_data = attributes['x-data']
+const wants_alpine_scope = raw_x_data === true || typeof raw_x_data === 'string'
+const x_data_elements = typeof raw_x_data === 'string' ? raw_x_data.slice(1, -1) : ''
 const x_on = attributes['x-on:click.prevent'] ?? undefined
 
 delete attributes['x-data']
@@ -66,9 +71,9 @@ const nested_x_data = external ? `{
             })
         },
         ${x_data_elements}
-    }` : (x_data_elements ? `{
-        ${x_data_elements}
-    }` : undefined)
+    }` : (wants_alpine_scope ? (x_data_elements.trim() ? `{
+        ${x_data_elements.trim()}
+    }` : '{}') : undefined)
 ---
 
 <Element
