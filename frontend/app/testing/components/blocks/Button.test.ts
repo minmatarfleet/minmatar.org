@@ -56,6 +56,39 @@ test("a plain button is enabled once Alpine loads", async () => {
   expect(result).toContain("removeAttribute(");
 });
 
+test("bare x-data is an empty Alpine scope so x-on:click can run", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(Button, {
+    props: {
+      href: "#corporation-apply",
+      "x-data": true,
+      "x-on:click": "target.click()",
+    },
+    slots: {
+      default: "Start application",
+    },
+  });
+
+  expect(result).toContain("Start application");
+  expect(result).toContain('x-data="{}"');
+  expect(result).toContain('x-on:click="target.click()"');
+});
+
+test("x-data object string keeps its expressions", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(Button, {
+    props: {
+      "x-data": "{ open: false }",
+    },
+    slots: {
+      default: "Buy",
+    },
+  });
+
+  expect(result).toContain("open: false");
+  expect(result).toContain("x-data=");
+});
+
 test("internal Button with href does not isolate an empty Alpine scope", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(Button, {
