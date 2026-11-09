@@ -28,6 +28,34 @@ test("external Button looks up show_alert_dialog on body and passes accept_href"
   expect(result).not.toMatch(/[^.]show_alert_dialog\(\{/);
 });
 
+test("x-bind:disabled is not cleared on init", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(Button, {
+    props: {
+      "x-bind:disabled": "error",
+      type: "submit",
+    },
+    slots: {
+      default: "Apply",
+    },
+  });
+
+  expect(result).toContain("x-bind:disabled");
+  expect(result).not.toContain("removeAttribute(");
+  expect(result).toContain("disabled");
+});
+
+test("a plain button is enabled once Alpine loads", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(Button, {
+    slots: {
+      default: "Save",
+    },
+  });
+
+  expect(result).toContain("removeAttribute(");
+});
+
 test("internal Button with href does not isolate an empty Alpine scope", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(Button, {

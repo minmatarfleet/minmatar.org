@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-09 — Corporation Apply closes with nothing saved
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** explained in the thread before the fix; no further ping
+**PR:** fix+skill
+**Symptom vs cause:** Apply fired a real submit and no `EveCorporationApplication` was created. The button init stripped `disabled` while the form was already invalid, so Apply stayed clickable. Roles and the confirmation checkboxes are not browser-required, the server rejected that body, and the dialog closed on the click.
+**Durable rule:** A corporation Apply submit with no application row is this button. Keep `x-bind:disabled` in charge, require a role and the confirmation checkboxes, and do not close the dialog in the submit handler.
+**Skill update:** added the corporation Apply row.
+
 ## 2026-11-06 — Dread SRP refused: alt not in the strategic fleet
 
 **Category:** pulse.technology

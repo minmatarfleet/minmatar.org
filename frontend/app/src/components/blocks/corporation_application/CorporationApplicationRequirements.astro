@@ -43,6 +43,7 @@ const fieldName = (key: string) =>
             type="checkbox"
             name={fieldName('agree_tenets')}
             x-model="agree_tenets"
+            required
             x-on:change="updateApplicationStatus()"
         >
             <Markdown
@@ -59,6 +60,7 @@ const fieldName = (key: string) =>
                 type="checkbox"
                 name={fieldName('confirm_omega')}
                 x-model="confirm_omega"
+                required
                 x-on:change="updateApplicationStatus()"
             >
                 <Markdown markdown={t('l3arn_application_confirm_omega')} inline={true} inline_element='span' />
@@ -70,6 +72,7 @@ const fieldName = (key: string) =>
             type="checkbox"
             name={fieldName('confirm_auth_chars')}
             x-model="confirm_auth_chars"
+            required
             x-on:change="updateApplicationStatus()"
         >
             <Markdown markdown={t('l3arn_application_confirm_auth')} inline={true} inline_element='span' />
