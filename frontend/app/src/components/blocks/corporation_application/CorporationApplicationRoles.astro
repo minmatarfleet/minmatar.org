@@ -45,6 +45,7 @@ const fieldName = (key: string) =>
                 name={fieldName('roles')}
                 value={role}
                 x-model="roles"
+                x-bind:required="!roles.length"
                 x-on:change="updateApplicationStatus()"
             >
                 <Markdown markdown={t(t_key('l3arn_application_role_', role))} inline={true} inline_element='span' />
