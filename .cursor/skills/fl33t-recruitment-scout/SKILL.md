@@ -15,8 +15,10 @@ your alliance already replied, route to the best corp, and draft short human
 outreach.
 
 **This is an agent skill first.** The durable, improving part is this document
-plus [examples.md](examples.md): workflow, judgment, voice. `examples.md` starts
-empty — add real outreach there as learnings accumulate.
+plus [voice.md](voice.md) (how a reply sounds) and [examples.md](examples.md)
+(routing and send-shape corrections from past runs). Add to `examples.md`
+after sending outreach; add to `voice.md` only when a reply that sounded like a
+person is worth copying.
 
 `scripts/` holds **optional single-purpose fetchers** the agent can mix and match.
 They do not route corps or draft messages. You can also hit endpoints and browse
@@ -28,7 +30,7 @@ Configurable for any alliance. The reference implementation uses
 ## Quick start
 
 **Agent workflow (primary):** follow the two phases below. Read corp bios, scan
-sources, judge fit, draft outreach per examples.
+sources, judge fit, then read `voice.md` and draft.
 
 **Optional fetchers** (run only what you need):
 
@@ -76,7 +78,7 @@ Task Progress:
 - [ ] Read each thread; decide responded vs open
 - [ ] Route each open prospect to one primary corp (from pre-scout bios)
 - [ ] Register each open thread for a tracking code (track_outreach.py register)
-- [ ] Draft outreach using voice rules below (+ any entries in examples.md), with tracked hrefs
+- [ ] Read voice.md, then draft outreach with tracked hrefs
 - [ ] Present the four-part output (overview, already replied, need to reply, copy-pastable replies)
 ```
 
@@ -91,8 +93,9 @@ Task Progress:
 | When to link ads vs plain discord | Hardcoded per-corp rules |
 | New corp focus or requirements | Config that duplicates the API |
 
-Update [examples.md](examples.md) after sending outreach that worked — that is the
-feedback loop. Do not pre-fill templates.
+Update [examples.md](examples.md) after sending outreach: paste what was sent and
+one plain sentence on what changed. That is the feedback loop for routing and
+send-shape. Voice lives in [voice.md](voice.md); do not pre-fill templates.
 
 ### Data scripts (pick what you need)
 
@@ -170,7 +173,7 @@ and corp focus to active ads, not stale positioning.
 
 #### 1c. Recent AARs and capital videos (proof media)
 
-Gather fresh **battle reports and capital / big-fight videos** to weave into
+Gather fresh **battle reports and capital / big-fight videos** to use in
 outreach — especially Rattini (caps / multi-box vets) and WH→FW or casual-null
 redirects. Primary source: **`u/BearThatCares`** Reddit submissions (default
 lookback **45 days**).
@@ -216,7 +219,7 @@ Replace rows when a new mega-fight AAR posts. URLs also live in `config.json`
 | Video | Bring Fun Shit | `https://youtu.be/7-eGTtq9vWo` | Every r/evejobs and forum send |
 | Video | Rock Hoppin' | `https://youtu.be/XCApG7Pt6m4` | Mining/industry extra |
 | AAR | 625B down in Amamake (27 Sep YC128) | `https://www.reddit.com/r/Eve/comments/1wr8ohf/aar_625b_down_in_amamake/` | Default extra AAR (newest big fight). r/eve plug when the thread is about fights. |
-| AAR | 700B down in Ahbazon (1 Aug YC128) | `https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/` | Caps / Rattini / dread-feed hook. r/eve plug when they asked about capitals. |
+| AAR | 700B down in Ahbazon (1 Aug YC128) | `https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/` | Caps / Rattini / the dread-feed joke. r/eve plug when they asked about capitals. |
 | Site | Monthly Warzone Report | `https://my.minmatar.org/warzone/` | Forums onebox / casual-null / action-location threads. r/eve plug when they ask how the war is going. |
 | Site | Amamake market report | `https://my.minmatar.org/amamake-market/` | r/eve plug when the ask is mining, market, ISK, or the station economy. |
 | Site | Corporation directory | `https://my.minmatar.org/alliance/corporations/` | Dual-route, self-serve bios |
@@ -262,7 +265,7 @@ in section 4) when:
 - **WH-only seekers** — blunt FW redirect (session ISK/kills, no scanning)
   unless they are USTZ new or early-intermediate with wormhole use on the side,
   which is SOEXD. Bring Fun Shit always; optional WH-operator credibility. Add
-  the newest kit AAR when the thread can take a second proof beat. Do not force
+  the newest kit AAR when the thread has room for a second proof link. Do not force
   SLTAR or ARAT into a jspace-locked thread unless they leave lowsec open.
 - **Sov-null mining / industry seekers** — highsec bulwark + Extraction fleet density;
   never “we have sov too.”
@@ -350,139 +353,69 @@ Additional principles:
 - **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; the MFA network on `discord.gg/minmatar` for general industry/PvE. Do not name a Discord person. Dual accounts (mining main + PvP alt) can split Extraction + the FW seat that matches the combat character. On forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume). Close with **Bring Fun Shit then Rock Hoppin'** (two blocks).
 - **Ex-FL33T returning:** if they already left Rattini and are not asking for dreads or a pile of characters, route **SLTAR** rather than sending them back to ARAT.
 - **Caps / multi-box veterans:** ARAT. Unused capital + learning lowsec → ARAT (own the dread-feed joke). Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
-- **WH-only veterans, or jspace with no USTZ new/early-intermediate hook:** nameless FW redirect plus Bring Fun Shit and the newest kit AAR. Do not close that redirect with Rock Hoppin'. SOEXD is for USTZ new and early-intermediate pilots who still want a hole on the side.
+- **WH-only veterans, or jspace with no USTZ new/early-intermediate angle:** nameless FW redirect plus Bring Fun Shit and the newest kit AAR. Do not close that redirect with Rock Hoppin'. SOEXD is for USTZ new and early-intermediate pilots who still want a hole on the side.
 - **Alliance positioning:** we are a **faction warfare** alliance. Daily content is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting, structure timers, or bloc null. If OP wants dedicated sov-null mining, pitch highsec bulwarks / Extraction instead — never "we have sov too." If OP wants dedicated nullbloc PAP/CRAB lifestyle with no industry-or-FW opening, leave unanswered rather than inventing a null pitch.
 - **Proof closes above are for r/evejobs and the forums.** On r/eve, keep the seat in section 3, then send the content plug instead of the ad and video stack.
 
 ### Draft outreach
 
-Read [examples.md](examples.md) for past learnings if any exist. Every recommended
-**pitch** is **one short paragraph** — punchy, readable on a phone, no line breaks
-inside that block. Proof video and forum oneboxes are **separate send blocks**,
-never glued onto the pitch sentence.
+Read [voice.md](voice.md) now, then draft. It is the voice guide: who is
+talking, real replies that sounded like a person next to scout drafts that
+did not, and the tells to catch before pasting. This section is only the
+send-shape: how long, and where the links go on each surface.
 
-#### Shape (r/evejobs and forums)
+The pitch is **one short paragraph, two sentences by default**, readable on
+a phone without scrolling. One sentence when the thread is crowded, three
+only when they asked something a second sentence cannot cover. Proof videos
+and forum oneboxes are **separate blocks**, never glued onto the pitch.
 
-**One pitch paragraph. 2–4 sentences max.** Weave their detail, name one primary
-corp, what it does, then ad link and/or discord inline at the end of that
-paragraph only. No bullet lists, no wall of text. This shape is for r/evejobs
-and the EVE forums. r/eve uses the content plug below.
+#### Send-shape (required)
 
-```
-[hook: their words, a fear, or what the corp does — first sentence grabs attention]
-
-[corp + one concrete detail tied to their post + optional graduate/alt corp in passing]
-
-[ad link and/or discord.gg/minmatar woven into the last sentence of the pitch]
-```
-
-**Send-shape (required — do not collapse into the pitch):**
-
-| Surface | After the pitch paragraph |
-|---------|---------------------------|
-| **r/evejobs** | Pitch has no URLs. Blank line, then `Some links`, then a markdown bullet list. Discord and my.minmatar.org bullets use tracked hrefs. See section 4. |
-| **r/eve** | No pitch. One or two sentences, then exactly one content URL. See below. |
-| **Forums** | Pitch keeps the ad URL as bare text and `discord.gg/minmatar` as a tracked link in the last sentence. Then each proof URL on its own line so Discourse embeds it (Bring Fun Shit, Rock Hoppin' when mining, one AAR). Do not bold YouTube URLs. Do not use the Reddit `Some links` list. |
+| Surface | The pitch | After the pitch |
+|---------|-----------|-----------------|
+| **r/evejobs** | No URLs inside it. | Blank line, the line `Some links`, then a markdown bullet list. Discord and my.minmatar.org bullets use tracked hrefs. See section 4. |
+| **r/eve** | No pitch. One or two sentences that answer the thread. No corp name. | Exactly one content URL on its own line. See below. |
+| **Forums** | The ad URL as bare text and `discord.gg/minmatar` as a tracked link in the last sentence. | Each proof URL on its own line so Discourse embeds it: Bring Fun Shit, Rock Hoppin' when mining, one AAR. No bold YouTube URLs. No `Some links` list. |
 
 #### r/eve (content plug)
 
 r/eve is a discussion subreddit. The people in the thread are there for the
 post, so a corporation name, an r/evejobs ad, or a Discord invite reads as a
-recruiter who wandered in. Answer the thread by handing them one piece of
-content from the warzone. Section 3 still names the seat from the routing map
-so the recruiter knows the direction. The copy block is the plug.
+recruiter who wandered in. Answer the thread like a pilot pointing at a
+writeup, then hand them one piece of content. Section 3 still names the seat
+from the routing map so the recruiter knows the direction. The copy block is
+the plug.
 
-**Voice**
-
-- Sound like a pilot pointing at a writeup. One or two sentences, then the URL
-  on its own line.
-- The sentence answers their question and names the place (Amamake, the
-  Amarr-Minmatar warzone, highsec bulwarks). It can say the writeup is ours
-  ("our monthly warzone report", "the Amamake market report"). That is the
-  tie back. Stop there.
-- Do not name a corporation. Do not describe a roster, culture, or
-  requirements. Do not say we are recruiting.
-- Never link an r/evejobs recruitment ad. Never use `Some links`. Never
-  include Discord, Bring Fun Shit, or Rock Hoppin'.
-- Exactly one URL, on its own line, with no label and no bullets. The URL is
-  the comment. Do not skip it.
+- One or two sentences that answer their question and name the place
+  (Amamake, the Amarr-Minmatar warzone, highsec bulwarks). It can say the
+  writeup is ours ("our monthly warzone report"). That is the tie back.
+- Do not name a corporation, describe a roster, or say we are recruiting.
+  Never link an r/evejobs ad, Discord, Bring Fun Shit, or Rock Hoppin'.
+- Exactly one URL, on its own line, no label, no bullets. The URL is the
+  comment. Do not skip it.
 - Pick the piece that matches the thread:
-  - Fights, faction warfare, "where's the action," returning to shoot: the
+  - Fights, faction warfare, "where's the action", returning to shoot: the
     newest kit AAR. Capitals: the cap-feed AAR.
   - How the war is going, occupancy, a returning pilot asking what changed:
     the monthly warzone report.
   - Mining, market, ISK, industry, the station economy: the Amamake market
     report.
 - Warzone and Amamake links use tracked hrefs. AARs stay bare Reddit URLs.
-- Still vary openings across a run. On r/eve, use direct answer, contrast, or
-  blunt. Corp-first stays on r/evejobs.
 
 ```
 [one or two sentences that answer the thread and point at the piece]
 
-<blank line>
 [one URL alone]
 ```
 
-#### Variety (mandatory per scout run)
+#### Before you present
 
-Draft all messages, compare side by side. Same rhythm = rewrite. Vary **how the
-paragraph opens**, not how many paragraphs there are:
-
-| Opening | First sentence… |
-|---------|-----------------|
-| Corp-first | What the corp does |
-| OP-first | Their situation in plain words |
-| Direct answer | Answers their question |
-| Blunt | Ultra-tight when thread is saturated |
-| Negative `tracks` | Only when OP vented |
-| Contrast | "not sure X is wrong but…" |
-
-Do not repeat the same opening mode or the same first three words across messages
-in one run. Rotate how link/discord land (end of sentence, after corp name, etc.).
-
-**Self-check:** each message should be scannable in under 5 seconds. **r/evejobs
-and forum** drafts include Bring Fun Shit. Mining/industry on those surfaces
-also includes Rock Hoppin'. PvP/FW/caps/redirects on those surfaces also include
-the newest kit AAR when the thread has room. **r/eve** drafts stay one or
-two sentences plus exactly one content URL.
-
-**Voice rules:**
-
-- Sound human, not marketing. No em dashes. No AI filler.
-- Do not open with "Hey —" or "I saw your post".
-- **Weave, don't dump.** Work one or two OP details into the pitch naturally.
-  Vary where they land: sometimes lead with corp, sometimes with their situation,
-  sometimes with a direct reply to their question. Never open every message with
-  the same comma-chain mirror (`holland, eu nights, new but wanting pvp?`).
-- **No question-form mirroring.** Do not restate their post as a rhetorical
-  question (`industry, mining ops, pve, fw sounds interesting?`).
-- **No salesy fit language.** Avoid "probably the move", "good fit", "probably
-  the best fit", "worth a look" stacked together, or listing `you want X, Y, Z`.
-  Describe the corp; let them decide.
-- **`tracks` is for negatives only.** Valid: `goons feeling like a number tracks`.
-  Invalid: `sons of bane taking care of people tracks`. Positive nostalgia gets
-  a plain statement (`hard to find another sons of bane since winter co days`).
-- One primary corp. Alliance mention is a footnote, not a second pitch.
-- Stats only when they kill a stated fear (e.g. member count answers "not a 3
-  person discord").
-- No zkill links, no competitor comparisons, no brochure bullet lists.
-- **No nullsec pitch.** Never mention sovereignty, null ratting, null deployment,
-  or "we have sov too" in outreach. We are FW/lowsec; sov-null seekers get skipped
-  or an honest FW pitch only if their ask fits.
-- **One paragraph only** for the corp pitch on r/evejobs and forums. Those two
-  surfaces share that block. Link + discord inline in the pitch; skip discord
-  when the ad link is enough. **Bring Fun Shit is required on every r/evejobs
-  and forum send**, own block (see send-shape). Rock Hoppin' is extra for
-  mining/industry there, never a BFS substitute. Add one Current-kit AAR for
-  PvP/caps/redirects as they land; do not paste proof URLs into the pitch
-  paragraph. r/eve does not use this stack. The r/eve reply is the content
-  plug above.
-- **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
-  as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
-- **Industry Discord:** `discord.gg/minmatar` only. Do not name a person to ask
-  for. Minmatar Extraction Company has no public Discord contact on the roster.
-- Keep motivational lines only when OP is about to quit EVE (still one paragraph).
+Read every draft in the run back to back against the "Tells to catch" list
+in `voice.md`. Two drafts that open the same way or share a phrase means one
+gets rewritten. Then check the proof stack: r/evejobs and forum drafts
+include Bring Fun Shit; mining and industry on those surfaces also include
+Rock Hoppin'; PvP, FW, caps and redirects there add the newest kit AAR when
+the thread has room. r/eve drafts stay one or two sentences plus one URL.
 
 ### Tracked links
 

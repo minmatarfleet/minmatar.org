@@ -3,8 +3,10 @@
 An agent skill (Claude Code or Cursor) for finding pilots who are **looking for a corporation**,
 routing them to the right corp, and drafting short, human outreach replies.
 
-**The skill is the product.** `SKILL.md` defines workflow and judgment.
-`examples.md` stores real outreach learnings as they accumulate (starts empty).
+**The skill is the product.** `SKILL.md` defines workflow, routing and the
+send-shape. `voice.md` defines how a reply sounds, with real sends next to
+scout drafts that had to be rewritten. `examples.md` stores routing and
+send-shape corrections as they accumulate.
 
 `scripts/` provides **single-purpose fetchers** the agent can run à la carte —
 not a monolithic pipeline.

@@ -1,6 +1,33 @@
 # Outreach learnings
 
-Real responses that worked. Add entries here after you send outreach — no templates.
+Routing and send-shape corrections from past runs, newest first. For how a
+reply should sound, read [voice.md](voice.md); do not copy the voice of the
+scout drafts quoted below, many of them are the pattern voice.md warns about.
+
+When you add an entry: paste what was actually sent, name the seat, and write
+one plain sentence on what changed and why. No templates, no copywriting
+jargon ("hook", "beat", "fear-kill", "weave").
+
+---
+
+## 2026-11-08 replies read as AI
+
+Recruiter correction. The Sep 24 to Nov 7 r/evejobs sends all had the same
+shape: the poster's details stacked into one noun phrase, then "is <corp>"
+("Large EUTZ fleets, one ship at a time, no FC seat, is Soltech Armada out of
+Amamake"). Seventeen of thirty-nine scout-shaped replies opened that way,
+twenty-one had no "you" or "we" in them, and the same phrases came back run
+after run ("second job", "log on, shoot, log off", "sovereignty calendar",
+"is normal there", "Not sure X is the Y").
+
+The cause was the voice section in SKILL.md: a list of things not to say, a
+fill-in template with a "hook", and a table of six named opening modes that
+smaller models rotated through like a schedule. That section is gone. The
+voice now lives in [voice.md](voice.md): who is talking, real hand-typed sends
+next to the scout drafts for the same threads, and the tells to catch before
+pasting. Send-shape stays in SKILL.md.
+
+Scout drafts quoted in the entries below are history, not the voice to copy.
 
 ---
 
