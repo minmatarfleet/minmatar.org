@@ -13,5 +13,10 @@ test("ButtonCorpApply defaults", async () => {
     },
   });
 
-  // expect(result).toMatchSnapshot();
+  expect(result).toContain('x-bind:disabled="error"');
+  expect(result).toContain('x-on:submit="if (error) { $event.preventDefault() }"');
+  expect(result).not.toContain("close_dialog(); $nextTick");
+  expect(result).toContain('x-on:click="close_dialog()"');
+  expect(result).toContain('x-bind:required="!roles.length"');
+  expect(result).toContain("required");
 });

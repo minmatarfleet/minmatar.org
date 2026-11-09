@@ -55,9 +55,7 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
         x-data={is_l3arn
             ? l3arnApplicationAlpineState(false)
             : corporationApplicationAlpineState(false)}
-        x-on:submit={is_l3arn
-            ? "if (error) { $event.preventDefault(); return }; close_dialog(); $nextTick(() => clearL3arnForm())"
-            : "if (error) { $event.preventDefault(); return }; close_dialog(); $nextTick(() => clearCorpApplicationForm())"}
+        x-on:submit="if (error) { $event.preventDefault() }"
         x-init={is_l3arn ? "initL3arnForm()" : "initCorpApplicationForm()"}
     >
         <Wrapper
