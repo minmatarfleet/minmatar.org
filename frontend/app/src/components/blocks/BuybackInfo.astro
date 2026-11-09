@@ -4,10 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { BuybackAcceptedItem, BuybackSettings } from '@dtypes/api.minmatar.org'
 import type { DisplayItem } from '@dtypes/layout_components'
-import {
-    BUYBACK_ORE_BASES,
-    compressed_buyback_ore_base,
-} from '@helpers/buyback_ore'
+import { buyback_ore_base, ore_variant_family } from '@helpers/buyback_ore'
 
 interface Props {
     settings: BuybackSettings;
@@ -87,7 +84,7 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
     const leftover: BuybackAcceptedItem[] = []
 
     for (const item of items) {
-        const base = compressed_buyback_ore_base(item.name)
+        const base = ore_variant_family(item.name)
         if (!base) {
             leftover.push(item)
             continue
@@ -97,8 +94,15 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
         by_base.set(base, group)
     }
 
-    const grouped: DisplayItem[] = BUYBACK_ORE_BASES
-        .filter((base) => by_base.has(base))
+    for (const base of [...by_base.keys()]) {
+        const variants = by_base.get(base) ?? []
+        if (buyback_ore_base(`Compressed ${base}`) || variants.length >= 2) continue
+        leftover.push(...variants)
+        by_base.delete(base)
+    }
+
+    const grouped: DisplayItem[] = [...by_base.keys()]
+        .sort((a, b) => a.localeCompare(b))
         .map((base) => {
             const variants = (by_base.get(base) ?? [])
                 .slice()

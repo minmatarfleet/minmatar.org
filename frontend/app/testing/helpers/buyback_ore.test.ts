@@ -5,6 +5,7 @@ import {
     compressed_buyback_ore_base,
     group_stock_items,
     janice_tsv_from_stock_groups,
+    ore_variant_family,
     type StockGroupItem,
 } from '@helpers/buyback_ore'
 
@@ -65,6 +66,9 @@ describe('buyback_ore_base', () => {
         expect(buyback_ore_base('Compressed Veldspar II-Grade')).toBe('Veldspar')
         expect(buyback_ore_base('Ytirium')).toBe('Ytirium')
         expect(compressed_buyback_ore_base('Ytirium')).toBeNull()
+        expect(buyback_ore_base('Compressed Bistot II-Grade')).toBeNull()
+        expect(ore_variant_family('Compressed Bistot II-Grade')).toBe('Bistot')
+        expect(ore_variant_family('Compressed Brimful Arkonor')).toBe('Arkonor')
     })
 })
 
@@ -137,5 +141,45 @@ describe('group_stock_items', () => {
             'Compressed Ytirium',
             'Ytirium',
         ])
+    })
+
+    it('stacks a newly accepted ore family that is not on the tier list', () => {
+        const groups = group_stock_items([
+            item({
+                type_id: 21,
+                name: 'Compressed Bistot II-Grade',
+                category: 'ore',
+                quantity: 34,
+            }),
+            item({
+                type_id: 20,
+                name: 'Compressed Bistot',
+                category: 'ore',
+                quantity: 34,
+            }),
+            item({
+                type_id: 22,
+                name: 'Compressed Arkonor',
+                category: 'ore',
+                quantity: 10,
+            }),
+            item({
+                type_id: 2,
+                name: 'Compressed Veldspar',
+                category: 'ore',
+                quantity: 5,
+            }),
+        ])
+
+        expect(groups.map((group) => group.label)).toEqual([
+            'Veldspar',
+            'Bistot',
+            'Compressed Arkonor',
+        ])
+        expect(groups.find((group) => group.label === 'Bistot')?.variants.map((variant) => variant.name)).toEqual([
+            'Compressed Bistot',
+            'Compressed Bistot II-Grade',
+        ])
+        expect(groups.find((group) => group.label === 'Bistot')?.quantity).toBe(68)
     })
 })

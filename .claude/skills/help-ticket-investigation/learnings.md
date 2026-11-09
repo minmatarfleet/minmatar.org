@@ -49,6 +49,36 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** A corporation Apply submit with no application row is this button. Keep `x-bind:disabled` in charge, require a role and the confirmation checkboxes, and do not close the dialog in the submit handler.
 **Skill update:** added the corporation Apply row.
 
+## 2026-11-08 — New ore family stays unstacked on the buyback list
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Grades of a newly accepted ore rendered as separate rows. Dark Ochre stacked because it is on `BUYBACK_ORE_BASES`. The new family was not, so the display never grouped it. A daily job was requested; the list is what gates the group.
+**Durable rule:** Group `category: ore` rows that share `ore_variant_family` when there are two or more. Do not add the name to `BUYBACK_ORE_BASES` just to fix the display; that also changes the weekly seed and the Jita clamp.
+**Skill update:** added the unstacked-ore-family row.
+
+## 2026-11-08 — Corporations shortcut opens the alt corporation
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill (same PR)
+**Symptom vs cause:** The neocom corporation button opened the alphabetically first corporation the pilot leads. They are CEO of the main's corporation and of an alt corporation in BUILD, so the alt name won.
+**Durable rule:** `led_corporations[0]` is the main character's corporation when they lead it, then other CEO corporations, then director corporations by name.
+**Skill update:** added the corporations-button row.
+
+## 2026-11-08 — Application watched on a screenshare never appears
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** A recruit was watched submitting an application and nothing showed in Discord or on the site. Every pending application from the last two weeks already has a forum thread. No row exists for a submission that failed to post. The ticket does not name the character.
+**Durable rule:** A missing Discord application thread means there is no `EveCorporationApplication`. Ask for the character name. Do not treat it as a thread-create failure when pending rows all have threads.
+**Skill update:** added the screenshare-application row.
+
 ## 2026-11-06 — Dread SRP refused: alt not in the strategic fleet
 
 **Category:** pulse.technology

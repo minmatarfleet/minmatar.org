@@ -9,6 +9,7 @@ from authentication import AuthBearer
 from eveonline.constants import HOLDING_CORPORATION_TICKER
 from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.characters.identity import owned_by_q
+from eveonline.models import EvePlayer
 from groups.helpers.feature_access import get_user_feature_codes
 from users.helpers import get_user_permissions
 
@@ -32,9 +33,10 @@ class UserGatesSchema(Schema):
     features: List[str]
     legacy: LegacyGatesSchema
     gate_source: str
-    # Alliance corporations the user is CEO or a director of, CEO first (not
-    # the holding corporation): the navigation links them to their
-    # corporation page.
+    # Corporations the user is CEO or a director of (not the holding
+    # corporation). The main character's corporation comes first when they
+    # lead it, then other CEO corporations, then director corporations by
+    # name. Navigation links to the first.
     led_corporations: List[LedCorporationSchema] = []
 
 
@@ -85,9 +87,19 @@ def led_corporations(user_id: int) -> list[LedCorporationSchema]:
         .values_list("corporation_id", "name")
         .distinct()
     )
+    primary_corporation_id = (
+        EvePlayer.objects.filter(user_id=user_id)
+        .values_list("primary_character__corporation_id", flat=True)
+        .first()
+    )
     return [
         LedCorporationSchema(corporation_id=corporation_id, name=name)
         for corporation_id, name in sorted(
-            rows, key=lambda row: (row[0] not in ceo_of, row[1])
+            rows,
+            key=lambda row: (
+                row[0] != primary_corporation_id,
+                row[0] not in ceo_of,
+                row[1],
+            ),
         )
     ]
