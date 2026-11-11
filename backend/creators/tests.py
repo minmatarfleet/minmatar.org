@@ -18,7 +18,6 @@ from creators.oauth import OAuthError, TokenPayload
 from creators.service import (
     ensure_valid_access_token,
     poll_twitch_live,
-    sync_reddit_posts,
     sync_twitch_videos,
     sync_youtube_videos,
     upsert_account_from_oauth,
@@ -232,7 +231,11 @@ class CreatorAccountsTestCase(TestCase):
             ).exists()
         )
 
-    def test_relinking_your_own_reddit_username_still_works(self):
+    @patch("creators.service.list_user_submitted", return_value=[])
+    def test_relinking_your_own_reddit_username_still_works(
+        self, list_submitted
+    ):
+        self.assertEqual(list_submitted.return_value, [])
         self._grant_thinkspeak()
         for username in ("ThinkspeakPilot", "u/thinkspeakpilot"):
             response = self.client.put(
@@ -253,6 +256,15 @@ class CreatorAccountsTestCase(TestCase):
     @patch("creators.service.list_user_submitted")
     def test_link_reddit_username_and_sync(self, list_submitted):
         self._grant_thinkspeak()
+        list_submitted.return_value = [
+            {
+                "id": "abc123",
+                "title": "Recruitment post",
+                "url": "https://www.reddit.com/r/eve/comments/abc123/",
+                "created_utc": 1723824000,
+                "thumbnail": "",
+            }
+        ]
         response = self.client.put(
             "/api/creators/reddit",
             data={"username": "u/ThinkspeakPilot"},
@@ -268,20 +280,7 @@ class CreatorAccountsTestCase(TestCase):
             response.json()["platform_user_id"], "thinkspeakpilot"
         )
 
-        account = CreatorAccount.objects.get(
-            user=self.user, provider=CreatorProvider.REDDIT
-        )
-        list_submitted.return_value = [
-            {
-                "id": "abc123",
-                "title": "Recruitment post",
-                "url": "https://www.reddit.com/r/eve/comments/abc123/",
-                "created_utc": 1723824000,
-                "thumbnail": "",
-            }
-        ]
-        count = sync_reddit_posts(account)
-        self.assertEqual(count, 1)
+        list_submitted.assert_called_once_with("ThinkspeakPilot", limit=25)
         item = CreatorItem.objects.get(
             provider=CreatorProvider.REDDIT, external_id="abc123"
         )

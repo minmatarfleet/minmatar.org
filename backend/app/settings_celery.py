@@ -483,10 +483,19 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
-        "[Creators] Sync YouTube / Twitch media",
+        "[Creators] Sync Reddit / YouTube / Twitch media",
         {
             "task": "creators.tasks.sync_creator_media",
             "schedule": crontab(minute=20),
+        },
+    ),
+    (
+        "[Creators] Import Reddit / YouTube posts as EvePosts",
+        {
+            # CreatorItem sync only fills the creators feed. This pulls
+            # posters / dispatches / videos onto /alliance/content.
+            "task": "creators.tasks.import_creator_posts",
+            "schedule": crontab(minute=35, hour="*/6"),
         },
     ),
     (

@@ -33,6 +33,7 @@ from creators.service import (
     disconnect_account,
     link_reddit_username,
     RedditUsernameTaken,
+    sync_reddit_posts,
     upsert_account_from_oauth,
 )
 from groups.helpers.feature_access import (
@@ -227,6 +228,9 @@ def put_reddit_username(request, payload: RedditUsernameRequest):
         }
     except ValueError:
         return 400, {"detail": "username_required"}
+    # Pull public submissions right away so the creators feed is not empty
+    # until the hourly sync runs.
+    sync_reddit_posts(account)
     return _account_schema(account)
 
 
