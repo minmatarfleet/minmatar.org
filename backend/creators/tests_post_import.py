@@ -338,9 +338,8 @@ class CreatorPostImportTestCase(TestCase):
 
     @patch("creators.post_import.org_reddit_token", return_value="tok")
     @patch("creators.post_import.collect_candidates")
-    def test_import_recent_skips_suspended_accounts(
-        self, collect, _token
-    ):
+    def test_import_recent_skips_suspended_accounts(self, collect, token):
+        self.assertEqual(token.return_value, "tok")
         CreatorAccount.objects.create(
             user=self.user,
             provider=CreatorProvider.REDDIT,
@@ -366,8 +365,9 @@ class CreatorPostImportTestCase(TestCase):
     @patch("creators.post_import.org_reddit_token", return_value="tok")
     @patch("creators.post_import.fetch_reddit_window")
     def test_import_recent_creates_propaganda_poster(
-        self, fetch_window, _token
+        self, fetch_window, token
     ):
+        self.assertEqual(token.return_value, "tok")
         CreatorAccount.objects.create(
             user=self.user,
             provider=CreatorProvider.REDDIT,

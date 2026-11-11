@@ -18,7 +18,6 @@ from creators.oauth import OAuthError, TokenPayload
 from creators.service import (
     ensure_valid_access_token,
     poll_twitch_live,
-    sync_reddit_posts,
     sync_twitch_videos,
     sync_youtube_videos,
     upsert_account_from_oauth,
@@ -234,8 +233,9 @@ class CreatorAccountsTestCase(TestCase):
 
     @patch("creators.service.list_user_submitted", return_value=[])
     def test_relinking_your_own_reddit_username_still_works(
-        self, _list_submitted
+        self, list_submitted
     ):
+        self.assertEqual(list_submitted.return_value, [])
         self._grant_thinkspeak()
         for username in ("ThinkspeakPilot", "u/thinkspeakpilot"):
             response = self.client.put(
