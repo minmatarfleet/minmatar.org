@@ -21,7 +21,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from creators.models import CreatorAccount, CreatorProvider
+from creators.models import CreatorAccount, CreatorAccountStatus, CreatorProvider
 from creators.post_import import (
     apply_imports,
     collect_candidates,
@@ -85,7 +85,7 @@ class Command(BaseCommand):
             raise CommandError(f'Database alias "{source}" is not configured.')
 
         cutoff = timezone.now() - timedelta(days=days)
-        accounts = list(
+        accounts_qs = (
             CreatorAccount.objects.using(source)
             .select_related("user")
             .filter(
@@ -96,6 +96,13 @@ class Command(BaseCommand):
             )
             .order_by("provider", "id")
         )
+        # On the live DB, skip suspended creators. Cross-DB dry-runs keep
+        # the broader set so ops can still inspect every linked account.
+        if source == "default":
+            accounts_qs = accounts_qs.filter(
+                status=CreatorAccountStatus.APPROVED
+            )
+        accounts = list(accounts_qs)
         if not accounts:
             raise CommandError(
                 f"No Reddit/YouTube creator accounts on alias {source}."

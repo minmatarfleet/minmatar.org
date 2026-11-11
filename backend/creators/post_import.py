@@ -20,7 +20,11 @@ from django.utils.dateparse import parse_datetime
 
 from creators.clients.reddit import normalize_reddit_username
 from creators.clients.youtube import is_public_playlist_item
-from creators.models import CreatorAccount, CreatorProvider
+from creators.models import (
+    CreatorAccount,
+    CreatorAccountStatus,
+    CreatorProvider,
+)
 from creators.oauth import OAuthError, refresh_access_token
 from posts.models import EvePost, EveTag
 from reddit.client import RedditClient
@@ -639,3 +643,59 @@ def _unique_title(title: str) -> str:
 
 def org_reddit_token() -> str | None:
     return RedditClient().get_access_token()
+
+
+def approved_import_accounts() -> list[CreatorAccount]:
+    """Approved Reddit/YouTube creator accounts to pull into EvePosts."""
+    return list(
+        CreatorAccount.objects.select_related("user")
+        .filter(
+            provider__in=[
+                CreatorProvider.REDDIT,
+                CreatorProvider.YOUTUBE,
+            ],
+            status=CreatorAccountStatus.APPROVED,
+        )
+        .order_by("provider", "id")
+    )
+
+
+def import_recent_creator_posts(
+    *,
+    days: int = 7,
+    state: str = "published",
+    dry_run: bool = False,
+    accounts: Iterable[CreatorAccount] | None = None,
+) -> dict[str, Any]:
+    """
+    Pull recent linked Reddit/YouTube posts into EvePosts.
+
+    Used by the management command and the scheduled Celery task so
+    /alliance/content keeps getting Propaganda / Dispatches / Videos
+    without a manual import.
+    """
+    if days < 1:
+        raise ValueError("days must be >= 1")
+
+    cutoff = timezone.now() - timedelta(days=days)
+    account_list = (
+        list(accounts) if accounts is not None else approved_import_accounts()
+    )
+    token = org_reddit_token()
+    candidates = collect_candidates(
+        account_list, cutoff=cutoff, reddit_token=token
+    )
+    to_import, skipped = partition_candidates(
+        candidates, posts=EvePost.objects.all()
+    )
+    created = apply_imports(to_import, state=state, dry_run=dry_run)
+    return {
+        "accounts": len(account_list),
+        "cutoff": cutoff.isoformat(),
+        "fetched": len(candidates),
+        "import": len(to_import),
+        "skip": len(skipped),
+        "created": len(created),
+        "created_ids": [post.id for post in created],
+        "dry_run": dry_run,
+    }

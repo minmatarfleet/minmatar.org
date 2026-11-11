@@ -6,13 +6,18 @@ from unittest.mock import MagicMock, patch
 from django.contrib.auth.models import User
 
 from app.test import TestCase
-from creators.models import CreatorProvider
+from creators.models import (
+    CreatorAccount,
+    CreatorAccountStatus,
+    CreatorProvider,
+)
 from creators.post_import import (
     ImportCandidate,
     apply_imports,
     candidate_from_reddit,
     classify_reddit,
     fetch_youtube_window,
+    import_recent_creator_posts,
     parse_youtube_playlist_item,
     partition_candidates,
     reddit_image_url,
@@ -330,3 +335,69 @@ class CreatorPostImportTestCase(TestCase):
         no_status = item("public")
         del no_status["status"]
         self.assertIsNone(parse_youtube_playlist_item(no_status, cutoff))
+
+    @patch("creators.post_import.org_reddit_token", return_value="tok")
+    @patch("creators.post_import.collect_candidates")
+    def test_import_recent_skips_suspended_accounts(
+        self, collect, _token
+    ):
+        CreatorAccount.objects.create(
+            user=self.user,
+            provider=CreatorProvider.REDDIT,
+            platform_user_id="bearthatcares",
+            platform_username="BearThatCares",
+            status=CreatorAccountStatus.APPROVED,
+        )
+        other = User.objects.create_user("suspended-creator")
+        CreatorAccount.objects.create(
+            user=other,
+            provider=CreatorProvider.REDDIT,
+            platform_user_id="gone",
+            platform_username="Gone",
+            status=CreatorAccountStatus.SUSPENDED,
+        )
+        collect.return_value = []
+        result = import_recent_creator_posts(days=7, dry_run=True)
+        self.assertEqual(result["accounts"], 1)
+        accounts = list(collect.call_args.args[0])
+        self.assertEqual(len(accounts), 1)
+        self.assertEqual(accounts[0].platform_username, "BearThatCares")
+
+    @patch("creators.post_import.org_reddit_token", return_value="tok")
+    @patch("creators.post_import.fetch_reddit_window")
+    def test_import_recent_creates_propaganda_poster(
+        self, fetch_window, _token
+    ):
+        CreatorAccount.objects.create(
+            user=self.user,
+            provider=CreatorProvider.REDDIT,
+            platform_user_id="bearthatcares",
+            platform_username="BearThatCares",
+            status=CreatorAccountStatus.APPROVED,
+        )
+        published = _published()
+        fetch_window.return_value = [
+            {
+                "id": "1xpf9he",
+                "title": "The Goonswarm Effect - YC 128",
+                "url": "https://www.reddit.com/r/Eve/comments/1xpf9he/x/",
+                "permalink": (
+                    "https://www.reddit.com/r/Eve/comments/1xpf9he/x/"
+                ),
+                "link_url": "https://i.redd.it/poster.png",
+                "subreddit": "eve",
+                "is_self": False,
+                "post_hint": "image",
+                "removed": False,
+                "selftext": "",
+                "image_url": "https://i.redd.it/poster.png",
+                "published_at": published,
+            }
+        ]
+        result = import_recent_creator_posts(days=30, state="published")
+        self.assertEqual(result["created"], 1)
+        post = EvePost.objects.get(title="The Goonswarm Effect - YC 128")
+        self.assertEqual(post.state, "published")
+        self.assertEqual(
+            list(post.tags.values_list("tag", flat=True)), ["Propaganda"]
+        )
