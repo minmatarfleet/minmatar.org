@@ -2857,6 +2857,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/invite-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Invite Feedback
+         * @description The fleet invite feedback form for the logged-in pilot. A pilot who was not asked gets not_invited. edit=true reopens a submitted form while the round is open.
+         */
+        get: operations["fleets_endpoints_invite_feedback_get_form_get_invite_feedback"];
+        put?: never;
+        /**
+         * Post Invite Feedback
+         * @description Save this pilot's fleet invite feedback. A closed round returns the closed panel and does not save.
+         */
+        post: operations["fleets_endpoints_invite_feedback_post_form_post_invite_feedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/invite-feedback/command": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invite Feedback Command
+         * @description Preview, send, remind, or close the fleet invite feedback round. Strategic FCs only. The Discord command calls this.
+         */
+        post: operations["fleets_endpoints_invite_feedback_post_command_post_invite_feedback_command"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/invite-feedback/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Invite Feedback Results
+         * @description Fleet invite feedback counts for Strategic FCs. link=true only says whether a round exists, for the schedule page. A cut with fewer than 5 answers is omitted.
+         */
+        get: operations["fleets_endpoints_invite_feedback_get_results_get_invite_feedback_results"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/invites/{invite_id}/discord-out": {
         parameters: {
             query?: never;
@@ -9692,6 +9756,39 @@ export interface components {
             /** Value */
             value?: unknown;
         };
+        /** Answers */
+        Answers: {
+            /**
+             * Comment
+             * @default
+             */
+            comment?: string;
+            /**
+             * Felt
+             * @default
+             */
+            felt?: string;
+            /**
+             * Improve
+             * @default []
+             */
+            improve?: string[];
+            /**
+             * Sitting Out
+             * @default
+             */
+            sitting_out?: string;
+            /**
+             * Why
+             * @default
+             */
+            why?: string;
+            /**
+             * Why Text
+             * @default
+             */
+            why_text?: string;
+        };
         /** ApplicationRequirements */
         ApplicationRequirements: {
             /** Application Id */
@@ -9901,6 +9998,15 @@ export interface components {
             value?: number | null;
             /** Week Start */
             week_start?: string | null;
+        };
+        /** Bar */
+        Bar: {
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
         };
         /** BasicCharacterResponse */
         BasicCharacterResponse: {
@@ -11972,6 +12078,24 @@ export interface components {
             /** User Id */
             user_id: number;
         };
+        /** Chip */
+        Chip: {
+            /** Active */
+            active: boolean;
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
+        /** Choice */
+        Choice: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
         /** ChoiceOut */
         ChoiceOut: {
             /** Label */
@@ -12039,6 +12163,23 @@ export interface components {
         ColonyEntry: {
             actual_character: components["schemas"]["CharacterRef"];
             primary_character: components["schemas"]["CharacterRef"];
+        };
+        /** CommandRequest */
+        CommandRequest: {
+            /** Action */
+            action: string;
+            /**
+             * Confirm
+             * @default false
+             */
+            confirm?: boolean;
+            /** Discord User Id */
+            discord_user_id: number;
+        };
+        /** CommandResponse */
+        CommandResponse: {
+            /** Message */
+            message: string;
         };
         /** CommanderOrderRequest */
         CommanderOrderRequest: {
@@ -17464,6 +17605,82 @@ export interface components {
             /** Signed Up */
             signed_up: number;
         };
+        /** FormResponse */
+        FormResponse: {
+            answers?: components["schemas"]["Answers"];
+            /**
+             * Body
+             * @default
+             */
+            body?: string;
+            /**
+             * Comment Heading
+             * @default
+             */
+            comment_heading?: string;
+            /**
+             * Comment Placeholder
+             * @default
+             */
+            comment_placeholder?: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /**
+             * Errors
+             * @default []
+             */
+            errors?: string[];
+            /**
+             * Heading
+             * @default
+             */
+            heading?: string;
+            /**
+             * Intro
+             * @default
+             */
+            intro?: string;
+            /**
+             * Invites
+             * @default []
+             */
+            invites?: components["schemas"]["InviteRow"][];
+            /**
+             * List Heading
+             * @default
+             */
+            list_heading?: string;
+            /**
+             * Pending Invites
+             * @default []
+             */
+            pending_invites?: components["schemas"]["InviteRow"][];
+            /**
+             * Questions
+             * @default []
+             */
+            questions?: components["schemas"]["Question"][];
+            /** State */
+            state: string;
+        };
+        /** FrameRow */
+        FrameRow: {
+            /** Answered Count */
+            answered_count: number;
+            /** Answered Percent */
+            answered_percent: number;
+            /** Asked Count */
+            asked_count: number;
+            /** Asked Percent */
+            asked_percent: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
         /**
          * FreightCharacterStatResponse
          * @description Character stats: primary character and completed contract count (e.g. last 30 days).
@@ -18674,6 +18891,19 @@ export interface components {
             user_id: number;
             /** Wave */
             wave: number;
+        };
+        /** InviteRow */
+        InviteRow: {
+            /** Answer */
+            answer: string;
+            /** Answer Label */
+            answer_label: string;
+            /** Fleet Id */
+            fleet_id: number;
+            /** Title */
+            title: string;
+            /** When */
+            when: string;
         };
         /** InviteTotals */
         InviteTotals: {
@@ -23172,6 +23402,40 @@ export interface components {
             /** Skill Type Id */
             skill_type_id: number;
         };
+        /** Question */
+        Question: {
+            /**
+             * Badge
+             * @default
+             */
+            badge?: string;
+            /**
+             * Choices
+             * @default []
+             */
+            choices?: components["schemas"]["Choice"][];
+            /**
+             * Exclusive
+             * @default
+             */
+            exclusive?: string;
+            /**
+             * Help
+             * @default
+             */
+            help?: string;
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Max
+             * @default 1
+             */
+            max?: number;
+            /** Prompt */
+            prompt: string;
+        };
         /** QuestionSchema */
         QuestionSchema: {
             /**
@@ -23849,6 +24113,128 @@ export interface components {
             /** Detail */
             detail: string;
             host_group?: components["schemas"]["HostGroupRef"] | null;
+        };
+        /** ResultsResponse */
+        ResultsResponse: {
+            /**
+             * Answered Percent
+             * @default 0
+             */
+            answered_percent?: number;
+            /**
+             * Chips
+             * @default []
+             */
+            chips?: components["schemas"]["Chip"][];
+            /**
+             * Cohort Count
+             * @default 0
+             */
+            cohort_count?: number;
+            /**
+             * Cut
+             * @default all
+             */
+            cut?: string;
+            /**
+             * Felt
+             * @default []
+             */
+            felt?: components["schemas"]["Bar"][];
+            /**
+             * Felt Help
+             * @default
+             */
+            felt_help?: string;
+            /**
+             * Felt Split
+             * @default []
+             */
+            felt_split?: components["schemas"]["SplitSide"][];
+            /**
+             * Frame
+             * @default []
+             */
+            frame?: components["schemas"]["FrameRow"][];
+            /**
+             * Frame Note
+             * @default
+             */
+            frame_note?: string;
+            /**
+             * Glad Or Fine Percent
+             * @default 0
+             */
+            glad_or_fine_percent?: number;
+            /**
+             * Improve
+             * @default []
+             */
+            improve?: components["schemas"]["Bar"][];
+            /**
+             * Improve Help
+             * @default
+             */
+            improve_help?: string;
+            /**
+             * Lede
+             * @default
+             */
+            lede?: string;
+            /**
+             * Open Asked
+             * @default 0
+             */
+            open_asked?: number;
+            /**
+             * Open Replied
+             * @default 0
+             */
+            open_replied?: number;
+            /**
+             * Quotes
+             * @default []
+             */
+            quotes?: string[];
+            /**
+             * Quotes Help
+             * @default
+             */
+            quotes_help?: string;
+            /**
+             * Response Count
+             * @default 0
+             */
+            response_count?: number;
+            /** Show Link */
+            show_link: boolean;
+            /**
+             * Sitting Out
+             * @default []
+             */
+            sitting_out?: components["schemas"]["Bar"][];
+            /**
+             * Sitting Out Help
+             * @default
+             */
+            sitting_out_help?: string;
+            /**
+             * Sitting Out Split
+             * @default []
+             */
+            sitting_out_split?: components["schemas"]["SplitSide"][];
+            /** Status */
+            status: string;
+            /**
+             * Why
+             * @default []
+             */
+            why?: components["schemas"]["Bar"][];
+            /**
+             * Why Help
+             * @default
+             */
+            why_help?: string;
         };
         /** ResultsSchema */
         ResultsSchema: {
@@ -24826,6 +25212,17 @@ export interface components {
             /** System */
             system: string;
         };
+        /** SplitSide */
+        SplitSide: {
+            /** Bars */
+            bars: components["schemas"]["Bar"][];
+            /** Count */
+            count: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+        };
         /**
          * SpotlightQuestionInput
          * @description One one-off question merged in before the Open floor.
@@ -25136,6 +25533,46 @@ export interface components {
             name: string;
             /** Type */
             type: string;
+        };
+        /** SubmitError */
+        SubmitError: {
+            /** Detail */
+            detail: string;
+            /** Errors */
+            errors: string[];
+        };
+        /** SubmitRequest */
+        SubmitRequest: {
+            /**
+             * Comment
+             * @default
+             */
+            comment?: string;
+            /**
+             * Felt
+             * @default
+             */
+            felt?: string;
+            /**
+             * Improve
+             * @default []
+             */
+            improve?: string[];
+            /**
+             * Sitting Out
+             * @default
+             */
+            sitting_out?: string;
+            /**
+             * Why
+             * @default
+             */
+            why?: string;
+            /**
+             * Why Text
+             * @default
+             */
+            why_text?: string;
         };
         /** SubmitResponseRequest */
         SubmitResponseRequest: {
@@ -34234,6 +34671,171 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    fleets_endpoints_invite_feedback_get_form_get_invite_feedback: {
+        parameters: {
+            query?: {
+                edit?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_invite_feedback_post_form_post_invite_feedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitError"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_invite_feedback_post_command_post_invite_feedback_command: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommandRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_invite_feedback_get_results_get_invite_feedback_results: {
+        parameters: {
+            query?: {
+                cut?: string;
+                link?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

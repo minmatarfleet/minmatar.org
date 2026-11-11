@@ -1487,3 +1487,71 @@ class EveFleetShipTarget(models.Model):
 
     def __str__(self):
         return f"{self.eve_fleet_id} {self.name} ×{self.target}"
+
+
+class FleetInviteFeedbackRound(models.Model):
+    """One sending of the fleet-invite feedback form. There is only one."""
+
+    STATUS_OPEN = "open"
+    STATUS_CLOSED = "closed"
+    STATUS_CHOICES = (
+        (STATUS_OPEN, "Open"),
+        (STATUS_CLOSED, "Closed"),
+    )
+
+    key = models.CharField(max_length=40, unique=True)
+    status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN
+    )
+    # The start of the invite window that was frozen at send.
+    since = models.DateTimeField()
+    opened_at = models.DateTimeField(auto_now_add=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-opened_at", "-id"]
+
+    def __str__(self):
+        return f"{self.key} ({self.status})"
+
+
+class FleetInviteFeedback(models.Model):
+    """One pilot's frozen invites and, once they submit, their answers."""
+
+    COHORT_ANSWERED = "answered"
+    COHORT_NO_ANSWER = "no_answer"
+    COHORT_CHOICES = (
+        (COHORT_ANSWERED, "Answered every invite"),
+        (COHORT_NO_ANSWER, "Left one unanswered"),
+    )
+
+    round = models.ForeignKey(
+        FleetInviteFeedbackRound,
+        on_delete=models.CASCADE,
+        related_name="responses",
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="fleet_invite_feedback",
+    )
+    cohort = models.CharField(max_length=16, choices=COHORT_CHOICES)
+    # Qualifying invites, newest fleet first. A private fleet stores no
+    # objective: title is blank and private is true.
+    invites = models.JSONField(default=list, blank=True)
+    answers = models.JSONField(default=dict, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    reminded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["round", "user"],
+                name="fleets_invite_feedback_one_per_pilot",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.round_id} → {self.user_id} ({self.cohort})"

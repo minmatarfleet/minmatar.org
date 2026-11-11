@@ -1,0 +1,62 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user) return HTTP_403_Forbidden()
+
+import {
+    answers_from_form,
+    get_invite_feedback,
+    submit_invite_feedback,
+} from '@helpers/fleet_invite_feedback'
+import type { InviteFeedbackAnswers, InviteFeedbackForm } from '@helpers/fleet_invite_feedback'
+
+import FleetInviteFeedback from '@components/blocks/FleetInviteFeedback.astro'
+
+let form: InviteFeedbackForm | null = null
+let errors: string[] = []
+let attempted: InviteFeedbackAnswers | null = null
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData()
+    attempted = answers_from_form(data)
+    try {
+        const result = await submit_invite_feedback(auth_token as string, attempted)
+        if (result.ok && result.form) {
+            form = result.form
+            attempted = null
+        } else if (!result.ok) {
+            errors = result.errors
+        }
+    } catch {
+        errors = [t('fleets.invite_feedback.load_error')]
+    }
+}
+
+if (!form) {
+    try {
+        form = await get_invite_feedback(auth_token as string, true)
+    } catch {
+        form = null
+    }
+}
+
+const partial_url = translatePath('/partials/fleet_invite_feedback_component/')
+const edit_href = `${translatePath('/fleets/invite-feedback/')}?edit=1`
+---
+
+{form ?
+    <FleetInviteFeedback
+        form={form}
+        errors={errors}
+        attempted={attempted}
+        partial_url={partial_url}
+        edit_href={edit_href}
+    />
+    :
+    <p>{t('fleets.invite_feedback.load_error')}</p>
+}

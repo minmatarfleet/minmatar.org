@@ -25,7 +25,12 @@ import { parse_host_filter } from '@helpers/fleet_hosts'
 const host_filter = parse_host_filter(Astro.url.searchParams.get('host'))
 
 import { get_audiences } from '@helpers/api.minmatar.org/fleets'
+import { invite_feedback_show_link } from '@helpers/fleet_invite_feedback'
 import type { Audience } from '@dtypes/api.minmatar.org'
+
+const show_feedback_link = can(gates, 'fleets.manage_any')
+    ? await invite_feedback_show_link(auth_token as string).catch(() => false)
+    : false
 
 // Audiences are only used by the flash-form button, which only fleet creators
 // see, so nobody else waits for them.
@@ -137,6 +142,13 @@ const page_title = t('fleets.upcoming.page_title');
         </FlexInline>
 
         <FleetsHubTabs active="upcoming" />
+
+        {show_feedback_link &&
+            <p class="[ invite-feedback-link ]">
+                <a href={translatePath('/fleets/invite-feedback/results/')}>{t('fleets.invite_feedback.link')}</a>
+            </p>
+        }
+
         
         <UpcomingFleetsUpdater
             id="upcoming-fleets"
@@ -149,3 +161,13 @@ const page_title = t('fleets.upcoming.page_title');
         </UpcomingFleetsUpdater>
 	</PageWide>
 </Viewport>
+
+<style lang="scss">
+    .invite-feedback-link {
+        margin: 0;
+
+        a {
+            color: var(--highlight);
+        }
+    }
+</style>
