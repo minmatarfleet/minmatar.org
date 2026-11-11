@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-11 — Accepted into a corp, then only some Discord access changed
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** no reply (test-guild bot 403s the production help thread)
+**PR:** skill-only
+**Symptom vs cause:** A new member was accepted into a corporation and then reported that only some permissions rolled back. The account is Trial, which Alliance applies automatically, and the Discord roles still match the site groups (Alliance, the corp role, Trial, timezone brackets). The primary's stored corporation is still the previous one, which is not an `EveCorporation` row, so the `:49` nickname sync wrote `[?]`. Public ESI and affiliation already show the new corporation; corporation history still lists the previous one. Another linked character is in the new corp, so the corp role stayed.
+**Durable rule:** Trial plus a `[?]` nickname is this split, not a role-sync bug. The history preference only overrides ESI when it still reports the previous corporation. The next affiliation run should store the new corp and the nickname becomes `[TICKER]`.
+**Skill update:** added the partial-rollback row.
+
 ## 2026-11-09 — Corporation Apply closes with nothing saved
 
 **Category:** pulse.technology
