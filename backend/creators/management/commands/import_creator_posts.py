@@ -21,7 +21,11 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from creators.models import CreatorAccount, CreatorAccountStatus, CreatorProvider
+from creators.models import (
+    CreatorAccount,
+    CreatorAccountStatus,
+    CreatorProvider,
+)
 from creators.post_import import (
     apply_imports,
     collect_candidates,
