@@ -116,13 +116,14 @@ class DiscordGuild(models.Model):
     last_seen_at = models.DateTimeField(null=True, blank=True)
     # From the last role snapshot. False until the bot has Manage Roles
     # (or Administrator) on this server. The reconciler skips it until then.
-    can_manage_roles = models.BooleanField(default=False)
+    # db_default keeps inserts from code that predates these columns working.
+    can_manage_roles = models.BooleanField(default=False, db_default=False)
     # When the snapshot last finished, including a permission failure.
     # Empty while a connect is still waiting on Discord.
     roles_checked_at = models.DateTimeField(null=True, blank=True)
     # id, name, position, managed, assignable. Role ids are strings:
     # snowflakes do not fit in a JavaScript number.
-    roles = models.JSONField(default=list, blank=True)
+    roles = models.JSONField(default=list, blank=True, db_default=[])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

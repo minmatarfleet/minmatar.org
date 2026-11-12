@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="discordguild",
             name="can_manage_roles",
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(db_default=False, default=False),
         ),
         migrations.AddField(
             model_name="discordguild",
@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="discordguild",
             name="roles",
-            field=models.JSONField(blank=True, default=list),
+            field=models.JSONField(blank=True, db_default=[], default=list),
         ),
         migrations.CreateModel(
             name="DiscordRoleMapping",
