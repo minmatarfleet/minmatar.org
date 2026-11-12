@@ -36,6 +36,7 @@ from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
 )
+from tribes.signals import tribe_group_membership_post_save
 
 CLIENT = "discord.guild_roles.DiscordClient"
 ROLE_MEMBER = 9001
@@ -88,6 +89,15 @@ class GuildRoleFixture(TestCase):
         )
         self.corporation.discord_bot_status = "ok"
         self.corporation.save()
+
+    def tearDown(self):
+        # Later tests in this process still write membership history and seats.
+        signals.post_save.connect(
+            tribe_group_membership_post_save,
+            sender=TribeGroupMembership,
+            dispatch_uid="tribe_group_membership_post_save",
+        )
+        super().tearDown()
 
     def map(self, state, role_id):
         return DiscordRoleMapping.objects.create(

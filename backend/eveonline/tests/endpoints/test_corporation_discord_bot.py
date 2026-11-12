@@ -162,9 +162,7 @@ class CorporationDiscordBotEndpointTestCase(TestCase):
         exchange.reset_mock()
         state = self.start()
         response = self.callback(code="abc", state=state)
-        self.assertIn(
-            "discord_bot_error=missing_guild", response["Location"]
-        )
+        self.assertIn("discord_bot_error=missing_guild", response["Location"])
         exchange.assert_not_called()
 
         setup.assert_not_called()
