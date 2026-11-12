@@ -10,10 +10,12 @@ if (!user) return HTTP_403_Forbidden()
 
 import {
     answers_from_form,
-    get_invite_feedback,
-    submit_invite_feedback,
 } from '@helpers/fleet_invite_feedback'
 import type { InviteFeedbackAnswers, InviteFeedbackForm } from '@helpers/fleet_invite_feedback'
+import {
+    get_invite_feedback,
+    submit_invite_feedback,
+} from '@helpers/api.minmatar.org/invite_feedback' // pragma: allowlist secret
 
 import FleetInviteFeedback from '@components/blocks/FleetInviteFeedback.astro'
 

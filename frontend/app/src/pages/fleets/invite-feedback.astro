@@ -10,10 +10,12 @@ if (!user) return login_redirect(Astro)
 
 import {
     answers_from_form,
-    get_invite_feedback,
-    submit_invite_feedback,
 } from '@helpers/fleet_invite_feedback'
 import type { InviteFeedbackAnswers, InviteFeedbackForm } from '@helpers/fleet_invite_feedback'
+import {
+    get_invite_feedback,
+    submit_invite_feedback,
+} from '@helpers/api.minmatar.org/invite_feedback' // pragma: allowlist secret
 
 const edit = Astro.url.searchParams.get('edit') === '1'
 let form: InviteFeedbackForm | null = null

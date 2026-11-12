@@ -12,8 +12,8 @@ import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 if (!can(gates, 'fleets.manage_any')) return HTTP_403_Forbidden()
 
-import { get_invite_feedback_results } from '@helpers/fleet_invite_feedback'
 import type { InviteFeedbackResults } from '@helpers/fleet_invite_feedback'
+import { get_invite_feedback_results } from '@helpers/api.minmatar.org/invite_feedback' // pragma: allowlist secret
 
 const cut = Astro.url.searchParams.get('cut') ?? 'all'
 let results: InviteFeedbackResults | null = null

@@ -96,7 +96,7 @@ class InviteFeedbackTests(TestCase):
         return EveFleet.objects.create(**values)
 
     def invite(self, fleet, user, **fields):
-        wave, _created = EveFleetInviteWave.objects.get_or_create(
+        wave, unused_created = EveFleetInviteWave.objects.get_or_create(
             eve_fleet=fleet,
             number=1,
             defaults={"sent_by": self.fc},
@@ -125,7 +125,7 @@ class InviteFeedbackTests(TestCase):
         return run_action("send", confirm=True)
 
     def test_cohort_keeps_past_untracked_and_drops_the_rest(
-        self, _delay, _async
+        self, unused_delay, unused_async
     ):
         pilot = make_user("pilot")
         kept = self.invite(
@@ -163,7 +163,9 @@ class InviteFeedbackTests(TestCase):
             FleetInviteFeedback.objects.filter(user=opted).exists()
         )
 
-    def test_snapshot_lists_every_invite_newest_first(self, _delay, _async):
+    def test_snapshot_lists_every_invite_newest_first(
+        self, unused_delay, unused_async
+    ):
         pilot = make_user("pilot")
         older = self.invite(
             self.fleet(days_ago=5, objective="Armor brawl"),
@@ -222,7 +224,9 @@ class InviteFeedbackTests(TestCase):
         self.assertEqual(keys, ["felt", "sitting_out", "why", "improve"])
         self.assertNotIn(SECRET, response.content.decode())
 
-    def test_answered_form_has_no_open_question(self, _delay, _async):
+    def test_answered_form_has_no_open_question(
+        self, unused_delay, unused_async
+    ):
         pilot = make_user("pilot")
         self.invite(
             self.fleet(),
@@ -237,7 +241,7 @@ class InviteFeedbackTests(TestCase):
         self.assertEqual(keys, ["felt", "sitting_out", "improve"])
         self.assertEqual(response.json()["pending_invites"], [])
 
-    def test_validation(self, _delay, _async):
+    def test_validation(self, unused_delay, unused_async):
         pilot = make_user("pilot")
         self.invite(self.fleet(), pilot)
         self.send()
@@ -323,7 +327,9 @@ class InviteFeedbackTests(TestCase):
         self.assertEqual(editing.json()["state"], "form")
         self.assertEqual(editing.json()["answers"]["felt"], "fine")
 
-    def test_why_rejected_when_every_invite_was_answered(self, _delay, _async):
+    def test_why_rejected_when_every_invite_was_answered(
+        self, unused_delay, unused_async
+    ):
         pilot = make_user("pilot")
         self.invite(self.fleet(), pilot, answer=EveFleetInvite.ANSWER_IN)
         self.send()
@@ -343,7 +349,7 @@ class InviteFeedbackTests(TestCase):
         row = FleetInviteFeedback.objects.get(user=pilot)
         self.assertIsNone(row.submitted_at)
 
-    def test_stranger_and_closed(self, _delay, _async):
+    def test_stranger_and_closed(self, unused_delay, unused_async):
         pilot = make_user("pilot")
         stranger = make_user("stranger")
         self.invite(self.fleet(), pilot, answer=EveFleetInvite.ANSWER_IN)
@@ -375,7 +381,7 @@ class InviteFeedbackTests(TestCase):
         )
 
     def test_second_send_does_not_add_pilots_or_another_dm(
-        self, _delay, _async
+        self, unused_delay, unused_async
     ):
         first = make_user("first")
         quiet = make_user("quiet")
@@ -406,7 +412,7 @@ class InviteFeedbackTests(TestCase):
             NotificationDelivery.objects.filter(user=quiet).count(), 0
         )
 
-    def test_remind_skips(self, _delay, _async):
+    def test_remind_skips(self, unused_delay, unused_async):
         due = make_user("due")
         failed = make_user("failed")
         opted = make_user("optedlater")
@@ -441,7 +447,7 @@ class InviteFeedbackTests(TestCase):
         self.assertIn("Reminded 0 pilots", second)
         self.assertIn("already reminded", second)
 
-    def test_dry_run_command_writes_nothing(self, _delay, _async):
+    def test_dry_run_command_writes_nothing(self, unused_delay, unused_async):
         pilot = make_user("pilot")
         self.invite(self.fleet(), pilot)
         out = StringIO()
@@ -450,7 +456,9 @@ class InviteFeedbackTests(TestCase):
         self.assertEqual(FleetInviteFeedbackRound.objects.count(), 0)
         self.assertEqual(NotificationDelivery.objects.count(), 0)
 
-    def test_discord_command_is_strategic_only(self, _delay, _async):
+    def test_discord_command_is_strategic_only(
+        self, unused_delay, unused_async
+    ):
         pilot = make_user("pilot")
         self.invite(self.fleet(), pilot)
         denied = self.client.post(
@@ -493,7 +501,9 @@ class InviteFeedbackTests(TestCase):
         )
         self.assertEqual(unknown.status_code, 400)
 
-    def test_results_frame_splits_and_privacy(self, _delay, _async):
+    def test_results_frame_splits_and_privacy(
+        self, unused_delay, unused_async
+    ):
         opens = [make_user(f"open{index}") for index in range(6)]
         manys = [make_user(f"many{index}") for index in range(6)]
         twos = [make_user(f"two{index}") for index in range(2)]
@@ -572,7 +582,9 @@ class InviteFeedbackTests(TestCase):
         sides = {side["key"] for side in narrow.json()["sitting_out_split"]}
         self.assertNotIn("answered", sides)
 
-    def test_link_flag_does_not_include_quotes(self, _delay, _async):
+    def test_link_flag_does_not_include_quotes(
+        self, unused_delay, unused_async
+    ):
         pilot = make_user("pilot")
         self.invite(self.fleet(), pilot, answer=EveFleetInvite.ANSWER_IN)
         self.send()
