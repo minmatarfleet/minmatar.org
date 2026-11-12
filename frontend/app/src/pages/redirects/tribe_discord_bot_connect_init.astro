@@ -1,0 +1,20 @@
+---
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+import { get_public_api_url } from '@helpers/env'
+import { tribe_discord_bot_connect_url } from '@helpers/api.minmatar.org/tribes' // pragma: allowlist secret
+
+const { auth_token } = get_request_user(Astro)
+
+if (!auth_token)
+    return login_redirect(Astro)
+
+// The backend checks the chief, sends them to Discord's bot install page,
+// and Discord sends them back to the tribe page.
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+if (!tribe_id)
+    return Astro.redirect('/alliance/tribes/')
+
+return Astro.redirect(tribe_discord_bot_connect_url(get_public_api_url(), tribe_id, auth_token))
+---

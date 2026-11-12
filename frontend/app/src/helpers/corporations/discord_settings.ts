@@ -1,11 +1,11 @@
 import type { CorporationDiscordSettings } from '@dtypes/api.minmatar.org'
 import type { ui } from '@i18n/ui'
 
-type UiKey = keyof typeof ui['en']
+export type UiKey = keyof typeof ui['en']
 
-export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot'
+export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles'
 
-const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot']
+const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles']
 
 export interface DiscordSettingsFlash {
     kind: 'success' | 'error';
@@ -23,6 +23,11 @@ const SAVE_ERRORS: Record<string, UiKey> = {
     invite_not_found: 'corporations.discord.error_invite_not_found',
     invite_expires: 'corporations.discord.error_invite_expires',
     not_a_server: 'corporations.discord.error_not_a_server',
+    duplicate_role: 'corporations.discord.error_duplicate',
+    unknown_role: 'corporations.discord.error_unknown',
+    not_connected: 'corporations.discord.error_not_connected',
+    cannot_manage_roles: 'corporations.discord.error_cannot_manage',
+    state_not_allowed: 'corporations.discord.error_unknown',
 }
 
 export function discord_error_key(code: string): UiKey {
@@ -89,6 +94,8 @@ export function discord_bot_status_key(status: string | null): UiKey {
 const BOT_CONNECT_ERRORS: Record<string, UiKey> = {
     denied: 'corporations.discord.bot_error_denied',
     alliance_server: 'corporations.discord.bot_error_alliance_server',
+    guild_taken: 'corporations.discord.bot_error_guild_taken',
+    missing_guild: 'corporations.discord.bot_error_missing_guild',
     not_allowed: 'corporations.discord.bot_error_not_allowed',
     session_expired: 'corporations.discord.bot_error_session_expired',
 }

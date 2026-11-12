@@ -8,14 +8,17 @@ import type { CorporationDiscordInvitePreview, CorporationDiscordSettings } from
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import {
     DiscordInviteError,
+    DiscordRoleError,
     check_corporation_discord,
     disconnect_corporation_discord_bot,
     get_corporation_discord,
     remove_corporation_discord,
     retry_corporation_discord_bot,
+    save_corporation_discord_roles,
     update_corporation_discord,
 } from '@helpers/api.minmatar.org/corporations'
 import {
+    DISCORD_BOT_POLL_LIMIT,
     discord_bot_connect_flash,
     discord_bot_needs_attention,
     discord_bot_next_poll,
@@ -33,7 +36,16 @@ import { query_string } from '@helpers/string'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import DiscordRoleMappings from '@components/blocks/DiscordRoleMappings.astro'
 import Input from '@components/blocks/Input.astro'
+
+const CORPORATION_ROLE_STATES = [
+    'member',
+    'director',
+    'recruiter',
+    'structure_manager',
+    'alliance_member',
+] as const
 
 const ROOT_ID = 'corporation-discord'
 const URL_HELP_ID = 'corp-discord-url-help'
@@ -88,16 +100,25 @@ if (Astro.request.method === 'POST') {
         } else if (action === 'retry_bot') {
             await retry_corporation_discord_bot(auth_token, corporation_id)
             flash = { kind: 'success', key: 'corporations.discord.bot_retrying' }
+        } else if (action === 'save_roles') {
+            await save_corporation_discord_roles(auth_token, corporation_id, CORPORATION_ROLE_STATES.map((state) => ({
+                state,
+                role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
+            })))
+            flash = { kind: 'success', key: 'corporations.discord.roles_saved' }
         }
     } catch (error) {
-        editing = true
-        draft_url = typed_url
-        preview = null
+        if (action !== 'save_roles') {
+            editing = true
+            draft_url = typed_url
+            preview = null
+        }
+        const code = error instanceof DiscordInviteError || error instanceof DiscordRoleError
+            ? error.message
+            : ''
         flash = {
             kind: 'error',
-            key: error instanceof DiscordInviteError
-                ? discord_error_key(error.message)
-                : 'corporations.settings.error_save',
+            key: code ? discord_error_key(code) : 'corporations.settings.error_save',
         }
     }
 }
@@ -110,7 +131,24 @@ const bot = settings.bot
 // stored as the fallback but isn't edited here.
 const bot_connected = bot.connected
 const bot_attention = bot_connected && discord_bot_needs_attention(bot.status)
-const next_poll = bot_connected ? discord_bot_next_poll(bot.status, poll) : null
+const role_sync = settings.role_sync ?? {
+    can_manage_roles: false,
+    checked: false,
+    roles: [],
+    mappings: [],
+}
+const roles_checked = Boolean(role_sync.checked)
+const can_manage_roles = Boolean(role_sync.can_manage_roles)
+const role_waiting = bot_connected && bot.status !== 'removed' && !roles_checked
+const status_poll = bot_connected ? discord_bot_next_poll(bot.status, poll) : null
+const next_poll = status_poll ?? (role_waiting && poll < DISCORD_BOT_POLL_LIMIT ? poll + 1 : null)
+const role_rows = [
+    { state: 'member', label: t('corporations.discord.role_member') },
+    { state: 'director', label: t('corporations.discord.role_director') },
+    { state: 'recruiter', label: t('corporations.discord.role_recruiter') },
+    { state: 'structure_manager', label: t('corporations.discord.role_structure_manager') },
+    { state: 'alliance_member', label: t('corporations.discord.role_alliance') },
+]
 const bot_slow = bot_connected && bot.status === 'pending' && next_poll === null
 
 const is_dead = !bot_connected && settings.exists && settings.status === 'dead'
@@ -222,6 +260,41 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
                     {bot.channel_name && <>{t('corporations.discord.bot_channel').replace('{channel}', bot.channel_name)} · </>}
                     {t('corporations.discord.bot_renewed')}
                 </small>
+            }
+
+            {bot_connected && bot.status === 'ok' && !roles_checked &&
+                <p class="[ corp-discord__muted ]" role="status">
+                    {poll >= DISCORD_BOT_POLL_LIMIT
+                        ? t('corporations.discord.roles_checking_slow')
+                        : t('corporations.discord.roles_checking')}
+                </p>
+            }
+
+            {bot_connected && bot.status === 'ok' && roles_checked && !can_manage_roles &&
+                <Flexblock gap="var(--space-xs)">
+                    <p class="[ corp-discord__attention ]">{t('corporations.discord.needs_manage')}</p>
+                    <Button href={BOT_CONNECT_URL} color="transparent" size="sm">
+                        {t('corporations.discord.bot_add_again')}
+                    </Button>
+                </Flexblock>
+            }
+
+            {bot_connected && bot.status === 'ok' && can_manage_roles &&
+                <Flexblock gap="var(--space-s)">
+                    <p class="[ corp-discord__muted ]">{t('corporations.discord.roles_leading')}</p>
+                    <DiscordRoleMappings
+                        rows={role_rows}
+                        roles={role_sync.roles}
+                        mappings={role_sync.mappings}
+                        none_label={t('corporations.discord.role_none')}
+                        problem_missing={t('corporations.discord.problem_missing')}
+                        problem_above={t('corporations.discord.problem_above')}
+                        empty_title={t('corporations.discord.roles_empty')}
+                    />
+                    <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                        {t('corporations.discord.roles_save')}
+                    </Button>
+                </Flexblock>
             }
 
             {offer_bot &&

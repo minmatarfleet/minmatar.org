@@ -79,7 +79,8 @@ class CorporationDiscordBotEndpointTestCase(TestCase):
         self.assertEqual("discord.com", location.netloc)
         query = parse_qs(location.query)
         self.assertEqual(["bot"], query["scope"])
-        self.assertEqual(["1025"], query["permissions"])
+        # Create Instant Invite | View Channel | Manage Roles.
+        self.assertEqual(["268436481"], query["permissions"])
 
     def test_connect_needs_settings_access_and_configuration(self):
         self.assertEqual(403, self.connect(self.member_user).status_code)
@@ -150,10 +151,21 @@ class CorporationDiscordBotEndpointTestCase(TestCase):
 
         exchange.side_effect = DiscordError("nope")
         state = self.start()
-        response = self.callback(code="abc", state=state)
+        response = self.callback(code="abc", state=state, guild_id="4242")
         self.assertIn(
             "discord_bot_error=exchange_failed", response["Location"]
         )
+
+        # No guild id means the code is not exchanged: that exchange adds
+        # the bot and can reset a managed role.
+        exchange.side_effect = None
+        exchange.reset_mock()
+        state = self.start()
+        response = self.callback(code="abc", state=state)
+        self.assertIn(
+            "discord_bot_error=missing_guild", response["Location"]
+        )
+        exchange.assert_not_called()
 
         setup.assert_not_called()
         self.corporation.refresh_from_db()
@@ -180,7 +192,7 @@ class CorporationDiscordBotEndpointTestCase(TestCase):
         self.corporation.discord_bot_invite_code = "old"
         self.corporation.save()
         state = self.start()
-        self.callback(code="abc", state=state)
+        self.callback(code="abc", state=state, guild_id="5555")
         release.assert_called_once_with(4242, "old")
 
     def test_disconnect_and_retry(self):

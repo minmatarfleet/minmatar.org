@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ui } from '@i18n/ui'
 import {
     DISCORD_BOT_POLL_LIMIT,
     discord_bot_connect_flash,
@@ -84,6 +85,8 @@ describe('discord bot', () => {
             .toEqual({ kind: 'success', key: 'corporations.discord.bot_connected' })
         expect(discord_bot_connect_flash(new URLSearchParams('discord_bot_error=alliance_server')))
             .toEqual({ kind: 'error', key: 'corporations.discord.bot_error_alliance_server' })
+        expect(discord_bot_connect_flash(new URLSearchParams('discord_bot_error=guild_taken')))
+            .toEqual({ kind: 'error', key: 'corporations.discord.bot_error_guild_taken' })
         expect(discord_bot_connect_flash(new URLSearchParams('discord_bot_error=exchange_failed')))
             .toEqual({ kind: 'error', key: 'corporations.discord.bot_error' })
         expect(discord_bot_connect_flash(new URLSearchParams(''))).toBeNull()
@@ -98,5 +101,9 @@ describe('discord bot', () => {
     it('knows the bot actions', () => {
         expect(parse_discord_action('disconnect_bot')).toBe('disconnect_bot')
         expect(parse_discord_action('retry_bot')).toBe('retry_bot')
+        expect(parse_discord_action('save_roles')).toBe('save_roles')
+        expect(ui.en['corporations.detail.role_steward']).toBe('Structure manager')
+        expect(ui.en['corporations.detail.stewards']).toBe('Structure managers')
+        expect(ui.en['corporations.discord.role_structure_manager']).toContain('Structure manager')
     })
 })

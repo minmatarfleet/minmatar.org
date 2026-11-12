@@ -1,18 +1,19 @@
 """A corporation's Discord server, reached through our bot.
 
-The CEO or a director adds the bot to their server from the Settings tab
-(Discord's bot install page, with only Create Instant Invite and View
-Channel). The bot then keeps one 7-day invite fresh, and the corporation
-page links to it, so the link never dies the way a pasted one can.
+The CEO or a director adds the bot to their server from the Settings tab.
+The install asks for Create Instant Invite, View Channel, and Manage Roles.
+The bot keeps one 7-day invite fresh, and can give existing roles to the
+right people. The corporation page links to the invite, so the link never
+dies the way a pasted one can.
 
 - Page views never call Discord. The invite is made and rotated by Celery
   (``refresh_corporation_discord_bot``) and stored on the corporation.
 - An invite is replaced once it has under ``ROTATE_BEFORE`` left, so any
   link a visitor saw keeps working for days. The old one is left to
   expire, never deleted: at most two of ours sit in the server's list.
-- The bot reads no messages and has no other permissions. It only makes
-  invites, in the channel it picked (the server's system channel, else the
-  first one everyone can see).
+- The bot reads no messages and never creates roles. It makes invites in
+  the channel it picked (the server's system channel, else the first one
+  everyone can see), and a separate pass adds or removes mapped roles.
 - The pasted invite (``discord_invite``) stays as the fallback while the
   bot is setting up or can't make invites.
 """
@@ -30,6 +31,12 @@ from ratelimit import RateLimitException
 from requests import HTTPError, RequestException
 
 from discord.client import DiscordClient, discord_error_code
+from discord.guild_roles import (
+    clear_role_mappings,
+    install_block_reason,
+    role_sync_payload,
+    snapshot_guild_roles,
+)
 from discord.models import DiscordGuild
 from eveonline.helpers.corporations.discord_invite import (
     discord_settings,
@@ -48,10 +55,14 @@ PUBLIC_MARGIN = timedelta(hours=1)
 # Channels tried when the bot needs a new one; each failure is one call.
 PROBE_LIMIT = 5
 
-# Create Instant Invite | View Channel: all the bot asks for.
+# Create Instant Invite | View Channel. The public invite link stays at
+# these two so a bare link cannot reset a managed role to Manage Roles.
+# The OAuth install (authorize_url) also asks for Manage Roles.
 CREATE_INSTANT_INVITE = 1 << 0
 VIEW_CHANNEL = 1 << 10
+MANAGE_ROLES = 1 << 28
 BOT_PERMISSIONS = CREATE_INSTANT_INVITE | VIEW_CHANNEL
+INSTALL_PERMISSIONS = BOT_PERMISSIONS | MANAGE_ROLES
 
 # Text and announcement channels can hold an invite.
 INVITE_CHANNEL_TYPES = {0, 5}
@@ -120,17 +131,18 @@ def bot_configured() -> bool:
     )
 
 
-def authorize_url(state: str) -> str:
+def authorize_url(state: str, redirect_uri: str | None = None) -> str:
     """Discord's page for adding the bot to a server the person manages."""
     query = urlencode(
         {
             "client_id": settings.DISCORD_CLIENT_ID,
             "scope": "bot",
-            "permissions": BOT_PERMISSIONS,
+            "permissions": INSTALL_PERMISSIONS,
             # A server install, not a user install.
             "integration_type": 0,
             "response_type": "code",
-            "redirect_uri": settings.DISCORD_CORP_BOT_REDIRECT_URL,
+            "redirect_uri": redirect_uri
+            or settings.DISCORD_CORP_BOT_REDIRECT_URL,
             "state": state,
         }
     )
@@ -153,8 +165,11 @@ def link_guild(
     it. Raises DiscordBotError("alliance_server") for the alliance Discord.
     """
     guild_id = int(guild["id"])
-    if guild_id == int(settings.DISCORD_GUILD_ID):
-        raise DiscordBotError("alliance_server")
+    blocked = install_block_reason(
+        guild_id, corporation_id=corporation.corporation_id
+    )
+    if blocked:
+        raise DiscordBotError(blocked)
 
     row, _ = DiscordGuild.objects.update_or_create(
         guild_id=guild_id,
@@ -191,6 +206,9 @@ def link_guild(
     corporation.discord_bot_linked_at = timezone.now()
     corporation.discord_bot_linked_by = user
     corporation.save(update_fields=BOT_FIELDS)
+    if previous is not None:
+        old = DiscordGuild.objects.filter(guild_id=previous.guild_id).first()
+        clear_role_mappings(old)
     return previous
 
 
@@ -199,8 +217,9 @@ def unlink_guild(corporation: EveCorporation) -> Release | None:
     becomes the page's Discord again. Returns what to release."""
     if not is_connected(corporation):
         return None
+    released_guild = corporation.discord_guild
     release = Release(
-        guild_id=corporation.discord_guild.guild_id,
+        guild_id=released_guild.guild_id,
         invite_code=corporation.discord_bot_invite_code,
     )
     corporation.discord_guild = None
@@ -214,6 +233,7 @@ def unlink_guild(corporation: EveCorporation) -> Release | None:
     corporation.discord_bot_linked_at = None
     corporation.discord_bot_linked_by = None
     corporation.save(update_fields=BOT_FIELDS)
+    clear_role_mappings(released_guild)
     return release
 
 
@@ -235,6 +255,7 @@ def guild_in_use(guild_id: int) -> bool:
             Q(is_primary=True)
             | Q(tribe_group_bindings__isnull=False)
             | Q(corporations__isnull=False)
+            | Q(tribes__isnull=False)
         )
         .exists()
     )
@@ -493,6 +514,27 @@ def refresh_bot_invite(corporation: EveCorporation) -> str | None:
             previous_status or "-",
             status,
         )
+    if status == EveCorporation.DISCORD_BOT_REMOVED:
+        guild.can_manage_roles = False
+        guild.roles_checked_at = now
+        guild.save(
+            update_fields=[
+                "can_manage_roles",
+                "roles_checked_at",
+                "updated_at",
+            ]
+        )
+    else:
+        try:
+            snapshot_guild_roles(
+                guild, DiscordClient.for_guild(guild.guild_id)
+            )
+        except Exception as error:
+            logger.warning(
+                "Discord role snapshot for corporation %s failed: %s",
+                corporation.corporation_id,
+                error,
+            )
     return status
 
 
@@ -552,4 +594,7 @@ def corporation_discord_settings(corporation: EveCorporation) -> dict:
         **discord_settings(corporation),
         "bot": bot_settings(corporation),
         "page_source": page_source,
+        "role_sync": role_sync_payload(
+            corporation.discord_guild if is_connected(corporation) else None
+        ),
     }

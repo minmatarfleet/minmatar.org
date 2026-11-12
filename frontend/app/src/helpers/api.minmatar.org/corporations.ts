@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate } from '@dtypes/api.minmatar.org'
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -139,6 +139,8 @@ export async function update_corporation_page_text(
 /** Thrown for a 400: `message` is the API's error code (e.g. `invite_expires`). */
 export class DiscordInviteError extends Error {}
 
+export class DiscordRoleError extends Error {}
+
 async function discord_invite_request<T>(access_token: string, endpoint: string, method: string, invite_url?: string) {
     const response = await api_response(endpoint, {
         method,
@@ -178,6 +180,23 @@ export async function remove_corporation_discord(access_token: string, corporati
     return await discord_invite_request<CorporationDiscordSettings>(
         access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord`, 'DELETE',
     )
+}
+
+/** Map existing Discord roles. The bot adds and removes only these. */
+export async function save_corporation_discord_roles(
+    access_token: string,
+    corporation_id: number,
+    mappings: DiscordRoleMappingUpdate['mappings'],
+) {
+    const response = await api_response(
+        `${API_ENDPOINT}/corporations/${corporation_id}/discord/roles`,
+        { method: 'PUT', token: access_token, body: { mappings }, allow: [400] },
+    )
+    if (response.status === 400) {
+        const body = await response.json().catch(() => ({}))
+        throw new DiscordRoleError(body.detail ?? 'invalid')
+    }
+    return await response.json() as CorporationDiscordSettings
 }
 
 /** Browser URL that starts adding the bot (Discord's install page, then back to Settings). */

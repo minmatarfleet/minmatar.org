@@ -99,11 +99,11 @@ class LandingChannelsTestCase(SimpleTestCase):
     DISCORD_CORP_BOT_REDIRECT_URL="https://api.example/cb",
 )
 class AuthorizeUrlTestCase(SimpleTestCase):
-    def test_asks_only_for_invites(self):
+    def test_asks_for_invites_and_manage_roles(self):
         url = authorize_url("state-1")
         self.assertIn("scope=bot", url)
-        # Create Instant Invite + View Channel, nothing else.
-        self.assertIn("permissions=1025", url)
+        # Create Instant Invite | View Channel | Manage Roles.
+        self.assertIn("permissions=268436481", url)
         self.assertIn("state=state-1", url)
         self.assertIn("redirect_uri=https%3A%2F%2Fapi.example%2Fcb", url)
 

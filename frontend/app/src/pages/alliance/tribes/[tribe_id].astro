@@ -34,6 +34,12 @@ const volunteers_url = translatePath(`/partials/tribe_chief_volunteers_component
     tribe_id,
     seat_name: tribe.name,
 })}`)
+const discord_params = new URLSearchParams({ tribe_id: String(tribe_id) })
+for (const key of ['discord_bot', 'discord_bot_error']) {
+    const value = Astro.url.searchParams.get(key)
+    if (value) discord_params.set(key, value)
+}
+const discord_partial = translatePath(`/partials/tribe_discord_component/?${discord_params}`)
 
 // The About rollup is cached by Celery; until it exists the page shows the tribe without it.
 const about: TribeAbout | null = await get_tribe_about(tribe_id, auth_token).catch(() => null)
@@ -160,6 +166,12 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
                         </LazyPartial>
                     }
                 </Flexblock>
+            }
+
+            {tribe.can_manage_discord &&
+                <LazyPartial url={discord_partial}>
+                    <span class="[ text-muted ]">{t('tribes.discord.loading')}</span>
+                </LazyPartial>
             }
 
             <TribeAboutIntro lede={tribe.description} markdown={tribe.content} vitals={vitals} />

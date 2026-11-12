@@ -303,6 +303,28 @@ class CorporationDiscordBot(Schema):
     checked_at: Optional[datetime] = None
 
 
+class DiscordRoleChoice(Schema):
+    id: str
+    name: str
+
+
+class DiscordRoleMappingRow(Schema):
+    state: str
+    role_id: Optional[str] = None
+    problem: Optional[str] = None
+
+
+class DiscordRoleSync(Schema):
+    can_manage_roles: bool = False
+    checked: bool = False
+    roles: List[DiscordRoleChoice] = []
+    mappings: List[DiscordRoleMappingRow] = []
+
+
+class DiscordRoleMappingUpdate(Schema):
+    mappings: List[DiscordRoleMappingRow]
+
+
 class CorporationDiscordSettings(Schema):
     corporation_id: int
     # These describe the pasted invite link.
@@ -317,6 +339,7 @@ class CorporationDiscordSettings(Schema):
     bot: CorporationDiscordBot = CorporationDiscordBot()
     # Which link the corporation page shows: "bot", "link" or None.
     page_source: Optional[str] = None
+    role_sync: DiscordRoleSync = DiscordRoleSync()
 
 
 class CorporationDiscordInviteRequest(Schema):

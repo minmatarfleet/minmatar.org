@@ -97,8 +97,8 @@ def refresh_corporation_discord_bots():
 
 @app.task
 def release_corporation_discord_guild(guild_id: int, invite_code: str = ""):
-    """After a corporation disconnects the bot: revoke its invite, and leave
-    the server unless the alliance, a tribe or another corporation uses it."""
+    """After a corporation or a tribe disconnects the bot: revoke its invite,
+    and leave the server unless another corporation uses it."""
     return release_guild(guild_id, invite_code)
 
 

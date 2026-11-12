@@ -35,6 +35,7 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
      - `http://localhost:8000/api/users/callback` (for development)
      - `http://localhost:8000/oauth2/login/redirect` (for admin login)
      - `http://localhost:8000/api/eveonline/corporations/corporations/discord/bot/callback` (corporations adding the bot, `DISCORD_CORP_BOT_REDIRECT_URL`)
+     - `http://localhost:8000/api/tribes/discord/bot/callback` (tribe chiefs adding the bot, `DISCORD_TRIBE_BOT_REDIRECT_URL`)
 
 3. **Get Application Credentials**:
    - From "OAuth2":
@@ -114,26 +115,40 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
    - Drag this role to the **top** of the role list
    - ⚠️ **Important**: The bot can only manage roles positioned **below** its own role in the hierarchy
 
-## Corporation Discord servers
+## Corporation and tribe Discord servers
 
-A corporation's CEO or a director can add the bot to their own server from the
-Settings tab of the corporation page. The bot only asks for Create Instant
-Invite and View Channel, keeps one 7-day invite fresh for the corporation page,
-and reads no messages (`eveonline/helpers/corporations/discord_bot.py`).
+A corporation's CEO or a director adds the bot from the corporation Settings
+tab. A tribe chief does the same from the tribe page. The install asks for
+Create Instant Invite, View Channel, and Manage Roles. The bot keeps one
+7-day invite fresh for a corporation page, and on either kind of server it
+adds or removes existing roles that a director or chief mapped
+(`discord/guild_roles.py`). It reads no messages and never creates roles.
+A bare invite link still asks only for Create Instant Invite and View
+Channel, so it cannot reset a managed role to Manage Roles.
 
-- Set `DISCORD_CORP_BOT_REDIRECT_URL` to the callback above (and list it under
-  OAuth2 > Redirects). Without it the Settings tab offers only a pasted link.
+Mapped states for a corporation are member, director, recruiter, structure
+manager, and alliance member. A tribe maps member and alliance member.
+Structure manager is the pilot-facing name for the `stewards` list. The
+alliance auth group stays `Corp <TICKER> Gunner`. These mappings are not an
+`auth.Group` source, and the pass never kicks anyone.
+
+- Set `DISCORD_CORP_BOT_REDIRECT_URL` and `DISCORD_TRIBE_BOT_REDIRECT_URL` to
+  the callbacks above (and list both under OAuth2 > Redirects). Without the
+  corporation URL the Settings tab offers only a pasted link. Without the
+  tribe URL the tribe page does not offer the bot.
 - The bot must stay a **Public Bot**, or nobody but the application owner can
   add it.
 - In production, turn on **Requires OAuth2 Code Grant**. The bot then joins a
-  server only after the backend exchanges the code, so a bare install link
-  can't add it anywhere, and the callback can turn away the alliance and tribe
-  servers before the bot is re-added there. Re-adding the bot to a server it is
-  already in can reset its managed role to the two permissions above, so give
-  the bot its real permissions in the alliance and tribe servers through a
-  separate role, not the managed one.
-- A server used only by corporations stays out of the admin channel pickers
-  (`discord.channels.admin_picker_guilds`).
+  server only after the backend exchanges the code. The callback refuses a
+  missing guild id, the alliance Discord, a Fishermen server, and a server
+  another corporation or tribe already uses *before* that exchange. Re-adding
+  the bot resets its managed role to the install permissions, so give the bot
+  its real permissions on the alliance Discord through a separate role, not
+  the managed one. The same-org re-add is allowed: that is how a server picks
+  up Manage Roles.
+- A server used only by a corporation or a tribe stays out of the admin
+  channel pickers (`discord.channels.admin_picker_guilds`). Fishermen stays
+  in that list and keeps its own seat sync.
 
 ## Step 6: Configure Environment Variables
 

@@ -499,6 +499,14 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Discord] Reconcile corporation and tribe role mappings",
+        {
+            "task": "discord.tasks.reconcile_guild_role_mappings",
+            "schedule": crontab(minute="7,22,37,52", hour="*"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
         "[Misc] Remove orphan discord user roles",
         {
             "task": "discord.tasks.remove_roles_from_unregistered_guild_members",

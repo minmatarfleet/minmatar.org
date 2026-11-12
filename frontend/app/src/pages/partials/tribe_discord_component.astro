@@ -1,0 +1,171 @@
+---
+// no-error-refetch: a section save; a failed save shows in the form it swaps back.
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    TribeDiscordError,
+    disconnect_tribe_discord,
+    get_tribe_discord,
+    save_tribe_discord_roles,
+} from '@helpers/api.minmatar.org/tribes' // pragma: allowlist secret
+import { query_string } from '@helpers/string'
+import type { UiKey } from '@helpers/corporations/discord_settings'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import DiscordRoleMappings from '@components/blocks/DiscordRoleMappings.astro'
+
+const TRIBE_ROLE_STATES = ['member', 'alliance_member'] as const
+const POLL_LIMIT = 20
+const ROOT_ID = 'tribe-discord'
+
+const ERRORS: Record<string, UiKey> = {
+    denied: 'tribes.discord.bot_error_denied',
+    alliance_server: 'tribes.discord.bot_error_alliance_server',
+    guild_taken: 'tribes.discord.bot_error_guild_taken',
+    missing_guild: 'tribes.discord.bot_error_missing_guild',
+    not_allowed: 'tribes.discord.bot_error_not_allowed',
+    session_expired: 'tribes.discord.bot_error_session_expired',
+    duplicate_role: 'tribes.discord.error_duplicate',
+    unknown_role: 'tribes.discord.error_unknown',
+    state_not_allowed: 'tribes.discord.error_unknown',
+    not_connected: 'tribes.discord.error_not_connected',
+    cannot_manage_roles: 'tribes.discord.error_cannot_manage',
+}
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
+if (!tribe_id) return HTTP_403_Forbidden()
+
+const partial_url = (extra: Record<string, string> = {}) => translatePath(`/partials/tribe_discord_component/?${query_string({
+    tribe_id: String(tribe_id),
+    ...extra,
+})}`)
+const PARTIAL_URL = partial_url()
+const CONNECT_URL = translatePath(`/redirects/tribe_discord_bot_connect_init?${query_string({
+    tribe_id: String(tribe_id),
+})}`)
+const poll = parseInt(Astro.url.searchParams.get('poll') ?? '0') || 0
+
+let flash: { kind: 'success' | 'error'; key: UiKey } | null = null
+if (!poll && Astro.url.searchParams.get('discord_bot') === 'connected')
+    flash = { kind: 'success', key: 'tribes.discord.connected' }
+const connect_error = Astro.url.searchParams.get('discord_bot_error')
+if (!poll && connect_error)
+    flash = { kind: 'error', key: ERRORS[connect_error] ?? 'tribes.discord.error' }
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    try {
+        if (action === 'disconnect') {
+            await disconnect_tribe_discord(auth_token, tribe_id)
+            flash = { kind: 'success', key: 'tribes.discord.disconnected' }
+        } else if (action === 'save_roles') {
+            await save_tribe_discord_roles(auth_token, tribe_id, TRIBE_ROLE_STATES.map((state) => ({
+                state,
+                role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
+            })))
+            flash = { kind: 'success', key: 'tribes.discord.roles_saved' }
+        }
+    } catch (error) {
+        const code = error instanceof TribeDiscordError ? error.message : ''
+        flash = { kind: 'error', key: ERRORS[code] ?? 'tribes.discord.error' }
+    }
+}
+
+const settings = await get_tribe_discord(auth_token, tribe_id)
+if (!settings) return HTTP_403_Forbidden()
+if (!settings.available && !settings.connected)
+    return new Response('', { status: 200 })
+
+const waiting = settings.connected && !settings.checked
+const next_poll = waiting && poll < POLL_LIMIT ? poll + 1 : null
+const role_rows = [
+    { state: 'member', label: t('tribes.discord.role_member') },
+    { state: 'alliance_member', label: t('tribes.discord.role_alliance') },
+]
+---
+
+<section
+    id={ROOT_ID}
+    class="tribe-discord"
+    hx-get={next_poll ? partial_url({ poll: String(next_poll) }) : undefined}
+    hx-trigger={next_poll ? 'load delay:3s' : undefined}
+    hx-target={next_poll ? 'this' : undefined}
+    hx-swap={next_poll ? 'outerHTML' : undefined}
+>
+    <form method="post" action={PARTIAL_URL} hx-post={PARTIAL_URL} hx-target={`#${ROOT_ID}`} hx-swap="outerHTML">
+        <Flexblock gap="var(--space-m)">
+            {!settings.connected &&
+                <p class="[ text-muted ]">{t('tribes.discord.leading')}</p>
+            }
+            {flash &&
+                <p class:list={['tribe-discord__flash', { 'is-error': flash.kind === 'error' }]} role={flash.kind === 'error' ? 'alert' : 'status'}>
+                    {t(flash.key)}
+                </p>
+            }
+            {settings.connected &&
+                <FlexInline gap="var(--space-xs)">
+                    <span class="tribe-discord__name">{settings.guild_name}</span>
+                    <Button type="submit" name="action" value="disconnect" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                        {t('tribes.discord.disconnect')}
+                    </Button>
+                </FlexInline>
+            }
+            {!settings.connected && settings.available &&
+                <Button href={CONNECT_URL} color="fleet-red" size="sm">{t('tribes.discord.add')}</Button>
+            }
+            {waiting &&
+                <p class="[ text-muted ]" role="status">
+                    {poll >= POLL_LIMIT ? t('tribes.discord.checking_slow') : t('tribes.discord.checking')}
+                </p>
+            }
+            {settings.connected && settings.checked && !settings.can_manage_roles &&
+                <Flexblock gap="var(--space-xs)">
+                    <p class="tribe-discord__attention">{t('tribes.discord.needs_manage')}</p>
+                    <Button href={CONNECT_URL} color="transparent" size="sm">{t('tribes.discord.add_again')}</Button>
+                </Flexblock>
+            }
+            {settings.connected && settings.can_manage_roles &&
+                <Flexblock gap="var(--space-s)">
+                    <p class="[ text-muted ]">{t('tribes.discord.roles_leading')}</p>
+                    <DiscordRoleMappings
+                        rows={role_rows}
+                        roles={settings.roles}
+                        mappings={settings.mappings}
+                        none_label={t('tribes.discord.role_none')}
+                        problem_missing={t('tribes.discord.problem_missing')}
+                        problem_above={t('tribes.discord.problem_above')}
+                        empty_title={t('tribes.discord.roles_empty')}
+                    />
+                    <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                        {t('tribes.discord.roles_save')}
+                    </Button>
+                </Flexblock>
+            }
+        </Flexblock>
+    </form>
+</section>
+
+<style lang="scss">
+    .tribe-discord {
+        max-width: var(--max-text-width);
+    }
+
+    .tribe-discord__name {
+        font-family: var(--button-font);
+        color: var(--highlight);
+    }
+
+    .tribe-discord__attention,
+    .tribe-discord__flash.is-error {
+        color: var(--fleet-yellow);
+    }
+</style>
