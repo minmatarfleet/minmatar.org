@@ -7063,6 +7063,7 @@
             "default": {
               "can_manage_roles": false,
               "checked": false,
+              "checked_at": null,
               "mappings": [],
               "roles": []
             }
@@ -10942,6 +10943,18 @@
             "default": false,
             "title": "Checked",
             "type": "boolean"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
           },
           "mappings": {
             "default": [],
@@ -41058,6 +41071,18 @@
             "title": "Checked",
             "type": "boolean"
           },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
           "connected": {
             "default": false,
             "title": "Connected",
@@ -54106,6 +54131,74 @@
           }
         ],
         "summary": "Map existing Discord roles for this corporation (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles/refresh": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Re-read this corporation's Discord roles (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"
@@ -77367,6 +77460,74 @@
           }
         ],
         "summary": "Map existing Discord roles for this tribe (chiefs)",
+        "tags": [
+          "Tribes",
+          "Tribes"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/discord/refresh": {
+      "post": {
+        "operationId": "tribes_endpoints_tribe_discord_post_tribe_discord_refresh_post_tribe_discord_refresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Re-read this tribe's Discord roles (chiefs)",
         "tags": [
           "Tribes",
           "Tribes"

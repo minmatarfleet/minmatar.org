@@ -9,10 +9,16 @@ import {
     TribeDiscordError,
     disconnect_tribe_discord,
     get_tribe_discord,
+    refresh_tribe_discord_roles,
     save_tribe_discord_roles,
 } from '@helpers/api.minmatar.org/tribes' // pragma: allowlist secret
 import { query_string } from '@helpers/string'
-import type { UiKey } from '@helpers/corporations/discord_settings'
+import {
+    DISCORD_BOT_POLL_LIMIT,
+    discord_roles_next_poll,
+    discord_roles_refresh_pending,
+    type UiKey,
+} from '@helpers/corporations/discord_settings'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -20,7 +26,6 @@ import Button from '@components/blocks/Button.astro'
 import DiscordRoleMappings from '@components/blocks/DiscordRoleMappings.astro'
 
 const TRIBE_ROLE_STATES = ['member', 'alliance_member'] as const
-const POLL_LIMIT = 20
 const ROOT_ID = 'tribe-discord'
 
 const ERRORS: Record<string, UiKey> = {
@@ -52,6 +57,8 @@ const CONNECT_URL = translatePath(`/redirects/tribe_discord_bot_connect_init?${q
     tribe_id: String(tribe_id),
 })}`)
 const poll = parseInt(Astro.url.searchParams.get('poll') ?? '0') || 0
+// The catalog timestamp from before this re-fetch. Polling stops once a newer one lands.
+let role_since = Astro.url.searchParams.get('since')
 
 let flash: { kind: 'success' | 'error'; key: UiKey } | null = null
 if (!poll && Astro.url.searchParams.get('discord_bot') === 'connected')
@@ -73,8 +80,14 @@ if (Astro.request.method === 'POST') {
                 role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
             })))
             flash = { kind: 'success', key: 'tribes.discord.roles_saved' }
+        } else if (action === 'refresh_roles') {
+            const current = await get_tribe_discord(auth_token, tribe_id)
+            role_since = current?.checked_at ?? null
+            await refresh_tribe_discord_roles(auth_token, tribe_id)
         }
     } catch (error) {
+        if (action === 'refresh_roles')
+            role_since = null
         const code = error instanceof TribeDiscordError ? error.message : ''
         flash = { kind: 'error', key: ERRORS[code] ?? 'tribes.discord.error' }
     }
@@ -86,7 +99,15 @@ if (!settings.available && !settings.connected)
     return new Response('', { status: 200 })
 
 const waiting = settings.connected && !settings.checked
-const next_poll = waiting && poll < POLL_LIMIT ? poll + 1 : null
+const refresh_pending = discord_roles_refresh_pending(settings.checked_at, role_since)
+const refresh_poll = discord_roles_next_poll(refresh_pending, poll)
+const next_poll = refresh_poll ?? (waiting && poll < DISCORD_BOT_POLL_LIMIT ? poll + 1 : null)
+if (role_since && !refresh_pending && !flash)
+    flash = { kind: 'success', key: 'tribes.discord.roles_refreshed' }
+const poll_query = next_poll === null ? undefined : partial_url({
+    poll: String(next_poll),
+    ...(refresh_pending && role_since ? { since: role_since } : {}),
+})
 const role_rows = [
     { state: 'member', label: t('tribes.discord.role_member') },
     { state: 'alliance_member', label: t('tribes.discord.role_alliance') },
@@ -96,7 +117,7 @@ const role_rows = [
 <section
     id={ROOT_ID}
     class="tribe-discord"
-    hx-get={next_poll ? partial_url({ poll: String(next_poll) }) : undefined}
+    hx-get={poll_query}
     hx-trigger={next_poll ? 'load delay:3s' : undefined}
     hx-target={next_poll ? 'this' : undefined}
     hx-swap={next_poll ? 'outerHTML' : undefined}
@@ -124,13 +145,23 @@ const role_rows = [
             }
             {waiting &&
                 <p class="[ text-muted ]" role="status">
-                    {poll >= POLL_LIMIT ? t('tribes.discord.checking_slow') : t('tribes.discord.checking')}
+                    {poll >= DISCORD_BOT_POLL_LIMIT ? t('tribes.discord.checking_slow') : t('tribes.discord.checking')}
+                </p>
+            }
+            {refresh_pending &&
+                <p class="[ text-muted ]" role="status">
+                    {refresh_poll === null ? t('tribes.discord.checking_slow') : t('tribes.discord.checking')}
                 </p>
             }
             {settings.connected && settings.checked && !settings.can_manage_roles &&
                 <Flexblock gap="var(--space-xs)">
                     <p class="tribe-discord__attention">{t('tribes.discord.needs_manage')}</p>
-                    <Button href={CONNECT_URL} color="transparent" size="sm">{t('tribes.discord.add_again')}</Button>
+                    <FlexInline gap="var(--space-xs)">
+                        <Button href={CONNECT_URL} color="transparent" size="sm">{t('tribes.discord.add_again')}</Button>
+                        <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" off_disable={true}>
+                            {t('tribes.discord.roles_refresh')}
+                        </Button>
+                    </FlexInline>
                 </Flexblock>
             }
             {settings.connected && settings.can_manage_roles &&
@@ -145,9 +176,14 @@ const role_rows = [
                         problem_above={t('tribes.discord.problem_above')}
                         empty_title={t('tribes.discord.roles_empty')}
                     />
-                    <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
-                        {t('tribes.discord.roles_save')}
-                    </Button>
+                    <FlexInline gap="var(--space-xs)">
+                        <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                            {t('tribes.discord.roles_save')}
+                        </Button>
+                        <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" off_disable={true}>
+                            {t('tribes.discord.roles_refresh')}
+                        </Button>
+                    </FlexInline>
                 </Flexblock>
             }
         </Flexblock>

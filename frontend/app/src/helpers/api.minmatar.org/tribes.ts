@@ -81,6 +81,13 @@ export async function save_tribe_discord_roles(
     )
 }
 
+/** Queue a fresh read of the server's roles. The form keeps the roles it already has. */
+export async function refresh_tribe_discord_roles(access_token: string, tribe_id: number) {
+    return await tribe_discord_write<TribeDiscordSettings>(
+        access_token, `${API_ENDPOINT}/${tribe_id}/discord/refresh`, 'POST',
+    )
+}
+
 export async function disconnect_tribe_discord(access_token: string, tribe_id: number) {
     return await tribe_discord_write<TribeDiscordSettings | null>(
         access_token, `${API_ENDPOINT}/${tribe_id}/discord`, 'DELETE',

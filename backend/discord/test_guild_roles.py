@@ -473,3 +473,57 @@ class RoleEndpointTestCase(GuildRoleFixture):
         )
         self.assertEqual(200, saved.status_code)
         self.assertEqual("Members", saved.json()["roles"][0]["name"])
+
+    @patch(
+        "eveonline.endpoints.corporations.post_corporation_discord_roles_refresh.queue_snapshot"
+    )
+    def test_a_director_refetches_roles(self, queue_snapshot):
+        url = (
+            "/api/eveonline/corporations/corporations/"
+            f"{self.corporation.corporation_id}/discord/roles/refresh"
+        )
+        response = self.client.post(url, **self.auth)
+        self.assertEqual(200, response.status_code)
+        self.assertIsNotNone(response.json()["role_sync"]["checked_at"])
+        queue_snapshot.assert_called_once_with(self.guild.pk)
+
+        stranger = User.objects.create(username="refresh-stranger")
+        denied = self.client.post(
+            url, HTTP_AUTHORIZATION=f"Bearer {make_token(stranger)}"
+        )
+        self.assertEqual(403, denied.status_code)
+
+        self.corporation.discord_guild = None
+        self.corporation.discord_bot_status = ""
+        self.corporation.save()
+        missing = self.client.post(url, **self.auth)
+        self.assertEqual(400, missing.status_code)
+        self.assertEqual("not_connected", missing.json()["detail"])
+
+    @patch(
+        "tribes.endpoints.tribe_discord.post_tribe_discord_refresh.queue_snapshot"
+    )
+    def test_a_chief_refetches_roles(self, queue_snapshot):
+        tribe = Tribe.objects.create(
+            name="Caps",
+            slug="caps-refresh",
+            chief=self.user,
+            discord_guild=self.guild,
+        )
+        url = f"/api/tribes/{tribe.pk}/discord/refresh"
+        response = self.client.post(url, **self.auth)
+        self.assertEqual(200, response.status_code)
+        self.assertIsNotNone(response.json()["checked_at"])
+        queue_snapshot.assert_called_once_with(self.guild.pk)
+
+        stranger = User.objects.create(username="refresh-pilot")
+        denied = self.client.post(
+            url, HTTP_AUTHORIZATION=f"Bearer {make_token(stranger)}"
+        )
+        self.assertEqual(403, denied.status_code)
+
+        tribe.discord_guild = None
+        tribe.save()
+        missing = self.client.post(url, **self.auth)
+        self.assertEqual(400, missing.status_code)
+        self.assertEqual("not_connected", missing.json()["detail"])

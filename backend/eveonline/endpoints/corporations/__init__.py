@@ -9,6 +9,7 @@ from eveonline.endpoints.corporations import (
     get_corporation_discord_bot_connect,
     post_corporation_discord_bot_refresh,
     post_corporation_discord_check,
+    post_corporation_discord_roles_refresh,
     put_corporation_discord,
     put_corporation_discord_roles,
     put_corporation_page_text,
@@ -77,6 +78,7 @@ for endpoint in (
     get_corporation_discord_bot_callback,
     delete_corporation_discord_bot,
     post_corporation_discord_bot_refresh,
+    post_corporation_discord_roles_refresh,
 ):
     view = getattr(endpoint, endpoint.__name__.rsplit(".", 1)[-1])
     getattr(discord_router, endpoint.METHOD)(

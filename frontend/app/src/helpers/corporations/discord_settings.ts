@@ -3,9 +3,9 @@ import type { ui } from '@i18n/ui'
 
 export type UiKey = keyof typeof ui['en']
 
-export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles'
+export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles'
 
-const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles']
+const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles']
 
 export interface DiscordSettingsFlash {
     kind: 'success' | 'error';
@@ -116,6 +116,31 @@ export const DISCORD_BOT_POLL_LIMIT = 20
 /** The next poll number while the bot is setting up, or null to stop. */
 export function discord_bot_next_poll(status: string | null, poll: number): number | null {
     if (status !== 'pending' || poll >= DISCORD_BOT_POLL_LIMIT)
+        return null
+    return poll + 1
+}
+
+/** True until a re-fetch writes a role catalog newer than `since`. */
+export function discord_roles_refresh_pending(
+    checked_at: string | null | undefined,
+    since: string | null | undefined,
+): boolean {
+    if (!since)
+        return false
+    const since_ms = Date.parse(since)
+    if (Number.isNaN(since_ms))
+        return false
+    if (!checked_at)
+        return true
+    const checked_ms = Date.parse(checked_at)
+    if (Number.isNaN(checked_ms))
+        return true
+    return checked_ms <= since_ms
+}
+
+/** The next poll number while a role re-fetch is in flight, or null to stop. */
+export function discord_roles_next_poll(pending: boolean, poll: number): number | null {
+    if (!pending || poll >= DISCORD_BOT_POLL_LIMIT)
         return null
     return poll + 1
 }

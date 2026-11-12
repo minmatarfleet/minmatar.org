@@ -1,6 +1,7 @@
 """A tribe chief's Discord: one server, existing roles mapped to states.
 
-GET, PUT and DELETE share a path, so they go on one router. Ninja answers
+GET, PUT and DELETE share a path, so they go on one router. Refresh is a
+separate POST. Ninja answers
 405 when a second router repeats a path with another method. The callback
 is registered first so "/discord/bot/callback" is not read as a tribe id.
 """
@@ -12,6 +13,7 @@ from tribes.endpoints.tribe_discord import (
     get_tribe_discord,
     get_tribe_discord_bot_callback,
     get_tribe_discord_bot_connect,
+    post_tribe_discord_refresh,
     put_tribe_discord_roles,
 )
 
@@ -23,6 +25,7 @@ discord_router = Router(tags=["Tribes"])
 for endpoint in (
     get_tribe_discord,
     put_tribe_discord_roles,
+    post_tribe_discord_refresh,
     delete_tribe_discord,
 ):
     view = getattr(endpoint, endpoint.__name__.rsplit(".", 1)[-1])

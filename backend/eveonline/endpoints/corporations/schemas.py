@@ -317,6 +317,7 @@ class DiscordRoleMappingRow(Schema):
 class DiscordRoleSync(Schema):
     can_manage_roles: bool = False
     checked: bool = False
+    checked_at: Optional[datetime] = None
     roles: List[DiscordRoleChoice] = []
     mappings: List[DiscordRoleMappingRow] = []
 

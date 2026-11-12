@@ -412,6 +412,7 @@ def role_sync_payload(guild: DiscordGuild | None) -> dict:
         return {
             "can_manage_roles": False,
             "checked": False,
+            "checked_at": None,
             "roles": [],
             "mappings": [],
         }
@@ -431,6 +432,7 @@ def role_sync_payload(guild: DiscordGuild | None) -> dict:
     return {
         "can_manage_roles": bool(guild.can_manage_roles),
         "checked": guild.roles_checked_at is not None,
+        "checked_at": guild.roles_checked_at,
         "roles": roles,
         "mappings": [
             {

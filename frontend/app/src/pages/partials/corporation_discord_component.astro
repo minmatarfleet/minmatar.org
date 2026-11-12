@@ -12,6 +12,7 @@ import {
     check_corporation_discord,
     disconnect_corporation_discord_bot,
     get_corporation_discord,
+    refresh_corporation_discord_roles,
     remove_corporation_discord,
     retry_corporation_discord_bot,
     save_corporation_discord_roles,
@@ -25,6 +26,8 @@ import {
     discord_bot_status_key,
     discord_error_key,
     discord_invite_label,
+    discord_roles_next_poll,
+    discord_roles_refresh_pending,
     discord_section_summary,
     discord_server_initials,
     discord_status_key,
@@ -68,6 +71,8 @@ const BOT_CONNECT_URL = translatePath(`/redirects/discord_bot_connect_init?${que
     corporation_id: String(corporation_id),
 })}`)
 const poll = parseInt(Astro.url.searchParams.get('poll') ?? '0') || 0
+// The catalog timestamp from before this re-fetch. Polling stops once a newer one lands.
+let role_since = Astro.url.searchParams.get('since')
 
 // Set when Discord sends the CEO back from the bot install page.
 let flash: DiscordSettingsFlash | null = poll ? null : discord_bot_connect_flash(Astro.url.searchParams)
@@ -106,9 +111,15 @@ if (Astro.request.method === 'POST') {
                 role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
             })))
             flash = { kind: 'success', key: 'corporations.discord.roles_saved' }
+        } else if (action === 'refresh_roles') {
+            const current = await get_corporation_discord(auth_token, corporation_id) as CorporationDiscordSettings | null
+            role_since = current?.role_sync?.checked_at ?? null
+            await refresh_corporation_discord_roles(auth_token, corporation_id)
         }
     } catch (error) {
-        if (action !== 'save_roles') {
+        if (action === 'refresh_roles')
+            role_since = null
+        if (action !== 'save_roles' && action !== 'refresh_roles') {
             editing = true
             draft_url = typed_url
             preview = null
@@ -134,14 +145,23 @@ const bot_attention = bot_connected && discord_bot_needs_attention(bot.status)
 const role_sync = settings.role_sync ?? {
     can_manage_roles: false,
     checked: false,
+    checked_at: null,
     roles: [],
     mappings: [],
 }
 const roles_checked = Boolean(role_sync.checked)
 const can_manage_roles = Boolean(role_sync.can_manage_roles)
 const role_waiting = bot_connected && bot.status !== 'removed' && !roles_checked
+const refresh_pending = discord_roles_refresh_pending(role_sync.checked_at, role_since)
 const status_poll = bot_connected ? discord_bot_next_poll(bot.status, poll) : null
-const next_poll = status_poll ?? (role_waiting && poll < DISCORD_BOT_POLL_LIMIT ? poll + 1 : null)
+const refresh_poll = discord_roles_next_poll(refresh_pending, poll)
+const next_poll = status_poll ?? refresh_poll ?? (role_waiting && poll < DISCORD_BOT_POLL_LIMIT ? poll + 1 : null)
+if (role_since && !refresh_pending && !flash)
+    flash = { kind: 'success', key: 'corporations.discord.roles_refreshed' }
+const poll_query = next_poll === null ? undefined : partial_url({
+    poll: String(next_poll),
+    ...(refresh_pending && role_since ? { since: role_since } : {}),
+})
 const role_rows = [
     { state: 'member', label: t('corporations.discord.role_member') },
     { state: 'director', label: t('corporations.discord.role_director') },
@@ -176,7 +196,7 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
 <div
     id={ROOT_ID}
     class="[ corp-discord ]"
-    hx-get={next_poll ? partial_url({ poll: String(next_poll) }) : undefined}
+    hx-get={poll_query}
     hx-trigger={next_poll ? 'load delay:3s' : undefined}
     hx-target={next_poll ? 'this' : undefined}
     hx-swap={next_poll ? 'outerHTML' : undefined}
@@ -270,12 +290,25 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
                 </p>
             }
 
+            {refresh_pending &&
+                <p class="[ corp-discord__muted ]" role="status">
+                    {refresh_poll === null
+                        ? t('corporations.discord.roles_checking_slow')
+                        : t('corporations.discord.roles_checking')}
+                </p>
+            }
+
             {bot_connected && bot.status === 'ok' && roles_checked && !can_manage_roles &&
                 <Flexblock gap="var(--space-xs)">
                     <p class="[ corp-discord__attention ]">{t('corporations.discord.needs_manage')}</p>
-                    <Button href={BOT_CONNECT_URL} color="transparent" size="sm">
-                        {t('corporations.discord.bot_add_again')}
-                    </Button>
+                    <FlexInline gap="var(--space-xs)">
+                        <Button href={BOT_CONNECT_URL} color="transparent" size="sm">
+                            {t('corporations.discord.bot_add_again')}
+                        </Button>
+                        <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" off_disable={true}>
+                            {t('corporations.discord.roles_refresh')}
+                        </Button>
+                    </FlexInline>
                 </Flexblock>
             }
 
@@ -291,9 +324,14 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
                         problem_above={t('corporations.discord.problem_above')}
                         empty_title={t('corporations.discord.roles_empty')}
                     />
-                    <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
-                        {t('corporations.discord.roles_save')}
-                    </Button>
+                    <FlexInline gap="var(--space-xs)">
+                        <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                            {t('corporations.discord.roles_save')}
+                        </Button>
+                        <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" off_disable={true}>
+                            {t('corporations.discord.roles_refresh')}
+                        </Button>
+                    </FlexInline>
                 </Flexblock>
             }
 

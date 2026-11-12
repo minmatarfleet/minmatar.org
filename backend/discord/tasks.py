@@ -44,7 +44,7 @@ def reconcile_guild_role_mappings(guild_pk: int | None = None):
 
 @app.task()
 def snapshot_guild_roles_task(guild_pk: int):
-    """Read one server's roles after a tribe connects the bot.
+    """Read one server's roles after a connect or a manual refresh.
 
     guild_roles queues this task, so the import stays inside the function.
     """

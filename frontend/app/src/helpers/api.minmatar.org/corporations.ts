@@ -199,6 +199,19 @@ export async function save_corporation_discord_roles(
     return await response.json() as CorporationDiscordSettings
 }
 
+/** Queue a fresh read of the server's roles. The form keeps the roles it already has. */
+export async function refresh_corporation_discord_roles(access_token: string, corporation_id: number) {
+    const response = await api_response(
+        `${API_ENDPOINT}/corporations/${corporation_id}/discord/roles/refresh`,
+        { method: 'POST', token: access_token, allow: [400] },
+    )
+    if (response.status === 400) {
+        const body = await response.json().catch(() => ({}))
+        throw new DiscordRoleError(body.detail ?? 'invalid')
+    }
+    return await response.json() as CorporationDiscordSettings
+}
+
 /** Browser URL that starts adding the bot (Discord's install page, then back to Settings). */
 export function corporation_discord_bot_connect_url(api_url: string, corporation_id: number, access_token: string) {
     return `${api_url}/api/eveonline/corporations/corporations/${corporation_id}/discord/bot/connect` +

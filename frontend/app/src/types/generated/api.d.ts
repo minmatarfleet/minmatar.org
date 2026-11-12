@@ -2492,6 +2492,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-read this corporation's Discord roles (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/info": {
         parameters: {
             query?: never;
@@ -8913,6 +8930,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/{tribe_id}/discord/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-read this tribe's Discord roles (chiefs) */
+        post: operations["tribes_endpoints_tribe_discord_post_tribe_discord_refresh_post_tribe_discord_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/{tribe_id}/groups": {
         parameters: {
             query?: never;
@@ -12352,6 +12386,7 @@ export interface components {
              * @default {
              *       "can_manage_roles": false,
              *       "checked": false,
+             *       "checked_at": null,
              *       "mappings": [],
              *       "roles": []
              *     }
@@ -13880,6 +13915,8 @@ export interface components {
              * @default false
              */
             checked?: boolean;
+            /** Checked At */
+            checked_at?: string | null;
             /**
              * Mappings
              * @default []
@@ -25973,6 +26010,8 @@ export interface components {
              * @default false
              */
             checked?: boolean;
+            /** Checked At */
+            checked_at?: string | null;
             /**
              * Connected
              * @default false
@@ -33550,6 +33589,55 @@ export interface operations {
                 "application/json": components["schemas"]["DiscordRoleMappingUpdate"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -48983,6 +49071,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TribeDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_tribe_discord_post_tribe_discord_refresh_post_tribe_discord_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Forbidden */

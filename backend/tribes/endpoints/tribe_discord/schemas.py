@@ -1,5 +1,7 @@
 """Discord role mapping on a tribe's own server."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -20,6 +22,7 @@ class TribeDiscordSettings(BaseModel):
     guild_name: str | None = None
     can_manage_roles: bool = False
     checked: bool = False
+    checked_at: datetime | None = None
     roles: list[TribeDiscordRole] = Field(default_factory=list)
     mappings: list[TribeDiscordMapping] = Field(default_factory=list)
 
