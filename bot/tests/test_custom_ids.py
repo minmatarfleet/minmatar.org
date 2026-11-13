@@ -30,6 +30,9 @@ HISTORICAL_TEMPLATES = {
         r"tribe_chief:decline:(?P<volunteer_id>[0-9]+)"
     ),
     "FLEET_INVITE_OUT_TEMPLATE": r"fleet_invite:out:(?P<invite_id>[0-9]+)",
+    "INVITE_FEEDBACK_ANSWER_TEMPLATE": (
+        r"invite_feedback:answer:(?P<round_id>[0-9]+)"
+    ),
     "HELP_TICKET_CLOSE_TEMPLATE": r"help_ticket_close:(?P<ticket_id>[0-9]+)",
     "HELP_TICKET_CLOSE_REASON_TEMPLATE": (
         r"help_ticket_close_reason:(?P<ticket_id>[0-9]+)"

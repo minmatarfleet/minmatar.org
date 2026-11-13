@@ -10965,6 +10965,19 @@
         "title": "DiscordDeclineRequest",
         "type": "object"
       },
+      "DiscordFormRequest": {
+        "properties": {
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "DiscordFormRequest",
+        "type": "object"
+      },
       "DiscordNpsiActionRequest": {
         "properties": {
           "discord_user_id": {
@@ -11131,6 +11144,52 @@
           "discord_user_id"
         ],
         "title": "DiscordSitOutRequest",
+        "type": "object"
+      },
+      "DiscordSubmitRequest": {
+        "properties": {
+          "comment": {
+            "default": "",
+            "title": "Comment",
+            "type": "string"
+          },
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          },
+          "felt": {
+            "default": "",
+            "title": "Felt",
+            "type": "string"
+          },
+          "improve": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Improve",
+            "type": "array"
+          },
+          "sitting_out": {
+            "default": "",
+            "title": "Sitting Out",
+            "type": "string"
+          },
+          "why": {
+            "default": "",
+            "title": "Why",
+            "type": "string"
+          },
+          "why_text": {
+            "default": "",
+            "title": "Why Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "DiscordSubmitRequest",
         "type": "object"
       },
       "DiscordUserSchema": {
@@ -35106,6 +35165,11 @@
           "prompt": {
             "title": "Prompt",
             "type": "string"
+          },
+          "short": {
+            "default": "",
+            "title": "Short",
+            "type": "string"
           }
         },
         "required": [
@@ -56183,6 +56247,132 @@
           }
         ],
         "summary": "Post Invite Feedback Command",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/invite-feedback/discord-form": {
+      "post": {
+        "description": "The fleet invite feedback form for a Discord user (bot). Always the editable form while the round is open.",
+        "operationId": "fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_form",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordFormRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Feedback Discord Form",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/invite-feedback/discord-submit": {
+      "post": {
+        "description": "Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment, and a real pick beats \"Nothing\".",
+        "operationId": "fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_submit",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordSubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Feedback Discord Submit",
         "tags": [
           "Fleets"
         ]

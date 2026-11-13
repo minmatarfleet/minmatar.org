@@ -12,6 +12,8 @@ class Choice(BaseModel):
 
 class Question(BaseModel):
     key: str
+    # A label of 45 characters or fewer, for the Discord form.
+    short: str = ""
     prompt: str
     help: str = ""
     kind: str
@@ -61,6 +63,14 @@ class SubmitRequest(BaseModel):
     why_text: str = ""
     improve: List[str] = []
     comment: str = ""
+
+
+class DiscordFormRequest(BaseModel):
+    discord_user_id: int
+
+
+class DiscordSubmitRequest(SubmitRequest):
+    discord_user_id: int
 
 
 class SubmitError(BaseModel):

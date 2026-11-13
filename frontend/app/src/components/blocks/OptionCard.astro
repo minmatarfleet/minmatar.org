@@ -1,13 +1,14 @@
 ---
 /**
- * One choice of a radio group, drawn as a card. The radio input is real (and
- * visually hidden), so arrow keys, Space and form submission work natively.
- * Pages add Alpine (`x-model`) or htmx (`hx-get`, `hx-trigger`) attributes
- * through `input_attributes`.
+ * One choice of a radio group (or, with `type="checkbox"`, of a pick-many
+ * group), drawn as a card. The input is real (and visually hidden), so arrow
+ * keys, Space and form submission work natively. Pages add Alpine (`x-model`)
+ * or htmx (`hx-get`, `hx-trigger`) attributes through `input_attributes`.
  */
 interface Props {
     name:               string;
     value:              string;
+    type?:              'radio' | 'checkbox';
     checked?:           boolean;
     input_attributes?:  Record<string, any>;
     [propName: string]: any;
@@ -16,6 +17,7 @@ interface Props {
 const {
     name,
     value,
+    type = 'radio',
     checked = false,
     input_attributes = {},
     ...attributes
@@ -25,7 +27,7 @@ delete attributes.class
 ---
 
 <label class:list={['[ option-card ]', Astro.props.class]} {...attributes}>
-    <input type="radio" name={name} value={value} checked={checked} {...input_attributes} />
+    <input type={type} name={name} value={value} checked={checked} {...input_attributes} />
     <span class="[ option-card__body ]">
         <slot />
     </span>

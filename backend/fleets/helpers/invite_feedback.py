@@ -39,10 +39,14 @@ WINDOW = timedelta(days=28)
 REMIND_AFTER = timedelta(days=3)
 COMMENT_MAX = 280
 PAGE_PATH = "/fleets/invite-feedback/"
+SOURCE_WEB = "web"
+SOURCE_DISCORD = "discord"
 
 LIST_HEADING = "Your invites, last few weeks."
 WHY_HELP = "Leaving one open is common. These were still open."
 COMMENT_HEADING = "One thing to change"
+# The DM lists at most this many invites; the rest are "and N more".
+DM_INVITE_LIMIT = 10
 COMMENT_PLACEHOLDER = "Optional. A sentence is enough."
 
 THANKS_HEADING = "Thanks. That's all we needed."
@@ -289,7 +293,7 @@ def form_for(user, *, edit: bool) -> dict:
     return _form_panel(row)
 
 
-def submit(user, payload: dict) -> dict:
+def submit(user, payload: dict, *, source: str = SOURCE_WEB) -> dict:
     row = (
         FleetInviteFeedback.objects.select_related("round")
         .filter(user=user)
@@ -300,7 +304,9 @@ def submit(user, payload: dict) -> dict:
         return _panel("not_invited", NOT_INVITED_HEADING, NOT_INVITED_BODY)
     if row.round.status == FleetInviteFeedbackRound.STATUS_CLOSED:
         return _panel("closed", CLOSED_HEADING, CLOSED_BODY)
-    errors = validate(row, payload)
+    if source == SOURCE_DISCORD:
+        payload = discord_payload(payload)
+    errors = validate(row, payload, require_why_text=source != SOURCE_DISCORD)
     if errors:
         raise InviteFeedbackError(errors[0], errors=errors)
     pending = _has_pending(row)
@@ -318,13 +324,33 @@ def submit(user, payload: dict) -> dict:
         "why_text": why_text,
         "improve": list(payload.get("improve") or []),
         "comment": (payload.get("comment") or "").strip(),
+        "source": source,
     }
     row.submitted_at = timezone.now()
     row.save(update_fields=["answers", "submitted_at"])
     return _panel("thanks", THANKS_HEADING, THANKS_BODY, detail=THANKS_DETAIL)
 
 
-def validate(row: FleetInviteFeedback, payload: dict) -> list[str]:
+def discord_payload(payload: dict) -> dict:
+    """Fit a Discord form answer to the website's rules.
+
+    The Discord form has five fields, so Other's reason is the comment, and
+    its multi-select cannot make "Nothing" stand alone: a real pick beats it.
+    """
+    payload = dict(payload)
+    improve = list(payload.get("improve") or [])
+    if NOTHING in improve and len(improve) > 1:
+        improve = [item for item in improve if item != NOTHING]
+    payload["improve"] = improve
+    why = (payload.get("why") or "").strip()
+    if why == "other" and not (payload.get("why_text") or "").strip():
+        payload["why_text"] = (payload.get("comment") or "").strip()
+    return payload
+
+
+def validate(
+    row: FleetInviteFeedback, payload: dict, *, require_why_text: bool = True
+) -> list[str]:
     errors = []
     felt = payload.get("felt") or ""
     sitting = payload.get("sitting_out") or ""
@@ -340,7 +366,7 @@ def validate(row: FleetInviteFeedback, payload: dict) -> list[str]:
     if pending:
         if why not in dict(WHY):
             errors.append(ERR_WHY)
-        elif why == "other" and not why_text:
+        elif why == "other" and not why_text and require_why_text:
             errors.append(ERR_WHY_TEXT)
         elif why == "other" and len(why_text) > COMMENT_MAX:
             errors.append(ERR_WHY_LENGTH)
@@ -481,6 +507,7 @@ def _notify(survey, *, reminder: bool, only_user_ids=None) -> tuple[int, int]:
         rows = rows.filter(sent_at__isnull=True)
         if only_user_ids is not None:
             rows = rows.filter(user_id__in=only_user_ids)
+    rows = list(rows)
     users = [row.user for row in rows]
     if not users:
         return 0, 0
@@ -488,9 +515,12 @@ def _notify(survey, *, reminder: bool, only_user_ids=None) -> tuple[int, int]:
     deliveries = notify_users(
         users,
         TYPE_KEY,
-        _dm_context(reminder=reminder),
+        _dm_context(survey, reminder=reminder),
         idempotency_key=key,
         stagger_rate_limited_channels=True,
+        user_contexts={
+            row.user_id: {"invite_lines": dm_invite_lines(row)} for row in rows
+        },
     )
     delivered_ids = {delivery.user_id for delivery in deliveries}
     existing = set(
@@ -549,7 +579,7 @@ def _idempotency_key(survey, *, reminder: bool) -> str:
     return key
 
 
-def _dm_context(*, reminder: bool) -> dict:
+def _dm_context(survey, *, reminder: bool) -> dict:
     if reminder:
         title = "Still got a minute?"
         body = "The fleet invite survey is still open. A few questions."
@@ -559,7 +589,27 @@ def _dm_context(*, reminder: bool) -> dict:
             "Hey! You've been invited to a few fleets lately- could you "
             "take two minutes to share some feedback on the process?"
         )
-    return {"title": title, "body": body, "url": site_url(PAGE_PATH)}
+    return {
+        "title": title,
+        "body": body,
+        "url": site_url(PAGE_PATH),
+        "round_id": survey.id,
+        "list_heading": LIST_HEADING,
+    }
+
+
+def dm_invite_lines(row: FleetInviteFeedback) -> list[str]:
+    """The pilot's own invites for the DM, newest first, one per line."""
+    items = row.invites or []
+    lines = [
+        f"{format_when(item['start'])} · {display_title(item)} · "
+        f"{ANSWER_LABELS.get(item.get('answer') or '', 'No answer')}"
+        for item in items[:DM_INVITE_LIMIT]
+    ]
+    extra = len(items) - DM_INVITE_LIMIT
+    if extra > 0:
+        lines.append(f"and {extra} more")
+    return lines
 
 
 def _people(count: int) -> str:
@@ -738,6 +788,7 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
     questions = [
         {
             "key": "felt",
+            "short": "These invites felt…",
             "prompt": "Most of the time, these invites felt…",
             "help": "",
             "kind": "single",
@@ -746,6 +797,7 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
         },
         {
             "key": "sitting_out",
+            "short": "Sitting out felt like…",
             "prompt": "Which of these is closest for Sitting out?",
             "help": "",
             "kind": "single",
@@ -757,6 +809,7 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
         questions.append(
             {
                 "key": "why",
+                "short": "Why the open ones stayed open",
                 "prompt": "On the ones still open, what was most often going on?",
                 "help": WHY_HELP,
                 "kind": "single",
@@ -767,6 +820,7 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
     questions.append(
         {
             "key": "improve",
+            "short": "What would have mattered",
             "prompt": "Which of these would have mattered for the invites above?",
             "help": "",
             "kind": "multi",

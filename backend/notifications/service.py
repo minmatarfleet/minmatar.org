@@ -66,6 +66,7 @@ def notify_users(
     *,
     idempotency_key: str | None = None,
     stagger_rate_limited_channels: bool = False,
+    user_contexts: dict | None = None,
 ) -> list[NotificationDelivery]:
     """
     Create pending deliveries for each user × enabled channel and enqueue send.
@@ -76,6 +77,9 @@ def notify_users(
     When stagger_rate_limited_channels is True, Discord and Eve mail deliveries
     are enqueued with increasing countdown so fan-out stays under configured
     per-second budgets (with headroom for retries).
+
+    user_contexts maps a user id to extra context merged over context for
+    that recipient only (e.g. their own list in a one-time DM).
     """
     ntype = get_type(type_key)
     context = context or {}
@@ -101,6 +105,11 @@ def notify_users(
     }
 
     for user in user_list:
+        payload = payload_base
+        if user_contexts and user.id in user_contexts:
+            payload = _render_payload(
+                ntype, {**context, **user_contexts[user.id]}
+            )
         for channel in ntype.allowed_channels():
             key = (user.id, channel)
             if key in pref_map:
@@ -138,7 +147,7 @@ def notify_users(
                         user=user,
                         notification_type=type_key,
                         channel=channel,
-                        payload=payload_base,
+                        payload=payload,
                         status=NotificationDeliveryStatus.PENDING,
                         idempotency_key=store_key,
                     )

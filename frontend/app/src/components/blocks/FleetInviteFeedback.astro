@@ -5,11 +5,18 @@ const { t } = i18n(Astro.url)
 import type {
     InviteFeedbackAnswers,
     InviteFeedbackForm,
+    InviteFeedbackInvite,
 } from '@helpers/fleet_invite_feedback'
+import type { TagColors } from '@dtypes/layout_components'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
 
 interface Props {
     form: InviteFeedbackForm
@@ -30,17 +37,35 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
     if (Array.isArray(value)) return value.includes(key)
     return value === key
 }
+
+// The answer tag colours what the pilot did: green for In, amber for Sitting
+// out, and no colour for an invite that is still open.
+function answer_color(invite: InviteFeedbackInvite): TagColors | undefined {
+    if (invite.answer === 'in') return 'green'
+    if (invite.answer === 'out') return 'fleet-yellow'
+    return undefined
+}
+
+const choice_attributes = (key: string) => {
+    if (key === 'why') return { '@change': 'pick_why($event)' }
+    if (key === 'improve') return { '@change': 'pick_improve($event)' }
+    return {}
+}
 ---
 
 <div id="fleet-invite-feedback" class="[ fleet-invite-feedback ]">
     {form.state !== 'form' ?
         <ComponentBlock width="narrow">
-            <h2>{form.heading}</h2>
-            {form.body && <p>{form.body}</p>}
-            {form.detail && <p class="[ detail ]">{form.detail}</p>}
-            {form.state === 'thanks' &&
-                <Button href={edit_href}>{t('fleets.invite_feedback.change')}</Button>
-            }
+            <Flexblock gap="var(--space-s)">
+                <h2>{form.heading}</h2>
+                {form.body && <p>{form.body}</p>}
+                {form.detail && <p class="[ detail ]">{form.detail}</p>}
+                {form.state === 'thanks' &&
+                    <FlexInline>
+                        <Button href={edit_href}>{t('fleets.invite_feedback.change')}</Button>
+                    </FlexInline>
+                }
+            </Flexblock>
         </ComponentBlock>
         :
         <form
@@ -48,7 +73,7 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
             method="post"
             hx-post={partial_url}
             hx-target="#fleet-invite-feedback"
-            hx-swap="outerHTML"
+            hx-swap="outerHTML show:top"
             hx-disabled-elt="find button"
             data-max={max_picks}
             autocomplete="off"
@@ -77,68 +102,100 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
                 </div>
             }
             {form.invites.length > 0 &&
-                <section class="[ history ]">
-                    <h2>{form.list_heading}</h2>
-                    <ul class="[ invites ]">
-                        {form.invites.map((invite) =>
-                            <li>
-                                <span class="[ when ]">{invite.when}</span>
-                                <span class="[ title ]">{invite.title}</span>
-                                <span class="[ tag ]">{invite.answer_label}</span>
-                            </li>
-                        )}
-                    </ul>
-                </section>
-            }
-            {form.questions.map((question) =>
-                <fieldset>
-                    <legend>
-                        {question.prompt}
-                        {question.badge && <span class="[ badge ]">{question.badge}</span>}
-                    </legend>
-                    {question.help && <p class="[ help ]">{question.help}</p>}
-                    {question.key === 'why' && form.pending_invites.length > 0 &&
-                        <ul class="[ invites pending ]">
-                            {form.pending_invites.map((invite) =>
+                <ComponentBlock class="[ history ]">
+                    <Flexblock gap="var(--space-s)">
+                        <h2 class="[ panel-title ]">{form.list_heading}</h2>
+                        <ul class="[ invites ]">
+                            {form.invites.map((invite) =>
                                 <li>
                                     <span class="[ when ]">{invite.when}</span>
                                     <span class="[ title ]">{invite.title}</span>
+                                    <span class="[ answer ]">
+                                        <Tag
+                                            variant="outline"
+                                            text={invite.answer_label}
+                                            {...answer_color(invite) ? { color: answer_color(invite) } : {}}
+                                        />
+                                    </span>
                                 </li>
                             )}
                         </ul>
-                    }
-                    <div class="[ choices ]">
-                        {question.choices.map((choice) =>
-                            <RadioCheckInput
-                                type={question.kind === 'multi' ? 'checkbox' : 'radio'}
-                                name={question.key}
-                                value={choice.key}
-                                checked={picked(question.key as keyof InviteFeedbackAnswers, choice.key)}
-                                required={question.kind === 'single'}
-                                label={choice.label}
-                                {...question.key === 'why' ? { '@change': 'pick_why($event)' } : {}}
-                                {...question.key === 'improve' ? { '@change': 'pick_improve($event)' } : {}}
-                            />
-                        )}
-                    </div>
-                    {question.key === 'why' &&
-                        <label class="[ other ]" x-show="other" x-cloak>
-                            <span>{t('fleets.invite_feedback.other_label')}</span>
-                            <textarea name="why_text" maxlength="280" rows="3">{answers.why_text}</textarea>
-                        </label>
-                    }
-                </fieldset>
+                    </Flexblock>
+                </ComponentBlock>
+            }
+            {form.questions.map((question, index) =>
+                <ComponentBlock>
+                    <fieldset>
+                        <legend>
+                            <span class="[ number ]">{index + 1}</span>
+                            <span class="[ heading ]">
+                                <span class="[ prompt ]">{question.prompt}</span>
+                                {question.badge &&
+                                    <Tag
+                                        variant="outline"
+                                        text={question.badge}
+                                        {...question.badge === 'Required' ? { color: 'fleet-red' } : {}}
+                                    />
+                                }
+                            </span>
+                        </legend>
+                        {question.help && <p class="[ help ]">{question.help}</p>}
+                        {question.key === 'why' && form.pending_invites.length > 0 &&
+                            <ul class="[ invites pending ]">
+                                {form.pending_invites.map((invite) =>
+                                    <li>
+                                        <span class="[ when ]">{invite.when}</span>
+                                        <span class="[ title ]">{invite.title}</span>
+                                    </li>
+                                )}
+                            </ul>
+                        }
+                        <Grid
+                            class="[ choices ]"
+                            min_item_width="22rem"
+                            row_gap="var(--space-2xs)"
+                            column_gap="var(--space-2xs)"
+                        >
+                            {question.choices.map((choice) =>
+                                <OptionCard
+                                    class="[ choice ]"
+                                    type={question.kind === 'multi' ? 'checkbox' : 'radio'}
+                                    name={question.key}
+                                    value={choice.key}
+                                    checked={picked(question.key as keyof InviteFeedbackAnswers, choice.key)}
+                                    input_attributes={{
+                                        ...(question.kind === 'single' ? { required: true } : {}),
+                                        ...choice_attributes(question.key),
+                                    }}
+                                >
+                                    <span class:list={['[ mark ]', { 'mark--square': question.kind === 'multi' }]} aria-hidden="true"></span>
+                                    <span class="[ choice-label ]">{choice.label}</span>
+                                </OptionCard>
+                            )}
+                        </Grid>
+                        {question.key === 'why' &&
+                            <label class="[ other ]" x-show="other" x-cloak>
+                                <span>{t('fleets.invite_feedback.other_label')}</span>
+                                <Textarea name="why_text" maxlength="280" rows="3">{answers.why_text}</Textarea>
+                            </label>
+                        }
+                    </fieldset>
+                </ComponentBlock>
             )}
-            <label class="[ comment ]">
-                <span>{form.comment_heading}</span>
-                <textarea
-                    name="comment"
-                    maxlength="280"
-                    rows="3"
-                    placeholder={form.comment_placeholder}
-                >{answers.comment}</textarea>
-            </label>
-            <Button type="submit">{t('fleets.invite_feedback.send')}</Button>
+            <ComponentBlock>
+                <label class="[ comment ]">
+                    <span class="[ prompt ]">{form.comment_heading}</span>
+                    <Textarea
+                        name="comment"
+                        maxlength="280"
+                        rows="3"
+                        placeholder={form.comment_placeholder}
+                    >{answers.comment}</Textarea>
+                </label>
+            </ComponentBlock>
+            <FlexInline>
+                <Button type="submit">{t('fleets.invite_feedback.send')}</Button>
+            </FlexInline>
         </form>
     }
 </div>
@@ -165,46 +222,80 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         margin: 0;
     }
 
-    .errors {
-        border: solid 1px var(--fleet-red);
-        padding: var(--space-2xs) var(--space-xs);
+    .intro {
+        font-size: var(--step-0);
+        text-wrap: pretty;
     }
 
-    .history {
+    .errors {
         display: flex;
         flex-direction: column;
-        gap: var(--space-xs);
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid 3px var(--fleet-red);
+        background-color: color-mix(in srgb, var(--fleet-red) 12%, transparent);
+
+        p {
+            margin: 0;
+            color: var(--highlight);
+        }
     }
 
-    .history h2 {
+    .panel-title {
+        font-size: var(--step-1);
         margin: 0;
     }
 
+    /* The invite list: when, title and answer on one line, hairline between rows. */
     .invites {
         list-style: none;
         padding: 0;
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xs);
     }
 
     .invites li {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: var(--space-3xs) var(--space-s);
+        align-items: center;
+        padding: var(--space-2xs) 0;
+        border-top: solid 1px var(--hairline);
+    }
+
+    .invites li:first-child {
+        border-top: 0;
+    }
+
+    .invites li:last-child {
+        padding-bottom: 0;
+    }
+
+    .invites .title {
+        min-width: 0;
+        color: var(--highlight);
+    }
+
+    .answer {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs) var(--space-xs);
-        align-items: baseline;
-        padding: var(--space-2xs) var(--space-xs);
-        background: var(--surface-sunken);
+        justify-content: flex-end;
     }
 
     .when {
+        min-width: 9rem;
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
         color: var(--fleet-yellow);
     }
 
-    .tag {
-        border: solid 1px var(--border-color-hover);
-        padding: 0 var(--space-3xs);
+    .pending {
+        padding: var(--space-2xs) var(--space-s);
+        background-color: var(--surface-sunken);
+    }
+
+    .pending li {
+        border-top-color: var(--hairline-medium);
     }
 
     fieldset {
@@ -213,39 +304,78 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: var(--space-xs);
+        gap: var(--space-s);
         min-width: 0;
     }
 
     legend {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs);
-        align-items: baseline;
-        font-weight: 600;
-        padding: 0;
-    }
-
-    .badge {
-        font-weight: 400;
-        color: var(--fleet-yellow);
-    }
-
-    .choices {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-    }
-
-    .choices :global(label) {
-        width: 100%;
-        max-width: 100%;
+        gap: var(--space-xs);
         align-items: flex-start;
+        padding: 0;
+        margin-bottom: var(--space-s);
     }
 
-    .choices :global(small) {
+    .heading {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-xs);
+        align-items: center;
         min-width: 0;
-        white-space: normal;
+    }
+
+    .number {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2em;
+        height: 2em;
+        margin-top: 0.15em;
+        padding-inline: var(--space-3xs);
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        line-height: 1;
+        color: var(--fleet-yellow);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+    }
+
+    .prompt {
+        font-size: var(--step-1);
+        font-weight: 600;
+        color: var(--highlight);
+        text-wrap: balance;
+    }
+
+    /* One choice: a mark that fills when picked, then the label. */
+    .mark {
+        flex: none;
+        width: var(--space-xs);
+        height: var(--space-xs);
+        border-radius: 50%;
+        border: solid 1px var(--fleet-red);
+        background-color: var(--fleet-yellow);
+        transition: var(--fast-transition);
+    }
+
+    .mark--square {
+        border-radius: 0;
+    }
+
+    .choices :global(.option-card:has(input:checked)) .mark {
+        background-color: var(--green);
+        border: solid 2px var(--fleet-yellow);
+    }
+
+    .choice-label {
+        min-width: 0;
+        color: var(--fleet-yellow);
+        text-wrap: pretty;
+    }
+
+    .choices :global(.option-card:has(input:checked)) .choice-label {
+        color: var(--highlight);
+        font-weight: 600;
     }
 
     .other,
@@ -255,21 +385,36 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         gap: var(--space-2xs);
     }
 
-    .other > span,
-    .comment > span {
+    .other > span {
         font-weight: 600;
-    }
-
-    textarea {
-        width: 100%;
-        background: transparent;
-        color: inherit;
-        border: solid 1px var(--border-color-hover);
-        padding: var(--space-2xs);
-        font: inherit;
+        color: var(--highlight);
     }
 
     [x-cloak] {
         display: none;
+    }
+
+    @media (max-width: 48rem) {
+        .prompt {
+            font-size: var(--step-0);
+            text-wrap: pretty;
+        }
+
+        .invites li {
+            grid-template-columns: 1fr auto;
+        }
+
+        .when {
+            min-width: 0;
+        }
+
+        .invites .title {
+            grid-column: 1 / -1;
+        }
+
+        .answer {
+            grid-row: 1;
+            grid-column: 2;
+        }
     }
 </style>

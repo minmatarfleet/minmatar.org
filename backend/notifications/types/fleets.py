@@ -6,6 +6,10 @@ import html
 import re
 
 from feed.rollups.fleet_kills import format_isk
+from fleets.helpers.invite_feedback_discord import (
+    answer_button,
+    website_button,
+)
 from notifications.discord_buttons import link_button_components
 from notifications.models import NotificationChannel
 from notifications.registry import NotificationType, register
@@ -243,14 +247,27 @@ def render_fleet_invite_feedback(ctx: dict) -> dict:
     title = (ctx.get("title") or "").strip()
     body = (ctx.get("body") or "").strip()
     url = (ctx.get("url") or "").strip()
-    # A link button is the action. The title stays plain text, and the
-    # payload omits Mark as read so the button is the only thing to press.
+    message = body
+    lines = ctx.get("invite_lines") or []
+    if lines:
+        heading = (ctx.get("list_heading") or "").strip()
+        listed = "\n".join(f"- {line}" for line in lines)
+        message = f"{body}\n\n**{heading}**\n{listed}".strip()
+    # The buttons are the action, so the payload omits Mark as read. Answer
+    # opens the form in Discord (the bot handles it); the link is the same
+    # form on the website.
     payload = {
         "title": title,
         "body": body,
-        "discord_message": body,
+        "discord_message": message,
     }
-    if url:
+    round_id = ctx.get("round_id")
+    if round_id:
+        buttons = [answer_button(int(round_id))]
+        if url:
+            buttons.append(website_button(url))
+        payload["discord_components"] = [{"type": 1, "components": buttons}]
+    elif url:
         payload["discord_components"] = link_button_components(
             "Provide feedback", url
         )

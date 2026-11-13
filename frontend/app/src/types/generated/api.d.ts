@@ -2935,6 +2935,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/invite-feedback/discord-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invite Feedback Discord Form
+         * @description The fleet invite feedback form for a Discord user (bot). Always the editable form while the round is open.
+         */
+        post: operations["fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_form"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/invite-feedback/discord-submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invite Feedback Discord Submit
+         * @description Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment, and a real pick beats "Nothing".
+         */
+        post: operations["fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/invite-feedback/results": {
         parameters: {
             query?: never;
@@ -14009,6 +14049,11 @@ export interface components {
             /** Discord User Id */
             discord_user_id: number;
         };
+        /** DiscordFormRequest */
+        DiscordFormRequest: {
+            /** Discord User Id */
+            discord_user_id: number;
+        };
         /** DiscordNpsiActionRequest */
         DiscordNpsiActionRequest: {
             /** Discord User Id */
@@ -14073,6 +14118,41 @@ export interface components {
         DiscordSitOutRequest: {
             /** Discord User Id */
             discord_user_id: number;
+        };
+        /** DiscordSubmitRequest */
+        DiscordSubmitRequest: {
+            /**
+             * Comment
+             * @default
+             */
+            comment?: string;
+            /** Discord User Id */
+            discord_user_id: number;
+            /**
+             * Felt
+             * @default
+             */
+            felt?: string;
+            /**
+             * Improve
+             * @default []
+             */
+            improve?: string[];
+            /**
+             * Sitting Out
+             * @default
+             */
+            sitting_out?: string;
+            /**
+             * Why
+             * @default
+             */
+            why?: string;
+            /**
+             * Why Text
+             * @default
+             */
+            why_text?: string;
         };
         /**
          * DiscordUserSchema
@@ -23559,6 +23639,11 @@ export interface components {
             max?: number;
             /** Prompt */
             prompt: string;
+            /**
+             * Short
+             * @default
+             */
+            short?: string;
         };
         /** QuestionSchema */
         QuestionSchema: {
@@ -35057,6 +35142,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_form: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordFormRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordSubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitError"];
                 };
             };
             /** @description Unauthorized */
