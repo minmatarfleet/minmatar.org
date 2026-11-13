@@ -4,12 +4,13 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { MentorCard } from '@dtypes/api.minmatar.org'
 import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
-import { MENTOR_REQUEST_MODAL, brackets_text, mentor_class_path, mentors_url, modal_click } from '@helpers/mentors'
+import { MENTOR_REQUEST_MODAL, MENTOR_SETTINGS_PATH, brackets_text, mentor_class_path, mentors_url, modal_click } from '@helpers/mentors'
 
 /**
  * One mentor: who they are, when they play on weekdays and weekends, how fast
  * they answer and how busy they are, the classes they teach, and a button to
- * ask for a class. `class_id` preselects a class in the request.
+ * ask for a class. `class_id` preselects a class in the request. The
+ * viewer's own card says "You" and links to My settings instead.
  */
 interface Props {
     card: MentorCard;
@@ -61,7 +62,10 @@ import Tag from '@components/blocks/Tag.astro'
                 </p>
             }
         </div>
-        {fit_label[card.fit] && <Tag text={fit_label[card.fit]} color="green" variant="outline" narrow={true} />}
+        {card.is_you ?
+            <Tag text={t('mentors.you')} color="fleet-yellow" variant="outline" narrow={true} />
+            : fit_label[card.fit] && <Tag text={fit_label[card.fit]} color="green" variant="outline" narrow={true} />
+        }
     </header>
 
     <dl class="[ mentor-card__facts ]">
@@ -98,7 +102,9 @@ import Tag from '@components/blocks/Tag.astro'
 
     <footer class="[ mentor-card__foot ]">
         <span class="[ mentor-card__muted ]">{t('mentors.classes_taught').replace('{count}', card.classes_taught.toString())}</span>
-        {card.full ?
+        {card.is_you ?
+            <Button size="sm" color="transparent" href={translatePath(MENTOR_SETTINGS_PATH)}>{t('mentors.nav.settings')}</Button>
+            : card.full ?
             <span class="[ mentor-card__full ]">{t('mentors.full')}</span>
             : can_request && card.classes.length > 0 &&
             <Button type="button" size="sm" x-data x-on:click={modal_click(request_url)}>

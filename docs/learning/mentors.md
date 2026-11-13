@@ -22,7 +22,7 @@ There is no general intake: a pilot always asks one mentor.
 
 Mentors and pilots each have weekday brackets, weekend brackets and evening days (`backend/learning/mentors/availability.py`). The brackets are the timezone ones (`USTZ`, `USTZ+`, `EUTZ`, ...) from `backend/timezones/brackets.py`, on each region's own clock. An evening counts for the day it started, so a US evening that runs past midnight EVE is still that weekday.
 
-A pilot's times start from their `PilotTimezone` (both weekday and weekend get the same brackets, because the record has no weekday/weekend split). They can change them on the request. Mentor cards are sorted by how well the times fit (`evenings`, `weekdays`, `weekends`, `none`), then by whether the mentor is full this week, then by classes taught.
+A pilot's times start from their `PilotTimezone` (both weekday and weekend get the same brackets, because the record has no weekday/weekend split). They can change them on the request. A mentor sees their own card too, marked You, with a link to My settings instead of Request a class. Mentor cards are sorted by how well the times fit (`evenings`, `weekdays`, `weekends`, `none`), then by whether the mentor is full this week, then by classes taught.
 
 ## Life of a request
 

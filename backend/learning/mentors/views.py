@@ -68,8 +68,11 @@ def class_ref(mc: MentorClass) -> dict:
 
 
 def mentor_cards(
-    mentors: list[MentorProfile], viewer_availability, now=None
+    mentors: list[MentorProfile], viewer_availability, now=None, viewer=None
 ) -> list[dict]:
+    """Cards for the mentors list. The viewer's own card is included and
+    marked ``is_you`` so a mentor sees what pilots see (they can't book it).
+    """
     if not mentors:
         return []
     ids = [m.pk for m in mentors]
@@ -111,6 +114,7 @@ def mentor_cards(
                 "classes_taught": taught.get(mentor.pk, 0),
                 "full": service.is_full(mentor, now),
                 "classes": teaching.get(mentor.pk, []),
+                "is_you": viewer is not None and mentor.user_id == viewer.pk,
             }
         )
     cards.sort(
@@ -220,9 +224,7 @@ def home(user, now=None) -> dict:
             taking_requests=True,
             teaching__status=MentorClassTeacher.STATUS_ACCEPTED,
             teaching__mentor_class__status=MentorClass.STATUS_PUBLISHED,
-        )
-        .exclude(user=user)
-        .distinct()
+        ).distinct()
     )
     mine = _requests_qs().filter(pilot=user)
     open_rows = mine.filter(status__in=MentorRequest.OPEN_STATUSES).order_by(
@@ -237,7 +239,7 @@ def home(user, now=None) -> dict:
         "availability": availability(viewer),
         "classes": request_rows(open_rows, user),
         "past_count": past_count,
-        "mentors": mentor_cards(mentors, viewer, now),
+        "mentors": mentor_cards(mentors, viewer, now, viewer=user),
     }
 
 
@@ -261,9 +263,7 @@ def class_detail(user, mentor_class: MentorClass) -> dict:
             status=MentorProfile.STATUS_APPROVED,
             teaching__mentor_class=mentor_class,
             teaching__status=MentorClassTeacher.STATUS_ACCEPTED,
-        )
-        .exclude(user=user)
-        .distinct()
+        ).distinct()
     )
     author = None
     if mentor_class.author_id:
@@ -291,7 +291,7 @@ def class_detail(user, mentor_class: MentorClass) -> dict:
         "requirements": [c.__dict__ for c in checks],
         "all_met": all(c.met for c in checks),
         "mentors": mentor_cards(
-            teachers, service.default_pilot_availability(user)
+            teachers, service.default_pilot_availability(user), viewer=user
         ),
         "pilots_taught": MentorRequest.objects.filter(
             mentor_class=mentor_class, status=MentorRequest.STATUS_DONE

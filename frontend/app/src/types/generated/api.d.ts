@@ -21502,6 +21502,11 @@ export interface components {
             fit: string;
             /** Full */
             full: boolean;
+            /**
+             * Is You
+             * @default false
+             */
+            is_you?: boolean;
             /** Mentor Id */
             mentor_id: number;
             person: components["schemas"]["MentorPersonSchema"];

@@ -42,6 +42,7 @@ class MentorCardSchema(Schema):
     classes_taught: int
     full: bool
     classes: list[MentorClassRefSchema]
+    is_you: bool = False
 
 
 class MentorRequestSchema(Schema):
