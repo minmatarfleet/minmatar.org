@@ -18,6 +18,7 @@ from ninja import Router
 from fleets.endpoints.active import _ROUTES as active_routes
 from fleets.endpoints.catalog import _ROUTES as catalog_routes
 from fleets.endpoints.fleet import _ROUTES as fleet_routes
+from fleets.endpoints.invite_feedback import _ROUTES as invite_feedback_routes
 from fleets.endpoints.metrics import _ROUTES as metrics_routes
 from fleets.endpoints.npsi import _ROUTES as npsi_routes
 from fleets.endpoints.private import _ROUTES as private_routes
@@ -60,6 +61,9 @@ def _hide_private_fleets(view_func):
 
 
 for routes in (
+    # Static /invite-feedback before /{fleet_id}, or "invite-feedback" is
+    # read as a fleet id and the form never matches.
+    invite_feedback_routes,
     reference_routes,
     catalog_routes,
     npsi_routes,

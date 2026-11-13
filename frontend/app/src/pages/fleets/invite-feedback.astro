@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user) return login_redirect(Astro)
+
+import {
+    answers_from_form,
+} from '@helpers/fleet_invite_feedback'
+import type { InviteFeedbackAnswers, InviteFeedbackForm } from '@helpers/fleet_invite_feedback'
+import {
+    get_invite_feedback,
+    submit_invite_feedback,
+} from '@helpers/api.minmatar.org/invite_feedback' // pragma: allowlist secret
+
+const edit = Astro.url.searchParams.get('edit') === '1'
+let form: InviteFeedbackForm | null = null
+let load_error = false
+let errors: string[] = []
+let attempted: InviteFeedbackAnswers | null = null
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData()
+    attempted = answers_from_form(data)
+    try {
+        const result = await submit_invite_feedback(auth_token as string, attempted)
+        if (result.ok && result.form) {
+            form = result.form
+            attempted = null
+        } else if (!result.ok) {
+            errors = result.errors
+        }
+    } catch {
+        load_error = true
+    }
+}
+
+if (!form && !load_error) {
+    try {
+        form = await get_invite_feedback(auth_token as string, edit || errors.length > 0)
+    } catch {
+        load_error = true
+    }
+}
+
+const page_title = t('fleets.invite_feedback.page_title')
+const partial_url = translatePath('/partials/fleet_invite_feedback_component/')
+const edit_href = `${translatePath('/fleets/invite-feedback/')}?edit=1`
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FleetInviteFeedback from '@components/blocks/FleetInviteFeedback.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('fleets.invite_feedback.meta_description')}
+>
+    <PageWide
+        cover={{
+            image: '/images/fleets-cover.jpg',
+            image_990: '/images/fleets-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        breadcrumbs={[{
+            accumulated_path: '/fleets/upcoming/',
+            page_title: t('fleets.hub.upcoming'),
+        }, {
+            accumulated_path: '/fleets/invite-feedback/',
+            page_title: page_title,
+        }]}
+    >
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{page_title}</PageTitle>
+        </Flexblock>
+        {load_error || !form ?
+            <p>{t('fleets.invite_feedback.load_error')}</p>
+            :
+            <FleetInviteFeedback
+                form={form}
+                errors={errors}
+                attempted={attempted}
+                partial_url={partial_url}
+                edit_href={edit_href}
+            />
+        }
+    </PageWide>
+</Viewport>

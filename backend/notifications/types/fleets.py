@@ -238,6 +238,40 @@ FLEET_CLOSED = register(
 )
 
 
+def render_fleet_invite_feedback(ctx: dict) -> dict:
+    title = (ctx.get("title") or "").strip()
+    body = (ctx.get("body") or "").strip()
+    url = (ctx.get("url") or "").strip()
+    message = body
+    if url and url not in body:
+        message = f"{body}\n{url}" if body else url
+    return {
+        "title": title,
+        "body": body,
+        "url": url,
+        "discord_message": message,
+    }
+
+
+# A one-time DM. Discord on, so it shows on Account › Notifications and a
+# pilot can turn this message off without turning fleet invites off.
+FLEET_INVITE_FEEDBACK = register(
+    NotificationType(
+        key="fleets.invite_feedback",
+        feature="fleets",
+        label="Fleet invite feedback",
+        description=(
+            "A one-time Discord DM asking what recent fleet invites have "
+            "been like. Turning this off does not turn fleet invites off."
+        ),
+        channels=(NotificationChannel.DISCORD,),
+        defaults={NotificationChannel.DISCORD: True},
+        render=render_fleet_invite_feedback,
+        supports_topic_subscription=False,
+    )
+)
+
+
 # Not delivered through notify_user: the invite DM carries its own buttons
 # (fleets.helpers.private_fleet_discord). The preference is the pilot's
 # "Stop fleet invites"; private fleet invites ignore it.

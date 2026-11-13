@@ -1,0 +1,234 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    InviteFeedbackAnswers,
+    InviteFeedbackForm,
+} from '@helpers/fleet_invite_feedback'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Button from '@components/blocks/Button.astro'
+
+interface Props {
+    form: InviteFeedbackForm
+    errors: string[]
+    attempted: InviteFeedbackAnswers | null
+    partial_url: string
+    edit_href: string
+}
+
+const { form, errors, attempted, partial_url, edit_href } = Astro.props
+const answers = attempted ?? form.answers
+const improve = form.questions.find((question) => question.key === 'improve')
+const exclusive = (improve?.exclusive ?? 'nothing').replace(/[^a-z_]/g, '')
+const max_picks = improve?.max ?? 2
+
+function picked(name: keyof InviteFeedbackAnswers, key: string) {
+    const value = answers[name]
+    if (Array.isArray(value)) return value.includes(key)
+    return value === key
+}
+---
+
+<div id="fleet-invite-feedback" class="[ fleet-invite-feedback ]">
+    {form.state !== 'form' ?
+        <ComponentBlock width="narrow">
+            <h2>{form.heading}</h2>
+            {form.body && <p>{form.body}</p>}
+            {form.detail && <p class="[ detail ]">{form.detail}</p>}
+            {form.state === 'thanks' &&
+                <Button href={edit_href}>{t('fleets.invite_feedback.change')}</Button>
+            }
+        </ComponentBlock>
+        :
+        <form
+            method="post"
+            hx-post={partial_url}
+            hx-target="#fleet-invite-feedback"
+            hx-swap="outerHTML"
+            hx-disabled-elt="find button"
+            data-max={max_picks}
+            autocomplete="off"
+            x-data={`{
+                other: ${answers.why === 'other'},
+                pick_why(event) { this.other = event.target.value === 'other' },
+                pick_improve(event) {
+                    const boxes = [...event.target.form.querySelectorAll('input[name="improve"]')]
+                    const exclusive = boxes.find((box) => box.value === '${exclusive}')
+                    const max = Number(event.target.form.dataset.max || ${max_picks})
+                    if (exclusive && event.target === exclusive && exclusive.checked) {
+                        for (const box of boxes) {
+                            if (box !== exclusive) box.checked = false
+                        }
+                        return
+                    }
+                    if (exclusive) exclusive.checked = false
+                    if (boxes.filter((box) => box.checked).length > max) event.target.checked = false
+                }
+            }`}
+        >
+            <p class="[ intro ]">{form.intro}</p>
+            {errors.length > 0 &&
+                <div class="[ errors ]" role="alert">
+                    {errors.map((error) => <p>{error}</p>)}
+                </div>
+            }
+            <section>
+                <h2>{form.list_heading}</h2>
+                <ul class="[ invites ]">
+                    {form.invites.map((invite) =>
+                        <li>
+                            <span class="[ when ]">{invite.when}</span>
+                            <span class="[ title ]">{invite.title}</span>
+                            <span class="[ tag ]">{invite.answer_label}</span>
+                        </li>
+                    )}
+                </ul>
+            </section>
+            {form.questions.map((question) =>
+                <fieldset>
+                    <legend>
+                        {question.prompt}
+                        {question.badge && <span class="[ badge ]">{question.badge}</span>}
+                    </legend>
+                    {question.help && <p class="[ help ]">{question.help}</p>}
+                    {question.key === 'why' && form.pending_invites.length > 0 &&
+                        <ul class="[ invites pending ]">
+                            {form.pending_invites.map((invite) =>
+                                <li>
+                                    <span class="[ when ]">{invite.when}</span>
+                                    <span class="[ title ]">{invite.title}</span>
+                                </li>
+                            )}
+                        </ul>
+                    }
+                    <div class="[ choices ]">
+                        {question.choices.map((choice) =>
+                            <RadioCheckInput
+                                type={question.kind === 'multi' ? 'checkbox' : 'radio'}
+                                name={question.key}
+                                value={choice.key}
+                                checked={picked(question.key as keyof InviteFeedbackAnswers, choice.key)}
+                                required={question.kind === 'single'}
+                                label={choice.label}
+                                {...question.key === 'why' ? { '@change': 'pick_why($event)' } : {}}
+                                {...question.key === 'improve' ? { '@change': 'pick_improve($event)' } : {}}
+                            />
+                        )}
+                    </div>
+                    {question.key === 'why' &&
+                        <label class="[ other ]" x-show="other" x-cloak>
+                            <span>{t('fleets.invite_feedback.other_label')}</span>
+                            <textarea name="why_text" maxlength="280" rows="3">{answers.why_text}</textarea>
+                        </label>
+                    }
+                </fieldset>
+            )}
+            <label class="[ comment ]">
+                <span>{form.comment_heading}</span>
+                <textarea
+                    name="comment"
+                    maxlength="280"
+                    rows="3"
+                    placeholder={form.comment_placeholder}
+                >{answers.comment}</textarea>
+            </label>
+            <Button type="submit">{t('fleets.invite_feedback.send')}</Button>
+        </form>
+    }
+</div>
+
+<style lang="scss">
+    .fleet-invite-feedback {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-text-width);
+    }
+
+    .intro,
+    .help,
+    .detail {
+        color: var(--text-color-muted, var(--fleet-yellow));
+    }
+
+    .errors {
+        border: solid 1px var(--fleet-red);
+        padding: var(--space-2xs) var(--space-xs);
+    }
+
+    .invites {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .invites li {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-xs);
+        align-items: baseline;
+    }
+
+    .when {
+        color: var(--fleet-yellow);
+    }
+
+    .tag {
+        border: solid 1px var(--border-color-hover);
+        padding: 0 var(--space-3xs);
+    }
+
+    fieldset {
+        border: 0;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        align-items: baseline;
+        font-weight: 600;
+    }
+
+    .badge {
+        font-weight: 400;
+        color: var(--fleet-yellow);
+    }
+
+    .choices {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .other,
+    .comment {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    textarea {
+        width: 100%;
+        background: transparent;
+        color: inherit;
+        border: solid 1px var(--border-color-hover);
+        padding: var(--space-2xs);
+        font: inherit;
+    }
+
+    [x-cloak] {
+        display: none;
+    }
+</style>

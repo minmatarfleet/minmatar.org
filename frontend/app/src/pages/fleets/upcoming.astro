@@ -27,6 +27,9 @@ const host_filter = parse_host_filter(Astro.url.searchParams.get('host'))
 import { get_audiences } from '@helpers/api.minmatar.org/fleets'
 import type { Audience } from '@dtypes/api.minmatar.org'
 
+const can_see_feedback = can(gates, 'fleets.manage_any')
+const FEEDBACK_LINK_PARTIAL = translatePath('/partials/fleet_invite_feedback_link_component/')
+
 // Audiences are only used by the flash-form button, which only fleet creators
 // see, so nobody else waits for them.
 const audiences_promise = can_add_fleets ? get_audiences(auth_token as string) : null
@@ -137,7 +140,11 @@ const page_title = t('fleets.upcoming.page_title');
         </FlexInline>
 
         <FleetsHubTabs active="upcoming" />
-        
+
+        {can_see_feedback &&
+            <LazyPartial url={FEEDBACK_LINK_PARTIAL} swap="outerHTML" indicator={false} />
+        }
+
         <UpcomingFleetsUpdater
             id="upcoming-fleets"
             refresh_rate_seconds={240}

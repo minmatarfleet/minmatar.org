@@ -17,6 +17,7 @@ from .npsi.views import register_npsi_buttons
 from .tribe_chiefs.views import register_tribe_chief_buttons
 from .tribe_invites.views import register_tribe_invite_buttons
 from .fleet_invites.views import register_fleet_invite_buttons
+from .fleet_invites.feedback import register_fleet_invite_feedback
 from .voicetracking_api import (
     ACTIVITY_RECORDS_URL,
     GUILDS_SYNC_URL,
@@ -76,6 +77,7 @@ class MyClient(discord.Client):
         register_tribe_invite_buttons(self)
         register_tribe_chief_buttons(self)
         register_fleet_invite_buttons(self)
+        register_fleet_invite_feedback(self.tree, GUILDS)
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")
             await self.tree.sync(guild=guild)

@@ -1,0 +1,299 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { InviteFeedbackBar, InviteFeedbackResults } from '@helpers/fleet_invite_feedback'
+import { bar_max, bar_width } from '@helpers/fleet_invite_feedback'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+interface Props {
+    results: InviteFeedbackResults
+}
+
+const { results } = Astro.props
+const results_path = translatePath('/fleets/invite-feedback/results/')
+const has_answers = results.response_count > 0
+
+function href_for(key: string) {
+    if (key === 'all') return results_path
+    return `${results_path}?cut=${encodeURIComponent(key)}`
+}
+
+function bars(items: InviteFeedbackBar[]) {
+    const max = bar_max(items)
+    return items.map((item) => ({ ...item, width: bar_width(item.count, max) }))
+}
+---
+
+<div class="[ fleet-invite-results ]">
+    <p class="[ lede ]">{results.lede}</p>
+    {results.status !== 'none' &&
+        <>
+            <div class="[ tiles ]">
+                <ComponentBlock>
+                    <span class="[ tile-value ]">{results.cohort_count}</span>
+                    <span>{t('fleets.invite_feedback.asked')}</span>
+                </ComponentBlock>
+                <ComponentBlock>
+                    <span class="[ tile-value ]">{results.response_count}</span>
+                    <span>{t('fleets.invite_feedback.answered')} · {results.answered_percent}%</span>
+                </ComponentBlock>
+                <ComponentBlock>
+                    <span class="[ tile-value ]">{results.glad_or_fine_percent}%</span>
+                    <span>{t('fleets.invite_feedback.tile_glad')}</span>
+                </ComponentBlock>
+                <ComponentBlock>
+                    <span class="[ tile-value ]">{results.open_replied}/{results.open_asked}</span>
+                    <span>{t('fleets.invite_feedback.tile_open')}</span>
+                </ComponentBlock>
+            </div>
+            {results.frame.length > 0 &&
+                <section>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>{t('fleets.invite_feedback.frame_asked')}</th>
+                                <th>{t('fleets.invite_feedback.frame_answered')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {results.frame.map((row) =>
+                                <tr>
+                                    <th scope="row">{row.label}</th>
+                                    <td>{row.asked_count} · {row.asked_percent}%</td>
+                                    <td>{row.answered_count} · {row.answered_percent}%</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                    {results.frame_note && <p class="[ note ]">{results.frame_note}</p>}
+                </section>
+            }
+            {results.chips.length > 0 &&
+                <nav class="[ chips ]" aria-label={t('fleets.invite_feedback.results_title')}>
+                    {results.chips.map((chip) =>
+                        <a
+                            href={href_for(chip.key)}
+                            aria-current={chip.active ? 'page' : undefined}
+                            class:list={[{ 'is-active': chip.active }]}
+                        >
+                            {chip.label} · {chip.count}
+                        </a>
+                    )}
+                </nav>
+            }
+            {has_answers &&
+                <>
+                    {results.sitting_out.length > 0 &&
+                        <section>
+                            <h2>{t('fleets.invite_feedback.sitting_out')}</h2>
+                            {results.sitting_out_help && <p class="[ note ]">{results.sitting_out_help}</p>}
+                            {results.sitting_out_split.length > 0 &&
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        {results.sitting_out_split.map((side) =>
+                                            <th>{side.label} · {side.count}</th>
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {results.sitting_out_split[0].bars.map((bar, index) =>
+                                        <tr>
+                                            <th scope="row">{bar.label}</th>
+                                            {results.sitting_out_split.map((side) =>
+                                                <td>{side.bars[index]?.count ?? 0}</td>
+                                            )}
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                            }
+                            <ul class="[ bars ]">
+                                {bars(results.sitting_out).map((bar) =>
+                                    <li>
+                                        <span>{bar.label}</span>
+                                        <span class="[ track ]"><span class="[ fill ]" style={`width: ${bar.width}`}></span></span>
+                                        <span>{bar.count}</span>
+                                    </li>
+                                )}
+                            </ul>
+                        </section>
+                    }
+                    {results.felt.length > 0 &&
+                        <section>
+                            <h2>{t('fleets.invite_feedback.felt')}</h2>
+                            <ul class="[ bars ]">
+                                {bars(results.felt).map((bar) =>
+                                    <li>
+                                        <span>{bar.label}</span>
+                                        <span class="[ track ]"><span class="[ fill ]" style={`width: ${bar.width}`}></span></span>
+                                        <span>{bar.count}</span>
+                                    </li>
+                                )}
+                            </ul>
+                            {results.felt_split.length > 0 &&
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            {results.felt_split.map((side) =>
+                                                <th>{side.label} · {side.count}</th>
+                                            )}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {results.felt_split[0].bars.map((bar, index) =>
+                                            <tr>
+                                                <th scope="row">{bar.label}</th>
+                                                {results.felt_split.map((side) =>
+                                                    <td>{side.bars[index]?.count ?? 0}</td>
+                                                )}
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            }
+                            {results.felt_help && <p class="[ note ]">{results.felt_help}</p>}
+                        </section>
+                    }
+                    {results.why.length > 0 &&
+                        <section>
+                            <h2>{t('fleets.invite_feedback.why')}</h2>
+                            {results.why_help && <p class="[ note ]">{results.why_help}</p>}
+                            <ul class="[ bars ]">
+                                {bars(results.why).map((bar) =>
+                                    <li>
+                                        <span>{bar.label}</span>
+                                        <span class="[ track ]"><span class="[ fill ]" style={`width: ${bar.width}`}></span></span>
+                                        <span>{bar.count}</span>
+                                    </li>
+                                )}
+                            </ul>
+                        </section>
+                    }
+                    {results.improve.length > 0 &&
+                        <section>
+                            <h2>{t('fleets.invite_feedback.improve')}</h2>
+                            {results.improve_help && <p class="[ note ]">{results.improve_help}</p>}
+                            <ol class="[ priority ]">
+                                {results.improve.map((bar) =>
+                                    <li>
+                                        <span>{bar.label}</span>
+                                        <span>{bar.count}</span>
+                                    </li>
+                                )}
+                            </ol>
+                        </section>
+                    }
+                    {results.quotes.length > 0 &&
+                        <section>
+                            <h2>{t('fleets.invite_feedback.quotes')}</h2>
+                            {results.quotes_help && <p class="[ note ]">{results.quotes_help}</p>}
+                            <ul class="[ quotes ]">
+                                {results.quotes.map((quote) => <li>{quote}</li>)}
+                            </ul>
+                        </section>
+                    }
+                </>
+            }
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .fleet-invite-results {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(var(--space-3xl), 1fr));
+        gap: var(--space-xs);
+    }
+
+    .tile-value {
+        display: block;
+        font-size: var(--step-2);
+    }
+
+    .note,
+    .lede {
+        color: var(--fleet-yellow);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        text-align: left;
+        padding: var(--space-3xs) var(--space-2xs);
+        border-bottom: solid 1px var(--border-color-hover);
+    }
+
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .chips a {
+        border: solid 1px var(--border-color-hover);
+        padding: var(--space-3xs) var(--space-2xs);
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .chips a.is-active {
+        border-color: var(--highlight);
+        color: var(--highlight);
+    }
+
+    .bars,
+    .priority,
+    .quotes {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .bars li,
+    .priority li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+        gap: var(--space-xs);
+        align-items: center;
+    }
+
+    .priority li {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .track {
+        display: block;
+        height: var(--space-2xs);
+        background: var(--border-color-hover);
+    }
+
+    .fill {
+        display: block;
+        height: 100%;
+        background: var(--fleet-red);
+    }
+
+    .quotes li {
+        border-left: solid 2px var(--fleet-yellow);
+        padding-left: var(--space-xs);
+    }
+</style>

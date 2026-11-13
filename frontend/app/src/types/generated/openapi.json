@@ -650,6 +650,45 @@
         "title": "AnswerInput",
         "type": "object"
       },
+      "Answers": {
+        "properties": {
+          "comment": {
+            "default": "",
+            "title": "Comment",
+            "type": "string"
+          },
+          "felt": {
+            "default": "",
+            "title": "Felt",
+            "type": "string"
+          },
+          "improve": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Improve",
+            "type": "array"
+          },
+          "sitting_out": {
+            "default": "",
+            "title": "Sitting Out",
+            "type": "string"
+          },
+          "why": {
+            "default": "",
+            "title": "Why",
+            "type": "string"
+          },
+          "why_text": {
+            "default": "",
+            "title": "Why Text",
+            "type": "string"
+          }
+        },
+        "title": "Answers",
+        "type": "object"
+      },
       "ApplicationRequirements": {
         "properties": {
           "application_id": {
@@ -1143,6 +1182,29 @@
           "awarded_at"
         ],
         "title": "AwardOut",
+        "type": "object"
+      },
+      "Bar": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "count"
+        ],
+        "title": "Bar",
         "type": "object"
       },
       "BasicCharacterResponse": {
@@ -6132,6 +6194,52 @@
         "title": "ChiefVolunteerSchema",
         "type": "object"
       },
+      "Chip": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "count",
+          "active"
+        ],
+        "title": "Chip",
+        "type": "object"
+      },
+      "Choice": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "Choice",
+        "type": "object"
+      },
       "ChoiceOut": {
         "properties": {
           "label": {
@@ -6281,6 +6389,42 @@
           "actual_character"
         ],
         "title": "ColonyEntry",
+        "type": "object"
+      },
+      "CommandRequest": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "confirm": {
+            "default": false,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discord_user_id",
+          "action"
+        ],
+        "title": "CommandRequest",
+        "type": "object"
+      },
+      "CommandResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "CommandResponse",
         "type": "object"
       },
       "CommanderOrderRequest": {
@@ -20487,6 +20631,131 @@
         "title": "FleetWindowShip",
         "type": "object"
       },
+      "FormResponse": {
+        "properties": {
+          "answers": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Answers"
+              }
+            ]
+          },
+          "body": {
+            "default": "",
+            "title": "Body",
+            "type": "string"
+          },
+          "comment_heading": {
+            "default": "",
+            "title": "Comment Heading",
+            "type": "string"
+          },
+          "comment_placeholder": {
+            "default": "",
+            "title": "Comment Placeholder",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "errors": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "heading": {
+            "default": "",
+            "title": "Heading",
+            "type": "string"
+          },
+          "intro": {
+            "default": "",
+            "title": "Intro",
+            "type": "string"
+          },
+          "invites": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InviteRow"
+            },
+            "title": "Invites",
+            "type": "array"
+          },
+          "list_heading": {
+            "default": "",
+            "title": "List Heading",
+            "type": "string"
+          },
+          "pending_invites": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InviteRow"
+            },
+            "title": "Pending Invites",
+            "type": "array"
+          },
+          "questions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "title": "Questions",
+            "type": "array"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "FormResponse",
+        "type": "object"
+      },
+      "FrameRow": {
+        "properties": {
+          "answered_count": {
+            "title": "Answered Count",
+            "type": "integer"
+          },
+          "answered_percent": {
+            "title": "Answered Percent",
+            "type": "integer"
+          },
+          "asked_count": {
+            "title": "Asked Count",
+            "type": "integer"
+          },
+          "asked_percent": {
+            "title": "Asked Percent",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "asked_count",
+          "asked_percent",
+          "answered_count",
+          "answered_percent"
+        ],
+        "title": "FrameRow",
+        "type": "object"
+      },
       "FreightCharacterStatResponse": {
         "description": "Character stats: primary character and completed contract count (e.g. last 30 days).",
         "properties": {
@@ -23662,6 +23931,39 @@
           "ships"
         ],
         "title": "InvitePilot",
+        "type": "object"
+      },
+      "InviteRow": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "answer_label": {
+            "title": "Answer Label",
+            "type": "string"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "when": {
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "when",
+          "title",
+          "answer",
+          "answer_label"
+        ],
+        "title": "InviteRow",
         "type": "object"
       },
       "InviteTotals": {
@@ -34648,6 +34950,57 @@
         "title": "QualifyingSkillSchema",
         "type": "object"
       },
+      "Question": {
+        "properties": {
+          "badge": {
+            "default": "",
+            "title": "Badge",
+            "type": "string"
+          },
+          "choices": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Choice"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "exclusive": {
+            "default": "",
+            "title": "Exclusive",
+            "type": "string"
+          },
+          "help": {
+            "default": "",
+            "title": "Help",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "max": {
+            "default": 1,
+            "title": "Max",
+            "type": "integer"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "prompt",
+          "kind"
+        ],
+        "title": "Question",
+        "type": "object"
+      },
       "QuestionSchema": {
         "properties": {
           "choices": {
@@ -36228,6 +36581,166 @@
           "detail"
         ],
         "title": "RestrictedResponse",
+        "type": "object"
+      },
+      "ResultsResponse": {
+        "properties": {
+          "answered_percent": {
+            "default": 0,
+            "title": "Answered Percent",
+            "type": "integer"
+          },
+          "chips": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Chip"
+            },
+            "title": "Chips",
+            "type": "array"
+          },
+          "cohort_count": {
+            "default": 0,
+            "title": "Cohort Count",
+            "type": "integer"
+          },
+          "cut": {
+            "default": "all",
+            "title": "Cut",
+            "type": "string"
+          },
+          "felt": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "title": "Felt",
+            "type": "array"
+          },
+          "felt_help": {
+            "default": "",
+            "title": "Felt Help",
+            "type": "string"
+          },
+          "felt_split": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SplitSide"
+            },
+            "title": "Felt Split",
+            "type": "array"
+          },
+          "frame": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FrameRow"
+            },
+            "title": "Frame",
+            "type": "array"
+          },
+          "frame_note": {
+            "default": "",
+            "title": "Frame Note",
+            "type": "string"
+          },
+          "glad_or_fine_percent": {
+            "default": 0,
+            "title": "Glad Or Fine Percent",
+            "type": "integer"
+          },
+          "improve": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "title": "Improve",
+            "type": "array"
+          },
+          "improve_help": {
+            "default": "",
+            "title": "Improve Help",
+            "type": "string"
+          },
+          "lede": {
+            "default": "",
+            "title": "Lede",
+            "type": "string"
+          },
+          "open_asked": {
+            "default": 0,
+            "title": "Open Asked",
+            "type": "integer"
+          },
+          "open_replied": {
+            "default": 0,
+            "title": "Open Replied",
+            "type": "integer"
+          },
+          "quotes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Quotes",
+            "type": "array"
+          },
+          "quotes_help": {
+            "default": "",
+            "title": "Quotes Help",
+            "type": "string"
+          },
+          "response_count": {
+            "default": 0,
+            "title": "Response Count",
+            "type": "integer"
+          },
+          "show_link": {
+            "title": "Show Link",
+            "type": "boolean"
+          },
+          "sitting_out": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "title": "Sitting Out",
+            "type": "array"
+          },
+          "sitting_out_help": {
+            "default": "",
+            "title": "Sitting Out Help",
+            "type": "string"
+          },
+          "sitting_out_split": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SplitSide"
+            },
+            "title": "Sitting Out Split",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "why": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "title": "Why",
+            "type": "array"
+          },
+          "why_help": {
+            "default": "",
+            "title": "Why Help",
+            "type": "string"
+          }
+        },
+        "required": [
+          "show_link",
+          "status"
+        ],
+        "title": "ResultsResponse",
         "type": "object"
       },
       "ResultsSchema": {
@@ -38494,6 +39007,37 @@
         "title": "SiteOut",
         "type": "object"
       },
+      "SplitSide": {
+        "properties": {
+          "bars": {
+            "items": {
+              "$ref": "#/components/schemas/Bar"
+            },
+            "title": "Bars",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "count",
+          "bars"
+        ],
+        "title": "SplitSide",
+        "type": "object"
+      },
       "SpotlightQuestionInput": {
         "description": "One one-off question merged in before the Open floor.",
         "properties": {
@@ -39168,6 +39712,66 @@
           "fuel_expires"
         ],
         "title": "StructureResponse",
+        "type": "object"
+      },
+      "SubmitError": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail",
+          "errors"
+        ],
+        "title": "SubmitError",
+        "type": "object"
+      },
+      "SubmitRequest": {
+        "properties": {
+          "comment": {
+            "default": "",
+            "title": "Comment",
+            "type": "string"
+          },
+          "felt": {
+            "default": "",
+            "title": "Felt",
+            "type": "string"
+          },
+          "improve": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Improve",
+            "type": "array"
+          },
+          "sitting_out": {
+            "default": "",
+            "title": "Sitting Out",
+            "type": "string"
+          },
+          "why": {
+            "default": "",
+            "title": "Why",
+            "type": "string"
+          },
+          "why_text": {
+            "default": "",
+            "title": "Why Text",
+            "type": "string"
+          }
+        },
+        "title": "SubmitRequest",
         "type": "object"
       },
       "SubmitResponseRequest": {
@@ -55022,6 +55626,248 @@
           }
         ],
         "summary": "Get the fleets that the user is currently active in",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/invite-feedback": {
+      "get": {
+        "description": "The fleet invite feedback form for the logged-in pilot. A pilot who was not asked gets not_invited. edit=true reopens a submitted form while the round is open.",
+        "operationId": "fleets_endpoints_invite_feedback_get_form_get_invite_feedback",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "edit",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Edit",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Invite Feedback",
+        "tags": [
+          "Fleets"
+        ]
+      },
+      "post": {
+        "description": "Save this pilot's fleet invite feedback. A closed round returns the closed panel and does not save.",
+        "operationId": "fleets_endpoints_invite_feedback_post_form_post_invite_feedback",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitError"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Feedback",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/invite-feedback/command": {
+      "post": {
+        "description": "Preview, send, remind, or close the fleet invite feedback round. Strategic FCs only. The Discord command calls this.",
+        "operationId": "fleets_endpoints_invite_feedback_post_command_post_invite_feedback_command",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Feedback Command",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/invite-feedback/results": {
+      "get": {
+        "description": "Fleet invite feedback counts for Strategic FCs. link=true only says whether a round exists, for the schedule page. A cut with fewer than 5 answers is omitted.",
+        "operationId": "fleets_endpoints_invite_feedback_get_results_get_invite_feedback_results",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cut",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "title": "Cut",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "link",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Link",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Invite Feedback Results",
         "tags": [
           "Fleets"
         ]
