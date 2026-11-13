@@ -1,15 +1,19 @@
-"""POST "/classes" - start a class (mentors and learning managers)."""
+"""POST "/classes" - set up a class (learning managers, from Settings)."""
 
 from authentication import AuthBearer
-from learning.endpoints.mentors.common import ERRORS, handles_errors
+from learning.endpoints.mentors.common import (
+    ERRORS,
+    handles_errors,
+    require_manage,
+)
 from learning.mentors import requirements as reqs
-from learning.mentors import service, views
+from learning.mentors import service
 from learning.mentors.schemas import (
     MentorClassBody,
     MentorClassCreatedResponse,
 )
 from learning.mentors.service import MentorError
-from learning.models import MentorClass, MentorClassTeacher
+from learning.models import MENTOR_CLASS_COVER_CHOICES, MentorClass
 
 PATH = "/classes"
 METHOD = "post"
@@ -28,6 +32,9 @@ def apply_body(mc: MentorClass, payload: MentorClassBody) -> None:
         raise MentorError("Pick where the class happens.")
     if not 15 <= payload.minutes <= 180:
         raise MentorError("A class is 15 to 180 minutes.")
+    cover = (payload.cover_image_url or "").strip()
+    if cover not in dict(MENTOR_CLASS_COVER_CHOICES):
+        raise MentorError("Pick a background from the gallery.")
     try:
         rows = reqs.clean([r.dict() for r in payload.requirements])
     except reqs.RequirementError as exc:
@@ -38,17 +45,14 @@ def apply_body(mc: MentorClass, payload: MentorClassBody) -> None:
     mc.minutes = payload.minutes
     mc.where = payload.where
     mc.requirements = rows
+    mc.cover_image_url = cover
 
 
 @handles_errors
 def post_class(request, payload: MentorClassBody):
-    profile = service.approved_profile(request.user)
-    if profile is None and not views.can_manage(request.user):
-        raise MentorError("Only mentors can write classes.", 403)
+    require_manage(request.user)
     mc = MentorClass(author=request.user)
     apply_body(mc, payload)
     mc.slug = service.unique_slug(mc.title)
     mc.save()
-    if profile is not None:
-        MentorClassTeacher.objects.create(mentor_class=mc, mentor=profile)
     return 201, {"id": mc.pk, "slug": mc.slug}

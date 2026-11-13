@@ -1,6 +1,9 @@
 from django.contrib import admin
 
+from campaigns.forms import cover_image_formfield
+
 from learning.models import (
+    MENTOR_CLASS_COVER_CHOICES,
     Certificate,
     CertificateLearning,
     Learning,
@@ -141,6 +144,25 @@ class MentorClassAdmin(admin.ModelAdmin):
     search_fields = ("title", "slug")
     raw_id_fields = ("author", "learning")
     inlines = (MentorClassTeacherInline,)
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "cover_image_url":
+            current = ""
+            object_id = (request.resolver_match.kwargs or {}).get("object_id")
+            if object_id:
+                current = (
+                    MentorClass.objects.filter(pk=object_id)
+                    .values_list("cover_image_url", flat=True)
+                    .first()
+                    or ""
+                )
+            return cover_image_formfield(
+                current_value=current,
+                choices=MENTOR_CLASS_COVER_CHOICES,
+                help_text="Background of the class page. Default uses the "
+                "Learning Center cover.",
+            )
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
 @admin.register(MentorRequest)

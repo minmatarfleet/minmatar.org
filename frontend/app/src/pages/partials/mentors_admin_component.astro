@@ -14,7 +14,7 @@ if (!user || !can(await get_gates(Astro), 'learning.manage'))
 import type { MentorAdminClass, MentorsAdmin, MentorsMe } from '@dtypes/api.minmatar.org'
 import { get_mentors_admin, get_mentors_me } from '@helpers/api.minmatar.org/mentors'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { MENTORS_ADMIN_PARTIAL, brackets_text, class_time, mentor_class_edit_path, mentors_url } from '@helpers/mentors'
+import { MENTORS_ADMIN_PARTIAL, NEW_MENTOR_CLASS_PATH, brackets_text, class_time, mentor_class_cover, mentor_class_edit_path, mentors_url } from '@helpers/mentors'
 import { handle_mentor_post } from '@helpers/mentors_actions'
 
 const token = auth_token as string
@@ -37,6 +37,7 @@ const post_url = (mode: string, params: Record<string, number> = {}) =>
     translatePath(mentors_url(MENTORS_ADMIN_PARTIAL, { mode, ...params }))
 
 const class_groups: { title: string, rows: MentorAdminClass[] }[] = admin ? [
+    { title: t('mentors.admin.drafts'), rows: admin.drafts },
     { title: t('mentors.admin.review'), rows: admin.review },
     { title: t('mentors.admin.published'), rows: admin.published },
     { title: t('mentors.admin.hidden'), rows: admin.hidden },
@@ -44,6 +45,7 @@ const class_groups: { title: string, rows: MentorAdminClass[] }[] = admin ? [
 
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Tag from '@components/blocks/Tag.astro'
 import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
@@ -93,7 +95,10 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                 }
             </MentorsSection>
 
-            <MentorsSection title={t('mentors.admin.classes')}>
+            <MentorsSection title={t('mentors.admin.classes')} hint={t('mentors.admin.classes_hint')}>
+                <Button slot="aside" size="sm" href={translatePath(NEW_MENTOR_CLASS_PATH)}>
+                    {t('mentors.admin.create')}
+                </Button>
                 {class_groups.length === 0 ?
                     <EmptyState title={t('mentors.admin.classes_empty')} />
                     : class_groups.map(group =>
@@ -102,11 +107,11 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                         <ul class="[ mentors-admin__list ]">
                             {group.rows.map(row =>
                                 <li class="[ mentors-admin__row ]">
+                                    <img class="[ mentors-admin__cover ]" src={mentor_class_cover(row.cover_image_url)} alt="" width="96" height="54" loading="lazy" />
                                     <div class="[ mentors-admin__body ]">
                                         <a href={translatePath(mentor_class_edit_path(row.id))}>{row.title}</a>
                                         <small>
-                                            {t('mentors.admin.written_by').replace('{name}', row.author_name)}
-                                            {' · '}{t('mentors.minutes_label').replace('{count}', row.minutes.toString())}
+                                            {t('mentors.minutes_label').replace('{count}', row.minutes.toString())}
                                             {' · '}{t('mentors.admin.requests_90d').replace('{count}', row.requests_90d.toString())}
                                         </small>
                                         {row.teachers.length > 0 &&
@@ -117,18 +122,6 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                             </span>
                                         }
                                     </div>
-                                    {row.status === 'review' &&
-                                        <form
-                                            class="[ mentors-admin__inline mentors-admin__review ]"
-                                            hx-post={post_url('class_status', { class_id: row.id })}
-                                            hx-target="#mentors-admin"
-                                            hx-swap="outerHTML"
-                                        >
-                                            <input type="text" name="note" placeholder={t('mentors.admin.send_back_note')} aria-label={t('mentors.admin.send_back_note')} maxlength="500" />
-                                            <Button type="submit" size="sm" color="transparent" name="status" value="draft">{t('mentors.admin.send_back')}</Button>
-                                            <Button type="submit" size="sm" color="green" name="status" value="published">{t('mentors.admin.publish')}</Button>
-                                        </form>
-                                    }
                                     {row.status === 'published' &&
                                         <Button
                                             type="button"
@@ -142,7 +135,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                             {t('mentors.admin.hide')}
                                         </Button>
                                     }
-                                    {row.status === 'hidden' &&
+                                    {row.status !== 'published' &&
                                         <Button
                                             type="button"
                                             size="sm"
@@ -152,7 +145,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                             hx-target="#mentors-admin"
                                             hx-swap="outerHTML"
                                         >
-                                            {t('mentors.admin.show')}
+                                            {row.status === 'hidden' ? t('mentors.admin.show') : t('mentors.admin.publish')}
                                         </Button>
                                     }
                                 </li>
@@ -245,7 +238,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                     hx-target="#mentors-admin"
                     hx-swap="outerHTML"
                 >
-                    <input type="text" name="character_name" required placeholder={t('mentors.admin.make_placeholder')} aria-label={t('mentors.admin.make_placeholder')} />
+                    <Input type="text" name="character_name" required placeholder={t('mentors.admin.make_placeholder')} aria-label={t('mentors.admin.make_placeholder')} />
                     <Button type="submit" size="sm" color="transparent">{t('mentors.admin.make')}</Button>
                 </form>
             </MentorsSection>
@@ -320,6 +313,14 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         }
     }
 
+    .mentors-admin__cover {
+        flex: none;
+        width: 6em;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+    }
+
     .mentors-admin__faces {
         display: flex;
         gap: var(--space-3xs);
@@ -335,16 +336,8 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         align-items: center;
         gap: var(--space-2xs);
 
-        input {
+        > :global(:first-child) {
             flex: 0 1 20em;
-        }
-    }
-
-    .mentors-admin__review {
-        flex-basis: 100%;
-
-        input {
-            flex: 1 1 14em;
         }
     }
 

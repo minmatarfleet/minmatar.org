@@ -1,0 +1,72 @@
+---
+/**
+ * The class background, picked from the site cover gallery (the one
+ * campaigns use): a grid of thumbnail radio cards. The empty value is the
+ * Learning Center cover. Posts as `cover_image_url`.
+ */
+import type { MentorClassCover } from '@dtypes/api.minmatar.org'
+import { mentor_class_cover } from '@helpers/mentors'
+
+interface Props {
+    covers:     MentorClassCover[];
+    selected:   string;
+    /** The visible label's id, for the group's accessible name. */
+    labelledby: string;
+    [propName: string]: any;
+}
+
+const {
+    covers,
+    selected,
+    labelledby,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Grid from '@components/compositions/Grid.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+---
+
+<Grid
+    role="radiogroup"
+    aria-labelledby={labelledby}
+    class:list={['[ class-covers ]', Astro.props.class]}
+    min_item_width="9rem"
+    row_gap="var(--space-xs)"
+    column_gap="var(--space-xs)"
+    {...attributes}
+>
+    {covers.map(cover =>
+        <OptionCard name="cover_image_url" value={cover.url} checked={cover.url === selected}>
+            <img src={mentor_class_cover(cover.url)} alt="" width="160" height="90" loading="lazy" />
+            <span>{cover.label}</span>
+        </OptionCard>
+    )}
+</Grid>
+
+<style lang="scss">
+    .class-covers :global(.option-card__body) {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-3xs);
+        padding: var(--space-3xs);
+    }
+
+    img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+    }
+
+    span {
+        overflow: hidden;
+        color: var(--highlight);
+        font-size: var(--step--1);
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>

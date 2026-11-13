@@ -27,10 +27,11 @@ def post_class_teach(request, class_id: int):
     if profile is None:
         raise MentorError("You aren't a mentor.", 403)
     mc = get_class(class_id)
-    if (
-        mc.status != MentorClass.STATUS_PUBLISHED
-        and mc.author_id != request.user.pk
-    ):
+    # Mentors join published classes; an invite also lets them join a draft.
+    invited = MentorClassTeacher.objects.filter(
+        mentor_class=mc, mentor=profile
+    ).exists()
+    if mc.status != MentorClass.STATUS_PUBLISHED and not invited:
         raise MentorError("That class isn't published.")
     row, _ = MentorClassTeacher.objects.get_or_create(
         mentor_class=mc, mentor=profile

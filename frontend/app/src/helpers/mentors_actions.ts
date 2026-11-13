@@ -11,7 +11,6 @@ import {
     set_mentor_class_status,
     set_mentor_status,
     stop_teaching_mentor_class,
-    submit_mentor_class,
     teach_mentor_class,
 } from '@helpers/api.minmatar.org/mentors'
 import { form_numbers, form_strings } from '@helpers/mentors'
@@ -22,7 +21,7 @@ import { form_numbers, form_strings } from '@helpers/mentors'
  */
 export type MentorMode =
     | 'request' | 'cancel' | 'pass' | 'accept' | 'feedback' | 'apply'
-    | 'save_settings' | 'teach' | 'stop' | 'submit_class' | 'invite_teacher'
+    | 'save_settings' | 'teach' | 'stop' | 'invite_teacher'
     | 'class_status' | 'mentor_status' | 'make_mentor'
 
 export interface MentorActionResult {
@@ -91,7 +90,6 @@ export async function run_mentor_action(
             mode === 'apply' ? await apply_to_mentor(token, text_of(form, 'note')) :
             mode === 'teach' ? await teach_mentor_class(token, class_id) :
             mode === 'stop' ? await stop_teaching_mentor_class(token, class_id) :
-            mode === 'submit_class' ? await submit_mentor_class(token, class_id) :
             mode === 'invite_teacher' ? await invite_class_teacher(token, class_id, text_of(form, 'character_name')) :
             mode === 'class_status' ? await set_mentor_class_status(token, class_id, text_of(form, 'status'), text_of(form, 'note')) :
             mode === 'mentor_status' ? await set_mentor_status(token, number_of(form, params, 'mentor_id'), text_of(form, 'status')) :

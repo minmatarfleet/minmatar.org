@@ -5,7 +5,7 @@ from __future__ import annotations
 from django import forms
 
 from app.links import site_url
-from campaigns.constants import CAMPAIGN_COVER_CHOICES, CAMPAIGN_COVER_PATHS
+from campaigns.constants import CAMPAIGN_COVER_CHOICES
 from campaigns.models import (
     AreaScope,
     CampaignArea,
@@ -35,21 +35,28 @@ class CoverImageRadioSelect(forms.RadioSelect):
         return option
 
 
-def cover_image_formfield(*, current_value: str = ""):
-    """Choice field for Story / add forms; keeps legacy custom URLs selectable."""
-    choices = list(CAMPAIGN_COVER_CHOICES)
+def cover_image_formfield(
+    *,
+    current_value: str = "",
+    choices=None,
+    help_text: str = (
+        "Site gallery covers. Default uses the kind fallback on the "
+        "campaign card."
+    ),
+):
+    """Thumbnail picker over the site cover gallery (campaigns by default);
+    keeps legacy custom URLs selectable."""
+    choices = list(CAMPAIGN_COVER_CHOICES if choices is None else choices)
+    known = {choice[0] for choice in choices}
     value = (current_value or "").strip()
-    if value and value not in CAMPAIGN_COVER_PATHS and value != "":
+    if value and value not in known:
         choices.append((value, f"Custom (legacy): {value}"))
     return forms.ChoiceField(
         choices=choices,
         required=False,
         label="Cover",
         widget=CoverImageRadioSelect,
-        help_text=(
-            "Site gallery covers. Default uses the kind fallback on the "
-            "campaign card."
-        ),
+        help_text=help_text,
     )
 
 

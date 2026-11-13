@@ -19,7 +19,6 @@ from learning.endpoints.mentors import post_apply
 from learning.endpoints.mentors import post_class
 from learning.endpoints.mentors import get_class_edit
 from learning.endpoints.mentors import put_class_edit
-from learning.endpoints.mentors import post_class_submit
 from learning.endpoints.mentors import post_class_teachers
 from learning.endpoints.mentors import post_class_teach
 from learning.endpoints.mentors import delete_class_teach
@@ -28,6 +27,7 @@ from learning.endpoints.mentors import put_admin_class_status
 from learning.endpoints.mentors import put_admin_mentor_status
 from learning.endpoints.mentors import post_admin_mentor
 from learning.endpoints.mentors import get_admin_metrics
+from learning.endpoints.mentors import get_class_options
 from learning.endpoints.mentors import post_discord_pass
 from learning.endpoints.mentors import post_discord_cancel
 from learning.endpoints.mentors import post_discord_confirm
@@ -45,6 +45,7 @@ _MODULES = (
     post_apply,
     get_admin,
     get_admin_metrics,
+    get_class_options,
     post_admin_mentor,
     put_admin_mentor_status,
     put_admin_class_status,
@@ -61,7 +62,6 @@ _MODULES = (
     post_class,
     get_class_edit,
     put_class_edit,
-    post_class_submit,
     post_class_teachers,
     post_class_teach,
     delete_class_teach,

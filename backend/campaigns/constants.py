@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.covers import SITE_COVERS
 from eveonline.killmail_classes import SMALL_GANG_MAX_ATTACKERS
 
 # Paths under /api/campaigns that a campaign slug would otherwise shadow.
@@ -243,24 +244,11 @@ CAMPAIGN_AWARDS = [
     ("ever_present", "Ever Present", "active_days"),
 ]
 
-# Curated cover art under frontend/public/images. Empty = kind fallback on
-# the campaign card (strategic → Auga, FW → warzone card).
+# Curated cover art (app.covers). Empty = kind fallback on the campaign card
+# (strategic → Auga, FW → warzone card).
 CAMPAIGN_COVER_CHOICES: list[tuple[str, str]] = [
     ("", "Default (by campaign kind)"),
-    ("/images/home-auga-cover.jpg", "Auga"),
-    ("/images/home-amamake-cover.jpg", "Amamake"),
-    ("/images/home-cover-og.jpg", "Watermellon"),
-    ("/images/home-vard-cover.jpg", "Vard"),
-    ("/images/home-evati-cover.jpg", "Evati"),
-    ("/images/home-nakah-cover.jpg", "Nakah"),
-    ("/images/home-r6-2-cover.jpg", "R-6KYM"),
-    ("/images/home-amarr-cover.jpg", "Amarr"),
-    ("/images/warzone-card.jpg", "Warzone card"),
-    ("/images/warzone-cover.jpg", "Warzone"),
-    ("/images/etherium-campaign.webp", "Etherium Reach"),
-    ("/images/providence-campaign.webp", "Providence"),
-    ("/images/scalding-campaign.webp", "Scalding Pass"),
-    ("/images/hek-campaign.webp", "Hek"),
+    *SITE_COVERS,
 ]
 
 CAMPAIGN_COVER_PATHS = frozenset(

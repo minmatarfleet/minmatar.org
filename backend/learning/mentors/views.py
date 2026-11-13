@@ -12,6 +12,7 @@ from learning.mentors import availability as avail
 from learning.mentors import requirements as reqs
 from learning.mentors import service
 from learning.models import (
+    MENTOR_CLASS_COVER_CHOICES,
     MentorClass,
     MentorClassTeacher,
     MentorProfile,
@@ -284,6 +285,7 @@ def class_detail(user, mentor_class: MentorClass) -> dict:
         ],
         "minutes": mentor_class.minutes,
         "where": mentor_class.where,
+        "cover_image_url": mentor_class.cover_image_url,
         "status": mentor_class.status,
         "author": author,
         "requirements": [c.__dict__ for c in checks],
@@ -303,7 +305,8 @@ def class_detail(user, mentor_class: MentorClass) -> dict:
 
 
 def can_edit_class(user, mentor_class: MentorClass) -> bool:
-    return mentor_class.author_id == user.pk or can_manage(user)
+    """Classes are set up in Settings: only learning managers edit them."""
+    return can_manage(user)
 
 
 def mentoring(profile: MentorProfile) -> dict:
@@ -384,19 +387,6 @@ def settings(user) -> dict:
                 else teaching
             )
             target.append(_teaching_row(row, counts, idents))
-        # Drafts the mentor wrote but nobody teaches yet still show up.
-        for mc in MentorClass.objects.filter(author=user).exclude(
-            pk__in=class_ids
-        ):
-            teaching.append(
-                {
-                    "mentor_class": class_ref(mc),
-                    "teacher_status": MentorClassTeacher.STATUS_ACCEPTED,
-                    "is_author": True,
-                    "author_name": "",
-                    "teacher_count": 0,
-                }
-            )
         if profile.approved:
             joinable = [
                 class_ref(mc)
@@ -428,6 +418,7 @@ def class_edit(user, mentor_class: MentorClass) -> dict:
         "minutes": mentor_class.minutes,
         "where": mentor_class.where,
         "requirements": list(mentor_class.requirements or []),
+        "cover_image_url": mentor_class.cover_image_url,
         "status": mentor_class.status,
         "review_note": mentor_class.review_note,
         "teachers": [
@@ -439,11 +430,26 @@ def class_edit(user, mentor_class: MentorClass) -> dict:
             }
             for t in teachers
         ],
-        "requirement_kinds": [
-            {"kind": kind, "label": label}
-            for kind, label in reqs.KIND_LABELS.items()
-        ],
+        "requirement_kinds": requirement_kinds(),
         "can_review": can_manage(user),
+    }
+
+
+def requirement_kinds() -> list[dict]:
+    return [
+        {"kind": kind, "label": label}
+        for kind, label in reqs.KIND_LABELS.items()
+    ]
+
+
+def class_options() -> dict:
+    """What the class editor offers: the cover gallery and requirement kinds."""
+    return {
+        "covers": [
+            {"url": url, "label": label}
+            for url, label in MENTOR_CLASS_COVER_CHOICES
+        ],
+        "requirement_kinds": requirement_kinds(),
     }
 
 
@@ -482,6 +488,7 @@ def _admin_classes(classes) -> list[dict]:
             ],
             "requests_90d": counts.get(mc.pk, 0),
             "requirement_count": len(mc.requirements or []),
+            "cover_image_url": mc.cover_image_url,
             "status": mc.status,
             "review_note": mc.review_note,
         }
@@ -559,6 +566,9 @@ def admin() -> dict:
     profiles = MentorProfile.objects.order_by("created_at")
     return {
         "reports": reports,
+        "drafts": _admin_classes(
+            classes.filter(status=MentorClass.STATUS_DRAFT)
+        ),
         "review": _admin_classes(
             classes.filter(status=MentorClass.STATUS_REVIEW)
         ),
