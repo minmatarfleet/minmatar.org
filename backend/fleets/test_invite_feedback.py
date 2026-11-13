@@ -37,6 +37,7 @@ from notifications.models import (
     NotificationDeliveryStatus,
     NotificationPreference,
 )
+from notifications.discord_format import discord_embed_from_payload
 from notifications.types.fleets import render_fleet_invite_feedback
 from tribes.tests.publishing_fixtures import make_user
 
@@ -450,6 +451,9 @@ class InviteFeedbackTests(TestCase):
 
     def test_dm_asks_for_two_minutes(self, unused_delay, unused_async):
         payload = render_fleet_invite_feedback(_dm_context(reminder=False))
+        self.assertEqual(payload["title"], "We need your feedback")
+        embed = discord_embed_from_payload({**payload, "feature": "fleets"})
+        self.assertEqual(embed["title"], "We need your feedback")
         self.assertEqual(
             payload["discord_message"],
             (

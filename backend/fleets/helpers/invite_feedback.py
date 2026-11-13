@@ -558,11 +558,11 @@ def _dm_context(*, reminder: bool) -> dict:
         title = "Still got a minute?"
         body = "The fleet invite survey is still open. A few questions."
     else:
+        title = "We need your feedback"
         body = (
             "Hey! You've been invited to a few fleets lately- could you "
             "take two minutes to share some feedback on the process?"
         )
-        title = body
     return {"title": title, "body": body, "url": site_url(PAGE_PATH)}
 
 
