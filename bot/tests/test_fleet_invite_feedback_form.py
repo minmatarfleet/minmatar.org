@@ -65,6 +65,11 @@ def _form(*, with_why=True, answers=None):
         or {"felt": "", "sitting_out": "", "why": "", "why_text": "", "improve": [], "comment": ""},
         "comment_heading": "One thing to change",
         "comment_placeholder": "Optional. A sentence is enough.",
+        "list_heading": "Your invites, last few weeks.",
+        "invites": [
+            {"when": "Wed 11 Nov, 03:10", "title": "Amamake plex defense", "answer_label": "No answer"},
+            {"when": "Sun 8 Nov, 03:10", "title": "Sunday roam", "answer_label": "In"},
+        ],
     }
 
 
@@ -92,13 +97,33 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
         # Other's reason goes in the comment, so the comment says so.
         self.assertIn("Other", modal.children[-1].description)
 
-    async def test_four_fields_without_open_invites(self):
+    async def test_title_names_the_invites(self):
+        from app.fleet_invites.feedback_form import FeedbackModal
+
+        self.assertEqual("About your 2 fleet invites", FeedbackModal(_form()).title)
+
+    async def test_free_slot_shows_the_invite_list_first(self):
+        import discord
+
         from app.fleet_invites.feedback_form import FeedbackModal
 
         modal = FeedbackModal(_form(with_why=False))
-        self.assertEqual(4, len(modal.children))
+        self.assertEqual(5, len(modal.children))
+        listing = modal.children[0]
+        self.assertIsInstance(listing, discord.ui.TextDisplay)
+        self.assertIn("Amamake plex defense · No answer", listing.content)
         self.assertNotIn("why", modal.selects)
         self.assertIsNone(modal.children[-1].description)
+
+    async def test_no_list_when_all_five_slots_are_questions(self):
+        import discord
+
+        from app.fleet_invites.feedback_form import FeedbackModal
+
+        modal = FeedbackModal(_form())
+        self.assertFalse(
+            any(isinstance(item, discord.ui.TextDisplay) for item in modal.children)
+        )
 
     async def test_saved_answers_are_preselected(self):
         from app.fleet_invites.feedback_form import FeedbackModal
