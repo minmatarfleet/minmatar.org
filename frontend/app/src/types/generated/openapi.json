@@ -50544,7 +50544,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Acknowledge hangar purchase Complete/Cancel from Discord",
+        "summary": "Acknowledge a hangar purchase Discord button",
         "tags": [
           "Buyback",
           "Buyback"

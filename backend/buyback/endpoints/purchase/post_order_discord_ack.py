@@ -18,7 +18,7 @@ from discord.models import DiscordUser
 PATH = "/orders/{order_id}/discord-ack"
 METHOD = "post"
 ROUTE_SPEC = {
-    "summary": "Acknowledge hangar purchase Complete/Cancel from Discord",
+    "summary": "Acknowledge a hangar purchase Discord button",
     "auth": AuthBearer(),
     "response": {
         200: BuybackPurchaseOrderResponse,
@@ -30,9 +30,9 @@ ROUTE_SPEC = {
 
 
 def _actor_may_ack(order: BuybackPurchaseOrder, actor, action: str) -> bool:
-    if action == "complete":
+    if action in ("complete", "contract_up", "close"):
         return can_manage_stock_sales(actor)
-    if action == "cancel":
+    if action in ("cancel", "contract_accepted"):
         is_owner = order.created_by_id == actor.pk
         return is_owner or can_manage_stock_sales(actor)
     return False
@@ -64,7 +64,13 @@ def post_order_discord_ack(
 
     actor = discord_user.user
     action = (payload.action or "").strip().lower()
-    if action not in ("complete", "cancel"):
+    if action not in (
+        "complete",
+        "cancel",
+        "contract_up",
+        "contract_accepted",
+        "close",
+    ):
         return 400, ErrorResponse(detail="Unknown Discord ack action.")
     if not _actor_may_ack(order, actor, action):
         return 403, ErrorResponse(detail="Not authorized for this ack.")

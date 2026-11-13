@@ -13,6 +13,9 @@ own ids against it: backend/discord/test_bot_custom_ids.py.
 # Hangar buyback purchase orders (backend: buyback/helpers/purchase_discord_buttons.py)
 BUYBACK_COMPLETE_PREFIX = "buyback:complete:"
 BUYBACK_CANCEL_PREFIX = "buyback:cancel:"
+BUYBACK_CONTRACT_UP_PREFIX = "buyback:contract_up:"
+BUYBACK_CONTRACT_ACCEPTED_PREFIX = "buyback:contract_accepted:"
+BUYBACK_CLOSE_PREFIX = "buyback:close:"
 
 # LP buyback settlement acks (backend: industry/helpers/lp_buyback_discord_buttons.py)
 LP_BUYBACK_LP_SENT_PREFIX = "lp_buyback:lp:"
@@ -79,6 +82,11 @@ def template(prefix: str, group: str) -> str:
 
 BUYBACK_COMPLETE_TEMPLATE = template(BUYBACK_COMPLETE_PREFIX, "order_id")
 BUYBACK_CANCEL_TEMPLATE = template(BUYBACK_CANCEL_PREFIX, "order_id")
+BUYBACK_CONTRACT_UP_TEMPLATE = template(BUYBACK_CONTRACT_UP_PREFIX, "order_id")
+BUYBACK_CONTRACT_ACCEPTED_TEMPLATE = template(
+    BUYBACK_CONTRACT_ACCEPTED_PREFIX, "order_id"
+)
+BUYBACK_CLOSE_TEMPLATE = template(BUYBACK_CLOSE_PREFIX, "order_id")
 LP_BUYBACK_LP_SENT_TEMPLATE = template(LP_BUYBACK_LP_SENT_PREFIX, "order_id")
 LP_BUYBACK_ISK_SENT_TEMPLATE = template(LP_BUYBACK_ISK_SENT_PREFIX, "order_id")
 NOTIF_ACK_TEMPLATE = template(NOTIF_ACK_PREFIX, "delivery_id")
@@ -86,9 +94,15 @@ NPSI_POST_TEMPLATE = template(NPSI_POST_PREFIX, "event_id")
 NPSI_POST_ALIAS_TEMPLATE = template(NPSI_POST_ALIAS_PREFIX, "event_id")
 NPSI_PREPING_TEMPLATE = template(NPSI_PREPING_PREFIX, "event_id")
 NPSI_TRACK_TEMPLATE = template(NPSI_TRACK_PREFIX, "event_id")
-TRIBE_INVITE_DECLINE_TEMPLATE = template(TRIBE_INVITE_DECLINE_PREFIX, "invitation_id")
-TRIBE_CHIEF_APPOINT_TEMPLATE = template(TRIBE_CHIEF_APPOINT_PREFIX, "volunteer_id")
-TRIBE_CHIEF_DECLINE_TEMPLATE = template(TRIBE_CHIEF_DECLINE_PREFIX, "volunteer_id")
+TRIBE_INVITE_DECLINE_TEMPLATE = template(
+    TRIBE_INVITE_DECLINE_PREFIX, "invitation_id"
+)
+TRIBE_CHIEF_APPOINT_TEMPLATE = template(
+    TRIBE_CHIEF_APPOINT_PREFIX, "volunteer_id"
+)
+TRIBE_CHIEF_DECLINE_TEMPLATE = template(
+    TRIBE_CHIEF_DECLINE_PREFIX, "volunteer_id"
+)
 FLEET_INVITE_OUT_TEMPLATE = template(FLEET_INVITE_OUT_PREFIX, "invite_id")
 FLEET_INVITE_STOP_TEMPLATE = template(FLEET_INVITE_STOP_PREFIX, "invite_id")
 INVITE_FEEDBACK_ANSWER_TEMPLATE = template(

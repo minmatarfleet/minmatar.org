@@ -809,7 +809,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Acknowledge hangar purchase Complete/Cancel from Discord */
+        /** Acknowledge a hangar purchase Discord button */
         post: operations["buyback_endpoints_purchase_post_order_discord_ack_post_order_discord_ack"];
         delete?: never;
         options?: never;

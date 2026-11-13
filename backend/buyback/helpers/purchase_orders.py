@@ -5,11 +5,10 @@ from __future__ import annotations
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
-from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter, EveCorporation
 from eveuniverse.models import EveType
 
 from buyback.discord_tasks import (
+    notify_buyback_contract_up_task,
     notify_buyback_purchase_created_task,
     notify_buyback_purchase_status_changed_task,
 )
@@ -23,10 +22,18 @@ from buyback.models import (
     BuybackPurchaseOrderLine,
     EveBuybackSettings,
 )
+from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCharacter, EveCorporation
 
 
 class PurchaseOrderError(Exception):
     """Buyer-facing purchase order failure."""
+
+
+def _clear_stall(order: BuybackPurchaseOrder) -> None:
+    """Start the reminder clock over. A step change is progress."""
+    order.settlement_changed_at = timezone.now()
+    order.stalled_reminder_at = None
 
 
 def _lock_hangar_sales() -> None:
@@ -356,6 +363,34 @@ def create_purchase_order(
     return order
 
 
+def contract_coverage_note(order: BuybackPurchaseOrder) -> str:
+    """How synced contract lines compare with this order.
+
+    Empty when every line is covered. A sentence when nothing has synced.
+    Otherwise one line per type the contract is short.
+    """
+    entity_ids = _match_entity_ids(order)
+    sold = (
+        _sold_by_type_since(entity_ids, order.created_at) if entity_ids else {}
+    )
+    if not sold:
+        return (
+            "Contract items have not synced yet, so this sale "
+            "was not checked against a contract."
+        )
+    allocated = _allocated_before_order(order)
+    cover = _outbound_cover_for_order(order, allocated)
+    gaps = []
+    for line in order.lines.all():
+        have = cover.get(line.eve_type_id, 0)
+        need = int(line.quantity)
+        if have < need:
+            gaps.append(f"- {line.name}: contract has {have:,} of {need:,}")
+    if not gaps:
+        return ""
+    return "Contract is missing items:\n" + "\n".join(gaps)
+
+
 def complete_purchase_order(order: BuybackPurchaseOrder, user) -> None:
     with transaction.atomic():
         order = (
@@ -376,11 +411,14 @@ def complete_purchase_order(order: BuybackPurchaseOrder, user) -> None:
         order.status = BuybackPurchaseOrder.Status.COMPLETED
         order.completed_at = timezone.now()
         order.completed_by = user
+        _clear_stall(order)
         order.save(
             update_fields=[
                 "status",
                 "completed_at",
                 "completed_by",
+                "settlement_changed_at",
+                "stalled_reminder_at",
                 "updated_at",
             ]
         )
@@ -388,17 +426,153 @@ def complete_purchase_order(order: BuybackPurchaseOrder, user) -> None:
     notify_buyback_purchase_status_changed_task.delay(order.pk)
 
 
-def cancel_purchase_order(order: BuybackPurchaseOrder) -> None:
+def mark_contract_up(order: BuybackPurchaseOrder) -> None:
+    """Buyback team has put the in-game contract up. Ping the buyer next."""
+    with transaction.atomic():
+        order = BuybackPurchaseOrder.objects.select_for_update().get(
+            pk=order.pk
+        )
+        if order.status != BuybackPurchaseOrder.Status.PENDING:
+            raise PurchaseOrderError("Only pending orders can be updated.")
+        if (
+            order.settlement_step
+            != BuybackPurchaseOrder.SettlementStep.CONTRACT_UP
+        ):
+            raise PurchaseOrderError("The contract is already marked up.")
+        order.settlement_step = (
+            BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+        )
+        _clear_stall(order)
+        order.save(
+            update_fields=[
+                "settlement_step",
+                "settlement_changed_at",
+                "stalled_reminder_at",
+                "updated_at",
+            ]
+        )
+    notify_buyback_contract_up_task.delay(order.pk)
+
+
+def accept_purchase_contract(order: BuybackPurchaseOrder, user) -> None:
+    """Buyer accepted the contract. Close the sale and keep its lines."""
+    with transaction.atomic():
+        order = BuybackPurchaseOrder.objects.select_for_update().get(
+            pk=order.pk
+        )
+        if order.status != BuybackPurchaseOrder.Status.PENDING:
+            raise PurchaseOrderError("Only pending orders can be completed.")
+        if (
+            order.settlement_step
+            != BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+        ):
+            raise PurchaseOrderError(
+                "Waiting for the buyback team to mark the contract up."
+            )
+        order.status = BuybackPurchaseOrder.Status.COMPLETED
+        order.completed_at = timezone.now()
+        order.completed_by = user
+        _clear_stall(order)
+        order.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "completed_by",
+                "settlement_changed_at",
+                "stalled_reminder_at",
+                "updated_at",
+            ]
+        )
+    notify_buyback_purchase_status_changed_task.delay(order.pk)
+
+
+def close_open_sale(order: BuybackPurchaseOrder, user) -> None:
+    """Buyback team closes a sale thread that predates Contract up."""
+    with transaction.atomic():
+        order = BuybackPurchaseOrder.objects.select_for_update().get(
+            pk=order.pk
+        )
+        if order.status != BuybackPurchaseOrder.Status.PENDING:
+            raise PurchaseOrderError("Only pending orders can be closed.")
+        if (
+            order.settlement_step
+            != BuybackPurchaseOrder.SettlementStep.MANUAL_CLOSE
+        ):
+            raise PurchaseOrderError("This sale is not waiting to be closed.")
+        order.status = BuybackPurchaseOrder.Status.COMPLETED
+        order.completed_at = timezone.now()
+        order.completed_by = user
+        _clear_stall(order)
+        order.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "completed_by",
+                "settlement_changed_at",
+                "stalled_reminder_at",
+                "updated_at",
+            ]
+        )
+    notify_buyback_purchase_status_changed_task.delay(order.pk)
+
+
+def _cancel_locked(order: BuybackPurchaseOrder, *, reason: str) -> None:
+    """Mark a locked pending order cancelled. Caller holds the row lock."""
+    order.status = BuybackPurchaseOrder.Status.CANCELLED
+    order.completed_at = timezone.now()
+    order.cancel_reason = reason
+    _clear_stall(order)
+    order.save(
+        update_fields=[
+            "status",
+            "completed_at",
+            "cancel_reason",
+            "settlement_changed_at",
+            "stalled_reminder_at",
+            "updated_at",
+        ]
+    )
+
+
+def cancel_purchase_order(
+    order: BuybackPurchaseOrder, *, reason: str = ""
+) -> None:
     with transaction.atomic():
         order = BuybackPurchaseOrder.objects.select_for_update().get(
             pk=order.pk
         )
         if order.status != BuybackPurchaseOrder.Status.PENDING:
             raise PurchaseOrderError("Only pending orders can be cancelled.")
-        order.status = BuybackPurchaseOrder.Status.CANCELLED
-        order.completed_at = timezone.now()
-        order.save(update_fields=["status", "completed_at", "updated_at"])
+        _cancel_locked(order, reason=reason)
     notify_buyback_purchase_status_changed_task.delay(order.pk)
+
+
+def cancel_stalled_contract_up(
+    order_id: int, *, stalled_before, reason: str
+) -> bool:
+    """Cancel a sale still waiting on Contract up, unless it moved.
+
+    Re-checks under the row lock so a coordinator pressing Contract up
+    during the sweep is not cancelled.
+    """
+    with transaction.atomic():
+        order = (
+            BuybackPurchaseOrder.objects.select_for_update()
+            .filter(
+                pk=order_id,
+                status=BuybackPurchaseOrder.Status.PENDING,
+                settlement_step=(
+                    BuybackPurchaseOrder.SettlementStep.CONTRACT_UP
+                ),
+                settlement_changed_at__lte=stalled_before,
+            )
+            .first()
+        )
+        if order is None:
+            return False
+        _cancel_locked(order, reason=reason)
+    notify_buyback_purchase_status_changed_task.delay(order.pk)
+    return True
 
 
 def discord_ack_order(
@@ -407,6 +581,12 @@ def discord_ack_order(
     action = (action or "").strip().lower()
     if action == "complete":
         complete_purchase_order(order, actor)
+    elif action == "contract_up":
+        mark_contract_up(order)
+    elif action == "contract_accepted":
+        accept_purchase_contract(order, actor)
+    elif action == "close":
+        close_open_sale(order, actor)
     elif action == "cancel":
         cancel_purchase_order(order)
     else:
@@ -416,7 +596,11 @@ def discord_ack_order(
 
 
 def try_complete_from_outbound_contracts() -> int:
-    """Complete pending orders covered by synced outbound sale contracts."""
+    """Complete pending orders fully covered by synced outbound contracts.
+
+    The hourly refresh does not call this. A sale closes when the buyer
+    presses Contract accepted, including when the contract is short.
+    """
     completed_ids: list[int] = []
     allocated: dict[tuple[int, int], int] = {}
     with transaction.atomic():
@@ -433,7 +617,16 @@ def try_complete_from_outbound_contracts() -> int:
                 continue
             order.status = BuybackPurchaseOrder.Status.COMPLETED
             order.completed_at = timezone.now()
-            order.save(update_fields=["status", "completed_at", "updated_at"])
+            _clear_stall(order)
+            order.save(
+                update_fields=[
+                    "status",
+                    "completed_at",
+                    "settlement_changed_at",
+                    "stalled_reminder_at",
+                    "updated_at",
+                ]
+            )
             _allocate_order_lines(order, allocated)
             completed_ids.append(order.pk)
     for order_id in completed_ids:
