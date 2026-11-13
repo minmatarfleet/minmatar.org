@@ -798,13 +798,10 @@
             "title": "Felt",
             "type": "string"
           },
-          "improve": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Improve",
-            "type": "array"
+          "keep": {
+            "default": "",
+            "title": "Keep",
+            "type": "string"
           },
           "sitting_out": {
             "default": "",
@@ -11652,13 +11649,10 @@
             "title": "Felt",
             "type": "string"
           },
-          "improve": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Improve",
-            "type": "array"
+          "keep": {
+            "default": "",
+            "title": "Keep",
+            "type": "string"
           },
           "sitting_out": {
             "default": "",
@@ -38850,18 +38844,13 @@
             "title": "Glad Or Fine Percent",
             "type": "integer"
           },
-          "improve": {
+          "keep": {
             "default": [],
             "items": {
               "$ref": "#/components/schemas/Bar"
             },
-            "title": "Improve",
+            "title": "Keep",
             "type": "array"
-          },
-          "improve_help": {
-            "default": "",
-            "title": "Improve Help",
-            "type": "string"
           },
           "lede": {
             "default": "",
@@ -41950,13 +41939,10 @@
             "title": "Felt",
             "type": "string"
           },
-          "improve": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Improve",
-            "type": "array"
+          "keep": {
+            "default": "",
+            "title": "Keep",
+            "type": "string"
           },
           "sitting_out": {
             "default": "",
@@ -58576,7 +58562,7 @@
     },
     "/api/fleets/invite-feedback/discord-submit": {
       "post": {
-        "description": "Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment, and a real pick beats \"Nothing\".",
+        "description": "Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment.",
         "operationId": "fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_submit",
         "parameters": [],
         "requestBody": {

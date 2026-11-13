@@ -3,14 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { answers_from_form, bar_max, bar_width } from '@helpers/fleet_invite_feedback'
 
 describe('answers_from_form', () => {
-    it('reads one answer per question and every ticked improvement', () => {
+    it('reads one answer per question', () => {
         const form = new FormData()
         form.set('felt', 'fine')
         form.set('sitting_out', 'normal')
         form.set('why', 'other')
         form.set('why_text', 'The two buttons looked the same.')
-        form.append('improve', 'lighter')
-        form.append('improve', 'why_picked')
+        form.set('keep', 'yes')
         form.set('comment', 'Tell me the doctrine.')
 
         expect(answers_from_form(form)).toEqual({
@@ -18,13 +17,13 @@ describe('answers_from_form', () => {
             sitting_out: 'normal',
             why: 'other',
             why_text: 'The two buttons looked the same.',
-            improve: ['lighter', 'why_picked'],
+            keep: 'yes',
             comment: 'Tell me the doctrine.',
         })
     })
 
     it('leaves a skipped question empty', () => {
-        expect(answers_from_form(new FormData()).improve).toEqual([])
+        expect(answers_from_form(new FormData()).keep).toBe('')
         expect(answers_from_form(new FormData()).felt).toBe('')
     })
 })

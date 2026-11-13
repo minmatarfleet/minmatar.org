@@ -43,7 +43,12 @@ SOURCE_WEB = "web"
 SOURCE_DISCORD = "discord"
 
 LIST_HEADING = "Your invites, last few weeks."
-WHY_HELP = "Leaving one open is common. These were still open."
+WHY_HELP = "If you didn't select any option, what was the cause?"
+FELT_HELP = (
+    "These are the invitations you receive in a direct message to "
+    "volunteer for."
+)
+SITTING_OUT_HELP = 'What did selecting "Sitting out" seem like to you?'
 COMMENT_HEADING = "One thing to change"
 # The DM lists at most this many invites; the rest are "and N more".
 DM_INVITE_LIMIT = 10
@@ -64,14 +69,13 @@ NOT_INVITED_BODY = (
 CLOSED_HEADING = "This survey is closed."
 CLOSED_BODY = "Thanks if you already answered."
 
-ERR_FELT = "Pick how these invites felt most of the time."
-ERR_SITTING = "Pick which is closest for Sitting out."
-ERR_WHY = "Pick what was most often going on."
+ERR_FELT = "Pick how the direct fleet invitations felt."
+ERR_SITTING = "Pick what Sitting out felt like."
+ERR_WHY = "Pick what caused the ones you didn't answer."
 ERR_WHY_TEXT = "Say what the other reason was."
 ERR_WHY_LENGTH = "Keep the other reason to a sentence."
 ERR_WHY_EXTRA = "You answered every invite, so that question doesn't apply."
-ERR_IMPROVE = "Pick one or two that would have mattered."
-ERR_NOTHING = '"Nothing. They were fine" stands on its own.'
+ERR_KEEP = "Say whether we should keep direct fleet invitations."
 ERR_COMMENT = "Keep the comment to a sentence."
 
 FELT = (
@@ -99,15 +103,10 @@ WHY = (
     ("mobile", "It was awkward on my phone"),
     ("other", "Other"),
 )
-IMPROVE = (
-    ("fewer", "Fewer of them"),
-    ("makeable", "Only fleets I can actually make"),
-    ("lighter", 'A "not this time" that doesn\'t feel like a no'),
-    ("why_picked", "Tell me why I was picked"),
-    ("maybe", "A way to say maybe"),
-    ("nothing", "Nothing. They were fine"),
+KEEP = (
+    ("yes", "Yes"),
+    ("no", "No"),
 )
-NOTHING = "nothing"
 ANSWER_LABELS = {
     EveFleetInvite.ANSWER_IN: "In",
     EveFleetInvite.ANSWER_OUT: "Sitting out",
@@ -326,7 +325,7 @@ def submit(user, payload: dict, *, source: str = SOURCE_WEB) -> dict:
         "sitting_out": payload.get("sitting_out") or "",
         "why": why,
         "why_text": why_text,
-        "improve": list(payload.get("improve") or []),
+        "keep": payload.get("keep") or "",
         "comment": (payload.get("comment") or "").strip(),
         "source": source,
     }
@@ -338,14 +337,9 @@ def submit(user, payload: dict, *, source: str = SOURCE_WEB) -> dict:
 def discord_payload(payload: dict) -> dict:
     """Fit a Discord form answer to the website's rules.
 
-    The Discord form has five fields, so Other's reason is the comment, and
-    its multi-select cannot make "Nothing" stand alone: a real pick beats it.
+    The Discord form has five fields, so Other's reason is the comment.
     """
     payload = dict(payload)
-    improve = list(payload.get("improve") or [])
-    if NOTHING in improve and len(improve) > 1:
-        improve = [item for item in improve if item != NOTHING]
-    payload["improve"] = improve
     why = (payload.get("why") or "").strip()
     if why == "other" and not (payload.get("why_text") or "").strip():
         payload["why_text"] = (payload.get("comment") or "").strip()
@@ -360,7 +354,7 @@ def validate(
     sitting = payload.get("sitting_out") or ""
     why = (payload.get("why") or "").strip()
     why_text = (payload.get("why_text") or "").strip()
-    improve = list(payload.get("improve") or [])
+    keep = payload.get("keep") or ""
     comment = (payload.get("comment") or "").strip()
     if felt not in dict(FELT):
         errors.append(ERR_FELT)
@@ -376,13 +370,8 @@ def validate(
             errors.append(ERR_WHY_LENGTH)
     elif why or why_text:
         errors.append(ERR_WHY_EXTRA)
-    known = dict(IMPROVE)
-    if any(item not in known for item in improve):
-        errors.append(ERR_IMPROVE)
-    elif NOTHING in improve and len(improve) > 1:
-        errors.append(ERR_NOTHING)
-    elif not improve or len(improve) > 2:
-        errors.append(ERR_IMPROVE)
+    if keep not in dict(KEEP):
+        errors.append(ERR_KEEP)
     if len(comment) > COMMENT_MAX:
         errors.append(ERR_COMMENT)
     return errors
@@ -777,24 +766,24 @@ def _invite_rows(items, *, pending_only: bool) -> list[dict]:
 
 def _stored_answers(row: FleetInviteFeedback) -> dict:
     raw = row.answers or {}
-    improve = raw.get("improve") or []
     return {
         "felt": raw.get("felt") or "",
         "sitting_out": raw.get("sitting_out") or "",
         "why": raw.get("why") or "",
         "why_text": raw.get("why_text") or "",
-        "improve": list(improve),
+        "keep": raw.get("keep") or "",
         "comment": raw.get("comment") or "",
     }
 
 
 def _questions(row: FleetInviteFeedback) -> list[dict]:
+    # "short" is the Discord form label: 45 characters at most.
     questions = [
         {
             "key": "felt",
-            "short": "These invites felt…",
-            "prompt": "Most of the time, these invites felt…",
-            "help": "",
+            "short": "The direct fleet invitations felt…",
+            "prompt": "The direct fleet invitations felt…",
+            "help": FELT_HELP,
             "kind": "single",
             "badge": "Required",
             "choices": _choices(FELT),
@@ -802,8 +791,8 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
         {
             "key": "sitting_out",
             "short": "Sitting out felt like…",
-            "prompt": "Which of these is closest for Sitting out?",
-            "help": "",
+            "prompt": "Sitting out for these invitations felt like…",
+            "help": SITTING_OUT_HELP,
             "kind": "single",
             "badge": "Required",
             "choices": _choices(SITTING_OUT),
@@ -813,8 +802,10 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
         questions.append(
             {
                 "key": "why",
-                "short": "Why the open ones stayed open",
-                "prompt": "On the ones still open, what was most often going on?",
+                "short": "When I didn't select either option",
+                "prompt": (
+                    "For the ones where I didn't select either option…"
+                ),
                 "help": WHY_HELP,
                 "kind": "single",
                 "badge": "Required",
@@ -823,15 +814,13 @@ def _questions(row: FleetInviteFeedback) -> list[dict]:
         )
     questions.append(
         {
-            "key": "improve",
-            "short": "What would have mattered",
-            "prompt": "Which of these would have mattered for the invites above?",
+            "key": "keep",
+            "short": "Should we keep direct fleet invitations?",
+            "prompt": "Should we keep direct fleet invitations?",
             "help": "",
-            "kind": "multi",
-            "badge": "Pick up to two",
-            "exclusive": NOTHING,
-            "max": 2,
-            "choices": _choices(IMPROVE),
+            "kind": "single",
+            "badge": "Required",
+            "choices": _choices(KEEP),
         }
     )
     return questions
@@ -870,7 +859,7 @@ def _panel(state: str, heading: str, body: str, *, detail: str = "") -> dict:
             "sitting_out": "",
             "why": "",
             "why_text": "",
-            "improve": [],
+            "keep": "",
             "comment": "",
         },
         "comment_heading": "",

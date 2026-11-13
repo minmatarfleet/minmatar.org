@@ -228,7 +228,7 @@ class InviteFeedbackTests(TestCase):
             ["Sunday roam"],
         )
         keys = [question["key"] for question in body["questions"]]
-        self.assertEqual(keys, ["felt", "sitting_out", "why", "improve"])
+        self.assertEqual(keys, ["felt", "sitting_out", "why", "keep"])
         self.assertNotIn(SECRET, response.content.decode())
 
     def test_answered_form_has_no_open_question(
@@ -245,7 +245,7 @@ class InviteFeedbackTests(TestCase):
             "/api/fleets/invite-feedback", **auth_headers(pilot)
         )
         keys = [question["key"] for question in response.json()["questions"]]
-        self.assertEqual(keys, ["felt", "sitting_out", "improve"])
+        self.assertEqual(keys, ["felt", "sitting_out", "keep"])
         self.assertEqual(response.json()["pending_invites"], [])
 
     def test_validation(self, unused_delay, unused_async):
@@ -255,17 +255,22 @@ class InviteFeedbackTests(TestCase):
         url = "/api/fleets/invite-feedback"
         missing = self.client.post(
             url,
-            data={"felt": "", "improve": ["fewer"]},
+            data={"felt": "", "keep": "maybe"},
             content_type="application/json",
             **auth_headers(pilot),
         )
         self.assertEqual(missing.status_code, 400)
         self.assertIn(
-            "Pick how these invites felt most of the time.",
+            "Pick how the direct fleet invitations felt.",
             missing.json()["errors"],
         )
         self.assertIn(
-            "Pick what was most often going on.", missing.json()["errors"]
+            "Pick what caused the ones you didn't answer.",
+            missing.json()["errors"],
+        )
+        self.assertIn(
+            "Say whether we should keep direct fleet invitations.",
+            missing.json()["errors"],
         )
         other = self.client.post(
             url,
@@ -274,28 +279,23 @@ class InviteFeedbackTests(TestCase):
                 "sitting_out": "normal",
                 "why": "other",
                 "why_text": "",
-                "improve": ["fewer"],
+                "keep": "yes",
             },
             content_type="application/json",
             **auth_headers(pilot),
         )
         self.assertEqual(other.status_code, 400)
         self.assertIn("Say what the other reason was.", other.json()["errors"])
-        mixed = self.client.post(
+        no_keep = self.client.post(
             url,
-            data={
-                "felt": "fine",
-                "sitting_out": "normal",
-                "why": "silence",
-                "improve": ["nothing", "fewer"],
-            },
+            data={"felt": "fine", "sitting_out": "normal", "why": "silence"},
             content_type="application/json",
             **auth_headers(pilot),
         )
-        self.assertEqual(mixed.status_code, 400)
-        self.assertIn(
-            '"Nothing. They were fine" stands on its own.',
-            mixed.json()["errors"],
+        self.assertEqual(no_keep.status_code, 400)
+        self.assertEqual(
+            ["Say whether we should keep direct fleet invitations."],
+            no_keep.json()["errors"],
         )
         long = self.client.post(
             url,
@@ -303,7 +303,7 @@ class InviteFeedbackTests(TestCase):
                 "felt": "fine",
                 "sitting_out": "normal",
                 "why": "silence",
-                "improve": ["fewer"],
+                "keep": "yes",
                 "comment": "x" * 281,
             },
             content_type="application/json",
@@ -317,7 +317,7 @@ class InviteFeedbackTests(TestCase):
                 "felt": "fine",
                 "sitting_out": "letdown",
                 "why": "silence",
-                "improve": ["lighter"],
+                "keep": "no",
                 "comment": "Tell me the doctrine in the DM.",
             },
             content_type="application/json",
@@ -351,7 +351,7 @@ class InviteFeedbackTests(TestCase):
                 "felt": "glad",
                 "sitting_out": "normal",
                 "why": "later",
-                "improve": ["nothing"],
+                "keep": "yes",
             },
             content_type="application/json",
             **auth_headers(pilot),
@@ -382,7 +382,7 @@ class InviteFeedbackTests(TestCase):
             data={
                 "felt": "fine",
                 "sitting_out": "normal",
-                "improve": ["nothing"],
+                "keep": "yes",
             },
             content_type="application/json",
             **auth_headers(pilot),
@@ -578,7 +578,7 @@ class InviteFeedbackTests(TestCase):
         body = form.json()
         self.assertEqual(body["state"], "form")
         shorts = [question["short"] for question in body["questions"]]
-        self.assertIn("Why the open ones stayed open", shorts)
+        self.assertIn("When I didn't select either option", shorts)
         for short in shorts:
             self.assertLessEqual(len(short), 45)
         mine = self.discord_call(
@@ -598,25 +598,25 @@ class InviteFeedbackTests(TestCase):
             "felt": "fine",
             "sitting_out": "normal",
             "why": "other",
-            "improve": ["nothing", "fewer"],
+            "keep": "yes",
             "comment": "Was away that week",
         }
         saved = self.discord_call("discord-submit", self.bot_user, answers)
         self.assertEqual(saved.status_code, 200, saved.content)
         self.assertEqual(saved.json()["state"], "thanks")
         row = FleetInviteFeedback.objects.get(user=pilot)
-        self.assertEqual(row.answers["improve"], ["fewer"])
+        self.assertEqual(row.answers["keep"], "yes")
         self.assertEqual(row.answers["why_text"], "Was away that week")
         self.assertEqual(row.answers["source"], "discord")
         # Other with no comment still saves from Discord.
         blank = self.discord_call(
             "discord-submit",
             self.bot_user,
-            {**answers, "comment": "", "improve": ["nothing"]},
+            {**answers, "comment": "", "keep": "no"},
         )
         self.assertEqual(blank.status_code, 200, blank.content)
         row.refresh_from_db()
-        self.assertEqual(row.answers["improve"], ["nothing"])
+        self.assertEqual(row.answers["keep"], "no")
         self.assertEqual(row.answers["why_text"], "")
         # A missing required answer is still an error.
         missing = self.discord_call(
@@ -624,12 +624,13 @@ class InviteFeedbackTests(TestCase):
         )
         self.assertEqual(missing.status_code, 400)
         self.assertIn(
-            "Pick how these invites felt", missing.json()["errors"][0]
+            "Pick how the direct fleet invitations felt",
+            missing.json()["errors"][0],
         )
-        # The website keeps its stricter rules and records its source.
+        # The website still needs Other's own reason.
         web = self.client.post(
             "/api/fleets/invite-feedback",
-            data={**answers, "improve": ["nothing", "fewer"]},
+            data={**answers, "comment": ""},
             content_type="application/json",
             **auth_headers(pilot),
         )
@@ -755,7 +756,7 @@ class InviteFeedbackTests(TestCase):
                     "felt": felt,
                     "sitting_out": sitting,
                     "why": "silence" if pending else "",
-                    "improve": ["fewer"],
+                    "keep": "yes",
                     "comment": comment,
                 },
                 content_type="application/json",
