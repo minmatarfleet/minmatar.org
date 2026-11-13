@@ -36,6 +36,10 @@ const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
 
 import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astro'
 ---
 
@@ -72,32 +76,29 @@ import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astr
 
         {data.request.note && <p class="[ mentor-modal__muted ]">“{data.request.note}”</p>}
 
-        <fieldset>
-            <legend>{t('mentors.accept.pick')}</legend>
+        <fieldset class="[ manage-field ]">
+            <legend class="[ manage-field__label ]">{t('mentors.accept.pick')}</legend>
             {data.slots.length === 0 && <p class="[ mentor-modal__muted ]">{t('mentors.accept.no_slots')}</p>}
             {data.slots.map(slot =>
-                <label class="[ mentor-modal__choice ]">
-                    <input type="radio" name="slot" value={slot} x-model="slot" />
-                    <span><strong>{class_time(lang, slot)}</strong></span>
-                </label>
+                <OptionCard name="slot" value={slot} input_attributes={{ 'x-model': 'slot' }}>
+                    <strong>{class_time(lang, slot)}</strong>
+                </OptionCard>
             )}
-            <label class="[ mentor-modal__choice ]">
-                <input type="radio" name="slot" value="other" x-model="slot" />
-                <span>
+            <OptionCard name="slot" value="other" input_attributes={{ 'x-model': 'slot' }}>
+                <span class="[ mentor-modal__choice ]">
                     <strong>{t('mentors.accept.other')}</strong>
                     <small>{t('mentors.accept.other_hint')}</small>
                 </span>
-            </label>
+            </OptionCard>
             <div class="[ mentor-modal__when ]" x-show="slot === 'other'" x-cloak>
-                <input type="date" name="date" min={tomorrow} aria-label={t('mentors.accept.other_hint')} />
-                <input type="time" name="time" step="900" aria-label={t('mentors.accept.other_hint')} />
+                <Input type="date" name="date" min={tomorrow} size="sm" aria-label={t('mentors.accept.other_hint')} />
+                <Input type="time" name="time" step="900" size="sm" aria-label={t('mentors.accept.other_hint')} />
             </div>
         </fieldset>
 
-        <label class="[ mentor-modal__field ]">
-            <span>{t('mentors.accept.bring').replace('{name}', pilot.name)}</span>
-            <textarea name="bring" rows="2" maxlength="500"></textarea>
-        </label>
+        <ManageField label={t('mentors.accept.bring').replace('{name}', pilot.name)} for="mentor-accept-bring">
+            <Textarea id="mentor-accept-bring" name="bring" rows="2" maxlength="500"></Textarea>
+        </ManageField>
 
         <p class="[ mentor-modal__muted ]">{t('mentors.accept.footer')}</p>
 
