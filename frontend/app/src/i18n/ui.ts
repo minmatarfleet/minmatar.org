@@ -7418,7 +7418,7 @@ export const ui = {
         'fleets.hub.history': 'Fleet History',
         'fleets.hub.commanders': 'Commanders',
         'fleets.hub.campaigns': 'Campaigns',
-        'fleets.invite_feedback.page_title': 'Fleet invites',
+        'fleets.invite_feedback.page_title': 'Fleet invites survey',
         'fleets.invite_feedback.meta_description': 'A short form about the fleet invites you were sent.',
         'fleets.invite_feedback.send': 'Send',
         'fleets.invite_feedback.change': 'Change my answers',

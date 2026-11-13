@@ -22,3 +22,20 @@ def mark_as_read_components(delivery_id: int) -> list[dict]:
             ],
         }
     ]
+
+
+def link_button_components(label: str, url: str) -> list[dict]:
+    """One link button. Replaces Mark as read when set on the payload."""
+    return [
+        {
+            "type": 1,  # ACTION_ROW
+            "components": [
+                {
+                    "type": 2,  # BUTTON
+                    "style": 5,  # Link
+                    "label": label,
+                    "url": url,
+                }
+            ],
+        }
+    ]

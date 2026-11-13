@@ -17,7 +17,7 @@ from app.test import TestCase
 from app.testing import auth_headers
 from discord.models import DiscordUser
 from eveonline.models import EveLocation
-from fleets.helpers.invite_feedback import PROBE_KEY, run_action
+from fleets.helpers.invite_feedback import PROBE_KEY, _dm_context, run_action
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
@@ -37,6 +37,8 @@ from notifications.models import (
     NotificationDeliveryStatus,
     NotificationPreference,
 )
+from notifications.discord_format import discord_embed_from_payload
+from notifications.types.fleets import render_fleet_invite_feedback
 from tribes.tests.publishing_fixtures import make_user
 
 SECRET = "SECRET DROP"
@@ -208,6 +210,7 @@ class InviteFeedbackTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         body = response.json()
+        self.assertEqual(body["intro"], "")
         self.assertEqual(
             [row["title"] for row in body["invites"]],
             ["Sunday roam", "Private fleet", "Armor brawl"],
@@ -318,6 +321,11 @@ class InviteFeedbackTests(TestCase):
         )
         self.assertEqual(saved.status_code, 200)
         self.assertEqual(saved.json()["state"], "thanks")
+        self.assertEqual(
+            saved.json()["detail"],
+            "You can change your answers until the survey closes.",
+        )
+        self.assertNotIn("your name", saved.json()["detail"].lower())
         self.assertIn(
             "Sitting out is only not this fleet", saved.json()["body"]
         )
@@ -446,6 +454,22 @@ class InviteFeedbackTests(TestCase):
         second = run_action("remind", confirm=True)
         self.assertIn("Reminded 0 pilots", second)
         self.assertIn("already reminded", second)
+
+    def test_dm_asks_for_two_minutes(self, unused_delay, unused_async):
+        payload = render_fleet_invite_feedback(_dm_context(reminder=False))
+        self.assertEqual(payload["title"], "We need your feedback")
+        embed = discord_embed_from_payload({**payload, "feature": "fleets"})
+        self.assertEqual(embed["title"], "We need your feedback")
+        self.assertEqual(
+            payload["discord_message"],
+            (
+                "Hey! You've been invited to a few fleets lately- could "
+                "you take two minutes to share some feedback on the "
+                "process?"
+            ),
+        )
+        button = payload["discord_components"][0]["components"][0]
+        self.assertEqual(button["label"], "Provide feedback")
 
     def test_dry_run_command_writes_nothing(self, unused_delay, unused_async):
         pilot = make_user("pilot")

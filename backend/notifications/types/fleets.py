@@ -6,6 +6,7 @@ import html
 import re
 
 from feed.rollups.fleet_kills import format_isk
+from notifications.discord_buttons import link_button_components
 from notifications.models import NotificationChannel
 from notifications.registry import NotificationType, register
 
@@ -242,15 +243,18 @@ def render_fleet_invite_feedback(ctx: dict) -> dict:
     title = (ctx.get("title") or "").strip()
     body = (ctx.get("body") or "").strip()
     url = (ctx.get("url") or "").strip()
-    message = body
-    if url and url not in body:
-        message = f"{body}\n{url}" if body else url
-    return {
+    # A link button is the action. The title stays plain text, and the
+    # payload omits Mark as read so the button is the only thing to press.
+    payload = {
         "title": title,
         "body": body,
-        "url": url,
-        "discord_message": message,
+        "discord_message": body,
     }
+    if url:
+        payload["discord_components"] = link_button_components(
+            "Provide feedback", url
+        )
+    return payload
 
 
 # A one-time DM. Discord on, so it shows on Account › Notifications and a

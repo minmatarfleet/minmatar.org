@@ -40,7 +40,6 @@ REMIND_AFTER = timedelta(days=3)
 COMMENT_MAX = 280
 PAGE_PATH = "/fleets/invite-feedback/"
 
-INTRO = "Counts go to fleet leadership. Your name is not on the results."
 LIST_HEADING = "Your invites, last few weeks."
 WHY_HELP = "Leaving one open is common. These were still open."
 COMMENT_HEADING = "One thing to change"
@@ -51,10 +50,7 @@ THANKS_BODY = (
     "Sitting out is only not this fleet. Stop fleet invites is what turns "
     "the DMs off."
 )
-THANKS_DETAIL = (
-    "Fleet leadership sees the counts, not your name. You can change your "
-    "answers until the survey closes."
-)
+THANKS_DETAIL = "You can change your answers until the survey closes."
 NOT_INVITED_HEADING = "This isn't open for you."
 NOT_INVITED_BODY = (
     "This survey is only for pilots who got a fleet invite in the last few "
@@ -558,10 +554,10 @@ def _dm_context(*, reminder: bool) -> dict:
         title = "Still got a minute?"
         body = "The fleet invite survey is still open. A few questions."
     else:
-        title = "Fleet invites, about a minute."
+        title = "We need your feedback"
         body = (
-            "You've had a few fleet invites lately. A short form asks what "
-            "that was like. Leadership sees counts, not your name."
+            "Hey! You've been invited to a few fleets lately- could you "
+            "take two minutes to share some feedback on the process?"
         )
     return {"title": title, "body": body, "url": site_url(PAGE_PATH)}
 
@@ -788,7 +784,6 @@ def _form_panel(row: FleetInviteFeedback) -> dict:
     panel = _panel("form", "", "")
     panel.update(
         {
-            "intro": INTRO,
             "list_heading": LIST_HEADING,
             "invites": _invite_rows(invites, pending_only=False),
             "pending_invites": _invite_rows(invites, pending_only=True),
