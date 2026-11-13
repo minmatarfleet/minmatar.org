@@ -46,3 +46,42 @@ export function timezone_matches(timezone: TagLike, filter: TimezoneFilter): boo
         return brackets.length === 0
     return brackets.some(code => code === filter || code === `${filter}+`)
 }
+
+// Each region's brackets are fixed in that region's own clock (backend/timezones/brackets.py),
+// so their EVE hours move with daylight saving.
+const REFERENCE_ZONES: Record<TimezoneRegion, string> = {
+    US: 'America/New_York',
+    EU: 'Europe/Berlin',
+    AU: 'Australia/Sydney',
+}
+const PRIME_HOURS = [18, 23] as const
+const LATE_HOURS = [23, 3] as const
+
+// Minutes the zone is ahead of UTC at that moment.
+function zone_offset_minutes(zone: string, at: Date): number {
+    const parts = Object.fromEntries(
+        new Intl.DateTimeFormat('en-US', {
+            timeZone: zone, hourCycle: 'h23',
+            year: 'numeric', month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: 'numeric',
+        }).formatToParts(at).map(part => [part.type, part.value])
+    )
+    const local = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute)
+    return Math.round((local - at.getTime()) / 60000)
+}
+
+function eve_clock_from_local(local_hour: number, offset_minutes: number): string {
+    const minutes = (((local_hour * 60 - offset_minutes) % 1440) + 1440) % 1440
+    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+}
+
+// "17:00–22:00" for EUTZ in winter: the bracket's hours in EVE time on that date. Empty for an unknown code.
+export function timezone_hours(code: string, at: Date = new Date()): string {
+    const region = bracket_region(code)
+    if (!region || !is_timezone_bracket(code))
+        return ''
+    const [start, end] = code.endsWith('+') ? LATE_HOURS : PRIME_HOURS
+    const minute = new Date(Math.floor(at.getTime() / 60000) * 60000)
+    const offset = zone_offset_minutes(REFERENCE_ZONES[region], minute)
+    return `${eve_clock_from_local(start, offset)}–${eve_clock_from_local(end, offset)}`
+}

@@ -187,9 +187,11 @@ def answer_hours(profile_ids, since_days: int = 90) -> dict[int, float]:
     return {k: statistics.median(v) for k, v in waits.items()}
 
 
-def answer_text(hours: float | None) -> str:
+def answer_text(hours: float | None, default: str = "New mentor") -> str:
+    """How fast a mentor answers. ``default`` is shown before they have
+    answered anyone: pilots see "Within a day", managers "New mentor"."""
     if hours is None:
-        return "New mentor"
+        return default
     if hours < 1:
         return "Within an hour"
     if hours < 20:
@@ -217,6 +219,18 @@ def classes_taught(profile_ids) -> dict[int, int]:
         )
         .values_list("mentor_id")
         .annotate(n=Count("id"))
+        .values_list("mentor_id", "n")
+    )
+
+
+def pilots_mentored(profile_ids) -> dict[int, int]:
+    """Distinct pilots each mentor has finished a class with."""
+    return dict(
+        MentorRequest.objects.filter(
+            mentor_id__in=profile_ids, status=MentorRequest.STATUS_DONE
+        )
+        .values_list("mentor_id")
+        .annotate(n=Count("pilot_id", distinct=True))
         .values_list("mentor_id", "n")
     )
 

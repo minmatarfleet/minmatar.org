@@ -125,7 +125,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                     :
                     <>
                         {fit.length > 0 &&
-                            <MentorsSection title={t('mentors.fit_heading')} hint={t('mentors.fit_lead')}>
+                            <MentorsSection title={t('mentors.fit_heading')}>
                                 <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="300px">
                                     {fit.map(card => <MentorCard card={card} />)}
                                 </Grid>

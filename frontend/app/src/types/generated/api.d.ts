@@ -21510,6 +21510,11 @@ export interface components {
             /** Mentor Id */
             mentor_id: number;
             person: components["schemas"]["MentorPersonSchema"];
+            /**
+             * Pilots Mentored
+             * @default 0
+             */
+            pilots_mentored?: number;
             /** Queue */
             queue: number;
         };
@@ -21636,6 +21641,11 @@ export interface components {
         };
         /** MentorClassRefSchema */
         MentorClassRefSchema: {
+            /**
+             * Cover Image Url
+             * @default
+             */
+            cover_image_url?: string;
             /** Id */
             id: number;
             /** Minutes */

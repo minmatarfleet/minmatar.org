@@ -3,23 +3,26 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { TimezoneTag } from '@dtypes/api.minmatar.org'
-import { timezone_description } from '@helpers/timezones'
+import { timezone_description, timezone_hours } from '@helpers/timezones'
 
 /**
  * A pilot's timezones, the same on every page: one tag per bracket (solid
  * from activity, dashed when only declared, muted when it is outside their
  * home region or weekend only), "No TZ yet" when nothing is known, or
- * "On Leave" in its place where leave matters.
+ * "On Leave" in its place where leave matters. Hovering or focusing a tag
+ * shows what it means and its hours in EVE time today.
  */
 interface Props {
     timezone?:              TimezoneTag | null;
     on_leave?:              boolean;
+    show_source?:           boolean;
     [propName: string]: any;
 }
 
 const {
     timezone,
     on_leave = false,
+    show_source = true,
     ...attributes
 } = Astro.props
 
@@ -30,40 +33,52 @@ const declared = timezone?.source === 'declared'
 const secondary = new Set(timezone?.secondary ?? [])
 const weekend = new Set(timezone?.weekend ?? [])
 
-function tag_title(code:string) {
+const now = new Date()
+
+// "EU evening · 17:00–22:00 EVE (weekends only). From when they fly, fight and are on comms"
+function tag_tooltip(code:string) {
+    const hours = timezone_hours(code, now)
     const notes = [
         secondary.has(code) && t('timezones.secondary'),
         weekend.has(code) && t('timezones.weekend_only'),
     ].filter(Boolean)
-    return notes.length > 0 ? `${timezone_description(code, t)}: ${notes.join(', ')}` : undefined
+    const label = [
+        timezone_description(code, t),
+        hours && t('timezones.hours_eve').replace('{hours}', hours),
+    ].filter(Boolean).join(' · ')
+    const source = show_source ? (declared ? t('timezones.declared') : t('timezones.from_activity')) : ''
+    return [
+        notes.length > 0 ? `${label} (${notes.join(', ')})` : label,
+        source,
+    ].filter(Boolean).join('. ')
 }
-const title = brackets.length > 0
-    ? `${brackets.map(code => timezone_description(code, t)).join(', ')}. ${declared ? t('timezones.declared') : t('timezones.from_activity')}`
-    : t('timezones.no_tz_yet_hint')
 ---
 
-<span class:list={['[ tz-tags ]', Astro.props.class]} title={on_leave ? undefined : title} {...attributes}>
+<span class:list={['[ tz-tags ]', Astro.props.class]} {...attributes}>
     {on_leave ?
         <span class="[ tz-tag tz-tag--leave ]">{t('timezones.on_leave')}</span> :
     brackets.length > 0 ?
         brackets.map(code =>
             <span
                 class:list={['[ tz-tag ]', { 'tz-tag--declared': declared, 'tz-tag--minor': secondary.has(code) || weekend.has(code) }]}
-                title={tag_title(code)}
+                tabindex="0"
+                data-tippy-content={tag_tooltip(code)}
             >{code}</span>
         ) :
-        <span class="[ tz-tag tz-tag--none ]">{t('timezones.no_tz_yet')}</span>
+        <span class="[ tz-tag tz-tag--none ]" title={t('timezones.no_tz_yet_hint')}>{t('timezones.no_tz_yet')}</span>
     }
 </span>
 
 <style lang="scss">
+    /* .tz-tags in front so the tooltip's dotted underline
+       (span[data-tippy-content]) doesn't replace a tag's bottom border. */
     .tz-tags {
         display: inline-flex;
         gap: var(--space-3xs);
         vertical-align: middle;
     }
 
-    .tz-tag {
+    .tz-tags .tz-tag {
         padding: 0 var(--space-3xs);
         border: 1px solid var(--foreground);
         color: var(--highlight);
@@ -74,25 +89,25 @@ const title = brackets.length > 0
         white-space: nowrap;
     }
 
-    .tz-tag--declared {
+    .tz-tags .tz-tag--declared {
         border-style: dashed;
         border-color: var(--hairline-strong);
         color: var(--foreground);
     }
 
-    .tz-tag--minor {
+    .tz-tags .tz-tag--minor {
         border-color: var(--hairline-medium);
         color: var(--text-muted);
         font-weight: 500;
     }
 
-    .tz-tag--none {
+    .tz-tags .tz-tag--none {
         border-color: var(--hairline-medium);
         color: var(--text-muted);
         font-weight: 500;
     }
 
-    .tz-tag--leave {
+    .tz-tags .tz-tag--leave {
         border-color: var(--hairline-medium);
         background-color: var(--hairline);
         color: var(--text-muted);

@@ -21,6 +21,9 @@ from learning.models import (
 
 FEATURE_REQUEST = "learning.mentors"
 FEATURE_MANAGE = "learning.manage"
+# What a pilot sees for a mentor who has not answered anyone yet.
+PILOT_ANSWER_DEFAULT = "Within a day"
+
 FIT_ORDER = {"evenings": 0, "weekdays": 1, "weekends": 2, "none": 3}
 
 
@@ -64,6 +67,7 @@ def class_ref(mc: MentorClass) -> dict:
         "minutes": mc.minutes,
         "where": mc.where,
         "status": mc.status,
+        "cover_image_url": mc.cover_image_url,
     }
 
 
@@ -80,6 +84,7 @@ def mentor_cards(
     answers = service.answer_hours(ids)
     queues = service.queue_counts(ids)
     taught = service.classes_taught(ids)
+    mentored = service.pilots_mentored(ids)
     teaching: dict[int, list] = {}
     for row in (
         MentorClassTeacher.objects.filter(
@@ -109,9 +114,12 @@ def mentor_cards(
                 "availability": availability(mine),
                 "fit": fit,
                 "answer_hours": round(hours, 1) if hours is not None else None,
-                "answer_text": service.answer_text(hours),
+                "answer_text": service.answer_text(
+                    hours, PILOT_ANSWER_DEFAULT
+                ),
                 "queue": queues.get(mentor.pk, 0),
                 "classes_taught": taught.get(mentor.pk, 0),
+                "pilots_mentored": mentored.get(mentor.pk, 0),
                 "full": service.is_full(mentor, now),
                 "classes": teaching.get(mentor.pk, []),
                 "is_you": viewer is not None and mentor.user_id == viewer.pk,
@@ -184,7 +192,9 @@ def request_rows(requests, viewer=None) -> list[dict]:
                     if req.passed_from_id
                     else ""
                 ),
-                "answer_text": service.answer_text(answers.get(req.mentor_id)),
+                "answer_text": service.answer_text(
+                    answers.get(req.mentor_id), PILOT_ANSWER_DEFAULT
+                ),
                 "pilot_rating": req.pilot_rating,
                 "mentor_outcome": req.mentor_outcome,
                 "can_give_feedback": can_feedback,

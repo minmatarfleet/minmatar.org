@@ -24,6 +24,8 @@ Mentors and pilots each have weekday brackets, weekend brackets and evening days
 
 A pilot's times start from their `PilotTimezone` (both weekday and weekend get the same brackets, because the record has no weekday/weekend split). They can change them on the request. A mentor sees their own card too, marked You, with a link to My settings instead of Request a class. Mentor cards are sorted by how well the times fit (`evenings`, `weekdays`, `weekends`, `none`), then by whether the mentor is full this week, then by classes taught.
 
+Each card shows the mentor's weekday and weekend brackets as `TimezoneTags` (hover for the bracket's EVE hours today), a Monday–Sunday strip of the evenings they teach, how fast they answer ("Within a day" until they have answered someone), and their classes as cover tiles. Past four classes the fourth tile becomes "+N more" and opens the rest. The footer counts distinct pilots who finished a class with them (`pilots_mentored`).
+
 ## Life of a request
 
 `MentorRequest.status` in `backend/learning/models.py`:

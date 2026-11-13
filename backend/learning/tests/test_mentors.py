@@ -434,6 +434,33 @@ class MentorApiTestCase(TestCase):
             "/images/home-auga-cover.jpg", detail.json()["cover_image_url"]
         )
 
+    def test_home_card_shows_cover_pilots_mentored_and_answer_default(
+        self, *_
+    ):
+        self.mc.cover_image_url = "/images/home-auga-cover.jpg"
+        self.mc.save()
+        second = _user("bosun", 2000000001, 44)
+        for pilot in (self.pilot, self.pilot, second):
+            MentorRequest.objects.create(
+                pilot=pilot,
+                mentor=self.profile,
+                mentor_class=self.mc,
+                status=MentorRequest.STATUS_DONE,
+            )
+        card = self.client.get(BASE, **auth_headers(self.pilot)).json()[
+            "mentors"
+        ][0]
+        self.assertEqual(
+            "/images/home-auga-cover.jpg",
+            card["classes"][0]["cover_image_url"],
+        )
+        self.assertEqual(3, card["classes_taught"])
+        self.assertEqual(2, card["pilots_mentored"])
+        self.assertEqual("Within a day", card["answer_text"])
+
+    def test_managers_still_see_new_mentor(self, *_):
+        self.assertEqual("New mentor", service.answer_text(None))
+
     def test_bot_endpoints_need_the_service_account(self, *_):
         req = MentorRequest.objects.create(
             pilot=self.pilot, mentor=self.profile, mentor_class=self.mc

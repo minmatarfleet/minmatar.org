@@ -28938,6 +28938,11 @@
           "person": {
             "$ref": "#/components/schemas/MentorPersonSchema"
           },
+          "pilots_mentored": {
+            "default": 0,
+            "title": "Pilots Mentored",
+            "type": "integer"
+          },
           "queue": {
             "title": "Queue",
             "type": "integer"
@@ -29263,6 +29268,11 @@
       },
       "MentorClassRefSchema": {
         "properties": {
+          "cover_image_url": {
+            "default": "",
+            "title": "Cover Image Url",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "integer"

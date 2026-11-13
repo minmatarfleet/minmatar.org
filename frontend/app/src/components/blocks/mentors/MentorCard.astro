@@ -2,15 +2,16 @@
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { MentorCard } from '@dtypes/api.minmatar.org'
+import type { MentorCard, MentorClassRef } from '@dtypes/api.minmatar.org'
 import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
-import { MENTOR_REQUEST_MODAL, MENTOR_SETTINGS_PATH, brackets_text, mentor_class_path, mentors_url, modal_click } from '@helpers/mentors'
+import { MENTOR_REQUEST_MODAL, MENTOR_SETTINGS_PATH, mentor_class_cover, mentor_class_path, mentors_url, modal_click } from '@helpers/mentors'
 
 /**
- * One mentor: who they are, when they play on weekdays and weekends, how fast
- * they answer and how busy they are, the classes they teach, and a button to
- * ask for a class. `class_id` preselects a class in the request. The
- * viewer's own card says "You" and links to My settings instead.
+ * One mentor: who they are, their weekday and weekend timezones, the
+ * evenings they teach, how fast they answer and how busy they are, their
+ * classes as cover tiles, and a button to ask for a class. `class_id`
+ * preselects a class in the request. The viewer's own card says "You" and
+ * links to My settings instead.
  */
 interface Props {
     card: MentorCard;
@@ -23,10 +24,20 @@ const { card, class_id, can_request = true, ...attributes } = Astro.props
 
 delete attributes.class
 
-const fit_label: Record<string, string> = {
-    evenings: t('mentors.fit.evenings'),
-    weekdays: t('mentors.fit.weekdays'),
-    weekends: t('mentors.fit.weekends'),
+// Two rows of tiles at most: past four, the fourth tile opens the rest.
+const MAX_TILES = 4
+const capped = card.classes.length > MAX_TILES
+const shown = capped ? card.classes.slice(0, MAX_TILES - 1) : card.classes
+const hidden = capped ? card.classes.slice(MAX_TILES - 1) : []
+
+function tile(mentor_class: MentorClassRef) {
+    const where = t(t_key('mentors.where.', mentor_class.where))
+    return {
+        href: translatePath(mentor_class_path(mentor_class.slug)),
+        style: `--cover: url('${mentor_class_cover(mentor_class.cover_image_url)}')`,
+        title: mentor_class.title,
+        meta: `${t('mentors.minutes_label').replace('{count}', mentor_class.minutes.toString())} · ${where.charAt(0).toUpperCase()}${where.slice(1)}`,
+    }
 }
 
 const queue_text =
@@ -35,10 +46,20 @@ const queue_text =
     t('mentors.queue_many').replace('{count}', card.queue.toString())
 
 const request_url = translatePath(mentors_url(MENTOR_REQUEST_MODAL, { mentor_id: card.mentor_id, class_id }))
-const days = card.availability.days.map(day => t(t_key('mentors.day.', day))).join(' ')
+const teaching_days = new Set(card.availability.days)
+const week = [0, 1, 2, 3, 4, 5, 6].map(day => {
+    const name = t(t_key('mentors.day.', day))
+    const on = teaching_days.has(day)
+    return { letter: name.charAt(0), on, label: on ? name : t('mentors.day_off').replace('{day}', name) }
+})
+
+// The mentor's own teaching hours: no activity source to explain.
+const weekday_timezone = { brackets: card.availability.weekday_brackets, source: null, secondary: [], weekend: [] }
+const weekend_timezone = { brackets: card.availability.weekend_brackets, source: null, secondary: [], weekend: [] }
 
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
+import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 ---
 
 <article class:list={['[ mentor-card ]', Astro.props.class]} {...attributes}>
@@ -61,28 +82,34 @@ import Tag from '@components/blocks/Tag.astro'
                     {card.person.corp}
                 </p>
             }
+            {card.is_you &&
+                <Tag text={t('mentors.you')} color="fleet-yellow" variant="outline" narrow={true} />
+            }
         </div>
-        {card.is_you ?
-            <Tag text={t('mentors.you')} color="fleet-yellow" variant="outline" narrow={true} />
-            : fit_label[card.fit] && <Tag text={fit_label[card.fit]} color="green" variant="outline" narrow={true} />
-        }
     </header>
 
     <dl class="[ mentor-card__facts ]">
         <div>
             <dt>{t('mentors.weekdays')}</dt>
-            <dd>{brackets_text(card.availability.weekday_brackets)}</dd>
+            <dd><TimezoneTags timezone={weekday_timezone} show_source={false} /></dd>
         </div>
         <div>
             <dt>{t('mentors.weekends')}</dt>
-            <dd>{brackets_text(card.availability.weekend_brackets)}</dd>
+            <dd><TimezoneTags timezone={weekend_timezone} show_source={false} /></dd>
         </div>
-        {days &&
-            <div>
-                <dt class="[ visually-hidden ]">{t('mentors.request.days')}</dt>
-                <dd class="[ mentor-card__days ]">{days}</dd>
-            </div>
-        }
+        <div>
+            <dt>{t('mentors.days')}</dt>
+            <dd>
+                <ol class="[ mentor-card__week ]">
+                    {week.map(day =>
+                        <li class:list={['[ mentor-card__day ]', { 'mentor-card__day--on': day.on }]} title={day.label}>
+                            <span aria-hidden="true">{day.letter}</span>
+                            <span class="[ visually-hidden ]">{day.label}</span>
+                        </li>
+                    )}
+                </ol>
+            </dd>
+        </div>
         <div>
             <dt>{t('mentors.answers')}</dt>
             <dd>{card.answer_text} · {queue_text}</dd>
@@ -90,25 +117,43 @@ import Tag from '@components/blocks/Tag.astro'
     </dl>
 
     {card.classes.length > 0 &&
-        <div class="[ mentor-card__classes ]">
-            <span class="[ mentor-card__label ]">{t('mentors.teaches')}</span>
-            <ul>
-                {card.classes.map(mentor_class =>
-                    <li><a href={translatePath(mentor_class_path(mentor_class.slug))}>{mentor_class.title}</a></li>
-                )}
-            </ul>
-        </div>
+        <ul class="[ mentor-card__classes ]" aria-label={t('mentors.classes_label')} x-data="{ all: false }">
+            {shown.map(tile).map(item =>
+                <li>
+                    <a class="[ mentor-card__tile ]" href={item.href} style={item.style}>
+                        <span class="[ mentor-card__tile-title ]">{item.title}</span>
+                        <span class="[ mentor-card__tile-meta ]">{item.meta}</span>
+                    </a>
+                </li>
+            )}
+            {hidden.map(tile).map(item =>
+                <li hidden x-bind:hidden="!all">
+                    <a class="[ mentor-card__tile ]" href={item.href} style={item.style}>
+                        <span class="[ mentor-card__tile-title ]">{item.title}</span>
+                        <span class="[ mentor-card__tile-meta ]">{item.meta}</span>
+                    </a>
+                </li>
+            )}
+            {capped &&
+                <li x-bind:hidden="all">
+                    <button type="button" class="[ mentor-card__tile mentor-card__tile--more ]" x-on:click="all = true">
+                        <span class="[ mentor-card__more-count ]">{t('mentors.more_classes').replace('{count}', hidden.length.toString())}</span>
+                        <span class="[ mentor-card__tile-meta ]">{t('mentors.see_all_classes')}</span>
+                    </button>
+                </li>
+            }
+        </ul>
     }
 
     <footer class="[ mentor-card__foot ]">
-        <span class="[ mentor-card__muted ]">{t('mentors.classes_taught').replace('{count}', card.classes_taught.toString())}</span>
+        <span class="[ mentor-card__muted ]">{t('mentors.pilots_mentored').replace('{count}', card.pilots_mentored.toString())}</span>
         {card.is_you ?
             <Button size="sm" color="transparent" href={translatePath(MENTOR_SETTINGS_PATH)}>{t('mentors.nav.settings')}</Button>
             : card.full ?
             <span class="[ mentor-card__full ]">{t('mentors.full')}</span>
             : can_request && card.classes.length > 0 &&
-            <Button type="button" size="sm" x-data x-on:click={modal_click(request_url)}>
-                {t('mentors.request_class')}
+            <Button class="[ mentor-card__request ]" type="button" size="sm" x-data x-on:click={modal_click(request_url)}>
+                {t('mentors.request')}
             </Button>
         }
     </footer>
@@ -128,7 +173,7 @@ import Tag from '@components/blocks/Tag.astro'
     .mentor-card__head {
         display: flex;
         align-items: flex-start;
-        gap: var(--space-s);
+        gap: var(--space-xs);
     }
 
     .mentor-card__portrait {
@@ -139,7 +184,10 @@ import Tag from '@components/blocks/Tag.astro'
     }
 
     .mentor-card__who {
-        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
         min-width: 0;
 
         h3 {
@@ -164,7 +212,8 @@ import Tag from '@components/blocks/Tag.astro'
 
         div {
             display: flex;
-            gap: var(--space-xs);
+            align-items: center;
+            gap: var(--space-2xs);
         }
 
         dt {
@@ -179,35 +228,99 @@ import Tag from '@components/blocks/Tag.astro'
         }
     }
 
-    .mentor-card__days {
-        color: var(--text-muted) !important;
+    .mentor-card__week {
+        display: flex;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mentor-card__day {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--space-s);
+        height: var(--space-s);
+        border: 1px dashed var(--hairline-strong);
+        color: var(--text-muted);
+        font-size: var(--step--2);
+        font-weight: 600;
+    }
+
+    .mentor-card__day--on {
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent);
+        color: var(--fleet-yellow);
     }
 
     .mentor-card__classes {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 1fr;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
 
-        ul {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-3xs);
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        a {
-            display: inline-block;
-            padding: var(--space-3xs) var(--space-2xs);
-            border: solid 1px var(--hairline-strong);
-            color: var(--highlight);
-            font-size: var(--step--1);
-            text-decoration: none;
+        li[hidden] {
+            display: none;
         }
     }
 
-    .mentor-card__label,
+    .mentor-card__tile {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        min-block-size: var(--space-2xl);
+        padding: var(--space-2xs);
+        border: solid 1px var(--hairline-strong);
+        background-image:
+            linear-gradient(180deg, color-mix(in srgb, var(--black) 10%, transparent) 20%, color-mix(in srgb, var(--black) 85%, transparent) 100%),
+            var(--cover);
+        background-position: center;
+        background-size: cover;
+        color: var(--highlight);
+        text-align: start;
+        text-decoration: none;
+        transition: border-color var(--fast-transition);
+    }
+
+    .mentor-card__tile--more {
+        align-items: center;
+        justify-content: center;
+        background: var(--hairline);
+        font: inherit;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .mentor-card__tile-title,
+    .mentor-card__more-count {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        line-height: 1.1;
+        text-transform: uppercase;
+        overflow-wrap: anywhere;
+    }
+
+    .mentor-card__more-count {
+        font-size: var(--step-1);
+    }
+
+    .mentor-card__tile-meta {
+        color: color-mix(in srgb, var(--highlight) 80%, transparent);
+        font-size: var(--step--2);
+    }
+
+    .mentor-card__tile--more .mentor-card__tile-meta {
+        color: var(--text-muted);
+    }
+
     .mentor-card__muted {
         color: var(--text-muted);
         font-size: var(--step--1);
@@ -218,8 +331,13 @@ import Tag from '@components/blocks/Tag.astro'
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: var(--space-xs);
+        gap: var(--space-2xs);
         margin-block-start: auto;
+
+        :global(.mentor-card__request) {
+            justify-content: center;
+            min-inline-size: calc(var(--space-3xl) + var(--space-s));
+        }
     }
 
     .mentor-card__full {
@@ -228,7 +346,7 @@ import Tag from '@components/blocks/Tag.astro'
     }
 
     @media (hover: hover) {
-        .mentor-card__classes a:hover {
+        .mentor-card__tile:hover {
             border-color: var(--fleet-yellow);
         }
     }
