@@ -80,7 +80,11 @@ Task Progress:
 
 URL shape: `https://discord.com/channels/<guild_id>/<thread_id>`
 
-- Last path segment is `HelpTicket.thread_id`.
+- Two ids: the last segment is `HelpTicket.thread_id`.
+- Three ids: guild / channel / message. The middle id is the channel.
+  If `HelpTicket` has no row and `get_channel_info` is a named channel,
+  answer that message in the channel. Do not force outcomes 1–3 onto a
+  help thread that does not exist.
 - Thread names look like `<category-code>-<opener-name>`. These are help
   tickets, not Sentry.
 - **No URL / “each discord thread” / open help tickets:**
@@ -222,6 +226,7 @@ Scan this table before inventing a new theory.
 | Fitting order should accept a pasted fit | Create order posts `fitting_id` from `get_fittings()` (site fits). There is no EFT paste. If someone in-thread already said they will build it, confirm that and do not re-ask. |
 | New player guide missing how to reload the MOTD / MOTD should link the guide | Fleet chat scrolls the MOTD off. Reload is the fleet chat window’s three dots (**More**) → **Reload Channel's MOTD**, documented in `new-player-fleet-guide.md`. Generated MOTD Resources includes `SECTION_RESOURCES_GUIDE` (`<loc>` link to that guide). Discord fleet pings already have a New Player Instructions button to the same URL. |
 | Structure-pings channel says Skyhook, or a reinforce never appears | That channel is `DISCORD_STRUCTURE_PINGS_CHANNEL_ID`, not a `HelpTicket`. Reconstruct the post from `EveStructurePing` (`discord_success`, `text`). `is_new_event` still drops a repeat of the same stage inside an hour, and still drops anything older than 20 minutes. A higher stage (`OrbitalReinforced`, `StructureLostShields`, `StructureLostArmor`, `StructureDestroyed`) must ping. Orbital copy names `typeID` from eveuniverse (Customs Office is 2233, skyhook is 81080) plus `solarSystemID`. Do not post the investigation into that channel. The cloud bot is the test guild and 403s the production guild. |
+| Year-in-review cards (m³ moved, freight ISK, LP, reactions, m³ mined, ore ISK, ships and ISK destroyed, fleets) | Placeholder art is not a data source. Freight is finished `FreightContract` volume and `reward`; check the earliest `date_completed` before quoting a full year. LP is completed sell `quantity` and `quantity * isk_per_lp`; check the earliest `completed_at`. Mining m³ is `EveCharacterMiningEntry` for FL33T and BUILD. Ore ISK is the current Jita guide (`EveMarketItemHistory`); some new ores have no price, so the ISK figure is short. Reactions are delivered ESI jobs with `activity_id=9`; the count is runs, not output units. SDE products for those formulas are activity 11. Destroyed ships and ISK are zKill alliance stats for FL33T. Do not add BUILD (shared kills count on both). Fleets are `led_fleets` (not cancelled, alliance-visible). No year-over-year percent when that source has no prior year. |
 
 ### Discord reply
 
