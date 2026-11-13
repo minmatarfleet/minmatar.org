@@ -1,5 +1,6 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from eveonline.models import EveCorporationContract, EveLocation
 
@@ -396,6 +397,17 @@ class BuybackPurchaseOrder(models.Model):
     )
     # True once the Contract up button has been posted in the thread.
     team_prompted = models.BooleanField(default=False)
+    settlement_changed_at = models.DateTimeField(
+        default=timezone.now,
+        db_index=True,
+        help_text="When this settlement step started; drives reminders.",
+    )
+    stalled_reminder_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Last stalled-sale reminder; cleared when the step changes.",
+    )
+    cancel_reason = models.TextField(blank=True, default="")
 
     class Meta:
         verbose_name = "Buyback purchase order"

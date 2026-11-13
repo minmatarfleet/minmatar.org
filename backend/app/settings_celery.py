@@ -188,6 +188,13 @@ CELERYBEAT_BUYBACK = [
         },
     ),
     (
+        "[Buyback] Sweep purchase orders (remind, auto-cancel, threads)",
+        {
+            "task": "buyback.tasks.sweep_buyback_purchase_orders_task",
+            "schedule": crontab(minute=40, hour="*"),
+        },
+    ),
+    (
         "[Buyback] Refresh accepted-item demand/stockpile metrics",
         {
             "task": "buyback.tasks.refresh_buyback_accepted_item_metrics_task",

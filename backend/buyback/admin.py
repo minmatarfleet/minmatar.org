@@ -184,5 +184,8 @@ class BuybackPurchaseOrderAdmin(admin.ModelAdmin):
         "completed_at",
         "completed_by",
         "discord_thread_id",
+        "settlement_changed_at",
+        "stalled_reminder_at",
+        "cancel_reason",
     )
     inlines = (BuybackPurchaseOrderLineInline,)

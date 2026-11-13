@@ -30,6 +30,12 @@ class PurchaseOrderError(Exception):
     """Buyer-facing purchase order failure."""
 
 
+def _clear_stall(order: BuybackPurchaseOrder) -> None:
+    """Start the reminder clock over. A step change is progress."""
+    order.settlement_changed_at = timezone.now()
+    order.stalled_reminder_at = None
+
+
 def _lock_hangar_sales() -> None:
     """Serialize hangar sales so concurrent places cannot oversell."""
     settings = EveBuybackSettings.load()
@@ -405,11 +411,14 @@ def complete_purchase_order(order: BuybackPurchaseOrder, user) -> None:
         order.status = BuybackPurchaseOrder.Status.COMPLETED
         order.completed_at = timezone.now()
         order.completed_by = user
+        _clear_stall(order)
         order.save(
             update_fields=[
                 "status",
                 "completed_at",
                 "completed_by",
+                "settlement_changed_at",
+                "stalled_reminder_at",
                 "updated_at",
             ]
         )
@@ -433,7 +442,15 @@ def mark_contract_up(order: BuybackPurchaseOrder) -> None:
         order.settlement_step = (
             BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
         )
-        order.save(update_fields=["settlement_step", "updated_at"])
+        _clear_stall(order)
+        order.save(
+            update_fields=[
+                "settlement_step",
+                "settlement_changed_at",
+                "stalled_reminder_at",
+                "updated_at",
+            ]
+        )
     notify_buyback_contract_up_task.delay(order.pk)
 
 
@@ -455,28 +472,77 @@ def accept_purchase_contract(order: BuybackPurchaseOrder, user) -> None:
         order.status = BuybackPurchaseOrder.Status.COMPLETED
         order.completed_at = timezone.now()
         order.completed_by = user
+        _clear_stall(order)
         order.save(
             update_fields=[
                 "status",
                 "completed_at",
                 "completed_by",
+                "settlement_changed_at",
+                "stalled_reminder_at",
                 "updated_at",
             ]
         )
     notify_buyback_purchase_status_changed_task.delay(order.pk)
 
 
-def cancel_purchase_order(order: BuybackPurchaseOrder) -> None:
+def _cancel_locked(order: BuybackPurchaseOrder, *, reason: str) -> None:
+    """Mark a locked pending order cancelled. Caller holds the row lock."""
+    order.status = BuybackPurchaseOrder.Status.CANCELLED
+    order.completed_at = timezone.now()
+    order.cancel_reason = reason
+    _clear_stall(order)
+    order.save(
+        update_fields=[
+            "status",
+            "completed_at",
+            "cancel_reason",
+            "settlement_changed_at",
+            "stalled_reminder_at",
+            "updated_at",
+        ]
+    )
+
+
+def cancel_purchase_order(
+    order: BuybackPurchaseOrder, *, reason: str = ""
+) -> None:
     with transaction.atomic():
         order = BuybackPurchaseOrder.objects.select_for_update().get(
             pk=order.pk
         )
         if order.status != BuybackPurchaseOrder.Status.PENDING:
             raise PurchaseOrderError("Only pending orders can be cancelled.")
-        order.status = BuybackPurchaseOrder.Status.CANCELLED
-        order.completed_at = timezone.now()
-        order.save(update_fields=["status", "completed_at", "updated_at"])
+        _cancel_locked(order, reason=reason)
     notify_buyback_purchase_status_changed_task.delay(order.pk)
+
+
+def cancel_stalled_contract_up(
+    order_id: int, *, stalled_before, reason: str
+) -> bool:
+    """Cancel a sale still waiting on Contract up, unless it moved.
+
+    Re-checks under the row lock so a coordinator pressing Contract up
+    during the sweep is not cancelled.
+    """
+    with transaction.atomic():
+        order = (
+            BuybackPurchaseOrder.objects.select_for_update()
+            .filter(
+                pk=order_id,
+                status=BuybackPurchaseOrder.Status.PENDING,
+                settlement_step=(
+                    BuybackPurchaseOrder.SettlementStep.CONTRACT_UP
+                ),
+                settlement_changed_at__lte=stalled_before,
+            )
+            .first()
+        )
+        if order is None:
+            return False
+        _cancel_locked(order, reason=reason)
+    notify_buyback_purchase_status_changed_task.delay(order.pk)
+    return True
 
 
 def discord_ack_order(
@@ -519,7 +585,16 @@ def try_complete_from_outbound_contracts() -> int:
                 continue
             order.status = BuybackPurchaseOrder.Status.COMPLETED
             order.completed_at = timezone.now()
-            order.save(update_fields=["status", "completed_at", "updated_at"])
+            _clear_stall(order)
+            order.save(
+                update_fields=[
+                    "status",
+                    "completed_at",
+                    "settlement_changed_at",
+                    "stalled_reminder_at",
+                    "updated_at",
+                ]
+            )
             _allocate_order_lines(order, allocated)
             completed_ids.append(order.pk)
     for order_id in completed_ids:

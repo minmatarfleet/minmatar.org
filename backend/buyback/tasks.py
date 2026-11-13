@@ -16,6 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
+def sweep_buyback_purchase_orders_task() -> dict:
+    """Hourly: mirror threads, remind stalled sales, auto-cancel."""
+    # pylint: disable=import-outside-toplevel
+    from buyback.helpers.purchase_sweep import sweep_buyback_purchase_orders
+
+    return sweep_buyback_purchase_orders()
+
+
+@shared_task
 def sync_buyback_ledger_task():
     """Hourly-ish: contracts in/out, sell fills, hangar snapshot → Unknown."""
     result = refresh_buyback_ledger(

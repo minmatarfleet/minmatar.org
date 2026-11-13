@@ -105,6 +105,29 @@ def buyback_channel_id() -> int | None:
     return MIRROR.channel_id()
 
 
+def active_buyback_thread_ids() -> set[int] | None:
+    """Unarchived thread ids in the sale forum (None if unknown)."""
+    row = MIRROR.channel_row()
+    if not row:
+        return None
+    channel_id, guild_id = row
+    try:
+        threads = (
+            DiscordClient(guild_id=guild_id)
+            .get_active_threads()
+            .json()
+            .get("threads", [])
+        )
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.warning("Could not list active buyback sale threads: %s", exc)
+        return None
+    return {
+        int(thread["id"])
+        for thread in threads
+        if str(thread.get("parent_id")) == str(channel_id)
+    }
+
+
 def order_thread_title(order: BuybackPurchaseOrder) -> str:
     who = _display_name(order)
     isk = format_isk_compact(order.contract_total)
@@ -252,18 +275,69 @@ def _completed_message(order: BuybackPurchaseOrder) -> str:
     return _message_with_note(lines, _coverage_note(order))
 
 
+def _participant_mentions(order: BuybackPurchaseOrder) -> str:
+    team = buyback_team_mentions().split()
+    buyer = _user_mention(order.created_by)
+    parts = list(team)
+    if buyer and buyer not in parts:
+        parts.append(buyer)
+    return " ".join(parts)
+
+
 def _cancelled_message(order: BuybackPurchaseOrder) -> str:
-    mention = _user_mention(order.created_by)
+    mentions = _participant_mentions(order)
+    lines: list[str] = []
+    if mentions:
+        lines.extend([mentions, ""])
+    lines.append(":no_entry_sign: Sale cancelled")
+    if order.cancel_reason:
+        lines.append(order.cancel_reason)
+    lines.append(order_site_url(order))
+    return "\n".join(lines)
+
+
+def stalled_cancel_reason(order: BuybackPurchaseOrder) -> str:
+    return (
+        "No progress for 48 hours while waiting on the buyback team "
+        f"to put the contract up for **{_display_name(order)}**. "
+        "Post a new order when you're ready."
+    )
+
+
+def post_stalled_reminder(
+    order: BuybackPurchaseOrder,
+    *,
+    waited_hours: int,
+    cancel_at=None,
+) -> bool:
+    """Ping whoever owes the next button. False when Discord did not get it."""
+    step = order.settlement_step
+    waiting_on_team = step == BuybackPurchaseOrder.SettlementStep.CONTRACT_UP
+    if waiting_on_team:
+        mention = _participant_mentions(order) or "Buyback team"
+        waiting = "the buyback team to put the contract up"
+        pressed = "Once it's up, press **Contract up** below."
+        components = order_action_components(order.pk)
+    else:
+        mention = _user_mention(order.created_by)
+        waiting = "you to accept the contract"
+        pressed = "Once it's accepted, press **Contract accepted** below."
+        components = contract_accepted_components(order.pk)
     lines: list[str] = []
     if mention:
         lines.extend([mention, ""])
-    lines.extend(
-        [
-            ":no_entry_sign: Sale cancelled",
-            order_site_url(order),
-        ]
+    lines.append(
+        ":alarm_clock: Reminder — this sale has been waiting on "
+        f"{waiting} for {waited_hours} hours."
     )
-    return "\n".join(lines)
+    lines.append(pressed)
+    if cancel_at is not None:
+        lines.append(
+            "If nothing moves, this order is cancelled automatically "
+            f"<t:{int(cancel_at.timestamp())}:R>."
+        )
+    lines.append(order_site_url(order))
+    return MIRROR.post(order.discord_thread_id, "\n".join(lines), components)
 
 
 def notify_contract_up(order: BuybackPurchaseOrder) -> None:
