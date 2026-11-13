@@ -33,6 +33,13 @@ ROUTE_SPEC = {
 }
 
 
+def _action(payload: DiscordMemberAccessUpdate) -> str | None:
+    # An explicit null means "leave them"; a missing field is an older form.
+    if "action" not in payload.model_fields_set:
+        return None
+    return payload.action or ""
+
+
 def put_corporation_discord_members(
     request, corporation_id: int, payload: DiscordMemberAccessUpdate
 ):
@@ -50,6 +57,7 @@ def put_corporation_discord_members(
             payload.grace_hours,
             payload.exemptions,
             user=request.user,
+            action=_action(payload),
         )
     except AccessError as error:
         return 400, ErrorResponse(detail=error.code)

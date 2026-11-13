@@ -34,9 +34,11 @@ import {
     discord_section_summary,
     discord_server_initials,
     discord_status_key,
+    DISCORD_CORPORATION_ROLE_STATES,
     parse_discord_action,
     parse_exemptions,
     parse_keep_member,
+    parse_member_action,
 } from '@helpers/corporations/discord_settings'
 import type { DiscordSettingsFlash } from '@helpers/corporations/discord_settings'
 import { query_string } from '@helpers/string'
@@ -44,17 +46,8 @@ import { query_string } from '@helpers/string'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
-import DiscordMemberAccess from '@components/blocks/DiscordMemberAccess.astro'
-import DiscordRoleMappings from '@components/blocks/DiscordRoleMappings.astro'
+import DiscordServerAccess from '@components/blocks/DiscordServerAccess.astro'
 import Input from '@components/blocks/Input.astro'
-
-const CORPORATION_ROLE_STATES = [
-    'member',
-    'director',
-    'recruiter',
-    'structure_manager',
-    'alliance_member',
-] as const
 
 const ROOT_ID = 'corporation-discord'
 const URL_HELP_ID = 'corp-discord-url-help'
@@ -93,18 +86,31 @@ if (Astro.request.method === 'POST') {
     const action = keep_id ? 'keep_member' : parse_discord_action(form.get('action'))
     const typed_url = String(form.get('invite_url') ?? '').trim()
     // Section saves that leave the pasted-link editor closed on failure.
-    const member_action = action === 'save_members' || action === 'approve_members' || action === 'keep_member'
+    // save_roles and save_members come from a page loaded before the one
+    // Save; they post the same form.
+    const access_save = action === 'save_access' || action === 'save_roles' || action === 'save_members'
+    const member_action = access_save || action === 'approve_members' || action === 'keep_member'
     try {
         if (keep_id) {
             await keep_corporation_discord_member(auth_token, corporation_id, keep_id)
             flash = { kind: 'success', key: 'corporations.discord.members_kept' }
-        } else if (action === 'save_members') {
-            await save_corporation_discord_members(auth_token, corporation_id, {
-                policy: String(form.get('member_policy') ?? '') || null,
-                grace_hours: parseInt(String(form.get('member_grace_hours') ?? '24')) || 24,
-                exemptions: parse_exemptions(form.get('member_exemptions')),
-            })
-            flash = { kind: 'success', key: 'corporations.discord.members_saved' }
+        } else if (access_save) {
+            // Roles hidden behind "Add a role" are disabled, so they post
+            // nothing and save as unset.
+            if (form.has('role_member'))
+                await save_corporation_discord_roles(auth_token, corporation_id, DISCORD_CORPORATION_ROLE_STATES.map((state) => ({
+                    state,
+                    role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
+                })))
+            if (form.has('member_policy'))
+                await save_corporation_discord_members(auth_token, corporation_id, {
+                    policy: String(form.get('member_policy') ?? '') || null,
+                    // Left out by an older page: a policy then means remove.
+                    ...(form.has('member_cleanup') ? { action: parse_member_action(form.get('member_cleanup')) } : {}),
+                    grace_hours: parseInt(String(form.get('member_grace_hours') ?? '24')) || 24,
+                    exemptions: parse_exemptions(form.get('member_exemptions')),
+                })
+            flash = { kind: 'success', key: 'corporations.discord.access_saved' }
         } else if (action === 'approve_members') {
             await approve_corporation_discord_members(auth_token, corporation_id)
             flash = { kind: 'success', key: 'corporations.discord.members_approved' }
@@ -127,12 +133,6 @@ if (Astro.request.method === 'POST') {
         } else if (action === 'retry_bot') {
             await retry_corporation_discord_bot(auth_token, corporation_id)
             flash = { kind: 'success', key: 'corporations.discord.bot_retrying' }
-        } else if (action === 'save_roles') {
-            await save_corporation_discord_roles(auth_token, corporation_id, CORPORATION_ROLE_STATES.map((state) => ({
-                state,
-                role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
-            })))
-            flash = { kind: 'success', key: 'corporations.discord.roles_saved' }
         } else if (action === 'refresh_roles') {
             const current = await get_corporation_discord(auth_token, corporation_id) as CorporationDiscordSettings | null
             role_since = current?.role_sync?.checked_at ?? null
@@ -141,7 +141,7 @@ if (Astro.request.method === 'POST') {
     } catch (error) {
         if (action === 'refresh_roles')
             role_since = null
-        if (action !== 'save_roles' && action !== 'refresh_roles' && !member_action) {
+        if (action !== 'refresh_roles' && !member_action) {
             editing = true
             draft_url = typed_url
             preview = null
@@ -172,7 +172,6 @@ const role_sync = settings.role_sync ?? {
     mappings: [],
 }
 const roles_checked = Boolean(role_sync.checked)
-const can_manage_roles = Boolean(role_sync.can_manage_roles)
 const role_waiting = bot_connected && bot.status !== 'removed' && !roles_checked
 const refresh_pending = discord_roles_refresh_pending(role_sync.checked_at, role_since)
 const status_poll = bot_connected ? discord_bot_next_poll(bot.status, poll) : null
@@ -184,13 +183,6 @@ const poll_query = next_poll === null ? undefined : partial_url({
     poll: String(next_poll),
     ...(refresh_pending && role_since ? { since: role_since } : {}),
 })
-const role_rows = [
-    { state: 'member', label: t('corporations.discord.role_member') },
-    { state: 'director', label: t('corporations.discord.role_director') },
-    { state: 'recruiter', label: t('corporations.discord.role_recruiter') },
-    { state: 'structure_manager', label: t('corporations.discord.role_structure_manager') },
-    { state: 'alliance_member', label: t('corporations.discord.role_alliance') },
-]
 const bot_slow = bot_connected && bot.status === 'pending' && next_poll === null
 
 const is_dead = !bot_connected && settings.exists && settings.status === 'dead'
@@ -320,45 +312,12 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
                 </p>
             }
 
-            {bot_connected && bot.status === 'ok' && roles_checked && !can_manage_roles &&
-                <Flexblock gap="var(--space-xs)">
-                    <p class="[ corp-discord__attention ]">{t('corporations.discord.needs_manage')}</p>
-                    <FlexInline gap="var(--space-xs)">
-                        <Button href={BOT_CONNECT_URL} color="transparent" size="sm">
-                            {t('corporations.discord.bot_add_again')}
-                        </Button>
-                        <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" off_disable={true}>
-                            {t('corporations.discord.roles_refresh')}
-                        </Button>
-                    </FlexInline>
-                </Flexblock>
-            }
-
-            {bot_connected && bot.status === 'ok' && can_manage_roles &&
-                <Flexblock gap="var(--space-s)">
-                    <p class="[ corp-discord__muted ]">{t('corporations.discord.roles_leading')}</p>
-                    <DiscordRoleMappings
-                        rows={role_rows}
-                        roles={role_sync.roles}
-                        mappings={role_sync.mappings}
-                        none_label={t('corporations.discord.role_none')}
-                        problem_missing={t('corporations.discord.problem_missing')}
-                        problem_above={t('corporations.discord.problem_above')}
-                        empty_title={t('corporations.discord.roles_empty')}
-                    />
-                    <FlexInline gap="var(--space-xs)">
-                        <Button type="submit" name="action" value="save_roles" formnovalidate color="fleet-red" size="sm" off_disable={true}>
-                            {t('corporations.discord.roles_save')}
-                        </Button>
-                        <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" off_disable={true}>
-                            {t('corporations.discord.roles_refresh')}
-                        </Button>
-                    </FlexInline>
-                </Flexblock>
-            }
-
             {bot_connected && bot.status === 'ok' && roles_checked && settings.member_access &&
-                <DiscordMemberAccess access={settings.member_access} connect_url={BOT_CONNECT_URL} />
+                <DiscordServerAccess
+                    access={settings.member_access}
+                    role_sync={role_sync}
+                    connect_url={BOT_CONNECT_URL}
+                />
             }
 
             {offer_bot &&
@@ -510,8 +469,9 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
         flex-wrap: wrap;
         align-items: center;
         gap: var(--space-xs) var(--space-s);
-        padding: var(--space-s);
-        border: solid 1px var(--border-color);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px var(--hairline-medium);
+        border-radius: var(--space-3xs);
         background-color: var(--component-background);
     }
 

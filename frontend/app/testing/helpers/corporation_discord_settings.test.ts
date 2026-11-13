@@ -13,11 +13,14 @@ import {
     discord_section_summary,
     discord_server_initials,
     discord_status_key,
+    discord_access_roles,
+    discord_initial_action,
     discord_removal_eta,
     keep_member_action,
     parse_discord_action,
     parse_exemptions,
     parse_keep_member,
+    parse_member_action,
 } from '@helpers/corporations/discord_settings'
 
 const labels = { not_set: 'Optional · not set', set: 'Set', dead: 'Needs a new link' }
@@ -158,5 +161,51 @@ describe('member access helpers', () => {
     it('maps the member policy errors', () => {
         expect(discord_error_key('cannot_kick_members')).toBe('corporations.discord.error_cannot_kick_members')
         expect(discord_error_key('invalid_username')).toBe('corporations.discord.error_invalid_username')
+    })
+})
+
+describe('discord_access_roles', () => {
+    it('shows only the member role until others are added', () => {
+        const roles = discord_access_roles([])
+        expect(roles.all[0]).toBe('member')
+        expect(roles.extra).not.toContain('member')
+        expect(roles.added).toEqual([])
+    })
+
+    it('keeps roles that are already set on screen', () => {
+        const roles = discord_access_roles([
+            { state: 'member', role_id: '1' },
+            { state: 'alliance_member', role_id: '2' },
+            { state: 'director', role_id: null },
+        ])
+        expect(roles.added).toEqual(['alliance_member'])
+    })
+})
+
+describe('parse_member_action', () => {
+    it('reads the cleanup choice, and anything else as leave them', () => {
+        expect(parse_member_action('notify')).toBe('notify')
+        expect(parse_member_action('remove')).toBe('remove')
+        expect(parse_member_action('')).toBeNull()
+        expect(parse_member_action('kick')).toBeNull()
+    })
+
+    it('knows the one Save action', () => {
+        expect(parse_discord_action('save_access')).toBe('save_access')
+    })
+})
+
+describe('discord_initial_action', () => {
+    it('starts a new policy on Notify the CEO', () => {
+        expect(discord_initial_action(null, null)).toBe('notify')
+    })
+
+    it('keeps a saved choice, including remove roles only', () => {
+        expect(discord_initial_action('corporation', 'remove')).toBe('remove')
+        expect(discord_initial_action('corporation', null)).toBe('')
+    })
+
+    it('reads a policy from before actions existed as remove', () => {
+        expect(discord_initial_action('alliance', undefined)).toBe('remove')
     })
 })

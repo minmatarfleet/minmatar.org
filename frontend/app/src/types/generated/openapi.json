@@ -7362,6 +7362,7 @@
               }
             ],
             "default": {
+              "action": null,
               "can_kick_members": false,
               "checked_at": null,
               "exemptions": [],
@@ -11250,6 +11251,17 @@
       },
       "DiscordMemberAccess": {
         "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
           "can_kick_members": {
             "default": false,
             "title": "Can Kick Members",
@@ -11333,6 +11345,17 @@
       },
       "DiscordMemberAccessUpdate": {
         "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
           "exemptions": {
             "default": [],
             "items": {
@@ -11479,6 +11502,18 @@
             "format": "date-time",
             "title": "Flagged At",
             "type": "string"
+          },
+          "notified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notified At"
           },
           "reason": {
             "title": "Reason",
