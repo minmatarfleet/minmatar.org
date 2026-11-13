@@ -3,7 +3,6 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_request_user } from '@helpers/request_user'
-import { login_url } from '@helpers/http_responses'
 
 import type {
     LearningCertificate,
@@ -16,8 +15,7 @@ import {
     get_learning_me,
     get_learning_persona_recommendation,
 } from '@helpers/api.minmatar.org/learning'
-import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
-import { get_characters_summary_sorted, get_skillsets } from '@helpers/fetching/characters'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { get_gates, can } from '@helpers/gates'
 import { PERSONA_COOKIE } from '@helpers/learning'
 import { getPublishedGuides } from '@/data/guides'
@@ -25,14 +23,13 @@ import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 import { buildLandingCollectionJsonLd, getLearningHubSeo } from '@/data/guides/seo'
 import { LEARNING_HUB_PATH } from '@/data/guides/urls'
 import { get_site_origin } from '@helpers/seo'
-import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
-import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import LearningCenterHub from '@components/blocks/LearningCenterHub.astro'
+import LearningHeader from '@components/blocks/LearningHeader.astro'
 
 const auth_token = get_request_user(Astro).auth_token || ''
 
@@ -46,24 +43,9 @@ const unavailable = Astro.url.searchParams.get('unavailable') === '1'
 let me: LearningMeResponse | null = null
 let recommendation: LearningPersonaRecommendation | null = null
 let readiness_character_id = 0
-let skillsets: Skillset[] = []
-let skillsets_character: CharacterBasic | null = null
 let certificates_admin_href: string | null = null
-let skillsets_admin_href: string | null = null
-const skillsets_login_href = auth_token
-    ? null
-    : login_url(Astro)
 
-// The personal calls run in two rounds instead of one after another. The
-// outcome matches the old sequential code: if `me` or `recommendation` fails,
-// readiness, the admin links and skillsets stay empty; if the readiness
-// summary fails, the admin links and skillsets stay empty too; a primary
-// character or skillsets failure only empties skillsets.
-const primary_promise = auth_token
-    ? get_primary_characters(auth_token)
-    : null
-// Settled here so a rejection the page never awaits is not left unhandled.
-primary_promise?.catch(() => null)
+// If `me` or `recommendation` fails, readiness and the admin link stay empty.
 // Memoized per request; the layout awaits the same promise.
 const gates_promise = auth_token ? get_gates(Astro) : null
 
@@ -84,13 +66,7 @@ const gates = personal_ok ? await gates_promise : null
 const summary_promise = personal_ok && gates && can(gates, 'characters.readiness#strict')
     ? get_characters_summary_sorted(auth_token)
     : null
-const skillsets_promise = personal_ok
-    ? primary_promise!.then((primary) =>
-        primary?.character_id ? get_skillsets(auth_token, primary.character_id) : null
-    )
-    : null
 summary_promise?.catch(() => null)
-skillsets_promise?.catch(() => null)
 
 const valid_personas = new Set(['alliance', 'militia', 'other'])
 const persona_candidates = [
@@ -121,22 +97,6 @@ if (personal_ok && gates) {
 
         if (can(gates, 'learning.manage')) {
             certificates_admin_href = translatePath('/learning/manage/')
-        }
-        if (can(gates, 'skillsets.manage')) {
-            skillsets_admin_href = translatePath('/learning/manage/#skillsets')
-        }
-
-        try {
-            const primary_skillsets = await skillsets_promise
-            if (primary_skillsets) {
-                skillsets = primary_skillsets.skillsets
-                skillsets_character = {
-                    character_id: primary_skillsets.character_id,
-                    character_name: primary_skillsets.character_name,
-                }
-            }
-        } catch (skillsets_error) {
-            console.error(skillsets_error)
         }
     } catch (e) {
         console.error(e)
@@ -172,7 +132,6 @@ const structured_data = buildLandingCollectionJsonLd({
     translatePath,
 })
 
-const page_title = t('learning.page_title')
 ---
 
 <Viewport
@@ -212,20 +171,11 @@ const page_title = t('learning.page_title')
                 persona_confirmed_on_server={Boolean(me?.persona_confirmed)}
                 readiness_character_id={readiness_character_id}
                 catalog_path={LEARNING_HUB_PATH}
-                skillsets={skillsets}
-                skillsets_character={skillsets_character}
-                skillsets_login_href={skillsets_login_href}
                 certificates_admin_href={certificates_admin_href}
-                skillsets_admin_href={skillsets_admin_href}
+                show_skillsets={false}
+                show_guides={false}
             >
-                <Flexblock slot="intro" gap="var(--space-l)">
-                    <TextBox>
-                        <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    </TextBox>
-                    <TextBox>
-                        <p class="[ excerpt ]">{t('learning.leading_text')}</p>
-                    </TextBox>
-                </Flexblock>
+                <LearningHeader slot="intro" active="certificates" />
             </LearningCenterHub>
         </Flexblock>
     </PageLanding>

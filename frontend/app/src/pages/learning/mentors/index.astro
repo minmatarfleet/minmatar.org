@@ -1,0 +1,52 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { user } = get_request_user(Astro)
+
+if (!user)
+    return login_redirect(Astro)
+
+import { MENTORS_HOME_PARTIAL, mentors_url } from '@helpers/mentors'
+
+const partial_url = translatePath(mentors_url(MENTORS_HOME_PARTIAL, {}))
+const page_title = `${t('mentors.page_title')} · ${t('learning.center_title')}`
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LearningHeader from '@components/blocks/LearningHeader.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('mentors.meta_description')}
+    components={{ alert_dialog: true, confirm_dialog: true, modal: true }}
+>
+    <PageLanding
+        cover={{
+            image: '/images/guides-cover.jpg',
+            image_990: '/images/guides-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        <Flexblock gap="var(--space-xl)">
+            <LearningHeader active="mentors" />
+            <LazyPartial url={partial_url} swap="outerHTML">
+                <p class="[ mentors-loading ]">{t('loading')}</p>
+            </LazyPartial>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .mentors-loading {
+        color: var(--text-muted);
+    }
+</style>

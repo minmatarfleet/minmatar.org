@@ -2312,6 +2312,7 @@ export type LearningContentKind =
     | 'page'
     | 'youtube'
     | 'external'
+    | 'mentor_class'
     | 'other'
 
 export interface LearningItem {
@@ -3289,3 +3290,29 @@ export type ManageEntityMatch = ApiResponse<'ManageEntityMatchResponse'>
 export type CampaignChoices = ApiResponse<'CampaignChoicesOut'>
 /** One stored campaign choice and its label. */
 export type CampaignChoice = CampaignChoices['status'][number]
+
+// Learning Center mentors (/api/learning/mentors)
+export type MentorAvailability = ApiResponse<'AvailabilitySchema'>
+export type MentorPerson = ApiResponse<'MentorPersonSchema'>
+export type MentorClassRef = ApiResponse<'MentorClassRefSchema'>
+export type MentorCard = ApiResponse<'MentorCardSchema'>
+export type MentorRequest = ApiResponse<'MentorRequestSchema'>
+export type MentorsHome = ApiResponse<'MentorsHomeResponse'>
+export type MentorsMe = ApiResponse<'MentorsMeResponse'>
+export type MentorRequirementCheck = ApiResponse<'RequirementCheckSchema'>
+export type MentorClassDetail = ApiResponse<'MentorClassDetailResponse'>
+export type MentorCreateRequest = ApiRequest<'CreateMentorRequestBody'>
+export type MentoringView = ApiResponse<'MentoringResponse'>
+export type MentorSlots = ApiResponse<'MentorSlotsResponse'>
+export type MentorSettings = ApiResponse<'MentorSettingsResponse'>
+export type MentorSettingsPatch = ApiRequest<'MentorSettingsBody'>
+export type MentorTeaching = ApiResponse<'MentorTeachingSchema'>
+export type MentorClassBody = ApiRequest<'MentorClassBody'>
+export type MentorClassEdit = ApiResponse<'MentorClassEditResponse'>
+export type MentorClassCreated = ApiResponse<'MentorClassCreatedResponse'>
+export type MentorsAdmin = ApiResponse<'MentorsAdminResponse'>
+export type MentorReport = ApiResponse<'MentorReportSchema'>
+export type MentorAdminClass = ApiResponse<'AdminMentorClassSchema'>
+export type MentorAdminMentor = ApiResponse<'AdminMentorSchema'>
+export type MentorsMetrics = ApiResponse<'MentorsMetricsResponse'>
+export type MentorAction = ApiResponse<'MentorActionResponse'>

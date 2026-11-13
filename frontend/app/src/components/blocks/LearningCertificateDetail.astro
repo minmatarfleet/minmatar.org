@@ -1,7 +1,7 @@
 ---
 import { get_public_api_url } from '@helpers/env'
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { LearningCertificate } from '@dtypes/api.minmatar.org'
 import { getLearningCoverImage, isExternalLearningUrl } from '@helpers/learning'
@@ -64,6 +64,7 @@ const config_json = JSON.stringify({
                 const external = isExternalLearningUrl(learning.url)
                 const href = learning.url
                 const cover = getLearningCoverImage(learning.slug)
+                const mentor_class = learning.content_kind === 'mentor_class'
                 return (
                     <ComponentBlock
                         class="[ learning-card ]"
@@ -77,7 +78,7 @@ const config_json = JSON.stringify({
                             <div class="[ learning-card__main ]">
                                 <div class="[ learning-card__copy ]">
                                     <div class="[ learning-card__meta ]">
-                                        <span class="[ kind ]">{learning.content_kind}</span>
+                                        <span class="[ kind ]">{mentor_class ? t('mentors.nav.label') : learning.content_kind}</span>
                                         {external &&
                                             <span class="[ kind external ]">
                                                 {t('learning_center.learning.external')}
@@ -94,15 +95,22 @@ const config_json = JSON.stringify({
                                 </div>
                                 <div class="[ learning-card__actions ]">
                                     {/* No href: avoid <a target=_blank> racing Alpine tip modal */}
-                                    <Button
-                                        class="[ learning-card__open ]"
-                                        size="sm"
-                                        type="button"
-                                        x-on:click.prevent={`openLearning(${JSON.stringify(href)})`}
-                                    >
-                                        {t('learning_center.learning.open')}
-                                    </Button>
-                                    <button
+                                    {mentor_class ?
+                                        <Button class="[ learning-card__open ]" size="sm" href={translatePath(href)}>
+                                            {t('mentors.request_class')}
+                                        </Button>
+                                        :
+                                        <Button
+                                            class="[ learning-card__open ]"
+                                            size="sm"
+                                            type="button"
+                                            x-on:click.prevent={`openLearning(${JSON.stringify(href)})`}
+                                        >
+                                            {t('learning_center.learning.open')}
+                                        </Button>
+                                    }
+                                    {/* A mentor class completes when the mentor closes it out. */}
+                                    {!mentor_class && <button
                                         type="button"
                                         class="[ learning-card__complete ]"
                                         x-show={'!completed["' + learning.slug + '"]'}
@@ -111,7 +119,7 @@ const config_json = JSON.stringify({
                                         x-on:click={'markComplete("' + learning.slug + '")'}
                                     >
                                         {t('learning_center.learning.mark_complete')}
-                                    </button>
+                                    </button>}
                                     <span
                                         class="[ done ]"
                                         x-show={'completed["' + learning.slug + '"]'}

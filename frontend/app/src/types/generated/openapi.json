@@ -17,6 +17,25 @@
         "title": "AcceptInvitationRequest",
         "type": "object"
       },
+      "AcceptMentorRequestBody": {
+        "properties": {
+          "bring": {
+            "default": "",
+            "title": "Bring",
+            "type": "string"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at"
+        ],
+        "title": "AcceptMentorRequestBody",
+        "type": "object"
+      },
       "AccountCreateRequest": {
         "properties": {
           "corporation_name": {
@@ -350,6 +369,118 @@
           "character_id"
         ],
         "title": "AddCharacterRequest",
+        "type": "object"
+      },
+      "AdminMentorClassSchema": {
+        "properties": {
+          "author_name": {
+            "title": "Author Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "requests_90d": {
+            "title": "Requests 90D",
+            "type": "integer"
+          },
+          "requirement_count": {
+            "title": "Requirement Count",
+            "type": "integer"
+          },
+          "review_note": {
+            "title": "Review Note",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "teachers": {
+            "items": {
+              "$ref": "#/components/schemas/MentorPersonSchema"
+            },
+            "title": "Teachers",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "minutes",
+          "where",
+          "author_name",
+          "teachers",
+          "requests_90d",
+          "requirement_count",
+          "status",
+          "review_note"
+        ],
+        "title": "AdminMentorClassSchema",
+        "type": "object"
+      },
+      "AdminMentorSchema": {
+        "properties": {
+          "application_note": {
+            "title": "Application Note",
+            "type": "string"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilitySchema"
+          },
+          "classes": {
+            "title": "Classes",
+            "type": "integer"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "mentor_id": {
+            "title": "Mentor Id",
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "taking_requests": {
+            "title": "Taking Requests",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mentor_id",
+          "person",
+          "status",
+          "availability",
+          "classes",
+          "taking_requests",
+          "full",
+          "application_note"
+        ],
+        "title": "AdminMentorSchema",
         "type": "object"
       },
       "AdvantageRequest": {
@@ -1062,6 +1193,38 @@
           "active_months"
         ],
         "title": "AttentionPilot",
+        "type": "object"
+      },
+      "AvailabilitySchema": {
+        "properties": {
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "weekday_brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekday Brackets",
+            "type": "array"
+          },
+          "weekend_brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekend Brackets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "weekday_brackets",
+          "weekend_brackets",
+          "days"
+        ],
+        "title": "AvailabilitySchema",
         "type": "object"
       },
       "AvailableCharacterSchema": {
@@ -10067,6 +10230,53 @@
         "title": "CreateLoyaltyMarketOrderRequest",
         "type": "object"
       },
+      "CreateMentorRequestBody": {
+        "properties": {
+          "class_id": {
+            "title": "Class Id",
+            "type": "integer"
+          },
+          "days": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "mentor_id": {
+            "title": "Mentor Id",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "weekday_brackets": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekday Brackets",
+            "type": "array"
+          },
+          "weekend_brackets": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekend Brackets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mentor_id",
+          "class_id"
+        ],
+        "title": "CreateMentorRequestBody",
+        "type": "object"
+      },
       "CreateMoonFromPasteRequest": {
         "properties": {
           "paste": {
@@ -10908,6 +11118,19 @@
         "title": "DiscordAckLoyaltyMarketOrderRequest",
         "type": "object"
       },
+      "DiscordActionBody": {
+        "properties": {
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "DiscordActionBody",
+        "type": "object"
+      },
       "DiscordChannelKind": {
         "enum": [
           "text",
@@ -10963,6 +11186,29 @@
           "discord_user_id"
         ],
         "title": "DiscordDeclineRequest",
+        "type": "object"
+      },
+      "DiscordFeedbackBody": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discord_user_id",
+          "answer"
+        ],
+        "title": "DiscordFeedbackBody",
         "type": "object"
       },
       "DiscordFormRequest": {
@@ -24142,6 +24388,19 @@
         "title": "InviteRow",
         "type": "object"
       },
+      "InviteTeacherBody": {
+        "properties": {
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name"
+        ],
+        "title": "InviteTeacherBody",
+        "type": "object"
+      },
       "InviteTotals": {
         "properties": {
           "answered_in": {
@@ -28592,6 +28851,1376 @@
           "created_at"
         ],
         "title": "MembershipSchema",
+        "type": "object"
+      },
+      "MentorActionResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "MentorActionResponse",
+        "type": "object"
+      },
+      "MentorApplyBody": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "title": "MentorApplyBody",
+        "type": "object"
+      },
+      "MentorCardSchema": {
+        "properties": {
+          "answer_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Hours"
+          },
+          "answer_text": {
+            "title": "Answer Text",
+            "type": "string"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilitySchema"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/MentorClassRefSchema"
+            },
+            "title": "Classes",
+            "type": "array"
+          },
+          "classes_taught": {
+            "title": "Classes Taught",
+            "type": "integer"
+          },
+          "fit": {
+            "title": "Fit",
+            "type": "string"
+          },
+          "full": {
+            "title": "Full",
+            "type": "boolean"
+          },
+          "mentor_id": {
+            "title": "Mentor Id",
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "queue": {
+            "title": "Queue",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mentor_id",
+          "person",
+          "availability",
+          "fit",
+          "answer_hours",
+          "answer_text",
+          "queue",
+          "classes_taught",
+          "full",
+          "classes"
+        ],
+        "title": "MentorCardSchema",
+        "type": "object"
+      },
+      "MentorClassBody": {
+        "properties": {
+          "minutes": {
+            "default": 60,
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "outline": {
+            "default": "",
+            "title": "Outline",
+            "type": "string"
+          },
+          "requirements": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RequirementRowSchema"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where": {
+            "default": "voice",
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "MentorClassBody",
+        "type": "object"
+      },
+      "MentorClassCreatedResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug"
+        ],
+        "title": "MentorClassCreatedResponse",
+        "type": "object"
+      },
+      "MentorClassDetailResponse": {
+        "properties": {
+          "all_met": {
+            "title": "All Met",
+            "type": "boolean"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MentorPersonSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mentors": {
+            "items": {
+              "$ref": "#/components/schemas/MentorCardSchema"
+            },
+            "title": "Mentors",
+            "type": "array"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "open_request_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Request Id"
+          },
+          "outline": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Outline",
+            "type": "array"
+          },
+          "pilots_taught": {
+            "title": "Pilots Taught",
+            "type": "integer"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementCheckSchema"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "summary",
+          "outline",
+          "minutes",
+          "where",
+          "status",
+          "author",
+          "requirements",
+          "all_met",
+          "mentors",
+          "pilots_taught",
+          "can_edit",
+          "open_request_id"
+        ],
+        "title": "MentorClassDetailResponse",
+        "type": "object"
+      },
+      "MentorClassEditResponse": {
+        "properties": {
+          "can_review": {
+            "title": "Can Review",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "outline": {
+            "title": "Outline",
+            "type": "string"
+          },
+          "requirement_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementKindSchema"
+            },
+            "title": "Requirement Kinds",
+            "type": "array"
+          },
+          "requirements": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementRowSchema"
+            },
+            "title": "Requirements",
+            "type": "array"
+          },
+          "review_note": {
+            "title": "Review Note",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "teachers": {
+            "items": {
+              "$ref": "#/components/schemas/MentorClassTeacherSchema"
+            },
+            "title": "Teachers",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "summary",
+          "outline",
+          "minutes",
+          "where",
+          "requirements",
+          "status",
+          "review_note",
+          "teachers",
+          "requirement_kinds",
+          "can_review"
+        ],
+        "title": "MentorClassEditResponse",
+        "type": "object"
+      },
+      "MentorClassRefSchema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "where": {
+            "title": "Where",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "minutes",
+          "where",
+          "status"
+        ],
+        "title": "MentorClassRefSchema",
+        "type": "object"
+      },
+      "MentorClassStatusBody": {
+        "properties": {
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "MentorClassStatusBody",
+        "type": "object"
+      },
+      "MentorClassTeacherSchema": {
+        "properties": {
+          "is_author": {
+            "title": "Is Author",
+            "type": "boolean"
+          },
+          "mentor_id": {
+            "title": "Mentor Id",
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mentor_id",
+          "person",
+          "status",
+          "is_author"
+        ],
+        "title": "MentorClassTeacherSchema",
+        "type": "object"
+      },
+      "MentorFeedbackBody": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "answer"
+        ],
+        "title": "MentorFeedbackBody",
+        "type": "object"
+      },
+      "MentorPersonSchema": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "corp": {
+            "title": "Corp",
+            "type": "string"
+          },
+          "corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Id"
+          },
+          "discord_handle": {
+            "title": "Discord Handle",
+            "type": "string"
+          },
+          "discord_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "portrait": {
+            "title": "Portrait",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "character_id",
+          "portrait",
+          "corp",
+          "corporation_id",
+          "discord_handle",
+          "discord_id"
+        ],
+        "title": "MentorPersonSchema",
+        "type": "object"
+      },
+      "MentorProfileSchema": {
+        "properties": {
+          "application_note": {
+            "title": "Application Note",
+            "type": "string"
+          },
+          "classes_per_week": {
+            "title": "Classes Per Week",
+            "type": "integer"
+          },
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "taking_requests": {
+            "title": "Taking Requests",
+            "type": "boolean"
+          },
+          "weekday_brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekday Brackets",
+            "type": "array"
+          },
+          "weekend_brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekend Brackets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "weekday_brackets",
+          "weekend_brackets",
+          "days",
+          "classes_per_week",
+          "taking_requests",
+          "application_note"
+        ],
+        "title": "MentorProfileSchema",
+        "type": "object"
+      },
+      "MentorRecordSchema": {
+        "properties": {
+          "classes_taught": {
+            "title": "Classes Taught",
+            "type": "integer"
+          },
+          "pilots_mentored": {
+            "title": "Pilots Mentored",
+            "type": "integer"
+          },
+          "still_flying": {
+            "title": "Still Flying",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "classes_taught",
+          "pilots_mentored",
+          "still_flying"
+        ],
+        "title": "MentorRecordSchema",
+        "type": "object"
+      },
+      "MentorReportSchema": {
+        "properties": {
+          "class_title": {
+            "title": "Class Title",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mentor": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "mentor_notes": {
+            "title": "Mentor Notes",
+            "type": "string"
+          },
+          "mentor_outcome": {
+            "title": "Mentor Outcome",
+            "type": "string"
+          },
+          "mentor_outcome_label": {
+            "title": "Mentor Outcome Label",
+            "type": "string"
+          },
+          "pilot": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "pilot_note": {
+            "title": "Pilot Note",
+            "type": "string"
+          },
+          "pilot_rating": {
+            "title": "Pilot Rating",
+            "type": "string"
+          },
+          "pilot_rating_label": {
+            "title": "Pilot Rating Label",
+            "type": "string"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          }
+        },
+        "required": [
+          "id",
+          "pilot",
+          "mentor",
+          "class_title",
+          "starts_at",
+          "pilot_rating",
+          "pilot_rating_label",
+          "pilot_note",
+          "mentor_outcome",
+          "mentor_outcome_label",
+          "mentor_notes"
+        ],
+        "title": "MentorReportSchema",
+        "type": "object"
+      },
+      "MentorRequestSchema": {
+        "properties": {
+          "answer_text": {
+            "title": "Answer Text",
+            "type": "string"
+          },
+          "answered_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answered At"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilitySchema"
+          },
+          "bring": {
+            "title": "Bring",
+            "type": "string"
+          },
+          "can_give_feedback": {
+            "title": "Can Give Feedback",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "mentor": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "mentor_class": {
+            "$ref": "#/components/schemas/MentorClassRefSchema"
+          },
+          "mentor_id": {
+            "title": "Mentor Id",
+            "type": "integer"
+          },
+          "mentor_outcome": {
+            "title": "Mentor Outcome",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "passed_from_name": {
+            "title": "Passed From Name",
+            "type": "string"
+          },
+          "pilot": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "pilot_rating": {
+            "title": "Pilot Rating",
+            "type": "string"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "mentor_class",
+          "pilot",
+          "mentor",
+          "mentor_id",
+          "note",
+          "starts_at",
+          "bring",
+          "created_at",
+          "answered_at",
+          "availability",
+          "passed_from_name",
+          "answer_text",
+          "pilot_rating",
+          "mentor_outcome",
+          "can_give_feedback"
+        ],
+        "title": "MentorRequestSchema",
+        "type": "object"
+      },
+      "MentorSettingsBody": {
+        "properties": {
+          "classes_per_week": {
+            "title": "Classes Per Week",
+            "type": "integer"
+          },
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "taking_requests": {
+            "title": "Taking Requests",
+            "type": "boolean"
+          },
+          "weekday_brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekday Brackets",
+            "type": "array"
+          },
+          "weekend_brackets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekend Brackets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "weekday_brackets",
+          "weekend_brackets",
+          "days",
+          "classes_per_week",
+          "taking_requests"
+        ],
+        "title": "MentorSettingsBody",
+        "type": "object"
+      },
+      "MentorSettingsResponse": {
+        "properties": {
+          "invites": {
+            "items": {
+              "$ref": "#/components/schemas/MentorTeachingSchema"
+            },
+            "title": "Invites",
+            "type": "array"
+          },
+          "joinable": {
+            "items": {
+              "$ref": "#/components/schemas/MentorClassRefSchema"
+            },
+            "title": "Joinable",
+            "type": "array"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MentorProfileSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "teaching": {
+            "items": {
+              "$ref": "#/components/schemas/MentorTeachingSchema"
+            },
+            "title": "Teaching",
+            "type": "array"
+          }
+        },
+        "required": [
+          "profile",
+          "teaching",
+          "invites",
+          "joinable"
+        ],
+        "title": "MentorSettingsResponse",
+        "type": "object"
+      },
+      "MentorSlotsResponse": {
+        "properties": {
+          "mentor_availability": {
+            "$ref": "#/components/schemas/AvailabilitySchema"
+          },
+          "request": {
+            "$ref": "#/components/schemas/MentorRequestSchema"
+          },
+          "slots": {
+            "items": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Slots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request",
+          "mentor_availability",
+          "slots"
+        ],
+        "title": "MentorSlotsResponse",
+        "type": "object"
+      },
+      "MentorStatusBody": {
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "MentorStatusBody",
+        "type": "object"
+      },
+      "MentorTeachingSchema": {
+        "properties": {
+          "author_name": {
+            "title": "Author Name",
+            "type": "string"
+          },
+          "is_author": {
+            "title": "Is Author",
+            "type": "boolean"
+          },
+          "mentor_class": {
+            "$ref": "#/components/schemas/MentorClassRefSchema"
+          },
+          "teacher_count": {
+            "title": "Teacher Count",
+            "type": "integer"
+          },
+          "teacher_status": {
+            "title": "Teacher Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mentor_class",
+          "teacher_status",
+          "is_author",
+          "author_name",
+          "teacher_count"
+        ],
+        "title": "MentorTeachingSchema",
+        "type": "object"
+      },
+      "MentoringResponse": {
+        "properties": {
+          "asks": {
+            "items": {
+              "$ref": "#/components/schemas/MentorRequestSchema"
+            },
+            "title": "Asks",
+            "type": "array"
+          },
+          "booked": {
+            "items": {
+              "$ref": "#/components/schemas/MentorRequestSchema"
+            },
+            "title": "Booked",
+            "type": "array"
+          },
+          "past_count": {
+            "title": "Past Count",
+            "type": "integer"
+          },
+          "record": {
+            "$ref": "#/components/schemas/MentorRecordSchema"
+          },
+          "to_close": {
+            "items": {
+              "$ref": "#/components/schemas/MentorRequestSchema"
+            },
+            "title": "To Close",
+            "type": "array"
+          }
+        },
+        "required": [
+          "record",
+          "asks",
+          "booked",
+          "to_close",
+          "past_count"
+        ],
+        "title": "MentoringResponse",
+        "type": "object"
+      },
+      "MentorsAdminResponse": {
+        "properties": {
+          "applications": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMentorSchema"
+            },
+            "title": "Applications",
+            "type": "array"
+          },
+          "hidden": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMentorClassSchema"
+            },
+            "title": "Hidden",
+            "type": "array"
+          },
+          "mentors": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMentorSchema"
+            },
+            "title": "Mentors",
+            "type": "array"
+          },
+          "published": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMentorClassSchema"
+            },
+            "title": "Published",
+            "type": "array"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/MentorReportSchema"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
+          "review": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMentorClassSchema"
+            },
+            "title": "Review",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reports",
+          "review",
+          "published",
+          "hidden",
+          "applications",
+          "mentors"
+        ],
+        "title": "MentorsAdminResponse",
+        "type": "object"
+      },
+      "MentorsHomeResponse": {
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilitySchema"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "can_request": {
+            "title": "Can Request",
+            "type": "boolean"
+          },
+          "classes": {
+            "items": {
+              "$ref": "#/components/schemas/MentorRequestSchema"
+            },
+            "title": "Classes",
+            "type": "array"
+          },
+          "is_mentor": {
+            "title": "Is Mentor",
+            "type": "boolean"
+          },
+          "mentor_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mentor Status"
+          },
+          "mentors": {
+            "items": {
+              "$ref": "#/components/schemas/MentorCardSchema"
+            },
+            "title": "Mentors",
+            "type": "array"
+          },
+          "open_asks": {
+            "title": "Open Asks",
+            "type": "integer"
+          },
+          "past_count": {
+            "title": "Past Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "can_request",
+          "is_mentor",
+          "mentor_status",
+          "can_manage",
+          "open_asks",
+          "availability",
+          "classes",
+          "past_count",
+          "mentors"
+        ],
+        "title": "MentorsHomeResponse",
+        "type": "object"
+      },
+      "MentorsMeResponse": {
+        "properties": {
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "can_request": {
+            "title": "Can Request",
+            "type": "boolean"
+          },
+          "is_mentor": {
+            "title": "Is Mentor",
+            "type": "boolean"
+          },
+          "mentor_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mentor Status"
+          },
+          "open_asks": {
+            "title": "Open Asks",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "can_request",
+          "is_mentor",
+          "mentor_status",
+          "can_manage",
+          "open_asks"
+        ],
+        "title": "MentorsMeResponse",
+        "type": "object"
+      },
+      "MentorsMetricsResponse": {
+        "properties": {
+          "classes_done": {
+            "title": "Classes Done",
+            "type": "integer"
+          },
+          "first_mentor_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Mentor Pct"
+          },
+          "got_mentor_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Got Mentor Pct"
+          },
+          "impact": {
+            "items": {
+              "$ref": "#/components/schemas/MetricsImpactSchema"
+            },
+            "title": "Impact",
+            "type": "array"
+          },
+          "median_hours_to_booked": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Hours To Booked"
+          },
+          "mentors": {
+            "items": {
+              "$ref": "#/components/schemas/MetricsMentorRowSchema"
+            },
+            "title": "Mentors",
+            "type": "array"
+          },
+          "period_days": {
+            "title": "Period Days",
+            "type": "integer"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "requests": {
+            "title": "Requests",
+            "type": "integer"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricsTopicSchema"
+            },
+            "title": "Topics",
+            "type": "array"
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/MetricsZoneSchema"
+            },
+            "title": "Zones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "period_days",
+          "requests",
+          "pilots",
+          "got_mentor_pct",
+          "first_mentor_pct",
+          "median_hours_to_booked",
+          "classes_done",
+          "mentors",
+          "zones",
+          "topics",
+          "impact"
+        ],
+        "title": "MentorsMetricsResponse",
+        "type": "object"
+      },
+      "MetricsImpactSchema": {
+        "properties": {
+          "measures": {
+            "items": {
+              "$ref": "#/components/schemas/MetricsMeasureSchema"
+            },
+            "title": "Measures",
+            "type": "array"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "n",
+          "measures"
+        ],
+        "title": "MetricsImpactSchema",
+        "type": "object"
+      },
+      "MetricsMeasureSchema": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mentored": {
+            "title": "Mentored",
+            "type": "number"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "boolean"
+          },
+          "similar": {
+            "title": "Similar",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "mentored",
+          "similar",
+          "percent"
+        ],
+        "title": "MetricsMeasureSchema",
+        "type": "object"
+      },
+      "MetricsMentorRowSchema": {
+        "properties": {
+          "answer_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Hours"
+          },
+          "answer_text": {
+            "title": "Answer Text",
+            "type": "string"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/AvailabilitySchema"
+          },
+          "classes": {
+            "title": "Classes",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/MentorPersonSchema"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "person",
+          "availability",
+          "classes",
+          "pilots",
+          "answer_hours",
+          "answer_text",
+          "passed"
+        ],
+        "title": "MetricsMentorRowSchema",
+        "type": "object"
+      },
+      "MetricsTopicSchema": {
+        "properties": {
+          "mentors": {
+            "title": "Mentors",
+            "type": "integer"
+          },
+          "requests": {
+            "title": "Requests",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "requests",
+          "mentors",
+          "waiting"
+        ],
+        "title": "MetricsTopicSchema",
+        "type": "object"
+      },
+      "MetricsZoneSchema": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "mentors": {
+            "items": {
+              "$ref": "#/components/schemas/MentorPersonSchema"
+            },
+            "title": "Mentors",
+            "type": "array"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "mentors",
+          "waiting"
+        ],
+        "title": "MetricsZoneSchema",
         "type": "object"
       },
       "MissingSignupPilot": {
@@ -36358,6 +37987,39 @@
         "title": "RequirementCheck",
         "type": "object"
       },
+      "RequirementCheckSchema": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "met": {
+            "title": "Met",
+            "type": "boolean"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "value",
+          "label",
+          "met",
+          "detail"
+        ],
+        "title": "RequirementCheckSchema",
+        "type": "object"
+      },
       "RequirementCreateRequest": {
         "properties": {
           "importance": {
@@ -36403,6 +38065,24 @@
           "name"
         ],
         "title": "RequirementDoctrineOption",
+        "type": "object"
+      },
+      "RequirementKindSchema": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "label"
+        ],
+        "title": "RequirementKindSchema",
         "type": "object"
       },
       "RequirementOptions": {
@@ -36464,6 +38144,24 @@
           "detail"
         ],
         "title": "RequirementQualificationSchema",
+        "type": "object"
+      },
+      "RequirementRowSchema": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "RequirementRowSchema",
         "type": "object"
       },
       "RequirementRule": {
@@ -68062,6 +69760,2121 @@
         "summary": "Learning Center progress for the authenticated user.",
         "tags": [
           "Learning Center"
+        ]
+      }
+    },
+    "/api/learning/mentors": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_home_get_home",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorsHomeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Find a mentor: your classes and mentors sorted by fit.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/admin": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_admin_get_admin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorsAdminResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Class reports, classes to review, and mentors.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/admin/classes/{class_id}/status": {
+      "put": {
+        "operationId": "learning_endpoints_mentors_put_admin_class_status_put_admin_class_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorClassStatusBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Publish a class, send it back to its author, or hide it.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/admin/mentors": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_admin_mentor_post_admin_mentor",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteTeacherBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Make a pilot a mentor by their main character's name.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/admin/mentors/{mentor_id}/status": {
+      "put": {
+        "operationId": "learning_endpoints_mentors_put_admin_mentor_status_put_admin_mentor_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mentor_id",
+            "required": true,
+            "schema": {
+              "title": "Mentor Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorStatusBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve, decline or remove a mentor.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/admin/metrics": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_admin_metrics_get_admin_metrics",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": false,
+            "schema": {
+              "default": 90,
+              "title": "Period",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorsMetricsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Requests, mentors, coverage and impact for a period.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/apply": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_apply_post_apply",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorApplyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Ask learning managers to make you a mentor.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/classes": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_class_post_class",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorClassBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorClassCreatedResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Create a class as a draft.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/classes/{class_id}/edit": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_class_edit_get_class_edit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorClassEditResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A class for its author or a learning manager to edit.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      },
+      "put": {
+        "operationId": "learning_endpoints_mentors_put_class_edit_put_class_edit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorClassBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorClassEditResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Save a class (author or learning manager).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/classes/{class_id}/submit": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_class_submit_post_class_submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Send a class to learning managers for review.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/classes/{class_id}/teach": {
+      "delete": {
+        "operationId": "learning_endpoints_mentors_delete_class_teach_delete_class_teach",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Stop teaching a class (or decline the invite).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      },
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_class_teach_post_class_teach",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Start teaching a class: accept an invite or join it.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/classes/{class_id}/teachers": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_class_teachers_post_class_teachers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "class_id",
+            "required": true,
+            "schema": {
+              "title": "Class Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteTeacherBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Invite another mentor to teach this class.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/classes/{slug}": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_class_get_class",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorClassDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A class, its requirements for you, and its mentors.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/me": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_me_get_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorsMeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Mentor roles of the authenticated user.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/mentoring": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_mentoring_get_mentoring",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentoringResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The mentor's requests and booked classes.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/past": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_past_get_past",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MentorRequestSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Your past classes.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_request_post_request",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMentorRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorRequestSchema"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Request a class from a mentor.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/accept": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_request_accept_post_request_accept",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptMentorRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Accept a request and book its time (mentor).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/cancel": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_request_cancel_post_request_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Cancel a class (pilot or mentor).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/discord-cancel": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_discord_cancel_post_discord_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Cancel a class from its DM (Discord bot).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/discord-confirm": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_discord_confirm_post_discord_confirm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Confirm attendance from the reminder DM (Discord bot).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/discord-feedback": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_discord_feedback_post_discord_feedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordFeedbackBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Answer how a class went from its DM (Discord bot).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/discord-pass": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_discord_pass_post_discord_pass",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pass on a request from its DM (Discord bot).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/feedback": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_request_feedback_post_request_feedback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorFeedbackBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Answer how a class went (pilot or mentor).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/pass": {
+      "post": {
+        "operationId": "learning_endpoints_mentors_post_request_pass_post_request_pass",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorActionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pass on a request (mentor).",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/requests/{request_id}/slots": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_request_slots_get_request_slots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorSlotsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Suggested times inside both pilots' timezones and days.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
+    "/api/learning/mentors/settings": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_settings_get_settings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The mentor's times, capacity and classes.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      },
+      "put": {
+        "operationId": "learning_endpoints_mentors_put_settings_put_settings",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorSettingsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Save the mentor's weekday and weekend times and capacity.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
         ]
       }
     },

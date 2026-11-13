@@ -1,0 +1,100 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MentorsMe } from '@dtypes/api.minmatar.org'
+import {
+    MENTEES_PATH,
+    MENTORS_ADMIN_PATH,
+    MENTORS_METRICS_PATH,
+    MENTORS_PATH,
+    MENTOR_SETTINGS_PATH,
+} from '@helpers/mentors'
+
+/**
+ * The Mentors pages as pills under the Learning Center tabs: Find a mentor
+ * for everyone, My mentees and My settings for mentors, Settings and Metrics
+ * for learning managers. A pilot with only one page sees no pills.
+ */
+interface Props {
+    active: 'find' | 'mentees' | 'settings' | 'admin' | 'metrics';
+    me: MentorsMe | null;
+}
+
+const { active, me } = Astro.props
+
+const pills = [
+    { id: 'find', label: t('mentors.nav.find'), href: MENTORS_PATH, count: 0 },
+    ...(me?.is_mentor || me?.mentor_status ? [
+        { id: 'mentees', label: t('mentors.nav.mentees'), href: MENTEES_PATH, count: me?.open_asks ?? 0 },
+        { id: 'settings', label: t('mentors.nav.settings'), href: MENTOR_SETTINGS_PATH, count: 0 },
+    ] : []),
+    ...(me?.can_manage ? [
+        { id: 'admin', label: t('mentors.nav.admin'), href: MENTORS_ADMIN_PATH, count: 0 },
+        { id: 'metrics', label: t('mentors.nav.metrics'), href: MENTORS_METRICS_PATH, count: 0 },
+    ] : []),
+]
+---
+
+{pills.length > 1 &&
+    <nav class="[ mentors-nav ]" aria-label={t('mentors.nav.label')}>
+        {pills.map(pill =>
+            <a
+                href={translatePath(pill.href)}
+                class:list={['[ mentors-pill ]', { 'is-active': pill.id === active }]}
+                aria-current={pill.id === active ? 'page' : undefined}
+            >
+                {pill.label}
+                {pill.count > 0 && <span class="[ mentors-pill__count ]">{pill.count}</span>}
+            </a>
+        )}
+    </nav>
+}
+
+<style lang="scss">
+    .mentors-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .mentors-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: var(--space-l);
+        padding: 0 var(--space-s);
+        border: solid 1px var(--hairline-strong);
+        color: var(--foreground);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none;
+        transition: border-color var(--fast-transition), color var(--fast-transition);
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .mentors-pill__count {
+        padding: 0 var(--space-3xs);
+        background: var(--fleet-red);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 700;
+    }
+
+    @media (hover: hover) {
+        .mentors-pill:hover {
+            border-color: var(--fleet-yellow);
+            color: var(--highlight);
+        }
+    }
+</style>

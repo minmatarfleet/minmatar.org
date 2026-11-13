@@ -1,0 +1,123 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { MentorRequest } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { brackets_text, class_time } from '@helpers/mentors'
+
+/**
+ * One class request, seen by the pilot (`side="pilot"`: shows the mentor) or
+ * by the mentor (`side="mentor"`: shows the pilot and their times). Buttons
+ * go in the default slot.
+ */
+interface Props {
+    request: MentorRequest;
+    side: 'pilot' | 'mentor';
+    show_times?: boolean;
+    [propName: string]: any;
+}
+
+const { request, side, show_times = false, ...attributes } = Astro.props
+
+delete attributes.class
+
+const other = side === 'pilot' ? request.mentor : request.pilot
+
+const status_text =
+    request.status === 'asked' ? t('mentors.status.asked').replace('{name}', request.mentor.name) :
+    request.status === 'booked' && request.starts_at ? class_time(lang, request.starts_at) :
+    t(t_key('mentors.status.', request.status))
+
+const title = side === 'pilot'
+    ? t('mentors.with').replace('{class}', request.mentor_class.title).replace('{name}', request.mentor.name)
+    : request.mentor_class.title
+---
+
+<article class:list={['[ mentor-row ]', `mentor-row--${request.status}`, Astro.props.class]} {...attributes}>
+    <img src={get_player_icon(other.character_id ?? 1, 64)} alt="" width="40" height="40" loading="lazy" />
+    <div class="[ mentor-row__body ]">
+        <h3>{side === 'mentor' ? other.name : title}</h3>
+        <p class="[ mentor-row__meta ]">
+            {side === 'mentor' && <span>{title}</span>}
+            <span class="[ mentor-row__status ]">{status_text}</span>
+            {request.status === 'booked' && other.discord_handle &&
+                <span>{t('mentors.discord_handle').replace('{handle}', other.discord_handle)}</span>
+            }
+            {request.passed_from_name &&
+                <span>{t('mentors.moved_from').replace('{name}', request.passed_from_name)}</span>
+            }
+        </p>
+        {show_times &&
+            <p class="[ mentor-row__meta ]">
+                <span>{t('mentors.weekdays')}: {brackets_text(request.availability.weekday_brackets)}</span>
+                <span>{t('mentors.weekends')}: {brackets_text(request.availability.weekend_brackets)}</span>
+            </p>
+        }
+        {request.note && <p class="[ mentor-row__note ]">“{request.note}”</p>}
+        {request.bring && <p class="[ mentor-row__note ]">{request.bring}</p>}
+    </div>
+    {Astro.slots.has('default') &&
+        <div class="[ mentor-row__actions ]">
+            <slot />
+        </div>
+    }
+</article>
+
+<style lang="scss">
+    .mentor-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background: var(--surface-sunken);
+
+        img {
+            flex-shrink: 0;
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .mentor-row--booked {
+        border-inline-start: solid 3px var(--green);
+    }
+
+    .mentor-row__body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 16em;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        h3 {
+            font-size: var(--step-0);
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .mentor-row__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-row__status {
+        color: var(--highlight);
+    }
+
+    .mentor-row__note {
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+
+    .mentor-row__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+</style>

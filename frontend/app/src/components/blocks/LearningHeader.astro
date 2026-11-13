@@ -1,0 +1,29 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/** The Learning Center masthead and tabs, the same on every tab. */
+interface Props {
+    active: 'certificates' | 'mentors' | 'guides' | 'skillplans';
+}
+
+const { active } = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import LearningTabs from '@components/blocks/LearningTabs.astro'
+---
+
+<Flexblock gap="var(--space-l)">
+    <Flexblock gap="var(--space-s)">
+        <TextBox>
+            <PageTitle is_landing={true}>{t('learning.center_title')}</PageTitle>
+        </TextBox>
+        <TextBox>
+            <p class="[ excerpt ]">{t('learning.center_lead')}</p>
+        </TextBox>
+        <slot name="aside" />
+    </Flexblock>
+    <LearningTabs active={active} />
+</Flexblock>

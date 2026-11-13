@@ -114,6 +114,8 @@ def _validate_guide(payload: ManageLearningRequest) -> str | None:
         return "Slug must be lowercase letters, numbers and dashes."
     if payload.content_kind not in ContentKind.values:
         return "Unknown content kind."
+    if payload.content_kind == ContentKind.MENTOR_CLASS:
+        return "Mentor classes are made in the mentor class editor."
     return None
 
 
@@ -175,6 +177,10 @@ def update_guide(request, slug: str, payload: ManageLearningRequest):
     item = Learning.objects.filter(slug=slug).first()
     if item is None:
         return _error("Guide not found.", 404)
+    if item.content_kind == ContentKind.MENTOR_CLASS:
+        # The mentor class owns this row (title, URL, published) and
+        # rewrites it on every save.
+        return _error("Edit this in the mentor class editor.")
     if message := _validate_guide(payload):
         return _error(message)
     if (

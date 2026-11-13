@@ -1,0 +1,107 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorRequest } from '@dtypes/api.minmatar.org'
+import { get_mentoring, get_mentors_home } from '@helpers/api.minmatar.org/mentors'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { MENTORS_HOME_PARTIAL, MENTORS_MENTEES_PARTIAL, MENTOR_FEEDBACK_MODAL, mentors_url } from '@helpers/mentors'
+
+/**
+ * After a class: the pilot rates it (`on=home`) or the mentor closes it
+ * (`on=mentees`). Both answers go to learning managers, never to the other
+ * person.
+ */
+const request_id = parseInt(Astro.url.searchParams.get('request_id') ?? '0') || 0
+const as_mentor = Astro.url.searchParams.get('on') === 'mentees'
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!request_id)
+    return HTTP_404_Not_Found()
+
+let request: MentorRequest | null = null
+let fetch_error: Error | false = false
+
+try {
+    const rows = as_mentor
+        ? (await get_mentoring(auth_token as string)).to_close
+        : (await get_mentors_home(auth_token as string)).classes
+    request = rows.find(row => row.id === request_id) ?? null
+} catch (error) {
+    fetch_error = error as Error
+}
+
+if (!fetch_error && !request)
+    return HTTP_404_Not_Found()
+
+const other = as_mentor ? request?.pilot : request?.mentor
+const answers = as_mentor
+    ? ['done', 'another', 'no_show', 'moved'].map(value => ({ value, label: t(t_key('mentors.outcome.', value)) }))
+    : ['really', 'bit', 'not', 'didnt_happen'].map(value => ({ value, label: t(t_key('mentors.rating.', value)) }))
+
+const name = other?.name ?? ''
+const title = (as_mentor ? t('mentors.feedback.mentor_title') : t('mentors.feedback.pilot_title')).replace('{name}', name)
+const privacy = (as_mentor ? t('mentors.feedback.mentor_private') : t('mentors.feedback.pilot_private')).replaceAll('{name}', name)
+const post_url = translatePath(mentors_url(as_mentor ? MENTORS_MENTEES_PARTIAL : MENTORS_HOME_PARTIAL, { mode: 'feedback', request_id }))
+
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astro'
+---
+
+<MentorModalStyles />
+
+{fetch_error || !request || !other ?
+    <ErrorRefetch
+        args={{
+            partial: translatePath(mentors_url(MENTOR_FEEDBACK_MODAL, { request_id, on: as_mentor ? 'mentees' : 'home' })),
+            error: fetch_error || new Error(''),
+            delay,
+            target: '#modal-description',
+        }}
+    />
+    :
+    <form
+        class="[ mentor-modal ]"
+        hx-post={post_url}
+        hx-target={as_mentor ? '#mentors-mentees' : '#mentors-home'}
+        hx-swap="outerHTML"
+    >
+        <header class="[ mentor-modal__head ]">
+            <img src={get_player_icon(other.character_id ?? 1, 64)} alt="" width="48" height="48" />
+            <div>
+                <p class="[ mentor-modal__eyebrow ]">{request.mentor_class.title}</p>
+                <h2>{title}</h2>
+            </div>
+        </header>
+
+        <p class="[ mentor-modal__muted ]">{privacy}</p>
+
+        <fieldset>
+            {answers.map((answer, index) =>
+                <label class="[ mentor-modal__choice ]">
+                    <input type="radio" name="answer" value={answer.value} checked={index === 0} required />
+                    <span><strong>{answer.label}</strong></span>
+                </label>
+            )}
+        </fieldset>
+
+        <label class="[ mentor-modal__field ]">
+            <span>{t('mentors.feedback.note')}</span>
+            <textarea name="note" rows="3" maxlength="2000"></textarea>
+        </label>
+
+        <div class="[ mentor-modal__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('cancel')}</Button>
+            <Button type="submit" size="sm" modal-action="accept">{t('mentors.feedback.send')}</Button>
+        </div>
+    </form>
+}

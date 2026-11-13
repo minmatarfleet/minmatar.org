@@ -1,0 +1,212 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorRequest, MentorsHome } from '@dtypes/api.minmatar.org'
+import { get_mentors_home, get_mentors_past } from '@helpers/api.minmatar.org/mentors'
+import { MENTORS_HOME_PARTIAL, MENTOR_FEEDBACK_MODAL, mentors_url, modal_click } from '@helpers/mentors'
+import { handle_mentor_post } from '@helpers/mentors_actions'
+
+const token = auth_token as string
+const view = Astro.url.searchParams.get('view') === 'past' ? 'past' : 'home'
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const result = await handle_mentor_post(Astro.request, Astro.url, token)
+
+let home: MentorsHome | null = null
+let past: MentorRequest[] = []
+let fetch_error: Error | false = false
+
+try {
+    if (view === 'past')
+        past = await get_mentors_past(token)
+    else
+        home = await get_mentors_home(token)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const self_url = translatePath(MENTORS_HOME_PARTIAL)
+const post_url = (mode: string, params: Record<string, string | number> = {}) =>
+    translatePath(mentors_url(MENTORS_HOME_PARTIAL, { mode, ...params }))
+const feedback_url = (request_id: number) =>
+    translatePath(mentors_url(MENTOR_FEEDBACK_MODAL, { request_id, on: 'home' }))
+
+const fit = home?.mentors.filter(card => card.fit !== 'none') ?? []
+const other = home?.mentors.filter(card => card.fit === 'none') ?? []
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Grid from '@components/compositions/Grid.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import MentorCard from '@components/blocks/mentors/MentorCard.astro'
+import MentorRequestRow from '@components/blocks/mentors/MentorRequestRow.astro'
+import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
+import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+{view === 'past' ?
+    <div class="[ mentors-list ]">
+        {fetch_error ?
+            <ErrorRefetch args={{ partial: translatePath(mentors_url(MENTORS_HOME_PARTIAL, { view: 'past' })), error: fetch_error, delay }} />
+            : past.length === 0 ?
+            <EmptyState title={t('mentors.past_classes_title')} />
+            : past.map(request => <MentorRequestRow request={request} side="pilot" />)
+        }
+    </div>
+    :
+    <div
+        id="mentors-home"
+        class="[ mentors-page ]"
+        hx-get={self_url}
+        hx-trigger="mentors-changed from:body"
+        hx-swap="outerHTML"
+    >
+        {fetch_error || !home ?
+            <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentors-home' }} />
+            : !home.can_request ?
+            <EmptyState title={t('mentors.no_access')} hint="" />
+            :
+            <>
+                <MentorsNav active="find" me={home} />
+                <MentorsNotice result={result?.mentor_name ? { ok: true, message: t('mentors.request.sent').replace('{name}', result.mentor_name) } : result} />
+
+                {(home.classes.length > 0 || home.past_count > 0) &&
+                    <MentorsSection title={t('mentors.your_classes')}>
+                        <div class="[ mentors-list ]">
+                            {home.classes.map(request =>
+                                <MentorRequestRow request={request} side="pilot">
+                                    {request.status === 'booked' && request.mentor.discord_id &&
+                                        <Button size="sm" color="transparent" href={`https://discord.com/users/${request.mentor.discord_id}`} external={true} new_tab={true}>
+                                            {t('mentors.message')}
+                                        </Button>
+                                    }
+                                    {request.can_give_feedback &&
+                                        <Button type="button" size="sm" x-data x-on:click={modal_click(feedback_url(request.id))}>
+                                            {t('mentors.how_did_it_go')}
+                                        </Button>
+                                    }
+                                    {(request.status === 'asked' || request.status === 'booked') &&
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('cancel', { request_id: request.id })}
+                                            hx-target="#mentors-home"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.cancel_class')}
+                                        </Button>
+                                    }
+                                </MentorRequestRow>
+                            )}
+                        </div>
+                        {home.past_count > 0 &&
+                            <details class="[ mentors-past ]">
+                                <summary>{t('mentors.past_classes').replace('{count}', home.past_count.toString())}</summary>
+                                <LazyPartial url={translatePath(mentors_url(MENTORS_HOME_PARTIAL, { view: 'past' }))} trigger="reveal" indicator={false} />
+                            </details>
+                        }
+                    </MentorsSection>
+                }
+
+                {home.mentors.length === 0 ?
+                    <EmptyState title={t('mentors.empty')} hint={t('mentors.empty_hint')} />
+                    :
+                    <>
+                        {fit.length > 0 &&
+                            <MentorsSection title={t('mentors.fit_heading')} hint={t('mentors.fit_lead')}>
+                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="300px">
+                                    {fit.map(card => <MentorCard card={card} />)}
+                                </Grid>
+                            </MentorsSection>
+                        }
+                        {other.length > 0 &&
+                            <MentorsSection title={t('mentors.other_heading')} hint={t('mentors.other_lead')}>
+                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="300px">
+                                    {other.map(card => <MentorCard card={card} />)}
+                                </Grid>
+                            </MentorsSection>
+                        }
+                    </>
+                }
+
+                {!home.is_mentor && (home.mentor_status === 'applied' ?
+                    <p class="[ mentors-muted ]">{t('mentors.become_sent')}</p>
+                    : !home.mentor_status &&
+                    <MentorsSection title={t('mentors.become')} hint={t('mentors.become_lead')}>
+                        <form
+                            class="[ mentors-apply ]"
+                            hx-post={post_url('apply')}
+                            hx-target="#mentors-home"
+                            hx-swap="outerHTML"
+                        >
+                            <label>
+                                <span>{t('mentors.apply_note_label')}</span>
+                                <textarea name="note" rows="2" maxlength="1000"></textarea>
+                            </label>
+                            <Button type="submit" size="sm" color="transparent">{t('mentors.apply_send')}</Button>
+                        </form>
+                    </MentorsSection>
+                )}
+            </>
+        }
+    </div>
+}
+
+<style lang="scss">
+    .mentors-page {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .mentors-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .mentors-past summary {
+        padding-block: var(--space-2xs);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        cursor: pointer;
+    }
+
+    .mentors-muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentors-apply {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-xs);
+        max-width: var(--max-landing-width);
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            width: 100%;
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+
+        textarea {
+            width: 100%;
+        }
+    }
+</style>

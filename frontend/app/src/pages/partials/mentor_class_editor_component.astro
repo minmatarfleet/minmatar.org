@@ -1,0 +1,331 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorClassBody, MentorClassEdit } from '@dtypes/api.minmatar.org'
+import { create_mentor_class, get_mentor_class_edit, save_mentor_class } from '@helpers/api.minmatar.org/mentors'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { MENTOR_CLASS_EDITOR_PARTIAL, mentor_class_edit_path, mentor_class_path, mentors_url } from '@helpers/mentors'
+import { handle_mentor_post, type MentorActionResult } from '@helpers/mentors_actions'
+
+const params = Astro.url.searchParams
+const class_id = parseInt(params.get('class_id') ?? '0') || 0
+const mode = params.get('mode') ?? ''
+const delay = parseInt(params.get('delay') ?? '0')
+const token = auth_token as string
+
+const WHERE = ['voice', 'screen_share', 'in_space']
+
+const body_from = (form: FormData): MentorClassBody => {
+    const kinds = form.getAll('req_kind').map(String)
+    const values = form.getAll('req_value').map(String)
+    return {
+        title: String(form.get('title') ?? '').trim(),
+        summary: String(form.get('summary') ?? '').trim(),
+        outline: String(form.get('outline') ?? '').trim(),
+        minutes: parseInt(String(form.get('minutes') ?? '60')) || 60,
+        where: String(form.get('where') ?? 'voice'),
+        requirements: kinds
+            .map((kind, index) => ({ kind, value: (values[index] ?? '').trim() }))
+            .filter(row => row.kind),
+    }
+}
+
+let result: MentorActionResult | null = null
+
+if (Astro.request.method === 'POST' && (mode === 'create' || mode === 'save')) {
+    const form = await Astro.request.formData()
+    try {
+        if (mode === 'create') {
+            const created = await create_mentor_class(token, body_from(form))
+            return partial_redirect(Astro.request, translatePath(mentor_class_edit_path(created.id)))
+        }
+        await save_mentor_class(token, class_id, body_from(form))
+        result = { ok: true, message: t('mentors.settings.saved') }
+    } catch (error) {
+        result = { ok: false, message: (error as Error).message }
+    }
+} else {
+    result = await handle_mentor_post(Astro.request, Astro.url, token)
+}
+
+let edit: MentorClassEdit | null = null
+let fetch_error: Error | false = false
+
+if (class_id) {
+    try {
+        edit = await get_mentor_class_edit(token, class_id)
+    } catch (error) {
+        fetch_error = error as Error
+    }
+}
+
+const self_url = translatePath(mentors_url(MENTOR_CLASS_EDITOR_PARTIAL, { class_id: class_id || undefined }))
+const post_url = (next: string) => translatePath(mentors_url(MENTOR_CLASS_EDITOR_PARTIAL, { class_id: class_id || undefined, mode: next }))
+
+const rows_json = JSON.stringify(edit?.requirements ?? [])
+const kinds = edit?.requirement_kinds ?? []
+
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Tag from '@components/blocks/Tag.astro'
+import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+<div id="mentor-class-editor" class="[ mentor-editor ]">
+    {fetch_error ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error, delay, target: '#mentor-class-editor' }} />
+        :
+        <>
+            <MentorsNotice result={result} />
+
+            <header class="[ mentor-editor__head ]">
+                <div>
+                    <p class="[ mentor-editor__muted ]">{t('mentors.editor.eyebrow')}</p>
+                    <h2>{edit ? edit.title : t('mentors.editor.create')}</h2>
+                </div>
+                {edit &&
+                    <Tag text={t(t_key('mentors.class_status.', edit.status))} color={edit.status === 'published' ? 'green' : 'fleet-yellow'} variant="outline" narrow={true} />
+                }
+            </header>
+
+            {edit?.review_note && edit.status === 'draft' &&
+                <p role="status" class="[ mentor-editor__note ]">{t('mentors.editor.sent_back').replace('{note}', edit.review_note)}</p>
+            }
+
+            <form
+                class="[ mentor-editor__form ]"
+                hx-post={post_url(edit ? 'save' : 'create')}
+                hx-target="#mentor-class-editor"
+                hx-swap="outerHTML"
+            >
+                <MentorsSection title={t('mentors.editor.about')}>
+                    <label class="[ mentor-editor__field ]">
+                        <span>{t('mentors.editor.title')}</span>
+                        <input type="text" name="title" value={edit?.title ?? ''} maxlength="120" required />
+                    </label>
+                    <label class="[ mentor-editor__field ]">
+                        <span>{t('mentors.editor.summary')}</span>
+                        <textarea name="summary" rows="3" maxlength="2000">{edit?.summary ?? ''}</textarea>
+                    </label>
+                    <label class="[ mentor-editor__field ]">
+                        <span>{t('mentors.editor.outline')} <small>({t('mentors.editor.outline_hint')})</small></span>
+                        <textarea name="outline" rows="5" maxlength="4000">{edit?.outline ?? ''}</textarea>
+                    </label>
+                    <div class="[ mentor-editor__row ]">
+                        <label class="[ mentor-editor__field ]">
+                            <span>{t('mentors.editor.length')}</span>
+                            <input type="number" name="minutes" min="15" max="180" step="5" value={edit?.minutes ?? 60} required />
+                        </label>
+                        <label class="[ mentor-editor__field ]">
+                            <span>{t('mentors.editor.where')}</span>
+                            <select name="where">
+                                {WHERE.map(where =>
+                                    <option value={where} selected={(edit?.where ?? 'voice') === where}>{t(t_key('mentors.where_label.', where))}</option>
+                                )}
+                            </select>
+                        </label>
+                    </div>
+                </MentorsSection>
+
+                {edit &&
+                    <MentorsSection title={t('mentors.editor.requirements')} hint={t('mentors.editor.requirements_hint')}>
+                        <div class="[ mentor-editor__reqs ]" x-data={`{ rows: ${rows_json} }`}>
+                            <template x-for="(row, index) in rows" x-bind:key="index">
+                                <div class="[ mentor-editor__req ]">
+                                    <select name="req_kind" x-model="row.kind" aria-label={t('mentors.editor.requirements')}>
+                                        {kinds.map(kind => <option value={kind.kind}>{kind.label}</option>)}
+                                    </select>
+                                    <input type="text" name="req_value" x-model="row.value" aria-label={t('mentors.editor.value')} placeholder={t('mentors.editor.value')} maxlength="200" />
+                                    <Button type="button" size="sm" color="transparent" x-on:click="rows.splice(index, 1)" aria-label={t('mentors.editor.remove_requirement')}>×</Button>
+                                </div>
+                            </template>
+                            <div>
+                                <Button type="button" size="sm" color="transparent" x-on:click={`rows.push({ kind: '${kinds[0]?.kind ?? ''}', value: '' })`}>
+                                    {t('mentors.editor.add_requirement')}
+                                </Button>
+                            </div>
+                        </div>
+                    </MentorsSection>
+                }
+
+                <div class="[ mentor-editor__actions ]">
+                    <Button type="submit" size="sm">{t('mentors.editor.save')}</Button>
+                    {edit && edit.status === 'published' &&
+                        <Button size="sm" color="transparent" href={translatePath(mentor_class_path(edit.slug))}>{t('mentors.editor.view')}</Button>
+                    }
+                </div>
+            </form>
+
+            {edit && edit.status === 'draft' &&
+                <div class="[ mentor-editor__submit ]">
+                    <Button
+                        type="button"
+                        size="sm"
+                        color="green"
+                        hx-post={post_url('submit_class')}
+                        hx-target="#mentor-class-editor"
+                        hx-swap="outerHTML"
+                    >
+                        {t('mentors.editor.submit')}
+                    </Button>
+                    <p class="[ mentor-editor__muted ]">{t('mentors.editor.review_note')}</p>
+                </div>
+            }
+
+            <MentorsSection title={t('mentors.editor.teachers')}>
+                {!edit ?
+                    <p class="[ mentor-editor__muted ]">{t('mentors.editor.save_first')}</p>
+                    :
+                    <>
+                        <ul class="[ mentor-editor__teachers ]">
+                            {edit.teachers.map(teacher =>
+                                <li>
+                                    <img src={get_player_icon(teacher.person.character_id ?? 1, 32)} alt="" width="28" height="28" loading="lazy" />
+                                    <strong>{teacher.person.name}</strong>
+                                    <small>
+                                        {teacher.is_author ? t('mentors.editor.author') : teacher.status === 'accepted' ? t('mentors.editor.accepted') : t('mentors.editor.invited')}
+                                    </small>
+                                </li>
+                            )}
+                        </ul>
+                        <form
+                            class="[ mentor-editor__invite ]"
+                            hx-post={post_url('invite_teacher')}
+                            hx-target="#mentor-class-editor"
+                            hx-swap="outerHTML"
+                        >
+                            <input type="text" name="character_name" required placeholder={t('mentors.editor.invite_placeholder')} aria-label={t('mentors.editor.invite')} />
+                            <Button type="submit" size="sm" color="transparent">{t('mentors.editor.invite')}</Button>
+                        </form>
+                    </>
+                }
+            </MentorsSection>
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .mentor-editor,
+    .mentor-editor__form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .mentor-editor__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-s);
+
+        h2 {
+            font-size: var(--step-3);
+        }
+    }
+
+    .mentor-editor__muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-editor__note {
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px var(--fleet-yellow);
+        font-size: var(--step--1);
+    }
+
+    .mentor-editor__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        max-width: var(--max-text-width);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+        }
+    }
+
+    .mentor-editor__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-m);
+
+        .mentor-editor__field {
+            flex: 0 1 14em;
+        }
+    }
+
+    .mentor-editor__reqs {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        max-width: var(--max-text-width);
+    }
+
+    .mentor-editor__req {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        select {
+            flex: 2 1 16em;
+        }
+
+        input {
+            flex: 1 1 10em;
+        }
+    }
+
+    .mentor-editor__actions,
+    .mentor-editor__submit,
+    .mentor-editor__invite {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .mentor-editor__invite input {
+        flex: 0 1 20em;
+    }
+
+    .mentor-editor__teachers {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+</style>

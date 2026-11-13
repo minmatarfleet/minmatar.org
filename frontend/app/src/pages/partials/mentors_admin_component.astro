@@ -1,0 +1,393 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user || !can(await get_gates(Astro), 'learning.manage'))
+    return HTTP_403_Forbidden()
+
+import type { MentorAdminClass, MentorsAdmin, MentorsMe } from '@dtypes/api.minmatar.org'
+import { get_mentors_admin, get_mentors_me } from '@helpers/api.minmatar.org/mentors'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { MENTORS_ADMIN_PARTIAL, brackets_text, class_time, mentor_class_edit_path, mentors_url } from '@helpers/mentors'
+import { handle_mentor_post } from '@helpers/mentors_actions'
+
+const token = auth_token as string
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const result = await handle_mentor_post(Astro.request, Astro.url, token)
+
+let me: MentorsMe | null = null
+let admin: MentorsAdmin | null = null
+let fetch_error: Error | false = false
+
+try {
+    ;[me, admin] = await Promise.all([get_mentors_me(token), get_mentors_admin(token)])
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const self_url = translatePath(MENTORS_ADMIN_PARTIAL)
+const post_url = (mode: string, params: Record<string, number> = {}) =>
+    translatePath(mentors_url(MENTORS_ADMIN_PARTIAL, { mode, ...params }))
+
+const class_groups: { title: string, rows: MentorAdminClass[] }[] = admin ? [
+    { title: t('mentors.admin.review'), rows: admin.review },
+    { title: t('mentors.admin.published'), rows: admin.published },
+    { title: t('mentors.admin.hidden'), rows: admin.hidden },
+].filter(group => group.rows.length > 0) : []
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Tag from '@components/blocks/Tag.astro'
+import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
+import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+<div id="mentors-admin" class="[ mentors-page ]">
+    {fetch_error || !me || !admin ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentors-admin' }} />
+        :
+        <>
+            <MentorsNav active="admin" me={me} />
+            <MentorsNotice result={result} />
+
+            <MentorsSection title={t('mentors.admin.reports')} hint={t('mentors.admin.reports_hint')}>
+                {admin.reports.length === 0 ?
+                    <EmptyState title={t('mentors.admin.reports_empty')} />
+                    :
+                    <ul class="[ mentors-admin__list ]">
+                        {admin.reports.map(report =>
+                            <li class="[ mentors-report ]">
+                                <p class="[ mentors-report__head ]">
+                                    <strong>{report.class_title}</strong>
+                                    <span>{report.pilot.name} · {report.mentor.name}</span>
+                                    {report.starts_at && <span>{class_time(lang, report.starts_at)}</span>}
+                                </p>
+                                <dl>
+                                    <div>
+                                        <dt>{t('mentors.admin.pilot')}</dt>
+                                        <dd>
+                                            <strong>{report.pilot_rating_label || t('mentors.admin.no_answer')}</strong>
+                                            {report.pilot_note && <span>“{report.pilot_note}”</span>}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>{t('mentors.admin.mentor')}</dt>
+                                        <dd>
+                                            <strong>{report.mentor_outcome_label || t('mentors.admin.no_answer')}</strong>
+                                            {report.mentor_notes && <span>“{report.mentor_notes}”</span>}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </li>
+                        )}
+                    </ul>
+                }
+            </MentorsSection>
+
+            <MentorsSection title={t('mentors.admin.classes')}>
+                {class_groups.length === 0 ?
+                    <EmptyState title={t('mentors.admin.classes_empty')} />
+                    : class_groups.map(group =>
+                    <div class="[ mentors-admin__group ]">
+                        <h3>{group.title}</h3>
+                        <ul class="[ mentors-admin__list ]">
+                            {group.rows.map(row =>
+                                <li class="[ mentors-admin__row ]">
+                                    <div class="[ mentors-admin__body ]">
+                                        <a href={translatePath(mentor_class_edit_path(row.id))}>{row.title}</a>
+                                        <small>
+                                            {t('mentors.admin.written_by').replace('{name}', row.author_name)}
+                                            {' · '}{t('mentors.minutes_label').replace('{count}', row.minutes.toString())}
+                                            {' · '}{t('mentors.admin.requests_90d').replace('{count}', row.requests_90d.toString())}
+                                        </small>
+                                        {row.teachers.length > 0 &&
+                                            <span class="[ mentors-admin__faces ]">
+                                                {row.teachers.map(teacher =>
+                                                    <img src={get_player_icon(teacher.character_id ?? 1, 32)} alt={teacher.name} title={teacher.name} width="24" height="24" loading="lazy" />
+                                                )}
+                                            </span>
+                                        }
+                                    </div>
+                                    {row.status === 'review' &&
+                                        <form
+                                            class="[ mentors-admin__inline mentors-admin__review ]"
+                                            hx-post={post_url('class_status', { class_id: row.id })}
+                                            hx-target="#mentors-admin"
+                                            hx-swap="outerHTML"
+                                        >
+                                            <input type="text" name="note" placeholder={t('mentors.admin.send_back_note')} aria-label={t('mentors.admin.send_back_note')} maxlength="500" />
+                                            <Button type="submit" size="sm" color="transparent" name="status" value="draft">{t('mentors.admin.send_back')}</Button>
+                                            <Button type="submit" size="sm" color="green" name="status" value="published">{t('mentors.admin.publish')}</Button>
+                                        </form>
+                                    }
+                                    {row.status === 'published' &&
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('class_status', { class_id: row.id })}
+                                            hx-vals='{"status": "hidden"}'
+                                            hx-target="#mentors-admin"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.admin.hide')}
+                                        </Button>
+                                    }
+                                    {row.status === 'hidden' &&
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('class_status', { class_id: row.id })}
+                                            hx-vals='{"status": "published"}'
+                                            hx-target="#mentors-admin"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.admin.show')}
+                                        </Button>
+                                    }
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                )}
+            </MentorsSection>
+
+            {admin.applications.length > 0 &&
+                <MentorsSection title={t('mentors.admin.applications')}>
+                    <ul class="[ mentors-admin__list ]">
+                        {admin.applications.map(row =>
+                            <li class="[ mentors-admin__row ]">
+                                <img src={get_player_icon(row.person.character_id ?? 1, 64)} alt="" width="40" height="40" loading="lazy" />
+                                <div class="[ mentors-admin__body ]">
+                                    <strong>{row.person.name}</strong>
+                                    <small>{row.person.corp}</small>
+                                    {row.application_note && <span>“{row.application_note}”</span>}
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="transparent"
+                                    hx-post={post_url('mentor_status', { mentor_id: row.mentor_id })}
+                                    hx-vals='{"status": "declined"}'
+                                    hx-target="#mentors-admin"
+                                    hx-swap="outerHTML"
+                                >
+                                    {t('mentors.admin.decline')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="green"
+                                    hx-post={post_url('mentor_status', { mentor_id: row.mentor_id })}
+                                    hx-vals='{"status": "approved"}'
+                                    hx-target="#mentors-admin"
+                                    hx-swap="outerHTML"
+                                >
+                                    {t('mentors.admin.approve')}
+                                </Button>
+                            </li>
+                        )}
+                    </ul>
+                </MentorsSection>
+            }
+
+            <MentorsSection title={t('mentors.admin.mentors')}>
+                {admin.mentors.length === 0 ?
+                    <EmptyState title={t('mentors.admin.mentors_empty')} />
+                    :
+                    <ul class="[ mentors-admin__list ]">
+                        {admin.mentors.map(row =>
+                            <li class="[ mentors-admin__row ]">
+                                <img src={get_player_icon(row.person.character_id ?? 1, 64)} alt="" width="40" height="40" loading="lazy" />
+                                <div class="[ mentors-admin__body ]">
+                                    <strong>{row.person.name}</strong>
+                                    <small>
+                                        {t('mentors.weekdays')}: {brackets_text(row.availability.weekday_brackets)}
+                                        {' · '}{t('mentors.weekends')}: {brackets_text(row.availability.weekend_brackets)}
+                                        {' · '}{t('mentors.admin.classes_count').replace('{count}', row.classes.toString())}
+                                    </small>
+                                </div>
+                                <Tag
+                                    text={row.full ? t('mentors.admin.full') : row.taking_requests ? t('mentors.admin.taking') : t('mentors.admin.paused')}
+                                    color={row.taking_requests && !row.full ? 'green' : 'fleet-yellow'}
+                                    variant="outline"
+                                    narrow={true}
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="transparent"
+                                    hx-post={post_url('mentor_status', { mentor_id: row.mentor_id })}
+                                    hx-vals='{"status": "removed"}'
+                                    hx-confirm={`${t('mentors.admin.remove')} ${row.person.name}?`}
+                                    hx-target="#mentors-admin"
+                                    hx-swap="outerHTML"
+                                >
+                                    {t('mentors.admin.remove')}
+                                </Button>
+                            </li>
+                        )}
+                    </ul>
+                }
+                <form
+                    class="[ mentors-admin__inline ]"
+                    hx-post={post_url('make_mentor')}
+                    hx-target="#mentors-admin"
+                    hx-swap="outerHTML"
+                >
+                    <input type="text" name="character_name" required placeholder={t('mentors.admin.make_placeholder')} aria-label={t('mentors.admin.make_placeholder')} />
+                    <Button type="submit" size="sm" color="transparent">{t('mentors.admin.make')}</Button>
+                </form>
+            </MentorsSection>
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .mentors-page {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .mentors-admin__group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        h3 {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+    }
+
+    .mentors-admin__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .mentors-admin__row,
+    .mentors-report {
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px var(--border-color);
+        background: var(--surface-sunken);
+    }
+
+    .mentors-admin__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .mentors-admin__body {
+        display: flex;
+        flex: 1 1 16em;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        a,
+        strong {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small,
+        span {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+
+    .mentors-admin__faces {
+        display: flex;
+        gap: var(--space-3xs);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .mentors-admin__inline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        input {
+            flex: 0 1 20em;
+        }
+    }
+
+    .mentors-admin__review {
+        flex-basis: 100%;
+
+        input {
+            flex: 1 1 14em;
+        }
+    }
+
+    .mentors-report {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        dl {
+            display: grid;
+            gap: var(--space-2xs);
+            margin: 0;
+        }
+
+        dl div {
+            display: flex;
+            gap: var(--space-s);
+        }
+
+        dt {
+            flex-shrink: 0;
+            width: 5em;
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+
+        dd {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            font-size: var(--step--1);
+        }
+    }
+
+    .mentors-report__head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-s);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+</style>

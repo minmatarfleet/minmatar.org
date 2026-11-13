@@ -115,6 +115,7 @@ Added to move frontend gating off Django permission strings ([frontend-feature-g
 | `notifications.push` | `affiliation` | `subscriptions.add_usersubscription` | — |
 | `learning.admin` | `staff` | `learning.change_certificate` (staff: `learning.view_certificate`) | staff permission |
 | `skillsets.admin` | `staff` | `eveonline.change_eveskillset` (staff: `eveonline.view_eveskillset`) | staff permission |
+| `learning.mentors` | `affiliation` | — | Alliance |
 | `learning.manage` | `tribe_membership` | `learning.change_certificate` | Thinkspeak (`pulse.thinkspeak`) |
 | `skillsets.manage` | `tribe_membership` | `eveonline.change_eveskillset` | Thinkspeak (`pulse.thinkspeak`) |
 | `creators.moderate` | `tribe_membership` | `creators.change_creatoraccount` | Thinkspeak (`pulse.thinkspeak`) |

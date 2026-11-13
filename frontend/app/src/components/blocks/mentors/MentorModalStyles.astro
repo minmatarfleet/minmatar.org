@@ -1,0 +1,119 @@
+---
+/** Shared layout for the Mentors modals (request, accept, feedback). Renders nothing. */
+---
+
+<style lang="scss" is:global>
+    .mentor-modal {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-height: 88dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: var(--space-s);
+        color: var(--highlight);
+
+        fieldset {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            margin: 0;
+            padding: 0;
+            border: 0;
+        }
+
+        legend {
+            padding-block-end: var(--space-2xs);
+            color: var(--text-muted);
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+    }
+
+    .mentor-modal__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding-inline-end: var(--space-xl);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+
+        h2 {
+            color: var(--fleet-yellow);
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+        }
+    }
+
+    .mentor-modal__eyebrow,
+    .mentor-modal__muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-modal__choice {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-2xs) var(--space-s);
+        border: solid 1px var(--hairline);
+        cursor: pointer;
+
+        &:has(input:checked) {
+            border-color: var(--fleet-yellow);
+        }
+
+        input {
+            accent-color: var(--fleet-yellow);
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+        }
+
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+
+    .mentor-modal__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+
+        textarea,
+        input {
+            width: 100%;
+        }
+    }
+
+    .mentor-modal__next {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px var(--hairline);
+        font-size: var(--step--1);
+
+        ol {
+            margin: 0;
+            padding-inline-start: var(--space-m);
+            color: var(--foreground);
+        }
+    }
+
+    .mentor-modal__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--space-xs);
+    }
+</style>

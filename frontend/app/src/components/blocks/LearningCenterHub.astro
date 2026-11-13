@@ -44,6 +44,9 @@ interface Props {
     skillsets_login_href?: string | null
     certificates_admin_href?: string | null
     skillsets_admin_href?: string | null
+    /** Skill plans and guides have their own Learning Center tabs now. */
+    show_skillsets?: boolean
+    show_guides?: boolean
 }
 
 const {
@@ -62,6 +65,8 @@ const {
     skillsets_login_href = null,
     certificates_admin_href = null,
     skillsets_admin_href = null,
+    show_skillsets = true,
+    show_guides = true,
 } = Astro.props
 
 const personas: { id: LearningPersona; title: string; description: string }[] = [
@@ -113,7 +118,7 @@ const progress_label = t('learning_center.certificate.progress')
 >
     <Flexblock gap="var(--space-2xl)">
         <FlexInline justification="space-between" class="[ w-full !items-start ]" gap="var(--space-m)">
-            <div class="[ grow ]">
+            <div class="[ grow min-w-0 ]">
                 <slot name="intro" />
             </div>
             {/* SSR is-hidden (not x-show/x-cloak): if Alpine races VT, panels stay correct. */}
@@ -242,7 +247,7 @@ const progress_label = t('learning_center.certificate.progress')
                 </Grid>
             )}
 
-            <LearningSkillsets
+            {show_skillsets && <LearningSkillsets
                 heading={t('learning_center.skillsets_heading')}
                 lead={t('learning_center.skillsets_lead')}
                 empty_text={t('learning_center.skillsets_empty')}
@@ -252,11 +257,11 @@ const progress_label = t('learning_center.certificate.progress')
                 login_label={t('learning_center.skillsets_login')}
                 admin_href={skillsets_admin_href}
                 admin_label={t('learning_center.skillsets_edit_admin')}
-            />
+            />}
         </Flexblock>
     </div>
 
-        <GuidesCatalog />
+        {show_guides && <GuidesCatalog />}
     </Flexblock>
 </div>
 

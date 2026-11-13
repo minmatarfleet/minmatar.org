@@ -4,6 +4,10 @@ from learning.models import (
     Certificate,
     CertificateLearning,
     Learning,
+    MentorClass,
+    MentorClassTeacher,
+    MentorProfile,
+    MentorRequest,
     UserCertificateAward,
     UserLearningPreference,
     UserLearningProgress,
@@ -114,3 +118,49 @@ class UserCertificateAwardAdmin(admin.ModelAdmin):
     @admin.display(description="Certificate", ordering="certificate__title")
     def certificate_title(self, obj: UserCertificateAward) -> str:
         return obj.certificate.title
+
+
+@admin.register(MentorProfile)
+class MentorProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "status", "taking_requests", "classes_per_week")
+    list_filter = ("status", "taking_requests")
+    search_fields = ("user__username",)
+    raw_id_fields = ("user", "decided_by")
+
+
+class MentorClassTeacherInline(admin.TabularInline):
+    model = MentorClassTeacher
+    extra = 0
+    raw_id_fields = ("mentor",)
+
+
+@admin.register(MentorClass)
+class MentorClassAdmin(admin.ModelAdmin):
+    list_display = ("title", "slug", "status", "minutes", "where", "author")
+    list_filter = ("status", "where")
+    search_fields = ("title", "slug")
+    raw_id_fields = ("author", "learning")
+    inlines = (MentorClassTeacherInline,)
+
+
+@admin.register(MentorRequest)
+class MentorRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "pilot",
+        "mentor",
+        "mentor_class",
+        "status",
+        "starts_at",
+        "pilot_rating",
+        "mentor_outcome",
+    )
+    list_filter = ("status", "pilot_rating", "mentor_outcome")
+    search_fields = ("pilot__username", "mentor__user__username")
+    raw_id_fields = (
+        "pilot",
+        "mentor",
+        "mentor_class",
+        "passed_from",
+        "cancelled_by",
+    )

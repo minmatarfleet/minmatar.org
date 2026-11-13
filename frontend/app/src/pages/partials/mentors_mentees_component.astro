@@ -1,0 +1,176 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentoringView, MentorsMe } from '@dtypes/api.minmatar.org'
+import { get_mentoring, get_mentors_me } from '@helpers/api.minmatar.org/mentors'
+import { MENTORS_MENTEES_PARTIAL, MENTOR_ACCEPT_MODAL, MENTOR_FEEDBACK_MODAL, mentors_url, modal_click } from '@helpers/mentors'
+import { handle_mentor_post } from '@helpers/mentors_actions'
+
+const token = auth_token as string
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const result = await handle_mentor_post(Astro.request, Astro.url, token)
+
+let me: MentorsMe | null = null
+let mentoring: MentoringView | null = null
+let fetch_error: Error | false = false
+
+try {
+    me = await get_mentors_me(token)
+    if (me.is_mentor)
+        mentoring = await get_mentoring(token)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const self_url = translatePath(MENTORS_MENTEES_PARTIAL)
+const post_url = (mode: string, request_id: number) =>
+    translatePath(mentors_url(MENTORS_MENTEES_PARTIAL, { mode, request_id }))
+const accept_url = (request_id: number) => translatePath(mentors_url(MENTOR_ACCEPT_MODAL, { request_id }))
+const close_url = (request_id: number) => translatePath(mentors_url(MENTOR_FEEDBACK_MODAL, { request_id, on: 'mentees' }))
+
+const stats = mentoring ? [
+    { label: t('mentors.record.classes'), value: mentoring.record.classes_taught },
+    { label: t('mentors.record.pilots'), value: mentoring.record.pilots_mentored },
+    { label: t('mentors.record.flying'), value: mentoring.record.still_flying },
+] : []
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Grid from '@components/compositions/Grid.astro'
+import StatCard from '@components/blocks/StatCard.astro'
+import MentorRequestRow from '@components/blocks/mentors/MentorRequestRow.astro'
+import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
+import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+<div
+    id="mentors-mentees"
+    class="[ mentors-page ]"
+    hx-get={self_url}
+    hx-trigger="mentors-changed from:body"
+    hx-swap="outerHTML"
+>
+    {fetch_error || !me ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentors-mentees' }} />
+        :
+        <>
+            <MentorsNav active="mentees" me={me} />
+            <MentorsNotice result={result} />
+            {!mentoring ?
+                (me.mentor_status === 'applied' ?
+                    <EmptyState title={t('mentors.applied')} hint={t('mentors.applied_hint')} />
+                    :
+                    <EmptyState title={t('mentors.not_mentor')} hint={t('mentors.not_mentor_hint')} />)
+                :
+                <>
+                    <Grid class="[ w-full grid-fill ]" row_gap="var(--space-xs)" column_gap="var(--space-xs)" min_item_width="180px">
+                        {stats.map(stat => <StatCard label={stat.label} value={stat.value} />)}
+                    </Grid>
+
+                    <MentorsSection title={t('mentors.asking')} hint={t('mentors.asking_hint')}>
+                        {mentoring.asks.length === 0 ?
+                            <EmptyState title={t('mentors.asking_empty')} />
+                            :
+                            <div class="[ mentors-list ]">
+                                {mentoring.asks.map(request =>
+                                    <MentorRequestRow request={request} side="mentor" show_times={true}>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('pass', request.id)}
+                                            hx-target="#mentors-mentees"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.pass')}
+                                        </Button>
+                                        <Button type="button" size="sm" color="green" x-data x-on:click={modal_click(accept_url(request.id))}>
+                                            {t('mentors.accept')}
+                                        </Button>
+                                    </MentorRequestRow>
+                                )}
+                            </div>
+                        }
+                    </MentorsSection>
+
+                    <MentorsSection title={t('mentors.booked')}>
+                        {mentoring.booked.length === 0 ?
+                            <EmptyState title={t('mentors.booked_empty')} />
+                            :
+                            <div class="[ mentors-list ]">
+                                {mentoring.booked.map(request =>
+                                    <MentorRequestRow request={request} side="mentor">
+                                        {request.pilot.discord_id &&
+                                            <Button size="sm" color="transparent" href={`https://discord.com/users/${request.pilot.discord_id}`} external={true} new_tab={true}>
+                                                {t('mentors.message')}
+                                            </Button>
+                                        }
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('cancel', request.id)}
+                                            hx-target="#mentors-mentees"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.cancel_class')}
+                                        </Button>
+                                    </MentorRequestRow>
+                                )}
+                            </div>
+                        }
+                    </MentorsSection>
+
+                    {mentoring.to_close.length > 0 &&
+                        <MentorsSection title={t('mentors.to_close')} hint={t('mentors.to_close_hint')}>
+                            <div class="[ mentors-list ]">
+                                {mentoring.to_close.map(request =>
+                                    <MentorRequestRow request={request} side="mentor">
+                                        <Button type="button" size="sm" x-data x-on:click={modal_click(close_url(request.id))}>
+                                            {t('mentors.how_did_it_go')}
+                                        </Button>
+                                    </MentorRequestRow>
+                                )}
+                            </div>
+                        </MentorsSection>
+                    }
+
+                    {mentoring.past_count > 0 &&
+                        <p class="[ mentors-muted ]">{t('mentors.past_mentees').replace('{count}', mentoring.past_count.toString())}</p>
+                    }
+                </>
+            }
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .mentors-page {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .mentors-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .mentors-muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+</style>

@@ -1,0 +1,118 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorSlots } from '@dtypes/api.minmatar.org'
+import { get_mentor_slots } from '@helpers/api.minmatar.org/mentors'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { MENTORS_MENTEES_PARTIAL, MENTOR_ACCEPT_MODAL, brackets_text, class_time, mentors_url } from '@helpers/mentors'
+
+const request_id = parseInt(Astro.url.searchParams.get('request_id') ?? '0') || 0
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!request_id)
+    return HTTP_404_Not_Found()
+
+let data: MentorSlots | null = null
+let fetch_error: Error | false = false
+
+try {
+    data = await get_mentor_slots(auth_token as string, request_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const pilot = data?.request.pilot
+const first = data?.slots[0] ?? 'other'
+const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astro'
+---
+
+<MentorModalStyles />
+
+{fetch_error || !data || !pilot ?
+    <ErrorRefetch
+        args={{
+            partial: translatePath(mentors_url(MENTOR_ACCEPT_MODAL, { request_id })),
+            error: fetch_error || new Error(''),
+            delay,
+            target: '#modal-description',
+        }}
+    />
+    :
+    <form
+        class="[ mentor-modal ]"
+        hx-post={translatePath(mentors_url(MENTORS_MENTEES_PARTIAL, { mode: 'accept', request_id }))}
+        hx-target="#mentors-mentees"
+        hx-swap="outerHTML"
+        x-data={`{ slot: '${first}' }`}
+    >
+        <header class="[ mentor-modal__head ]">
+            <img src={get_player_icon(pilot.character_id ?? 1, 64)} alt="" width="48" height="48" />
+            <div>
+                <p class="[ mentor-modal__eyebrow ]">{t('mentors.accept.eyebrow').replace('{class}', data.request.mentor_class.title)}</p>
+                <h2>{pilot.name}</h2>
+                <p class="[ mentor-modal__muted ]">
+                    {t('mentors.weekdays')}: {brackets_text(data.request.availability.weekday_brackets)} ·
+                    {t('mentors.weekends')}: {brackets_text(data.request.availability.weekend_brackets)}
+                </p>
+            </div>
+        </header>
+
+        {data.request.note && <p class="[ mentor-modal__muted ]">“{data.request.note}”</p>}
+
+        <fieldset>
+            <legend>{t('mentors.accept.pick')}</legend>
+            {data.slots.length === 0 && <p class="[ mentor-modal__muted ]">{t('mentors.accept.no_slots')}</p>}
+            {data.slots.map(slot =>
+                <label class="[ mentor-modal__choice ]">
+                    <input type="radio" name="slot" value={slot} x-model="slot" />
+                    <span><strong>{class_time(lang, slot)}</strong></span>
+                </label>
+            )}
+            <label class="[ mentor-modal__choice ]">
+                <input type="radio" name="slot" value="other" x-model="slot" />
+                <span>
+                    <strong>{t('mentors.accept.other')}</strong>
+                    <small>{t('mentors.accept.other_hint')}</small>
+                </span>
+            </label>
+            <div class="[ mentor-modal__when ]" x-show="slot === 'other'" x-cloak>
+                <input type="date" name="date" min={tomorrow} aria-label={t('mentors.accept.other_hint')} />
+                <input type="time" name="time" step="900" aria-label={t('mentors.accept.other_hint')} />
+            </div>
+        </fieldset>
+
+        <label class="[ mentor-modal__field ]">
+            <span>{t('mentors.accept.bring').replace('{name}', pilot.name)}</span>
+            <textarea name="bring" rows="2" maxlength="500"></textarea>
+        </label>
+
+        <p class="[ mentor-modal__muted ]">{t('mentors.accept.footer')}</p>
+
+        <div class="[ mentor-modal__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('cancel')}</Button>
+            <Button type="submit" size="sm" color="green" modal-action="accept">{t('mentors.accept.book')}</Button>
+        </div>
+    </form>
+}
+
+<style lang="scss">
+    .mentor-modal__when {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        padding-inline-start: var(--space-l);
+    }
+</style>

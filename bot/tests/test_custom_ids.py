@@ -23,12 +23,8 @@ HISTORICAL_TEMPLATES = {
     "TRIBE_INVITE_DECLINE_TEMPLATE": (
         r"tribe_invite:decline:(?P<invitation_id>[0-9]+)"
     ),
-    "TRIBE_CHIEF_APPOINT_TEMPLATE": (
-        r"tribe_chief:appoint:(?P<volunteer_id>[0-9]+)"
-    ),
-    "TRIBE_CHIEF_DECLINE_TEMPLATE": (
-        r"tribe_chief:decline:(?P<volunteer_id>[0-9]+)"
-    ),
+    "TRIBE_CHIEF_APPOINT_TEMPLATE": (r"tribe_chief:appoint:(?P<volunteer_id>[0-9]+)"),
+    "TRIBE_CHIEF_DECLINE_TEMPLATE": (r"tribe_chief:decline:(?P<volunteer_id>[0-9]+)"),
     "FLEET_INVITE_OUT_TEMPLATE": r"fleet_invite:out:(?P<invite_id>[0-9]+)",
     "INVITE_FEEDBACK_ANSWER_TEMPLATE": (
         r"invite_feedback:answer:(?P<round_id>[0-9]+)"
@@ -75,6 +71,13 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
         from app.tickets.views import CloseTicketButton, CloseWithReasonButton
         from app.fleet_invites.views import SitOutButton, StopInvitesButton
         from app.tribe_invites.views import DeclineInviteButton
+        from app.mentors.views import (
+            CLOSE_BUTTONS,
+            RATE_BUTTONS,
+            CancelButton as MentorCancelButton,
+            ConfirmButton as MentorConfirmButton,
+            PassButton as MentorPassButton,
+        )
 
         pairs = {
             CompleteButton: custom_ids.BUYBACK_COMPLETE_TEMPLATE,
@@ -91,7 +94,14 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
             DeclineInviteButton: custom_ids.TRIBE_INVITE_DECLINE_TEMPLATE,
             SitOutButton: custom_ids.FLEET_INVITE_OUT_TEMPLATE,
             StopInvitesButton: custom_ids.FLEET_INVITE_STOP_TEMPLATE,
+            MentorPassButton: custom_ids.MENTOR_PASS_TEMPLATE,
+            MentorCancelButton: custom_ids.MENTOR_CANCEL_TEMPLATE,
+            MentorConfirmButton: custom_ids.MENTOR_CONFIRM_TEMPLATE,
         }
+        for answer, button in RATE_BUTTONS.items():
+            pairs[button] = custom_ids.MENTOR_RATE_TEMPLATES[answer]
+        for answer, button in CLOSE_BUTTONS.items():
+            pairs[button] = custom_ids.MENTOR_CLOSE_TEMPLATES[answer]
         for item, template in pairs.items():
             compiled = item.__discord_ui_compiled_template__
             self.assertEqual(template, compiled.pattern, item.__name__)

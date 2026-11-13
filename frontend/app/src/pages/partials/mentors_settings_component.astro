@@ -1,0 +1,296 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorSettings, MentorsMe } from '@dtypes/api.minmatar.org'
+import { get_mentor_settings, get_mentors_me } from '@helpers/api.minmatar.org/mentors'
+import {
+    MENTORS_SETTINGS_PARTIAL,
+    NEW_MENTOR_CLASS_PATH,
+    mentor_class_edit_path,
+    mentor_class_path,
+    mentors_url,
+} from '@helpers/mentors'
+import { handle_mentor_post } from '@helpers/mentors_actions'
+
+const token = auth_token as string
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const result = await handle_mentor_post(Astro.request, Astro.url, token)
+const saved = result?.ok && Astro.url.searchParams.get('mode') === 'save_settings'
+
+let me: MentorsMe | null = null
+let settings: MentorSettings | null = null
+let fetch_error: Error | false = false
+
+try {
+    ;[me, settings] = await Promise.all([get_mentors_me(token), get_mentor_settings(token)])
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const self_url = translatePath(MENTORS_SETTINGS_PARTIAL)
+const post_url = (mode: string, params: Record<string, number> = {}) =>
+    translatePath(mentors_url(MENTORS_SETTINGS_PARTIAL, { mode, ...params }))
+const profile = settings?.profile ?? null
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Tag from '@components/blocks/Tag.astro'
+import MentorChips from '@components/blocks/mentors/MentorChips.astro'
+import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
+import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+<div id="mentors-settings" class="[ mentors-page ]">
+    {fetch_error || !me || !settings ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentors-settings' }} />
+        :
+        <>
+            <MentorsNav active="settings" me={me} />
+            <MentorsNotice result={saved ? { ok: true, message: t('mentors.settings.saved') } : result} />
+
+            {!profile ?
+                <EmptyState title={t('mentors.not_mentor')} hint={t('mentors.not_mentor_hint')} />
+                :
+                <>
+                    {profile.status === 'applied' &&
+                        <EmptyState title={t('mentors.applied')} hint={t('mentors.applied_hint')} />
+                    }
+
+                    <MentorsSection title={t('mentors.settings.when')} hint={t('mentors.settings.when_hint')}>
+                        <form
+                            class="[ mentors-form ]"
+                            hx-post={post_url('save_settings')}
+                            hx-target="#mentors-settings"
+                            hx-swap="outerHTML"
+                        >
+                            <MentorChips name="weekday_brackets" kind="brackets" selected={profile.weekday_brackets} legend={t('mentors.weekdays')} />
+                            <MentorChips name="weekend_brackets" kind="brackets" selected={profile.weekend_brackets} legend={t('mentors.weekends')} />
+                            <MentorChips name="days" kind="days" selected={profile.days} legend={t('mentors.request.days')} />
+                            <div class="[ mentors-form__row ]">
+                                <label class="[ mentors-form__field ]">
+                                    <span>{t('mentors.settings.per_week')}</span>
+                                    <input type="number" name="classes_per_week" min="1" max="10" value={profile.classes_per_week} required />
+                                </label>
+                                <label class="[ mentors-form__toggle ]">
+                                    <input type="checkbox" name="taking_requests" checked={profile.taking_requests} />
+                                    <span>
+                                        <strong>{t('mentors.settings.taking')}</strong>
+                                        <small>{t('mentors.settings.taking_hint')}</small>
+                                    </span>
+                                </label>
+                            </div>
+                            <div>
+                                <Button type="submit" size="sm">{t('mentors.settings.save')}</Button>
+                            </div>
+                        </form>
+                    </MentorsSection>
+
+                    <MentorsSection title={t('mentors.settings.teach')}>
+                        <Button slot="aside" size="sm" color="transparent" href={translatePath(NEW_MENTOR_CLASS_PATH)}>
+                            {t('mentors.settings.create')}
+                        </Button>
+                        {settings.teaching.length === 0 ?
+                            <EmptyState title={t('mentors.settings.teach_empty')} />
+                            :
+                            <ul class="[ mentors-classes ]">
+                                {settings.teaching.map(row =>
+                                    <li>
+                                        <div class="[ mentors-classes__body ]">
+                                            <a href={translatePath(mentor_class_path(row.mentor_class.slug))}>{row.mentor_class.title}</a>
+                                            <small>
+                                                {row.is_author ? t('mentors.settings.written_by_you') : t('mentors.settings.written_by').replace('{name}', row.author_name)}
+                                                {' · '}{t('mentors.settings.teachers').replace('{count}', row.teacher_count.toString())}
+                                            </small>
+                                        </div>
+                                        {row.mentor_class.status !== 'published' &&
+                                            <Tag text={t(t_key('mentors.class_status.', row.mentor_class.status))} color="fleet-yellow" variant="outline" narrow={true} />
+                                        }
+                                        {row.is_author &&
+                                            <Button size="sm" color="transparent" href={translatePath(mentor_class_edit_path(row.mentor_class.id))}>
+                                                {t('mentors.settings.edit')}
+                                            </Button>
+                                        }
+                                        {!row.is_author &&
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                color="transparent"
+                                                hx-post={post_url('stop', { class_id: row.mentor_class.id })}
+                                                hx-target="#mentors-settings"
+                                                hx-swap="outerHTML"
+                                            >
+                                                {t('mentors.settings.stop')}
+                                            </Button>
+                                        }
+                                    </li>
+                                )}
+                            </ul>
+                        }
+                    </MentorsSection>
+
+                    {settings.invites.length > 0 &&
+                        <MentorsSection title={t('mentors.settings.invites')}>
+                            <ul class="[ mentors-classes ]">
+                                {settings.invites.map(row =>
+                                    <li>
+                                        <div class="[ mentors-classes__body ]">
+                                            <a href={translatePath(mentor_class_path(row.mentor_class.slug))}>{row.mentor_class.title}</a>
+                                            <small>{t('mentors.settings.written_by').replace('{name}', row.author_name)}</small>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('stop', { class_id: row.mentor_class.id })}
+                                            hx-target="#mentors-settings"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.settings.decline')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="green"
+                                            hx-post={post_url('teach', { class_id: row.mentor_class.id })}
+                                            hx-target="#mentors-settings"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.settings.join_button')}
+                                        </Button>
+                                    </li>
+                                )}
+                            </ul>
+                        </MentorsSection>
+                    }
+
+                    {settings.joinable.length > 0 &&
+                        <MentorsSection title={t('mentors.settings.join')}>
+                            <ul class="[ mentors-classes ]">
+                                {settings.joinable.map(mentor_class =>
+                                    <li>
+                                        <div class="[ mentors-classes__body ]">
+                                            <a href={translatePath(mentor_class_path(mentor_class.slug))}>{mentor_class.title}</a>
+                                            <small>{t('mentors.minutes_label').replace('{count}', mentor_class.minutes.toString())} · {t(t_key('mentors.where.', mentor_class.where))}</small>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('teach', { class_id: mentor_class.id })}
+                                            hx-target="#mentors-settings"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.settings.join_button')}
+                                        </Button>
+                                    </li>
+                                )}
+                            </ul>
+                        </MentorsSection>
+                    }
+                </>
+            }
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .mentors-page {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .mentors-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .mentors-form__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: var(--space-m);
+    }
+
+    .mentors-form__field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+
+        input {
+            width: 6em;
+        }
+    }
+
+    .mentors-form__toggle {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        cursor: pointer;
+
+        input {
+            accent-color: var(--fleet-yellow);
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+        }
+
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+
+    .mentors-classes {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-xs) var(--space-s);
+            border: solid 1px var(--border-color);
+            background: var(--surface-sunken);
+        }
+
+        a {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+
+    .mentors-classes__body {
+        display: flex;
+        flex: 1 1 14em;
+        flex-direction: column;
+        min-width: 0;
+    }
+</style>
