@@ -7,6 +7,7 @@ import re
 from django.conf import settings
 
 from alliance.models import AllianceHealthSnapshot
+from discord.models import DiscordGuild
 from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_characters_for_users,
@@ -95,7 +96,28 @@ def apply_on_leave(rows: list[dict]) -> None:
         row["on_leave"] = row.get("user_id") in on_leave
 
 
-def public_profile(corporation: EveCorporation) -> dict:
+def viewer_invite_url(corporation: EveCorporation, user=None) -> str | None:
+    """The Discord link this viewer sees. A server set to corporation
+    members only shows its link to people with a character in the
+    corporation; everyone else would be removed from it anyway."""
+    url = page_invite_url(corporation)
+    if url is None:
+        return None
+    guild = corporation.discord_guild if corporation.discord_guild_id else None
+    if (
+        guild is None
+        or guild.member_policy != DiscordGuild.MEMBER_POLICY_CORPORATION
+    ):
+        return url
+    if user is None or not user.is_authenticated:
+        return None
+    in_corporation = EveCharacter.objects.filter(
+        user_id=user.id, corporation_id=corporation.corporation_id
+    ).exists()
+    return url if in_corporation else None
+
+
+def public_profile(corporation: EveCorporation, user=None) -> dict:
     """Profile payload. Heavy 90-day stats come from the Celery-filled cache
     and are absent (empty/None) until the first refresh finishes."""
     leaders = leadership_rows(corporation)
@@ -116,7 +138,7 @@ def public_profile(corporation: EveCorporation) -> dict:
         "highlights": corporation.highlights or None,
         "activity_summary": corporation.activity_summary or None,
         "media": [_media_item(item) for item in corporation.media.all()],
-        "discord_invite_url": page_invite_url(corporation),
+        "discord_invite_url": viewer_invite_url(corporation, user),
     }
 
 

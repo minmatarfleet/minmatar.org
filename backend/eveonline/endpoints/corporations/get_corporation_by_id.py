@@ -44,7 +44,7 @@ def get_corporation_by_id(request, corporation_id: int):
         "type": corporation.type,
         "active": corporation.active,
         "trial": corporation.trial,
-        **public_profile(corporation),
+        **public_profile(corporation, request.user),
         "members": [],
         "directors": [
             {

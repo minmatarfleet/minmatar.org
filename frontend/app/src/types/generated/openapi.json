@@ -57171,6 +57171,11 @@
             "description": "Not Found"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get a corporation's public profile",
         "tags": [
           "Corporations",

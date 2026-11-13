@@ -4,6 +4,7 @@ from eveuniverse.models import EveFaction
 from ninja import Router
 
 from app.errors import ErrorResponse
+from authentication import AuthLenient
 from eveonline.endpoints.corporations.schemas import CorporationInfoResponse
 from eveonline.helpers.corporations.profile import (
     load_corporation,
@@ -19,6 +20,7 @@ router = Router(tags=["Corporations"])
 @router.get(
     "corporations/{corporation_id}/info",
     response={200: CorporationInfoResponse, 404: ErrorResponse},
+    auth=AuthLenient(),
     summary="Get a corporation's public profile",
 )
 def get_corporation_info(request, corporation_id: int):
@@ -35,7 +37,7 @@ def get_corporation_info(request, corporation_id: int):
         "type": corporation.type,
         "active": corporation.active,
         "trial": corporation.trial,
-        **public_profile(corporation),
+        **public_profile(corporation, request.user),
     }
     if (
         corporation.alliance
