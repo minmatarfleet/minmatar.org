@@ -330,9 +330,7 @@ class InviteFeedbackTests(TestCase):
             "You can change your answers until the survey closes.",
         )
         self.assertNotIn("your name", saved.json()["detail"].lower())
-        self.assertIn(
-            "Sitting out is only not this fleet", saved.json()["body"]
-        )
+        self.assertEqual(saved.json()["body"], "")
         again = self.client.get(url, **auth_headers(pilot))
         self.assertEqual(again.json()["state"], "thanks")
         editing = self.client.get(url + "?edit=true", **auth_headers(pilot))

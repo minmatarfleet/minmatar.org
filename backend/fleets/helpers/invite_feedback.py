@@ -55,10 +55,7 @@ DM_INVITE_LIMIT = 10
 COMMENT_PLACEHOLDER = "Optional. A sentence is enough."
 
 THANKS_HEADING = "Thanks. That's all we needed."
-THANKS_BODY = (
-    "Sitting out is only not this fleet. Stop fleet invites is what turns "
-    "the DMs off."
-)
+THANKS_BODY = ""
 THANKS_DETAIL = "You can change your answers until the survey closes."
 NOT_INVITED_HEADING = "This isn't open for you."
 NOT_INVITED_BODY = (
