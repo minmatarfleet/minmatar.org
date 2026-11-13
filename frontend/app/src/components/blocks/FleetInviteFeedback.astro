@@ -44,6 +44,7 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         </ComponentBlock>
         :
         <form
+            class="[ form ]"
             method="post"
             hx-post={partial_url}
             hx-target="#fleet-invite-feedback"
@@ -75,18 +76,20 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
                     {errors.map((error) => <p>{error}</p>)}
                 </div>
             }
-            <section>
-                <h2>{form.list_heading}</h2>
-                <ul class="[ invites ]">
-                    {form.invites.map((invite) =>
-                        <li>
-                            <span class="[ when ]">{invite.when}</span>
-                            <span class="[ title ]">{invite.title}</span>
-                            <span class="[ tag ]">{invite.answer_label}</span>
-                        </li>
-                    )}
-                </ul>
-            </section>
+            {form.invites.length > 0 &&
+                <section class="[ history ]">
+                    <h2>{form.list_heading}</h2>
+                    <ul class="[ invites ]">
+                        {form.invites.map((invite) =>
+                            <li>
+                                <span class="[ when ]">{invite.when}</span>
+                                <span class="[ title ]">{invite.title}</span>
+                                <span class="[ tag ]">{invite.answer_label}</span>
+                            </li>
+                        )}
+                    </ul>
+                </section>
+            }
             {form.questions.map((question) =>
                 <fieldset>
                     <legend>
@@ -148,15 +151,33 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         max-width: var(--max-text-width);
     }
 
+    .form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        margin: 0;
+    }
+
     .intro,
     .help,
     .detail {
-        color: var(--text-color-muted, var(--fleet-yellow));
+        color: var(--text-muted);
+        margin: 0;
     }
 
     .errors {
         border: solid 1px var(--fleet-red);
         padding: var(--space-2xs) var(--space-xs);
+    }
+
+    .history {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .history h2 {
+        margin: 0;
     }
 
     .invites {
@@ -173,6 +194,8 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         flex-wrap: wrap;
         gap: var(--space-2xs) var(--space-xs);
         align-items: baseline;
+        padding: var(--space-2xs) var(--space-xs);
+        background: var(--surface-sunken);
     }
 
     .when {
@@ -190,7 +213,8 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xs);
+        gap: var(--space-xs);
+        min-width: 0;
     }
 
     legend {
@@ -199,6 +223,7 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
         gap: var(--space-2xs);
         align-items: baseline;
         font-weight: 600;
+        padding: 0;
     }
 
     .badge {
@@ -209,14 +234,30 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
     .choices {
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xs);
+        gap: var(--space-s);
+    }
+
+    .choices :global(label) {
+        width: 100%;
+        max-width: 100%;
+        align-items: flex-start;
+    }
+
+    .choices :global(small) {
+        min-width: 0;
+        white-space: normal;
     }
 
     .other,
     .comment {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
+        gap: var(--space-2xs);
+    }
+
+    .other > span,
+    .comment > span {
+        font-weight: 600;
     }
 
     textarea {

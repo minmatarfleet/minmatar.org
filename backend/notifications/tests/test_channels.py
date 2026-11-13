@@ -7,6 +7,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 from discord.models import DiscordUser
 from notifications.channels import ChannelSendError, ChannelSkip, send_channel
 from notifications.models import NotificationChannel
+from notifications.types.fleets import render_fleet_invite_feedback
 from notifications.rate_limit import acquire
 
 
@@ -89,3 +90,37 @@ class DiscordChannelErrorTestCase(TestCase):
                 {"discord_message": "hi", "feature": "industry"},
             )
         self.assertFalse(ctx.exception.retryable)
+
+    @patch("notifications.channels.acquire", return_value=(True, 0.0))
+    @patch("notifications.channels.DiscordClient")
+    def test_feedback_dm_button_replaces_mark_as_read(
+        self, mock_client_cls, mock_acquire
+    ):
+        del mock_acquire
+        response = MagicMock()
+        response.json.return_value = {"channel_id": "1", "id": "2"}
+        mock_client_cls.return_value.send_dm.return_value = response
+        payload = render_fleet_invite_feedback(
+            {
+                "title": "Fleet invites, about a minute.",
+                "body": "A short form.",
+                "url": "https://example.test/fleets/invite-feedback/",
+            }
+        )
+        send_channel(
+            NotificationChannel.DISCORD,
+            self.user,
+            payload,
+            delivery_id=9,
+        )
+        sent = mock_client_cls.return_value.send_dm.call_args.kwargs["payload"]
+        button = sent["components"][0]["components"][0]
+        self.assertEqual(button["label"], "Provide feedback")
+        self.assertEqual(button["style"], 5)
+        self.assertEqual(
+            button["url"], "https://example.test/fleets/invite-feedback/"
+        )
+        self.assertNotIn("Mark as read", str(sent["components"]))
+        embed = sent["embeds"][0]
+        self.assertNotIn("url", embed)
+        self.assertNotIn("example.test", embed["description"])
