@@ -56145,7 +56145,7 @@
     },
     "/api/fleets/invite-feedback/command": {
       "post": {
-        "description": "Preview, send, remind, or close the fleet invite feedback round. Strategic FCs only. The Discord command calls this.",
+        "description": "Preview, remind, or close the fleet invite feedback round. Strategic FCs only. The full send is the production command.",
         "operationId": "fleets_endpoints_invite_feedback_post_command_post_invite_feedback_command",
         "parameters": [],
         "requestBody": {

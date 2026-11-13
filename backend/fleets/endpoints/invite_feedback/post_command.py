@@ -1,7 +1,8 @@
-"""Discord command: preview, send, remind, or close the feedback round.
+"""Discord command: preview, remind, or close the feedback round.
 
 The bot calls this with the service token and the Strategic FC's Discord
-id. Send, remind, and close do nothing unless confirm is true.
+id. Remind and close do nothing unless confirm is true. The full send is
+the production management command.
 """
 
 from app.errors import ErrorResponse
@@ -30,6 +31,10 @@ def post_invite_feedback_command(request, payload: CommandRequest):
         return 403, ErrorResponse(detail="Not authorized.")
     if not can_use_feature(actor, "fleets.manage_any"):
         return 403, ErrorResponse(detail="Only Strategic FCs can send this.")
+    if payload.action == "send":
+        return 400, ErrorResponse(
+            detail=("The full send runs from the production command only.")
+        )
     try:
         message = run_action(payload.action, confirm=payload.confirm)
     except InviteFeedbackError as exc:
@@ -50,8 +55,9 @@ ROUTES = (
                 401: ErrorResponse,
             },
             "description": (
-                "Preview, send, remind, or close the fleet invite feedback "
-                "round. Strategic FCs only. The Discord command calls this."
+                "Preview, remind, or close the fleet invite feedback round. "
+                "Strategic FCs only. The full send is the production "
+                "command."
             ),
         },
         post_invite_feedback_command,

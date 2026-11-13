@@ -2926,7 +2926,7 @@ export interface paths {
         put?: never;
         /**
          * Post Invite Feedback Command
-         * @description Preview, send, remind, or close the fleet invite feedback round. Strategic FCs only. The Discord command calls this.
+         * @description Preview, remind, or close the fleet invite feedback round. Strategic FCs only. The full send is the production command.
          */
         post: operations["fleets_endpoints_invite_feedback_post_command_post_invite_feedback_command"];
         delete?: never;

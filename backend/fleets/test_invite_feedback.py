@@ -17,7 +17,7 @@ from app.test import TestCase
 from app.testing import auth_headers
 from discord.models import DiscordUser
 from eveonline.models import EveLocation
-from fleets.helpers.invite_feedback import run_action
+from fleets.helpers.invite_feedback import PROBE_KEY, run_action
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
@@ -456,6 +456,37 @@ class InviteFeedbackTests(TestCase):
         self.assertEqual(FleetInviteFeedbackRound.objects.count(), 0)
         self.assertEqual(NotificationDelivery.objects.count(), 0)
 
+    def test_one_pilot_send_does_not_open_the_real_round(
+        self, unused_delay, unused_async
+    ):
+        bear = make_user("BearThatCares")
+        other = make_user("other")
+        self.invite(self.fleet(), bear)
+        self.invite(self.fleet(), other)
+        out = StringIO()
+        call_command(
+            "send_fleet_invite_feedback", "--user", "bearthatcares", stdout=out
+        )
+        self.assertIn("Sent the form to BearThatCares.", out.getvalue())
+        probe = FleetInviteFeedbackRound.objects.get()
+        self.assertEqual(probe.key, PROBE_KEY)
+        self.assertEqual(
+            list(probe.responses.values_list("user", flat=True)), [bear.id]
+        )
+        results = self.client.get(
+            "/api/fleets/invite-feedback/results?link=true",
+            **auth_headers(self.fc),
+        )
+        self.assertFalse(results.json()["show_link"])
+        self.send()
+        official = FleetInviteFeedbackRound.objects.exclude(
+            key=PROBE_KEY
+        ).get()
+        self.assertEqual(
+            set(official.responses.values_list("user_id", flat=True)),
+            {bear.id, other.id},
+        )
+
     def test_discord_command_is_strategic_only(
         self, unused_delay, unused_async
     ):
@@ -481,17 +512,18 @@ class InviteFeedbackTests(TestCase):
         self.assertEqual(preview.status_code, 200)
         self.assertIn("Nothing is sent", preview.json()["message"])
         self.assertEqual(FleetInviteFeedbackRound.objects.count(), 0)
-        unconfirmed = self.client.post(
+        blocked = self.client.post(
             "/api/fleets/invite-feedback/command",
             data={
                 "discord_user_id": 4242,
                 "action": "send",
-                "confirm": False,
+                "confirm": True,
             },
             content_type="application/json",
             **auth_headers(self.fc),
         )
-        self.assertIn("Nothing was sent", unconfirmed.json()["message"])
+        self.assertEqual(blocked.status_code, 400)
+        self.assertIn("production command", blocked.json()["detail"])
         self.assertEqual(FleetInviteFeedbackRound.objects.count(), 0)
         unknown = self.client.post(
             "/api/fleets/invite-feedback/command",
