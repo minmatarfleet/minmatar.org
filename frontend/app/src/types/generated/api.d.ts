@@ -13142,6 +13142,7 @@ export interface components {
             invite_url?: string | null;
             /**
              * @default {
+             *       "action": null,
              *       "can_kick_members": false,
              *       "checked_at": null,
              *       "exemptions": [],
@@ -14694,6 +14695,8 @@ export interface components {
         };
         /** DiscordMemberAccess */
         DiscordMemberAccess: {
+            /** Action */
+            action?: string | null;
             /**
              * Can Kick Members
              * @default false
@@ -14737,6 +14740,8 @@ export interface components {
         };
         /** DiscordMemberAccessUpdate */
         DiscordMemberAccessUpdate: {
+            /** Action */
+            action?: string | null;
             /**
              * Exemptions
              * @default []
@@ -14805,6 +14810,8 @@ export interface components {
              * Format: date-time
              */
             flagged_at: string;
+            /** Notified At */
+            notified_at?: string | null;
             /** Reason */
             reason: string;
             /**

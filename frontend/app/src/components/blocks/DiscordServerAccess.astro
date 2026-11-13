@@ -1,0 +1,797 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationDiscordSettings, DiscordMemberAccess } from '@dtypes/api.minmatar.org'
+import type { UiKey } from '@helpers/corporations/discord_settings'
+import {
+    discord_access_roles,
+    discord_initial_action,
+    discord_removal_eta,
+    keep_member_action,
+} from '@helpers/corporations/discord_settings'
+
+import ActionMenu from '@components/blocks/ActionMenu.astro'
+import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Select from '@components/blocks/Select.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+/**
+ * A corporation's Discord, in the order a CEO decides it: who can join,
+ * the roles that choice makes sense of, then what happens to everyone
+ * else. One form, one Save.
+ */
+interface Props {
+    access: DiscordMemberAccess;
+    role_sync: CorporationDiscordSettings['role_sync'];
+    // Discord's install page; adding the bot again grants missing permissions.
+    connect_url: string;
+    [propName: string]: any;
+}
+
+const { access, role_sync, connect_url } = Astro.props
+
+type Option = { value: string, title: UiKey, sub: UiKey, default?: boolean }
+const POLICIES: Option[] = [
+    { value: '', title: 'corporations.discord.policy_anyone', sub: 'corporations.discord.policy_anyone_sub' },
+    { value: 'corporation', title: 'corporations.discord.policy_corporation', sub: 'corporations.discord.policy_corporation_sub' },
+    { value: 'alliance', title: 'corporations.discord.policy_alliance', sub: 'corporations.discord.policy_alliance_sub' },
+]
+const ACTIONS: Option[] = [
+    { value: 'notify', title: 'corporations.discord.cleanup_notify', sub: 'corporations.discord.cleanup_notify_sub', default: true },
+    { value: '', title: 'corporations.discord.cleanup_roles', sub: 'corporations.discord.cleanup_roles_sub' },
+    { value: 'remove', title: 'corporations.discord.cleanup_remove', sub: 'corporations.discord.cleanup_remove_sub' },
+]
+const ROLE_KEYS: Record<string, { title: UiKey, sub: UiKey }> = {
+    member: { title: 'corporations.discord.role_member', sub: 'corporations.discord.role_member_sub' },
+    director: { title: 'corporations.discord.role_director', sub: 'corporations.discord.role_director_sub' },
+    recruiter: { title: 'corporations.discord.role_recruiter', sub: 'corporations.discord.role_recruiter_sub' },
+    structure_manager: { title: 'corporations.discord.role_structure_manager', sub: 'corporations.discord.role_structure_manager_sub' },
+    alliance_member: { title: 'corporations.discord.role_alliance', sub: 'corporations.discord.role_alliance_sub' },
+}
+const REASON_KEYS: Record<string, UiKey> = {
+    unlinked: 'corporations.discord.members_reason_unlinked',
+    not_corporation: 'corporations.discord.members_reason_not_corporation',
+    not_alliance: 'corporations.discord.members_reason_not_alliance',
+}
+const grace_key = (hours: number) => `corporations.discord.members_grace_${hours}` as UiKey
+const eve_time = (when: string) => new Date(when).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+}) + ' EVE'
+
+const policy = access.policy ?? ''
+const action = discord_initial_action(access.policy, access.action)
+const notifies = action === 'notify'
+const can_kick = access.can_kick_members
+const can_manage_roles = Boolean(role_sync.can_manage_roles)
+const grace_choices = access.grace_choices.length ? access.grace_choices : [access.grace_hours]
+const exemptions = access.exemptions.map((row) => row.username)
+const hidden = access.pending_total - access.pending.length
+const held = Boolean(access.held && !access.held.approved)
+
+const roles = discord_access_roles(role_sync.mappings)
+const mappings = new Map(role_sync.mappings.map((mapping) => [mapping.state, mapping]))
+const known = new Set(role_sync.roles.map((role) => role.id))
+const role_rows = roles.all.map((state, index) => {
+    const mapping = mappings.get(state)
+    const selected = mapping?.role_id ?? ''
+    return {
+        state,
+        json: JSON.stringify(state),
+        optional: index > 0,
+        selected,
+        missing_choice: selected !== '' && !known.has(selected),
+        problem: mapping?.problem ?? '',
+    }
+})
+
+const alpine = `{
+    policy: ${JSON.stringify(policy)},
+    action: ${JSON.stringify(action)},
+    added: ${JSON.stringify(roles.added)},
+    names: ${JSON.stringify(exemptions)},
+    draft: '',
+    shown(state) {
+        return state === 'member' || this.added.includes(state)
+    },
+    addable(state) {
+        return !this.shown(state) && !(state === 'alliance_member' && this.policy === 'corporation')
+    },
+    add(state) {
+        this.added.push(state)
+        this.$nextTick(() => document.getElementById('discord-role-' + state)?.focus())
+    },
+    drop(state) {
+        this.added = this.added.filter((other) => other !== state)
+    },
+    add_names() {
+        for (const raw of this.draft.split(/[\\s,]+/)) {
+            const name = raw.replace(/^@/, '').toLowerCase()
+            if (name && !this.names.includes(name))
+                this.names.push(name)
+        }
+        this.draft = ''
+    },
+    drop_name(name) {
+        this.names = this.names.filter((other) => other !== name)
+    },
+}`
+
+function status_label(row: DiscordMemberAccess['pending'][number]): { text: string, waiting: boolean } {
+    if (notifies && row.notified_at)
+        return { text: eve_time(row.notified_at), waiting: false }
+    const eta = discord_removal_eta(row.remove_after)
+    if (eta)
+        return { text: t('corporations.discord.members_in').replace('{time}', eta), waiting: true }
+    if (!notifies && held)
+        return { text: t('corporations.discord.members_after_approval'), waiting: true }
+    return { text: t('corporations.discord.members_due'), waiting: true }
+}
+---
+
+<div class="[ server-access ]" x-data={alpine}>
+    <section class="[ server-access__panel ]">
+        <header class="[ server-access__head ]">
+            <span class="[ server-access__step ]" aria-hidden="true">1</span>
+            <div>
+                <h4 class="[ server-access__title ]" id="server-access-policy">{t('corporations.discord.access_title')}</h4>
+                <p class="[ server-access__sub ]">{t('corporations.discord.access_sub')}</p>
+            </div>
+        </header>
+        <div class="[ server-access__body ]">
+            <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-policy">
+                {POLICIES.map((option) => (
+                    <label class="[ server-access__option ]">
+                        <input type="radio" name="member_policy" value={option.value} checked={policy === option.value} x-model="policy" />
+                        <span class="[ server-access__radio ]" aria-hidden="true"></span>
+                        <span>
+                            <span class="[ server-access__option-title ]">{t(option.title)}</span>
+                            <span class="[ server-access__option-sub ]">{t(option.sub)}</span>
+                        </span>
+                    </label>
+                ))}
+            </div>
+        </div>
+    </section>
+
+    <section class="[ server-access__panel ]">
+        <header class="[ server-access__head ]">
+            <span class="[ server-access__step ]" aria-hidden="true">2</span>
+            <div class="[ server-access__grow ]">
+                <h4 class="[ server-access__title ]">{t('corporations.discord.roles_title')}</h4>
+                <p class="[ server-access__sub ]">{t('corporations.discord.roles_leading')}</p>
+            </div>
+            <Button type="submit" name="action" value="refresh_roles" formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                {t('corporations.discord.roles_refresh')}
+            </Button>
+        </header>
+        <div class="[ server-access__body ]">
+            {!can_manage_roles ?
+                <div class="[ server-access__notice ]">
+                    <p>{t('corporations.discord.needs_manage')}</p>
+                    <Button href={connect_url} color="transparent" size="sm">{t('corporations.discord.bot_add_again')}</Button>
+                </div>
+            : role_sync.roles.length === 0 ?
+                <EmptyState title={t('corporations.discord.roles_empty')} />
+            :
+                <>
+                    <div class="[ server-access__table server-access__roles ]">
+                        <div class="[ server-access__thead ]" aria-hidden="true">
+                            <span>{t('corporations.discord.roles_pilots')}</span>
+                            <span>{t('corporations.discord.roles_role')}</span>
+                            <span></span>
+                        </div>
+                        {role_rows.map((row) => (
+                            <div
+                                class="[ server-access__row ]"
+                                x-show={row.optional ? `shown(${row.json})` : undefined}
+                                x-cloak={row.optional && !row.selected ? true : undefined}
+                            >
+                                <label class="[ server-access__who ]" for={`discord-role-${row.state}`}>
+                                    {t(ROLE_KEYS[row.state].title)}
+                                    <small>{t(ROLE_KEYS[row.state].sub)}</small>
+                                </label>
+                                <Select
+                                    id={`discord-role-${row.state}`}
+                                    name={`role_${row.state}`}
+                                    size="sm"
+                                    x-bind:disabled={row.optional ? `!shown(${row.json})` : undefined}
+                                >
+                                    <option value="" selected={row.selected === ''}>{t('corporations.discord.role_none')}</option>
+                                    {row.missing_choice && <option value={row.selected} selected>{row.selected}</option>}
+                                    {role_sync.roles.map((role) => (
+                                        <option value={role.id} selected={role.id === row.selected}>{role.name}</option>
+                                    ))}
+                                </Select>
+                                {row.optional ?
+                                    <button
+                                        type="button"
+                                        class="[ server-access__icon-button ]"
+                                        aria-label={t('corporations.discord.role_drop').replace('{role}', t(ROLE_KEYS[row.state].title))}
+                                        x-on:click={`drop(${row.json})`}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                                    </button>
+                                    :
+                                    <span></span>
+                                }
+                                {row.problem === 'missing' && <small class="[ server-access__problem ]">{t('corporations.discord.problem_missing')}</small>}
+                                {row.problem === 'above_bot' && <small class="[ server-access__problem ]">{t('corporations.discord.problem_above')}</small>}
+                            </div>
+                        ))}
+                    </div>
+                    <div x-show={`${JSON.stringify(roles.extra)}.some((state) => addable(state))`}>
+                        <ActionMenu label={`+ ${t('corporations.discord.role_add')}`} variant="button" color="transparent">
+                            {roles.extra.map((state) => (
+                                <ActionMenuItem
+                                    x-show={`addable(${JSON.stringify(state)})`}
+                                    x-on:click={`add(${JSON.stringify(state)}); close()`}
+                                >
+                                    <span class="[ server-access__menu-item ]">
+                                        {t(ROLE_KEYS[state].title)}
+                                        <small>{t(ROLE_KEYS[state].sub)}</small>
+                                    </span>
+                                </ActionMenuItem>
+                            ))}
+                        </ActionMenu>
+                    </div>
+                </>
+            }
+        </div>
+    </section>
+
+    <section class="[ server-access__panel ]" x-bind:class="{ 'is-off': policy === '' }" class:list={[{ 'is-off': !policy }]}>
+        <header class="[ server-access__head ]">
+            <span class="[ server-access__step ]" aria-hidden="true">3</span>
+            <div>
+                <h4 class="[ server-access__title ]" id="server-access-cleanup">
+                    <span x-show="policy === ''" x-cloak={policy ? true : undefined}>{t('corporations.discord.cleanup_title_anyone')}</span>
+                    <span x-show="policy === 'corporation'" x-cloak={policy !== 'corporation' ? true : undefined}>{t('corporations.discord.cleanup_title_corporation')}</span>
+                    <span x-show="policy === 'alliance'" x-cloak={policy !== 'alliance' ? true : undefined}>{t('corporations.discord.cleanup_title_alliance')}</span>
+                </h4>
+                <p class="[ server-access__sub ]" x-show="policy !== ''" x-cloak={!policy ? true : undefined}>
+                    <span x-show="policy !== 'alliance'">{t('corporations.discord.cleanup_sub_corporation')}</span>
+                    <span x-show="policy === 'alliance'" x-cloak={policy !== 'alliance' ? true : undefined}>{t('corporations.discord.cleanup_sub_alliance')}</span>
+                </p>
+                <p class="[ server-access__sub ]" x-show="policy === ''" x-cloak={policy ? true : undefined}>{t('corporations.discord.cleanup_sub_anyone')}</p>
+            </div>
+        </header>
+        <div class="[ server-access__body ]" x-show="policy !== ''" x-cloak={!policy ? true : undefined}>
+            <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-cleanup">
+                {ACTIONS.map((option) => (
+                    <label class="[ server-access__option ]">
+                        <input type="radio" name="member_cleanup" value={option.value} checked={action === option.value} x-model="action" />
+                        <span class="[ server-access__radio ]" aria-hidden="true"></span>
+                        <span>
+                            <span class="[ server-access__option-title ]">
+                                {t(option.title)}
+                                {option.default && <span class="[ server-access__default ]">{t('corporations.discord.cleanup_default')}</span>}
+                            </span>
+                            <span class="[ server-access__option-sub ]">{t(option.sub)}</span>
+                        </span>
+                    </label>
+                ))}
+            </div>
+
+            {!can_kick &&
+                <div class="[ server-access__notice ]" x-show="action === 'remove'" x-cloak={action !== 'remove' ? true : undefined}>
+                    <p>{t('corporations.discord.members_needs_kick')}</p>
+                    <Button href={connect_url} color="transparent" size="sm">{t('corporations.discord.bot_add_again')}</Button>
+                </div>
+            }
+
+            <div class="[ server-access__field ]" x-show="action !== ''" x-cloak={!action ? true : undefined}>
+                <label class="[ server-access__label ]" for="member-access-grace">{t('corporations.discord.members_grace')}</label>
+                <div>
+                    <div class="[ server-access__narrow ]">
+                        <Select id="member-access-grace" name="member_grace_hours" size="sm">
+                            {grace_choices.map((hours) => (
+                                <option value={hours} selected={hours === access.grace_hours}>{t(grace_key(hours))}</option>
+                            ))}
+                        </Select>
+                    </div>
+                    <p class="[ server-access__help ]">
+                        <span x-show="action === 'notify'" x-cloak={!notifies ? true : undefined}>{t('corporations.discord.members_grace_notify_help')}</span>
+                        <span x-show="action === 'remove'" x-cloak={action !== 'remove' ? true : undefined}>{t('corporations.discord.members_grace_remove_help')}</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="[ server-access__field ]">
+                <label class="[ server-access__label ]" for="member-access-exemptions">{t('corporations.discord.members_exemptions')}</label>
+                <div>
+                    <input type="hidden" name="member_exemptions" value={exemptions.join(',')} x-bind:value="names.join(',')" />
+                    <div class="[ server-access__chips ]">
+                        <template x-for="name in names" x-bind:key="name">
+                            <span class="[ server-access__chip ]">
+                                <span x-text="name"></span>
+                                <button type="button" x-bind:aria-label={`'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`} x-on:click="drop_name(name)">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                                </button>
+                            </span>
+                        </template>
+                        <input
+                            id="member-access-exemptions"
+                            class="[ server-access__chip-input ]"
+                            type="text"
+                            autocomplete="off"
+                            spellcheck="false"
+                            placeholder={t('corporations.discord.members_exemptions_placeholder')}
+                            aria-describedby="member-access-exemptions-help"
+                            x-model="draft"
+                            x-on:keydown.enter.prevent="add_names()"
+                            x-on:keydown.comma.prevent="add_names()"
+                            x-on:blur="add_names()"
+                        />
+                    </div>
+                    <p id="member-access-exemptions-help" class="[ server-access__help ]">{t('corporations.discord.members_exemptions_help')}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {policy && action && access.checked_at &&
+        <section class="[ server-access__panel ]">
+            <header class="[ server-access__head ]">
+                <h4 class="[ server-access__title server-access__grow ]">
+                    {t(notifies ? 'corporations.discord.members_pending_notify' : 'corporations.discord.members_pending')}
+                    <span class="[ server-access__count ]"> · {access.pending_total}</span>
+                </h4>
+                <small class="[ server-access__sub server-access__meta ]">
+                    {t('corporations.discord.members_checked').replace('{time}', eve_time(access.checked_at))}
+                </small>
+            </header>
+            <div class="[ server-access__body ]">
+                {action === 'remove' && held && access.held &&
+                    <div class="[ server-access__paused ]" role="status">
+                        <div class="[ server-access__grow ]">
+                            <p class="[ server-access__paused-title ]">{t('corporations.discord.members_held').replace('{count}', String(access.held.count))}</p>
+                            <p class="[ server-access__sub ]">{t('corporations.discord.members_held_help')}</p>
+                        </div>
+                        <Button type="submit" name="action" value="approve_members" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                            {t('corporations.discord.members_approve').replace('{count}', String(access.held.count))}
+                        </Button>
+                    </div>
+                }
+                {access.held?.approved &&
+                    <p class="[ server-access__sub ]" role="status">{t('corporations.discord.members_held_approved')}</p>
+                }
+                {access.pending.length === 0 ?
+                    <EmptyState title={t('corporations.discord.members_pending_empty')} />
+                    :
+                    <XFadeScroll>
+                        <div class="[ server-access__table server-access__list ]" role="table">
+                            <div class="[ server-access__thead ]" role="row">
+                                <span role="columnheader">{t('corporations.discord.members_pilot')}</span>
+                                <span role="columnheader">{t('corporations.discord.members_reason')}</span>
+                                <span role="columnheader">{t(notifies ? 'corporations.discord.members_notified_column' : 'corporations.discord.members_removed_column')}</span>
+                                <span role="columnheader"><span class="visually-hidden">{t('corporations.discord.members_keep')}</span></span>
+                            </div>
+                            {access.pending.map((row) => {
+                                const status = status_label(row)
+                                return (
+                                    <div class="[ server-access__row ]" role="row">
+                                        <span class="[ server-access__who ]" role="cell">
+                                            {row.display_name ?? row.username ?? row.discord_id}
+                                            {row.username && <small>@{row.username}</small>}
+                                        </span>
+                                        <span class="[ server-access__muted ]" role="cell">{t(REASON_KEYS[row.reason] ?? REASON_KEYS.unlinked)}</span>
+                                        <span class:list={['[ server-access__status ]', { 'is-waiting': status.waiting }]} role="cell">{status.text}</span>
+                                        <span role="cell">
+                                            <Button type="submit" name="action" value={keep_member_action(row.discord_id)} formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                                                {t('corporations.discord.members_keep')}
+                                            </Button>
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </XFadeScroll>
+                }
+                {hidden > 0 &&
+                    <small class="[ server-access__sub ]">
+                        {t('corporations.discord.members_pending_more').replace('{count}', String(hidden))}
+                    </small>
+                }
+            </div>
+        </section>
+    }
+
+    <div class="[ server-access__panel server-access__save ]">
+        <Button type="submit" name="action" value="save_access" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+            {t('corporations.discord.access_save')}
+        </Button>
+    </div>
+</div>
+
+<style lang="scss">
+    p,
+    h4 {
+        margin: 0;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .server-access {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .server-access__panel {
+        border: solid 1px var(--hairline-medium);
+        border-radius: var(--space-3xs);
+        background-color: var(--component-background);
+        transition: opacity var(--fast-transition);
+
+        &.is-off {
+            opacity: 0.55;
+        }
+    }
+
+    .server-access__head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: start;
+        gap: var(--space-2xs) var(--space-xs);
+        padding: var(--space-s) var(--space-m);
+        border-bottom: solid 1px var(--hairline);
+
+        .is-off & {
+            border-bottom: none;
+        }
+    }
+
+    .server-access__step {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: var(--space-m);
+        height: var(--space-m);
+        border-radius: 50%;
+        background-color: var(--hairline-strong);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 700;
+    }
+
+    .server-access__grow {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .server-access__title {
+        font-family: var(--button-font);
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .server-access__meta {
+        grid-column: 2 / -1;
+        justify-self: end;
+        margin: 0;
+    }
+
+    .server-access__count {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .server-access__sub,
+    .server-access__muted {
+        margin-block-start: var(--space-3xs);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .server-access__muted {
+        margin: 0;
+    }
+
+    .server-access__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-s) var(--space-m);
+    }
+
+    .server-access__options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+        gap: var(--space-xs);
+    }
+
+    .server-access__option {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px var(--hairline-strong);
+        border-radius: var(--space-3xs);
+        background-color: var(--surface-sunken);
+        cursor: pointer;
+        transition: border-color var(--fast-transition), background-color var(--fast-transition);
+
+        input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        &:has(input:checked) {
+            border-color: var(--foreground);
+            background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
+        }
+
+        &:has(input:focus-visible) {
+            outline: solid 2px var(--foreground);
+            outline-offset: 2px;
+        }
+    }
+
+    .server-access__radio {
+        flex: none;
+        box-sizing: border-box;
+        width: var(--space-s);
+        height: var(--space-s);
+        margin-block-start: var(--space-3xs);
+        border: solid 2px var(--faded);
+        border-radius: 50%;
+
+        :checked + & {
+            border-color: var(--foreground);
+            background-color: var(--foreground);
+            box-shadow: inset 0 0 0 3px var(--component-background);
+        }
+    }
+
+    .server-access__option-title {
+        display: block;
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .server-access__narrow {
+        max-width: calc(var(--space-3xl) * 2);
+    }
+
+    .server-access__default {
+        display: inline-block;
+        margin-inline-start: var(--space-3xs);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+
+    .server-access__option-sub {
+        display: block;
+        margin-block-start: var(--space-3xs);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+
+    .server-access__table {
+        border: solid 1px var(--hairline-medium);
+        border-radius: var(--space-3xs);
+    }
+
+    .server-access__thead,
+    .server-access__row {
+        display: grid;
+        align-items: center;
+        gap: var(--space-2xs) var(--space-s);
+        padding: 0 var(--space-s);
+    }
+
+    .server-access__thead {
+        min-height: var(--space-l);
+        background-color: var(--surface-sunken);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .server-access__row {
+        min-height: var(--space-xl);
+        padding-block: var(--space-2xs);
+        border-top: solid 1px var(--hairline);
+        color: var(--highlight);
+    }
+
+    .server-access__roles .server-access__thead,
+    .server-access__roles .server-access__row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) var(--space-l);
+    }
+
+    @media (max-width: 48rem) {
+        .server-access__head {
+            grid-template-columns: auto minmax(0, 1fr);
+
+            > :global(:nth-child(3)) {
+                grid-column: 2;
+                justify-self: start;
+            }
+        }
+
+        .server-access__roles .server-access__thead {
+            display: none;
+        }
+
+        .server-access__roles .server-access__row {
+            grid-template-columns: minmax(0, 1fr) var(--space-l);
+        }
+
+        .server-access__roles .server-access__who {
+            grid-column: 1 / -1;
+        }
+
+        .server-access__roles .server-access__row > span:empty {
+            display: none;
+        }
+    }
+
+    .server-access__list {
+        min-width: 40rem;
+    }
+
+    .server-access__list .server-access__thead,
+    .server-access__list .server-access__row {
+        grid-template-columns: minmax(0, 1fr) 12rem 10rem 5rem;
+    }
+
+    .server-access__who,
+    .server-access__menu-item {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: var(--step--1);
+        color: var(--highlight);
+
+        small {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .server-access__icon-button {
+        display: grid;
+        place-items: center;
+        width: var(--space-l);
+        height: var(--space-l);
+        border: none;
+        border-radius: var(--space-3xs);
+        background: none;
+        color: var(--faded);
+        cursor: pointer;
+        transition: color var(--fast-transition);
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .server-access__problem {
+        grid-column: 1 / -1;
+        color: var(--fleet-yellow);
+    }
+
+    .server-access__status {
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
+
+        &.is-waiting {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .server-access__field {
+        display: grid;
+        grid-template-columns: 12rem minmax(0, 1fr);
+        gap: var(--space-2xs) var(--space-s);
+        align-items: start;
+
+        @media (max-width: 48rem) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .server-access__label {
+        padding-block-start: var(--space-2xs);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .server-access__help {
+        margin-block-start: var(--space-3xs);
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+
+    .server-access__chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-height: var(--space-xl);
+        padding: var(--space-3xs) var(--space-2xs);
+        border: solid 1px var(--hairline-strong);
+        border-radius: var(--space-3xs);
+        background-color: var(--surface-sunken);
+
+        &:focus-within {
+            border-color: var(--foreground);
+        }
+    }
+
+    .server-access__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-2xs);
+        border-radius: var(--space-s);
+        background-color: var(--hairline-strong);
+        font-size: var(--step--1);
+        color: var(--highlight);
+
+        button {
+            display: grid;
+            place-items: center;
+            border: none;
+            border-radius: 50%;
+            background: none;
+            color: var(--faded);
+            cursor: pointer;
+        }
+    }
+
+    .server-access__chip-input {
+        flex: 1 1 10rem;
+        min-width: 0;
+        border: none;
+        background: none;
+        color: var(--form-color);
+        font: inherit;
+        font-size: var(--step--1);
+
+        &:focus-visible {
+            outline: none;
+        }
+    }
+
+    .server-access__notice,
+    .server-access__paused {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-s);
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 30%, transparent);
+        border-radius: var(--space-3xs);
+        background-color: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        color: var(--fleet-yellow);
+    }
+
+    .server-access__paused-title {
+        font-weight: 600;
+        color: var(--fleet-yellow);
+    }
+
+    .server-access__save {
+        display: flex;
+        justify-content: flex-end;
+        padding: var(--space-xs) var(--space-m);
+    }
+</style>

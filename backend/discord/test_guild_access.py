@@ -27,6 +27,7 @@ from discord.models import (
 from discord.test_guild_roles import GuildRoleFixture
 from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
 from eveonline.models import EveCharacter
+from notifications.types.corporations import render_discord_members
 
 CLIENT = "discord.guild_access.DiscordClient"
 BOT_ID = 5
@@ -59,6 +60,7 @@ class GuildAccessFixture(GuildRoleFixture):
         super().setUp()
         self.guild.can_kick_members = True
         self.guild.member_policy = DiscordGuild.MEMBER_POLICY_CORPORATION
+        self.guild.member_action = DiscordGuild.MEMBER_ACTION_REMOVE
         self.guild.save()
         # self.user flies in the corporation (the fixture's CEO).
         DiscordUser.objects.create(id=100, discord_tag="ceo", user=self.user)
@@ -130,6 +132,58 @@ class EnforceTestCase(GuildAccessFixture):
         self.assertEqual(2, enforce_guild(self.guild))
         self.assertEqual({200, 300}, self.kicked(client))
         self.assertFalse(DiscordGuildRemoval.objects.exists())
+
+    @patch("notifications.service.notify_users")
+    @patch(CLIENT)
+    def test_tell_the_ceo_lists_them_once_and_removes_nobody(
+        self, client_cls, notify_users
+    ):
+        self.guild.member_action = DiscordGuild.MEMBER_ACTION_NOTIFY
+        self.guild.can_kick_members = False
+        self.guild.save()
+        client = self.discord(
+            client_cls,
+            [person(100, "ceo"), person(200, "ally"), person(300, "random")],
+        )
+        self.assertEqual(0, enforce_guild(self.guild))
+        notify_users.assert_not_called()
+
+        self.age_pending()
+        self.assertEqual(0, enforce_guild(self.guild))
+        client.kick_guild_member.assert_not_called()
+        notify_users.assert_called_once()
+        users, key, context = notify_users.call_args.args
+        self.assertEqual([self.user], list(users))
+        self.assertEqual("corporations.discord_members", key)
+        self.assertEqual(
+            ["ally", "random"],
+            [row["username"] for row in context["people"]],
+        )
+        self.assertFalse(
+            DiscordGuildRemoval.objects.filter(notified_at=None).exists()
+        )
+
+        # Already told: the next pass stays quiet.
+        enforce_guild(self.guild)
+        notify_users.assert_called_once()
+
+    def test_the_ceo_notification_reads_as_a_list(self):
+        rendered = render_discord_members(
+            {
+                "server": "Rattini Tribe",
+                "corporation": "Rattini",
+                "people": [
+                    {"name": "Pal", "username": "pal", "reason": "Nope"},
+                    {"name": "x", "username": "x", "reason": "Nope"},
+                ],
+                "url": "https://example.test/settings",
+            }
+        )
+        self.assertEqual(
+            "2 people to remove from Rattini Tribe", rendered["title"]
+        )
+        self.assertIn("- Pal (@pal): Nope", rendered["discord_message"])
+        self.assertIn("- x: Nope", rendered["discord_message"])
 
     @patch(CLIENT)
     def test_alliance_policy_keeps_alliance_pilots(self, client_cls):
@@ -314,7 +368,60 @@ class PolicySaveTestCase(GuildAccessFixture):
         clear_role_mappings(self.guild)
         self.guild.refresh_from_db()
         self.assertEqual("", self.guild.member_policy)
+        self.assertEqual("", self.guild.member_action)
         self.assertFalse(self.guild.member_exemptions.exists())
+
+    def test_tell_the_ceo_needs_no_kick_members(self):
+        self.guild.can_kick_members = False
+        self.guild.save()
+        save_member_policy(self.guild, "corporation", 24, [], action="notify")
+        self.guild.refresh_from_db()
+        self.assertEqual("notify", self.guild.member_action)
+        with self.assertRaises(AccessError) as raised:
+            save_member_policy(
+                self.guild, "corporation", 24, [], action="remove"
+            )
+        self.assertEqual("cannot_kick_members", raised.exception.code)
+        with self.assertRaises(AccessError) as raised:
+            save_member_policy(self.guild, "corporation", 24, [], action="x")
+        self.assertEqual("invalid_action", raised.exception.code)
+
+    def test_a_policy_without_an_action_only_shapes_the_roles(self):
+        DiscordGuildRemoval.objects.create(
+            guild=self.guild,
+            discord_id=300,
+            reason="unlinked",
+            flagged_at=timezone.now() - timedelta(days=2),
+        )
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            save_member_policy(self.guild, "alliance", 24, [], action="")
+        self.assertEqual([], callbacks)
+        self.guild.refresh_from_db()
+        self.assertEqual(
+            ("alliance", ""),
+            (self.guild.member_policy, self.guild.member_action),
+        )
+        self.assertFalse(DiscordGuildRemoval.objects.exists())
+
+    def test_switching_to_remove_restarts_the_grace_period(self):
+        self.guild.member_action = DiscordGuild.MEMBER_ACTION_NOTIFY
+        self.guild.save()
+        DiscordGuildRemoval.objects.create(
+            guild=self.guild,
+            discord_id=300,
+            reason="unlinked",
+            flagged_at=timezone.now() - timedelta(days=2),
+        )
+        with self.captureOnCommitCallbacks(execute=False):
+            save_member_policy(
+                self.guild, "corporation", 24, [], action="remove"
+            )
+        self.assertFalse(DiscordGuildRemoval.objects.exists())
+
+    def test_no_action_leaves_anyone_off(self):
+        save_member_policy(self.guild, "", 24, [], action="remove")
+        self.guild.refresh_from_db()
+        self.assertEqual("", self.guild.member_action)
 
 
 class MemberEndpointTestCase(GuildAccessFixture):
@@ -356,6 +463,37 @@ class MemberEndpointTestCase(GuildAccessFixture):
             HTTP_AUTHORIZATION=f"Bearer {make_token(self.outsider)}",
         )
         self.assertEqual(403, denied.status_code)
+
+    @patch("discord.guild_access.queue_enforce")
+    def test_the_action_is_saved_and_older_forms_mean_remove(
+        self, queue_enforce
+    ):
+        del queue_enforce  # on_commit callbacks don't run in a TestCase.
+        response = self.client.put(
+            self.base,
+            data={"policy": "corporation", "action": "notify"},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("notify", response.json()["member_access"]["action"])
+
+        response = self.client.put(
+            self.base,
+            data={"policy": "alliance", "action": None},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertIsNone(response.json()["member_access"]["action"])
+
+        # A form from before actions existed.
+        response = self.client.put(
+            self.base,
+            data={"policy": "alliance"},
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual("remove", response.json()["member_access"]["action"])
 
     def test_bad_grace_is_refused(self):
         response = self.client.put(
