@@ -79,7 +79,7 @@ ERR_KEEP = "Say whether we should keep direct fleet invitations."
 ERR_COMMENT = "Keep the comment to a sentence."
 
 FELT = (
-    ("glad", "Glad I was asked"),
+    ("glad", "Good"),
     ("fine", "Fine"),
     ("much", "A bit much"),
     ("stop", "I wanted them to stop"),

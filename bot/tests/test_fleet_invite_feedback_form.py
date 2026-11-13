@@ -17,7 +17,7 @@ def _form(*, with_why=True, answers=None):
             "kind": "single",
             "max": 1,
             "choices": [
-                {"key": "glad", "label": "Glad I was asked"},
+                {"key": "glad", "label": "Good"},
                 {"key": "fine", "label": "Fine"},
             ],
         },

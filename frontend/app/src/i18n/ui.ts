@@ -7727,7 +7727,7 @@ export const ui = {
         'fleets.invite_feedback.answered': 'Answered',
         'fleets.invite_feedback.frame_asked': 'Asked',
         'fleets.invite_feedback.frame_answered': 'Answered',
-        'fleets.invite_feedback.tile_glad': 'Glad or fine',
+        'fleets.invite_feedback.tile_glad': 'Good or fine',
         'fleets.invite_feedback.tile_open': 'Open invites, replied',
         'fleets.invite_feedback.sitting_out': 'Sitting out',
         'fleets.invite_feedback.felt': 'How the invites felt',
