@@ -24,6 +24,8 @@ import type {
     TribeChiefCandidate,
     TribeChiefSeat,
     TribeChiefVolunteer,
+    TribeDiscordSettings,
+    TribeDiscordMappingUpdate,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -34,6 +36,67 @@ export async function get_tribes(): Promise<Tribe[]> {
     return await api_request<Tribe[]>(API_ENDPOINT, {
         error: 'Error fetching tribes',
     })
+}
+
+export class TribeDiscordError extends Error {}
+
+async function tribe_discord_write<T>(
+    access_token: string,
+    endpoint: string,
+    method: string,
+    body?: TribeDiscordMappingUpdate,
+): Promise<T> {
+    const response = await api_response(endpoint, {
+        method,
+        token: access_token,
+        body,
+        allow: [400, 403, 404],
+    })
+    if (response.status === 400) {
+        const payload = await response.json().catch(() => ({}))
+        throw new TribeDiscordError(payload.detail ?? 'invalid')
+    }
+    if (!response.ok)
+        return null as T
+    return await response.json() as T
+}
+
+/** The tribe's Discord server, or null when the viewer is not the chief. */
+export async function get_tribe_discord(access_token: string, tribe_id: number) {
+    return await tribe_discord_write<TribeDiscordSettings | null>(
+        access_token, `${API_ENDPOINT}/${tribe_id}/discord`, 'GET',
+    )
+}
+
+export async function save_tribe_discord_roles(
+    access_token: string,
+    tribe_id: number,
+    mappings: TribeDiscordMappingUpdate['mappings'],
+) {
+    return await tribe_discord_write<TribeDiscordSettings>(
+        access_token,
+        `${API_ENDPOINT}/${tribe_id}/discord`,
+        'PUT',
+        { mappings },
+    )
+}
+
+/** Queue a fresh read of the server's roles. The form keeps the roles it already has. */
+export async function refresh_tribe_discord_roles(access_token: string, tribe_id: number) {
+    return await tribe_discord_write<TribeDiscordSettings>(
+        access_token, `${API_ENDPOINT}/${tribe_id}/discord/refresh`, 'POST',
+    )
+}
+
+export async function disconnect_tribe_discord(access_token: string, tribe_id: number) {
+    return await tribe_discord_write<TribeDiscordSettings | null>(
+        access_token, `${API_ENDPOINT}/${tribe_id}/discord`, 'DELETE',
+    )
+}
+
+/** Browser URL that starts adding the bot, then returns to the tribe page. */
+export function tribe_discord_bot_connect_url(api_url: string, tribe_id: number, access_token: string) {
+    return `${api_url}/api/tribes/${tribe_id}/discord/bot/connect?token=${encodeURIComponent(access_token)}`
 }
 
 export async function get_tribe(id: number, access_token?: string | false | null): Promise<Tribe> {

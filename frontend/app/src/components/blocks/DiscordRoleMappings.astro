@@ -1,0 +1,104 @@
+---
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Select from '@components/blocks/Select.astro'
+
+interface Role {
+    id: string;
+    name: string;
+}
+
+interface Mapping {
+    state: string;
+    role_id?: string | null;
+    problem?: string | null;
+}
+
+interface Row {
+    state: string;
+    label: string;
+}
+
+interface Props {
+    rows: Row[];
+    roles: Role[];
+    mappings: Mapping[];
+    none_label: string;
+    problem_missing: string;
+    problem_above: string;
+    empty_title: string;
+}
+
+const {
+    rows,
+    roles,
+    mappings,
+    none_label,
+    problem_missing,
+    problem_above,
+    empty_title,
+} = Astro.props
+
+const by_state = new Map(mappings.map((mapping) => [mapping.state, mapping]))
+const known = new Set(roles.map((role) => role.id))
+---
+
+{roles.length === 0 ?
+    <EmptyState title={empty_title} />
+    :
+    <div class="discord-roles">
+        {rows.map((row) => {
+            const mapping = by_state.get(row.state)
+            const selected = mapping?.role_id ?? ''
+            const problem = mapping?.problem ?? ''
+            const missing_choice = selected !== '' && !known.has(selected)
+            return (
+                <div class="discord-roles__row">
+                    <label class="discord-roles__label" for={`discord-role-${row.state}`}>
+                        {row.label}
+                    </label>
+                    <Select id={`discord-role-${row.state}`} name={`role_${row.state}`} size="sm">
+                        <option value="" selected={selected === ''}>{none_label}</option>
+                        {missing_choice && <option value={selected} selected>{selected}</option>}
+                        {roles.map((role) => (
+                            <option value={role.id} selected={role.id === selected}>{role.name}</option>
+                        ))}
+                    </Select>
+                    {problem === 'missing' && <small class="discord-roles__problem">{problem_missing}</small>}
+                    {problem === 'above_bot' && <small class="discord-roles__problem">{problem_above}</small>}
+                </div>
+            )
+        })}
+    </div>
+}
+
+<style lang="scss">
+    .discord-roles {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .discord-roles__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+    }
+
+    .discord-roles__label {
+        flex: 1 1 12rem;
+        font-family: var(--button-font);
+        color: var(--highlight);
+    }
+
+    .discord-roles__row > :global(.relative),
+    .discord-roles__row > :global(div) {
+        flex: 2 1 14rem;
+        min-width: 0;
+    }
+
+    .discord-roles__problem {
+        flex-basis: 100%;
+        color: var(--fleet-yellow);
+    }
+</style>

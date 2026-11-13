@@ -7198,6 +7198,20 @@
             ],
             "title": "Page Source"
           },
+          "role_sync": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DiscordRoleSync"
+              }
+            ],
+            "default": {
+              "can_manage_roles": false,
+              "checked": false,
+              "checked_at": null,
+              "mappings": [],
+              "roles": []
+            }
+          },
           "status": {
             "anyOf": [
               {
@@ -10991,6 +11005,119 @@
           "status"
         ],
         "title": "DiscordNpsiActionResponse",
+        "type": "object"
+      },
+      "DiscordRoleChoice": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "DiscordRoleChoice",
+        "type": "object"
+      },
+      "DiscordRoleMappingRow": {
+        "properties": {
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "role_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "DiscordRoleMappingRow",
+        "type": "object"
+      },
+      "DiscordRoleMappingUpdate": {
+        "properties": {
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/DiscordRoleMappingRow"
+            },
+            "title": "Mappings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "mappings"
+        ],
+        "title": "DiscordRoleMappingUpdate",
+        "type": "object"
+      },
+      "DiscordRoleSync": {
+        "properties": {
+          "can_manage_roles": {
+            "default": false,
+            "title": "Can Manage Roles",
+            "type": "boolean"
+          },
+          "checked": {
+            "default": false,
+            "title": "Checked",
+            "type": "boolean"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "mappings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiscordRoleMappingRow"
+            },
+            "title": "Mappings",
+            "type": "array"
+          },
+          "roles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiscordRoleChoice"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "title": "DiscordRoleSync",
         "type": "object"
       },
       "DiscordSitOutRequest": {
@@ -41465,6 +41592,135 @@
         "title": "TribeAboutSchema",
         "type": "object"
       },
+      "TribeDiscordMapping": {
+        "properties": {
+          "problem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem"
+          },
+          "role_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "TribeDiscordMapping",
+        "type": "object"
+      },
+      "TribeDiscordMappingUpdate": {
+        "properties": {
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/TribeDiscordMapping"
+            },
+            "title": "Mappings",
+            "type": "array"
+          }
+        },
+        "title": "TribeDiscordMappingUpdate",
+        "type": "object"
+      },
+      "TribeDiscordRole": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "TribeDiscordRole",
+        "type": "object"
+      },
+      "TribeDiscordSettings": {
+        "properties": {
+          "available": {
+            "default": false,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "can_manage_roles": {
+            "default": false,
+            "title": "Can Manage Roles",
+            "type": "boolean"
+          },
+          "checked": {
+            "default": false,
+            "title": "Checked",
+            "type": "boolean"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "connected": {
+            "default": false,
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "guild_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Name"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/TribeDiscordMapping"
+            },
+            "title": "Mappings",
+            "type": "array"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/TribeDiscordRole"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "title": "TribeDiscordSettings",
+        "type": "object"
+      },
       "TribeEventAnnouncementPreview": {
         "description": "The announcement exactly as the bot would post it (the event link\nis a placeholder until Discord creates the event).",
         "properties": {
@@ -42970,6 +43226,11 @@
           "can_appoint_chief": {
             "default": false,
             "title": "Can Appoint Chief",
+            "type": "boolean"
+          },
+          "can_manage_discord": {
+            "default": false,
+            "title": "Can Manage Discord",
             "type": "boolean"
           },
           "can_set_chief": {
@@ -54396,6 +54657,152 @@
           }
         ],
         "summary": "Check a Discord invite before saving it (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles": {
+      "put": {
+        "operationId": "eveonline_endpoints_corporations_put_corporation_discord_roles_put_corporation_discord_roles",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordRoleMappingUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Map existing Discord roles for this corporation (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles/refresh": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Re-read this corporation's Discord roles (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"
@@ -77712,6 +78119,264 @@
         "tags": [
           "Tribes",
           "Tribes - Chiefs"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/discord": {
+      "delete": {
+        "operationId": "tribes_endpoints_tribe_discord_delete_tribe_discord_delete_tribe_discord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Disconnect the tribe's Discord server (chiefs)",
+        "tags": [
+          "Tribes",
+          "Tribes"
+        ]
+      },
+      "get": {
+        "operationId": "tribes_endpoints_tribe_discord_get_tribe_discord_get_tribe_discord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The tribe's Discord server (chiefs)",
+        "tags": [
+          "Tribes",
+          "Tribes"
+        ]
+      },
+      "put": {
+        "operationId": "tribes_endpoints_tribe_discord_put_tribe_discord_roles_put_tribe_discord_roles",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeDiscordMappingUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Map existing Discord roles for this tribe (chiefs)",
+        "tags": [
+          "Tribes",
+          "Tribes"
+        ]
+      }
+    },
+    "/api/tribes/{tribe_id}/discord/refresh": {
+      "post": {
+        "operationId": "tribes_endpoints_tribe_discord_post_tribe_discord_refresh_post_tribe_discord_refresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Re-read this tribe's Discord roles (chiefs)",
+        "tags": [
+          "Tribes",
+          "Tribes"
         ]
       }
     },

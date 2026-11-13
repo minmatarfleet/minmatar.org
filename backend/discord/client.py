@@ -493,6 +493,10 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/roles/{role_id}",
         )
 
+    def get_current_user(self):
+        """The bot user this token belongs to."""
+        return self.get(f"{BASE_URL}/users/@me")
+
     def get_user(self, user_id):
         """Get a user from a discord server"""
         return self.get(

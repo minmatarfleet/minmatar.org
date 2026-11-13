@@ -25,6 +25,15 @@ class Tribe(models.Model):
         blank=True,
         help_text="Tribe-level Discord channel for announcements.",
     )
+    # The tribe's own Discord, where the chief maps existing roles.
+    # Distinct from discord_channel_id, which is a channel on the alliance Discord.
+    discord_guild = models.ForeignKey(
+        "discord.DiscordGuild",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tribes",
+    )
     chief = models.ForeignKey(
         "auth.User",
         null=True,

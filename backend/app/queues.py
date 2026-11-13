@@ -124,6 +124,9 @@ FAST_TASKS = frozenset(
         # A CEO just added the bot and Settings waits for the first invite
         # (a few Discord calls for one corporation, no fan-out)
         "eveonline.tasks.corporations.refresh_corporation_discord_bot",
+        # A tribe chief just added the bot and the form waits for the
+        # role list (a few Discord calls for one server, no fan-out).
+        "discord.tasks.snapshot_guild_roles_task",
         # Fleet pings that are useless late
         "fleets.tasks.update_fleet_schedule",
         "fleets.tasks.nudge_missing_signups",

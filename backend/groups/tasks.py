@@ -317,7 +317,8 @@ def _user_qualifies_for_corporation_group(user, corporation_group):
         return corp.recruiters.filter(user=user).exists()
     if group_type == EveCorporationGroup.GROUP_TYPE_DIRECTOR:
         return corp.directors.filter(user=user).exists()
-    # Gunner group = stewards / station managers
+    # Gunner group = stewards / structure managers. The auth-group
+    # suffix stays " Gunner" so the alliance Discord role is not renamed.
     if group_type == EveCorporationGroup.GROUP_TYPE_GUNNER:
         return corp.stewards.filter(user=user).exists()
 

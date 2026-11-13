@@ -31,17 +31,17 @@ def admin_picker_guilds():
     """Active guilds whose channels the admin may pick for pings, voice
     tracking and buyback threads.
 
-    A corporation's own server (the bot only makes its invites) stays out:
-    listing it costs a Discord call on every form load, and an alliance
-    ping must never be pointed at it by mistake. It comes back when it is
-    also the alliance's or a tribe's server.
+    A corporation or tribe server stays out: listing it costs a Discord
+    call on every form load, and an alliance ping must never be pointed
+    at it by mistake. It comes back when it is also the alliance Discord
+    or a Fishermen server.
     """
     return (
         DiscordGuild.objects.filter(is_active=True)
         .filter(
             Q(is_primary=True)
             | Q(tribe_group_bindings__isnull=False)
-            | Q(corporations__isnull=True)
+            | (Q(corporations__isnull=True) & Q(tribes__isnull=True))
         )
         .distinct()
         .order_by("name")

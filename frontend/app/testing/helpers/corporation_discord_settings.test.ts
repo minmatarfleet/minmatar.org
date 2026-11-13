@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ui } from '@i18n/ui'
 import {
     DISCORD_BOT_POLL_LIMIT,
     discord_bot_connect_flash,
@@ -7,6 +8,8 @@ import {
     discord_bot_status_key,
     discord_error_key,
     discord_invite_label,
+    discord_roles_next_poll,
+    discord_roles_refresh_pending,
     discord_section_summary,
     discord_server_initials,
     discord_status_key,
@@ -84,6 +87,8 @@ describe('discord bot', () => {
             .toEqual({ kind: 'success', key: 'corporations.discord.bot_connected' })
         expect(discord_bot_connect_flash(new URLSearchParams('discord_bot_error=alliance_server')))
             .toEqual({ kind: 'error', key: 'corporations.discord.bot_error_alliance_server' })
+        expect(discord_bot_connect_flash(new URLSearchParams('discord_bot_error=guild_taken')))
+            .toEqual({ kind: 'error', key: 'corporations.discord.bot_error_guild_taken' })
         expect(discord_bot_connect_flash(new URLSearchParams('discord_bot_error=exchange_failed')))
             .toEqual({ kind: 'error', key: 'corporations.discord.bot_error' })
         expect(discord_bot_connect_flash(new URLSearchParams(''))).toBeNull()
@@ -95,8 +100,31 @@ describe('discord bot', () => {
         expect(discord_bot_next_poll('ok', 3)).toBeNull()
     })
 
+    it('keeps polling a role refresh until the catalog is newer', () => {
+        const since = '2026-11-12T13:42:09.123456Z'
+        expect(discord_roles_refresh_pending(since, since)).toBe(true)
+        expect(discord_roles_refresh_pending('2026-11-12T13:42:09.123Z', since)).toBe(true)
+        expect(discord_roles_refresh_pending('2026-11-12T13:42:10Z', since)).toBe(false)
+        expect(discord_roles_refresh_pending(null, since)).toBe(true)
+        expect(discord_roles_refresh_pending('not-a-time', since)).toBe(true)
+        expect(discord_roles_refresh_pending(since, null)).toBe(false)
+        expect(discord_roles_refresh_pending(since, 'not-a-time')).toBe(false)
+        expect(discord_roles_next_poll(true, 0)).toBe(1)
+        expect(discord_roles_next_poll(true, DISCORD_BOT_POLL_LIMIT)).toBeNull()
+        expect(discord_roles_next_poll(false, 1)).toBeNull()
+    })
+
     it('knows the bot actions', () => {
         expect(parse_discord_action('disconnect_bot')).toBe('disconnect_bot')
         expect(parse_discord_action('retry_bot')).toBe('retry_bot')
+        expect(parse_discord_action('save_roles')).toBe('save_roles')
+        expect(parse_discord_action('refresh_roles')).toBe('refresh_roles')
+        expect(ui.en['corporations.discord.roles_refresh']).toBe('Refresh roles')
+        expect(ui.en['corporations.discord.roles_refreshed']).toBe('Roles updated.')
+        expect(ui.en['tribes.discord.roles_refresh']).toBe('Refresh roles')
+        expect(ui.en['tribes.discord.roles_refreshed']).toBe('Roles updated.')
+        expect(ui.en['corporations.detail.role_steward']).toBe('Structure manager')
+        expect(ui.en['corporations.detail.stewards']).toBe('Structure managers')
+        expect(ui.en['corporations.discord.role_structure_manager']).toContain('Structure manager')
     })
 })

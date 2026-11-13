@@ -10,6 +10,7 @@ from tribes.endpoints.groups import router as groups_router
 from tribes.endpoints.invitations import router as invitations_router
 from tribes.endpoints.memberships import router as memberships_router
 from tribes.endpoints.publishing import router as publishing_router
+from tribes.endpoints.tribe_discord import router as tribe_discord_router
 from tribes.endpoints.tribes import router as tribes_router
 
 router = Router(tags=["Tribes"])
@@ -22,6 +23,8 @@ router.add_router("", events_router)
 router.add_router("", invitations_router)
 router.add_router("", chief_volunteers_router)
 router.add_router("", chief_assign_router)
+# "/discord/bot/callback" before "/{tribe_id}".
+router.add_router("", tribe_discord_router)
 router.add_router("", tribes_router)
 router.add_router("", groups_router)
 router.add_router("", memberships_router)

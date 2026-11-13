@@ -22,6 +22,10 @@ Anyone who adds or removes users from `auth.Group` (tribe approval, affiliation 
 
 Do **not** catch and ignore `DiscordRoleAssignmentError` unless you immediately retry or roll back the source write that required the group change.
 
+Corporation and tribe role mappings (`DiscordRoleMapping`) are not an
+`auth.Group` source. They add and remove roles on that corporation or tribe
+server only, and they never call `user.groups.add` or `.remove`.
+
 ### Every membership group needs a DiscordRole
 
 There are no intentional Django-only user membership groups. Creating an `auth.Group` runs `group_post_save` → `_ensure_discord_role_for_group`. On add, missing `DiscordRole` rows are ensured again; failure aborts the add.

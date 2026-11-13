@@ -114,6 +114,16 @@ class DiscordGuild(models.Model):
         help_text="Bot was present in this guild on the last sync.",
     )
     last_seen_at = models.DateTimeField(null=True, blank=True)
+    # From the last role snapshot. False until the bot has Manage Roles
+    # (or Administrator) on this server. The reconciler skips it until then.
+    # db_default keeps inserts from code that predates these columns working.
+    can_manage_roles = models.BooleanField(default=False, db_default=False)
+    # When the snapshot last finished, including a permission failure.
+    # Empty while a connect is still waiting on Discord.
+    roles_checked_at = models.DateTimeField(null=True, blank=True)
+    # id, name, position, managed, assignable. Role ids are strings:
+    # snowflakes do not fit in a JavaScript number.
+    roles = models.JSONField(default=list, blank=True, db_default=[])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -121,7 +131,59 @@ class DiscordGuild(models.Model):
         ordering = ["name"]
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
+
+
+class DiscordRoleMapping(models.Model):
+    """One existing Discord role standing in for a membership state.
+
+    Corporation and tribe servers share this table. The alliance Discord
+    and a Fishermen server are never mapped here. The reconciler only adds
+    and removes these roles for linked accounts.
+    """
+
+    STATE_MEMBER = "member"
+    STATE_DIRECTOR = "director"
+    STATE_RECRUITER = "recruiter"
+    STATE_STRUCTURE_MANAGER = "structure_manager"
+    STATE_ALLIANCE_MEMBER = "alliance_member"
+    STATE_CHOICES = [
+        (STATE_MEMBER, "Member"),
+        (STATE_DIRECTOR, "Director"),
+        (STATE_RECRUITER, "Recruiter"),
+        (STATE_STRUCTURE_MANAGER, "Structure manager"),
+        (STATE_ALLIANCE_MEMBER, "Alliance member"),
+    ]
+
+    PROBLEM_MISSING = "missing"
+    PROBLEM_ABOVE_BOT = "above_bot"
+
+    guild = models.ForeignKey(
+        DiscordGuild,
+        on_delete=models.CASCADE,
+        related_name="role_mappings",
+    )
+    state = models.CharField(max_length=32, choices=STATE_CHOICES)
+    role_id = models.BigIntegerField()
+    # missing: the role is gone. above_bot: the bot cannot assign it.
+    problem = models.CharField(max_length=16, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["guild", "state"],
+                name="discord_role_mapping_guild_state",
+            ),
+            models.UniqueConstraint(
+                fields=["guild", "role_id"],
+                name="discord_role_mapping_guild_role",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.guild_id} {self.state} -> {self.role_id}"
 
 
 class DiscordChannel(models.Model):

@@ -1,8 +1,9 @@
 """GET /corporations/discord/bot/callback - Discord sends the person back.
 
-Discord has added the bot to the server they picked. The code exchange says
-which server that was; the guild_id on this URL is only used to turn away
-the alliance and tribe servers before the exchange.
+The code exchange adds the bot and says which server that was. A missing
+guild id, the alliance Discord, a Fishermen server, or a server another
+corporation or tribe already uses is refused before the exchange, because
+exchanging the code can reset the bot's managed role.
 """
 
 import logging
@@ -15,7 +16,7 @@ from requests import RequestException
 from app.errors import create_error_id
 from app.links import site_url
 from discord.client import DiscordClient, DiscordError
-from discord.models import DiscordGuild
+from discord.guild_roles import install_block_reason
 from eveonline.endpoints.corporations.get_corporation_discord_bot_connect import (
     SESSION_KEY,
 )
@@ -57,23 +58,6 @@ def _with_params(url: str, params: str) -> str:
     return f"{url}{sep}{params}#settings"
 
 
-def _shared_server(guild_id: str | None) -> bool:
-    """The alliance Discord or a tribe's server. Linking one would point a
-    corporation page at it, and adding the bot again could change the
-    bot's role there."""
-    try:
-        guild_id = int(guild_id or 0)
-    except ValueError:
-        return False
-    if not guild_id:
-        return False
-    if guild_id == int(settings.DISCORD_GUILD_ID):
-        return True
-    return DiscordGuild.objects.filter(
-        guild_id=guild_id, tribe_group_bindings__isnull=False
-    ).exists()
-
-
 def get_corporation_discord_bot_callback(
     request,
     code: Optional[str] = None,
@@ -106,13 +90,17 @@ def get_corporation_discord_bot_callback(
     user = User.objects.filter(id=pending.get("user_id")).first()
     if user is None or not can_edit_corporation_settings(user, corporation):
         return fail("not_allowed")
-    if _shared_server(guild_id):
+    blocked = install_block_reason(
+        guild_id, corporation_id=corporation.corporation_id
+    )
+    if blocked:
         logger.warning(
-            "Corp %s tried to link shared Discord guild %s",
+            "Corp %s tried to link Discord guild %s (%s)",
             corporation.corporation_id,
             guild_id,
+            blocked,
         )
-        return fail("alliance_server")
+        return fail(blocked)
 
     try:
         guild = DiscordClient().exchange_bot_code(
@@ -121,18 +109,17 @@ def get_corporation_discord_bot_callback(
     except (DiscordError, RequestException) as e:
         logger.warning("Corp Discord bot code exchange failed: %s", e)
         return fail("exchange_failed")
-    if _shared_server(guild.get("id")):
-        logger.error(
-            "Corp %s added the bot to shared Discord guild %s; check the "
-            "bot's role there",
-            corporation.corporation_id,
-            guild.get("id"),
-        )
-        return fail("alliance_server")
 
     try:
         previous = link_guild(corporation, guild, user)
     except DiscordBotError as e:
+        if e.code == "alliance_server":
+            logger.error(
+                "Corp %s added the bot to shared Discord guild %s; check "
+                "the bot's role there",
+                corporation.corporation_id,
+                guild.get("id"),
+            )
         return fail(e.code)
     refresh_corporation_discord_bot.delay(corporation.corporation_id)
     if previous is not None:

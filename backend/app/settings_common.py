@@ -238,6 +238,12 @@ DISCORD_BOT_INVITE_URL = os.environ.get("DISCORD_BOT_INVITE_URL", "")
 DISCORD_CORP_BOT_REDIRECT_URL = os.environ.get(
     "DISCORD_CORP_BOT_REDIRECT_URL", ""
 )
+# Where Discord sends a tribe chief back after adding the bot to the
+# tribe's server: <api>/api/tribes/discord/bot/callback, also listed under
+# OAuth2 > Redirects. Empty hides "Add our bot" on the tribe page.
+DISCORD_TRIBE_BOT_REDIRECT_URL = os.environ.get(
+    "DISCORD_TRIBE_BOT_REDIRECT_URL", ""
+)
 # SDE sqlite for campaign area names; defaults to the newest
 # frontend/app/src/data/sde-*.sqlite.
 EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")

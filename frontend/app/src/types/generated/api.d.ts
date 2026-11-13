@@ -2475,6 +2475,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Map existing Discord roles for this corporation (CEO and directors) */
+        put: operations["eveonline_endpoints_corporations_put_corporation_discord_roles_put_corporation_discord_roles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-read this corporation's Discord roles (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/info": {
         parameters: {
             query?: never;
@@ -8941,6 +8975,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/{tribe_id}/discord": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tribe's Discord server (chiefs) */
+        get: operations["tribes_endpoints_tribe_discord_get_tribe_discord_get_tribe_discord"];
+        /** Map existing Discord roles for this tribe (chiefs) */
+        put: operations["tribes_endpoints_tribe_discord_put_tribe_discord_roles_put_tribe_discord_roles"];
+        post?: never;
+        /** Disconnect the tribe's Discord server (chiefs) */
+        delete: operations["tribes_endpoints_tribe_discord_delete_tribe_discord_delete_tribe_discord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/{tribe_id}/discord/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-read this tribe's Discord roles (chiefs) */
+        post: operations["tribes_endpoints_tribe_discord_post_tribe_discord_refresh_post_tribe_discord_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/{tribe_id}/groups": {
         parameters: {
             query?: never;
@@ -12453,6 +12523,16 @@ export interface components {
             invite_url?: string | null;
             /** Page Source */
             page_source?: string | null;
+            /**
+             * @default {
+             *       "can_manage_roles": false,
+             *       "checked": false,
+             *       "checked_at": null,
+             *       "mappings": [],
+             *       "roles": []
+             *     }
+             */
+            role_sync?: components["schemas"]["DiscordRoleSync"];
             /** Status */
             status?: string | null;
         };
@@ -13942,6 +14022,52 @@ export interface components {
             fleet_id?: number | null;
             /** Status */
             status: string;
+        };
+        /** DiscordRoleChoice */
+        DiscordRoleChoice: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** DiscordRoleMappingRow */
+        DiscordRoleMappingRow: {
+            /** Problem */
+            problem?: string | null;
+            /** Role Id */
+            role_id?: string | null;
+            /** State */
+            state: string;
+        };
+        /** DiscordRoleMappingUpdate */
+        DiscordRoleMappingUpdate: {
+            /** Mappings */
+            mappings: components["schemas"]["DiscordRoleMappingRow"][];
+        };
+        /** DiscordRoleSync */
+        DiscordRoleSync: {
+            /**
+             * Can Manage Roles
+             * @default false
+             */
+            can_manage_roles?: boolean;
+            /**
+             * Checked
+             * @default false
+             */
+            checked?: boolean;
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Mappings
+             * @default []
+             */
+            mappings?: components["schemas"]["DiscordRoleMappingRow"][];
+            /**
+             * Roles
+             * @default []
+             */
+            roles?: components["schemas"]["DiscordRoleChoice"][];
         };
         /** DiscordSitOutRequest */
         DiscordSitOutRequest: {
@@ -26283,6 +26409,58 @@ export interface components {
             /** Tribe Id */
             tribe_id: number;
         };
+        /** TribeDiscordMapping */
+        TribeDiscordMapping: {
+            /** Problem */
+            problem?: string | null;
+            /** Role Id */
+            role_id?: string | null;
+            /** State */
+            state: string;
+        };
+        /** TribeDiscordMappingUpdate */
+        TribeDiscordMappingUpdate: {
+            /** Mappings */
+            mappings?: components["schemas"]["TribeDiscordMapping"][];
+        };
+        /** TribeDiscordRole */
+        TribeDiscordRole: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** TribeDiscordSettings */
+        TribeDiscordSettings: {
+            /**
+             * Available
+             * @default false
+             */
+            available?: boolean;
+            /**
+             * Can Manage Roles
+             * @default false
+             */
+            can_manage_roles?: boolean;
+            /**
+             * Checked
+             * @default false
+             */
+            checked?: boolean;
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Connected
+             * @default false
+             */
+            connected?: boolean;
+            /** Guild Name */
+            guild_name?: string | null;
+            /** Mappings */
+            mappings?: components["schemas"]["TribeDiscordMapping"][];
+            /** Roles */
+            roles?: components["schemas"]["TribeDiscordRole"][];
+        };
         /**
          * TribeEventAnnouncementPreview
          * @description The announcement exactly as the bot would post it (the event link
@@ -26948,6 +27126,11 @@ export interface components {
              * @default false
              */
             can_appoint_chief?: boolean;
+            /**
+             * Can Manage Discord
+             * @default false
+             */
+            can_manage_discord?: boolean;
             /**
              * Can Set Chief
              * @default false
@@ -33798,6 +33981,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationDiscordInvitePreview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_put_corporation_discord_roles_put_corporation_discord_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordRoleMappingUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
                 };
             };
             /** @description Bad Request */
@@ -49273,6 +49558,188 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    tribes_endpoints_tribe_discord_get_tribe_discord_get_tribe_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_tribe_discord_put_tribe_discord_roles_put_tribe_discord_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeDiscordMappingUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_tribe_discord_delete_tribe_discord_delete_tribe_discord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeDiscordSettings"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_tribe_discord_post_tribe_discord_refresh_post_tribe_discord_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

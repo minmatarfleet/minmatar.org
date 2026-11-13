@@ -14,7 +14,7 @@ from discord.helpers import (
     remove_all_roles_from_guild_member,
 )
 from .guilds import sync_discord_guilds
-from .models import DiscordRole, DiscordUser
+from .models import DiscordGuild, DiscordRole, DiscordUser
 
 # Registers the outbox tasks with the worker (autodiscovery only imports
 # <app>.tasks).
@@ -25,6 +25,37 @@ from .outbox import (  # noqa: F401 pylint: disable=unused-import
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
+
+
+@app.task()
+def reconcile_guild_role_mappings(guild_pk: int | None = None):
+    """Add and remove mapped roles on corporation and tribe servers.
+
+    The beat calls this with no argument. Saving a mapping queues the same
+    task for one guild. It never uses the module-level alliance client.
+    guild_roles queues this task, so the import stays inside the function.
+    """
+    from discord.guild_roles import (  # pylint: disable=import-outside-toplevel
+        reconcile_guild_role_mappings as reconcile,
+    )
+
+    reconcile(guild_pk)
+
+
+@app.task()
+def snapshot_guild_roles_task(guild_pk: int):
+    """Read one server's roles after a connect or a manual refresh.
+
+    guild_roles queues this task, so the import stays inside the function.
+    """
+    from discord.guild_roles import (  # pylint: disable=import-outside-toplevel
+        snapshot_guild_roles,
+    )
+
+    guild = DiscordGuild.objects.filter(pk=guild_pk).first()
+    if guild is None:
+        return
+    snapshot_guild_roles(guild)
 
 
 @app.task()

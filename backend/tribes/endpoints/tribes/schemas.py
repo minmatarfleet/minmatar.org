@@ -20,6 +20,8 @@ class TribeSchema(BaseModel):
     can_appoint_chief: bool = False
     # The viewer is a superuser and can swap the chief.
     can_set_chief: bool = False
+    # The viewer is the chief (or interim executor) and can map Discord roles.
+    can_manage_discord: bool = False
     has_volunteered: bool = False
     is_active: bool
     group_count: int = 0
