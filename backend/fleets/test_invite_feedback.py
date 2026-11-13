@@ -210,6 +210,7 @@ class InviteFeedbackTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         body = response.json()
+        self.assertEqual(body["intro"], "")
         self.assertEqual(
             [row["title"] for row in body["invites"]],
             ["Sunday roam", "Private fleet", "Armor brawl"],
@@ -320,6 +321,11 @@ class InviteFeedbackTests(TestCase):
         )
         self.assertEqual(saved.status_code, 200)
         self.assertEqual(saved.json()["state"], "thanks")
+        self.assertEqual(
+            saved.json()["detail"],
+            "You can change your answers until the survey closes.",
+        )
+        self.assertNotIn("your name", saved.json()["detail"].lower())
         self.assertIn(
             "Sitting out is only not this fleet", saved.json()["body"]
         )

@@ -70,7 +70,7 @@ function picked(name: keyof InviteFeedbackAnswers, key: string) {
                 }
             }`}
         >
-            <p class="[ intro ]">{form.intro}</p>
+            {form.intro && <p class="[ intro ]">{form.intro}</p>}
             {errors.length > 0 &&
                 <div class="[ errors ]" role="alert">
                     {errors.map((error) => <p>{error}</p>)}

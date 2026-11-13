@@ -18,7 +18,7 @@ function form(invites: InviteFeedbackForm["invites"]): InviteFeedbackForm {
     heading: "",
     body: "",
     detail: "",
-    intro: "Counts go to fleet leadership. Your name is not on the results.",
+    intro: "",
     list_heading: "Your invites, last few weeks.",
     invites,
     pending_invites: [],
@@ -60,6 +60,8 @@ test("an empty invite list does not render the heading", async () => {
     props: { ...props, form: form([]) },
   });
   expect(html).not.toContain("Your invites, last few weeks.");
+  expect(html).not.toContain("Counts go to fleet leadership");
+  expect(html).not.toContain('class="[ intro ]"');
   expect(html).toContain('class="[ form ]"');
   expect(html).toContain("One thing to change");
 });
