@@ -29,6 +29,7 @@ class MentorClassRefSchema(Schema):
     minutes: int
     where: str
     status: str
+    cover_image_url: str = ""
 
 
 class MentorCardSchema(Schema):
@@ -40,6 +41,7 @@ class MentorCardSchema(Schema):
     answer_text: str
     queue: int
     classes_taught: int
+    pilots_mentored: int = 0
     full: bool
     classes: list[MentorClassRefSchema]
     is_you: bool = False
