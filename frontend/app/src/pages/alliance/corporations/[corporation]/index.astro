@@ -39,7 +39,7 @@ const resolved = is_id ? null : await get_corporation_id_by_slug(segment.toLower
 const corporation_id = is_id ? Number(segment) : resolved?.corporation_id ?? Number.NaN
 const corporation = Number.isNaN(corporation_id)
     ? null
-    : await get_corporation_info(corporation_id) as CorporationInfo | null
+    : await get_corporation_info(corporation_id, auth_token) as CorporationInfo | null
 
 if (!corporation)
     return Astro.redirect(translatePath('/404'))
