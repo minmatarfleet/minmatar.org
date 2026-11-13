@@ -79,7 +79,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                         {stats.map(stat => <StatCard label={stat.label} value={stat.value} />)}
                     </Grid>
 
-                    <MentorsSection title={t('mentors.asking')} hint={t('mentors.asking_hint')}>
+                    <MentorsSection title={t('mentors.asking')}>
                         {mentoring.asks.length === 0 ?
                             <EmptyState title={t('mentors.asking_empty')} />
                             :

@@ -43,6 +43,9 @@ const profile = settings?.profile ?? null
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import Tag from '@components/blocks/Tag.astro'
 import MentorChips from '@components/blocks/mentors/MentorChips.astro'
 import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
@@ -76,18 +79,14 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                             <MentorChips name="weekday_brackets" kind="brackets" selected={profile.weekday_brackets} legend={t('mentors.weekdays')} />
                             <MentorChips name="weekend_brackets" kind="brackets" selected={profile.weekend_brackets} legend={t('mentors.weekends')} />
                             <MentorChips name="days" kind="days" selected={profile.days} legend={t('mentors.request.days')} />
-                            <div class="[ mentors-form__row ]">
-                                <label class="[ mentors-form__field ]">
-                                    <span>{t('mentors.settings.per_week')}</span>
-                                    <input type="number" name="classes_per_week" min="1" max="10" value={profile.classes_per_week} required />
-                                </label>
-                                <label class="[ mentors-form__toggle ]">
-                                    <input type="checkbox" name="taking_requests" checked={profile.taking_requests} />
-                                    <span>
-                                        <strong>{t('mentors.settings.taking')}</strong>
-                                        <small>{t('mentors.settings.taking_hint')}</small>
-                                    </span>
-                                </label>
+                            <div class="[ manage-fields ]">
+                                <ManageField label={t('mentors.settings.per_week')} for="mentor-classes-per-week">
+                                    <Input id="mentor-classes-per-week" type="number" name="classes_per_week" min="1" max="10" value={profile.classes_per_week} required size="sm" width="8em" />
+                                </ManageField>
+                            </div>
+                            <div class="[ manage-field ]">
+                                <ManageSwitch name="taking_requests" label={t('mentors.settings.taking')} checked={profile.taking_requests} />
+                                <span class="[ manage-field__hint ]">{t('mentors.settings.taking_hint')}</span>
                             </div>
                             <div>
                                 <Button type="submit" size="sm">{t('mentors.settings.save')}</Button>
@@ -201,46 +200,6 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
-    }
-
-    .mentors-form__row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        gap: var(--space-m);
-    }
-
-    .mentors-form__field {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-        color: var(--text-muted);
-        font-size: var(--step--1);
-
-        input {
-            width: 6em;
-        }
-    }
-
-    .mentors-form__toggle {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        cursor: pointer;
-
-        input {
-            accent-color: var(--fleet-yellow);
-        }
-
-        span {
-            display: flex;
-            flex-direction: column;
-        }
-
-        small {
-            color: var(--text-muted);
-            font-size: var(--step--1);
-        }
     }
 
     .mentors-classes {

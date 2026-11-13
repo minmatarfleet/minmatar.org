@@ -8,7 +8,7 @@ import { MENTOR_REQUEST_MODAL, MENTOR_SETTINGS_PATH, mentor_class_cover, mentor_
 
 /**
  * One mentor: who they are, their weekday and weekend timezones, the
- * evenings they teach, how fast they answer and how busy they are, their
+ * evenings they teach, how fast they answer, their
  * classes as cover tiles, and a button to ask for a class. `class_id`
  * preselects a class in the request. The viewer's own card says "You" and
  * links to My settings instead.
@@ -39,11 +39,6 @@ function tile(mentor_class: MentorClassRef) {
         meta: `${t('mentors.minutes_label').replace('{count}', mentor_class.minutes.toString())} · ${where.charAt(0).toUpperCase()}${where.slice(1)}`,
     }
 }
-
-const queue_text =
-    card.queue === 0 ? t('mentors.queue_none') :
-    card.queue === 1 ? t('mentors.queue_one') :
-    t('mentors.queue_many').replace('{count}', card.queue.toString())
 
 const request_url = translatePath(mentors_url(MENTOR_REQUEST_MODAL, { mentor_id: card.mentor_id, class_id }))
 const teaching_days = new Set(card.availability.days)
@@ -112,7 +107,11 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         </div>
         <div>
             <dt>{t('mentors.answers')}</dt>
-            <dd>{card.answer_text} · {queue_text}</dd>
+            <dd>{card.answer_text}</dd>
+        </div>
+        <div>
+            <dt>{t('mentors.history')}</dt>
+            <dd>{t('mentors.pilots_mentored').replace('{count}', card.pilots_mentored.toString())}</dd>
         </div>
     </dl>
 
@@ -146,13 +145,12 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
     }
 
     <footer class="[ mentor-card__foot ]">
-        <span class="[ mentor-card__muted ]">{t('mentors.pilots_mentored').replace('{count}', card.pilots_mentored.toString())}</span>
         {card.is_you ?
-            <Button size="sm" color="transparent" href={translatePath(MENTOR_SETTINGS_PATH)}>{t('mentors.nav.settings')}</Button>
+            <Button class="[ mentor-card__action ]" size="sm" color="transparent" href={translatePath(MENTOR_SETTINGS_PATH)}>{t('mentors.nav.settings')}</Button>
             : card.full ?
             <span class="[ mentor-card__full ]">{t('mentors.full')}</span>
             : can_request && card.classes.length > 0 &&
-            <Button class="[ mentor-card__request ]" type="button" size="sm" x-data x-on:click={modal_click(request_url)}>
+            <Button class="[ mentor-card__action ]" type="button" size="sm" x-data x-on:click={modal_click(request_url)}>
                 {t('mentors.request')}
             </Button>
         }
@@ -321,22 +319,13 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         color: var(--text-muted);
     }
 
-    .mentor-card__muted {
-        color: var(--text-muted);
-        font-size: var(--step--1);
-    }
-
     .mentor-card__foot {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--space-2xs);
         margin-block-start: auto;
 
-        :global(.mentor-card__request) {
+        :global(.mentor-card__action) {
+            flex: 1;
             justify-content: center;
-            min-inline-size: calc(var(--space-3xl) + var(--space-s));
         }
     }
 

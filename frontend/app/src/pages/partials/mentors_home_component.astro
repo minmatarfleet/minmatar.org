@@ -126,14 +126,14 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                     <>
                         {fit.length > 0 &&
                             <MentorsSection title={t('mentors.fit_heading')}>
-                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="300px">
+                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="max(300px, calc((100% - 2 * var(--space-s)) / 3))">
                                     {fit.map(card => <MentorCard card={card} />)}
                                 </Grid>
                             </MentorsSection>
                         }
                         {other.length > 0 &&
                             <MentorsSection title={t('mentors.other_heading')} hint={t('mentors.other_lead')}>
-                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="300px">
+                                <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="max(300px, calc((100% - 2 * var(--space-s)) / 3))">
                                     {other.map(card => <MentorCard card={card} />)}
                                 </Grid>
                             </MentorsSection>

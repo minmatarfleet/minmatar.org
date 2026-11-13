@@ -52,6 +52,9 @@ const steps = [
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 import MentorChips from '@components/blocks/mentors/MentorChips.astro'
 import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astro'
 ---
@@ -85,16 +88,15 @@ import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astr
             </div>
         </header>
 
-        <fieldset class="[ mentor-modal__classes ]">
-            <legend>{t('mentors.request.what')}</legend>
+        <fieldset class="[ mentor-modal__classes manage-field ]">
+            <legend class="[ manage-field__label ]">{t('mentors.request.what')}</legend>
             {card.classes.map(mentor_class =>
-                <label class="[ mentor-modal__choice ]">
-                    <input type="radio" name="class_id" value={mentor_class.id} checked={mentor_class.id === picked.id} required />
-                    <span>
+                <OptionCard name="class_id" value={mentor_class.id.toString()} checked={mentor_class.id === picked.id} input_attributes={{ required: true }}>
+                    <span class="[ mentor-modal__choice ]">
                         <strong>{mentor_class.title}</strong>
                         <small>{t('mentors.minutes_label').replace('{count}', mentor_class.minutes.toString())} · {t(t_key('mentors.where.', mentor_class.where))}</small>
                     </span>
-                </label>
+                </OptionCard>
             )}
         </fieldset>
 
@@ -118,10 +120,9 @@ import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astr
             legend={t('mentors.request.days')}
         />
 
-        <label class="[ mentor-modal__field ]">
-            <span>{t('mentors.request.note').replace('{name}', name)}</span>
-            <textarea name="note" rows="3" maxlength="1000"></textarea>
-        </label>
+        <ManageField label={t('mentors.request.note').replace('{name}', name)} for="mentor-request-note">
+            <Textarea id="mentor-request-note" name="note" rows="3" maxlength="1000"></Textarea>
+        </ManageField>
 
         <div class="[ mentor-modal__next ]">
             <strong>{t('mentors.request.next')}</strong>

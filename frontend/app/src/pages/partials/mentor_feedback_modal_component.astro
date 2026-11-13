@@ -54,6 +54,9 @@ const post_url = translatePath(mentors_url(as_mentor ? MENTORS_MENTEES_PARTIAL :
 
 import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astro'
 ---
 
@@ -87,17 +90,15 @@ import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astr
 
         <fieldset>
             {answers.map((answer, index) =>
-                <label class="[ mentor-modal__choice ]">
-                    <input type="radio" name="answer" value={answer.value} checked={index === 0} required />
-                    <span><strong>{answer.label}</strong></span>
-                </label>
+                <OptionCard name="answer" value={answer.value} checked={index === 0} input_attributes={{ required: true }}>
+                    <strong>{answer.label}</strong>
+                </OptionCard>
             )}
         </fieldset>
 
-        <label class="[ mentor-modal__field ]">
-            <span>{t('mentors.feedback.note')}</span>
-            <textarea name="note" rows="3" maxlength="2000"></textarea>
-        </label>
+        <ManageField label={t('mentors.feedback.note')} for="mentor-feedback-note">
+            <Textarea id="mentor-feedback-note" name="note" rows="3" maxlength="2000"></Textarea>
+        </ManageField>
 
         <div class="[ mentor-modal__actions ]">
             <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('cancel')}</Button>
