@@ -82,6 +82,10 @@ class InviteFeedbackTests(TestCase):
             id=4242, discord_tag="stratfc", user=self.fc
         )
         self.client = Client()
+        self.bot_user = make_user("minmatar-bot")
+        self.bot_user.user_permissions.add(
+            Permission.objects.get(codename="service_account")
+        )
 
     def fleet(self, *, days_ago=2, status="complete", **fields):
         values = {
@@ -456,7 +460,12 @@ class InviteFeedbackTests(TestCase):
         self.assertIn("already reminded", second)
 
     def test_dm_asks_for_two_minutes(self, unused_delay, unused_async):
-        payload = render_fleet_invite_feedback(_dm_context(reminder=False))
+        survey = FleetInviteFeedbackRound.objects.create(
+            key="round-1", since=timezone.now() - timedelta(days=28)
+        )
+        payload = render_fleet_invite_feedback(
+            _dm_context(survey, reminder=False)
+        )
         self.assertEqual(payload["title"], "We need your feedback")
         embed = discord_embed_from_payload({**payload, "feature": "fleets"})
         self.assertEqual(embed["title"], "We need your feedback")
@@ -468,8 +477,144 @@ class InviteFeedbackTests(TestCase):
                 "process?"
             ),
         )
-        button = payload["discord_components"][0]["components"][0]
-        self.assertEqual(button["label"], "Provide feedback")
+        answer, website = payload["discord_components"][0]["components"]
+        self.assertEqual(answer["label"], "Answer")
+        self.assertEqual(
+            answer["custom_id"], f"invite_feedback:answer:{survey.id}"
+        )
+        self.assertEqual(website["label"], "Answer on the website")
+        self.assertEqual(website["style"], 5)
+
+    def test_dm_lists_the_pilots_own_invites(self, unused_delay, unused_async):
+        bear = make_user("BearThatCares")
+        other = make_user("other")
+        self.invite(self.fleet(days_ago=3, objective="Amamake defense"), bear)
+        self.invite(
+            self.fleet(days_ago=5, objective=SECRET, invite_only=True),
+            bear,
+            answer=EveFleetInvite.ANSWER_OUT,
+        )
+        self.invite(self.fleet(objective="Not yours"), other)
+        call_command(
+            "send_fleet_invite_feedback",
+            "--user",
+            "bearthatcares",
+            stdout=StringIO(),
+        )
+        delivery = NotificationDelivery.objects.get(
+            user=bear, channel=NotificationChannel.DISCORD
+        )
+        message = delivery.payload["discord_message"]
+        self.assertIn("**Your invites, last few weeks.**", message)
+        self.assertIn("Amamake defense · No answer", message)
+        self.assertIn("Private fleet · Sitting out", message)
+        self.assertNotIn(SECRET, message)
+        self.assertNotIn("Not yours", message)
+        self.assertLess(
+            message.index("Amamake defense"), message.index("Private fleet")
+        )
+
+    def test_dm_caps_a_long_invite_list(self, unused_delay, unused_async):
+        pilot = make_user("pilot")
+        for day in range(1, 14):
+            self.invite(self.fleet(days_ago=day), pilot)
+        self.send()
+        delivery = NotificationDelivery.objects.get(
+            user=pilot, channel=NotificationChannel.DISCORD
+        )
+        message = delivery.payload["discord_message"]
+        self.assertEqual(message.count("Sunday roam"), 10)
+        self.assertIn("and 3 more", message)
+
+    def discord_call(self, path, caller, data):
+        return self.client.post(
+            f"/api/fleets/invite-feedback/{path}",
+            data=data,
+            content_type="application/json",
+            **auth_headers(caller),
+        )
+
+    def test_discord_form_is_the_bot_or_the_pilot(
+        self, unused_delay, unused_async
+    ):
+        pilot = make_user("pilot")
+        DiscordUser.objects.create(id=777, discord_tag="pilot", user=pilot)
+        stranger = make_user("stranger")
+        self.invite(self.fleet(), pilot)
+        self.send()
+        denied = self.discord_call(
+            "discord-form", stranger, {"discord_user_id": 777}
+        )
+        self.assertEqual(denied.status_code, 403)
+        unlinked = self.discord_call(
+            "discord-form", self.bot_user, {"discord_user_id": 1}
+        )
+        self.assertEqual(unlinked.status_code, 403)
+        form = self.discord_call(
+            "discord-form",
+            self.bot_user,
+            {"discord_user_id": 777},
+        )
+        self.assertEqual(form.status_code, 200, form.content)
+        body = form.json()
+        self.assertEqual(body["state"], "form")
+        shorts = [question["short"] for question in body["questions"]]
+        self.assertIn("Why the open ones stayed open", shorts)
+        for short in shorts:
+            self.assertLessEqual(len(short), 45)
+        mine = self.discord_call(
+            "discord-form", pilot, {"discord_user_id": 777}
+        )
+        self.assertEqual(mine.status_code, 200)
+
+    def test_discord_submit_fits_the_form_rules(
+        self, unused_delay, unused_async
+    ):
+        pilot = make_user("pilot")
+        DiscordUser.objects.create(id=777, discord_tag="pilot", user=pilot)
+        self.invite(self.fleet(), pilot)
+        self.send()
+        answers = {
+            "discord_user_id": 777,
+            "felt": "fine",
+            "sitting_out": "normal",
+            "why": "other",
+            "improve": ["nothing", "fewer"],
+            "comment": "Was away that week",
+        }
+        saved = self.discord_call("discord-submit", self.bot_user, answers)
+        self.assertEqual(saved.status_code, 200, saved.content)
+        self.assertEqual(saved.json()["state"], "thanks")
+        row = FleetInviteFeedback.objects.get(user=pilot)
+        self.assertEqual(row.answers["improve"], ["fewer"])
+        self.assertEqual(row.answers["why_text"], "Was away that week")
+        self.assertEqual(row.answers["source"], "discord")
+        # Other with no comment still saves from Discord.
+        blank = self.discord_call(
+            "discord-submit",
+            self.bot_user,
+            {**answers, "comment": "", "improve": ["nothing"]},
+        )
+        self.assertEqual(blank.status_code, 200, blank.content)
+        row.refresh_from_db()
+        self.assertEqual(row.answers["improve"], ["nothing"])
+        self.assertEqual(row.answers["why_text"], "")
+        # A missing required answer is still an error.
+        missing = self.discord_call(
+            "discord-submit", self.bot_user, {**answers, "felt": ""}
+        )
+        self.assertEqual(missing.status_code, 400)
+        self.assertIn(
+            "Pick how these invites felt", missing.json()["errors"][0]
+        )
+        # The website keeps its stricter rules and records its source.
+        web = self.client.post(
+            "/api/fleets/invite-feedback",
+            data={**answers, "improve": ["nothing", "fewer"]},
+            content_type="application/json",
+            **auth_headers(pilot),
+        )
+        self.assertEqual(web.status_code, 400)
 
     def test_dry_run_command_writes_nothing(self, unused_delay, unused_async):
         pilot = make_user("pilot")

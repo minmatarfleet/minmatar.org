@@ -19,6 +19,10 @@ from buyback.helpers.purchase_discord_buttons import (
     cancel_custom_id,
     complete_custom_id,
 )
+from fleets.helpers.invite_feedback_discord import (
+    ANSWER_CUSTOM_ID_PREFIX as FEEDBACK_ANSWER_PREFIX,
+    answer_custom_id as feedback_answer_custom_id,
+)
 from fleets.helpers.npsi_discord import (
     POST_CUSTOM_ID_PREFIX,
     PREPING_CUSTOM_ID_PREFIX,
@@ -99,6 +103,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
                 STOP_INVITES_CUSTOM_ID_PREFIX,
                 self.bot.FLEET_INVITE_STOP_PREFIX,
             ),
+            (FEEDBACK_ANSWER_PREFIX, self.bot.INVITE_FEEDBACK_ANSWER_PREFIX),
         ]
         for backend, bot in pairs:
             self.assertEqual(backend, bot)
@@ -118,6 +123,10 @@ class BotCustomIdParityTestCase(SimpleTestCase):
             (chief_decline_custom_id, self.bot.TRIBE_CHIEF_DECLINE_TEMPLATE),
             (sit_out_custom_id, self.bot.FLEET_INVITE_OUT_TEMPLATE),
             (stop_invites_custom_id, self.bot.FLEET_INVITE_STOP_TEMPLATE),
+            (
+                feedback_answer_custom_id,
+                self.bot.INVITE_FEEDBACK_ANSWER_TEMPLATE,
+            ),
         ]
         for build, template in pairs:
             built = build(1234567890123)

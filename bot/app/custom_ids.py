@@ -39,6 +39,10 @@ TRIBE_CHIEF_DECLINE_PREFIX = "tribe_chief:decline:"
 FLEET_INVITE_OUT_PREFIX = "fleet_invite:out:"
 FLEET_INVITE_STOP_PREFIX = "fleet_invite:stop:"
 
+# Fleet invite feedback DM's Answer button, which opens the Discord form
+# (backend: fleets/helpers/invite_feedback_discord.py)
+INVITE_FEEDBACK_ANSWER_PREFIX = "invite_feedback:answer:"
+
 # Help tickets (bot-only: the bot posts these itself)
 HELP_TICKET_CLOSE_PREFIX = "help_ticket_close:"
 HELP_TICKET_CLOSE_REASON_PREFIX = "help_ticket_close_reason:"
@@ -75,6 +79,9 @@ TRIBE_CHIEF_DECLINE_TEMPLATE = template(
 )
 FLEET_INVITE_OUT_TEMPLATE = template(FLEET_INVITE_OUT_PREFIX, "invite_id")
 FLEET_INVITE_STOP_TEMPLATE = template(FLEET_INVITE_STOP_PREFIX, "invite_id")
+INVITE_FEEDBACK_ANSWER_TEMPLATE = template(
+    INVITE_FEEDBACK_ANSWER_PREFIX, "round_id"
+)
 HELP_TICKET_CLOSE_TEMPLATE = template(HELP_TICKET_CLOSE_PREFIX, "ticket_id")
 HELP_TICKET_CLOSE_REASON_TEMPLATE = template(
     HELP_TICKET_CLOSE_REASON_PREFIX, "ticket_id"
