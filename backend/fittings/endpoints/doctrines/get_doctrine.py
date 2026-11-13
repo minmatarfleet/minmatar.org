@@ -14,12 +14,12 @@ ROUTE_SPEC = {
 
 
 def get_doctrine(request, doctrine_id: int):
-    if not EveDoctrine.objects.filter(id=doctrine_id).exists():
+    # Include soft-deleted doctrines: past fleets still open them by id.
+    doctrine = EveDoctrine.all_objects.filter(id=doctrine_id).first()
+    if doctrine is None:
         return 404, ErrorResponse(
             detail="Doctrine not found",
         )
-
-    doctrine = EveDoctrine.objects.get(id=doctrine_id)
     primary_fittings = []
     secondary_fittings = []
     support_fittings = []
@@ -60,6 +60,5 @@ def get_doctrine(request, doctrine_id: int):
             location.location_id for location in doctrine.locations.all()
         ],
         retired=doctrine.retired,
-        retired_at=doctrine.retired_at,
     )
     return doctrine_response

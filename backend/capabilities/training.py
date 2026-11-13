@@ -93,7 +93,8 @@ class _Player:
         self.doctrine_fits = [
             row
             for row in EveDoctrineFitting.objects.filter(
-                fitting_id__in=list(sets)
+                fitting_id__in=list(sets),
+                doctrine__deleted__isnull=True,
             )
             .order_by("doctrine__name")
             .values(

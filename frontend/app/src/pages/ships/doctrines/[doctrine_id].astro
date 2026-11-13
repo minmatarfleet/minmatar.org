@@ -65,7 +65,6 @@ import PageTitle from '@components/page/PageTitle.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
-import Tag from '@components/blocks/Tag.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import DoctrineDetails from '@components/blocks/DoctrineDetails.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -96,12 +95,6 @@ const page_description = doctrine?.description
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                {doctrine?.retired &&
-                    <FlexInline gap="var(--space-2xs)">
-                        <Tag text={t('doctrine_changes.retired')} color="fleet-yellow" text_color="var(--background)" narrow />
-                        <small>{t('doctrine_changes.retired_banner')}</small>
-                    </FlexInline>
-                }
             </Flexblock>
             <PageActions>
                 {can_edit && doctrine &&

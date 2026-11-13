@@ -22,8 +22,9 @@ class DoctrineResponse(BaseModel):
     capitals_fittings: List[FittingResponse]
     sig_ids: List[int]
     location_ids: List[int]
+    # True when the doctrine has been soft-deleted. Lists omit those rows;
+    # a fetch by id still returns one so past fleets can open it.
     retired: bool = False
-    retired_at: datetime | None = None
 
 
 class DoctrineFittingResponse(BaseModel):

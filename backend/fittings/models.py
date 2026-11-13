@@ -682,9 +682,12 @@ class EveFittingSkillOverride(models.Model):
         return f"{self.fitting} – {self.skill} {self.action} {self.tier} {self.level}"
 
 
-class EveDoctrine(models.Model):
+class EveDoctrine(MinmatarSoftDeleteModel):  # pragma: allowlist secret
     """
-    Model for storing doctrines
+    Model for storing doctrines.
+
+    Removing a doctrine soft-deletes it. It drops out of every list and
+    picker, and a fleet that already uses it can still load it.
     """
 
     type_choices = (
@@ -693,22 +696,29 @@ class EveDoctrine(models.Model):
         (DOCTRINE_TYPE_STRATEGIC, "Strategic"),
         (DOCTRINE_TYPE_CAPITAL, "Capital ships"),
     )
-    name = models.CharField(max_length=255, unique=True)
+    # Uniqueness is among live rows only, so a removed doctrine's name can
+    # be used again.
+    name = models.CharField(max_length=255)
     type = models.CharField(max_length=255, choices=type_choices)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
     locations = models.ManyToManyField(EveLocation, blank=True)
     latest_version = models.CharField(max_length=255, blank=True)
-    # Retired doctrines drop out of the doctrine list and fleet pickers but
-    # keep their page, so past fleets still link somewhere.
-    retired_at = models.DateTimeField(null=True, blank=True)
 
     @property
     def retired(self) -> bool:
-        return self.retired_at is not None
+        """True when this doctrine has been soft-deleted."""
+        return self.deleted is not None
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name"],
+                condition=models.Q(deleted__isnull=True),
+                name="unique_evedoctrine_name_not_deleted",
+            ),
+        ]
         permissions = [
             (
                 "change_doctrine_non_strategic",
@@ -770,7 +780,7 @@ class EveDoctrine(models.Model):
                 self.latest_version = str(uuid.uuid4())
         else:
             old = (
-                EveDoctrine.objects.filter(pk=self.pk)
+                EveDoctrine.all_objects.filter(pk=self.pk)
                 .values(*EVE_DOCTRINE_VERSIONED_FIELDS, "latest_version")
                 .first()
             )
@@ -782,7 +792,7 @@ class EveDoctrine(models.Model):
                     for f in EVE_DOCTRINE_VERSIONED_FIELDS
                 )
                 if scalar_changed and old["latest_version"]:
-                    prior = EveDoctrine.objects.get(pk=self.pk)
+                    prior = EveDoctrine.all_objects.get(pk=self.pk)
                     EveDoctrineHistory.objects.create(
                         doctrine_id=self.pk,
                         superseded_version_id=old["latest_version"],

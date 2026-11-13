@@ -35,7 +35,8 @@ def get_market_locations_with_doctrines(
 
     doctrine_fittings = (
         EveDoctrineFitting.objects.filter(
-            doctrine__locations__in=active_locations
+            doctrine__deleted__isnull=True,
+            doctrine__locations__in=active_locations,
         )
         .exclude(role="secondary")
         .select_related("fitting")

@@ -202,7 +202,7 @@ def _fleet_patch_audience_location_errors(
         fleet.audience = EveFleetAudience.objects.get(id=payload.audience_id)
 
     # Only a change is checked: a fleet already on a doctrine that has since
-    # been retired keeps it when the form is saved again.
+    # been removed keeps it when the form is saved again.
     if (
         "doctrine_id" in payload.model_fields_set
         and payload.doctrine_id != fleet.doctrine_id
@@ -232,12 +232,12 @@ def _fleet_apply_optional_scalar_updates(fleet: EveFleet, payload) -> None:
     if payload.status:
         fleet.status = payload.status
     # An explicit null clears the doctrine ("No doctrine" in the edit form).
+    # Leave an unchanged id alone so a soft-deleted doctrine stays on the fleet.
     if "doctrine_id" in payload.model_fields_set:
-        fleet.doctrine = (
-            EveDoctrine.objects.get(id=payload.doctrine_id)
-            if payload.doctrine_id
-            else None
-        )
+        if not payload.doctrine_id:
+            fleet.doctrine = None
+        elif payload.doctrine_id != fleet.doctrine_id:
+            fleet.doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
     if payload.aar_link:
         fleet.aar_link = payload.aar_link
     if "hide_volunteers" in payload.model_fields_set:

@@ -68,24 +68,6 @@ const active_doctrine_location_ui = all_locations_ui.find(location => location.i
 
 const non_active_doctrine_location_ui = all_locations_ui.filter(location => location.id !== active_location_id)
 
-// Editors can still reach retired doctrines to bring one back.
-import { get_gates } from '@helpers/gates'
-import { can_edit_doctrines } from '@helpers/doctrine_editor'
-import { get_doctrines_with_retired } from '@helpers/api.minmatar.org/doctrines'
-import { doctrine_path } from '@helpers/ship_paths'
-
-let retired_doctrines:{ id:number, name:string }[] = []
-if (await can_edit_doctrines(await get_gates(Astro))) {
-    try {
-        retired_doctrines = (await get_doctrines_with_retired())
-            .filter((doctrine) => doctrine.retired)
-            .map((doctrine) => ({ id: doctrine.id, name: doctrine.name }))
-            .sort((a, b) => a.name.localeCompare(b.name))
-    } catch (error) {
-        console.error('Error fetching retired doctrines:', error)
-    }
-}
-
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
 import {
@@ -161,17 +143,6 @@ const leading_text = t('doctrines.alliance.page_leading_text')
                         active_doctrine_location_ui={active_doctrine_location_ui}
                         non_active_doctrine_location_ui={non_active_doctrine_location_ui}
                     />
-            }
-
-            {retired_doctrines.length > 0 &&
-                <Flexblock gap="var(--space-2xs)">
-                    <h2>{t('doctrine_changes.retired_doctrines')}</h2>
-                    <FlexInline gap="var(--space-s)" class="[ flex-wrap ]">
-                        {retired_doctrines.map((doctrine) =>
-                            <a href={translatePath(doctrine_path(doctrine.id, doctrine.name))}>{doctrine.name}</a>
-                        )}
-                    </FlexInline>
-                </Flexblock>
             }
         </Flexblock>
     </PageWide>

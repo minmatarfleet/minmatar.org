@@ -394,7 +394,8 @@ class InDoctrineListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         in_any_doctrine = EveDoctrineFitting.objects.filter(
-            fitting_id=OuterRef("pk")
+            fitting_id=OuterRef("pk"),
+            doctrine__deleted__isnull=True,
         )
         if self.value() == "yes":
             return queryset.filter(Exists(in_any_doctrine))
@@ -1484,13 +1485,13 @@ class EveDoctrineHistoryAdmin(admin.ModelAdmin):
 
 
 @admin.register(EveDoctrine)
-class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
+class EveDoctrineAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     """
     Custom admin to make editing doctrines easier
     """
 
     form = EveDoctrineForm
-    list_display = ("name", "type", "retired_at", "description")
+    list_display = ("name", "type", "deleted", "description")
     search_fields = ("name", "type", "description")
     ordering = ("name",)
 

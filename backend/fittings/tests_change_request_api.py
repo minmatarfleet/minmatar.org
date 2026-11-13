@@ -396,20 +396,29 @@ class ChangeRequestApiTestCase(TestCase):
         self.assertTrue(response.json()["applied"])
         experimental.refresh_from_db()
         self.assertTrue(experimental.retired)
+        self.assertIsNotNone(experimental.deleted)
+        self.assertFalse(
+            EveDoctrine.objects.filter(pk=experimental.pk).exists()
+        )
 
         listed = self.client.get("/api/doctrines/").json()
         self.assertNotIn(experimental.id, [d["id"] for d in listed])
-        everything = self.client.get(
-            "/api/doctrines/?include_retired=true"
-        ).json()
-        row = next(d for d in everything if d["id"] == experimental.id)
-        self.assertTrue(row["retired"])
-        single = self.client.get(f"/api/doctrines/{experimental.id}").json()
+        fetched = self.client.get(f"/api/doctrines/{experimental.id}")
+        self.assertEqual(200, fetched.status_code, fetched.content)
+        single = fetched.json()
         self.assertTrue(single["retired"])
+        self.assertNotIn("retired_at", single)
 
-        # Leaving retired out keeps it retired (older clients).
+        # Leaving retired out keeps it removed (older clients).
         body.pop("retired")
         body["description"] = "edited"
-        self._post(path, body)
+        kept = self._post(path, body)
+        self.assertEqual(200, kept.status_code, kept.content)
         experimental.refresh_from_db()
         self.assertTrue(experimental.retired)
+        self.assertEqual("edited", experimental.description)
+
+        # The name is free for a new doctrine.
+        EveDoctrine.objects.create(
+            name="Exp", type=DOCTRINE_TYPE_EXPERIMENTAL, description="new"
+        )

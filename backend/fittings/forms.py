@@ -263,9 +263,10 @@ class EveDoctrineForm(forms.ModelForm):
     description = forms.CharField(widget=forms.Textarea)
     retired = forms.BooleanField(
         required=False,
+        label="Removed",
         help_text=(
-            "Hides the doctrine from the doctrine list and fleet pickers. "
-            "Its page and past fleets stay."
+            "Soft-deletes the doctrine. It leaves every list and new fleets. "
+            "Past fleets can still open it."
         ),
     )
     primary_fittings = forms.ModelMultipleChoiceField(
@@ -342,7 +343,18 @@ class EveDoctrineForm(forms.ModelForm):
                 )
             ]
             self.fields["locations"].initial = self.instance.locations.all()
-            self.fields["retired"].initial = self.instance.retired
+            self.fields["retired"].initial = bool(self.instance.deleted)
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        taken = EveDoctrine.objects.filter(name=name)
+        if self.instance.pk:
+            taken = taken.exclude(pk=self.instance.pk)
+        if taken.exists():
+            raise forms.ValidationError(
+                "A doctrine with that name already exists."
+            )
+        return name
 
     class Meta:
         model = EveDoctrine

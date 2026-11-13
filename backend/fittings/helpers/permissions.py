@@ -53,9 +53,9 @@ def doctrine_change_tier(stored_type: str | None, new_type: str) -> str | None:
 
 def effective_protection_tier(fitting) -> str | None:
     types = set(
-        EveDoctrineFitting.objects.filter(fitting=fitting).values_list(
-            "doctrine__type", flat=True
-        )
+        EveDoctrineFitting.objects.filter(
+            fitting=fitting, doctrine__deleted__isnull=True
+        ).values_list("doctrine__type", flat=True)
     )
     types.discard(DOCTRINE_TYPE_EXPERIMENTAL)
     if types & {DOCTRINE_TYPE_STRATEGIC, DOCTRINE_TYPE_CAPITAL}:

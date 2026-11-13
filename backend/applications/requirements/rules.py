@@ -86,7 +86,8 @@ def _clean_ships(params: dict) -> dict:
         if level == LEVEL_FLOWN:
             raise RuleError("Has flown it applies to roles, not doctrines")
         doctrine_id = _int(params, "doctrine_id", 1, 2**31 - 1)
-        if not EveDoctrine.objects.filter(pk=doctrine_id).exists():
+        # A requirement can still name a doctrine that has been removed.
+        if not EveDoctrine.all_objects.filter(pk=doctrine_id).exists():
             raise RuleError("Unknown doctrine")
         return {"target": target, "doctrine_id": doctrine_id, "level": level}
     raise RuleError("Pick a doctrine or a role")
@@ -213,7 +214,7 @@ def doctrine_names_for(rules) -> dict[int, str]:
     if not ids:
         return {}
     return dict(
-        EveDoctrine.objects.filter(pk__in=ids).values_list("id", "name")
+        EveDoctrine.all_objects.filter(pk__in=ids).values_list("id", "name")
     )
 
 

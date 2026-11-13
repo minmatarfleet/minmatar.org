@@ -11402,18 +11402,6 @@
             "title": "Retired",
             "type": "boolean"
           },
-          "retired_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Retired At"
-          },
           "secondary_fittings": {
             "items": {
               "$ref": "#/components/schemas/FittingResponse"
@@ -52766,18 +52754,7 @@
     "/api/doctrines/": {
       "get": {
         "operationId": "fittings_endpoints_doctrines_get_doctrines_get_doctrines",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "include_retired",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Include Retired",
-              "type": "boolean"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "content": {

@@ -76,7 +76,8 @@ def post_doctrine_change_request(
 ):
     if not can_edit_doctrines(request.user):
         return 403, {"detail": "You cannot propose doctrine changes"}
-    doctrine = EveDoctrine.objects.filter(id=doctrine_id).first()
+    # all_objects so a removed doctrine can be brought back by id.
+    doctrine = EveDoctrine.all_objects.filter(id=doctrine_id).first()
     if not doctrine:
         return 404, {"detail": "Doctrine not found"}
 

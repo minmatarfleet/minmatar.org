@@ -24,7 +24,10 @@ def get_qualified_contract_fittings(location):
     Return fittings from doctrines assigned to this location.
     """
     fitting_ids = (
-        EveDoctrineFitting.objects.filter(doctrine__locations=location)
+        EveDoctrineFitting.objects.filter(
+            doctrine__deleted__isnull=True,
+            doctrine__locations=location,
+        )
         .values_list("fitting_id", flat=True)
         .distinct()
     )
@@ -35,9 +38,11 @@ def get_qualified_contract_fittings(location):
 
 def get_all_doctrine_fittings():
     """Return all active fittings assigned to at least one doctrine."""
-    fitting_ids = EveDoctrineFitting.objects.values_list(
-        "fitting_id", flat=True
-    ).distinct()
+    fitting_ids = (
+        EveDoctrineFitting.objects.filter(doctrine__deleted__isnull=True)
+        .values_list("fitting_id", flat=True)
+        .distinct()
+    )
     return EveFitting.objects.filter(
         deleted__isnull=True, pk__in=fitting_ids
     ).order_by("name")
@@ -50,7 +55,10 @@ def get_doctrine_names_by_fitting_id(
     if not fitting_ids:
         return names_by_fitting
     rows = (
-        EveDoctrineFitting.objects.filter(fitting_id__in=fitting_ids)
+        EveDoctrineFitting.objects.filter(
+            fitting_id__in=fitting_ids,
+            doctrine__deleted__isnull=True,
+        )
         .select_related("doctrine")
         .order_by("doctrine__name")
         .values_list("fitting_id", "doctrine__name")
@@ -62,9 +70,11 @@ def get_doctrine_names_by_fitting_id(
 
 def get_non_doctrine_fittings():
     """Return all active fittings that are not assigned to any doctrine."""
-    doctrine_fitting_ids = EveDoctrineFitting.objects.values_list(
-        "fitting_id", flat=True
-    ).distinct()
+    doctrine_fitting_ids = (
+        EveDoctrineFitting.objects.filter(doctrine__deleted__isnull=True)
+        .values_list("fitting_id", flat=True)
+        .distinct()
+    )
     return (
         EveFitting.objects.filter(deleted__isnull=True)
         .exclude(pk__in=doctrine_fitting_ids)
@@ -79,9 +89,11 @@ def get_qualified_non_doctrine_sell_fittings(location):
     When market categories are configured, only tag-qualified fittings are
     returned and doctrine fittings are excluded even if they share tags.
     """
-    doctrine_fitting_ids = EveDoctrineFitting.objects.values_list(
-        "fitting_id", flat=True
-    ).distinct()
+    doctrine_fitting_ids = (
+        EveDoctrineFitting.objects.filter(doctrine__deleted__isnull=True)
+        .values_list("fitting_id", flat=True)
+        .distinct()
+    )
     if not (location.market_categories or []):
         return get_non_doctrine_fittings()
     return get_qualified_sell_fittings(location).exclude(

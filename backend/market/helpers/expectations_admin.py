@@ -260,7 +260,8 @@ def build_contract_expectation_rows(location) -> list[dict]:
     doctrine_ids_by_fitting: dict[int, list[int]] = {}
     if fitting_ids:
         for fitting_id, doctrine_id in EveDoctrineFitting.objects.filter(
-            fitting_id__in=fitting_ids
+            fitting_id__in=fitting_ids,
+            doctrine__deleted__isnull=True,
         ).values_list("fitting_id", "doctrine_id"):
             doctrine_ids_by_fitting.setdefault(fitting_id, []).append(
                 doctrine_id
