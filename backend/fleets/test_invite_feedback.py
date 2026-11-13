@@ -514,6 +514,25 @@ class InviteFeedbackTests(TestCase):
             message.index("Amamake defense"), message.index("Private fleet")
         )
 
+    def test_one_pilot_send_lists_every_invite(
+        self, unused_delay, unused_async
+    ):
+        bear = make_user("BearThatCares")
+        self.invite(self.fleet(days_ago=-1, status="pending"), bear)
+        self.invite(self.fleet(days_ago=60, objective="Old roam"), bear)
+        out = StringIO()
+        call_command(
+            "send_fleet_invite_feedback", "--user", "bearthatcares", stdout=out
+        )
+        self.assertIn("Sent the form to BearThatCares.", out.getvalue())
+        row = FleetInviteFeedback.objects.get(user=bear)
+        self.assertEqual(len(row.invites), 2)
+        self.assertEqual(row.cohort, FleetInviteFeedback.COHORT_NO_ANSWER)
+        message = NotificationDelivery.objects.get(
+            user=bear, channel=NotificationChannel.DISCORD
+        ).payload["discord_message"]
+        self.assertIn("Old roam", message)
+
     def test_dm_caps_a_long_invite_list(self, unused_delay, unused_async):
         pilot = make_user("pilot")
         for day in range(1, 14):
