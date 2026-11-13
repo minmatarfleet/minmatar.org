@@ -15,10 +15,12 @@ from django.test import SimpleTestCase
 
 from buyback.helpers.purchase_discord_buttons import (
     CANCEL_CUSTOM_ID_PREFIX,
+    CLOSE_CUSTOM_ID_PREFIX,
     COMPLETE_CUSTOM_ID_PREFIX,
     CONTRACT_ACCEPTED_CUSTOM_ID_PREFIX,
     CONTRACT_UP_CUSTOM_ID_PREFIX,
     cancel_custom_id,
+    close_custom_id,
     complete_custom_id,
     contract_accepted_custom_id,
     contract_up_custom_id,
@@ -133,6 +135,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
                 CONTRACT_ACCEPTED_CUSTOM_ID_PREFIX,
                 self.bot.BUYBACK_CONTRACT_ACCEPTED_PREFIX,
             ),
+            (CLOSE_CUSTOM_ID_PREFIX, self.bot.BUYBACK_CLOSE_PREFIX),
             (LP_SENT_CUSTOM_ID_PREFIX, self.bot.LP_BUYBACK_LP_SENT_PREFIX),
             (ISK_SENT_CUSTOM_ID_PREFIX, self.bot.LP_BUYBACK_ISK_SENT_PREFIX),
             (NOTIF_ACK_CUSTOM_ID_PREFIX, self.bot.NOTIF_ACK_PREFIX),
@@ -166,6 +169,7 @@ class BotCustomIdParityTestCase(SimpleTestCase):
                 contract_accepted_custom_id,
                 self.bot.BUYBACK_CONTRACT_ACCEPTED_TEMPLATE,
             ),
+            (close_custom_id, self.bot.BUYBACK_CLOSE_TEMPLATE),
             (lp_sent_custom_id, self.bot.LP_BUYBACK_LP_SENT_TEMPLATE),
             (isk_sent_custom_id, self.bot.LP_BUYBACK_ISK_SENT_TEMPLATE),
             (ack_custom_id, self.bot.NOTIF_ACK_TEMPLATE),

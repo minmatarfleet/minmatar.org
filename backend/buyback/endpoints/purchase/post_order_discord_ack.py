@@ -30,7 +30,7 @@ ROUTE_SPEC = {
 
 
 def _actor_may_ack(order: BuybackPurchaseOrder, actor, action: str) -> bool:
-    if action in ("complete", "contract_up"):
+    if action in ("complete", "contract_up", "close"):
         return can_manage_stock_sales(actor)
     if action in ("cancel", "contract_accepted"):
         is_owner = order.created_by_id == actor.pk
@@ -69,6 +69,7 @@ def post_order_discord_ack(
         "cancel",
         "contract_up",
         "contract_accepted",
+        "close",
     ):
         return 400, ErrorResponse(detail="Unknown Discord ack action.")
     if not _actor_may_ack(order, actor, action):

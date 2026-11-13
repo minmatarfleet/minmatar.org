@@ -24,6 +24,7 @@ from buyback.helpers.purchase_discord import (
 )
 from buyback.helpers.purchase_discord_buttons import (
     cancel_custom_id,
+    close_custom_id,
     complete_custom_id,
     contract_accepted_custom_id,
     contract_up_custom_id,
@@ -49,6 +50,7 @@ class PurchaseDiscordButtonsTestCase(TestCase):
         self.assertEqual(
             contract_accepted_custom_id(9), "buyback:contract_accepted:9"
         )
+        self.assertEqual(close_custom_id(11), "buyback:close:11")
 
     def test_order_action_components(self):
         row = order_action_components(99)[0]["components"]
@@ -252,7 +254,7 @@ class PurchaseDiscordTestCase(TestCase):
         self.assertIn("have not synced", payload["content"])
 
     @patch("buyback.helpers.purchase_discord.discord")
-    def test_prompt_posts_contract_up_once(self, discord_mock):
+    def test_prompt_posts_close_once_for_an_open_thread(self, discord_mock):
         coordinator = User.objects.create(username="sale_coordinator")
         DiscordUser.objects.create(
             id=9001, discord_tag="coord#0001", user=coordinator
@@ -265,13 +267,17 @@ class PurchaseDiscordTestCase(TestCase):
         self.assertEqual(prompt_team_for_open_sales(), 1)
         payload = discord_mock.create_message.call_args.kwargs["payload"]
         self.assertIn("<@9001>", payload["content"])
-        self.assertIn("Compressed Veldspar", payload["content"])
-        self.assertEqual(
-            payload["components"][0]["components"][0]["custom_id"],
-            contract_up_custom_id(self.order.pk),
-        )
+        self.assertIn("Press **Close**", payload["content"])
+        self.assertNotIn("<@", payload["content"].split("\n", 1)[1])
+        button = payload["components"][0]["components"][0]
+        self.assertEqual(button["label"], "Close")
+        self.assertEqual(button["custom_id"], close_custom_id(self.order.pk))
         self.order.refresh_from_db()
         self.assertTrue(self.order.team_prompted)
+        self.assertEqual(
+            self.order.settlement_step,
+            BuybackPurchaseOrder.SettlementStep.MANUAL_CLOSE,
+        )
         self.assertEqual(prompt_team_for_open_sales(), 0)
         discord_mock.create_message.assert_called_once()
 
@@ -529,3 +535,47 @@ class PurchaseDiscordAckApiTestCase(TestCase):
         response = self._ack(data["id"], 3001, "contract_accepted")
         self.assertEqual(response.status_code, 400, response.content)
         self.assertIn("mark the contract up", response.json()["detail"])
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_status_changed_task.delay"
+    )
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_close_by_manager_completes_an_open_sale(
+        self, unused_created, status_changed
+    ):
+        data = self._place()
+        order = BuybackPurchaseOrder.objects.get(pk=data["id"])
+        order.settlement_step = (
+            BuybackPurchaseOrder.SettlementStep.MANUAL_CLOSE
+        )
+        order.save(update_fields=["settlement_step"])
+        response = self._ack(data["id"], 3002, "close")
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "completed")
+        order.refresh_from_db()
+        self.assertEqual(order.lines.get().quantity, 10)
+        status_changed.assert_called_once_with(order.pk)
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_close_by_owner_rejected(self, unused_created):
+        data = self._place()
+        order = BuybackPurchaseOrder.objects.get(pk=data["id"])
+        order.settlement_step = (
+            BuybackPurchaseOrder.SettlementStep.MANUAL_CLOSE
+        )
+        order.save(update_fields=["settlement_step"])
+        response = self._ack(data["id"], 3001, "close")
+        self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_close_before_the_team_prompt_rejected(self, unused_created):
+        data = self._place()
+        response = self._ack(data["id"], 3002, "close")
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("not waiting to be closed", response.json()["detail"])

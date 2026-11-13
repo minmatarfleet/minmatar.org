@@ -63,6 +63,7 @@ class PurchaseSweepTestCase(TestCase):
         reminded=None,
         step=Step.CONTRACT_UP,
         status=Status.PENDING,
+        team_prompted=True,
     ):
         order = BuybackPurchaseOrder.objects.create(
             created_by=self.user,
@@ -74,6 +75,7 @@ class PurchaseSweepTestCase(TestCase):
             status=status,
             settlement_step=step,
             discord_thread_id=thread_id,
+            team_prompted=team_prompted,
         )
         when = self.now - timedelta(hours=waited_hours)
         BuybackPurchaseOrder.objects.filter(pk=order.pk).update(
@@ -260,6 +262,16 @@ class PurchaseSweepTestCase(TestCase):
         self.now += timedelta(hours=24)
         stats = self._sweep(discord_mock, client_cls, unused_close)
         self.assertEqual((stats["cancelled"], stats["reminded"]), (0, 1))
+        order.refresh_from_db()
+        self.assertEqual(order.status, Status.PENDING)
+
+    def test_already_open_sale_is_not_swept(
+        self, discord_mock, client_cls, unused_close
+    ):
+        order = self._order(waited_hours=24 * 9, team_prompted=False)
+        stats = self._sweep(discord_mock, client_cls, unused_close)
+        self.assertEqual((stats["cancelled"], stats["reminded"]), (0, 0))
+        discord_mock.create_message.assert_not_called()
         order.refresh_from_db()
         self.assertEqual(order.status, Status.PENDING)
 

@@ -8,6 +8,7 @@ from django.conf import settings
 
 from app.links import site_url
 from buyback.helpers.purchase_discord_buttons import (
+    close_components,
     contract_accepted_components,
     order_action_components,
 )
@@ -253,6 +254,11 @@ def _completed_message(order: BuybackPurchaseOrder) -> str:
         == BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
     ):
         headline = ":white_check_mark: Contract accepted — sale completed"
+    elif (
+        order.settlement_step
+        == BuybackPurchaseOrder.SettlementStep.MANUAL_CLOSE
+    ):
+        headline = ":white_check_mark: Sale closed"
     elif order.completed_by_id:
         actor = _user_mention(order.completed_by) or (
             order.completed_by.username if order.completed_by else ""
@@ -367,31 +373,53 @@ def notify_contract_up(order: BuybackPurchaseOrder) -> None:
     )
 
 
+def _legacy_close_message(order: BuybackPurchaseOrder) -> str:
+    team = buyback_team_mentions() or "Buyback team"
+    return "\n".join(
+        [
+            team,
+            "",
+            f"Sale #{order.pk} is still open.",
+            "Press **Close** when it's done.",
+            order_site_url(order),
+        ]
+    )
+
+
 def prompt_team_for_open_sales() -> int:
-    """Post Contract up once into sale threads that predate that button."""
+    """Tag the buyback team once so they can close threads already open.
+
+    New sales are prompted when their thread is created and stay on
+    Contract up. This pass is only the sales that were already open.
+    """
+    step = BuybackPurchaseOrder.SettlementStep
     orders = (
         BuybackPurchaseOrder.objects.filter(
             status=BuybackPurchaseOrder.Status.PENDING,
-            settlement_step=BuybackPurchaseOrder.SettlementStep.CONTRACT_UP,
+            settlement_step=step.CONTRACT_UP,
             team_prompted=False,
             discord_thread_id__isnull=False,
         )
         .select_related("created_by", "created_by__discord_user")
-        .prefetch_related("lines")
         .order_by("pk")
     )
     posted = 0
     for order in orders:
         if not MIRROR.post(
             order.discord_thread_id,
-            order_starter_message(order),
-            order_action_components(order.pk),
+            _legacy_close_message(order),
+            close_components(order.pk),
         ):
             continue
         posted += BuybackPurchaseOrder.objects.filter(
             pk=order.pk,
+            status=BuybackPurchaseOrder.Status.PENDING,
+            settlement_step=step.CONTRACT_UP,
             team_prompted=False,
-        ).update(team_prompted=True)
+        ).update(
+            team_prompted=True,
+            settlement_step=step.MANUAL_CLOSE,
+        )
     return posted
 
 

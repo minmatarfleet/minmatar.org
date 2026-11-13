@@ -11,6 +11,8 @@ import discord
 from app.custom_ids import (
     BUYBACK_CANCEL_PREFIX,
     BUYBACK_CANCEL_TEMPLATE,
+    BUYBACK_CLOSE_PREFIX,
+    BUYBACK_CLOSE_TEMPLATE,
     BUYBACK_COMPLETE_PREFIX,
     BUYBACK_COMPLETE_TEMPLATE,
     BUYBACK_CONTRACT_ACCEPTED_PREFIX,
@@ -28,6 +30,7 @@ COMPLETE_TEMPLATE = BUYBACK_COMPLETE_TEMPLATE
 CANCEL_TEMPLATE = BUYBACK_CANCEL_TEMPLATE
 CONTRACT_UP_TEMPLATE = BUYBACK_CONTRACT_UP_TEMPLATE
 CONTRACT_ACCEPTED_TEMPLATE = BUYBACK_CONTRACT_ACCEPTED_TEMPLATE
+CLOSE_TEMPLATE = BUYBACK_CLOSE_TEMPLATE
 
 THREAD_ARCHIVE_DELAY_SECONDS = 5
 
@@ -206,7 +209,9 @@ class ContractAcceptedButton(
             discord.ui.Button(
                 label="Contract accepted",
                 style=discord.ButtonStyle.success,
-                custom_id=custom_id(BUYBACK_CONTRACT_ACCEPTED_PREFIX, order_id),
+                custom_id=custom_id(
+                    BUYBACK_CONTRACT_ACCEPTED_PREFIX, order_id
+                ),
             )
         )
         self.order_id = order_id
@@ -231,10 +236,45 @@ class ContractAcceptedButton(
         )
 
 
+class CloseButton(
+    discord.ui.DynamicItem[discord.ui.Button],
+    template=CLOSE_TEMPLATE,
+):
+    def __init__(self, order_id: int):
+        super().__init__(
+            discord.ui.Button(
+                label="Close",
+                style=discord.ButtonStyle.secondary,
+                custom_id=custom_id(BUYBACK_CLOSE_PREFIX, order_id),
+            )
+        )
+        self.order_id = order_id
+
+    @classmethod
+    async def from_custom_id(
+        cls,
+        interaction: discord.Interaction,
+        item: discord.ui.Button,
+        match: re.Match[str],
+        /,
+    ):
+        return cls(int(match["order_id"]))
+
+    async def callback(self, interaction: discord.Interaction):
+        await _handle_ack(
+            interaction,
+            order_id=self.order_id,
+            action="close",
+            success_label="Closed the sale",
+            closes_thread=True,
+        )
+
+
 def register_buyback_buttons(client: discord.Client) -> None:
     client.add_dynamic_items(
         CompleteButton,
         CancelButton,
         ContractUpButton,
         ContractAcceptedButton,
+        CloseButton,
     )

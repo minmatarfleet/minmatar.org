@@ -1,7 +1,8 @@
 """Hourly hangar-sale housekeeping: thread mirror, reminders, auto-cancel.
 
-- Contract not up yet: one reminder at 24h, cancel at 48h. The stock is
-  still reserved and no in-game contract has been confirmed.
+- Contract not up yet, on a new sale: one reminder at 24h, cancel at 48h.
+  The stock is still reserved and no in-game contract has been confirmed.
+  Sales already open keep a Close button for the team and are not swept.
 - Contract is up (buyer owes Contract accepted): pinged every 24h, never
   cancelled. Cancelling then would strand the contract.
 - A thread missing 10 minutes after the order is created again.
@@ -54,9 +55,11 @@ def _orders():
 
 
 def _can_auto_cancel(order: BuybackPurchaseOrder) -> bool:
+    # Threads already open before Contract up are closed by the team.
     return (
         order.status == Status.PENDING
         and order.settlement_step == Step.CONTRACT_UP
+        and order.team_prompted
     )
 
 
@@ -101,6 +104,7 @@ def auto_cancel_stalled_orders(now) -> int:
     stalled = _orders().filter(
         status=Status.PENDING,
         settlement_step=Step.CONTRACT_UP,
+        team_prompted=True,
         settlement_changed_at__lte=now - AUTO_CANCEL_AFTER,
         stalled_reminder_at__lte=now - MIN_WARNING_BEFORE_CANCEL,
     )
@@ -150,6 +154,8 @@ def remind_stalled_orders(now) -> int:
     reminded = 0
     stalled = _orders().filter(
         _not_reminded_since(now - REMIND_AFTER),
+        Q(settlement_step=Step.AWAITING_ACCEPT)
+        | Q(settlement_step=Step.CONTRACT_UP, team_prompted=True),
         status=Status.PENDING,
         settlement_changed_at__lte=now - REMIND_AFTER,
         discord_thread_id__isnull=False,

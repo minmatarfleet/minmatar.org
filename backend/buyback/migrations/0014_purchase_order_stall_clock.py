@@ -47,4 +47,17 @@ class Migration(migrations.Migration):
         migrations.RunPython(
             backfill_settlement_changed_at, migrations.RunPython.noop
         ),
+        migrations.AlterField(
+            model_name="buybackpurchaseorder",
+            name="settlement_step",
+            field=models.CharField(
+                choices=[
+                    ("contract_up", "Contract up"),
+                    ("awaiting_accept", "Awaiting accept"),
+                    ("manual_close", "Close"),
+                ],
+                default="contract_up",
+                max_length=32,
+            ),
+        ),
     ]

@@ -389,6 +389,7 @@ class BuybackPurchaseOrder(models.Model):
     class SettlementStep(models.TextChoices):
         CONTRACT_UP = "contract_up", "Contract up"
         AWAITING_ACCEPT = "awaiting_accept", "Awaiting accept"
+        MANUAL_CLOSE = "manual_close", "Close"
 
     settlement_step = models.CharField(
         max_length=32,

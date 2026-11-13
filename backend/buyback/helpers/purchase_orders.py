@@ -486,6 +486,36 @@ def accept_purchase_contract(order: BuybackPurchaseOrder, user) -> None:
     notify_buyback_purchase_status_changed_task.delay(order.pk)
 
 
+def close_open_sale(order: BuybackPurchaseOrder, user) -> None:
+    """Buyback team closes a sale thread that predates Contract up."""
+    with transaction.atomic():
+        order = BuybackPurchaseOrder.objects.select_for_update().get(
+            pk=order.pk
+        )
+        if order.status != BuybackPurchaseOrder.Status.PENDING:
+            raise PurchaseOrderError("Only pending orders can be closed.")
+        if (
+            order.settlement_step
+            != BuybackPurchaseOrder.SettlementStep.MANUAL_CLOSE
+        ):
+            raise PurchaseOrderError("This sale is not waiting to be closed.")
+        order.status = BuybackPurchaseOrder.Status.COMPLETED
+        order.completed_at = timezone.now()
+        order.completed_by = user
+        _clear_stall(order)
+        order.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "completed_by",
+                "settlement_changed_at",
+                "stalled_reminder_at",
+                "updated_at",
+            ]
+        )
+    notify_buyback_purchase_status_changed_task.delay(order.pk)
+
+
 def _cancel_locked(order: BuybackPurchaseOrder, *, reason: str) -> None:
     """Mark a locked pending order cancelled. Caller holds the row lock."""
     order.status = BuybackPurchaseOrder.Status.CANCELLED
@@ -555,6 +585,8 @@ def discord_ack_order(
         mark_contract_up(order)
     elif action == "contract_accepted":
         accept_purchase_contract(order, actor)
+    elif action == "close":
+        close_open_sale(order, actor)
     elif action == "cancel":
         cancel_purchase_order(order)
     else:
