@@ -377,6 +377,10 @@
             "title": "Author Name",
             "type": "string"
           },
+          "cover_image_url": {
+            "title": "Cover Image Url",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -431,6 +435,7 @@
           "teachers",
           "requests_90d",
           "requirement_count",
+          "cover_image_url",
           "status",
           "review_note"
         ],
@@ -28950,6 +28955,11 @@
       },
       "MentorClassBody": {
         "properties": {
+          "cover_image_url": {
+            "default": "",
+            "title": "Cover Image Url",
+            "type": "string"
+          },
           "minutes": {
             "default": 60,
             "title": "Minutes",
@@ -28989,6 +28999,24 @@
         "title": "MentorClassBody",
         "type": "object"
       },
+      "MentorClassCoverSchema": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "label"
+        ],
+        "title": "MentorClassCoverSchema",
+        "type": "object"
+      },
       "MentorClassCreatedResponse": {
         "properties": {
           "id": {
@@ -29026,6 +29054,10 @@
           "can_edit": {
             "title": "Can Edit",
             "type": "boolean"
+          },
+          "cover_image_url": {
+            "title": "Cover Image Url",
+            "type": "string"
           },
           "id": {
             "title": "Id",
@@ -29100,6 +29132,7 @@
           "outline",
           "minutes",
           "where",
+          "cover_image_url",
           "status",
           "author",
           "requirements",
@@ -29117,6 +29150,10 @@
           "can_review": {
             "title": "Can Review",
             "type": "boolean"
+          },
+          "cover_image_url": {
+            "title": "Cover Image Url",
+            "type": "string"
           },
           "id": {
             "title": "Id",
@@ -29185,6 +29222,7 @@
           "minutes",
           "where",
           "requirements",
+          "cover_image_url",
           "status",
           "review_note",
           "teachers",
@@ -29192,6 +29230,30 @@
           "can_review"
         ],
         "title": "MentorClassEditResponse",
+        "type": "object"
+      },
+      "MentorClassOptionsResponse": {
+        "properties": {
+          "covers": {
+            "items": {
+              "$ref": "#/components/schemas/MentorClassCoverSchema"
+            },
+            "title": "Covers",
+            "type": "array"
+          },
+          "requirement_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementKindSchema"
+            },
+            "title": "Requirement Kinds",
+            "type": "array"
+          }
+        },
+        "required": [
+          "covers",
+          "requirement_kinds"
+        ],
+        "title": "MentorClassOptionsResponse",
         "type": "object"
       },
       "MentorClassRefSchema": {
@@ -29819,6 +29881,13 @@
             "title": "Applications",
             "type": "array"
           },
+          "drafts": {
+            "items": {
+              "$ref": "#/components/schemas/AdminMentorClassSchema"
+            },
+            "title": "Drafts",
+            "type": "array"
+          },
           "hidden": {
             "items": {
               "$ref": "#/components/schemas/AdminMentorClassSchema"
@@ -29857,6 +29926,7 @@
         },
         "required": [
           "reports",
+          "drafts",
           "review",
           "published",
           "hidden",
@@ -69855,6 +69925,70 @@
         ]
       }
     },
+    "/api/learning/mentors/admin/class-options": {
+      "get": {
+        "operationId": "learning_endpoints_mentors_get_class_options_get_class_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorClassOptionsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The cover gallery and requirement kinds for the class editor.",
+        "tags": [
+          "Learning Center",
+          "Learning Center - Mentors"
+        ]
+      }
+    },
     "/api/learning/mentors/admin/classes/{class_id}/status": {
       "put": {
         "operationId": "learning_endpoints_mentors_put_admin_class_status_put_admin_class_status",
@@ -70387,7 +70521,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "A class for its author or a learning manager to edit.",
+        "summary": "A class for a learning manager to edit.",
         "tags": [
           "Learning Center",
           "Learning Center - Mentors"
@@ -70469,81 +70603,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Save a class (author or learning manager).",
-        "tags": [
-          "Learning Center",
-          "Learning Center - Mentors"
-        ]
-      }
-    },
-    "/api/learning/mentors/classes/{class_id}/submit": {
-      "post": {
-        "operationId": "learning_endpoints_mentors_post_class_submit_post_class_submit",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "class_id",
-            "required": true,
-            "schema": {
-              "title": "Class Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MentorActionResponse"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Forbidden"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Not Found"
-          }
-        },
-        "security": [
-          {
-            "AuthBearer": []
-          }
-        ],
-        "summary": "Send a class to learning managers for review.",
+        "summary": "Save a class (learning managers).",
         "tags": [
           "Learning Center",
           "Learning Center - Mentors"

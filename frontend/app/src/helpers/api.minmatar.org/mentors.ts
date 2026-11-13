@@ -4,6 +4,7 @@ import type {
     MentorClassCreated,
     MentorClassDetail,
     MentorClassEdit,
+    MentorClassOptions,
     MentorCreateRequest,
     MentorRequest,
     MentorSettings,
@@ -36,6 +37,8 @@ export const get_mentor_slots = (token: string, request_id: number) =>
 export const get_mentor_settings = (token: string) => get<MentorSettings>('/settings', token)
 export const get_mentor_class_edit = (token: string, class_id: number) =>
     get<MentorClassEdit>(`/classes/${class_id}/edit`, token)
+export const get_mentor_class_options = (token: string) =>
+    get<MentorClassOptions>('/admin/class-options', token)
 export const get_mentors_admin = (token: string) => get<MentorsAdmin>('/admin', token)
 export const get_mentors_metrics = (token: string, period: number) =>
     get<MentorsMetrics>(`/admin/metrics?period=${period}`, token)
@@ -58,8 +61,6 @@ export const create_mentor_class = (token: string, body: MentorClassBody) =>
     send<MentorClassCreated>('POST', '/classes', token, body)
 export const save_mentor_class = (token: string, class_id: number, body: MentorClassBody) =>
     send<MentorClassEdit>('PUT', `/classes/${class_id}/edit`, token, body)
-export const submit_mentor_class = (token: string, class_id: number) =>
-    send<MentorAction>('POST', `/classes/${class_id}/submit`, token)
 export const invite_class_teacher = (token: string, class_id: number, character_name: string) =>
     send<MentorAction>('POST', `/classes/${class_id}/teachers`, token, { character_name })
 export const teach_mentor_class = (token: string, class_id: number) =>

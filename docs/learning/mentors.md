@@ -14,7 +14,7 @@ The Learning Center is split into tabs, each its own URL: Certificates (`/learni
 | Settings | `/learning/mentors/admin/` | `learning.manage` |
 | Metrics | `/learning/mentors/metrics/` | `learning.manage` |
 | A class | `/learning/mentors/classes/<slug>/` | Everyone who can request |
-| Class editor | `/learning/mentors/classes/new/`, `/learning/mentors/classes/<id>/edit/` | The author and `learning.manage` |
+| Class editor | `/learning/mentors/classes/new/`, `/learning/mentors/classes/<id>/edit/` | `learning.manage` (from Settings) |
 
 There is no general intake: a pilot always asks one mentor.
 
@@ -41,7 +41,9 @@ The schedule runs every 15 minutes in `learning.tasks.run_mentor_schedule` on th
 
 ## Classes
 
-Any mentor can write a class (`MentorClass`): title, description, outline, length, where (voice, screen share, in space) and requirements. A learning manager reviews it before pilots see it, and can send it back with a note, publish, or hide it. The author invites other mentors to teach it (`MentorClassTeacher`), and any mentor can join a published class.
+Learning managers set up classes in Settings (`Create a class`): title, description, outline, length, where (voice, screen share, in space), requirements and a background. A new class is a draft; the editor's Published switch publishes or hides it. Pilots only see published classes. The manager invites mentors to teach it (`MentorClassTeacher`); an invited mentor can accept before the class is published, and any mentor can join a published class from My settings. Mentors don't write or edit classes. Classes left waiting for review from before this change show under Settings and publish like a draft.
+
+The background (`MentorClass.cover_image_url`) is picked from the site cover gallery that campaigns use (`backend/app/covers.py`), as thumbnails in the editor and in the Django admin. It is the class page's background; empty uses the Learning Center cover. `GET /admin/class-options` gives the editor the gallery and the requirement kinds.
 
 Requirements (`backend/learning/mentors/requirements.py`) are checked against what the site already knows: days in the alliance, a class done, accounts linked, a doctrine fit ready, a certificate, a tribe group, a corporation. A pilot who misses one sees what to do and can't request yet.
 

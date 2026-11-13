@@ -27,7 +27,7 @@ def post_class_teachers(request, class_id: int, payload: InviteTeacherBody):
 
     mc = get_class(class_id)
     if not views.can_edit_class(request.user, mc):
-        raise MentorError("Only the author can invite mentors.", 403)
+        raise MentorError("Learning managers only.", 403)
     name = (payload.character_name or "").strip()
     player = (
         EvePlayer.objects.filter(

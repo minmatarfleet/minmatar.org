@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+from app.covers import SITE_COVERS
+
 
 class Persona(models.TextChoices):
     ALLIANCE = "alliance", "Alliance"
@@ -184,6 +186,13 @@ def _empty_list():
     return []
 
 
+# Empty = the Learning Center cover (frontend MENTOR_CLASS_DEFAULT_COVER).
+MENTOR_CLASS_COVER_CHOICES: list[tuple[str, str]] = [
+    ("", "Learning Center"),
+    *SITE_COVERS,
+]
+
+
 class MentorProfile(models.Model):
     """A pilot who mentors (or asked to), and when they are around."""
 
@@ -232,7 +241,7 @@ class MentorProfile(models.Model):
 
 
 class MentorClass(models.Model):
-    """A class a mentor wrote. Several mentors can teach it."""
+    """A class a learning manager set up. Several mentors can teach it."""
 
     STATUS_DRAFT = "draft"
     STATUS_REVIEW = "review"
@@ -266,6 +275,14 @@ class MentorClass(models.Model):
     )
     # [{"kind": "alliance_days", "value": "7"}, ...]; see mentors/requirements.py
     requirements = models.JSONField(default=_empty_list, blank=True)
+    cover_image_url = models.CharField(
+        max_length=512,
+        blank=True,
+        default="",
+        choices=MENTOR_CLASS_COVER_CHOICES,
+        help_text="Background of the class page, from the site cover "
+        "gallery. Empty uses the Learning Center cover.",
+    )
     status = models.CharField(
         max_length=16, choices=STATUS_CHOICES, default=STATUS_DRAFT
     )

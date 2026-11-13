@@ -5,15 +5,30 @@ const { t, translatePath } = i18n(Astro.url)
 import { login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
-const { user } = get_request_user(Astro)
+const { auth_token, user } = get_request_user(Astro)
 
 if (!user)
     return login_redirect(Astro)
 
-import { MENTOR_CLASS_PARTIAL, mentors_url } from '@helpers/mentors'
+import { get_mentor_class } from '@helpers/api.minmatar.org/mentors'
+import { MENTOR_CLASS_PARTIAL, mentor_class_cover, mentors_url } from '@helpers/mentors'
 
-const partial_url = translatePath(mentors_url(MENTOR_CLASS_PARTIAL, { slug: Astro.params.slug ?? '' }))
-const page_title = `${t('mentors.page_title')} · ${t('learning.center_title')}`
+const slug = Astro.params.slug ?? ''
+const partial_url = translatePath(mentors_url(MENTOR_CLASS_PARTIAL, { slug }))
+
+// The page background is the cover a learning manager picked for the class.
+// The class itself renders in the partial; a failed lookup keeps the default.
+let cover_image_url = ''
+let class_title = ''
+try {
+    const detail = await get_mentor_class(auth_token as string, slug)
+    cover_image_url = detail.cover_image_url
+    class_title = detail.title
+} catch {
+    // The partial shows the error with a retry.
+}
+const cover = mentor_class_cover(cover_image_url)
+const page_title = `${class_title || t('mentors.page_title')} · ${t('learning.center_title')}`
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -29,8 +44,8 @@ import LazyPartial from '@components/blocks/LazyPartial.astro'
 >
     <PageLanding
         cover={{
-            image: '/images/guides-cover.jpg',
-            image_990: '/images/guides-cover.jpg',
+            image: cover,
+            image_990: cover,
             overlay: true,
             scrollable: true,
         }}

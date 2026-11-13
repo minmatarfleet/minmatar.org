@@ -6399,6 +6399,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning/mentors/admin/class-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The cover gallery and requirement kinds for the class editor. */
+        get: operations["learning_endpoints_mentors_get_class_options_get_class_options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning/mentors/admin/classes/{class_id}/status": {
         parameters: {
             query?: never;
@@ -6508,28 +6525,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A class for its author or a learning manager to edit. */
+        /** A class for a learning manager to edit. */
         get: operations["learning_endpoints_mentors_get_class_edit_get_class_edit"];
-        /** Save a class (author or learning manager). */
+        /** Save a class (learning managers). */
         put: operations["learning_endpoints_mentors_put_class_edit_put_class_edit"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/learning/mentors/classes/{class_id}/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send a class to learning managers for review. */
-        post: operations["learning_endpoints_mentors_post_class_submit_post_class_submit"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10246,6 +10246,8 @@ export interface components {
         AdminMentorClassSchema: {
             /** Author Name */
             author_name: string;
+            /** Cover Image Url */
+            cover_image_url: string;
             /** Id */
             id: number;
             /** Minutes */
@@ -21509,6 +21511,11 @@ export interface components {
         /** MentorClassBody */
         MentorClassBody: {
             /**
+             * Cover Image Url
+             * @default
+             */
+            cover_image_url?: string;
+            /**
              * Minutes
              * @default 60
              */
@@ -21536,6 +21543,13 @@ export interface components {
              */
             where?: string;
         };
+        /** MentorClassCoverSchema */
+        MentorClassCoverSchema: {
+            /** Label */
+            label: string;
+            /** Url */
+            url: string;
+        };
         /** MentorClassCreatedResponse */
         MentorClassCreatedResponse: {
             /** Id */
@@ -21550,6 +21564,8 @@ export interface components {
             author: components["schemas"]["MentorPersonSchema"] | null;
             /** Can Edit */
             can_edit: boolean;
+            /** Cover Image Url */
+            cover_image_url: string;
             /** Id */
             id: number;
             /** Mentors */
@@ -21579,6 +21595,8 @@ export interface components {
         MentorClassEditResponse: {
             /** Can Review */
             can_review: boolean;
+            /** Cover Image Url */
+            cover_image_url: string;
             /** Id */
             id: number;
             /** Minutes */
@@ -21603,6 +21621,13 @@ export interface components {
             title: string;
             /** Where */
             where: string;
+        };
+        /** MentorClassOptionsResponse */
+        MentorClassOptionsResponse: {
+            /** Covers */
+            covers: components["schemas"]["MentorClassCoverSchema"][];
+            /** Requirement Kinds */
+            requirement_kinds: components["schemas"]["RequirementKindSchema"][];
         };
         /** MentorClassRefSchema */
         MentorClassRefSchema: {
@@ -21816,6 +21841,8 @@ export interface components {
         MentorsAdminResponse: {
             /** Applications */
             applications: components["schemas"]["AdminMentorSchema"][];
+            /** Drafts */
+            drafts: components["schemas"]["AdminMentorClassSchema"][];
             /** Hidden */
             hidden: components["schemas"]["AdminMentorClassSchema"][];
             /** Mentors */
@@ -44262,6 +44289,59 @@ export interface operations {
             };
         };
     };
+    learning_endpoints_mentors_get_class_options_get_class_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorClassOptionsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     learning_endpoints_mentors_put_admin_class_status_put_admin_class_status: {
         parameters: {
             query?: never;
@@ -44683,61 +44763,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MentorClassEditResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    learning_endpoints_mentors_post_class_submit_post_class_submit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                class_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MentorActionResponse"];
                 };
             };
             /** @description Bad Request */

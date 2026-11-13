@@ -4,16 +4,31 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
 
 const { auth_token, user } = get_request_user(Astro)
 
-if (!user)
+// Classes are set up in Settings by learning managers.
+if (!user || !can(await get_gates(Astro), 'learning.manage'))
     return HTTP_403_Forbidden()
 
-import type { MentorClassBody, MentorClassEdit } from '@dtypes/api.minmatar.org'
-import { create_mentor_class, get_mentor_class_edit, save_mentor_class } from '@helpers/api.minmatar.org/mentors'
+import type { MentorClassBody, MentorClassEdit, MentorClassOptions, MentorsMe } from '@dtypes/api.minmatar.org'
+import {
+    create_mentor_class,
+    get_mentor_class_edit,
+    get_mentor_class_options,
+    get_mentors_me,
+    save_mentor_class,
+    set_mentor_class_status,
+} from '@helpers/api.minmatar.org/mentors'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { MENTOR_CLASS_EDITOR_PARTIAL, mentor_class_edit_path, mentor_class_path, mentors_url } from '@helpers/mentors'
+import {
+    MENTORS_ADMIN_PATH,
+    MENTOR_CLASS_EDITOR_PARTIAL,
+    mentor_class_edit_path,
+    mentor_class_path,
+    mentors_url,
+} from '@helpers/mentors'
 import { handle_mentor_post, type MentorActionResult } from '@helpers/mentors_actions'
 
 const params = Astro.url.searchParams
@@ -33,23 +48,46 @@ const body_from = (form: FormData): MentorClassBody => {
         outline: String(form.get('outline') ?? '').trim(),
         minutes: parseInt(String(form.get('minutes') ?? '60')) || 60,
         where: String(form.get('where') ?? 'voice'),
+        cover_image_url: String(form.get('cover_image_url') ?? ''),
         requirements: kinds
             .map((kind, index) => ({ kind, value: (values[index] ?? '').trim() }))
             .filter(row => row.kind),
     }
 }
 
+/**
+ * The Published switch: publish a draft or hidden class, hide a published
+ * one. A class waiting for review (from before classes moved to Settings)
+ * stays where it is until it is published.
+ */
+const next_status = (current: string, published: boolean): string | null =>
+    published && current !== 'published' ? 'published'
+    : !published && current === 'published' ? 'hidden'
+    : null
+
 let result: MentorActionResult | null = null
+// What was typed, kept when a save fails so nothing is lost.
+let posted: MentorClassBody | null = null
+let posted_published: boolean | null = null
 
 if (Astro.request.method === 'POST' && (mode === 'create' || mode === 'save')) {
     const form = await Astro.request.formData()
+    posted = body_from(form)
+    posted_published = form.get('published') === 'on'
     try {
         if (mode === 'create') {
-            const created = await create_mentor_class(token, body_from(form))
+            const created = await create_mentor_class(token, posted)
+            if (posted_published)
+                await set_mentor_class_status(token, created.id, 'published')
             return partial_redirect(Astro.request, translatePath(mentor_class_edit_path(created.id)))
         }
-        await save_mentor_class(token, class_id, body_from(form))
+        const saved = await save_mentor_class(token, class_id, posted)
+        const status = next_status(saved.status, posted_published)
+        if (status)
+            await set_mentor_class_status(token, class_id, status)
         result = { ok: true, message: t('mentors.settings.saved') }
+        posted = null
+        posted_published = null
     } catch (error) {
         result = { ok: false, message: (error as Error).message }
     }
@@ -57,40 +95,65 @@ if (Astro.request.method === 'POST' && (mode === 'create' || mode === 'save')) {
     result = await handle_mentor_post(Astro.request, Astro.url, token)
 }
 
+let me: MentorsMe | null = null
+let options: MentorClassOptions | null = null
 let edit: MentorClassEdit | null = null
 let fetch_error: Error | false = false
 
-if (class_id) {
-    try {
-        edit = await get_mentor_class_edit(token, class_id)
-    } catch (error) {
-        fetch_error = error as Error
-    }
+try {
+    ;[me, options, edit] = await Promise.all([
+        get_mentors_me(token),
+        get_mentor_class_options(token),
+        class_id ? get_mentor_class_edit(token, class_id) : Promise.resolve(null),
+    ])
+} catch (error) {
+    fetch_error = error as Error
 }
+
+const values: MentorClassBody = posted ?? {
+    title: edit?.title ?? '',
+    summary: edit?.summary ?? '',
+    outline: edit?.outline ?? '',
+    minutes: edit?.minutes ?? 60,
+    where: edit?.where ?? 'voice',
+    cover_image_url: edit?.cover_image_url ?? '',
+    requirements: edit?.requirements ?? [],
+}
+const published = posted_published ?? edit?.status === 'published'
 
 const self_url = translatePath(mentors_url(MENTOR_CLASS_EDITOR_PARTIAL, { class_id: class_id || undefined }))
 const post_url = (next: string) => translatePath(mentors_url(MENTOR_CLASS_EDITOR_PARTIAL, { class_id: class_id || undefined, mode: next }))
 
-const rows_json = JSON.stringify(edit?.requirements ?? [])
-const kinds = edit?.requirement_kinds ?? []
+const rows_json = JSON.stringify(values.requirements ?? [])
+const kinds = options?.requirement_kinds ?? []
+const id = (name: string) => `mentor-class-${name}`
 
 import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import MentorClassCoverPicker from '@components/blocks/mentors/MentorClassCoverPicker.astro'
+import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
 import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
-import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 ---
 
-<div id="mentor-class-editor" class="[ mentor-editor ]">
-    {fetch_error ?
-        <ErrorRefetch args={{ partial: self_url, error: fetch_error, delay, target: '#mentor-class-editor' }} />
+<div id="mentor-class-editor" class="[ class-editor ]">
+    {fetch_error || !me || !options || (class_id && !edit) ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentor-class-editor' }} />
         :
         <>
+            <MentorsNav active="admin" me={me} />
             <MentorsNotice result={result} />
 
-            <header class="[ mentor-editor__head ]">
+            <header class="[ class-editor__head ]">
                 <div>
-                    <p class="[ mentor-editor__muted ]">{t('mentors.editor.eyebrow')}</p>
+                    <a class="[ manage-eyebrow ]" href={translatePath(MENTORS_ADMIN_PATH)}>{t('mentors.editor.back')}</a>
                     <h2>{edit ? edit.title : t('mentors.editor.create')}</h2>
                 </div>
                 {edit &&
@@ -98,55 +161,56 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                 }
             </header>
 
-            {edit?.review_note && edit.status === 'draft' &&
-                <p role="status" class="[ mentor-editor__note ]">{t('mentors.editor.sent_back').replace('{note}', edit.review_note)}</p>
-            }
+            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+                <form
+                    class="[ manage-form class-editor__form ]"
+                    hx-post={post_url(edit ? 'save' : 'create')}
+                    hx-target="#mentor-class-editor"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="find button[type=submit]"
+                >
+                    <section class="[ class-editor__section ]" aria-labelledby={id('about')}>
+                        <h3 id={id('about')}>{t('mentors.editor.about')}</h3>
+                        <ManageField label={t('mentors.editor.title')} for={id('title')}>
+                            <Input id={id('title')} type="text" name="title" value={values.title} maxlength="120" required />
+                        </ManageField>
+                        <ManageField label={t('mentors.editor.summary')} for={id('summary')}>
+                            <Textarea id={id('summary')} name="summary" rows="3" maxlength="2000">{values.summary}</Textarea>
+                        </ManageField>
+                        <ManageField label={t('mentors.editor.outline')} for={id('outline')} hint={t('mentors.editor.outline_hint')}>
+                            <Textarea id={id('outline')} name="outline" rows="5" maxlength="4000">{values.outline}</Textarea>
+                        </ManageField>
+                        <div class="[ manage-fields class-editor__narrow ]">
+                            <ManageField label={t('mentors.editor.length')} for={id('minutes')}>
+                                <Input id={id('minutes')} type="number" name="minutes" min="15" max="180" step="5" value={values.minutes} required />
+                            </ManageField>
+                            <ManageField label={t('mentors.editor.where')} for={id('where')}>
+                                <Select id={id('where')} name="where">
+                                    {WHERE.map(where =>
+                                        <option value={where} selected={values.where === where}>{t(t_key('mentors.where_label.', where))}</option>
+                                    )}
+                                </Select>
+                            </ManageField>
+                        </div>
+                    </section>
 
-            <form
-                class="[ mentor-editor__form ]"
-                hx-post={post_url(edit ? 'save' : 'create')}
-                hx-target="#mentor-class-editor"
-                hx-swap="outerHTML"
-            >
-                <MentorsSection title={t('mentors.editor.about')}>
-                    <label class="[ mentor-editor__field ]">
-                        <span>{t('mentors.editor.title')}</span>
-                        <input type="text" name="title" value={edit?.title ?? ''} maxlength="120" required />
-                    </label>
-                    <label class="[ mentor-editor__field ]">
-                        <span>{t('mentors.editor.summary')}</span>
-                        <textarea name="summary" rows="3" maxlength="2000">{edit?.summary ?? ''}</textarea>
-                    </label>
-                    <label class="[ mentor-editor__field ]">
-                        <span>{t('mentors.editor.outline')} <small>({t('mentors.editor.outline_hint')})</small></span>
-                        <textarea name="outline" rows="5" maxlength="4000">{edit?.outline ?? ''}</textarea>
-                    </label>
-                    <div class="[ mentor-editor__row ]">
-                        <label class="[ mentor-editor__field ]">
-                            <span>{t('mentors.editor.length')}</span>
-                            <input type="number" name="minutes" min="15" max="180" step="5" value={edit?.minutes ?? 60} required />
-                        </label>
-                        <label class="[ mentor-editor__field ]">
-                            <span>{t('mentors.editor.where')}</span>
-                            <select name="where">
-                                {WHERE.map(where =>
-                                    <option value={where} selected={(edit?.where ?? 'voice') === where}>{t(t_key('mentors.where_label.', where))}</option>
-                                )}
-                            </select>
-                        </label>
-                    </div>
-                </MentorsSection>
+                    <section class="[ class-editor__section ]" aria-labelledby={id('cover')}>
+                        <h3 id={id('cover')}>{t('mentors.editor.background')}</h3>
+                        <p class="[ manage-muted ]">{t('mentors.editor.background_hint')}</p>
+                        <MentorClassCoverPicker covers={options.covers} selected={values.cover_image_url ?? ''} labelledby={id('cover')} />
+                    </section>
 
-                {edit &&
-                    <MentorsSection title={t('mentors.editor.requirements')} hint={t('mentors.editor.requirements_hint')}>
-                        <div class="[ mentor-editor__reqs ]" x-data={`{ rows: ${rows_json} }`}>
+                    <section class="[ class-editor__section ]" aria-labelledby={id('reqs')}>
+                        <h3 id={id('reqs')}>{t('mentors.editor.requirements')}</h3>
+                        <p class="[ manage-muted ]">{t('mentors.editor.requirements_hint')}</p>
+                        <div class="[ class-editor__reqs ]" x-data={`{ rows: ${rows_json} }`}>
                             <template x-for="(row, index) in rows" x-bind:key="index">
-                                <div class="[ mentor-editor__req ]">
-                                    <select name="req_kind" x-model="row.kind" aria-label={t('mentors.editor.requirements')}>
+                                <div class="[ class-editor__req ]">
+                                    <Select name="req_kind" x-model="row.kind" aria-label={t('mentors.editor.requirements')}>
                                         {kinds.map(kind => <option value={kind.kind}>{kind.label}</option>)}
-                                    </select>
-                                    <input type="text" name="req_value" x-model="row.value" aria-label={t('mentors.editor.value')} placeholder={t('mentors.editor.value')} maxlength="200" />
-                                    <Button type="button" size="sm" color="transparent" x-on:click="rows.splice(index, 1)" aria-label={t('mentors.editor.remove_requirement')}>×</Button>
+                                    </Select>
+                                    <Input type="text" name="req_value" x-model="row.value" aria-label={t('mentors.editor.value')} placeholder={t('mentors.editor.value')} maxlength="200" />
+                                    <Button type="button" size="sm" color="transparent" narrow={true} x-on:click="rows.splice(index, 1)" aria-label={t('mentors.editor.remove_requirement')}>×</Button>
                                 </div>
                             </template>
                             <div>
@@ -155,77 +219,76 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                 </Button>
                             </div>
                         </div>
-                    </MentorsSection>
-                }
+                    </section>
 
-                <div class="[ mentor-editor__actions ]">
-                    <Button type="submit" size="sm">{t('mentors.editor.save')}</Button>
-                    {edit && edit.status === 'published' &&
-                        <Button size="sm" color="transparent" href={translatePath(mentor_class_path(edit.slug))}>{t('mentors.editor.view')}</Button>
+                    <div class="[ manage-actions ]">
+                        <Button type="submit" size="sm">{edit ? t('mentors.editor.save') : t('mentors.editor.create')}</Button>
+                        {edit && edit.status === 'published' &&
+                            <Button size="sm" color="transparent" href={translatePath(mentor_class_path(edit.slug))}>{t('mentors.editor.view')}</Button>
+                        }
+                        <span class="[ manage-actions__end ]">
+                            <ManageSwitch name="published" label={t('mentors.editor.published')} checked={published} />
+                        </span>
+                    </div>
+                    {!published && <p class="[ manage-muted ]">{t('mentors.editor.draft_note')}</p>}
+                </form>
+            </ComponentBlock>
+
+            <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)">
+                <section class="[ class-editor__section ]" aria-labelledby={id('teachers')}>
+                    <h3 id={id('teachers')}>{t('mentors.editor.teachers')}</h3>
+                    {!edit ?
+                        <p class="[ manage-muted ]">{t('mentors.editor.save_first')}</p>
+                        :
+                        <>
+                            {edit.teachers.length === 0 ?
+                                <EmptyState title={t('mentors.editor.no_teachers')} />
+                                :
+                                <ul class="[ class-editor__teachers ]">
+                                    {edit.teachers.map(teacher =>
+                                        <li class="[ manage-who ]">
+                                            <img src={get_player_icon(teacher.person.character_id ?? 1, 32)} alt="" width="28" height="28" loading="lazy" />
+                                            <span class="[ manage-who__text ]">
+                                                <span class="[ manage-who__name ]">{teacher.person.name}</span>
+                                                <span class="[ manage-who__sub ]">
+                                                    {teacher.status === 'accepted' ? t('mentors.editor.accepted') : t('mentors.editor.invited')}
+                                                </span>
+                                            </span>
+                                        </li>
+                                    )}
+                                </ul>
+                            }
+                            <form
+                                class="[ class-editor__invite ]"
+                                hx-post={post_url('invite_teacher')}
+                                hx-target="#mentor-class-editor"
+                                hx-swap="outerHTML"
+                                hx-disabled-elt="find button[type=submit]"
+                            >
+                                <ManageField label={t('mentors.editor.invite')} for={id('invite')}>
+                                    <Input id={id('invite')} type="text" name="character_name" required placeholder={t('mentors.editor.invite_placeholder')} />
+                                </ManageField>
+                                <Button type="submit" size="sm" color="transparent">{t('mentors.editor.invite_button')}</Button>
+                            </form>
+                        </>
                     }
-                </div>
-            </form>
-
-            {edit && edit.status === 'draft' &&
-                <div class="[ mentor-editor__submit ]">
-                    <Button
-                        type="button"
-                        size="sm"
-                        color="green"
-                        hx-post={post_url('submit_class')}
-                        hx-target="#mentor-class-editor"
-                        hx-swap="outerHTML"
-                    >
-                        {t('mentors.editor.submit')}
-                    </Button>
-                    <p class="[ mentor-editor__muted ]">{t('mentors.editor.review_note')}</p>
-                </div>
-            }
-
-            <MentorsSection title={t('mentors.editor.teachers')}>
-                {!edit ?
-                    <p class="[ mentor-editor__muted ]">{t('mentors.editor.save_first')}</p>
-                    :
-                    <>
-                        <ul class="[ mentor-editor__teachers ]">
-                            {edit.teachers.map(teacher =>
-                                <li>
-                                    <img src={get_player_icon(teacher.person.character_id ?? 1, 32)} alt="" width="28" height="28" loading="lazy" />
-                                    <strong>{teacher.person.name}</strong>
-                                    <small>
-                                        {teacher.is_author ? t('mentors.editor.author') : teacher.status === 'accepted' ? t('mentors.editor.accepted') : t('mentors.editor.invited')}
-                                    </small>
-                                </li>
-                            )}
-                        </ul>
-                        <form
-                            class="[ mentor-editor__invite ]"
-                            hx-post={post_url('invite_teacher')}
-                            hx-target="#mentor-class-editor"
-                            hx-swap="outerHTML"
-                        >
-                            <input type="text" name="character_name" required placeholder={t('mentors.editor.invite_placeholder')} aria-label={t('mentors.editor.invite')} />
-                            <Button type="submit" size="sm" color="transparent">{t('mentors.editor.invite')}</Button>
-                        </form>
-                    </>
-                }
-            </MentorsSection>
+                </section>
+            </ComponentBlock>
         </>
     }
 </div>
 
 <style lang="scss">
-    .mentor-editor,
-    .mentor-editor__form {
+    .class-editor {
         display: flex;
         flex-direction: column;
         gap: var(--space-l);
     }
 
-    .mentor-editor__head {
+    .class-editor__head {
         display: flex;
         flex-wrap: wrap;
-        align-items: flex-start;
+        align-items: flex-end;
         justify-content: space-between;
         gap: var(--space-s);
 
@@ -234,78 +297,46 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         }
     }
 
-    .mentor-editor__muted {
-        color: var(--text-muted);
-        font-size: var(--step--1);
+    .class-editor__form {
+        gap: var(--space-l);
     }
 
-    .mentor-editor__note {
-        padding: var(--space-xs) var(--space-s);
-        border: solid 1px var(--fleet-yellow);
-        font-size: var(--step--1);
-    }
-
-    .mentor-editor__field {
+    .class-editor__section {
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
-        max-width: var(--max-text-width);
-        color: var(--text-muted);
-        font-size: var(--step--1);
+        gap: var(--space-s);
 
-        input,
-        textarea,
-        select {
-            width: 100%;
+        h3 {
+            font-size: var(--step-1);
         }
     }
 
-    .mentor-editor__row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-m);
-
-        .mentor-editor__field {
-            flex: 0 1 14em;
-        }
+    .class-editor__narrow {
+        max-width: 30rem;
     }
 
-    .mentor-editor__reqs {
+    .class-editor__reqs {
         display: flex;
         flex-direction: column;
         gap: var(--space-2xs);
-        max-width: var(--max-text-width);
     }
 
-    .mentor-editor__req {
-        display: flex;
-        flex-wrap: wrap;
+    .class-editor__req {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
         align-items: center;
         gap: var(--space-2xs);
 
-        select {
-            flex: 2 1 16em;
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr) auto;
+
+            > :first-child {
+                grid-column: 1 / -1;
+            }
         }
-
-        input {
-            flex: 1 1 10em;
-        }
     }
 
-    .mentor-editor__actions,
-    .mentor-editor__submit,
-    .mentor-editor__invite {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-xs);
-    }
-
-    .mentor-editor__invite input {
-        flex: 0 1 20em;
-    }
-
-    .mentor-editor__teachers {
+    .class-editor__teachers {
         display: flex;
         flex-direction: column;
         gap: var(--space-2xs);
@@ -313,19 +344,19 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         padding: 0;
         list-style: none;
 
-        li {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-        }
-
         img {
             border-radius: var(--space-3xs);
         }
+    }
 
-        small {
-            color: var(--text-muted);
-            font-size: var(--step--1);
+    .class-editor__invite {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: var(--space-xs);
+
+        > :global(:first-child) {
+            flex: 0 1 20rem;
         }
     }
 </style>

@@ -327,27 +327,98 @@ class MentorApiTestCase(TestCase):
         response = self.client.get(f"{BASE}/admin", **auth_headers(self.orion))
         self.assertEqual(403, response.status_code)
 
-    def test_write_and_submit_a_class(self, *_):
+    def _class_body(self, **changes):
+        body = {
+            "title": "Plexing for ISK",
+            "minutes": 30,
+            "where": "in_space",
+            "requirements": [{"kind": "alliance_days", "value": "7"}],
+            "cover_image_url": "/images/hek-campaign.webp",
+        }
+        body.update(changes)
+        return body
+
+    def test_mentors_cannot_create_classes(self, *_):
         response = self.client.post(
             f"{BASE}/classes",
-            data={
-                "title": "Plexing for ISK",
-                "minutes": 30,
-                "where": "in_space",
-                "requirements": [{"kind": "alliance_days", "value": "7"}],
-            },
+            data=self._class_body(),
             content_type="application/json",
             **auth_headers(self.orion),
         )
-        self.assertEqual(201, response.status_code)
-        class_id = response.json()["id"]
+        self.assertEqual(403, response.status_code)
+        response = self.client.get(
+            f"{BASE}/classes/{self.mc.pk}/edit", **auth_headers(self.orion)
+        )
+        self.assertEqual(403, response.status_code)
+
+    def test_manager_sets_up_a_class_with_a_cover(self, *_):
+        with mock.patch(
+            "learning.mentors.views.can_manage", return_value=True
+        ):
+            options = self.client.get(
+                f"{BASE}/admin/class-options", **auth_headers(self.pilot)
+            )
+            self.assertEqual(200, options.status_code)
+            covers = [c["url"] for c in options.json()["covers"]]
+            self.assertIn("", covers)
+            self.assertIn("/images/hek-campaign.webp", covers)
+
+            response = self.client.post(
+                f"{BASE}/classes",
+                data=self._class_body(cover_image_url="/etc/passwd"),
+                content_type="application/json",
+                **auth_headers(self.pilot),
+            )
+            self.assertEqual(400, response.status_code)
+
+            response = self.client.post(
+                f"{BASE}/classes",
+                data=self._class_body(),
+                content_type="application/json",
+                **auth_headers(self.pilot),
+            )
+            self.assertEqual(201, response.status_code)
+            class_id = response.json()["id"]
+            mc = MentorClass.objects.get(pk=class_id)
+            self.assertEqual(MentorClass.STATUS_DRAFT, mc.status)
+            self.assertEqual("/images/hek-campaign.webp", mc.cover_image_url)
+            # The manager doesn't become a teacher by setting it up.
+            self.assertFalse(mc.teachers.exists())
+
+            admin = self.client.get(
+                f"{BASE}/admin", **auth_headers(self.pilot)
+            ).json()
+            self.assertEqual(
+                [class_id], [row["id"] for row in admin["drafts"]]
+            )
+
+            response = self.client.post(
+                f"{BASE}/classes/{class_id}/teachers",
+                data={"character_name": "orion"},
+                content_type="application/json",
+                **auth_headers(self.pilot),
+            )
+            self.assertEqual(200, response.status_code, response.json())
+
+        # An invited mentor can take a class before it is published.
         response = self.client.post(
-            f"{BASE}/classes/{class_id}/submit", **auth_headers(self.orion)
+            f"{BASE}/classes/{class_id}/teach", **auth_headers(self.orion)
         )
         self.assertEqual(200, response.status_code)
         self.assertEqual(
-            MentorClass.STATUS_REVIEW,
-            MentorClass.objects.get(pk=class_id).status,
+            MentorClassTeacher.STATUS_ACCEPTED,
+            mc.teachers.get(mentor=self.profile).status,
+        )
+
+    def test_class_page_carries_its_cover(self, *_):
+        self.mc.cover_image_url = "/images/home-auga-cover.jpg"
+        self.mc.save()
+        detail = self.client.get(
+            f"{BASE}/classes/{self.mc.slug}", **auth_headers(self.pilot)
+        )
+        self.assertEqual(200, detail.status_code)
+        self.assertEqual(
+            "/images/home-auga-cover.jpg", detail.json()["cover_image_url"]
         )
 
     def test_bot_endpoints_need_the_service_account(self, *_):

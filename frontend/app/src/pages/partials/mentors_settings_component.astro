@@ -14,8 +14,6 @@ import type { MentorSettings, MentorsMe } from '@dtypes/api.minmatar.org'
 import { get_mentor_settings, get_mentors_me } from '@helpers/api.minmatar.org/mentors'
 import {
     MENTORS_SETTINGS_PARTIAL,
-    NEW_MENTOR_CLASS_PATH,
-    mentor_class_edit_path,
     mentor_class_path,
     mentors_url,
 } from '@helpers/mentors'
@@ -97,10 +95,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                         </form>
                     </MentorsSection>
 
-                    <MentorsSection title={t('mentors.settings.teach')}>
-                        <Button slot="aside" size="sm" color="transparent" href={translatePath(NEW_MENTOR_CLASS_PATH)}>
-                            {t('mentors.settings.create')}
-                        </Button>
+                    <MentorsSection title={t('mentors.settings.teach')} hint={t('mentors.settings.teach_hint')}>
                         {settings.teaching.length === 0 ?
                             <EmptyState title={t('mentors.settings.teach_empty')} />
                             :
@@ -109,31 +104,21 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                     <li>
                                         <div class="[ mentors-classes__body ]">
                                             <a href={translatePath(mentor_class_path(row.mentor_class.slug))}>{row.mentor_class.title}</a>
-                                            <small>
-                                                {row.is_author ? t('mentors.settings.written_by_you') : t('mentors.settings.written_by').replace('{name}', row.author_name)}
-                                                {' · '}{t('mentors.settings.teachers').replace('{count}', row.teacher_count.toString())}
-                                            </small>
+                                            <small>{t('mentors.settings.teachers').replace('{count}', row.teacher_count.toString())}</small>
                                         </div>
                                         {row.mentor_class.status !== 'published' &&
                                             <Tag text={t(t_key('mentors.class_status.', row.mentor_class.status))} color="fleet-yellow" variant="outline" narrow={true} />
                                         }
-                                        {row.is_author &&
-                                            <Button size="sm" color="transparent" href={translatePath(mentor_class_edit_path(row.mentor_class.id))}>
-                                                {t('mentors.settings.edit')}
-                                            </Button>
-                                        }
-                                        {!row.is_author &&
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                color="transparent"
-                                                hx-post={post_url('stop', { class_id: row.mentor_class.id })}
-                                                hx-target="#mentors-settings"
-                                                hx-swap="outerHTML"
-                                            >
-                                                {t('mentors.settings.stop')}
-                                            </Button>
-                                        }
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            color="transparent"
+                                            hx-post={post_url('stop', { class_id: row.mentor_class.id })}
+                                            hx-target="#mentors-settings"
+                                            hx-swap="outerHTML"
+                                        >
+                                            {t('mentors.settings.stop')}
+                                        </Button>
                                     </li>
                                 )}
                             </ul>

@@ -100,6 +100,7 @@ class MentorClassDetailResponse(Schema):
     outline: list[str]
     minutes: int
     where: str
+    cover_image_url: str
     status: str
     author: MentorPersonSchema | None
     requirements: list[RequirementCheckSchema]
@@ -198,6 +199,7 @@ class MentorClassBody(Schema):
     minutes: int = 60
     where: str = "voice"
     requirements: list[RequirementRowSchema] = []
+    cover_image_url: str = ""
 
 
 class MentorClassTeacherSchema(Schema):
@@ -221,11 +223,22 @@ class MentorClassEditResponse(Schema):
     minutes: int
     where: str
     requirements: list[RequirementRowSchema]
+    cover_image_url: str
     status: str
     review_note: str
     teachers: list[MentorClassTeacherSchema]
     requirement_kinds: list[RequirementKindSchema]
     can_review: bool
+
+
+class MentorClassCoverSchema(Schema):
+    url: str
+    label: str
+
+
+class MentorClassOptionsResponse(Schema):
+    covers: list[MentorClassCoverSchema]
+    requirement_kinds: list[RequirementKindSchema]
 
 
 class MentorClassCreatedResponse(Schema):
@@ -261,6 +274,7 @@ class AdminMentorClassSchema(Schema):
     teachers: list[MentorPersonSchema]
     requests_90d: int
     requirement_count: int
+    cover_image_url: str
     status: str
     review_note: str
 
@@ -278,6 +292,7 @@ class AdminMentorSchema(Schema):
 
 class MentorsAdminResponse(Schema):
     reports: list[MentorReportSchema]
+    drafts: list[AdminMentorClassSchema]
     review: list[AdminMentorClassSchema]
     published: list[AdminMentorClassSchema]
     hidden: list[AdminMentorClassSchema]

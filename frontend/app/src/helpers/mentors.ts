@@ -10,6 +10,14 @@ export const mentor_class_path = (slug: string) => `/learning/mentors/classes/${
 export const mentor_class_edit_path = (id: number) => `/learning/mentors/classes/${id}/edit/`
 export const NEW_MENTOR_CLASS_PATH = '/learning/mentors/classes/new/'
 
+/** The class page background when a learning manager didn't pick one. */
+export const MENTOR_CLASS_DEFAULT_COVER = '/images/guides-cover.jpg'
+
+/** A class's background: its picked cover, or the Learning Center one. */
+export function mentor_class_cover(cover_image_url: string | null | undefined): string {
+    return cover_image_url || MENTOR_CLASS_DEFAULT_COVER
+}
+
 export const MENTORS_HOME_PARTIAL = '/partials/mentors_home_component'
 export const MENTORS_MENTEES_PARTIAL = '/partials/mentors_mentees_component'
 export const MENTORS_SETTINGS_PARTIAL = '/partials/mentors_settings_component'
