@@ -3017,7 +3017,7 @@ export interface paths {
         put?: never;
         /**
          * Post Invite Feedback Discord Submit
-         * @description Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment, and a real pick beats "Nothing".
+         * @description Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment.
          */
         post: operations["fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_submit"];
         delete?: never;
@@ -10449,10 +10449,10 @@ export interface components {
              */
             felt?: string;
             /**
-             * Improve
-             * @default []
+             * Keep
+             * @default
              */
-            improve?: string[];
+            keep?: string;
             /**
              * Sitting Out
              * @default
@@ -14881,10 +14881,10 @@ export interface components {
              */
             felt?: string;
             /**
-             * Improve
-             * @default []
+             * Keep
+             * @default
              */
-            improve?: string[];
+            keep?: string;
             /**
              * Sitting Out
              * @default
@@ -25670,15 +25670,10 @@ export interface components {
              */
             glad_or_fine_percent?: number;
             /**
-             * Improve
+             * Keep
              * @default []
              */
-            improve?: components["schemas"]["Bar"][];
-            /**
-             * Improve Help
-             * @default
-             */
-            improve_help?: string;
+            keep?: components["schemas"]["Bar"][];
             /**
              * Lede
              * @default
@@ -27057,10 +27052,10 @@ export interface components {
              */
             felt?: string;
             /**
-             * Improve
-             * @default []
+             * Keep
+             * @default
              */
-            improve?: string[];
+            keep?: string;
             /**
              * Sitting Out
              * @default

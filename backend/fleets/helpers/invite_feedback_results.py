@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from fleets.helpers.invite_feedback import (
     FELT,
-    IMPROVE,
+    KEEP,
     PROBE_KEY,
     SITTING_OUT,
     WHY,
@@ -67,7 +67,7 @@ def results_payload(cut: str = "all", *, link_only: bool = False) -> dict:
         for row, flags in submitted
         if _slice_matches(active, flags)
     ]
-    people = [row for row, _flags in chosen]
+    people = [row for row, unused_flags in chosen]
     payload = _empty(
         show_link=True,
         status=survey.status,
@@ -91,10 +91,7 @@ def results_payload(cut: str = "all", *, link_only: bool = False) -> dict:
             f"{len(why_people)} pilots. The form listed those fleets "
             "under the question."
         )
-    payload["improve"] = _ranked_multi(people, IMPROVE)
-    payload["improve_help"] = (
-        "Pilots could pick two, so these counts are a priority list."
-    )
+    payload["keep"] = _ordered(people, "keep", KEEP)
     if active == "all":
         payload["quotes"] = _quotes(people)
         if payload["quotes"]:
@@ -125,8 +122,7 @@ def _empty(*, show_link: bool, status: str, lede: str) -> dict:
         "felt_help": "",
         "why": [],
         "why_help": "",
-        "improve": [],
-        "improve_help": "",
+        "keep": [],
         "quotes": [],
         "quotes_help": "",
     }
@@ -156,7 +152,7 @@ def _flags(row: FleetInviteFeedback) -> dict:
 
 
 def _slice_matches(cut: str, flags: dict) -> bool:
-    for key, _label, test in _SLICES:
+    for key, unused_label, test in _SLICES:  # pylint: disable=unused-variable
         if key == cut:
             return test(flags)
     return True
@@ -165,7 +161,7 @@ def _slice_matches(cut: str, flags: dict) -> bool:
 def _chips(submitted, cut: str) -> list[dict]:
     chips = []
     for key, label, test in _SLICES:
-        count = sum(1 for _row, flags in submitted if test(flags))
+        count = sum(1 for unused_row, flags in submitted if test(flags))
         if key != "all" and count < MIN_CELL:
             continue
         chips.append(
@@ -182,11 +178,13 @@ def _tiles(flagged, submitted) -> dict:
     responses = len(submitted)
     glad = sum(
         1
-        for row, _flags in submitted
+        for row, unused_flags in submitted
         if (row.answers or {}).get("felt") in {"glad", "fine"}
     )
-    open_asked = sum(1 for _row, flags in flagged if flags["pending"])
-    open_replied = sum(1 for _row, flags in submitted if flags["pending"])
+    open_asked = sum(1 for unused_row, flags in flagged if flags["pending"])
+    open_replied = sum(
+        1 for unused_row, flags in submitted if flags["pending"]
+    )
     return {
         "cohort_count": cohort,
         "response_count": responses,
@@ -202,8 +200,8 @@ def _frame(flagged, submitted) -> list[dict]:
     responses = len(submitted)
     rows = []
     for key, label, test in _FACTS:
-        asked = sum(1 for _row, flags in flagged if test(flags))
-        answered = sum(1 for _row, flags in submitted if test(flags))
+        asked = sum(1 for unused_row, flags in flagged if test(flags))
+        answered = sum(1 for unused_row, flags in submitted if test(flags))
         rows.append(
             {
                 "key": key,
@@ -287,7 +285,7 @@ def _answer_split(chosen):
 def _dose_split(chosen):
     one = [row for row, flags in chosen if flags["count"] == 1]
     many = [row for row, flags in chosen if flags["count"] >= 3]
-    two = sum(1 for _row, flags in chosen if flags["count"] == 2)
+    two = sum(1 for unused_row, flags in chosen if flags["count"] == 2)
     sides = []
     one_side = _side("one", "1 invite", one, "felt", FELT)
     many_side = _side("many", "3 or more", many, "felt", FELT)
@@ -333,28 +331,13 @@ def _ordered(people, question, choices) -> list[dict]:
 
 def _ranked(people, question, choices) -> list[dict]:
     rows = _ordered(people, question, choices)
-    order = {key: index for index, (key, _label) in enumerate(choices)}
-    rows.sort(key=lambda row: (-row["count"], order[row["key"]]))
-    return rows
-
-
-def _ranked_multi(people, choices) -> list[dict]:
-    counts = {key: 0 for key, _label in choices}
-    for row in people:
-        for value in (row.answers or {}).get("improve") or []:
-            if value in counts:
-                counts[value] += 1
-    rows = [
-        {"key": key, "label": label, "count": counts[key]}
-        for key, label in choices
-    ]
-    order = {key: index for index, (key, _label) in enumerate(choices)}
+    order = {key: index for index, (key, unused_label) in enumerate(choices)}
     rows.sort(key=lambda row: (-row["count"], order[row["key"]]))
     return rows
 
 
 def _tally(people, question, choices) -> dict:
-    counts = {key: 0 for key, _label in choices}
+    counts = {key: 0 for key, unused_label in choices}
     for row in people:
         value = (row.answers or {}).get(question) or ""
         if value in counts:

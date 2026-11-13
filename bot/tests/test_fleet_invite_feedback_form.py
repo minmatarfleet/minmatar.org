@@ -12,7 +12,7 @@ def _form(*, with_why=True, answers=None):
     questions = [
         {
             "key": "felt",
-            "short": "These invites felt…",
+            "short": "The direct fleet invitations felt…",
             "prompt": "Most of the time, these invites felt…",
             "kind": "single",
             "max": 1,
@@ -34,7 +34,7 @@ def _form(*, with_why=True, answers=None):
         questions.append(
             {
                 "key": "why",
-                "short": "Why the open ones stayed open",
+                "short": "When I didn't select either option",
                 "prompt": "On the ones still open, what was most often going on?",
                 "kind": "single",
                 "max": 1,
@@ -46,15 +46,14 @@ def _form(*, with_why=True, answers=None):
         )
     questions.append(
         {
-            "key": "improve",
-            "short": "What would have mattered",
-            "prompt": "Which of these would have mattered for the invites above?",
-            "kind": "multi",
-            "max": 2,
+            "key": "keep",
+            "short": "Should we keep direct fleet invitations?",
+            "prompt": "Should we keep direct fleet invitations?",
+            "kind": "single",
+            "max": 1,
             "choices": [
-                {"key": "fewer", "label": "Fewer of them"},
-                {"key": "maybe", "label": "A way to say maybe"},
-                {"key": "nothing", "label": "Nothing. They were fine"},
+                {"key": "yes", "label": "Yes"},
+                {"key": "no", "label": "No"},
             ],
         }
     )
@@ -62,7 +61,7 @@ def _form(*, with_why=True, answers=None):
         "state": "form",
         "questions": questions,
         "answers": answers
-        or {"felt": "", "sitting_out": "", "why": "", "why_text": "", "improve": [], "comment": ""},
+        or {"felt": "", "sitting_out": "", "why": "", "why_text": "", "keep": "", "comment": ""},
         "comment_heading": "One thing to change",
         "comment_placeholder": "Optional. A sentence is enough.",
         "list_heading": "Your invites, last few weeks.",
@@ -81,10 +80,10 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
         labels = [item.text for item in modal.children]
         self.assertEqual(
             [
-                "These invites felt…",
+                "The direct fleet invitations felt…",
                 "Sitting out felt like…",
-                "Why the open ones stayed open",
-                "What would have mattered",
+                "When I didn't select either option",
+                "Should we keep direct fleet invitations?",
                 "One thing to change",
             ],
             labels,
@@ -92,8 +91,8 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
         for label in modal.children:
             self.assertLessEqual(len(label.text), 45)
             self.assertLessEqual(len(label.description or ""), 100)
-        improve = modal.selects["improve"]
-        self.assertEqual((1, 2), (improve.min_values, improve.max_values))
+        keep = modal.selects["keep"]
+        self.assertEqual((1, 1), (keep.min_values, keep.max_values))
         # Other's reason goes in the comment, so the comment says so.
         self.assertIn("Other", modal.children[-1].description)
 
@@ -135,15 +134,15 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
                     "sitting_out": "normal",
                     "why": "later",
                     "why_text": "",
-                    "improve": ["fewer", "maybe"],
+                    "keep": "no",
                     "comment": "Shorter DMs",
                 }
             )
         )
         felt = {o.value: o.default for o in modal.selects["felt"].options}
         self.assertEqual({"glad": False, "fine": True}, felt)
-        improve = [o.value for o in modal.selects["improve"].options if o.default]
-        self.assertEqual(["fewer", "maybe"], improve)
+        keep = [o.value for o in modal.selects["keep"].options if o.default]
+        self.assertEqual(["no"], keep)
         self.assertEqual("Shorter DMs", modal.comment.default)
 
     async def test_submit_sends_the_picks_and_replies_privately(self):
@@ -153,7 +152,7 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
         modal.selects["felt"]._values = ["fine"]
         modal.selects["sitting_out"]._values = ["normal"]
         modal.selects["why"]._values = ["other"]
-        modal.selects["improve"]._values = ["fewer", "maybe"]
+        modal.selects["keep"]._values = ["yes"]
         modal.comment._value = "Away that week"
 
         interaction = MagicMock()
@@ -176,7 +175,7 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
                 "sitting_out": "normal",
                 "why": "other",
                 "why_text": "",
-                "improve": ["fewer", "maybe"],
+                "keep": "yes",
                 "comment": "Away that week",
             },
             seen["args"][1],
@@ -194,13 +193,13 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
         interaction.response.defer = AsyncMock()
         interaction.followup.send = AsyncMock()
         error = feedback_form.FeedbackApiError(
-            "Pick one or two that would have mattered.",
-            ["Pick one or two that would have mattered."],
+            "Say whether we should keep direct fleet invitations.",
+            ["Say whether we should keep direct fleet invitations."],
         )
         with patch.object(feedback_form, "save_answers", side_effect=error):
             await modal.on_submit(interaction)
         sent = interaction.followup.send.await_args.args[0]
-        self.assertIn("Pick one or two", sent)
+        self.assertIn("keep direct fleet invitations", sent)
         self.assertIn(feedback_form.WEBSITE_URL, sent)
 
 

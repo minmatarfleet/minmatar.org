@@ -7732,7 +7732,7 @@ export const ui = {
         'fleets.invite_feedback.sitting_out': 'Sitting out',
         'fleets.invite_feedback.felt': 'How the invites felt',
         'fleets.invite_feedback.why': 'Why an invite stayed open',
-        'fleets.invite_feedback.improve': 'What to change',
+        'fleets.invite_feedback.keep': 'Keep direct fleet invitations?',
         'fleets.invite_feedback.quotes': 'In their words',
         'fleets.commanders.page_title': 'Fleet Commanders',
         'fleets.commanders.meta_description': 'Who is commanding fleets: level, timezone and when they last led.',

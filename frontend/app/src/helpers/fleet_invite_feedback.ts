@@ -24,7 +24,7 @@ export interface InviteFeedbackAnswers {
     sitting_out: string
     why: string
     why_text: string
-    improve: string[]
+    keep: string
     comment: string
 }
 
@@ -103,8 +103,7 @@ export interface InviteFeedbackResults {
     felt_help: string
     why: InviteFeedbackBar[]
     why_help: string
-    improve: InviteFeedbackBar[]
-    improve_help: string
+    keep: InviteFeedbackBar[]
     quotes: string[]
     quotes_help: string
 }
@@ -115,7 +114,7 @@ export function answers_from_form(form: FormData): InviteFeedbackAnswers {
         sitting_out: String(form.get('sitting_out') ?? ''),
         why: String(form.get('why') ?? ''),
         why_text: String(form.get('why_text') ?? ''),
-        improve: form.getAll('improve').map((value) => String(value)),
+        keep: String(form.get('keep') ?? ''),
         comment: String(form.get('comment') ?? ''),
     }
 }

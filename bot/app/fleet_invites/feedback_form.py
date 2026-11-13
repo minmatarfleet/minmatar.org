@@ -213,11 +213,11 @@ class FeedbackModal(discord.ui.Modal):
             "sitting_out": "",
             "why": "",
             "why_text": "",
-            "improve": [],
+            "keep": "",
             "comment": (self.comment.value or "").strip(),
         }
         for key, select in self.selects.items():
-            if key == "improve":
+            if select.max_values > 1:
                 answers[key] = list(select.values)
             else:
                 answers[key] = select.values[0] if select.values else ""

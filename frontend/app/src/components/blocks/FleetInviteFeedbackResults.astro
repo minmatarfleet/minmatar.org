@@ -175,18 +175,18 @@ function bars(items: InviteFeedbackBar[]) {
                             </ul>
                         </section>
                     }
-                    {results.improve.length > 0 &&
+                    {results.keep.some((bar) => bar.count > 0) &&
                         <section>
-                            <h2>{t('fleets.invite_feedback.improve')}</h2>
-                            {results.improve_help && <p class="[ note ]">{results.improve_help}</p>}
-                            <ol class="[ priority ]">
-                                {results.improve.map((bar) =>
+                            <h2>{t('fleets.invite_feedback.keep')}</h2>
+                            <ul class="[ bars ]">
+                                {bars(results.keep).map((bar) =>
                                     <li>
                                         <span>{bar.label}</span>
+                                        <span class="[ track ]"><span class="[ fill ]" style={`width: ${bar.width}`}></span></span>
                                         <span>{bar.count}</span>
                                     </li>
                                 )}
-                            </ol>
+                            </ul>
                         </section>
                     }
                     {results.quotes.length > 0 &&
@@ -258,7 +258,6 @@ function bars(items: InviteFeedbackBar[]) {
     }
 
     .bars,
-    .priority,
     .quotes {
         list-style: none;
         padding: 0;
@@ -268,17 +267,13 @@ function bars(items: InviteFeedbackBar[]) {
         gap: var(--space-2xs);
     }
 
-    .bars li,
-    .priority li {
+    .bars li {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
         gap: var(--space-xs);
         align-items: center;
     }
 
-    .priority li {
-        grid-template-columns: minmax(0, 1fr) auto;
-    }
 
     .track {
         display: block;

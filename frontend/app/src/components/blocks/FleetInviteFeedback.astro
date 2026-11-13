@@ -28,9 +28,6 @@ interface Props {
 
 const { form, errors, attempted, partial_url, edit_href } = Astro.props
 const answers = attempted ?? form.answers
-const improve = form.questions.find((question) => question.key === 'improve')
-const exclusive = (improve?.exclusive ?? 'nothing').replace(/[^a-z_]/g, '')
-const max_picks = improve?.max ?? 2
 
 function picked(name: keyof InviteFeedbackAnswers, key: string) {
     const value = answers[name]
@@ -48,7 +45,6 @@ function answer_color(invite: InviteFeedbackInvite): TagColors | undefined {
 
 const choice_attributes = (key: string) => {
     if (key === 'why') return { '@change': 'pick_why($event)' }
-    if (key === 'improve') return { '@change': 'pick_improve($event)' }
     return {}
 }
 ---
@@ -75,24 +71,10 @@ const choice_attributes = (key: string) => {
             hx-target="#fleet-invite-feedback"
             hx-swap="outerHTML show:top"
             hx-disabled-elt="find button"
-            data-max={max_picks}
             autocomplete="off"
             x-data={`{
                 other: ${answers.why === 'other'},
-                pick_why(event) { this.other = event.target.value === 'other' },
-                pick_improve(event) {
-                    const boxes = [...event.target.form.querySelectorAll('input[name="improve"]')]
-                    const exclusive = boxes.find((box) => box.value === '${exclusive}')
-                    const max = Number(event.target.form.dataset.max || ${max_picks})
-                    if (exclusive && event.target === exclusive && exclusive.checked) {
-                        for (const box of boxes) {
-                            if (box !== exclusive) box.checked = false
-                        }
-                        return
-                    }
-                    if (exclusive) exclusive.checked = false
-                    if (boxes.filter((box) => box.checked).length > max) event.target.checked = false
-                }
+                pick_why(event) { this.other = event.target.value === 'other' }
             }`}
         >
             {form.intro && <p class="[ intro ]">{form.intro}</p>}
