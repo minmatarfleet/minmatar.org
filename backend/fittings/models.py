@@ -682,7 +682,6 @@ class EveFittingSkillOverride(models.Model):
         return f"{self.fitting} – {self.skill} {self.action} {self.tier} {self.level}"
 
 
-# The base class name matches a local database setting the secret scanner flags.
 class EveDoctrine(MinmatarSoftDeleteModel):  # pragma: allowlist secret
     """
     Model for storing doctrines.
