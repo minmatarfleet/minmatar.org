@@ -13,6 +13,10 @@ from app import custom_ids
 HISTORICAL_TEMPLATES = {
     "BUYBACK_COMPLETE_TEMPLATE": r"buyback:complete:(?P<order_id>[0-9]+)",
     "BUYBACK_CANCEL_TEMPLATE": r"buyback:cancel:(?P<order_id>[0-9]+)",
+    "BUYBACK_CONTRACT_UP_TEMPLATE": (r"buyback:contract_up:(?P<order_id>[0-9]+)"),
+    "BUYBACK_CONTRACT_ACCEPTED_TEMPLATE": (
+        r"buyback:contract_accepted:(?P<order_id>[0-9]+)"
+    ),
     "LP_BUYBACK_LP_SENT_TEMPLATE": r"lp_buyback:lp:(?P<order_id>[0-9]+)",
     "LP_BUYBACK_ISK_SENT_TEMPLATE": r"lp_buyback:isk:(?P<order_id>[0-9]+)",
     "NOTIF_ACK_TEMPLATE": r"notif_ack:(?P<delivery_id>[0-9]+)",
@@ -26,9 +30,7 @@ HISTORICAL_TEMPLATES = {
     "TRIBE_CHIEF_APPOINT_TEMPLATE": (r"tribe_chief:appoint:(?P<volunteer_id>[0-9]+)"),
     "TRIBE_CHIEF_DECLINE_TEMPLATE": (r"tribe_chief:decline:(?P<volunteer_id>[0-9]+)"),
     "FLEET_INVITE_OUT_TEMPLATE": r"fleet_invite:out:(?P<invite_id>[0-9]+)",
-    "INVITE_FEEDBACK_ANSWER_TEMPLATE": (
-        r"invite_feedback:answer:(?P<round_id>[0-9]+)"
-    ),
+    "INVITE_FEEDBACK_ANSWER_TEMPLATE": (r"invite_feedback:answer:(?P<round_id>[0-9]+)"),
     "HELP_TICKET_CLOSE_TEMPLATE": r"help_ticket_close:(?P<ticket_id>[0-9]+)",
     "HELP_TICKET_CLOSE_REASON_TEMPLATE": (
         r"help_ticket_close_reason:(?P<ticket_id>[0-9]+)"
@@ -59,7 +61,12 @@ class CustomIdContractTestCase(unittest.TestCase):
 class ViewsUseTheContractTestCase(unittest.TestCase):
     def test_dynamic_items_match_the_shared_templates(self):
         # pylint: disable=import-outside-toplevel
-        from app.buyback.views import CancelButton, CompleteButton
+        from app.buyback.views import (
+            CancelButton,
+            CompleteButton,
+            ContractAcceptedButton,
+            ContractUpButton,
+        )
         from app.lp_buyback.views import IskSentButton, LpSentButton
         from app.notifications.views import MarkAsReadButton
         from app.npsi.views import (
@@ -82,6 +89,8 @@ class ViewsUseTheContractTestCase(unittest.TestCase):
         pairs = {
             CompleteButton: custom_ids.BUYBACK_COMPLETE_TEMPLATE,
             CancelButton: custom_ids.BUYBACK_CANCEL_TEMPLATE,
+            ContractUpButton: custom_ids.BUYBACK_CONTRACT_UP_TEMPLATE,
+            ContractAcceptedButton: (custom_ids.BUYBACK_CONTRACT_ACCEPTED_TEMPLATE),
             LpSentButton: custom_ids.LP_BUYBACK_LP_SENT_TEMPLATE,
             IskSentButton: custom_ids.LP_BUYBACK_ISK_SENT_TEMPLATE,
             MarkAsReadButton: custom_ids.NOTIF_ACK_TEMPLATE,

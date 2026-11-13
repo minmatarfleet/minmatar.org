@@ -16,11 +16,17 @@ from django.test import SimpleTestCase
 from buyback.helpers.purchase_discord_buttons import (
     CANCEL_CUSTOM_ID_PREFIX,
     COMPLETE_CUSTOM_ID_PREFIX,
+    CONTRACT_ACCEPTED_CUSTOM_ID_PREFIX,
+    CONTRACT_UP_CUSTOM_ID_PREFIX,
     cancel_custom_id,
     complete_custom_id,
+    contract_accepted_custom_id,
+    contract_up_custom_id,
 )
 from fleets.helpers.invite_feedback_discord import (
     ANSWER_CUSTOM_ID_PREFIX as FEEDBACK_ANSWER_PREFIX,
+)
+from fleets.helpers.invite_feedback_discord import (
     answer_custom_id as feedback_answer_custom_id,
 )
 from fleets.helpers.npsi_discord import (
@@ -45,24 +51,42 @@ from industry.helpers.lp_buyback_discord_buttons import (
 )
 from learning.mentors.discord import (
     CANCEL_CUSTOM_ID_PREFIX as MENTOR_CANCEL_PREFIX,
-    CLOSE_CUSTOM_ID_PREFIXES as MENTOR_CLOSE_PREFIXES,
-    CONFIRM_CUSTOM_ID_PREFIX as MENTOR_CONFIRM_PREFIX,
-    PASS_CUSTOM_ID_PREFIX as MENTOR_PASS_PREFIX,
-    RATE_CUSTOM_ID_PREFIXES as MENTOR_RATE_PREFIXES,
-    cancel_custom_id as mentor_cancel_custom_id,
-    close_custom_id as mentor_close_custom_id,
-    confirm_custom_id as mentor_confirm_custom_id,
-    pass_custom_id as mentor_pass_custom_id,
-    rate_custom_id as mentor_rate_custom_id,
 )
+from learning.mentors.discord import (
+    CLOSE_CUSTOM_ID_PREFIXES as MENTOR_CLOSE_PREFIXES,
+)
+from learning.mentors.discord import (
+    CONFIRM_CUSTOM_ID_PREFIX as MENTOR_CONFIRM_PREFIX,
+)
+from learning.mentors.discord import (
+    PASS_CUSTOM_ID_PREFIX as MENTOR_PASS_PREFIX,
+)
+from learning.mentors.discord import (
+    RATE_CUSTOM_ID_PREFIXES as MENTOR_RATE_PREFIXES,
+)
+from learning.mentors.discord import (
+    cancel_custom_id as mentor_cancel_custom_id,
+)
+from learning.mentors.discord import close_custom_id as mentor_close_custom_id
+from learning.mentors.discord import (
+    confirm_custom_id as mentor_confirm_custom_id,
+)
+from learning.mentors.discord import pass_custom_id as mentor_pass_custom_id
+from learning.mentors.discord import rate_custom_id as mentor_rate_custom_id
 from notifications.discord_buttons import (
     NOTIF_ACK_CUSTOM_ID_PREFIX,
     ack_custom_id,
 )
 from tribes.helpers.chief_discord import (
     APPOINT_CUSTOM_ID_PREFIX as CHIEF_APPOINT_PREFIX,
+)
+from tribes.helpers.chief_discord import (
     DECLINE_CUSTOM_ID_PREFIX as CHIEF_DECLINE_PREFIX,
+)
+from tribes.helpers.chief_discord import (
     appoint_custom_id as chief_appoint_custom_id,
+)
+from tribes.helpers.chief_discord import (
     decline_custom_id as chief_decline_custom_id,
 )
 from tribes.helpers.invitation_discord import (
@@ -101,6 +125,14 @@ class BotCustomIdParityTestCase(SimpleTestCase):
         pairs = [
             (COMPLETE_CUSTOM_ID_PREFIX, self.bot.BUYBACK_COMPLETE_PREFIX),
             (CANCEL_CUSTOM_ID_PREFIX, self.bot.BUYBACK_CANCEL_PREFIX),
+            (
+                CONTRACT_UP_CUSTOM_ID_PREFIX,
+                self.bot.BUYBACK_CONTRACT_UP_PREFIX,
+            ),
+            (
+                CONTRACT_ACCEPTED_CUSTOM_ID_PREFIX,
+                self.bot.BUYBACK_CONTRACT_ACCEPTED_PREFIX,
+            ),
             (LP_SENT_CUSTOM_ID_PREFIX, self.bot.LP_BUYBACK_LP_SENT_PREFIX),
             (ISK_SENT_CUSTOM_ID_PREFIX, self.bot.LP_BUYBACK_ISK_SENT_PREFIX),
             (NOTIF_ACK_CUSTOM_ID_PREFIX, self.bot.NOTIF_ACK_PREFIX),
@@ -129,6 +161,11 @@ class BotCustomIdParityTestCase(SimpleTestCase):
         pairs = [
             (complete_custom_id, self.bot.BUYBACK_COMPLETE_TEMPLATE),
             (cancel_custom_id, self.bot.BUYBACK_CANCEL_TEMPLATE),
+            (contract_up_custom_id, self.bot.BUYBACK_CONTRACT_UP_TEMPLATE),
+            (
+                contract_accepted_custom_id,
+                self.bot.BUYBACK_CONTRACT_ACCEPTED_TEMPLATE,
+            ),
             (lp_sent_custom_id, self.bot.LP_BUYBACK_LP_SENT_TEMPLATE),
             (isk_sent_custom_id, self.bot.LP_BUYBACK_ISK_SENT_TEMPLATE),
             (ack_custom_id, self.bot.NOTIF_ACK_TEMPLATE),

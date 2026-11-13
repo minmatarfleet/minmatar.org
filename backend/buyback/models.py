@@ -177,8 +177,8 @@ class EveBuybackSettings(models.Model):
         blank=True,
         related_name="buyback_coordinator_settings",
         help_text=(
-            "Users who can see pending hangar sales and mark them complete "
-            "on the site and in Discord."
+            "Users who can see pending hangar sales, mark the Discord "
+            "contract up, and complete or cancel sales."
         ),
     )
     updated_at = models.DateTimeField(auto_now=True)
@@ -384,6 +384,18 @@ class BuybackPurchaseOrder(models.Model):
         related_name="buyback_purchase_orders_completed",
     )
     discord_thread_id = models.BigIntegerField(null=True, blank=True)
+
+    class SettlementStep(models.TextChoices):
+        CONTRACT_UP = "contract_up", "Contract up"
+        AWAITING_ACCEPT = "awaiting_accept", "Awaiting accept"
+
+    settlement_step = models.CharField(
+        max_length=32,
+        choices=SettlementStep.choices,
+        default=SettlementStep.CONTRACT_UP,
+    )
+    # True once the Contract up button has been posted in the thread.
+    team_prompted = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Buyback purchase order"

@@ -7,8 +7,11 @@ import logging
 from django.conf import settings
 
 from app.links import site_url
-from buyback.helpers.purchase_discord_buttons import order_action_components
-from buyback.models import BuybackPurchaseOrder
+from buyback.helpers.purchase_discord_buttons import (
+    contract_accepted_components,
+    order_action_components,
+)
+from buyback.models import BuybackPurchaseOrder, EveBuybackSettings
 from discord.client import DiscordClient
 from discord.forum_threads import ForumThreadMirror
 
@@ -59,6 +62,21 @@ def _user_mention(user) -> str:
         return user.username
 
 
+def buyback_team_mentions() -> str:
+    """Discord pings for coordinators who put sale contracts up."""
+    users = (
+        EveBuybackSettings.load()
+        .coordinators.select_related("discord_user")
+        .order_by("pk")
+    )
+    mentions = []
+    for user in users:
+        mention = _user_mention(user)
+        if mention.startswith("<@"):
+            mentions.append(mention)
+    return " ".join(mentions)
+
+
 def _display_name(order: BuybackPurchaseOrder) -> str:
     return order.character_name or (
         order.created_by.username if order.created_by_id else "?"
@@ -103,15 +121,25 @@ def _starter_with_items(
     return "\n".join(header + items + extra + [url])
 
 
+def _starter_pings(order: BuybackPurchaseOrder) -> str:
+    team = [part for part in buyback_team_mentions().split() if part]
+    buyer = _user_mention(order.created_by)
+    parts = list(team) or ["Buyback team"]
+    if buyer and buyer not in parts:
+        parts.append(buyer)
+    return " ".join(parts)
+
+
 def order_starter_message(order: BuybackPurchaseOrder) -> str:
-    mention = _user_mention(order.created_by)
     header = [
-        mention,
+        _starter_pings(order),
         "",
         f"**Purchase order #{order.pk}**",
         f"Pilot: {_display_name(order)}",
         f"Total: **{int(order.contract_total):,} ISK**",
         f"Status: {order.get_status_display()}",
+        "",
+        "Buyback team: put the contract up, then press **Contract up**.",
         "",
     ]
     item_lines = [
@@ -166,31 +194,62 @@ def notify_purchase_created(order: BuybackPurchaseOrder) -> None:
     thread_id = create_order_thread(order)
     if thread_id:
         BuybackPurchaseOrder.objects.filter(pk=order.pk).update(
-            discord_thread_id=thread_id
+            discord_thread_id=thread_id,
+            team_prompted=True,
         )
         order.discord_thread_id = thread_id
+        order.team_prompted = True
+
+
+def _coverage_note(order: BuybackPurchaseOrder) -> str:
+    # Local import: purchase_orders imports this module at load time.
+    # pylint: disable=import-outside-toplevel
+    from buyback.helpers.purchase_orders import contract_coverage_note
+
+    if not order.completed_by_id:
+        return ""
+    return contract_coverage_note(order)
+
+
+def _message_with_note(lines: list[str], note: str) -> str:
+    if not note:
+        return "\n".join(lines)
+    head, url = lines[:-1], lines[-1]
+    message = "\n".join(head + [note, url])
+    if len(message) <= 1900:
+        return message
+    room = 1900 - len("\n".join(head + [url])) - 2
+    if room < 40:
+        return "\n".join(lines)
+    return "\n".join(head + [note[: room - 1] + "…", url])
 
 
 def _completed_message(order: BuybackPurchaseOrder) -> str:
-    if order.completed_by_id:
+    if (
+        order.settlement_step
+        == BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+    ):
+        headline = ":white_check_mark: Contract accepted — sale completed"
+    elif order.completed_by_id:
         actor = _user_mention(order.completed_by) or (
             order.completed_by.username if order.completed_by else ""
         )
         who = f" by **{actor}**" if actor else ""
+        headline = f":white_check_mark: Sale completed{who}"
     else:
-        who = " (contract matched)"
+        headline = ":white_check_mark: Sale completed (contract matched)"
     mention = _user_mention(order.created_by)
     lines: list[str] = []
     if mention:
         lines.extend([mention, ""])
     lines.extend(
         [
-            f":white_check_mark: Sale completed{who}",
+            headline,
             f"**{int(order.contract_total):,} ISK**",
             order_site_url(order),
         ]
     )
-    return "\n".join(lines)
+    return _message_with_note(lines, _coverage_note(order))
 
 
 def _cancelled_message(order: BuybackPurchaseOrder) -> str:
@@ -205,6 +264,61 @@ def _cancelled_message(order: BuybackPurchaseOrder) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def notify_contract_up(order: BuybackPurchaseOrder) -> None:
+    """Ping the buyer to accept the contract the team just put up."""
+    if not order.discord_thread_id:
+        return
+    if (
+        order.settlement_step
+        != BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+    ):
+        return
+    mention = _user_mention(order.created_by)
+    lines = []
+    if mention:
+        lines.extend([mention, ""])
+    lines.extend(
+        [
+            "Contract is up. Accept it in game, then press "
+            "**Contract accepted**.",
+            order_site_url(order),
+        ]
+    )
+    MIRROR.post(
+        order.discord_thread_id,
+        "\n".join(lines),
+        contract_accepted_components(order.pk),
+    )
+
+
+def prompt_team_for_open_sales() -> int:
+    """Post Contract up once into sale threads that predate that button."""
+    orders = (
+        BuybackPurchaseOrder.objects.filter(
+            status=BuybackPurchaseOrder.Status.PENDING,
+            settlement_step=BuybackPurchaseOrder.SettlementStep.CONTRACT_UP,
+            team_prompted=False,
+            discord_thread_id__isnull=False,
+        )
+        .select_related("created_by", "created_by__discord_user")
+        .prefetch_related("lines")
+        .order_by("pk")
+    )
+    posted = 0
+    for order in orders:
+        if not MIRROR.post(
+            order.discord_thread_id,
+            order_starter_message(order),
+            order_action_components(order.pk),
+        ):
+            continue
+        posted += BuybackPurchaseOrder.objects.filter(
+            pk=order.pk,
+            team_prompted=False,
+        ).update(team_prompted=True)
+    return posted
 
 
 def notify_purchase_status_changed(order: BuybackPurchaseOrder) -> None:

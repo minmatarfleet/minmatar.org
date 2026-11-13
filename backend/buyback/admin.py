@@ -163,12 +163,13 @@ class BuybackPurchaseOrderAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "status",
+        "settlement_step",
         "character_name",
         "contract_total",
         "source",
         "created_at",
     )
-    list_filter = ("status", "source")
+    list_filter = ("status", "settlement_step", "source")
     search_fields = ("character_name", "created_by__username")
     readonly_fields = (
         "created_by",

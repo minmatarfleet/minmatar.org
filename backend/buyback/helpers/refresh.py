@@ -10,9 +10,7 @@ from buyback.helpers.contracts_ledger import (
 )
 from buyback.helpers.hangar import fetch_stockpile_quantities
 from buyback.helpers.metrics import refresh_accepted_item_metrics
-from buyback.helpers.purchase_orders import (
-    try_complete_from_outbound_contracts,
-)
+from buyback.helpers.purchase_discord import prompt_team_for_open_sales
 from buyback.helpers.sell_orders import sync_sold_order_ledger_entries
 from buyback.helpers.unknown import (
     emit_unknown_from_snapshots,
@@ -37,7 +35,6 @@ def refresh_buyback_ledger(
     if sync_contracts:
         result["contracts"] = sync_contract_ledger_entries()
         result["counterparties"] = backfill_contract_counterparties()
-        result["purchases_completed"] = try_complete_from_outbound_contracts()
         logger.info("Buyback contract ledger: %s", result["contracts"])
         logger.info(
             "Buyback contract counterparties: %s", result["counterparties"]
@@ -79,5 +76,9 @@ def refresh_buyback_ledger(
             fetch_stockpile=False,
         )
         logger.info("Buyback metrics: %s", result["metrics"])
+
+    # Sales close from Discord (Contract up, then Contract accepted).
+    # Contract lines above stay the record of what actually moved.
+    result["team_prompts"] = prompt_team_for_open_sales()
 
     return result

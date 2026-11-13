@@ -8,6 +8,7 @@ from celery import shared_task
 
 from buyback.helpers.purchase_discord import (
     close_thread_id,
+    notify_contract_up,
     notify_purchase_created,
     notify_purchase_status_changed,
 )
@@ -45,6 +46,25 @@ def notify_buyback_purchase_created_task(order_id: int) -> None:
     except Exception:
         logger.exception(
             "Failed Discord create notify for hangar purchase %s", order_id
+        )
+        raise
+
+
+@shared_task
+def notify_buyback_contract_up_task(order_id: int) -> None:
+    """Ping the buyer to accept a contract the team marked up."""
+    order = _order_for_notify(order_id)
+    if order is None:
+        logger.warning(
+            "Hangar purchase %s not found for contract-up notify",
+            order_id,
+        )
+        return
+    try:
+        notify_contract_up(order)
+    except Exception:
+        logger.exception(
+            "Failed contract-up notify for hangar purchase %s", order_id
         )
         raise
 

@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-13 — Buyback sale threads close from Discord buttons
+
+**Category:** pulse.technology (buyback forum; no HelpTicket row)
+**Verdict:** bug
+**Discord:** no reply (forum channel, not a help thread)
+**PR:** fix+skill
+**Symptom vs cause:** Pending sale threads stayed open after the in-game contract finished. Auto-complete only runs once `sold_contract` lines cover the order, and that item read was not keeping up with new contracts. The close is now the same shape as LP buyback: coordinators press Contract up, the buyer presses Contract accepted, the thread archives.
+**Durable rule:** Do not wait on a full contract match to archive a sale thread. Contract accepted closes it. Still record contract items. The completion post names lines the synced contract does not cover. The forum is not a HelpTicket.
+**Skill update:** rewrote the buyback sale-threads row for the button close.
+
 ## 2026-11-11 — Accepted into a corp, then only some Discord access changed
 
 **Category:** pulse.technology

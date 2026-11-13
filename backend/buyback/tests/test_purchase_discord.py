@@ -16,13 +16,17 @@ from app.test import TestCase
 from buyback.discord_tasks import close_buyback_purchase_thread_task
 from buyback.helpers.purchase_discord import (
     format_isk_compact,
+    notify_contract_up,
     notify_purchase_created,
     notify_purchase_status_changed,
     order_thread_title,
+    prompt_team_for_open_sales,
 )
 from buyback.helpers.purchase_discord_buttons import (
     cancel_custom_id,
     complete_custom_id,
+    contract_accepted_custom_id,
+    contract_up_custom_id,
     order_action_components,
 )
 from buyback.models import (
@@ -41,11 +45,15 @@ class PurchaseDiscordButtonsTestCase(TestCase):
     def test_custom_id_format(self):
         self.assertEqual(complete_custom_id(42), "buyback:complete:42")
         self.assertEqual(cancel_custom_id(7), "buyback:cancel:7")
+        self.assertEqual(contract_up_custom_id(8), "buyback:contract_up:8")
+        self.assertEqual(
+            contract_accepted_custom_id(9), "buyback:contract_accepted:9"
+        )
 
     def test_order_action_components(self):
         row = order_action_components(99)[0]["components"]
-        self.assertEqual(row[0]["label"], "Complete")
-        self.assertEqual(row[0]["custom_id"], "buyback:complete:99")
+        self.assertEqual(row[0]["label"], "Contract up")
+        self.assertEqual(row[0]["custom_id"], "buyback:contract_up:99")
         self.assertEqual(row[0]["style"], 3)
         self.assertEqual(row[1]["label"], "Cancel")
         self.assertEqual(row[1]["custom_id"], "buyback:cancel:99")
@@ -128,8 +136,12 @@ class PurchaseDiscordTestCase(TestCase):
         self.assertEqual(kwargs["applied_tags"], ["222"])
         self.assertEqual(
             kwargs["components"][0]["components"][0]["custom_id"],
-            complete_custom_id(self.order.pk),
+            contract_up_custom_id(self.order.pk),
         )
+        self.assertIn("Contract up", kwargs["message"])
+        self.assertIn("Buyback team", kwargs["message"])
+        self.order.refresh_from_db()
+        self.assertTrue(self.order.team_prompted)
 
     @patch("buyback.helpers.purchase_discord.discord")
     def test_notify_skips_without_designated_channel(self, discord_mock):
@@ -178,6 +190,90 @@ class PurchaseDiscordTestCase(TestCase):
         self.assertIn("Sale cancelled", payload["content"])
         close_later.assert_called_once_with(args=[777], countdown=5)
         discord_mock.close_thread.assert_called_once_with(channel_id=777)
+
+    @patch("buyback.helpers.purchase_discord.discord")
+    def test_contract_up_pings_the_buyer(self, discord_mock):
+        DiscordUser.objects.create(
+            id=4242, discord_tag="buyer#0001", user=self.user
+        )
+        self.order.settlement_step = (
+            BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+        )
+        self.order.discord_thread_id = 555
+        self.order.save(update_fields=["settlement_step", "discord_thread_id"])
+        notify_contract_up(self.order)
+        payload = discord_mock.create_message.call_args.kwargs["payload"]
+        self.assertIn("<@4242>", payload["content"])
+        self.assertIn("Contract accepted", payload["content"])
+        button = payload["components"][0]["components"][0]
+        self.assertEqual(
+            button["custom_id"], contract_accepted_custom_id(self.order.pk)
+        )
+
+    @patch("buyback.helpers.purchase_discord.discord")
+    def test_accepted_message_names_a_short_contract(self, discord_mock):
+        self.order.character_id = 12345
+        self.order.settlement_step = (
+            BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+        )
+        self.order.status = BuybackPurchaseOrder.Status.COMPLETED
+        self.order.completed_by = self.user
+        self.order.discord_thread_id = 555
+        self.order.save()
+        BuybackLedgerEntry.objects.create(
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            eve_type=self.ore,
+            quantity=4,
+            occurred_at=timezone.now(),
+            source_id="out:short",
+            counterparty_id=12345,
+        )
+        notify_purchase_status_changed(self.order)
+        payload = discord_mock.create_message.call_args.kwargs["payload"]
+        self.assertIn("Contract accepted", payload["content"])
+        self.assertIn("contract has 4 of 10", payload["content"])
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.lines.get().quantity, 10)
+
+    @patch("buyback.helpers.purchase_discord.discord")
+    def test_accepted_message_when_contract_items_have_not_synced(
+        self, discord_mock
+    ):
+        self.order.character_id = 12345
+        self.order.settlement_step = (
+            BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT
+        )
+        self.order.status = BuybackPurchaseOrder.Status.COMPLETED
+        self.order.completed_by = self.user
+        self.order.discord_thread_id = 555
+        self.order.save()
+        notify_purchase_status_changed(self.order)
+        payload = discord_mock.create_message.call_args.kwargs["payload"]
+        self.assertIn("have not synced", payload["content"])
+
+    @patch("buyback.helpers.purchase_discord.discord")
+    def test_prompt_posts_contract_up_once(self, discord_mock):
+        coordinator = User.objects.create(username="sale_coordinator")
+        DiscordUser.objects.create(
+            id=9001, discord_tag="coord#0001", user=coordinator
+        )
+        EveBuybackSettings.load().coordinators.add(coordinator)
+        self.order.discord_thread_id = 555
+        self.order.team_prompted = False
+        self.order.save(update_fields=["discord_thread_id", "team_prompted"])
+
+        self.assertEqual(prompt_team_for_open_sales(), 1)
+        payload = discord_mock.create_message.call_args.kwargs["payload"]
+        self.assertIn("<@9001>", payload["content"])
+        self.assertIn("Compressed Veldspar", payload["content"])
+        self.assertEqual(
+            payload["components"][0]["components"][0]["custom_id"],
+            contract_up_custom_id(self.order.pk),
+        )
+        self.order.refresh_from_db()
+        self.assertTrue(self.order.team_prompted)
+        self.assertEqual(prompt_team_for_open_sales(), 0)
+        discord_mock.create_message.assert_called_once()
 
 
 class PurchaseDiscordAckApiTestCase(TestCase):
@@ -364,3 +460,72 @@ class PurchaseDiscordAckApiTestCase(TestCase):
             **self.auth,
         )
         self.assertEqual(response.status_code, 403)
+
+    def _ack(self, order_id, discord_user_id, action):
+        return self.client.post(
+            f"{BASE_URL}/stock/orders/{order_id}/discord-ack",
+            data=json.dumps(
+                {"discord_user_id": discord_user_id, "action": action}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
+        )
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_contract_up_task.delay"
+    )
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_contract_up_by_manager(self, unused_created, contract_up):
+        data = self._place()
+        response = self._ack(data["id"], 3002, "contract_up")
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "pending")
+        order = BuybackPurchaseOrder.objects.get(pk=data["id"])
+        self.assertEqual(
+            order.settlement_step,
+            BuybackPurchaseOrder.SettlementStep.AWAITING_ACCEPT,
+        )
+        contract_up.assert_called_once_with(order.pk)
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_contract_up_by_owner_rejected(self, unused_created):
+        data = self._place()
+        response = self._ack(data["id"], 3001, "contract_up")
+        self.assertEqual(response.status_code, 403)
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_status_changed_task.delay"
+    )
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_contract_up_task.delay"
+    )
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_contract_accepted_closes_without_a_contract(
+        self, unused_created, unused_contract_up, status_changed
+    ):
+        data = self._place()
+        marked = self._ack(data["id"], 3002, "contract_up")
+        self.assertEqual(marked.status_code, 200, marked.content)
+        response = self._ack(data["id"], 3001, "contract_accepted")
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "completed")
+        order = BuybackPurchaseOrder.objects.get(pk=data["id"])
+        self.assertEqual(order.lines.get().quantity, 10)
+        status_changed.assert_called_once_with(order.pk)
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_contract_accepted_before_contract_up_rejected(
+        self, unused_created
+    ):
+        data = self._place()
+        response = self._ack(data["id"], 3001, "contract_accepted")
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("mark the contract up", response.json()["detail"])
