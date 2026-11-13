@@ -149,12 +149,12 @@ describe('alliance_health_pilot_list', () => {
     })
 
     it('sorts timezones in bracket order with No TZ yet last', () => {
-        const us = timezone_sort_value({ brackets: ['USTZ'], source: 'activity' })
-        const au = timezone_sort_value({ brackets: ['AUTZ+'], source: 'declared' })
-        const none = timezone_sort_value({ brackets: [], source: null })
+        const us = timezone_sort_value({ brackets: ['USTZ'], source: 'activity', secondary: [], weekend: [] })
+        const au = timezone_sort_value({ brackets: ['AUTZ+'], source: 'declared', secondary: [], weekend: [] })
+        const none = timezone_sort_value({ brackets: [], source: null, secondary: [], weekend: [] })
         expect(compare_health_sort_values(us, au, 'text', 'asc')).toBeLessThan(0)
         expect(compare_health_sort_values(au, none, 'text', 'asc')).toBeLessThan(0)
-        expect(timezone_text({ brackets: ['EUTZ', 'EUTZ+'], source: 'activity' })).toBe('EUTZ EUTZ+')
+        expect(timezone_text({ brackets: ['EUTZ', 'EUTZ+'], source: 'activity', secondary: [], weekend: [] })).toBe('EUTZ EUTZ+')
         expect(timezone_text(null)).toBe('')
     })
 })

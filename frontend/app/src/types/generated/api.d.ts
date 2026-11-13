@@ -14429,7 +14429,9 @@ export interface components {
             /**
              * @default {
              *       "brackets": [],
-             *       "source": null
+             *       "secondary": [],
+             *       "source": null,
+             *       "weekend": []
              *     }
              */
             timezone?: components["schemas"]["TimezoneTag"];
@@ -25914,6 +25916,11 @@ export interface components {
          * @description A pilot's timezones as every page shows them: the bracket codes
          *     (USTZ, EUTZ+, ...) and where they came from, "activity" or "declared".
          *     No brackets means nothing is known yet.
+         *
+         *     ``secondary`` are the brackets outside the pilot's home region (a US
+         *     pilot who also flies EU evenings), and ``weekend`` the brackets they
+         *     play almost only on Friday to Sunday evenings. Both are subsets of
+         *     ``brackets``; pages show them muted.
          */
         TimezoneTag: {
             /**
@@ -25921,8 +25928,18 @@ export interface components {
              * @default []
              */
             brackets?: string[];
+            /**
+             * Secondary
+             * @default []
+             */
+            secondary?: string[];
             /** Source */
             source?: string | null;
+            /**
+             * Weekend
+             * @default []
+             */
+            weekend?: string[];
         };
         /**
          * TokenType

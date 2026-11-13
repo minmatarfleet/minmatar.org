@@ -47,6 +47,12 @@ KEEP_MIN_SHARE = 0.08
 # The home model must be this sure before activity overrides what the pilot
 # declared. Below it, the declared prime time wins.
 CONFIDENT = 0.8
+# A bracket is weekend-only when at least this share of its evenings are
+# Friday, Saturday or Sunday evenings (an even spread would be 3 in 7).
+WEEKEND_DAYS = frozenset((4, 5, 6))
+WEEKEND_ONLY_SHARE = 0.8
+WEEKEND_SUFFIX = "_weekend"
+
 # How much a declared prime time tilts the home model.
 DECLARED_PRIOR = 0.7
 # Events are not independent (one fight is many killmails), so the
@@ -97,7 +103,8 @@ class Assessment:
     declared_home: str | None = None
     inferred_home: str | None = None
     inferred_confidence: float | None = None  # the home model's P, if it ran
-    # "<region>_<prime|late>" -> distinct evenings, as counted for roles
+    # "<region>_<prime|late>" -> distinct evenings, as counted for roles,
+    # and "<region>_<prime|late>_weekend" -> how many of them were weekends
     evenings: dict[str, int] = field(default_factory=dict)
     active_days: int = 0
     events: int = 0
@@ -115,6 +122,9 @@ def count_evenings(
 
     With ``home`` set, events inside the home region's own prime or late
     window are left out of every other region's counts.
+
+    Each window also gets a "<window>_weekend" count: how many of its
+    evenings were Friday, Saturday or Sunday evenings.
     """
     seen: dict[str, set] = {}
     for event in events:
@@ -131,7 +141,19 @@ def count_evenings(
             if kind is None:
                 continue
             seen.setdefault(f"{region}_{kind}", set()).add(evening_of(local))
-    return {key: len(days) for key, days in seen.items()}
+    counts = {key: len(days) for key, days in seen.items()}
+    for key, days in seen.items():
+        weekend = sum(1 for day in days if day.weekday() in WEEKEND_DAYS)
+        if weekend:
+            counts[key + WEEKEND_SUFFIX] = weekend
+    return counts
+
+
+def weekend_only(evenings: dict[str, int], region: str, kind: str) -> bool:
+    """Did the pilot play this bracket almost only on weekend evenings?"""
+    total = evenings.get(f"{region}_{kind}", 0)
+    weekend = evenings.get(f"{region}_{kind}{WEEKEND_SUFFIX}", 0)
+    return total > 0 and weekend >= WEEKEND_ONLY_SHARE * total
 
 
 def home_probabilities(

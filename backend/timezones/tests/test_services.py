@@ -288,3 +288,43 @@ class DiscordRolesTestCase(MuteDiscordMixin, TestCase):
         self.assertEqual(self._held(), set())
 
         self.assertEqual(discord_roles.apply_roles()["added"], 2)
+
+
+class TimezoneTagTestCase(TestCase):
+    def test_marks_brackets_outside_home_and_weekend_only(self):
+        user = User.objects.create(username="tagged")
+        row = PilotTimezone.objects.create(
+            user=user,
+            home="US",
+            home_source="activity",
+            brackets=["USTZ", "USTZ+", "EUTZ"],
+            evenings={
+                "US_prime": 20,
+                "US_prime_weekend": 9,
+                "US_late": 5,
+                "US_late_weekend": 5,
+                "EU_prime": 6,
+                "EU_prime_weekend": 2,
+            },
+            assessed_at=timezone.now(),
+            changed_at=timezone.now(),
+        )
+        tag = services.timezone_tag(row)
+        self.assertEqual(tag.brackets, ["USTZ", "USTZ+", "EUTZ"])
+        self.assertEqual(tag.secondary, ["EUTZ"])
+        self.assertEqual(tag.weekend, ["USTZ+"])
+
+    def test_rows_assessed_before_weekend_counts_have_no_weekend(self):
+        user = User.objects.create(username="older")
+        row = PilotTimezone.objects.create(
+            user=user,
+            home="EU",
+            home_source="declared",
+            brackets=["EUTZ"],
+            evenings={"EU_prime": 3},
+            assessed_at=timezone.now(),
+            changed_at=timezone.now(),
+        )
+        tag = services.timezone_tag(row)
+        self.assertEqual(tag.secondary, [])
+        self.assertEqual(tag.weekend, [])

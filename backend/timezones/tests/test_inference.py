@@ -8,6 +8,7 @@ from timezones.inference import (
     DECLARED,
     assess,
     count_evenings,
+    weekend_only,
 )
 
 NEW_YORK = ZoneInfo("America/New_York")
@@ -112,3 +113,24 @@ class AssessTestCase(SimpleTestCase):
             datetime(2026, 8, 4, 1, 30, tzinfo=BERLIN),
         ]
         self.assertEqual(count_evenings(events)["EU_late"], 1)
+
+
+class WeekendTestCase(SimpleTestCase):
+    # START (2026-08-01) is a Saturday.
+
+    def test_weekend_evenings_are_counted_per_window(self):
+        events = nights(BERLIN, 20, 8, every=1)  # Sat..Sat: 4 weekend
+        counts = count_evenings(events)
+        self.assertEqual(counts["EU_prime"], 8)
+        self.assertEqual(counts["EU_prime_weekend"], 4)
+        self.assertFalse(weekend_only(counts, "EU", "prime"))
+
+    def test_only_friday_to_sunday_is_weekend_only(self):
+        events = nights(BERLIN, 20, 6, every=7) + nights(
+            BERLIN, 20, 6, every=7, start=START - timedelta(days=1)
+        )
+        counts = count_evenings(events)
+        self.assertTrue(weekend_only(counts, "EU", "prime"))
+
+    def test_no_evenings_is_not_weekend_only(self):
+        self.assertFalse(weekend_only({}, "US", "prime"))
