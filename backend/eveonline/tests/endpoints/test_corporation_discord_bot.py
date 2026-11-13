@@ -80,7 +80,7 @@ class CorporationDiscordBotEndpointTestCase(TestCase):
         query = parse_qs(location.query)
         self.assertEqual(["bot"], query["scope"])
         # Create Instant Invite | View Channel | Manage Roles.
-        self.assertEqual(["268436481"], query["permissions"])
+        self.assertEqual(["268436483"], query["permissions"])
 
     def test_connect_needs_settings_access_and_configuration(self):
         self.assertEqual(403, self.connect(self.member_user).status_code)

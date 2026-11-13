@@ -119,7 +119,8 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
 
 A corporation's CEO or a director adds the bot from the corporation Settings
 tab. A tribe chief does the same from the tribe page. The install asks for
-Create Instant Invite, View Channel, and Manage Roles. The bot keeps one
+Create Instant Invite, View Channel, and Manage Roles (and Kick Members for a
+corporation). The bot keeps one
 7-day invite fresh for a corporation page, and on either kind of server it
 adds or removes existing roles that a director or chief mapped
 (`discord/guild_roles.py`). It reads no messages and never creates roles.
@@ -130,7 +131,19 @@ Mapped states for a corporation are member, director, recruiter, structure
 manager, and alliance member. A tribe maps member and alliance member.
 Structure manager is the pilot-facing name for the `stewards` list. The
 alliance auth group stays `Corp <TICKER> Gunner`. These mappings are not an
-`auth.Group` source, and the pass never kicks anyone.
+`auth.Group` source, and the role pass never kicks anyone.
+
+A corporation install also asks for Kick Members, for the optional member
+policy (`discord/guild_access.py`): "Corporation members only" or "Alliance
+members only". An hourly pass (`discord.tasks.enforce_guild_member_policy`)
+puts anyone who doesn't qualify on a pending list and removes them once
+they've been on it for the chosen grace period (1 hour to 7 days). They drop
+off the list as soon as they qualify. It never removes bots, the server
+owner, exempted usernames, or staff (Administrator, Manage Server, Kick or
+Ban Members, or a role at or above the bot's). A pass that would remove more
+than a quarter of the server (and more than 10 people) removes nobody until a
+director approves it in Settings. Servers added before this need the bot
+added again to pick up Kick Members.
 
 - Set `DISCORD_CORP_BOT_REDIRECT_URL` and `DISCORD_TRIBE_BOT_REDIRECT_URL` to
   the callbacks above (and list both under OAuth2 > Redirects). Without the

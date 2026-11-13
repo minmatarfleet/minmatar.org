@@ -22,6 +22,7 @@ from tribes.models import Tribe, TribeGroupMembership
 logger = logging.getLogger(__name__)
 
 # Discord permission and error codes.
+KICK_MEMBERS = 1 << 1
 ADMINISTRATOR = 1 << 3
 MANAGE_ROLES = 1 << 28
 MISSING_ACCESS = 50001
@@ -136,6 +137,22 @@ def clear_role_mappings(guild: DiscordGuild | None) -> None:
     if guild.corporations.exists() or guild.tribes.exists():
         return
     guild.role_mappings.all().delete()
+    # The member policy belongs to the corporation that set it.
+    guild.member_exemptions.all().delete()
+    guild.member_removals.all().delete()
+    guild.member_policy = DiscordGuild.MEMBER_POLICY_OFF
+    guild.members_held_at = None
+    guild.members_held_count = 0
+    guild.members_approved_at = None
+    guild.save(
+        update_fields=[
+            "member_policy",
+            "members_held_at",
+            "members_held_count",
+            "members_approved_at",
+            "updated_at",
+        ]
+    )
 
 
 def _bits(value) -> int:
@@ -147,9 +164,15 @@ def _bits(value) -> int:
 
 def _mark_cannot_manage(guild: DiscordGuild) -> None:
     guild.can_manage_roles = False
+    guild.can_kick_members = False
     guild.roles_checked_at = timezone.now()
     guild.save(
-        update_fields=["can_manage_roles", "roles_checked_at", "updated_at"]
+        update_fields=[
+            "can_manage_roles",
+            "can_kick_members",
+            "roles_checked_at",
+            "updated_at",
+        ]
     )
 
 
@@ -275,11 +298,16 @@ def snapshot_guild_roles(guild: DiscordGuild, client=None) -> bool:
     rows, can_manage = _catalog(guild, roles, member)
     guild.roles = rows
     guild.can_manage_roles = can_manage
+    guild.can_kick_members = bool(
+        _held_permissions(guild, roles, member)
+        & (ADMINISTRATOR | KICK_MEMBERS)
+    )
     guild.roles_checked_at = timezone.now()
     guild.save(
         update_fields=[
             "roles",
             "can_manage_roles",
+            "can_kick_members",
             "roles_checked_at",
             "updated_at",
         ]

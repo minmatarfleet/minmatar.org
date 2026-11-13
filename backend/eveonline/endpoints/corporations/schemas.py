@@ -326,6 +326,52 @@ class DiscordRoleMappingUpdate(Schema):
     mappings: List[DiscordRoleMappingRow]
 
 
+class DiscordMemberExemption(Schema):
+    username: str
+    # The bot has matched the name to an account (it then follows renames).
+    seen: bool = False
+
+
+class DiscordPendingRemoval(Schema):
+    discord_id: str
+    username: Optional[str] = None
+    display_name: Optional[str] = None
+    # unlinked, not_corporation or not_alliance
+    reason: str
+    flagged_at: datetime
+    remove_after: datetime
+
+
+class DiscordMemberHold(Schema):
+    since: datetime
+    count: int
+    approved: bool = False
+
+
+class DiscordMemberAccess(Schema):
+    # corporation, alliance, or None (anyone may stay).
+    policy: Optional[str] = None
+    grace_hours: int = 24
+    grace_choices: List[int] = []
+    can_kick_members: bool = False
+    checked_at: Optional[datetime] = None
+    last_removed: int = 0
+    held: Optional[DiscordMemberHold] = None
+    exemptions: List[DiscordMemberExemption] = []
+    pending: List[DiscordPendingRemoval] = []
+    pending_total: int = 0
+
+
+class DiscordMemberAccessUpdate(Schema):
+    policy: Optional[str] = None
+    grace_hours: int = 24
+    exemptions: List[str] = []
+
+
+class DiscordMemberExemptRequest(Schema):
+    discord_id: str
+
+
 class CorporationDiscordSettings(Schema):
     corporation_id: int
     # These describe the pasted invite link.
@@ -341,6 +387,7 @@ class CorporationDiscordSettings(Schema):
     # Which link the corporation page shows: "bot", "link" or None.
     page_source: Optional[str] = None
     role_sync: DiscordRoleSync = DiscordRoleSync()
+    member_access: DiscordMemberAccess = DiscordMemberAccess()
 
 
 class CorporationDiscordInviteRequest(Schema):

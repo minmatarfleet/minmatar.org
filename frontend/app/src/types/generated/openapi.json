@@ -7355,6 +7355,25 @@
             ],
             "title": "Invite Url"
           },
+          "member_access": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DiscordMemberAccess"
+              }
+            ],
+            "default": {
+              "can_kick_members": false,
+              "checked_at": null,
+              "exemptions": [],
+              "grace_choices": [],
+              "grace_hours": 24,
+              "held": null,
+              "last_removed": 0,
+              "pending": [],
+              "pending_total": 0,
+              "policy": null
+            }
+          },
           "page_source": {
             "anyOf": [
               {
@@ -11229,6 +11248,174 @@
         "title": "DiscordFormRequest",
         "type": "object"
       },
+      "DiscordMemberAccess": {
+        "properties": {
+          "can_kick_members": {
+            "default": false,
+            "title": "Can Kick Members",
+            "type": "boolean"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "exemptions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiscordMemberExemption"
+            },
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "grace_choices": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Grace Choices",
+            "type": "array"
+          },
+          "grace_hours": {
+            "default": 24,
+            "title": "Grace Hours",
+            "type": "integer"
+          },
+          "held": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscordMemberHold"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_removed": {
+            "default": 0,
+            "title": "Last Removed",
+            "type": "integer"
+          },
+          "pending": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiscordPendingRemoval"
+            },
+            "title": "Pending",
+            "type": "array"
+          },
+          "pending_total": {
+            "default": 0,
+            "title": "Pending Total",
+            "type": "integer"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy"
+          }
+        },
+        "title": "DiscordMemberAccess",
+        "type": "object"
+      },
+      "DiscordMemberAccessUpdate": {
+        "properties": {
+          "exemptions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Exemptions",
+            "type": "array"
+          },
+          "grace_hours": {
+            "default": 24,
+            "title": "Grace Hours",
+            "type": "integer"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy"
+          }
+        },
+        "title": "DiscordMemberAccessUpdate",
+        "type": "object"
+      },
+      "DiscordMemberExemptRequest": {
+        "properties": {
+          "discord_id": {
+            "title": "Discord Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discord_id"
+        ],
+        "title": "DiscordMemberExemptRequest",
+        "type": "object"
+      },
+      "DiscordMemberExemption": {
+        "properties": {
+          "seen": {
+            "default": false,
+            "title": "Seen",
+            "type": "boolean"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "DiscordMemberExemption",
+        "type": "object"
+      },
+      "DiscordMemberHold": {
+        "properties": {
+          "approved": {
+            "default": false,
+            "title": "Approved",
+            "type": "boolean"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          }
+        },
+        "required": [
+          "since",
+          "count"
+        ],
+        "title": "DiscordMemberHold",
+        "type": "object"
+      },
       "DiscordNpsiActionRequest": {
         "properties": {
           "discord_user_id": {
@@ -11269,6 +11456,58 @@
           "status"
         ],
         "title": "DiscordNpsiActionResponse",
+        "type": "object"
+      },
+      "DiscordPendingRemoval": {
+        "properties": {
+          "discord_id": {
+            "title": "Discord Id",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "flagged_at": {
+            "format": "date-time",
+            "title": "Flagged At",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "remove_after": {
+            "format": "date-time",
+            "title": "Remove After",
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "required": [
+          "discord_id",
+          "reason",
+          "flagged_at",
+          "remove_after"
+        ],
+        "title": "DiscordPendingRemoval",
         "type": "object"
       },
       "DiscordRoleChoice": {
@@ -56499,6 +56738,230 @@
           }
         ],
         "summary": "Check a Discord invite before saving it (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/members": {
+      "put": {
+        "operationId": "eveonline_endpoints_corporations_put_corporation_discord_members_put_corporation_discord_members",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordMemberAccessUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove people who aren't in the corporation or alliance from this corporation's Discord (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/members/approve": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_members_approve_post_corporation_discord_members_approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve a held removal pass that would remove many people at once (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/members/exempt": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_members_exempt_post_corporation_discord_members_exempt",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordMemberExemptRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Exempt someone on the pending removal list (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"

@@ -584,6 +584,8 @@ export interface CorporationForumPostUpdate {
 
 export type CorporationDiscordSettings = ApiResponse<'CorporationDiscordSettings'>
 export type DiscordRoleMappingUpdate = ApiRequest<'DiscordRoleMappingUpdate'>
+export type DiscordMemberAccess = ApiResponse<'DiscordMemberAccess'>
+export type DiscordMemberAccessUpdate = ApiRequest<'DiscordMemberAccessUpdate'>
 export type TribeDiscordSettings = ApiResponse<'TribeDiscordSettings'>
 export type TribeDiscordMappingUpdate = ApiRequest<'TribeDiscordMappingUpdate'>
 export type CorporationDiscordInvitePreview = ApiResponse<'CorporationDiscordInvitePreview'>

@@ -13,7 +13,11 @@ import {
     discord_section_summary,
     discord_server_initials,
     discord_status_key,
+    discord_removal_eta,
+    keep_member_action,
     parse_discord_action,
+    parse_exemptions,
+    parse_keep_member,
 } from '@helpers/corporations/discord_settings'
 
 const labels = { not_set: 'Optional · not set', set: 'Set', dead: 'Needs a new link' }
@@ -126,5 +130,33 @@ describe('discord bot', () => {
         expect(ui.en['corporations.detail.role_steward']).toBe('Structure manager')
         expect(ui.en['corporations.detail.stewards']).toBe('Structure managers')
         expect(ui.en['corporations.discord.role_structure_manager']).toContain('Structure manager')
+    })
+})
+
+describe('member access helpers', () => {
+    it('round-trips a Keep button and refuses anything else', () => {
+        expect(parse_keep_member(keep_member_action('123456789012345678'))).toBe('123456789012345678')
+        expect(parse_keep_member('keep:abc')).toBeNull()
+        expect(parse_keep_member('save_members')).toBeNull()
+        expect(parse_discord_action('save_members')).toBe('save_members')
+        expect(parse_discord_action('approve_members')).toBe('approve_members')
+    })
+
+    it('reads exemptions one per line or comma separated', () => {
+        expect(parse_exemptions(' pal \n\nbuddy, other ')).toEqual(['pal', 'buddy', 'other'])
+        expect(parse_exemptions(null)).toEqual([])
+    })
+
+    it('shows time left until removal, then nothing once due', () => {
+        const now = Date.UTC(2026, 10, 13, 12, 0)
+        expect(discord_removal_eta(new Date(now + 90 * 60_000).toISOString(), now)).toBe('1h 30m')
+        expect(discord_removal_eta(new Date(now + 5 * 60_000).toISOString(), now)).toBe('5m')
+        expect(discord_removal_eta(new Date(now + 72 * 3_600_000).toISOString(), now)).toBe('3d')
+        expect(discord_removal_eta(new Date(now - 60_000).toISOString(), now)).toBeNull()
+    })
+
+    it('maps the member policy errors', () => {
+        expect(discord_error_key('cannot_kick_members')).toBe('corporations.discord.error_cannot_kick_members')
+        expect(discord_error_key('invalid_username')).toBe('corporations.discord.error_invalid_username')
     })
 })

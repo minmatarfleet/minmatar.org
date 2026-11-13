@@ -2475,6 +2475,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Remove people who aren't in the corporation or alliance from this corporation's Discord (CEO and directors) */
+        put: operations["eveonline_endpoints_corporations_put_corporation_discord_members_put_corporation_discord_members"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/members/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a held removal pass that would remove many people at once (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_members_approve_post_corporation_discord_members_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/members/exempt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exempt someone on the pending removal list (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_members_exempt_post_corporation_discord_members_exempt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles": {
         parameters: {
             query?: never;
@@ -13089,6 +13140,21 @@ export interface components {
             icon_url?: string | null;
             /** Invite Url */
             invite_url?: string | null;
+            /**
+             * @default {
+             *       "can_kick_members": false,
+             *       "checked_at": null,
+             *       "exemptions": [],
+             *       "grace_choices": [],
+             *       "grace_hours": 24,
+             *       "held": null,
+             *       "last_removed": 0,
+             *       "pending": [],
+             *       "pending_total": 0,
+             *       "policy": null
+             *     }
+             */
+            member_access?: components["schemas"]["DiscordMemberAccess"];
             /** Page Source */
             page_source?: string | null;
             /**
@@ -14626,6 +14692,94 @@ export interface components {
             /** Discord User Id */
             discord_user_id: number;
         };
+        /** DiscordMemberAccess */
+        DiscordMemberAccess: {
+            /**
+             * Can Kick Members
+             * @default false
+             */
+            can_kick_members?: boolean;
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Exemptions
+             * @default []
+             */
+            exemptions?: components["schemas"]["DiscordMemberExemption"][];
+            /**
+             * Grace Choices
+             * @default []
+             */
+            grace_choices?: number[];
+            /**
+             * Grace Hours
+             * @default 24
+             */
+            grace_hours?: number;
+            held?: components["schemas"]["DiscordMemberHold"] | null;
+            /**
+             * Last Removed
+             * @default 0
+             */
+            last_removed?: number;
+            /**
+             * Pending
+             * @default []
+             */
+            pending?: components["schemas"]["DiscordPendingRemoval"][];
+            /**
+             * Pending Total
+             * @default 0
+             */
+            pending_total?: number;
+            /** Policy */
+            policy?: string | null;
+        };
+        /** DiscordMemberAccessUpdate */
+        DiscordMemberAccessUpdate: {
+            /**
+             * Exemptions
+             * @default []
+             */
+            exemptions?: string[];
+            /**
+             * Grace Hours
+             * @default 24
+             */
+            grace_hours?: number;
+            /** Policy */
+            policy?: string | null;
+        };
+        /** DiscordMemberExemptRequest */
+        DiscordMemberExemptRequest: {
+            /** Discord Id */
+            discord_id: string;
+        };
+        /** DiscordMemberExemption */
+        DiscordMemberExemption: {
+            /**
+             * Seen
+             * @default false
+             */
+            seen?: boolean;
+            /** Username */
+            username: string;
+        };
+        /** DiscordMemberHold */
+        DiscordMemberHold: {
+            /**
+             * Approved
+             * @default false
+             */
+            approved?: boolean;
+            /** Count */
+            count: number;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+        };
         /** DiscordNpsiActionRequest */
         DiscordNpsiActionRequest: {
             /** Discord User Id */
@@ -14639,6 +14793,27 @@ export interface components {
             fleet_id?: number | null;
             /** Status */
             status: string;
+        };
+        /** DiscordPendingRemoval */
+        DiscordPendingRemoval: {
+            /** Discord Id */
+            discord_id: string;
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Flagged At
+             * Format: date-time
+             */
+            flagged_at: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Remove After
+             * Format: date-time
+             */
+            remove_after: string;
+            /** Username */
+            username?: string | null;
         };
         /** DiscordRoleChoice */
         DiscordRoleChoice: {
@@ -35196,6 +35371,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationDiscordInvitePreview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_put_corporation_discord_members_put_corporation_discord_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordMemberAccessUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_members_approve_post_corporation_discord_members_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_members_exempt_post_corporation_discord_members_exempt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordMemberExemptRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
                 };
             };
             /** @description Bad Request */

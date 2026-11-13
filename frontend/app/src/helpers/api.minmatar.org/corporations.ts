@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -210,6 +210,33 @@ export async function refresh_corporation_discord_roles(access_token: string, co
         throw new DiscordRoleError(body.detail ?? 'invalid')
     }
     return await response.json() as CorporationDiscordSettings
+}
+
+async function discord_member_request(access_token: string, endpoint: string, method: string, body?: unknown) {
+    const response = await api_response(
+        `${API_ENDPOINT}/corporations/${endpoint}`,
+        { method, token: access_token, ...(body === undefined ? {} : { body }), allow: [400] },
+    )
+    if (response.status === 400) {
+        const detail = await response.json().catch(() => ({}))
+        throw new DiscordRoleError(detail.detail ?? 'invalid')
+    }
+    return await response.json() as CorporationDiscordSettings
+}
+
+/** Remove people who aren't in the corporation or alliance, with exemptions. */
+export async function save_corporation_discord_members(access_token: string, corporation_id: number, payload: DiscordMemberAccessUpdate) {
+    return await discord_member_request(access_token, `${corporation_id}/discord/members`, 'PUT', payload)
+}
+
+/** Move someone from the pending removal list to the exemptions. */
+export async function keep_corporation_discord_member(access_token: string, corporation_id: number, discord_id: string) {
+    return await discord_member_request(access_token, `${corporation_id}/discord/members/exempt`, 'POST', { discord_id })
+}
+
+/** Let a paused pass (many removals at once) go ahead. */
+export async function approve_corporation_discord_members(access_token: string, corporation_id: number) {
+    return await discord_member_request(access_token, `${corporation_id}/discord/members/approve`, 'POST')
 }
 
 /** Browser URL that starts adding the bot (Discord's install page, then back to Settings). */

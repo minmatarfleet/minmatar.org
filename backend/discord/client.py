@@ -171,10 +171,14 @@ class DiscordBaseClient:
         """Delete a resource using REST API"""
         _assert_discord_http_allowed()
         self.check_ratelimit()
+        headers = {
+            **(kwargs.pop("headers", None) or {}),
+            "Authorization": f"Bot {self.access_token}",
+        }
         response = self.session.delete(
             *args,
             **kwargs,
-            headers={"Authorization": f"Bot {self.access_token}"},
+            headers=headers,
             timeout=10,
         )
         if response.status_code == 429:
@@ -286,11 +290,18 @@ class DiscordClient(DiscordBaseClient):
         self.add_guild_member(user["id"], access_token)
         return user
 
-    def kick_guild_member(self, user_id: int | str):
-        """Remove a member from this client's guild."""
+    def kick_guild_member(self, user_id: int | str, reason: str = ""):
+        """Remove a member from this client's guild. `reason` shows in the
+        server's audit log."""
+        headers = {"X-Audit-Log-Reason": quote(reason[:512])} if reason else {}
         return self.delete(
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
+            headers=headers,
         )
+
+    def get_guild(self) -> dict:
+        """This client's guild (owner_id, name, ...)."""
+        return self.get(f"{BASE_URL}/guilds/{self.guild_id}")
 
     def get_invite(self, code: str) -> dict:
         """An invite and its server. 404 when it expired or was deleted."""

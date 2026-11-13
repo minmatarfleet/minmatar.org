@@ -3,9 +3,43 @@ import type { ui } from '@i18n/ui'
 
 export type UiKey = keyof typeof ui['en']
 
-export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles'
+export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles' | 'save_members' | 'approve_members'
 
-const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles']
+const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles', 'save_members', 'approve_members']
+
+// The pending list's Keep buttons post `keep:<discord id>`.
+const KEEP_PREFIX = 'keep:'
+
+/** The Discord id a Keep button posted, or null. */
+export function parse_keep_member(value: unknown): string | null {
+    if (typeof value !== 'string' || !value.startsWith(KEEP_PREFIX))
+        return null
+    const id = value.slice(KEEP_PREFIX.length)
+    return /^\d{1,20}$/.test(id) ? id : null
+}
+
+export function keep_member_action(discord_id: string): string {
+    return `${KEEP_PREFIX}${discord_id}`
+}
+
+/** Exemptions as typed in the textarea: one per line, commas allowed. */
+export function parse_exemptions(value: unknown): string[] {
+    return String(value ?? '')
+        .split(/[\n,]/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+}
+
+/** Hours and minutes until `when`, or null once it's due. */
+export function discord_removal_eta(when: string, now = Date.now()): string | null {
+    const minutes = Math.ceil((new Date(when).getTime() - now) / 60_000)
+    if (!Number.isFinite(minutes) || minutes <= 0)
+        return null
+    const hours = Math.floor(minutes / 60)
+    if (hours >= 48)
+        return `${Math.round(hours / 24)}d`
+    return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`
+}
 
 export interface DiscordSettingsFlash {
     kind: 'success' | 'error';
@@ -27,6 +61,11 @@ const SAVE_ERRORS: Record<string, UiKey> = {
     unknown_role: 'corporations.discord.error_unknown',
     not_connected: 'corporations.discord.error_not_connected',
     cannot_manage_roles: 'corporations.discord.error_cannot_manage',
+    invalid_username: 'corporations.discord.error_invalid_username',
+    too_many_exemptions: 'corporations.discord.error_too_many_exemptions',
+    cannot_kick_members: 'corporations.discord.error_cannot_kick_members',
+    not_pending: 'corporations.discord.error_not_pending',
+    not_held: 'corporations.discord.error_not_held',
     state_not_allowed: 'corporations.discord.error_unknown',
 }
 
