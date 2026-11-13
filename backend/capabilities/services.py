@@ -237,7 +237,8 @@ def doctrine_fittings() -> dict[int, dict]:
     """{fitting id: {"fitting", "roles", "strategic"}} for doctrine fittings."""
     out: dict[int, dict] = {}
     rows = EveDoctrineFitting.objects.filter(
-        fitting__deleted__isnull=True
+        fitting__deleted__isnull=True,
+        doctrine__deleted__isnull=True,
     ).select_related("fitting", "doctrine")
     for df in rows:
         entry = out.setdefault(
@@ -710,9 +711,9 @@ def _hull_capabilities(sde) -> dict[int, list[tuple[int, str, int]]]:
     """{hull: [(fitting id, capability, role order)]} from current sets."""
     out: dict[int, list] = defaultdict(list)
     roles = defaultdict(lambda: 9)
-    for fid, role in EveDoctrineFitting.objects.values_list(
-        "fitting_id", "role"
-    ):
+    for fid, role in EveDoctrineFitting.objects.filter(
+        doctrine__deleted__isnull=True
+    ).values_list("fitting_id", "role"):
         roles[fid] = min(roles[fid], ROLE_ORDER.get(role, 9))
     sets = FittingRequirementSet.objects.filter(is_current=True).values_list(
         "fitting_id", "fitting__ship_id", "capability"

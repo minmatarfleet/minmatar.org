@@ -182,7 +182,8 @@ def fetch_eve_market_contracts(request, location_id: int):
     sellers_by_fitting = _sellers_by_fitting(outstanding)
 
     doctrine_fittings = EveDoctrineFitting.objects.filter(
-        fitting_id__in=all_fitting_ids
+        fitting_id__in=all_fitting_ids,
+        doctrine__deleted__isnull=True,
     ).select_related("doctrine", "fitting")
     doctrines_by_fitting = defaultdict(list)
     for df in doctrine_fittings:

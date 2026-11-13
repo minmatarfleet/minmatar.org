@@ -9,13 +9,6 @@ export async function get_doctrines() {
     })
 }
 
-/** Every doctrine, retired ones included (the plain list leaves them out). */
-export async function get_doctrines_with_retired() {
-    return await api_request<Doctrine[]>(`${API_ENDPOINT}?include_retired=true`, {
-        error: 'Error fetching doctrines',
-    })
-}
-
 export async function get_doctrine_by_id(id:number) {
     return await api_request<Doctrine>(`${API_ENDPOINT}/${id}`, {
         error: 'Error fetching sigs',

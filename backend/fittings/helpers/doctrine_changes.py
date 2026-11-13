@@ -80,7 +80,8 @@ def _stored_doctrine(doctrine: EveDoctrine) -> EveDoctrine | None:
     """
     if not doctrine.pk:
         return None
-    return EveDoctrine.objects.filter(pk=doctrine.pk).first()
+    # Soft-deleted doctrines stay addressable so a removal can be undone.
+    return EveDoctrine.all_objects.filter(pk=doctrine.pk).first()
 
 
 def _write_doctrine_history_if_needed(doctrine: EveDoctrine, payload: dict):
@@ -140,14 +141,17 @@ def apply_doctrine_payload(doctrine: EveDoctrine, payload: dict):
     doctrine.name = payload["name"]
     doctrine.type = payload["type"]
     doctrine.description = payload["description"]
-    if "retired" in payload:
-        if payload["retired"] and doctrine.retired_at is None:
-            doctrine.retired_at = timezone.now()
-        elif not payload["retired"]:
-            doctrine.retired_at = None
     if not doctrine.latest_version:
         doctrine.latest_version = str(uuid.uuid4())
-    doctrine.save_without_versioning()
+    # A plain save restores a soft-deleted row. Keep it removed unless this
+    # payload says to bring it back.
+    doctrine.save_without_versioning(keep_deleted=True)
+    if "retired" in payload:
+        if payload["retired"]:
+            if doctrine.deleted is None:
+                doctrine.delete()
+        elif doctrine.deleted is not None:
+            doctrine.undelete()
 
     composition = _normalized_composition(payload.get("composition") or {})
     for role, fitting_ids in composition.items():

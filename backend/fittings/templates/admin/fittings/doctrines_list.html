@@ -65,9 +65,13 @@
         <td>{{ row.composition.utility }}</td>
         <td>{{ row.composition.capitals }}</td>
         <td>
+          {% if row.doctrine.deleted %}
+          <span class="fittings-pending-badge">{% translate "Deleted" %}</span>
+          {% endif %}
           {% if row.has_pending %}
           <span class="fittings-pending-badge">{% translate "Pending change" %}</span>
-          {% else %}
+          {% endif %}
+          {% if not row.doctrine.deleted and not row.has_pending %}
           —
           {% endif %}
         </td>

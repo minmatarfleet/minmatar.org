@@ -114,7 +114,8 @@ def fittings_manage_view(request):
 def doctrines_manage_view(request):
     require_doctrines_admin_view(request.user)
     pending_ids = _pending_doctrine_request_ids()
-    doctrines = EveDoctrine.objects.order_by("name")
+    # Staff can still open a removed doctrine here and bring it back.
+    doctrines = EveDoctrine.all_objects.order_by("name")
     rows = []
     for doctrine in doctrines:
         composition = {

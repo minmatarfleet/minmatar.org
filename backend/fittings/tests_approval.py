@@ -438,12 +438,15 @@ class DoctrineChangeRequestTestCase(TestCase):
         approve_doctrine_change_request(req, self.approver)
         doctrine.refresh_from_db()
         self.assertTrue(doctrine.retired)
+        self.assertIsNotNone(doctrine.deleted)
+        self.assertFalse(EveDoctrine.objects.filter(pk=doctrine.pk).exists())
 
         payload["retired"] = False
         req = submit_doctrine_change_request(doctrine, payload, self.proposer)
         approve_doctrine_change_request(req, self.approver)
         doctrine.refresh_from_db()
         self.assertFalse(doctrine.retired)
+        self.assertIsNone(doctrine.deleted)
 
     def test_payload_without_retired_keeps_state(self):
         doctrine = EveDoctrine.objects.create(
@@ -473,6 +476,7 @@ class DoctrineChangeRequestTestCase(TestCase):
         doctrine.refresh_from_db()
         self.assertEqual("D2", doctrine.name)
         self.assertTrue(doctrine.retired)
+        self.assertFalse(EveDoctrine.objects.filter(pk=doctrine.pk).exists())
 
     def test_propose_without_permission_denied(self):
         doctrine = EveDoctrine.objects.create(

@@ -93,7 +93,7 @@ class Command(BaseCommand):
             raise CommandError("--days must be >= 1.")
 
         cutoff = timezone.now() - timedelta(days=days)
-        doctrines = list(EveDoctrine.objects.using(source).order_by("pk"))
+        doctrines = list(EveDoctrine.all_objects.using(source).order_by("pk"))
         doctrine_fittings = list(
             EveDoctrineFitting.objects.using(source)
             .select_related("fitting", "doctrine")
@@ -348,13 +348,15 @@ class Command(BaseCommand):
             for field in EveDoctrine._meta.concrete_fields  # pylint: disable=protected-access
             if field.name not in DOCTRINE_SKIP_COPY
         }
-        existing = EveDoctrine.objects.using(local).filter(pk=prod.pk).first()
+        existing = (
+            EveDoctrine.all_objects.using(local).filter(pk=prod.pk).first()
+        )
         if existing:
-            EveDoctrine.objects.using(local).filter(pk=prod.pk).update(
+            EveDoctrine.all_objects.using(local).filter(pk=prod.pk).update(
                 **fields
             )
             return
-        EveDoctrine.objects.using(local).bulk_create(
+        EveDoctrine.all_objects.using(local).bulk_create(
             [EveDoctrine(id=prod.pk, **fields)]
         )
         self.stdout.write(f"  Copied EveDoctrine {prod.pk} ({prod.name}).")

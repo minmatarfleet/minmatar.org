@@ -706,8 +706,8 @@ class FleetRouterTestCase(TestCase):
             name="Old Doctrine",
             type="non_strategic",
             description="",
-            retired_at=timezone.now(),
         )
+        retired.delete()
         audience = EveFleetAudience.objects.first()
         response = self.client.post(
             f"{BASE_URL}",
@@ -722,7 +722,7 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(400, response.status_code, response.content)
-        self.assertIn("retired", response.json()["detail"])
+        self.assertIn("removed", response.json()["detail"])
 
         fleet = make_test_fleet("Test fleet", self.user)
         response = self.client.patch(
@@ -743,6 +743,15 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code, response.content)
+        self.assertEqual(retired.id, response.json()["doctrine_id"])
+        listed = self.client.get(
+            f"{BASE_URL}/v3?fleet_filter=upcoming",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, listed.status_code, listed.content)
+        row = next(item for item in listed.json() if item["id"] == fleet.id)
+        self.assertEqual(retired.id, row["doctrine_id"])
+        self.assertEqual("Old Doctrine", row["doctrine_name"])
 
     def test_fixup_fleet_status(self):
         self.assertEqual(None, fixup_fleet_status(None, None))
