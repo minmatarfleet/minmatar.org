@@ -1,5 +1,5 @@
 import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
-import { api_request, api_response } from '@helpers/api.minmatar.org/client'
+import { api_request, api_response, type ApiToken } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
 
@@ -16,8 +16,11 @@ export async function get_corporation_by_id(access_token:string, id:number) {
     })
 }
 
-export async function get_corporation_info(id:number) {
+/** Signed in, the Discord link of a corporation-members-only server shows
+ *  only to members of that corporation. */
+export async function get_corporation_info(id:number, access_token?:ApiToken) {
     return await api_request<CorporationInfo>(`${API_ENDPOINT}/corporations/${id}/info`, {
+        token: access_token,
         error: 'Error fetching corporation',
     })
 }

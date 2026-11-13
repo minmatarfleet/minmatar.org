@@ -1,13 +1,15 @@
 """Who may stay on a corporation's Discord server.
 
 A director picks a member policy in Settings: corporation members only, or
-alliance members only. An hourly pass lists the server's members and:
+alliance members only, and what to do about everyone else: nothing, tell
+the CEO, or remove them. An hourly pass lists the server's members and:
 
 - flags anyone who doesn't qualify onto a pending list, with a reason;
 - drops them from the list the moment they qualify (they linked their
   Discord on the site, or their character's corporation caught up), leave,
   or are exempted;
-- removes them once they've been on the list for ``member_grace_hours``.
+- once they've been on the list for ``member_grace_hours``, removes them,
+  or (with "Tell the CEO") sends the CEO one notification listing them.
 
 So turning a policy on never removes anyone straight away, a newcomer has
 the grace period to link their account, and the Settings tab shows who is
@@ -30,6 +32,7 @@ from datetime import timedelta
 
 import requests
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from ratelimit import RateLimitException
 
@@ -93,22 +96,20 @@ def normalize_username(raw) -> str | None:
     return name if USERNAME.match(name) else None
 
 
-def save_member_policy(
-    guild: DiscordGuild,
-    policy: str,
-    grace_hours: int,
-    usernames: list,
-    user=None,
-) -> None:
-    """Replace the policy and the exemption list from the Settings form."""
-    if policy not in {
-        DiscordGuild.MEMBER_POLICY_OFF,
-        DiscordGuild.MEMBER_POLICY_CORPORATION,
-        DiscordGuild.MEMBER_POLICY_ALLIANCE,
+def _clean_action(policy: str, action: str | None) -> str:
+    if action is None:
+        return DiscordGuild.MEMBER_ACTION_REMOVE if policy else ""
+    if action not in {
+        DiscordGuild.MEMBER_ACTION_OFF,
+        DiscordGuild.MEMBER_ACTION_NOTIFY,
+        DiscordGuild.MEMBER_ACTION_REMOVE,
     }:
-        raise AccessError("invalid_policy")
-    if grace_hours not in GRACE_HOURS:
-        raise AccessError("invalid_grace")
+        raise AccessError("invalid_action")
+    # Anyone may stay: nobody to tell the CEO about or remove.
+    return action if policy else DiscordGuild.MEMBER_ACTION_OFF
+
+
+def _clean_usernames(usernames: list) -> list[str]:
     names = []
     for raw in usernames:
         if not str(raw or "").strip():
@@ -120,16 +121,53 @@ def save_member_policy(
             names.append(name)
     if len(names) > MAX_EXEMPTIONS:
         raise AccessError("too_many_exemptions")
-    if policy and not guild.can_kick_members:
+    return names
+
+
+def save_member_policy(
+    guild: DiscordGuild,
+    policy: str,
+    grace_hours: int,
+    usernames: list,
+    user=None,
+    action: str | None = None,
+) -> None:
+    """Replace the policy and the exemption list from the Settings form.
+
+    Without an action (a form from before actions existed) a policy means
+    remove, as it did then.
+    """
+    if policy not in {
+        DiscordGuild.MEMBER_POLICY_OFF,
+        DiscordGuild.MEMBER_POLICY_CORPORATION,
+        DiscordGuild.MEMBER_POLICY_ALLIANCE,
+    }:
+        raise AccessError("invalid_policy")
+    action = _clean_action(policy, action)
+    if grace_hours not in GRACE_HOURS:
+        raise AccessError("invalid_grace")
+    names = _clean_usernames(usernames)
+    removes = action == DiscordGuild.MEMBER_ACTION_REMOVE
+    if removes and not guild.can_kick_members:
         raise AccessError("cannot_kick_members")
 
     with transaction.atomic():
-        changed = policy != guild.member_policy
+        changed = (
+            policy != guild.member_policy or action != guild.member_action
+        )
         guild.member_policy = policy
+        guild.member_action = action
         guild.member_grace_hours = grace_hours
-        fields = ["member_policy", "member_grace_hours", "updated_at"]
+        fields = [
+            "member_policy",
+            "member_action",
+            "member_grace_hours",
+            "updated_at",
+        ]
         if changed:
-            # A new policy starts a fresh list; its grace starts now.
+            # A new policy or action starts a fresh list; its grace starts
+            # now, so switching from Tell the CEO to Remove never removes
+            # anyone straight away.
             guild.member_removals.all().delete()
             guild.members_held_at = None
             guild.members_held_count = 0
@@ -152,7 +190,7 @@ def save_member_policy(
             ]
         )
         guild.member_removals.filter(username__in=names).delete()
-    if policy:
+    if action:
         transaction.on_commit(lambda: queue_enforce(guild.pk))
 
 
@@ -197,6 +235,7 @@ def member_access_payload(guild: DiscordGuild | None) -> dict:
     if guild is None:
         return {
             "policy": None,
+            "action": None,
             "grace_hours": DEFAULT_GRACE_HOURS,
             "grace_choices": list(GRACE_HOURS),
             "can_kick_members": False,
@@ -218,6 +257,7 @@ def member_access_payload(guild: DiscordGuild | None) -> dict:
         }
     return {
         "policy": guild.member_policy or None,
+        "action": guild.member_action or None,
         "grace_hours": guild.member_grace_hours,
         "grace_choices": list(GRACE_HOURS),
         "can_kick_members": bool(guild.can_kick_members),
@@ -239,6 +279,7 @@ def member_access_payload(guild: DiscordGuild | None) -> dict:
                 "reason": row.reason,
                 "flagged_at": row.flagged_at,
                 "remove_after": row.flagged_at + grace,
+                "notified_at": row.notified_at,
             }
             for row in rows
         ],
@@ -471,14 +512,15 @@ def enforce_guild(guild: DiscordGuild) -> int | None:
     when the pass couldn't run."""
     if _protected(guild) or not guild.is_active:
         return None
-    if not guild.member_policy:
+    if not guild.member_policy or not guild.member_action:
         guild.member_removals.all().delete()
         return None
     owned = _owner(guild)
     if owned is None or owned[0] != "corporation":
         return None
     corporation = owned[1]
-    if not guild.can_kick_members:
+    removes = guild.member_action == DiscordGuild.MEMBER_ACTION_REMOVE
+    if removes and not guild.can_kick_members:
         return None
 
     client = DiscordClient.for_guild(guild.guild_id)
@@ -494,6 +536,11 @@ def enforce_guild(guild: DiscordGuild) -> int | None:
     pending = _sync_pending(guild, unwelcome, now)
     grace = timedelta(hours=guild.member_grace_hours)
     due = [row for row in pending if row.flagged_at + grace <= now]
+
+    if not removes:
+        _notify_ceo(guild, corporation, due, now)
+        _save_pass(guild, members_checked_at=now, members_last_removed=0)
+        return 0
 
     approved_at = guild.members_approved_at
     approved = approved_at is not None and all(
@@ -535,11 +582,73 @@ def enforce_guild(guild: DiscordGuild) -> int | None:
     return removed
 
 
+def _notify_ceo(guild: DiscordGuild, corporation, due: list, now) -> None:
+    """One notification listing the people the CEO hasn't heard about yet.
+
+    Each person is in one notification only; they come up again only if
+    they leave the list and are flagged afresh.
+    """
+    fresh = [row for row in due if row.notified_at is None]
+    if not fresh:
+        return
+    # pylint: disable-next=import-outside-toplevel
+    from eveonline.helpers.corporations.permissions import ceo_user
+
+    # pylint: disable-next=import-outside-toplevel
+    from notifications.service import notify_user
+
+    # pylint: disable-next=import-outside-toplevel
+    from notifications.types.corporations import (
+        DISCORD_MEMBERS_KEY,
+        corporation_settings_url,
+    )
+
+    user = ceo_user(corporation)
+    if user is None:
+        logger.info(
+            "Discord guild %s: no CEO account to tell about %s people",
+            guild.guild_id,
+            len(fresh),
+        )
+        return
+    notify_user(
+        user,
+        DISCORD_MEMBERS_KEY,
+        {
+            "server": guild.name or "your Discord",
+            "corporation": corporation.name,
+            "people": [
+                {
+                    "name": row.display_name or row.username,
+                    "username": row.username,
+                    "reason": row.get_reason_display(),
+                }
+                for row in fresh
+            ],
+            "url": corporation_settings_url(corporation),
+        },
+        idempotency_key=(
+            f"discord-members:{guild.pk}:{int(now.timestamp())}:{user.pk}"
+        ),
+    )
+    DiscordGuildRemoval.objects.filter(
+        pk__in=[row.pk for row in fresh]
+    ).update(notified_at=now)
+
+
 def enforce_member_policies(guild_pk: int | None = None) -> None:
     """One pass over every server with a member policy, or a single one."""
-    queryset = DiscordGuild.objects.filter(
-        is_active=True, can_kick_members=True
-    ).exclude(member_policy="")
+    queryset = (
+        DiscordGuild.objects.filter(is_active=True)
+        .exclude(member_policy="")
+        .filter(
+            Q(member_action=DiscordGuild.MEMBER_ACTION_NOTIFY)
+            | Q(
+                member_action=DiscordGuild.MEMBER_ACTION_REMOVE,
+                can_kick_members=True,
+            )
+        )
+    )
     if guild_pk is not None:
         queryset = DiscordGuild.objects.filter(pk=guild_pk)
     for guild in queryset:

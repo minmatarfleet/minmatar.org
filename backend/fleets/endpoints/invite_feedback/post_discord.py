@@ -96,8 +96,7 @@ ROUTES = (
             },
             "description": (
                 "Save a Discord user's fleet invite feedback from the "
-                "Discord form (bot). Other's reason is the comment, and a "
-                'real pick beats "Nothing".'
+                "Discord form (bot). Other's reason is the comment."
             ),
         },
         post_invite_feedback_discord_submit,

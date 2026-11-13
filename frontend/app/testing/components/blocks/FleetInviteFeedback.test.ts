@@ -8,7 +8,7 @@ const answers = {
   sitting_out: "",
   why: "",
   why_text: "",
-  improve: [],
+  keep: "",
   comment: "",
 };
 

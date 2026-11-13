@@ -798,13 +798,10 @@
             "title": "Felt",
             "type": "string"
           },
-          "improve": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Improve",
-            "type": "array"
+          "keep": {
+            "default": "",
+            "title": "Keep",
+            "type": "string"
           },
           "sitting_out": {
             "default": "",
@@ -7362,6 +7359,7 @@
               }
             ],
             "default": {
+              "action": null,
               "can_kick_members": false,
               "checked_at": null,
               "exemptions": [],
@@ -11250,6 +11248,17 @@
       },
       "DiscordMemberAccess": {
         "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
           "can_kick_members": {
             "default": false,
             "title": "Can Kick Members",
@@ -11333,6 +11342,17 @@
       },
       "DiscordMemberAccessUpdate": {
         "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
           "exemptions": {
             "default": [],
             "items": {
@@ -11479,6 +11499,18 @@
             "format": "date-time",
             "title": "Flagged At",
             "type": "string"
+          },
+          "notified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notified At"
           },
           "reason": {
             "title": "Reason",
@@ -11652,13 +11684,10 @@
             "title": "Felt",
             "type": "string"
           },
-          "improve": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Improve",
-            "type": "array"
+          "keep": {
+            "default": "",
+            "title": "Keep",
+            "type": "string"
           },
           "sitting_out": {
             "default": "",
@@ -38850,18 +38879,13 @@
             "title": "Glad Or Fine Percent",
             "type": "integer"
           },
-          "improve": {
+          "keep": {
             "default": [],
             "items": {
               "$ref": "#/components/schemas/Bar"
             },
-            "title": "Improve",
+            "title": "Keep",
             "type": "array"
-          },
-          "improve_help": {
-            "default": "",
-            "title": "Improve Help",
-            "type": "string"
           },
           "lede": {
             "default": "",
@@ -41950,13 +41974,10 @@
             "title": "Felt",
             "type": "string"
           },
-          "improve": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Improve",
-            "type": "array"
+          "keep": {
+            "default": "",
+            "title": "Keep",
+            "type": "string"
           },
           "sitting_out": {
             "default": "",
@@ -57150,6 +57171,11 @@
             "description": "Not Found"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get a corporation's public profile",
         "tags": [
           "Corporations",
@@ -58576,7 +58602,7 @@
     },
     "/api/fleets/invite-feedback/discord-submit": {
       "post": {
-        "description": "Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment, and a real pick beats \"Nothing\".",
+        "description": "Save a Discord user's fleet invite feedback from the Discord form (bot). Other's reason is the comment.",
         "operationId": "fleets_endpoints_invite_feedback_post_discord_post_invite_feedback_discord_submit",
         "parameters": [],
         "requestBody": {

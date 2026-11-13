@@ -49,6 +49,16 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** Do not wait on a full contract match to archive a sale thread. Contract accepted closes a new sale. Threads already open get one Close button for the buyback team and are left out of that sweep. The hourly sweep reminds at 24h, cancels a new sale still waiting on Contract up at 48h after that warning, and only reminds the buyer once the contract is up. Still record contract items. The completion post names lines the synced contract does not cover. The forum is not a HelpTicket.
 **Skill update:** rewrote the buyback sale-threads row for the button close.
 
+## 2026-11-13 — Year-in-review cards used placeholder numbers
+
+**Category:** pulse.thinkspeak (named channel; no HelpTicket row)
+**Verdict:** clarify
+**Discord:** numbers posted in the channel
+**PR:** skill-only
+**Symptom vs cause:** Logistics, mining, and PvP year cards were placeholder art. Freight m³ and rewards are finished freight contracts. LP is completed buyback sells, and that source does not cover the whole year. Mining m³ for FL33T and BUILD has every day of the calendar year; ore ISK is the current Jita guide and misses unpriced new ores. Reaction runs are delivered ESI activity 9; output units are a different figure (SDE activity 11). Destroyed ships and ISK are zKill for the combat alliance and are down versus the prior year. Site fleets are up.
+**Durable rule:** A three-id Discord link is guild/channel/message. No HelpTicket row means answer that channel. Do not put a year-over-year percent on a source with no prior year. Do not add the associate alliance onto zKill destroyed totals.
+**Skill update:** added the year-in-review row and the three-id link note.
+
 ## 2026-11-11 — Accepted into a corp, then only some Discord access changed
 
 **Category:** pulse.technology

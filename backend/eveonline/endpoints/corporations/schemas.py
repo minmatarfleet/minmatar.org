@@ -339,7 +339,9 @@ class DiscordPendingRemoval(Schema):
     # unlinked, not_corporation or not_alliance
     reason: str
     flagged_at: datetime
+    # When they are removed, or (action "notify") when the CEO is told.
     remove_after: datetime
+    notified_at: Optional[datetime] = None
 
 
 class DiscordMemberHold(Schema):
@@ -351,6 +353,9 @@ class DiscordMemberHold(Schema):
 class DiscordMemberAccess(Schema):
     # corporation, alliance, or None (anyone may stay).
     policy: Optional[str] = None
+    # What happens to people the policy doesn't allow: notify (tell the
+    # CEO), remove, or None (nothing; the policy only shapes the roles).
+    action: Optional[str] = None
     grace_hours: int = 24
     grace_choices: List[int] = []
     can_kick_members: bool = False
@@ -364,6 +369,8 @@ class DiscordMemberAccess(Schema):
 
 class DiscordMemberAccessUpdate(Schema):
     policy: Optional[str] = None
+    # notify, remove or None. Left out, a policy means remove.
+    action: Optional[str] = None
     grace_hours: int = 24
     exemptions: List[str] = []
 

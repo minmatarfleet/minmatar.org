@@ -697,6 +697,49 @@ class CorporationRouterTestCase(TestCase):
         self.assertNotIn("leadership_missing_prime_time", payload)
         self.assertEqual("Executor notes", payload["executor_notes"])
 
+    def test_corporation_only_discord_link_shown_to_members_only(self):
+        corp = self.create_corp(12345, "TestCorp")
+        corp.discord_guild = DiscordGuild.objects.create(
+            guild_id=42,
+            name="Corp Ops",
+            is_active=True,
+            member_policy=DiscordGuild.MEMBER_POLICY_CORPORATION,
+        )
+        corp.discord_invite_url = "https://discord.gg/example"
+        corp.save()
+        url = BASE_URL + "corporations/12345/info"
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+
+        self.assertIsNone(self.client.get(url).json()["discord_invite_url"])
+        outsider = self.client.get(url, **auth).json()
+        self.assertIsNone(outsider["discord_invite_url"])
+
+        EveCharacter.objects.create(
+            character_id=20003,
+            character_name="Member Mo",
+            corporation_id=12345,
+            user=self.user,
+        )
+        member = self.client.get(url, **auth).json()
+        self.assertEqual(
+            "https://discord.gg/example", member["discord_invite_url"]
+        )
+
+        corp.discord_guild.member_policy = DiscordGuild.MEMBER_POLICY_ALLIANCE
+        corp.discord_guild.save()
+        self.assertEqual(
+            "https://discord.gg/example",
+            self.client.get(url).json()["discord_invite_url"],
+        )
+
+    def test_stale_token_still_reads_public_profile(self):
+        self.create_corp(12345, "TestCorp")
+        response = self.client.get(
+            BASE_URL + "corporations/12345/info",
+            HTTP_AUTHORIZATION="Bearer not-a-token",
+        )
+        self.assertEqual(200, response.status_code)
+
     def test_managed_includes_director(self):
         corp = self.create_corp(12345, "TestCorp")
         director = EveCharacter.objects.create(

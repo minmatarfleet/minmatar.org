@@ -55,7 +55,7 @@ let open_application: OpenCorporationApplication | null = null
 let fetch_error: Error | false = false
 try {
     [corporation, requirements, mine, open_application] = await Promise.all([
-        get_corporation_info(corporation_id),
+        get_corporation_info(corporation_id, auth_token),
         get_corporation_requirements(corporation_id),
         auth_token ? get_my_corporation_requirements(auth_token, corporation_id) : Promise.resolve(null),
         auth_token ? get_my_open_application(auth_token) : Promise.resolve(null),

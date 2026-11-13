@@ -3,9 +3,52 @@ import type { ui } from '@i18n/ui'
 
 export type UiKey = keyof typeof ui['en']
 
-export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles' | 'save_members' | 'approve_members'
+export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles' | 'save_members' | 'save_access' | 'approve_members'
 
-const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles', 'save_members', 'approve_members']
+const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles', 'save_members', 'save_access', 'approve_members']
+
+// Roles a corporation server can hand out, in the order Settings lists them.
+export const DISCORD_CORPORATION_ROLE_STATES = [
+    'member',
+    'director',
+    'recruiter',
+    'structure_manager',
+    'alliance_member',
+] as const
+
+export type DiscordCorporationRoleState = typeof DISCORD_CORPORATION_ROLE_STATES[number]
+
+/**
+ * The role rows Settings renders. Member always shows; the rest sit behind
+ * "Add a role" until added, except those already mapped.
+ */
+export function discord_access_roles(mappings: { state: string, role_id?: string | null }[]) {
+    const mapped = new Set(mappings.filter((mapping) => mapping.role_id).map((mapping) => mapping.state))
+    const extra = DISCORD_CORPORATION_ROLE_STATES.filter((state) => state !== 'member')
+    return {
+        all: [...DISCORD_CORPORATION_ROLE_STATES],
+        extra,
+        added: extra.filter((state) => mapped.has(state)),
+    }
+}
+
+/**
+ * The cleanup option Settings starts on. A server without a policy starts
+ * on Notify the CEO, the default; one saved before actions existed (no
+ * `action` field) removes, as it did then.
+ */
+export function discord_initial_action(policy: string | null | undefined, action: string | null | undefined): string {
+    if (!policy)
+        return 'notify'
+    if (action === undefined)
+        return 'remove'
+    return action ?? ''
+}
+
+/** The cleanup choice as posted: notify, remove, or null (remove roles only). */
+export function parse_member_action(value: unknown): 'notify' | 'remove' | null {
+    return value === 'notify' || value === 'remove' ? value : null
+}
 
 // The pending list's Keep buttons post `keep:<discord id>`.
 const KEEP_PREFIX = 'keep:'

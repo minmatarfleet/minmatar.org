@@ -10,6 +10,7 @@ class NotificationsConfig(AppConfig):
         # Register built-in notification types (side-effect import).
         # pylint: disable=import-outside-toplevel,unused-import
         from notifications.types import (  # noqa: F401
+            corporations,
             fleets,
             industry,
             tribes,

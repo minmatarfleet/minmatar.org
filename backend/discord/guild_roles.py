@@ -141,12 +141,14 @@ def clear_role_mappings(guild: DiscordGuild | None) -> None:
     guild.member_exemptions.all().delete()
     guild.member_removals.all().delete()
     guild.member_policy = DiscordGuild.MEMBER_POLICY_OFF
+    guild.member_action = DiscordGuild.MEMBER_ACTION_OFF
     guild.members_held_at = None
     guild.members_held_count = 0
     guild.members_approved_at = None
     guild.save(
         update_fields=[
             "member_policy",
+            "member_action",
             "members_held_at",
             "members_held_count",
             "members_approved_at",

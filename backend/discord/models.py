@@ -142,6 +142,23 @@ class DiscordGuild(models.Model):
         default="",
         db_default="",
     )
+    # What the hourly pass does with people the policy doesn't allow.
+    # Blank: nothing (the policy only decides which roles Settings offers).
+    MEMBER_ACTION_OFF = ""
+    MEMBER_ACTION_NOTIFY = "notify"
+    MEMBER_ACTION_REMOVE = "remove"
+    MEMBER_ACTION_CHOICES = [
+        (MEMBER_ACTION_OFF, "Leave them"),
+        (MEMBER_ACTION_NOTIFY, "Tell the CEO"),
+        (MEMBER_ACTION_REMOVE, "Remove them"),
+    ]
+    member_action = models.CharField(
+        max_length=16,
+        choices=MEMBER_ACTION_CHOICES,
+        blank=True,
+        default="",
+        db_default="",
+    )
     member_grace_hours = models.PositiveSmallIntegerField(
         default=24, db_default=24
     )
@@ -252,8 +269,9 @@ class DiscordGuildExemption(models.Model):
 class DiscordGuildRemoval(models.Model):
     """Someone on a corporation's server who doesn't meet its member policy.
 
-    They are removed once flagged_at is member_grace_hours old, and the row
-    is dropped as soon as they qualify, leave, or are exempted.
+    They are removed, or the CEO is told about them, once flagged_at is
+    member_grace_hours old. The row is dropped as soon as they qualify,
+    leave, or are exempted.
     """
 
     REASON_UNLINKED = "unlinked"
@@ -275,6 +293,8 @@ class DiscordGuildRemoval(models.Model):
     display_name = models.CharField(max_length=100, blank=True, default="")
     reason = models.CharField(max_length=16, choices=REASON_CHOICES)
     flagged_at = models.DateTimeField()
+    # When the CEO was told about them (the "Tell the CEO" action).
+    notified_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["flagged_at", "discord_id"]

@@ -28,7 +28,7 @@ class Answers(BaseModel):
     sitting_out: str = ""
     why: str = ""
     why_text: str = ""
-    improve: List[str] = []
+    keep: str = ""
     comment: str = ""
 
 
@@ -61,7 +61,7 @@ class SubmitRequest(BaseModel):
     sitting_out: str = ""
     why: str = ""
     why_text: str = ""
-    improve: List[str] = []
+    keep: str = ""
     comment: str = ""
 
 
@@ -129,8 +129,7 @@ class ResultsResponse(BaseModel):
     felt_help: str = ""
     why: List[Bar] = []
     why_help: str = ""
-    improve: List[Bar] = []
-    improve_help: str = ""
+    keep: List[Bar] = []
     quotes: List[str] = []
     quotes_help: str = ""
 
