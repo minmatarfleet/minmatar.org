@@ -288,6 +288,19 @@ class MentorApiTestCase(TestCase):
         mentors = response.json()["mentors"]
         self.assertEqual(["Orion"], [m["person"]["name"] for m in mentors])
         self.assertEqual("multi-boxing", mentors[0]["classes"][0]["slug"])
+        self.assertFalse(mentors[0]["is_you"])
+
+    def test_a_mentor_sees_their_own_card(self, *_):
+        response = self.client.get(BASE, **auth_headers(self.orion))
+        mentors = response.json()["mentors"]
+        self.assertEqual(["Orion"], [m["person"]["name"] for m in mentors])
+        self.assertTrue(mentors[0]["is_you"])
+        response = self.client.get(
+            f"{BASE}/classes/multi-boxing", **auth_headers(self.orion)
+        )
+        self.assertEqual(
+            [True], [m["is_you"] for m in response.json()["mentors"]]
+        )
 
     def test_class_page_checks_requirements(self, *_):
         response = self.client.get(

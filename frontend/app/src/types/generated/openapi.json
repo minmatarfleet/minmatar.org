@@ -28926,6 +28926,11 @@
             "title": "Full",
             "type": "boolean"
           },
+          "is_you": {
+            "default": false,
+            "title": "Is You",
+            "type": "boolean"
+          },
           "mentor_id": {
             "title": "Mentor Id",
             "type": "integer"
