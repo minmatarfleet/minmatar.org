@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 
-from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -17,14 +16,25 @@ from buyback.models import (
     BuybackLedgerEntry,
 )
 from eveonline.client import EsiClient
+from eveonline.helpers.characters.tokens import character_ids_with_scopes
 from eveonline.helpers.corporations import (
+    SCOPE_CHARACTER_CONTRACTS,
     SCOPE_CORPORATION_CONTRACTS,
     get_director_with_scope,
 )
 from eveonline.helpers.universe import ensure_eve_types
-from eveonline.models import EveCorporation, EveCorporationContract
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EveCorporationContract,
+)
 
 logger = logging.getLogger(__name__)
+
+# Deleted, rejected, and failed contracts are not stock movement.
+LEDGER_CONTRACT_STATUSES = frozenset(
+    {"outstanding", "in_progress", "finished"}
+)
 
 
 def _as_datetime(value) -> datetime | None:
@@ -88,28 +98,95 @@ def mexc_item_exchange_contracts():
     ).filter(_in_or_out_q())
 
 
-def fetch_contract_items(contract_id: int) -> list[dict]:
-    try:
-        corp = EveCorporation.objects.get(
-            corporation_id=BUYBACK_CORPORATION_ID
-        )
-    except EveCorporation.DoesNotExist:
-        return []
+def _add_unique(ordered: list[int], value) -> None:
+    if not value:
+        return
+    parsed = int(value)
+    if parsed not in ordered:
+        ordered.append(parsed)
+
+
+def _corporation_ids_for_items(contract: EveCorporationContract) -> list[int]:
+    """Corporations that might be allowed to read this contract, best first."""
+    ordered: list[int] = []
+    _add_unique(ordered, BUYBACK_CORPORATION_ID)
+    if contract.corporation_id:
+        _add_unique(ordered, contract.corporation.corporation_id)
+    _add_unique(ordered, contract.issuer_corporation_id)
+    _add_unique(ordered, contract.assignee_id)
+    return ordered
+
+
+def _character_ids_for_items(contract: EveCorporationContract) -> list[int]:
+    ordered: list[int] = []
+    _add_unique(ordered, contract.assignee_id)
+    _add_unique(ordered, contract.issuer_id)
+    return ordered
+
+
+def _read_corporation_items(
+    corporation_id: int, contract_id: int
+) -> list[dict] | None:
+    corp = EveCorporation.objects.filter(corporation_id=corporation_id).first()
+    if corp is None:
+        return None
     character = get_director_with_scope(corp, SCOPE_CORPORATION_CONTRACTS)
     if character is None:
-        logger.warning("No director with corp contracts scope for M-EXC")
-        return []
+        return None
     response = EsiClient(character).get_corporation_contract_items(
-        BUYBACK_CORPORATION_ID, contract_id
+        corporation_id, contract_id
     )
     if not response.success():
         logger.warning(
-            "Contract items ESI failed contract=%s code=%s",
+            "Contract items ESI failed contract=%s corporation=%s code=%s",
             contract_id,
+            corporation_id,
             response.response_code,
         )
-        return []
+        return None
     return list(response.results() or [])
+
+
+def _read_character_items(
+    character_id: int, contract_id: int
+) -> list[dict] | None:
+    if character_id not in character_ids_with_scopes(
+        [character_id], SCOPE_CHARACTER_CONTRACTS
+    ):
+        return None
+    character = EveCharacter.objects.filter(character_id=character_id).first()
+    if character is None:
+        return None
+    response = EsiClient(character).get_character_contract_items(contract_id)
+    if not response.success():
+        logger.warning(
+            "Contract items ESI failed contract=%s character=%s code=%s",
+            contract_id,
+            character_id,
+            response.response_code,
+        )
+        return None
+    return list(response.results() or [])
+
+
+def fetch_contract_items(contract: EveCorporationContract) -> list[dict]:
+    """Item lines for one M-EXC contract, from whoever can read them.
+
+    M-EXC's director token is preferred. Corporation contract sync often
+    stores the row under the other party, and that party can still read
+    the lines when M-EXC has no corporation-contracts scope. A character
+    assignee or issuer with character contracts is the last resort.
+    """
+    contract_id = int(contract.contract_id)
+    for corporation_id in _corporation_ids_for_items(contract):
+        items = _read_corporation_items(corporation_id, contract_id)
+        if items:
+            return items
+    for character_id in _character_ids_for_items(contract):
+        items = _read_character_items(character_id, contract_id)
+        if items:
+            return items
+    return []
 
 
 def upsert_ledger_from_contract_items(
@@ -178,7 +255,6 @@ def upsert_ledger_from_contract_items(
     return created
 
 
-@transaction.atomic
 def sync_contract_ledger_entries(
     *,
     contract_ids: list[int] | None = None,
@@ -186,8 +262,15 @@ def sync_contract_ledger_entries(
 ) -> dict[str, int]:
     """
     Fetch ESI items for M-EXC in/out item_exchange contracts and upsert ledger.
+
+    ``only_missing`` skips contracts that already have ledger rows. Item
+    lines do not change after creation. Sale completion watches contract
+    status on the header, which corporation sync updates on its own.
+
+    Each contract commits on its own. One ESI failure must not roll back
+    lines already written for the contracts before it.
     """
-    qs = mexc_item_exchange_contracts()
+    qs = mexc_item_exchange_contracts().select_related("corporation")
     if contract_ids is not None:
         qs = qs.filter(contract_id__in=contract_ids)
 
@@ -210,9 +293,10 @@ def sync_contract_ledger_entries(
     scanned = 0
     created = 0
     skipped = 0
+    unreadable = 0
     for contract in contracts:
         reason = classify_contract_direction(contract)
-        if reason is None:
+        if reason is None or contract.status not in LEDGER_CONTRACT_STATUSES:
             skipped += 1
             continue
         scanned += 1
@@ -222,7 +306,10 @@ def sync_contract_ledger_entries(
                 reason=reason, source_id__startswith=prefix
             ).exists():
                 continue
-        items = fetch_contract_items(contract.contract_id)
+        items = fetch_contract_items(contract)
+        if not items:
+            unreadable += 1
+            continue
         created += upsert_ledger_from_contract_items(
             contract=contract,
             reason=reason,
@@ -234,6 +321,7 @@ def sync_contract_ledger_entries(
         "scanned": scanned,
         "created": created,
         "skipped": skipped,
+        "unreadable": unreadable,
     }
 
 

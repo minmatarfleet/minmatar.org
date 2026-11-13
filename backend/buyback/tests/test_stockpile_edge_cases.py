@@ -15,11 +15,11 @@ from buyback.helpers.purchase_orders import (
     complete_purchase_order,
     try_complete_from_outbound_contracts,
 )
+from buyback.helpers.refresh import refresh_buyback_ledger
 from buyback.helpers.remaining import (
     available_stock_quantities,
     remaining_sale_quantities,
 )
-from buyback.helpers.refresh import refresh_buyback_ledger
 from buyback.helpers.unknown import emit_unknown_from_snapshots
 from buyback.models import (
     BUYBACK_CONTRACT_TYPE,
@@ -290,6 +290,38 @@ class FifoAutoCompleteEdgeCaseTestCase(StockpileEdgeCaseBase):
         self._outbound(order, 10, source_id="out:idempotent")
         self.assertEqual(try_complete_from_outbound_contracts(), 1)
         self.assertEqual(try_complete_from_outbound_contracts(), 0)
+
+    def test_outstanding_contract_waits_until_finished(self):
+        order = self._place(10)
+        corp = EveCorporation.objects.create(
+            corporation_id=BUYBACK_CORPORATION_ID,
+            name="M-EXC",
+            ticker="M-EXC",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=77,
+            corporation=corp,
+            type=BUYBACK_CONTRACT_TYPE,
+            status="outstanding",
+            issuer_id=1,
+            issuer_corporation_id=BUYBACK_CORPORATION_ID,
+            assignee_id=order.character_id,
+            date_issued=timezone.now(),
+            price=order.contract_total,
+            volume=1,
+        )
+        self._outbound(order, 10, source_id="77:1")
+        self.assertEqual(try_complete_from_outbound_contracts(), 0)
+        order.refresh_from_db()
+        self.assertEqual(order.status, BuybackPurchaseOrder.Status.PENDING)
+
+        EveCorporationContract.objects.filter(contract_id=77).update(
+            status="finished",
+            date_completed=timezone.now(),
+        )
+        self.assertEqual(try_complete_from_outbound_contracts(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.status, BuybackPurchaseOrder.Status.COMPLETED)
 
     def test_double_complete_rejected(self):
         order = self._place(10)

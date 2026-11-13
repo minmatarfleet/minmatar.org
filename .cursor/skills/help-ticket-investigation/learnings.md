@@ -49,6 +49,16 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** Trial plus a `[?]` nickname is this split, not a role-sync bug. The history preference only overrides ESI when it still reports the previous corporation. The next affiliation run should store the new corp and the nickname becomes `[TICKER]`.
 **Skill update:** added the partial-rollback row.
 
+## 2026-11-12 — Buyback sale threads stay open after the contract finishes
+
+**Category:** pulse.technology (buyback forum; no HelpTicket row)
+**Verdict:** bug
+**Discord:** no reply (forum channel, not a help thread)
+**PR:** fix+skill
+**Symptom vs cause:** Pending hangar sales stayed open after a finished item-exchange whose price matched the order. Ledger item lines stopped when M-EXC directors no longer had corporation contracts. Assignee corporations still stored the contract header. Auto-complete only reads `sold_contract` rows, so the Discord thread never closed.
+**Durable rule:** Read contract items from the corporation that stored the row when M-EXC cannot. Only `status=finished` closes the sale. The buyback forum is not a HelpTicket.
+**Skill update:** rewrote the buyback sale-threads row.
+
 ## 2026-11-09 — Corporation Apply closes with nothing saved
 
 **Category:** pulse.technology

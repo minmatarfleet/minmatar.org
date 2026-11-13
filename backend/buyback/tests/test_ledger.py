@@ -10,11 +10,13 @@ from django.utils import timezone
 
 from buyback.helpers.contracts_ledger import (
     classify_contract_direction,
+    fetch_contract_items,
     sync_contract_ledger_entries,
     upsert_ledger_from_contract_items,
 )
 from buyback.helpers.hangar import quantities_from_assets
 from buyback.helpers.metrics import assign_demand_statuses
+from buyback.helpers.refresh import refresh_buyback_ledger
 from buyback.helpers.sell_orders import sync_sold_order_ledger_entries
 from buyback.helpers.unknown import emit_unknown_from_snapshots
 from buyback.models import (
@@ -28,7 +30,9 @@ from buyback.models import (
     SellPriceBasis,
 )
 from buyback.tests.helpers import BASE_URL, ensure_type
+from eveonline.client import EsiResponse
 from eveonline.models import (
+    EveCharacter,
     EveCorporation,
     EveCorporationContract,
     EveLocation,
@@ -196,6 +200,187 @@ class ContractLedgerUpsertTestCase(TestCase):
         self.assertEqual(entry.quantity, 10)
         self.assertEqual(entry.counterparty_id, buyer.corporation_id)
         self.assertEqual(entry.counterparty_kind, "corporation")
+
+    @patch("buyback.helpers.contracts_ledger.fetch_contract_items")
+    def test_sync_skips_deleted_and_already_ledgered(self, mock_items):
+        EveCharacter.objects.create(character_id=7, character_name="Issuer")
+        EveCorporation.objects.create(
+            corporation_id=98832280,
+            name="Buyer Corp",
+            ticker="BUY",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=43,
+            corporation=self.corp,
+            type=BUYBACK_CONTRACT_TYPE,
+            status="deleted",
+            issuer_id=7,
+            issuer_corporation_id=BUYBACK_CORPORATION_ID,
+            assignee_id=98832280,
+            date_issued=timezone.now(),
+            price=0,
+            volume=1,
+        )
+        deleted = sync_contract_ledger_entries(contract_ids=[43])
+        self.assertEqual(deleted["skipped"], 1)
+        self.assertEqual(deleted["scanned"], 0)
+        mock_items.assert_not_called()
+
+        mock_items.return_value = [
+            {
+                "type_id": self.eve_type.id,
+                "quantity": 10,
+                "record_id": 1,
+                "is_included": True,
+            }
+        ]
+        EveCorporationContract.objects.create(
+            contract_id=44,
+            corporation=self.corp,
+            type=BUYBACK_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=7,
+            issuer_corporation_id=BUYBACK_CORPORATION_ID,
+            assignee_id=98832280,
+            date_issued=timezone.now(),
+            date_completed=timezone.now(),
+            price=100,
+            volume=1,
+        )
+        first = sync_contract_ledger_entries(contract_ids=[44])
+        self.assertEqual(first["created"], 1)
+        mock_items.reset_mock()
+        second = sync_contract_ledger_entries(
+            contract_ids=[44], only_missing=True
+        )
+        self.assertEqual(second["created"], 0)
+        mock_items.assert_not_called()
+
+    @patch(
+        "buyback.helpers.contracts_ledger.character_ids_with_scopes",
+        return_value=set(),
+    )
+    @patch("buyback.helpers.contracts_ledger.get_director_with_scope")
+    @patch("buyback.helpers.contracts_ledger.EsiClient")
+    def test_fetch_reads_items_from_the_corp_that_stored_the_contract(
+        self, esi_cls, directors, unused_scopes
+    ):
+        buyer = EveCorporation.objects.create(
+            corporation_id=98832280,
+            name="Buyer Corp",
+            ticker="BUY",
+        )
+        director = EveCharacter.objects.create(
+            character_id=555001,
+            character_name="Buyer Director",
+        )
+        contract = EveCorporationContract.objects.create(
+            contract_id=4242,
+            corporation=buyer,
+            type=BUYBACK_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=7,
+            issuer_corporation_id=BUYBACK_CORPORATION_ID,
+            assignee_id=buyer.corporation_id,
+            date_issued=timezone.now(),
+            date_completed=timezone.now(),
+            price=100,
+            volume=1,
+        )
+
+        def directors_for(corp, scope_list):
+            if corp.corporation_id == buyer.corporation_id:
+                return director
+            return None
+
+        directors.side_effect = directors_for
+        client = esi_cls.return_value
+        client.get_corporation_contract_items.return_value = EsiResponse(
+            0,
+            data=[
+                {
+                    "type_id": self.eve_type.id,
+                    "quantity": 10,
+                    "record_id": 1,
+                    "is_included": True,
+                }
+            ],
+        )
+
+        items = fetch_contract_items(contract)
+
+        self.assertEqual(items[0]["quantity"], 10)
+        client.get_corporation_contract_items.assert_called_once_with(
+            buyer.corporation_id, 4242
+        )
+        client.get_character_contract_items.assert_not_called()
+
+    @patch("buyback.helpers.contracts_ledger.get_director_with_scope")
+    @patch("buyback.helpers.contracts_ledger.character_ids_with_scopes")
+    @patch("buyback.helpers.contracts_ledger.EsiClient")
+    def test_fetch_reads_items_from_the_assignee_character(
+        self, esi_cls, scopes, directors
+    ):
+        directors.return_value = None
+        assignee_id = 777001
+        scopes.return_value = {assignee_id}
+        EveCharacter.objects.create(
+            character_id=assignee_id,
+            character_name="Buyer Alt",
+        )
+        contract = EveCorporationContract.objects.create(
+            contract_id=4243,
+            corporation=self.corp,
+            type=BUYBACK_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=7,
+            issuer_corporation_id=BUYBACK_CORPORATION_ID,
+            assignee_id=assignee_id,
+            date_issued=timezone.now(),
+            date_completed=timezone.now(),
+            price=100,
+            volume=1,
+        )
+        client = esi_cls.return_value
+        client.get_character_contract_items.return_value = EsiResponse(
+            0,
+            data=[
+                {
+                    "type_id": self.eve_type.id,
+                    "quantity": 4,
+                    "record_id": 2,
+                    "is_included": True,
+                }
+            ],
+        )
+
+        items = fetch_contract_items(contract)
+
+        self.assertEqual(items[0]["quantity"], 4)
+        client.get_corporation_contract_items.assert_not_called()
+        client.get_character_contract_items.assert_called_once_with(4243)
+
+    @patch(
+        "buyback.helpers.refresh.try_complete_from_outbound_contracts",
+        return_value=0,
+    )
+    @patch(
+        "buyback.helpers.refresh.backfill_contract_counterparties",
+        return_value={"updated": 0},
+    )
+    @patch(
+        "buyback.helpers.refresh.sync_contract_ledger_entries",
+        return_value={"scanned": 0},
+    )
+    def test_refresh_reads_only_missing_contract_items(
+        self, sync, unused_backfill, unused_complete
+    ):
+        refresh_buyback_ledger(
+            sync_sell_orders=False,
+            snapshot_hangar=False,
+            refresh_metrics=False,
+        )
+        sync.assert_called_once_with(only_missing=True)
 
 
 class UnknownResidualTestCase(TestCase):

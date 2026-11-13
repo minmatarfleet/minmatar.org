@@ -35,7 +35,10 @@ def refresh_buyback_ledger(
     result: dict = {}
 
     if sync_contracts:
-        result["contracts"] = sync_contract_ledger_entries()
+        # Re-read only contracts that have no lines yet. A full item scan
+        # every hour depends on an M-EXC contracts token and used to hold
+        # one transaction open across every ESI call.
+        result["contracts"] = sync_contract_ledger_entries(only_missing=True)
         result["counterparties"] = backfill_contract_counterparties()
         result["purchases_completed"] = try_complete_from_outbound_contracts()
         logger.info("Buyback contract ledger: %s", result["contracts"])

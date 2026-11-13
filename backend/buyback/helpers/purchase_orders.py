@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.utils import timezone
-from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter, EveCorporation
 from eveuniverse.models import EveType
 
 from buyback.discord_tasks import (
@@ -22,6 +20,12 @@ from buyback.models import (
     BuybackPurchaseOrder,
     BuybackPurchaseOrderLine,
     EveBuybackSettings,
+)
+from eveonline.helpers.characters import user_primary_character
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EveCorporationContract,
 )
 
 
@@ -140,23 +144,59 @@ def _match_entity_ids(order: BuybackPurchaseOrder) -> set[int]:
     return ids
 
 
+def _source_contract_id(source_id: str) -> int | None:
+    """Contract id encoded as ``{contract_id}:{record}``, or None."""
+    pieces = str(source_id).split(":", 1)
+    if len(pieces) != 2:
+        return None
+    try:
+        return int(pieces[0])
+    except ValueError:
+        return None
+
+
+def _unfinished_contract_ids(contract_ids: set[int]) -> set[int]:
+    """Stored contracts that are not finished.
+
+    An id with no row is left out, so a ledger line that is not tied to a
+    contract header still counts.
+    """
+    if not contract_ids:
+        return set()
+    return set(
+        EveCorporationContract.objects.filter(contract_id__in=contract_ids)
+        .exclude(status="finished")
+        .values_list("contract_id", flat=True)
+    )
+
+
 def _sold_by_type_since(entity_ids: set[int], since) -> dict[int, int]:
     if not entity_ids:
         return {}
-    rows = (
+    rows = list(
         BuybackLedgerEntry.objects.filter(
             reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
             counterparty_id__in=entity_ids,
             occurred_at__gte=since,
-        )
-        .values("eve_type_id")
-        .annotate(total=Sum("quantity"))
+        ).values_list("eve_type_id", "quantity", "source_id")
     )
-    return {
-        int(row["eve_type_id"]): int(row["total"] or 0)
-        for row in rows
-        if int(row["total"] or 0) > 0
-    }
+    unfinished = _unfinished_contract_ids(
+        {
+            contract_id
+            for row in rows
+            if (contract_id := _source_contract_id(row[2])) is not None
+        }
+    )
+    totals: dict[int, int] = {}
+    for type_id, quantity, source_id in rows:
+        contract_id = _source_contract_id(source_id)
+        if contract_id is not None and contract_id in unfinished:
+            continue
+        qty = int(quantity or 0)
+        if qty <= 0:
+            continue
+        totals[int(type_id)] = totals.get(int(type_id), 0) + qty
+    return totals
 
 
 def _claimed_qty(
