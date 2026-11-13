@@ -31,8 +31,6 @@ const chain = order_groups(groups, SUPPLY_FLOW).map((group) => {
     }
 })
 
-const hulls = groups.find((group) => group.code === 'supply.market')?.highlights?.hulls ?? []
-
 import TribeAboutSection from '@components/blocks/tribe_about/TribeAboutSection.astro'
 import TribeSupplyGoods from '@components/blocks/tribe_about/TribeSupplyGoods.astro'
 ---
@@ -90,7 +88,7 @@ import TribeSupplyGoods from '@components/blocks/tribe_about/TribeSupplyGoods.as
     </ol>
 </TribeAboutSection>
 
-<TribeSupplyGoods supply={supply} hulls={hulls} />
+<TribeSupplyGoods supply={supply} hulls={[]} />
 
 <style lang="scss">
     .chain {

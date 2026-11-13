@@ -21,7 +21,6 @@ export type TribeActivityMetric = {
 
 /** Group-specific showcase block rendered under the metric cards. */
 export type TribeActivityBlock =
-    | 'hulls'
     | 'weekly'
     | 'doctrine_grid'
     | 'fixed'
@@ -160,54 +159,6 @@ export const TRIBE_ACTIVITY_BY_CODE: Record<string, TribeActivitySpec> = {
                 value: `${format_volume_m3(total_number(totals, 'avg_volume_per_contract'))} m³`,
             },
         ],
-    },
-    'supply.market': {
-        metrics: (t, totals, highlights) => [
-            {
-                label: t('tribes.activity.market.fits_sold'),
-                value: count(total_number(totals, 'fits_sold')),
-                hint: best_month(t, highlights),
-            },
-            {
-                label: t('tribes.activity.market.isk_sold'),
-                value: format_isk(total_number(totals, 'isk_sold')),
-                hint: t('tribes.activity.market.isk_sold_hint'),
-            },
-            {
-                label: t('tribes.activity.market.fits_listed'),
-                value: count(total_number(totals, 'fits_listed')),
-                hint: t('tribes.activity.market.fits_listed_hint'),
-            },
-            {
-                label: t('tribes.activity.market.sellers'),
-                value: count(total_number(totals, 'sellers')),
-                hint: t('tribes.activity.market.sellers_hint'),
-            },
-        ],
-        block: 'hulls',
-        all_time: (t, highlights) => {
-            if (!highlights.all_time)
-                return null
-            const sold = all_time_number(highlights, 'fits_sold')
-            const target = all_time_number(highlights, 'next_milestone')
-            return {
-                headline: fill_template(t('tribes.activity.market.all_time'), { n: count(sold) }),
-                detail: target
-                    ? fill_template(t('tribes.activity.next_milestone'), {
-                        left: count(target - sold),
-                        target: count(target),
-                    })
-                    : '',
-                progress: target ? sold / target : undefined,
-            }
-        },
-        contributors: (t) => ({
-            metric_label: t('tribes.activity.market.fits_sold'),
-            value: (values) => count(values.fits_sold),
-            detail: (values) => fill_template(t('tribes.activity.market.contributor_detail'), {
-                isk: format_isk(values.isk_sold ?? 0),
-            }),
-        }),
     },
     'supply.loyalty-points': {
         metrics: (t, totals, highlights) => [

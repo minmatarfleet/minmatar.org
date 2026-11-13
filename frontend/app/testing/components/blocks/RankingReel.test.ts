@@ -24,19 +24,19 @@ describe('ranking reel builders', () => {
         expect(fleet_commanders_reel(fcs(2), t).items.map(i => i.stat_text)).toEqual(['1 fleet', '2 fleets'])
         expect(space_truckers_reel([{ ...pilot(0), completed_contracts_count: 1 }] as any, t, translate_path).items[0].stat_text).toBe('1 contract')
         expect(industry_manufacturers_reel([{ ...pilot(0), delivered_isk_estimate: '4560000' }] as any, t, translate_path).items[0].stat_text).toBe('4.56M ISK')
-        expect(market_operators_reel([{ ...pilot(0), total_isk_on_market: 7_890_000_000 }] as any, t, translate_path).items[0].stat_text).toBe('7.9B ISK on market')
+        expect(market_operators_reel([{ ...pilot(0), total_isk_on_market: 7_890_000_000 }] as any, t).items[0].stat_text).toBe('7.9B ISK on market')
     })
 
     test('fall back for operators without a primary character', () => {
-        const [item] = market_operators_reel([{ primary_character_id: null, primary_character_name: null, total_isk_on_market: 0 }] as any, t, translate_path).items
+        const [item] = market_operators_reel([{ primary_character_id: null, primary_character_name: null, total_isk_on_market: 0 }] as any, t).items
         expect(item.character_id).toBe(0)
         expect(item.character_name).toBe('')
     })
 
-    test('only the fleet commander reel has no call to action', () => {
+    test('fleet commander and market operator reels have no call to action', () => {
         expect(fleet_commanders_reel([], t).cta).toBeUndefined()
+        expect(market_operators_reel([], t).cta).toBeUndefined()
         expect(space_truckers_reel([], t, translate_path).cta?.href).toBe('/alliance/tribes/?tribe=supply')
-        expect(market_operators_reel([], t, translate_path).cta?.href).toBe('/alliance/tribes/?tribe=market')
     })
 })
 

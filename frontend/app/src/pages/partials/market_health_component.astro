@@ -134,7 +134,7 @@ const hubs_url = translatePath(`/market/ops/hubs/${active_location_id != null ? 
                     location_id={active_location_id}
                 />
                 {market_operators.length > 0 &&
-                    <RankingReel {...market_operators_reel(market_operators, t, translatePath)} />
+                    <RankingReel {...market_operators_reel(market_operators, t)} />
                 }
             </div> :
             <DebugTag>{t('no_market_health_unexpected_error')}</DebugTag>

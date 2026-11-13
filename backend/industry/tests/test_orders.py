@@ -885,7 +885,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
 
 
 class MarketOrderSubmitApiTests(OrdersEndpointTestCase):
-    """Active supply.market members may create produced-only orders."""
+    """Pilots granted produced-order submit may create produced-only orders."""
 
     def setUp(self):
         super().setUp()

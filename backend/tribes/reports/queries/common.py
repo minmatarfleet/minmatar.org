@@ -19,23 +19,6 @@ from tribes.reports.types import PeriodBounds
 # Months scanned for a "best month" record.
 BEST_MONTH_LOOKBACK_DAYS = 366
 
-# Round numbers a running all-time total works towards.
-MILESTONES = (
-    10,
-    25,
-    50,
-    100,
-    250,
-    500,
-    1_000,
-    2_500,
-    5_000,
-    10_000,
-    25_000,
-    50_000,
-    100_000,
-)
-
 
 def period_window(period: PeriodBounds) -> tuple[datetime, datetime]:
     """Report period in UTC; the end is inclusive (23:59:59.999999)."""
@@ -69,13 +52,6 @@ def best_month(
         return None
     month, value = max(totals.items(), key=lambda item: (item[1], item[0]))
     return {"month": month, "value": value}
-
-
-def next_milestone(value: float) -> int | None:
-    for milestone in MILESTONES:
-        if value < milestone:
-            return milestone
-    return None
 
 
 def roster_characters_by_eve_id(user_ids: Iterable[int]) -> dict[int, int]:

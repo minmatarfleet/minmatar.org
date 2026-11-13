@@ -6402,7 +6402,7 @@ export interface paths {
         };
         /**
          * Get Character Statistics
-         * @description Active supply.market members with a Market ESI token, ranked by total ISK on market at market-active locations.
+         * @description Pilots with a Market ESI token, ranked by total ISK on market at market-active locations.
          */
         get: operations["market_endpoints_get_character_statistics_get_character_statistics"];
         put?: never;

@@ -30,7 +30,6 @@ export interface RankingReelProps {
 }
 
 const SUPPLY_TRIBE_PATH = '/alliance/tribes/?tribe=supply'
-const MARKET_TRIBE_PATH = '/alliance/tribes/?tribe=market'
 
 export function fleet_commanders_reel(rows: FleetCommanderMetrics[], t: T): RankingReelProps {
     return {
@@ -75,7 +74,7 @@ export function industry_manufacturers_reel(rows: IndustryOrderCharacterStatisti
     }
 }
 
-export function market_operators_reel(rows: MarketOperatorStatistics[], t: T, translate_path: TranslatePath): RankingReelProps {
+export function market_operators_reel(rows: MarketOperatorStatistics[], t: T): RankingReelProps {
     return {
         title: t('market_operator_ranking'),
         caption: t('currently_on_market'),
@@ -85,6 +84,5 @@ export function market_operators_reel(rows: MarketOperatorStatistics[], t: T, tr
             character_name: row.primary_character_name ?? '',
             stat_text: t('market_operator_isk_on_market').replace('{isk}', format_isk(row.total_isk_on_market)),
         })),
-        cta: { href: translate_path(MARKET_TRIBE_PATH), text: t('join_market') },
     }
 }

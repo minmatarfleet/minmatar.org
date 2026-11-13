@@ -14,10 +14,6 @@ from tribes.reports.queries.lp_buyback import (
     run_lp_buyback_report,
 )
 from tribes.reports.queries.manual import run_manual_report
-from tribes.reports.queries.market_sales import (
-    market_sales_highlights,
-    run_market_sales_report,
-)
 from tribes.reports.queries.mining import run_mining_report
 from tribes.reports.queries.pi import run_pi_report
 from tribes.reports.queries.publishing import (
@@ -39,7 +35,6 @@ QUERY_RUNNERS = {
     "freight_program": run_freight_report,
     "fleet_commanders": run_fleet_commanders_report,
     "capitals_activity": run_capitals_report,
-    "market_sales": run_market_sales_report,
     "lp_buyback": run_lp_buyback_report,
     "readiness": run_readiness_report,
     "help_desk": run_help_desk_report,
@@ -50,7 +45,6 @@ QUERY_RUNNERS = {
 
 # Group-page extras (records, all-time totals, showcase lists) by binding.
 HIGHLIGHT_RUNNERS = {
-    "market_sales": market_sales_highlights,
     "lp_buyback": lp_buyback_highlights,
     "help_desk": help_desk_highlights,
     "publishing": publishing_highlights,
@@ -161,9 +155,6 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
                 "freight_program", ReportScope.PROGRAM
             ),
         },
-    ),
-    "supply.market": _activity_binding(
-        "supply.market", "market_sales", ReportScope.ROSTER, "fits_sold"
     ),
     "supply.loyalty-points": _activity_binding(
         "supply.loyalty-points", "lp_buyback", ReportScope.PROGRAM, "lp"

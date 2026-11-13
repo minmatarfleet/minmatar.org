@@ -10,7 +10,6 @@ import {
 const t = (key: keyof typeof ui['en']) => ui.en[key]
 
 const NEW_GROUPS = [
-    'supply.market',
     'supply.loyalty-points',
     'pulse.readiness',
     'pulse.technology',
@@ -44,23 +43,14 @@ describe('tribe activity specs', () => {
     })
 
     it('formats totals and the best month', () => {
-        const [fits_sold, isk] = TRIBE_ACTIVITY_BY_CODE['supply.market'].metrics(
+        const [lp, isk] = TRIBE_ACTIVITY_BY_CODE['supply.loyalty-points'].metrics(
             t,
-            { fits_sold: 1635, isk_sold: 360_870_260_929 },
-            { best_month: { month: '2026-02', value: 1077 } },
+            { lp_completed: 635, isk_completed: 360_870_260_929, completed: 12 },
+            { best_month: { month: '2026-02', value: 77 } },
         )
-        expect(fits_sold.value).toBe('1,635')
-        expect(fits_sold.hint).toBe('Best month: 1,077')
+        expect(lp.value).toBe('635')
+        expect(lp.hint).toBe('Best month: 77')
         expect(isk.value).toBe('360.9B')
-    })
-
-    it('tracks progress to the next market milestone', () => {
-        const all_time = TRIBE_ACTIVITY_BY_CODE['supply.market'].all_time!(t, {
-            all_time: { fits_sold: 14483, next_milestone: 25000 },
-        })
-        expect(all_time?.headline).toBe('14,483 fits sold')
-        expect(all_time?.detail).toBe('10,517 to go until 25,000')
-        expect(all_time?.progress).toBeCloseTo(0.579, 3)
     })
 
     it('skips the all-time banner without highlights', () => {

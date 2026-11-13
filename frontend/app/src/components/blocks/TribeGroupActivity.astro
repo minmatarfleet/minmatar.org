@@ -23,7 +23,6 @@ import Grid from '@components/compositions/Grid.astro'
 import StatCard from '@components/blocks/StatCard.astro'
 import ActivityAllTime from '@components/blocks/tribe_activity/ActivityAllTime.astro'
 import ActivityContributors from '@components/blocks/tribe_activity/ActivityContributors.astro'
-import ActivityHullTiles from '@components/blocks/tribe_activity/ActivityHullTiles.astro'
 import ActivityWeeklyBars from '@components/blocks/tribe_activity/ActivityWeeklyBars.astro'
 import ActivityDoctrineGrid from '@components/blocks/tribe_activity/ActivityDoctrineGrid.astro'
 import ActivityFixedTickets from '@components/blocks/tribe_activity/ActivityFixedTickets.astro'
@@ -84,7 +83,6 @@ const private_block_hidden = (activity.block === 'fixed' && !highlights.fixed)
                     <FluidFixed width="22rem" gap="var(--space-l)" breakpoint="55%">
                         <Flexblock gap="var(--space-m)">
                             {!private_block_hidden && <>
-                                {activity.block === 'hulls' && <ActivityHullTiles hulls={highlights.hulls ?? []} />}
                                 {activity.block === 'weekly' &&
                                     <ActivityWeeklyBars
                                         weekly={highlights.weekly ?? []}
