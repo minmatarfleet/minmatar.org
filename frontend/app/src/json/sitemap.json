@@ -491,7 +491,7 @@
     },
     {
         "slug": "tribes_market",
-        "path": "/alliance/tribes/?tribe=supply",
+        "path": "/market/ops/",
         "description": "page_finder.tribes.market.description",
         "publish": true,
         "sitemap": false,

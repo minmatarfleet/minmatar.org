@@ -79,7 +79,6 @@
         "src/components/blocks/tribe_activity/ActivityComingSoon.astro": 1,
         "src/components/blocks/tribe_activity/ActivityContributors.astro": 2,
         "src/components/blocks/tribe_activity/ActivityFixedTickets.astro": 2,
-        "src/components/blocks/tribe_activity/ActivityHullTiles.astro": 1,
         "src/components/blocks/tribe_activity/ActivityLatestWork.astro": 1,
         "src/components/blocks/tribe_activity/ActivityWeeklyBars.astro": 1,
         "src/components/blocks/tribe_activity/ActivityWelcomedWall.astro": 1,

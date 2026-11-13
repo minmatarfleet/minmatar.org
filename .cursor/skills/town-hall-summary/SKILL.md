@@ -68,11 +68,11 @@ pipenv run python manage.py town_hall_report \
 | Supply | `supply.planetary-interaction` | Gross PI ISK; top 5 roster |
 | Supply | `supply.capital-production`, `supply.subcapital-production` | Delivered/committed units + margin; top 5 by delivered margin |
 | Supply | `supply.freighters` | Program totals only (contracts, ISK, m³, completion hours) |
+| Supply | `supply.loyalty-points` | LP the buyback program bought; top sellers |
 | Pulse | `pulse.fleet-commanders` | Fleets led; top 5 alliance-wide |
 
 **Manual (narrative only — no query data):**
 
-- Supply: `supply.market`, `supply.loyalty-points`
 - Pulse: `pulse.technology`, `pulse.thinkspeak`, `pulse.readiness`, `pulse.tournaments`
 
 Manual groups return `manual: true` and a message; note them in **Slide readiness**, do not invent numbers.

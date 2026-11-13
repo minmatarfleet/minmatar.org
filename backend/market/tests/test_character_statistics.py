@@ -25,7 +25,6 @@ from market.helpers.character_statistics import (
 )
 from market.helpers.market_operators import eligible_market_operator_user_ids
 from market.models import EveMarketAttributedOrder, EveMarketContract
-from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 
 def setUpModule():
@@ -60,13 +59,6 @@ class MarketCharacterStatisticsTestCase(TestCase):
             solar_system_name="Elsewhere",
             market_active=False,
         )
-        self.tribe = Tribe.objects.create(name="Supply", slug="supply")
-        self.market_group = TribeGroup.objects.create(
-            tribe=self.tribe,
-            name="Market",
-            code="supply.market",
-        )
-
         self.operator = User.objects.create_user(username="operator")
         self.operator_char = EveCharacter.objects.create(
             character_id=111001,
@@ -75,11 +67,6 @@ class MarketCharacterStatisticsTestCase(TestCase):
             esi_scope_groups=["Basic", "Market"],
         )
         set_primary_character(self.operator, self.operator_char)
-        TribeGroupMembership.objects.create(
-            tribe_group=self.market_group,
-            user=self.operator,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        )
 
         self.other = User.objects.create_user(username="other")
         self.other_char = EveCharacter.objects.create(
@@ -89,24 +76,14 @@ class MarketCharacterStatisticsTestCase(TestCase):
             esi_scope_groups=["Basic", "Market"],
         )
         set_primary_character(self.other, self.other_char)
-        TribeGroupMembership.objects.create(
-            tribe_group=self.market_group,
-            user=self.other,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        )
 
-    def test_eligibility_requires_tribe_and_market_token(self):
+    def test_eligibility_requires_market_token(self):
         no_token = User.objects.create_user(username="no_token")
         EveCharacter.objects.create(
             character_id=333003,
             character_name="No Token",
             user=no_token,
             esi_scope_groups=["Basic"],
-        )
-        TribeGroupMembership.objects.create(
-            tribe_group=self.market_group,
-            user=no_token,
-            status=TribeGroupMembership.STATUS_ACTIVE,
         )
 
         token_only = User.objects.create_user(username="token_only")
@@ -121,7 +98,7 @@ class MarketCharacterStatisticsTestCase(TestCase):
         self.assertIn(self.operator.id, eligible)
         self.assertIn(self.other.id, eligible)
         self.assertNotIn(no_token.id, eligible)
-        self.assertNotIn(token_only.id, eligible)
+        self.assertIn(token_only.id, eligible)
 
     def test_ranks_by_sell_orders_and_contracts(self):
         EveMarketAttributedOrder.objects.create(

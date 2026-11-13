@@ -15,8 +15,8 @@ router = Router(tags=["Market"])
 @router.get(
     "/character-statistics",
     description=(
-        "Active supply.market members with a Market ESI token, ranked by "
-        "total ISK on market at market-active locations."
+        "Pilots with a Market ESI token, ranked by total ISK on market "
+        "at market-active locations."
     ),
     response=List[MarketCharacterStatResponse],
 )

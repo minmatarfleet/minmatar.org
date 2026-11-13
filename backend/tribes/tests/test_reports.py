@@ -140,7 +140,11 @@ class ReportRegistryTestCase(TestCase):
 
     def test_manual_pulse_groups(self):
         self.assertTrue(get_binding("pulse.tournaments").manual)
-        for code in ("pulse.technology", "pulse.readiness", "supply.market"):
+        for code in (
+            "pulse.technology",
+            "pulse.readiness",
+            "supply.loyalty-points",
+        ):
             self.assertFalse(get_binding(code).manual)
 
     def test_automated_bindings_have_runners(self):

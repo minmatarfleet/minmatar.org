@@ -122,17 +122,6 @@ export const TRIBE_ABOUT_STAGES: Record<string, TribeAboutStage> = {
         pilot_metric: 'tribes.about.metric.contracts',
         pilot_value: count,
     },
-    'supply.market': {
-        verb: 'tribes.about.verb.sold',
-        value: (totals) => short(n(totals, 'fits_sold')),
-        unit: 'tribes.about.unit.fits',
-        detail: (t, totals) => fill_template(t('tribes.about.detail.market'), {
-            isk: format_isk(n(totals, 'isk_sold')),
-            sellers: count(n(totals, 'sellers')),
-        }),
-        pilot_metric: 'tribes.about.metric.fits',
-        pilot_value: count,
-    },
     'supply.loyalty-points': {
         verb: 'tribes.about.verb.converted',
         value: (totals) => format_number(n(totals, 'lp_completed')),
@@ -210,14 +199,13 @@ export const CAPITALS_ORDER = [
     'capitals.faxes',
 ]
 
-/** Ore to hangar to market: the order Supply's groups hand work along. */
+/** Ore to hangar: the order Supply's groups hand work along. */
 export const SUPPLY_FLOW = [
     'supply.mining',
     'supply.planetary-interaction',
     'supply.subcapital-production',
     'supply.capital-production',
     'supply.freighters',
-    'supply.market',
     'supply.loyalty-points',
 ]
 

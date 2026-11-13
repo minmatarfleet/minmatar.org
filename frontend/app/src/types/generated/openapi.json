@@ -72576,7 +72576,7 @@
     },
     "/api/market/character-statistics": {
       "get": {
-        "description": "Active supply.market members with a Market ESI token, ranked by total ISK on market at market-active locations.",
+        "description": "Pilots with a Market ESI token, ranked by total ISK on market at market-active locations.",
         "operationId": "market_endpoints_get_character_statistics_get_character_statistics",
         "parameters": [],
         "responses": {

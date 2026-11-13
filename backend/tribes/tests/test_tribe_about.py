@@ -329,12 +329,12 @@ class TribeGrowthTestCase(TestCase):
         mining = TribeGroup.objects.create(
             tribe=tribe, name="Mining", code="supply.mining"
         )
-        market = TribeGroup.objects.create(
-            tribe=tribe, name="Market", code="supply.market"
+        freighters = TribeGroup.objects.create(
+            tribe=tribe, name="Freighters", code="supply.freighters"
         )
         user = User.objects.create_user(username="both")
         past = timezone.now() - timedelta(days=90)
-        for group in (mining, market):
+        for group in (mining, freighters):
             membership = TribeGroupMembership.objects.create(
                 tribe_group=group,
                 user=user,

@@ -88,7 +88,6 @@ GROUP_LEADER_METRIC = {
     "supply.planetary-interaction": "isk_pi_30d_estimate",
     "supply.subcapital-production": "delivered_units",
     "supply.capital-production": "delivered_units",
-    "supply.market": "fits_sold",
     "supply.loyalty-points": "lp",
     "pulse.readiness": "doctrine_changes",
     "pulse.technology": "tickets_resolved",

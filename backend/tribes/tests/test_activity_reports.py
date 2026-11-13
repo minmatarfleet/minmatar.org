@@ -45,7 +45,6 @@ from industry.models import (
     IndustryLoyaltyPointMarketOrder,
     IndustryLoyaltyPointMarketOrderClaim,
 )
-from market.models import EveMarketContract
 from posts.models import EvePost
 from tribes import tasks as tribe_tasks
 from tribes.helpers.showcase import build_group_showcase
@@ -66,10 +65,6 @@ from tribes.reports.queries.help_desk import (
 from tribes.reports.queries.lp_buyback import (
     lp_buyback_highlights,
     run_lp_buyback_report,
-)
-from tribes.reports.queries.market_sales import (
-    market_sales_highlights,
-    run_market_sales_report,
 )
 from tribes.reports.queries.publishing import (
     publishing_highlights,
@@ -177,64 +172,6 @@ class RegistryTestCase(TestCase):
     def test_thinkspeak_showcase_covers_ninety_days(self):
         binding = get_binding("pulse.thinkspeak")
         self.assertEqual(binding.presentation["showcase"]["period"], "90d")
-
-
-class MarketSalesTestCase(ActivityTestCase):
-    code = "supply.market"
-    group_name = "Market"
-
-    def setUp(self):
-        super().setUp()
-        _eve_type(587, "Rifter", 25, "Frigate")
-        self.fitting = EveFitting.objects.create(
-            name="[FL33T] Rifter",
-            ship_id=587,
-            description="d",
-            eft_format="[Rifter, [FL33T] Rifter]\n\n",
-        )
-        self._contract(1, self.member_char, completed_at=self.now)
-        # Public contract that vanished: no completed_at, sold via last_updated.
-        self._contract(2, self.member_char, completed_at=None)
-        self._contract(3, self.member_char, status="expired")
-        self._contract(4, self.outsider_char, completed_at=self.now)
-        self._contract(
-            5,
-            self.member_char,
-            completed_at=self.now - timedelta(days=90),
-        )
-
-    def _contract(self, pk, char, *, status="finished", completed_at=None):
-        EveMarketContract.objects.create(
-            id=pk,
-            title=self.fitting.name,
-            price=10_000_000,
-            issuer_external_id=char.character_id,
-            status=status,
-            fitting=self.fitting,
-            issued_at=self.now - timedelta(days=2),
-            completed_at=completed_at,
-            last_updated=completed_at or self.now,
-        )
-
-    def test_counts_roster_sales_including_vanished_public_contracts(self):
-        rows, totals, _ = run_market_sales_report(
-            self.group, self.period, ReportScope.ROSTER, {}
-        )
-        self.assertEqual(totals["fits_sold"], 2)
-        self.assertEqual(totals["confirmed_sales"], 1)
-        self.assertEqual(totals["isk_sold"], 20_000_000)
-        self.assertEqual(totals["fits_listed"], 4)
-        self.assertEqual(totals["sellers"], 1)
-        self.assertEqual(rows[0]["primary_character_name"], "Member")
-
-    def test_highlights_group_hulls_and_count_all_time(self):
-        highlights = market_sales_highlights(self.group, self.period)
-        self.assertEqual(
-            highlights["hulls"],
-            [{"type_id": 587, "name": "Rifter", "count": 2}],
-        )
-        self.assertEqual(highlights["all_time"]["fits_sold"], 3)
-        self.assertEqual(highlights["all_time"]["next_milestone"], 10)
 
 
 class LpBuybackTestCase(ActivityTestCase):

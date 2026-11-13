@@ -21,7 +21,7 @@ def user_can_submit_orders_unrestricted(user) -> bool:
 
 
 def user_can_submit_produced_orders(user) -> bool:
-    """Market members may create orders limited to produced catalog items."""
+    """Pilots granted produced-order submit may order produced catalog items."""
     return can_use_feature(user, ORDER_SUBMIT_PRODUCED_FEATURE)
 
 

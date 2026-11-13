@@ -185,20 +185,6 @@
   },
   {
     "model": "tribes.tribegroup",
-    "pk": 10,
-    "fields": {
-      "tribe": 2,
-      "name": "Market",
-      "description": "Contracts and market orders \u2014 doctrine fits, seed stock, and the alliance market pipeline.",
-      "group": null,
-      "chief": null,
-      "discord_channel_id": null,
-      "is_active": true,
-      "code": "supply.market"
-    }
-  },
-  {
-    "model": "tribes.tribegroup",
     "pk": 12,
     "fields": {
       "tribe": 4,
@@ -314,13 +300,6 @@
     "pk": 9,
     "fields": {
       "tribe_group": 5
-    }
-  },
-  {
-    "model": "tribes.tribegrouprequirement",
-    "pk": 10,
-    "fields": {
-      "tribe_group": 10
     }
   },
   {
@@ -481,15 +460,6 @@
       "requirement": 9,
       "eve_type": 3380,
       "minimum_level": 5
-    }
-  },
-  {
-    "model": "tribes.tribegrouprequirementskill",
-    "pk": 20,
-    "fields": {
-      "requirement": 10,
-      "eve_type": 25233,
-      "minimum_level": 3
     }
   },
   {

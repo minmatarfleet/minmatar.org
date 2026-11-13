@@ -13,7 +13,6 @@ export const TRIBE_GROUP_COVERS: Record<number, string> = {
     6: '/images/mining-cover.webp',
     4: '/images/subcapital-production-cover.webp',
     11: '/images/sellorders-tile-background.webp',
-    10: '/images/contracts-tile-background.webp',
     9: '/images/freight-tile-background.webp',
     17: '/images/tournament-cover.webp',
     16: '/images/loyalty-points-cover.webp',

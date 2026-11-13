@@ -255,10 +255,10 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         label="Submit produced industry orders",
         scope=FeatureScope.TRIBE_MEMBERSHIP,
         description=(
-            "Submit manufacturing orders limited to produced catalog items "
-            "(Supply Market members)."
+            "Submit manufacturing orders limited to produced catalog items. "
+            "Granted with market hub management."
         ),
-        default_tribe_group_codes=_tribe_codes("supply.market"),
+        legacy_permission="eveonline.change_evelocation",
     ),
     "industry.loyalty.trade": FeatureDefinition(
         code="industry.loyalty.trade",
@@ -296,7 +296,6 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
             "stocking expectations on Market ops."
         ),
         legacy_permission="eveonline.change_evelocation",
-        default_tribe_group_codes=_tribe_codes("supply.market"),
     ),
     "buyback.manage": FeatureDefinition(
         code="buyback.manage",

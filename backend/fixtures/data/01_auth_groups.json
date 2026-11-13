@@ -132,14 +132,6 @@
   },
   {
     "model": "auth.group",
-    "pk": 153,
-    "fields": {
-      "name": "Tribe Group - Market",
-      "permissions": []
-    }
-  },
-  {
-    "model": "auth.group",
     "pk": 154,
     "fields": {
       "name": "Tribe Group - Freighters",

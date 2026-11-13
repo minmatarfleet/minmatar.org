@@ -26,7 +26,6 @@ function group(code: string, name: string, totals: Record<string, number> = {}, 
 describe('tribe About helpers', () => {
     it('puts Supply groups in the order work moves down the line', () => {
         const groups = [
-            group('supply.market', 'Market'),
             group('supply.extra', 'Archive'),
             group('supply.mining', 'Mining'),
             group('supply.freighters', 'Freighters'),
@@ -34,15 +33,14 @@ describe('tribe About helpers', () => {
         expect(order_groups(groups, SUPPLY_FLOW).map((g) => g.name)).toEqual([
             'Mining',
             'Freighters',
-            'Market',
             'Archive',
         ])
     })
 
     it('treats manual groups and all-zero totals as having no year to show', () => {
         expect(group_has_year(group('pulse.tournaments', 'Tournaments', {}, true))).toBe(false)
-        expect(group_has_year(group('supply.market', 'Market', { fits_sold: 0 }))).toBe(false)
-        expect(group_has_year(group('supply.market', 'Market', { fits_sold: 3 }))).toBe(true)
+        expect(group_has_year(group('supply.freighters', 'Freighters', { contracts_completed: 0 }))).toBe(false)
+        expect(group_has_year(group('supply.freighters', 'Freighters', { contracts_completed: 3 }))).toBe(true)
     })
 
     it('starts charts at the first month with data', () => {
