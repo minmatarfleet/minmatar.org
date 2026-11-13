@@ -17,7 +17,7 @@ def _form(*, with_why=True, answers=None):
             "kind": "single",
             "max": 1,
             "choices": [
-                {"key": "glad", "label": "Glad I was asked"},
+                {"key": "glad", "label": "Good"},
                 {"key": "fine", "label": "Fine"},
             ],
         },
@@ -201,6 +201,36 @@ class FeedbackModalTest(unittest.IsolatedAsyncioTestCase):
         sent = interaction.followup.send.await_args.args[0]
         self.assertIn("keep direct fleet invitations", sent)
         self.assertIn(feedback_form.WEBSITE_URL, sent)
+
+
+class FieldDescriptionTest(unittest.TestCase):
+    def test_help_text_wins_and_a_repeat_is_dropped(self):
+        from app.fleet_invites.feedback_form import field_description
+
+        same = "The direct fleet invitations felt…"
+        self.assertEqual(
+            "These are the invitations you receive in a direct message.",
+            field_description(
+                {
+                    "short": same,
+                    "prompt": same,
+                    "help": "These are the invitations you receive in a direct message.",
+                }
+            ),
+        )
+        self.assertIsNone(
+            field_description({"short": same, "prompt": same, "help": ""})
+        )
+        self.assertEqual(
+            "Sitting out for these invitations felt like…",
+            field_description(
+                {
+                    "short": "Sitting out felt like…",
+                    "prompt": "Sitting out for these invitations felt like…",
+                    "help": "",
+                }
+            ),
+        )
 
 
 class AnswerButtonTest(unittest.IsolatedAsyncioTestCase):

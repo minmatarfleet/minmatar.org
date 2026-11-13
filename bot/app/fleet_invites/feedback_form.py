@@ -94,6 +94,17 @@ def _clip(text: str, limit: int) -> str:
     return text[: limit - 1].rstrip() + "…"
 
 
+def field_description(question: dict) -> str | None:
+    """The line under a field's label: the help text, else the full prompt
+    when the label shortened it. Never a repeat of the label."""
+    label = (question.get("short") or question.get("prompt") or "").strip()
+    for text in (question.get("help"), question.get("prompt")):
+        text = (text or "").strip()
+        if text and text != label:
+            return _clip(text, DESCRIPTION_MAX)
+    return None
+
+
 def modal_title(form: dict) -> str:
     """Names what the form is about, e.g. "About your 3 fleet invites"."""
     count = len(form.get("invites") or [])
@@ -153,7 +164,7 @@ class FeedbackModal(discord.ui.Modal):
                     text=_clip(
                         question.get("short") or question["prompt"], LABEL_MAX
                     ),
-                    description=_clip(question["prompt"], DESCRIPTION_MAX),
+                    description=field_description(question),
                     component=select,
                 )
             )
