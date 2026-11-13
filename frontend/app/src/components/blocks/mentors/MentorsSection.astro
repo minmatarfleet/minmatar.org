@@ -1,0 +1,45 @@
+---
+/** A titled block on a Mentors page: heading, optional hint, then the content. */
+interface Props {
+    title: string;
+    hint?: string;
+    [propName: string]: any;
+}
+
+const { title, hint, ...attributes } = Astro.props
+
+delete attributes.class
+---
+
+<section class:list={['[ mentors-section ]', Astro.props.class]} {...attributes}>
+    <header>
+        <h2>{title}</h2>
+        {hint && <p>{hint}</p>}
+        <slot name="aside" />
+    </header>
+    <slot />
+</section>
+
+<style lang="scss">
+    .mentors-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-3xs) var(--space-s);
+        }
+
+        h2 {
+            font-size: var(--step-2);
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+</style>

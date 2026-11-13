@@ -157,6 +157,7 @@ ROUTES: dict[str, str] = {
     "discord.": "community",
     "groups.": "community",
     "tribes.": "community",
+    "learning.": "community",
     "applications.": "community",
     "notifications.": "community",
     "reddit.": "community",

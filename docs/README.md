@@ -22,6 +22,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [frontend-sde.md](frontend-sde.md) | current | The frontend's local SDE SQLite snapshot: where it lives, the pinned build, upgrading it |
 | [architecture/feed-and-rollups.md](architecture/feed-and-rollups.md) | current | Killmail feed: ingest, monitored systems, rollups and their readers |
 | [intel/affiliations.md](intel/affiliations.md) | current | Intel affiliation database: blocs, pets and associates learned from kill history, review, and who reads it |
+| [learning/mentors.md](learning/mentors.md) | current | Learning Center tabs and one-to-one mentor classes: matching, request life, Discord DMs, classes, metrics |
 | [architecture/celery-queues.md](architecture/celery-queues.md) | current | Celery queues and workers, task standards (dedupe, routing, fast lane), Sentry queue monitoring |
 | [architecture/cached-aggregates.md](architecture/cached-aggregates.md) | current | Heavy aggregates: computed by Celery, read from the cache (`CachedRollup`), Redis-tolerant |
 | [architecture/deploys.md](architecture/deploys.md) | current | Production deploys without downtime: `docker rollout`, the Traefik `edge` proxy, healthchecks, migration rules |

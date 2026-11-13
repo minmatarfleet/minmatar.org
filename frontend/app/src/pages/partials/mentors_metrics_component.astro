@@ -1,0 +1,367 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user || !can(await get_gates(Astro), 'learning.manage'))
+    return HTTP_403_Forbidden()
+
+import type { MentorsMe, MentorsMetrics } from '@dtypes/api.minmatar.org'
+import { get_mentors_me, get_mentors_metrics } from '@helpers/api.minmatar.org/mentors'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { MENTORS_METRICS_PARTIAL, brackets_text, mentors_url } from '@helpers/mentors'
+
+const PERIODS = [30, 90, 365]
+const asked = parseInt(Astro.url.searchParams.get('period') ?? '90')
+const period = PERIODS.includes(asked) ? asked : 90
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const token = auth_token as string
+
+let me: MentorsMe | null = null
+let metrics: MentorsMetrics | null = null
+let fetch_error: Error | false = false
+
+try {
+    ;[me, metrics] = await Promise.all([get_mentors_me(token), get_mentors_metrics(token, period)])
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const self_url = translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period }))
+const period_label = (days: number) => days === 365 ? t('mentors.metrics.year') : t('mentors.metrics.days').replace('{count}', days.toString())
+const dash = '—'
+
+const tiles = metrics ? [
+    { label: t('mentors.metrics.requests'), value: metrics.requests.toString(), hint: t('mentors.metrics.from_pilots').replace('{count}', metrics.pilots.toString()) },
+    {
+        label: t('mentors.metrics.got_mentor'),
+        value: metrics.got_mentor_pct === null ? dash : `${metrics.got_mentor_pct}%`,
+        hint: metrics.first_mentor_pct === null ? '' : t('mentors.metrics.first_mentor').replace('{pct}', metrics.first_mentor_pct.toString()),
+    },
+    {
+        label: t('mentors.metrics.time'),
+        value: metrics.median_hours_to_booked === null ? dash : `${metrics.median_hours_to_booked} h`,
+        hint: t('mentors.metrics.time_hint'),
+    },
+    { label: t('mentors.metrics.done'), value: metrics.classes_done.toString(), hint: t('mentors.metrics.done_hint') },
+] : []
+
+const impact = metrics?.impact[0] ?? null
+const scale = (measure: { mentored: number, similar: number, percent: boolean }) =>
+    measure.percent ? 100 : Math.max(measure.mentored, measure.similar, 1)
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Grid from '@components/compositions/Grid.astro'
+import StatCard from '@components/blocks/StatCard.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+<div id="mentors-metrics" class="[ mentors-page ]">
+    {fetch_error || !me || !metrics ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentors-metrics' }} />
+        :
+        <>
+            <MentorsNav active="metrics" me={me} />
+
+            <nav class="[ mentors-periods ]" aria-label={t('mentors.metrics.period')}>
+                {PERIODS.map(days =>
+                    <button
+                        type="button"
+                        class:list={['[ mentors-period ]', { 'is-active': days === period }]}
+                        aria-pressed={days === period ? 'true' : 'false'}
+                        hx-get={translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period: days }))}
+                        hx-target="#mentors-metrics"
+                        hx-swap="outerHTML"
+                    >
+                        {period_label(days)}
+                    </button>
+                )}
+            </nav>
+
+            {metrics.requests === 0 && metrics.mentors.length === 0 ?
+                <EmptyState title={t('mentors.metrics.empty')} />
+                :
+                <>
+                    <Grid class="[ w-full grid-fill ]" row_gap="var(--space-xs)" column_gap="var(--space-xs)" min_item_width="200px">
+                        {tiles.map(tile => <StatCard label={tile.label} value={tile.value} hint={tile.hint || undefined} />)}
+                    </Grid>
+
+                    <MentorsSection title={t('mentors.metrics.mentors')}>
+                        <XFadeScroll>
+                            <table class="[ mentors-table ]">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">{t('mentors.metrics.col.mentor')}</th>
+                                        <th scope="col">{t('mentors.metrics.col.timezones')}</th>
+                                        <th scope="col">{t('mentors.metrics.col.classes')}</th>
+                                        <th scope="col">{t('mentors.metrics.col.pilots')}</th>
+                                        <th scope="col">{t('mentors.metrics.col.answers')}</th>
+                                        <th scope="col">{t('mentors.metrics.col.passed')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {metrics.mentors.map(row =>
+                                        <tr>
+                                            <th scope="row">
+                                                <span class="[ mentors-table__who ]">
+                                                    <img src={get_player_icon(row.person.character_id ?? 1, 32)} alt="" width="24" height="24" loading="lazy" />
+                                                    {row.person.name}
+                                                </span>
+                                            </th>
+                                            <td>{brackets_text([...new Set([...row.availability.weekday_brackets, ...row.availability.weekend_brackets])])}</td>
+                                            <td>{row.classes}</td>
+                                            <td>{row.pilots}</td>
+                                            <td>{row.answer_text}</td>
+                                            <td>{row.passed}</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </XFadeScroll>
+                    </MentorsSection>
+
+                    <MentorsSection title={t('mentors.metrics.zones')} hint={t('mentors.metrics.zones_hint')}>
+                        <Grid class="[ w-full grid-fill ]" row_gap="var(--space-xs)" column_gap="var(--space-xs)" min_item_width="220px">
+                            {metrics.zones.map(zone =>
+                                <div class:list={['[ mentors-zone ]', { 'is-thin': zone.mentors.length < 2 && zone.waiting > 0 }]}>
+                                    <strong>{zone.code}</strong>
+                                    <span>{t('mentors.metrics.waiting').replace('{count}', zone.waiting.toString())}</span>
+                                    <span class="[ mentors-zone__faces ]">
+                                        {zone.mentors.map(person =>
+                                            <img src={get_player_icon(person.character_id ?? 1, 32)} alt={person.name} title={person.name} width="24" height="24" loading="lazy" />
+                                        )}
+                                    </span>
+                                    {zone.mentors.length < 2 && zone.waiting > 0 && <small>{t('mentors.metrics.thin')}</small>}
+                                </div>
+                            )}
+                        </Grid>
+                    </MentorsSection>
+
+                    {metrics.topics.length > 0 &&
+                        <MentorsSection title={t('mentors.metrics.topics')}>
+                            <XFadeScroll>
+                                <table class="[ mentors-table ]">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{t('mentors.metrics.col.class')}</th>
+                                            <th scope="col">{t('mentors.metrics.col.requests')}</th>
+                                            <th scope="col">{t('mentors.metrics.mentors')}</th>
+                                            <th scope="col">{t('mentors.metrics.col.waiting')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {metrics.topics.map(topic =>
+                                            <tr>
+                                                <th scope="row">{topic.title}</th>
+                                                <td>{topic.requests}</td>
+                                                <td>{topic.mentors}</td>
+                                                <td>{topic.waiting}</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </XFadeScroll>
+                        </MentorsSection>
+                    }
+
+                    {impact &&
+                        <MentorsSection title={t('mentors.metrics.impact')} hint={t('mentors.metrics.impact_hint')}>
+                            {impact.measures.length === 0 ?
+                                <p class="[ mentors-muted ]">{t('mentors.metrics.impact_small').replace('{count}', impact.n.toString())}</p>
+                                :
+                                <div class="[ mentors-impact ]">
+                                    {impact.measures.map(measure =>
+                                        <div class="[ mentors-impact__measure ]">
+                                            <h3>{measure.label}</h3>
+                                            {[
+                                                { label: t('mentors.metrics.mentored'), value: measure.mentored, mentored: true },
+                                                { label: t('mentors.metrics.similar'), value: measure.similar, mentored: false },
+                                            ].map(bar =>
+                                                <div class="[ mentors-impact__bar ]">
+                                                    <span>{bar.label}</span>
+                                                    <span class="[ mentors-impact__track ]">
+                                                        <span
+                                                            class:list={['[ mentors-impact__fill ]', { 'is-mentored': bar.mentored }]}
+                                                            style={`inline-size: ${Math.round(100 * bar.value / scale(measure))}%`}
+                                                        ></span>
+                                                    </span>
+                                                    <strong>{bar.value}{measure.percent ? '%' : ''}</strong>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            }
+                        </MentorsSection>
+                    }
+                </>
+            }
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .mentors-page {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .mentors-muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentors-periods {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .mentors-period {
+        min-height: var(--space-l);
+        padding: 0 var(--space-s);
+        border: solid 1px var(--hairline-strong);
+        background: none;
+        color: var(--foreground);
+        font-size: var(--step--1);
+        font-weight: 600;
+        cursor: pointer;
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .mentors-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-s);
+            border-bottom: solid 1px var(--hairline);
+            text-align: start;
+            white-space: nowrap;
+        }
+
+        thead th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        tbody th {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+    }
+
+    .mentors-table__who {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .mentors-zone {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background: var(--surface-sunken);
+
+        strong {
+            font-size: var(--step-1);
+        }
+
+        span,
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+
+        &.is-thin {
+            border-color: var(--fleet-yellow);
+
+            small {
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .mentors-zone__faces {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+
+        img {
+            border-radius: var(--space-3xs);
+        }
+    }
+
+    .mentors-impact {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .mentors-impact__measure {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        h3 {
+            font-size: var(--step-0);
+        }
+    }
+
+    .mentors-impact__bar {
+        display: grid;
+        grid-template-columns: 9em 1fr 4em;
+        align-items: center;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+
+        span:first-child {
+            color: var(--text-muted);
+        }
+
+        strong {
+            text-align: end;
+        }
+    }
+
+    .mentors-impact__track {
+        block-size: var(--space-2xs);
+        background: var(--hairline);
+    }
+
+    .mentors-impact__fill {
+        display: block;
+        block-size: 100%;
+        background: var(--text-muted);
+
+        &.is-mentored {
+            background: var(--fleet-yellow);
+        }
+    }
+</style>

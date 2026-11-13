@@ -1,0 +1,87 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * The Learning Center tabs. Each is its own URL (/learning/,
+ * /learning/mentors/, /learning/guides/, /learning/skillplans/), so the tabs
+ * are links and old links keep working.
+ */
+interface Props {
+    active: 'certificates' | 'mentors' | 'guides' | 'skillplans';
+}
+
+const { active } = Astro.props
+
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+const tabs = [
+    { id: 'certificates', label: t('learning.tabs.certificates'), href: translatePath('/learning/') },
+    { id: 'mentors', label: t('learning.tabs.mentors'), href: translatePath('/learning/mentors/') },
+    { id: 'guides', label: t('learning.tabs.guides'), href: translatePath('/learning/guides/') },
+    { id: 'skillplans', label: t('learning.tabs.skillplans'), href: translatePath('/learning/skillplans/') },
+]
+---
+
+<XFadeScroll class="[ learning-tabs-scroll ]">
+<nav class="[ learning-tabs ]" aria-label={t('learning.tabs.label')}>
+    {tabs.map(tab =>
+        <a
+            href={tab.href}
+            class:list={['[ learning-tab ]', { 'is-active': tab.id === active }]}
+            aria-current={tab.id === active ? 'page' : undefined}
+        >
+            {tab.label}
+        </a>
+    )}
+</nav>
+</XFadeScroll>
+
+<style lang="scss">
+    .learning-tabs-scroll {
+        border-bottom: solid 1px var(--border-color-hover);
+        scrollbar-width: none;
+    }
+
+    .learning-tabs {
+        display: flex;
+        gap: var(--space-2xs);
+        width: max-content;
+    }
+
+    .learning-tab {
+        border-bottom: 3px solid transparent;
+        margin-block-end: -1px;
+        padding: var(--space-2xs) var(--space-s);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: var(--foreground);
+        text-decoration: none;
+        white-space: nowrap;
+        transition: color var(--fast-transition);
+
+        &.is-active {
+            color: var(--highlight);
+            border-bottom-color: var(--fleet-red);
+        }
+
+        &:focus-visible {
+            outline: solid 2px var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+    }
+
+    @media (hover: hover) {
+        .learning-tab:hover {
+            color: var(--highlight);
+        }
+    }
+
+    @media screen and (max-width: 767px) {
+        .learning-tab {
+            font-size: var(--step-0);
+        }
+    }
+</style>

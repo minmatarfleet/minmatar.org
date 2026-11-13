@@ -1,0 +1,138 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorsHome } from '@dtypes/api.minmatar.org'
+import { get_mentors_home } from '@helpers/api.minmatar.org/mentors'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { MENTORS_HOME_PARTIAL, MENTOR_CLASS_PARTIAL, MENTOR_REQUEST_MODAL, mentors_url } from '@helpers/mentors'
+
+const params = Astro.url.searchParams
+const mentor_id = parseInt(params.get('mentor_id') ?? '0') || 0
+const class_id = parseInt(params.get('class_id') ?? '0') || 0
+const delay = parseInt(params.get('delay') ?? '0')
+
+if (!mentor_id)
+    return HTTP_404_Not_Found()
+
+let home: MentorsHome | null = null
+let fetch_error: Error | false = false
+
+try {
+    home = await get_mentors_home(auth_token as string)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const card = home?.mentors.find(row => row.mentor_id === mentor_id) ?? null
+const picked = card?.classes.find(row => row.id === class_id) ?? card?.classes[0] ?? null
+const slug = card?.classes.find(row => row.id === class_id)?.slug
+
+// From a class page the request re-renders that page; anywhere else, Find a mentor.
+const post_url = slug
+    ? translatePath(mentors_url(MENTOR_CLASS_PARTIAL, { slug, mode: 'request', mentor_id }))
+    : translatePath(mentors_url(MENTORS_HOME_PARTIAL, { mode: 'request', mentor_id }))
+const target = slug ? '#mentor-class' : '#mentors-home'
+
+const name = card?.person.name ?? ''
+const steps = [
+    t('mentors.request.next_1'),
+    t('mentors.request.next_2'),
+    t('mentors.request.next_3'),
+].map(step => step.replaceAll('{name}', name))
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import MentorChips from '@components/blocks/mentors/MentorChips.astro'
+import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astro'
+---
+
+<MentorModalStyles />
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: translatePath(mentors_url(MENTOR_REQUEST_MODAL, { mentor_id, class_id })),
+            error: fetch_error,
+            delay,
+            target: '#modal-description',
+        }}
+    />
+    : !card || !picked || !home ?
+    <div class="[ mentor-modal ]">
+        <EmptyState title={t('mentors.request.no_classes')} />
+        <div class="[ mentor-modal__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('cancel')}</Button>
+        </div>
+    </div>
+    :
+    <form class="[ mentor-modal ]" hx-post={post_url} hx-target={target} hx-swap="outerHTML">
+        <header class="[ mentor-modal__head ]">
+            <img src={get_player_icon(card.person.character_id ?? 1, 64)} alt="" width="48" height="48" />
+            <div>
+                <p class="[ mentor-modal__eyebrow ]">{t('mentors.request.eyebrow')}</p>
+                <h2>{card.person.name}</h2>
+                <p class="[ mentor-modal__muted ]">{t('mentors.request.answers').replace('{answer}', card.answer_text)}</p>
+            </div>
+        </header>
+
+        <fieldset class="[ mentor-modal__classes ]">
+            <legend>{t('mentors.request.what')}</legend>
+            {card.classes.map(mentor_class =>
+                <label class="[ mentor-modal__choice ]">
+                    <input type="radio" name="class_id" value={mentor_class.id} checked={mentor_class.id === picked.id} required />
+                    <span>
+                        <strong>{mentor_class.title}</strong>
+                        <small>{t('mentors.minutes_label').replace('{count}', mentor_class.minutes.toString())} · {t(t_key('mentors.where.', mentor_class.where))}</small>
+                    </span>
+                </label>
+            )}
+        </fieldset>
+
+        <MentorChips
+            name="weekday_brackets"
+            kind="brackets"
+            selected={home.availability.weekday_brackets}
+            legend={`${t('mentors.request.when')} · ${t('mentors.weekdays')}`}
+            hint={t('mentors.request.when_hint')}
+        />
+        <MentorChips
+            name="weekend_brackets"
+            kind="brackets"
+            selected={home.availability.weekend_brackets}
+            legend={t('mentors.weekends')}
+        />
+        <MentorChips
+            name="days"
+            kind="days"
+            selected={home.availability.days}
+            legend={t('mentors.request.days')}
+        />
+
+        <label class="[ mentor-modal__field ]">
+            <span>{t('mentors.request.note').replace('{name}', name)}</span>
+            <textarea name="note" rows="3" maxlength="1000"></textarea>
+        </label>
+
+        <div class="[ mentor-modal__next ]">
+            <strong>{t('mentors.request.next')}</strong>
+            <ol>
+                {steps.map(step => <li>{step}</li>)}
+            </ol>
+        </div>
+
+        <div class="[ mentor-modal__actions ]">
+            <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('cancel')}</Button>
+            <Button type="submit" size="sm" modal-action="accept">{t('mentors.request.send')}</Button>
+        </div>
+    </form>
+}

@@ -1,0 +1,229 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MentorCard } from '@dtypes/api.minmatar.org'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { MENTOR_REQUEST_MODAL, brackets_text, mentor_class_path, mentors_url, modal_click } from '@helpers/mentors'
+
+/**
+ * One mentor: who they are, when they play on weekdays and weekends, how fast
+ * they answer and how busy they are, the classes they teach, and a button to
+ * ask for a class. `class_id` preselects a class in the request.
+ */
+interface Props {
+    card: MentorCard;
+    class_id?: number;
+    can_request?: boolean;
+    [propName: string]: any;
+}
+
+const { card, class_id, can_request = true, ...attributes } = Astro.props
+
+delete attributes.class
+
+const fit_label: Record<string, string> = {
+    evenings: t('mentors.fit.evenings'),
+    weekdays: t('mentors.fit.weekdays'),
+    weekends: t('mentors.fit.weekends'),
+}
+
+const queue_text =
+    card.queue === 0 ? t('mentors.queue_none') :
+    card.queue === 1 ? t('mentors.queue_one') :
+    t('mentors.queue_many').replace('{count}', card.queue.toString())
+
+const request_url = translatePath(mentors_url(MENTOR_REQUEST_MODAL, { mentor_id: card.mentor_id, class_id }))
+const days = card.availability.days.map(day => t(t_key('mentors.day.', day))).join(' ')
+
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<article class:list={['[ mentor-card ]', Astro.props.class]} {...attributes}>
+    <header class="[ mentor-card__head ]">
+        <img
+            class="[ mentor-card__portrait ]"
+            src={get_player_icon(card.person.character_id ?? 1, 128)}
+            alt=""
+            width="56"
+            height="56"
+            loading="lazy"
+        />
+        <div class="[ mentor-card__who ]">
+            <h3>{card.person.name}</h3>
+            {card.person.corp &&
+                <p class="[ mentor-card__corp ]">
+                    {card.person.corporation_id &&
+                        <img src={get_corporation_logo(card.person.corporation_id, 32)} alt="" width="16" height="16" loading="lazy" />
+                    }
+                    {card.person.corp}
+                </p>
+            }
+        </div>
+        {fit_label[card.fit] && <Tag text={fit_label[card.fit]} color="green" variant="outline" narrow={true} />}
+    </header>
+
+    <dl class="[ mentor-card__facts ]">
+        <div>
+            <dt>{t('mentors.weekdays')}</dt>
+            <dd>{brackets_text(card.availability.weekday_brackets)}</dd>
+        </div>
+        <div>
+            <dt>{t('mentors.weekends')}</dt>
+            <dd>{brackets_text(card.availability.weekend_brackets)}</dd>
+        </div>
+        {days &&
+            <div>
+                <dt class="[ visually-hidden ]">{t('mentors.request.days')}</dt>
+                <dd class="[ mentor-card__days ]">{days}</dd>
+            </div>
+        }
+        <div>
+            <dt>{t('mentors.answers')}</dt>
+            <dd>{card.answer_text} · {queue_text}</dd>
+        </div>
+    </dl>
+
+    {card.classes.length > 0 &&
+        <div class="[ mentor-card__classes ]">
+            <span class="[ mentor-card__label ]">{t('mentors.teaches')}</span>
+            <ul>
+                {card.classes.map(mentor_class =>
+                    <li><a href={translatePath(mentor_class_path(mentor_class.slug))}>{mentor_class.title}</a></li>
+                )}
+            </ul>
+        </div>
+    }
+
+    <footer class="[ mentor-card__foot ]">
+        <span class="[ mentor-card__muted ]">{t('mentors.classes_taught').replace('{count}', card.classes_taught.toString())}</span>
+        {card.full ?
+            <span class="[ mentor-card__full ]">{t('mentors.full')}</span>
+            : can_request && card.classes.length > 0 &&
+            <Button type="button" size="sm" x-data x-on:click={modal_click(request_url)}>
+                {t('mentors.request_class')}
+            </Button>
+        }
+    </footer>
+</article>
+
+<style lang="scss">
+    .mentor-card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        height: 100%;
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background: var(--surface-sunken);
+    }
+
+    .mentor-card__head {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-s);
+    }
+
+    .mentor-card__portrait {
+        flex-shrink: 0;
+        width: var(--space-xl);
+        height: var(--space-xl);
+        border-radius: var(--space-3xs);
+    }
+
+    .mentor-card__who {
+        flex-grow: 1;
+        min-width: 0;
+
+        h3 {
+            font-size: var(--step-1);
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .mentor-card__corp {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-card__facts {
+        display: grid;
+        gap: var(--space-3xs);
+        margin: 0;
+        font-size: var(--step--1);
+
+        div {
+            display: flex;
+            gap: var(--space-xs);
+        }
+
+        dt {
+            flex-shrink: 0;
+            width: 6em;
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+        }
+    }
+
+    .mentor-card__days {
+        color: var(--text-muted) !important;
+    }
+
+    .mentor-card__classes {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        ul {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        a {
+            display: inline-block;
+            padding: var(--space-3xs) var(--space-2xs);
+            border: solid 1px var(--hairline-strong);
+            color: var(--highlight);
+            font-size: var(--step--1);
+            text-decoration: none;
+        }
+    }
+
+    .mentor-card__label,
+    .mentor-card__muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-card__foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        margin-block-start: auto;
+    }
+
+    .mentor-card__full {
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+    }
+
+    @media (hover: hover) {
+        .mentor-card__classes a:hover {
+            border-color: var(--fleet-yellow);
+        }
+    }
+</style>

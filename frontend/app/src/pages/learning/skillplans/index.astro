@@ -1,0 +1,70 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { login_url } from '@helpers/http_responses'
+import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import { get_skillsets } from '@helpers/fetching/characters'
+import { get_gates, can } from '@helpers/gates'
+import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
+
+const auth_token = get_request_user(Astro).auth_token || ''
+
+let skillsets: Skillset[] = []
+let character: CharacterBasic | null = null
+let admin_href: string | null = null
+
+if (auth_token) {
+    try {
+        const [primary, gates] = await Promise.all([
+            get_primary_characters(auth_token),
+            get_gates(Astro),
+        ])
+        if (can(gates, 'skillsets.manage'))
+            admin_href = translatePath('/learning/manage/#skillsets')
+        if (primary?.character_id) {
+            const result = await get_skillsets(auth_token, primary.character_id)
+            skillsets = result.skillsets
+            character = { character_id: result.character_id, character_name: result.character_name }
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LearningHeader from '@components/blocks/LearningHeader.astro'
+import LearningSkillsets from '@components/blocks/LearningSkillsets.astro'
+
+const page_title = `${t('learning.skillplans_page_title')} · ${t('learning.center_title')}`
+---
+
+<Viewport title={page_title} meta_description={t('learning_center.skillsets_lead')}>
+    <PageLanding
+        cover={{
+            image: '/images/guides-cover.jpg',
+            image_990: '/images/guides-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        <Flexblock gap="var(--space-2xl)">
+            <LearningHeader active="skillplans" />
+            <LearningSkillsets
+                heading={t('learning_center.skillsets_heading')}
+                lead={t('learning_center.skillsets_lead')}
+                empty_text={t('learning_center.skillsets_empty')}
+                skillsets={skillsets}
+                character={character}
+                login_href={auth_token ? null : login_url(Astro)}
+                login_label={t('learning_center.skillsets_login')}
+                admin_href={admin_href}
+                admin_label={t('learning_center.skillsets_edit_admin')}
+            />
+        </Flexblock>
+    </PageLanding>
+</Viewport>

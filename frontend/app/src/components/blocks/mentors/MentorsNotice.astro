@@ -1,0 +1,29 @@
+---
+import type { MentorActionResult } from '@helpers/mentors_actions'
+
+/** The result of the action a Mentors partial just ran, when it has something to say. */
+interface Props {
+    result: MentorActionResult | null;
+}
+
+const { result } = Astro.props
+---
+
+{result && result.message &&
+    <p role={result.ok ? 'status' : 'alert'} class:list={['[ mentors-notice ]', { 'is-error': !result.ok }]}>
+        {result.message}
+    </p>
+}
+
+<style lang="scss">
+    .mentors-notice {
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px var(--green);
+        color: var(--highlight);
+        font-size: var(--step--1);
+
+        &.is-error {
+            border-color: var(--fleet-red);
+        }
+    }
+</style>

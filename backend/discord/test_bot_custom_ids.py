@@ -43,6 +43,18 @@ from industry.helpers.lp_buyback_discord_buttons import (
     isk_sent_custom_id,
     lp_sent_custom_id,
 )
+from learning.mentors.discord import (
+    CANCEL_CUSTOM_ID_PREFIX as MENTOR_CANCEL_PREFIX,
+    CLOSE_CUSTOM_ID_PREFIXES as MENTOR_CLOSE_PREFIXES,
+    CONFIRM_CUSTOM_ID_PREFIX as MENTOR_CONFIRM_PREFIX,
+    PASS_CUSTOM_ID_PREFIX as MENTOR_PASS_PREFIX,
+    RATE_CUSTOM_ID_PREFIXES as MENTOR_RATE_PREFIXES,
+    cancel_custom_id as mentor_cancel_custom_id,
+    close_custom_id as mentor_close_custom_id,
+    confirm_custom_id as mentor_confirm_custom_id,
+    pass_custom_id as mentor_pass_custom_id,
+    rate_custom_id as mentor_rate_custom_id,
+)
 from notifications.discord_buttons import (
     NOTIF_ACK_CUSTOM_ID_PREFIX,
     ack_custom_id,
@@ -104,9 +116,14 @@ class BotCustomIdParityTestCase(SimpleTestCase):
                 self.bot.FLEET_INVITE_STOP_PREFIX,
             ),
             (FEEDBACK_ANSWER_PREFIX, self.bot.INVITE_FEEDBACK_ANSWER_PREFIX),
+            (MENTOR_PASS_PREFIX, self.bot.MENTOR_PASS_PREFIX),
+            (MENTOR_CANCEL_PREFIX, self.bot.MENTOR_CANCEL_PREFIX),
+            (MENTOR_CONFIRM_PREFIX, self.bot.MENTOR_CONFIRM_PREFIX),
         ]
         for backend, bot in pairs:
             self.assertEqual(backend, bot)
+        self.assertEqual(MENTOR_RATE_PREFIXES, self.bot.MENTOR_RATE_PREFIXES)
+        self.assertEqual(MENTOR_CLOSE_PREFIXES, self.bot.MENTOR_CLOSE_PREFIXES)
 
     def test_every_backend_id_matches_a_bot_template(self):
         pairs = [
@@ -127,7 +144,18 @@ class BotCustomIdParityTestCase(SimpleTestCase):
                 feedback_answer_custom_id,
                 self.bot.INVITE_FEEDBACK_ANSWER_TEMPLATE,
             ),
+            (mentor_pass_custom_id, self.bot.MENTOR_PASS_TEMPLATE),
+            (mentor_cancel_custom_id, self.bot.MENTOR_CANCEL_TEMPLATE),
+            (mentor_confirm_custom_id, self.bot.MENTOR_CONFIRM_TEMPLATE),
         ]
+        for answer, template in self.bot.MENTOR_RATE_TEMPLATES.items():
+            pairs.append(
+                (lambda n, a=answer: mentor_rate_custom_id(a, n), template)
+            )
+        for answer, template in self.bot.MENTOR_CLOSE_TEMPLATES.items():
+            pairs.append(
+                (lambda n, a=answer: mentor_close_custom_id(a, n), template)
+            )
         for build, template in pairs:
             built = build(1234567890123)
             match = re.fullmatch(template, built)

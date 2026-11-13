@@ -6365,6 +6365,468 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning/mentors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find a mentor: your classes and mentors sorted by fit. */
+        get: operations["learning_endpoints_mentors_get_home_get_home"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Class reports, classes to review, and mentors. */
+        get: operations["learning_endpoints_mentors_get_admin_get_admin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/admin/classes/{class_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publish a class, send it back to its author, or hide it. */
+        put: operations["learning_endpoints_mentors_put_admin_class_status_put_admin_class_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/admin/mentors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a pilot a mentor by their main character's name. */
+        post: operations["learning_endpoints_mentors_post_admin_mentor_post_admin_mentor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/admin/mentors/{mentor_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Approve, decline or remove a mentor. */
+        put: operations["learning_endpoints_mentors_put_admin_mentor_status_put_admin_mentor_status"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/admin/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requests, mentors, coverage and impact for a period. */
+        get: operations["learning_endpoints_mentors_get_admin_metrics_get_admin_metrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask learning managers to make you a mentor. */
+        post: operations["learning_endpoints_mentors_post_apply_post_apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a class as a draft. */
+        post: operations["learning_endpoints_mentors_post_class_post_class"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/classes/{class_id}/edit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A class for its author or a learning manager to edit. */
+        get: operations["learning_endpoints_mentors_get_class_edit_get_class_edit"];
+        /** Save a class (author or learning manager). */
+        put: operations["learning_endpoints_mentors_put_class_edit_put_class_edit"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/classes/{class_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a class to learning managers for review. */
+        post: operations["learning_endpoints_mentors_post_class_submit_post_class_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/classes/{class_id}/teach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start teaching a class: accept an invite or join it. */
+        post: operations["learning_endpoints_mentors_post_class_teach_post_class_teach"];
+        /** Stop teaching a class (or decline the invite). */
+        delete: operations["learning_endpoints_mentors_delete_class_teach_delete_class_teach"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/classes/{class_id}/teachers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite another mentor to teach this class. */
+        post: operations["learning_endpoints_mentors_post_class_teachers_post_class_teachers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/classes/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A class, its requirements for you, and its mentors. */
+        get: operations["learning_endpoints_mentors_get_class_get_class"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mentor roles of the authenticated user. */
+        get: operations["learning_endpoints_mentors_get_me_get_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/mentoring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The mentor's requests and booked classes. */
+        get: operations["learning_endpoints_mentors_get_mentoring_get_mentoring"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/past": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your past classes. */
+        get: operations["learning_endpoints_mentors_get_past_get_past"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a class from a mentor. */
+        post: operations["learning_endpoints_mentors_post_request_post_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a request and book its time (mentor). */
+        post: operations["learning_endpoints_mentors_post_request_accept_post_request_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a class (pilot or mentor). */
+        post: operations["learning_endpoints_mentors_post_request_cancel_post_request_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/discord-cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a class from its DM (Discord bot). */
+        post: operations["learning_endpoints_mentors_post_discord_cancel_post_discord_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/discord-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm attendance from the reminder DM (Discord bot). */
+        post: operations["learning_endpoints_mentors_post_discord_confirm_post_discord_confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/discord-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer how a class went from its DM (Discord bot). */
+        post: operations["learning_endpoints_mentors_post_discord_feedback_post_discord_feedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/discord-pass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pass on a request from its DM (Discord bot). */
+        post: operations["learning_endpoints_mentors_post_discord_pass_post_discord_pass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer how a class went (pilot or mentor). */
+        post: operations["learning_endpoints_mentors_post_request_feedback_post_request_feedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/pass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pass on a request (mentor). */
+        post: operations["learning_endpoints_mentors_post_request_pass_post_request_pass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/requests/{request_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Suggested times inside both pilots' timezones and days. */
+        get: operations["learning_endpoints_mentors_get_request_slots_get_request_slots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/mentors/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The mentor's times, capacity and classes. */
+        get: operations["learning_endpoints_mentors_get_settings_get_settings"];
+        /** Save the mentor's weekday and weekend times and capacity. */
+        put: operations["learning_endpoints_mentors_put_settings_put_settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning/persona": {
         parameters: {
             query?: never;
@@ -9644,6 +10106,19 @@ export interface components {
             /** Character Ids */
             character_ids: number[];
         };
+        /** AcceptMentorRequestBody */
+        AcceptMentorRequestBody: {
+            /**
+             * Bring
+             * @default
+             */
+            bring?: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+        };
         /** AccountCreateRequest */
         AccountCreateRequest: {
             /**
@@ -9766,6 +10241,48 @@ export interface components {
         AddCharacterRequest: {
             /** Character Id */
             character_id: number;
+        };
+        /** AdminMentorClassSchema */
+        AdminMentorClassSchema: {
+            /** Author Name */
+            author_name: string;
+            /** Id */
+            id: number;
+            /** Minutes */
+            minutes: number;
+            /** Requests 90D */
+            requests_90d: number;
+            /** Requirement Count */
+            requirement_count: number;
+            /** Review Note */
+            review_note: string;
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Teachers */
+            teachers: components["schemas"]["MentorPersonSchema"][];
+            /** Title */
+            title: string;
+            /** Where */
+            where: string;
+        };
+        /** AdminMentorSchema */
+        AdminMentorSchema: {
+            /** Application Note */
+            application_note: string;
+            availability: components["schemas"]["AvailabilitySchema"];
+            /** Classes */
+            classes: number;
+            /** Full */
+            full: boolean;
+            /** Mentor Id */
+            mentor_id: number;
+            person: components["schemas"]["MentorPersonSchema"];
+            /** Status */
+            status: string;
+            /** Taking Requests */
+            taking_requests: boolean;
         };
         /** AdvantageRequest */
         AdvantageRequest: {
@@ -10046,6 +10563,15 @@ export interface components {
             timezone?: components["schemas"]["TimezoneTag"];
             /** User Id */
             user_id: number;
+        };
+        /** AvailabilitySchema */
+        AvailabilitySchema: {
+            /** Days */
+            days: number[];
+            /** Weekday Brackets */
+            weekday_brackets: string[];
+            /** Weekend Brackets */
+            weekend_brackets: string[];
         };
         /**
          * AvailableCharacterSchema
@@ -13658,6 +14184,33 @@ export interface components {
              */
             tier?: string;
         };
+        /** CreateMentorRequestBody */
+        CreateMentorRequestBody: {
+            /** Class Id */
+            class_id: number;
+            /**
+             * Days
+             * @default []
+             */
+            days?: number[];
+            /** Mentor Id */
+            mentor_id: number;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /**
+             * Weekday Brackets
+             * @default []
+             */
+            weekday_brackets?: string[];
+            /**
+             * Weekend Brackets
+             * @default []
+             */
+            weekend_brackets?: string[];
+        };
         /** CreateMoonFromPasteRequest */
         CreateMoonFromPasteRequest: {
             /** Paste */
@@ -14025,6 +14578,11 @@ export interface components {
             /** Discord User Id */
             discord_user_id: number;
         };
+        /** DiscordActionBody */
+        DiscordActionBody: {
+            /** Discord User Id */
+            discord_user_id: number;
+        };
         /**
          * DiscordChannelKind
          * @enum {string}
@@ -14048,6 +14606,18 @@ export interface components {
         DiscordDeclineRequest: {
             /** Discord User Id */
             discord_user_id: number;
+        };
+        /** DiscordFeedbackBody */
+        DiscordFeedbackBody: {
+            /** Answer */
+            answer: string;
+            /** Discord User Id */
+            discord_user_id: number;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
         };
         /** DiscordFormRequest */
         DiscordFormRequest: {
@@ -19111,6 +19681,11 @@ export interface components {
             /** When */
             when: string;
         };
+        /** InviteTeacherBody */
+        InviteTeacherBody: {
+            /** Character Name */
+            character_name: string;
+        };
         /** InviteTotals */
         InviteTotals: {
             /** Answered In */
@@ -20894,6 +21469,476 @@ export interface components {
             tribe_id: number;
             /** User Id */
             user_id: number;
+        };
+        /** MentorActionResponse */
+        MentorActionResponse: {
+            /** Message */
+            message: string;
+            /** Status */
+            status: string;
+        };
+        /** MentorApplyBody */
+        MentorApplyBody: {
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /** MentorCardSchema */
+        MentorCardSchema: {
+            /** Answer Hours */
+            answer_hours: number | null;
+            /** Answer Text */
+            answer_text: string;
+            availability: components["schemas"]["AvailabilitySchema"];
+            /** Classes */
+            classes: components["schemas"]["MentorClassRefSchema"][];
+            /** Classes Taught */
+            classes_taught: number;
+            /** Fit */
+            fit: string;
+            /** Full */
+            full: boolean;
+            /** Mentor Id */
+            mentor_id: number;
+            person: components["schemas"]["MentorPersonSchema"];
+            /** Queue */
+            queue: number;
+        };
+        /** MentorClassBody */
+        MentorClassBody: {
+            /**
+             * Minutes
+             * @default 60
+             */
+            minutes?: number;
+            /**
+             * Outline
+             * @default
+             */
+            outline?: string;
+            /**
+             * Requirements
+             * @default []
+             */
+            requirements?: components["schemas"]["RequirementRowSchema"][];
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /** Title */
+            title: string;
+            /**
+             * Where
+             * @default voice
+             */
+            where?: string;
+        };
+        /** MentorClassCreatedResponse */
+        MentorClassCreatedResponse: {
+            /** Id */
+            id: number;
+            /** Slug */
+            slug: string;
+        };
+        /** MentorClassDetailResponse */
+        MentorClassDetailResponse: {
+            /** All Met */
+            all_met: boolean;
+            author: components["schemas"]["MentorPersonSchema"] | null;
+            /** Can Edit */
+            can_edit: boolean;
+            /** Id */
+            id: number;
+            /** Mentors */
+            mentors: components["schemas"]["MentorCardSchema"][];
+            /** Minutes */
+            minutes: number;
+            /** Open Request Id */
+            open_request_id: number | null;
+            /** Outline */
+            outline: string[];
+            /** Pilots Taught */
+            pilots_taught: number;
+            /** Requirements */
+            requirements: components["schemas"]["RequirementCheckSchema"][];
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Summary */
+            summary: string;
+            /** Title */
+            title: string;
+            /** Where */
+            where: string;
+        };
+        /** MentorClassEditResponse */
+        MentorClassEditResponse: {
+            /** Can Review */
+            can_review: boolean;
+            /** Id */
+            id: number;
+            /** Minutes */
+            minutes: number;
+            /** Outline */
+            outline: string;
+            /** Requirement Kinds */
+            requirement_kinds: components["schemas"]["RequirementKindSchema"][];
+            /** Requirements */
+            requirements: components["schemas"]["RequirementRowSchema"][];
+            /** Review Note */
+            review_note: string;
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Summary */
+            summary: string;
+            /** Teachers */
+            teachers: components["schemas"]["MentorClassTeacherSchema"][];
+            /** Title */
+            title: string;
+            /** Where */
+            where: string;
+        };
+        /** MentorClassRefSchema */
+        MentorClassRefSchema: {
+            /** Id */
+            id: number;
+            /** Minutes */
+            minutes: number;
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /** Where */
+            where: string;
+        };
+        /** MentorClassStatusBody */
+        MentorClassStatusBody: {
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Status */
+            status: string;
+        };
+        /** MentorClassTeacherSchema */
+        MentorClassTeacherSchema: {
+            /** Is Author */
+            is_author: boolean;
+            /** Mentor Id */
+            mentor_id: number;
+            person: components["schemas"]["MentorPersonSchema"];
+            /** Status */
+            status: string;
+        };
+        /** MentorFeedbackBody */
+        MentorFeedbackBody: {
+            /** Answer */
+            answer: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /** MentorPersonSchema */
+        MentorPersonSchema: {
+            /** Character Id */
+            character_id: number | null;
+            /** Corp */
+            corp: string;
+            /** Corporation Id */
+            corporation_id: number | null;
+            /** Discord Handle */
+            discord_handle: string;
+            /** Discord Id */
+            discord_id: string | null;
+            /** Name */
+            name: string;
+            /** Portrait */
+            portrait: string;
+            /** User Id */
+            user_id: number;
+        };
+        /** MentorProfileSchema */
+        MentorProfileSchema: {
+            /** Application Note */
+            application_note: string;
+            /** Classes Per Week */
+            classes_per_week: number;
+            /** Days */
+            days: number[];
+            /** Status */
+            status: string;
+            /** Taking Requests */
+            taking_requests: boolean;
+            /** Weekday Brackets */
+            weekday_brackets: string[];
+            /** Weekend Brackets */
+            weekend_brackets: string[];
+        };
+        /** MentorRecordSchema */
+        MentorRecordSchema: {
+            /** Classes Taught */
+            classes_taught: number;
+            /** Pilots Mentored */
+            pilots_mentored: number;
+            /** Still Flying */
+            still_flying: number;
+        };
+        /** MentorReportSchema */
+        MentorReportSchema: {
+            /** Class Title */
+            class_title: string;
+            /** Id */
+            id: number;
+            mentor: components["schemas"]["MentorPersonSchema"];
+            /** Mentor Notes */
+            mentor_notes: string;
+            /** Mentor Outcome */
+            mentor_outcome: string;
+            /** Mentor Outcome Label */
+            mentor_outcome_label: string;
+            pilot: components["schemas"]["MentorPersonSchema"];
+            /** Pilot Note */
+            pilot_note: string;
+            /** Pilot Rating */
+            pilot_rating: string;
+            /** Pilot Rating Label */
+            pilot_rating_label: string;
+            /** Starts At */
+            starts_at: string | null;
+        };
+        /** MentorRequestSchema */
+        MentorRequestSchema: {
+            /** Answer Text */
+            answer_text: string;
+            /** Answered At */
+            answered_at: string | null;
+            availability: components["schemas"]["AvailabilitySchema"];
+            /** Bring */
+            bring: string;
+            /** Can Give Feedback */
+            can_give_feedback: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            mentor: components["schemas"]["MentorPersonSchema"];
+            mentor_class: components["schemas"]["MentorClassRefSchema"];
+            /** Mentor Id */
+            mentor_id: number;
+            /** Mentor Outcome */
+            mentor_outcome: string;
+            /** Note */
+            note: string;
+            /** Passed From Name */
+            passed_from_name: string;
+            pilot: components["schemas"]["MentorPersonSchema"];
+            /** Pilot Rating */
+            pilot_rating: string;
+            /** Starts At */
+            starts_at: string | null;
+            /** Status */
+            status: string;
+        };
+        /** MentorSettingsBody */
+        MentorSettingsBody: {
+            /** Classes Per Week */
+            classes_per_week: number;
+            /** Days */
+            days: number[];
+            /** Taking Requests */
+            taking_requests: boolean;
+            /** Weekday Brackets */
+            weekday_brackets: string[];
+            /** Weekend Brackets */
+            weekend_brackets: string[];
+        };
+        /** MentorSettingsResponse */
+        MentorSettingsResponse: {
+            /** Invites */
+            invites: components["schemas"]["MentorTeachingSchema"][];
+            /** Joinable */
+            joinable: components["schemas"]["MentorClassRefSchema"][];
+            profile: components["schemas"]["MentorProfileSchema"] | null;
+            /** Teaching */
+            teaching: components["schemas"]["MentorTeachingSchema"][];
+        };
+        /** MentorSlotsResponse */
+        MentorSlotsResponse: {
+            mentor_availability: components["schemas"]["AvailabilitySchema"];
+            request: components["schemas"]["MentorRequestSchema"];
+            /** Slots */
+            slots: string[];
+        };
+        /** MentorStatusBody */
+        MentorStatusBody: {
+            /** Status */
+            status: string;
+        };
+        /** MentorTeachingSchema */
+        MentorTeachingSchema: {
+            /** Author Name */
+            author_name: string;
+            /** Is Author */
+            is_author: boolean;
+            mentor_class: components["schemas"]["MentorClassRefSchema"];
+            /** Teacher Count */
+            teacher_count: number;
+            /** Teacher Status */
+            teacher_status: string;
+        };
+        /** MentoringResponse */
+        MentoringResponse: {
+            /** Asks */
+            asks: components["schemas"]["MentorRequestSchema"][];
+            /** Booked */
+            booked: components["schemas"]["MentorRequestSchema"][];
+            /** Past Count */
+            past_count: number;
+            record: components["schemas"]["MentorRecordSchema"];
+            /** To Close */
+            to_close: components["schemas"]["MentorRequestSchema"][];
+        };
+        /** MentorsAdminResponse */
+        MentorsAdminResponse: {
+            /** Applications */
+            applications: components["schemas"]["AdminMentorSchema"][];
+            /** Hidden */
+            hidden: components["schemas"]["AdminMentorClassSchema"][];
+            /** Mentors */
+            mentors: components["schemas"]["AdminMentorSchema"][];
+            /** Published */
+            published: components["schemas"]["AdminMentorClassSchema"][];
+            /** Reports */
+            reports: components["schemas"]["MentorReportSchema"][];
+            /** Review */
+            review: components["schemas"]["AdminMentorClassSchema"][];
+        };
+        /** MentorsHomeResponse */
+        MentorsHomeResponse: {
+            availability: components["schemas"]["AvailabilitySchema"];
+            /** Can Manage */
+            can_manage: boolean;
+            /** Can Request */
+            can_request: boolean;
+            /** Classes */
+            classes: components["schemas"]["MentorRequestSchema"][];
+            /** Is Mentor */
+            is_mentor: boolean;
+            /** Mentor Status */
+            mentor_status: string | null;
+            /** Mentors */
+            mentors: components["schemas"]["MentorCardSchema"][];
+            /** Open Asks */
+            open_asks: number;
+            /** Past Count */
+            past_count: number;
+        };
+        /** MentorsMeResponse */
+        MentorsMeResponse: {
+            /** Can Manage */
+            can_manage: boolean;
+            /** Can Request */
+            can_request: boolean;
+            /** Is Mentor */
+            is_mentor: boolean;
+            /** Mentor Status */
+            mentor_status: string | null;
+            /** Open Asks */
+            open_asks: number;
+        };
+        /** MentorsMetricsResponse */
+        MentorsMetricsResponse: {
+            /** Classes Done */
+            classes_done: number;
+            /** First Mentor Pct */
+            first_mentor_pct: number | null;
+            /** Got Mentor Pct */
+            got_mentor_pct: number | null;
+            /** Impact */
+            impact: components["schemas"]["MetricsImpactSchema"][];
+            /** Median Hours To Booked */
+            median_hours_to_booked: number | null;
+            /** Mentors */
+            mentors: components["schemas"]["MetricsMentorRowSchema"][];
+            /** Period Days */
+            period_days: number;
+            /** Pilots */
+            pilots: number;
+            /** Requests */
+            requests: number;
+            /** Topics */
+            topics: components["schemas"]["MetricsTopicSchema"][];
+            /** Zones */
+            zones: components["schemas"]["MetricsZoneSchema"][];
+        };
+        /** MetricsImpactSchema */
+        MetricsImpactSchema: {
+            /** Measures */
+            measures: components["schemas"]["MetricsMeasureSchema"][];
+            /** N */
+            n: number;
+            /** Name */
+            name: string;
+        };
+        /** MetricsMeasureSchema */
+        MetricsMeasureSchema: {
+            /** Label */
+            label: string;
+            /** Mentored */
+            mentored: number;
+            /** Percent */
+            percent: boolean;
+            /** Similar */
+            similar: number;
+        };
+        /** MetricsMentorRowSchema */
+        MetricsMentorRowSchema: {
+            /** Answer Hours */
+            answer_hours: number | null;
+            /** Answer Text */
+            answer_text: string;
+            availability: components["schemas"]["AvailabilitySchema"];
+            /** Classes */
+            classes: number;
+            /** Passed */
+            passed: number;
+            person: components["schemas"]["MentorPersonSchema"];
+            /** Pilots */
+            pilots: number;
+        };
+        /** MetricsTopicSchema */
+        MetricsTopicSchema: {
+            /** Mentors */
+            mentors: number;
+            /** Requests */
+            requests: number;
+            /** Title */
+            title: string;
+            /** Waiting */
+            waiting: number;
+        };
+        /** MetricsZoneSchema */
+        MetricsZoneSchema: {
+            /** Code */
+            code: string;
+            /** Mentors */
+            mentors: components["schemas"]["MentorPersonSchema"][];
+            /** Waiting */
+            waiting: number;
         };
         /** MissingSignupPilot */
         MissingSignupPilot: {
@@ -24159,6 +25204,19 @@ export interface components {
             /** Training Days */
             training_days?: number | null;
         };
+        /** RequirementCheckSchema */
+        RequirementCheckSchema: {
+            /** Detail */
+            detail: string;
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Met */
+            met: boolean;
+            /** Value */
+            value: string;
+        };
         /** RequirementCreateRequest */
         RequirementCreateRequest: {
             /**
@@ -24188,6 +25246,13 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** RequirementKindSchema */
+        RequirementKindSchema: {
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+        };
         /** RequirementOptions */
         RequirementOptions: {
             /** Brackets */
@@ -24210,6 +25275,16 @@ export interface components {
             met: boolean;
             /** Requirement Id */
             requirement_id: string;
+        };
+        /** RequirementRowSchema */
+        RequirementRowSchema: {
+            /** Kind */
+            kind: string;
+            /**
+             * Value
+             * @default
+             */
+            value?: string;
         };
         /** RequirementRule */
         RequirementRule: {
@@ -43110,6 +44185,1562 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_home_get_home: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorsHomeResponse"];
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_admin_get_admin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorsAdminResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_put_admin_class_status_put_admin_class_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorClassStatusBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_admin_mentor_post_admin_mentor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteTeacherBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_put_admin_mentor_status_put_admin_mentor_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mentor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorStatusBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_admin_metrics_get_admin_metrics: {
+        parameters: {
+            query?: {
+                period?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorsMetricsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_apply_post_apply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorApplyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_class_post_class: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorClassBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorClassCreatedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_class_edit_get_class_edit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorClassEditResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_put_class_edit_put_class_edit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorClassBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorClassEditResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_class_submit_post_class_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_class_teach_post_class_teach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_delete_class_teach_delete_class_teach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_class_teachers_post_class_teachers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                class_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteTeacherBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_class_get_class: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorClassDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_me_get_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorsMeResponse"];
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_mentoring_get_mentoring: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentoringResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_past_get_past: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorRequestSchema"][];
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_request_post_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMentorRequestBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorRequestSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_request_accept_post_request_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptMentorRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_request_cancel_post_request_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_discord_cancel_post_discord_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordActionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_discord_confirm_post_discord_confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordActionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_discord_feedback_post_discord_feedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordFeedbackBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_discord_pass_post_discord_pass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordActionBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_request_feedback_post_request_feedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorFeedbackBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_post_request_pass_post_request_pass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorActionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_request_slots_get_request_slots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSlotsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_get_settings_get_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSettingsResponse"];
+                };
+            };
+        };
+    };
+    learning_endpoints_mentors_put_settings_put_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MentorSettingsBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentorSettingsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

@@ -1,0 +1,264 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import type { MentorClassDetail } from '@dtypes/api.minmatar.org'
+import { get_mentor_class } from '@helpers/api.minmatar.org/mentors'
+import { MENTOR_CLASS_PARTIAL, MENTORS_PATH, mentor_class_edit_path, mentors_url } from '@helpers/mentors'
+import { handle_mentor_post } from '@helpers/mentors_actions'
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const token = auth_token as string
+
+if (!slug)
+    return HTTP_404_Not_Found()
+
+const result = await handle_mentor_post(Astro.request, Astro.url, token)
+
+let detail: MentorClassDetail | null = null
+let fetch_error: Error | false = false
+
+try {
+    detail = await get_mentor_class(token, slug)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+const self_url = translatePath(mentors_url(MENTOR_CLASS_PARTIAL, { slug }))
+const missing = detail?.requirements.filter(row => !row.met).length ?? 0
+const can_request = Boolean(detail?.all_met && !detail.open_request_id)
+
+const facts = detail ? [
+    { value: detail.minutes, label: t('mentors.class.minutes') },
+    { value: detail.mentors.length, label: t('mentors.class.mentors') },
+    { value: detail.pilots_taught, label: t('mentors.class.taught') },
+] : []
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Grid from '@components/compositions/Grid.astro'
+import Tag from '@components/blocks/Tag.astro'
+import MentorCard from '@components/blocks/mentors/MentorCard.astro'
+import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
+import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
+---
+
+<div id="mentor-class" class="[ mentor-class ]">
+    {fetch_error || !detail ?
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentor-class' }} />
+        :
+        <>
+            <MentorsNotice result={result} />
+            {result?.mentor_name &&
+                <p role="status" class="[ mentor-class__sent ]">
+                    {t('mentors.request.sent').replace('{name}', result.mentor_name)}
+                    <a href={translatePath(MENTORS_PATH)}>{t('mentors.your_classes')}</a>
+                </p>
+            }
+
+            <header class="[ mentor-class__head ]">
+                <div>
+                    <p class="[ mentor-class__eyebrow ]">
+                        {detail.author ? t('mentors.class.written_by').replace('{name}', detail.author.name) : ''}
+                        {detail.status !== 'published' && <Tag text={t(t_key('mentors.class_status.', detail.status))} color="fleet-yellow" variant="outline" narrow={true} />}
+                    </p>
+                    <h2>{detail.title}</h2>
+                    <p class="[ mentor-class__where ]">{t(t_key('mentors.where_label.', detail.where))}</p>
+                </div>
+                {detail.can_edit &&
+                    <Button size="sm" color="transparent" href={translatePath(mentor_class_edit_path(detail.id))}>{t('mentors.class.edit')}</Button>
+                }
+            </header>
+
+            <dl class="[ mentor-class__facts ]">
+                {facts.map(fact =>
+                    <div>
+                        <dd>{fact.value}</dd>
+                        <dt>{fact.label}</dt>
+                    </div>
+                )}
+            </dl>
+
+            {detail.summary && <p class="[ mentor-class__summary ]">{detail.summary}</p>}
+
+            <div class="[ mentor-class__columns ]">
+                {detail.outline.length > 0 &&
+                    <MentorsSection title={t('mentors.class.learn')}>
+                        <ul class="[ mentor-class__outline ]">
+                            {detail.outline.map(line => <li>{line}</li>)}
+                        </ul>
+                    </MentorsSection>
+                }
+                <MentorsSection title={t('mentors.class.requirements')}>
+                    <span slot="aside" class:list={['[ mentor-class__ready ]', { 'is-ready': missing === 0 }]}>
+                        {detail.requirements.length === 0 ? t('mentors.class.none') : missing === 0 ? t('mentors.class.ready') : t('mentors.class.to_go').replace('{count}', missing.toString())}
+                    </span>
+                    {detail.requirements.length > 0 &&
+                        <ul class="[ mentor-class__checks ]">
+                            {detail.requirements.map(row =>
+                                <li class:list={{ 'is-met': row.met }}>
+                                    <span aria-hidden="true">{row.met ? '✓' : '○'}</span>
+                                    <span>
+                                        <strong>{row.label}</strong>
+                                        {row.detail && <small>{row.detail}</small>}
+                                    </span>
+                                </li>
+                            )}
+                        </ul>
+                    }
+                </MentorsSection>
+            </div>
+
+            <MentorsSection title={t('mentors.class.teachers')}>
+                {detail.open_request_id ?
+                    <p class="[ mentor-class__muted ]">{t('mentors.class.open_request')}</p>
+                    : !detail.all_met &&
+                    <p class="[ mentor-class__muted ]">{t('mentors.class.locked')}</p>
+                }
+                {detail.mentors.length === 0 ?
+                    <EmptyState title={t('mentors.class.no_teachers')} />
+                    :
+                    <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="300px">
+                        {detail.mentors.map(card => <MentorCard card={card} class_id={detail.id} can_request={can_request} />)}
+                    </Grid>
+                }
+            </MentorsSection>
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .mentor-class {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .mentor-class__sent {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+        border: solid 1px var(--green);
+        font-size: var(--step--1);
+    }
+
+    .mentor-class__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-s);
+
+        h2 {
+            font-size: var(--step-3);
+        }
+    }
+
+    .mentor-class__eyebrow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-class__where,
+    .mentor-class__muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .mentor-class__facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-l);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+        }
+
+        dt {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+
+    .mentor-class__summary {
+        max-width: var(--max-text-width);
+        color: var(--foreground);
+    }
+
+    .mentor-class__columns {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 20em), 1fr));
+        gap: var(--space-l);
+    }
+
+    .mentor-class__outline {
+        margin: 0;
+        padding-inline-start: var(--space-m);
+    }
+
+    .mentor-class__ready {
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+
+        &.is-ready {
+            color: var(--green);
+        }
+    }
+
+    .mentor-class__checks {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            gap: var(--space-xs);
+            color: var(--text-muted);
+
+            &.is-met {
+                color: var(--green);
+            }
+        }
+
+        span:last-child {
+            display: flex;
+            flex-direction: column;
+        }
+
+        strong {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        small {
+            font-size: var(--step--1);
+        }
+    }
+</style>

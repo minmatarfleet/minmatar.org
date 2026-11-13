@@ -1,10 +1,11 @@
 // @vitest-environment node
 // (happy-dom drops the Cookie header from Request, and the page reads auth_token from it.)
 //
-// /learning/ makes its personal calls in two rounds instead of one after
-// another. These render the real page against a routed fetch and fail one call
-// at a time: each failure must leave the same parts empty as the old
-// sequential code did.
+// /learning/ (the Certificates tab) makes its personal calls in two rounds
+// instead of one after another. These render the real page against a routed
+// fetch and fail one call at a time: each failure must leave the same parts
+// empty as the old sequential code did. Skill plans moved to their own tab, so
+// this page never asks for them.
 import { experimental_AstroContainer as AstroContainer } from 'astro/container'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import * as jose from 'jose'
@@ -66,20 +67,25 @@ function parts(html: string) {
     return {
         readiness: html.includes(`/account/tags/${READINESS_ID}`),
         certificates_admin: html.includes('aria-label="Manage certificates and guides"'),
-        skillsets_admin: html.includes('Manage skillsets'),
-        skillsets: html.includes('Rifter Basics'),
         certificates_error: html.includes('Could not load certificates'),
     }
 }
 
-const ALL = { readiness: true, certificates_admin: true, skillsets_admin: true, skillsets: true, certificates_error: false }
-const NO_PERSONAL = { readiness: false, certificates_admin: false, skillsets_admin: false, skillsets: false, certificates_error: false }
+const ALL = { readiness: true, certificates_admin: true, certificates_error: false }
+const NO_PERSONAL = { readiness: false, certificates_admin: false, certificates_error: false }
 
 test('with every call answering, every part renders', async () => {
     expect(parts(await render())).toEqual(ALL)
 })
 
-test('a learning/me failure leaves readiness, admin links and skillsets empty, as before', async () => {
+test('the Certificates tab does not load skill plans or the primary character', async () => {
+    const html = await render()
+    expect(html).not.toContain('Rifter Basics')
+    expect(requested).not.toContain('/api/eveonline/characters/primary')
+    expect(requested).not.toContain(`/api/eveonline/characters/${PRIMARY_ID}/skillsets`)
+})
+
+test('a learning/me failure leaves readiness and the admin link empty, as before', async () => {
     failing.add('/api/learning/me')
     expect(parts(await render())).toEqual(NO_PERSONAL)
     expect(requested).not.toContain('/api/eveonline/characters/summary')
@@ -91,19 +97,9 @@ test('a recommendation failure leaves the same parts empty, as before', async ()
     expect(parts(await render())).toEqual(NO_PERSONAL)
 })
 
-test('a readiness summary failure also hides the admin links and skillsets, as before', async () => {
+test('a readiness summary failure also hides the admin link, as before', async () => {
     failing.add('/api/eveonline/characters/summary')
     expect(parts(await render())).toEqual(NO_PERSONAL)
-})
-
-test('a primary character failure only empties skillsets', async () => {
-    failing.add('/api/eveonline/characters/primary')
-    expect(parts(await render())).toEqual({ ...ALL, skillsets: false })
-})
-
-test('a skillsets failure only empties skillsets', async () => {
-    failing.add(`/api/eveonline/characters/${PRIMARY_ID}/skillsets`)
-    expect(parts(await render())).toEqual({ ...ALL, skillsets: false })
 })
 
 test('a certificates failure shows the certificates error and nothing else changes', async () => {
@@ -111,14 +107,14 @@ test('a certificates failure shows the certificates error and nothing else chang
     expect(parts(await render())).toEqual({ ...ALL, certificates_error: true })
 })
 
-test('the personal calls run in two rounds: summary, skillsets and certificates start before any of them answers', async () => {
+test('the personal calls run in two rounds: summary and certificates start before either answers', async () => {
     const order: string[] = []
     const gates: Record<string, () => void> = {}
     vi.stubGlobal('fetch', vi.fn((input: string) => {
         const path = new URL(String(input).replace(/^"?DUMMY-VALUE"?/, 'http://api')).pathname
         order.push(path)
         const respond = () => new Response(JSON.stringify(ROUTES[path] ?? {}), { status: path in ROUTES ? 200 : 404 })
-        if (['/api/eveonline/characters/summary', '/api/learning/certificates', `/api/eveonline/characters/${PRIMARY_ID}/skillsets`].includes(path))
+        if (['/api/eveonline/characters/summary', '/api/learning/certificates'].includes(path))
             return new Promise((resolve) => { gates[path] = () => resolve(respond()) })
         return Promise.resolve(respond())
     }))
@@ -126,7 +122,6 @@ test('the personal calls run in two rounds: summary, skillsets and certificates 
     const html = render()
     await vi.waitFor(() => expect(Object.keys(gates).sort()).toEqual([
         '/api/eveonline/characters/summary',
-        `/api/eveonline/characters/${PRIMARY_ID}/skillsets`,
         '/api/learning/certificates',
     ].sort()))
     Object.values(gates).forEach((open) => open())

@@ -19,6 +19,7 @@ from .tribe_invites.views import register_tribe_invite_buttons
 from .fleet_invites.views import register_fleet_invite_buttons
 from .fleet_invites.feedback import register_fleet_invite_feedback
 from .fleet_invites.feedback_form import register_fleet_invite_feedback_form
+from .mentors.views import register_mentor_buttons
 from .voicetracking_api import (
     ACTIVITY_RECORDS_URL,
     GUILDS_SYNC_URL,
@@ -79,6 +80,7 @@ class MyClient(discord.Client):
         register_tribe_chief_buttons(self)
         register_fleet_invite_buttons(self)
         register_fleet_invite_feedback_form(self)
+        register_mentor_buttons(self)
         register_fleet_invite_feedback(self.tree, GUILDS)
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")

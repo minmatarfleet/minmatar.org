@@ -560,6 +560,15 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="eveonline.change_eveskillset",
         staff_permission="eveonline.view_eveskillset",
     ),
+    "learning.mentors": FeatureDefinition(
+        code="learning.mentors",
+        label="Request mentor classes",
+        scope=FeatureScope.AFFILIATION,
+        description=(
+            "Ask a mentor for a one-to-one class and ask to become a mentor."
+        ),
+        default_affiliation_names=_aff("Alliance"),
+    ),
     "learning.manage": FeatureDefinition(
         code="learning.manage",
         label="Author learning content",

@@ -7,6 +7,7 @@ FEATURE_LABELS: dict[str, str] = {
     "industry": "Industry",
     "fleets": "Fleets",
     "tribes": "Tribes",
+    "learning": "Mentors",
 }
 
 # Discord embed accent colors (decimal).
@@ -14,6 +15,7 @@ FEATURE_COLORS: dict[str, int] = {
     "industry": 0xC45C26,  # Minmatar-ish orange
     "fleets": 0xB91C1C,  # fleet red
     "tribes": 0x2B6CB0,  # alliance blue
+    "learning": 0xF1D9A0,  # fleet yellow
 }
 
 _DEFAULT_COLOR = 0x4A5568

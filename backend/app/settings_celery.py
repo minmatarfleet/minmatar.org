@@ -343,6 +343,18 @@ CELERYBEAT_TRIBES = [
     ),
 ]
 
+# Learning Center mentors (docs/learning/mentors.md)
+CELERYBEAT_LEARNING = [
+    (
+        "[Learning] Mentor hand-offs, reminders and follow-ups",
+        {
+            "task": "learning.tasks.run_mentor_schedule",
+            "schedule": crontab(minute="*/15"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+]
+
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
 # Capability engine (docs/capabilities/capability-engine-design.md)
 CELERYBEAT_CAPABILITIES = [
@@ -762,6 +774,7 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_INDUSTRY
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES
+    + CELERYBEAT_LEARNING
     + CELERYBEAT_FEED
     + CELERYBEAT_INTEL
     + CELERYBEAT_SURVEYS

@@ -1,0 +1,56 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+
+const { user } = get_request_user(Astro)
+
+if (!user)
+    return login_redirect(Astro)
+
+if (!can(await get_gates(Astro), 'learning.manage'))
+    return HTTP_403_Forbidden()
+
+import { MENTORS_METRICS_PARTIAL, mentors_url } from '@helpers/mentors'
+
+const partial_url = translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period: Astro.url.searchParams.get('period') ?? undefined }))
+const page_title = `${t('mentors.page_title')} ${t('mentors.nav.metrics')} · ${t('learning.center_title')}`
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LearningHeader from '@components/blocks/LearningHeader.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('mentors.meta_description')}
+    components={{ alert_dialog: true, confirm_dialog: true, modal: true }}
+>
+    <PageLanding
+        cover={{
+            image: '/images/guides-cover.jpg',
+            image_990: '/images/guides-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        <Flexblock gap="var(--space-xl)">
+            <LearningHeader active="mentors" />
+            <LazyPartial url={partial_url} swap="outerHTML">
+                <p class="[ mentors-loading ]">{t('loading')}</p>
+            </LazyPartial>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .mentors-loading {
+        color: var(--text-muted);
+    }
+</style>

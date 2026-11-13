@@ -42,6 +42,24 @@ FLEET_INVITE_STOP_PREFIX = "fleet_invite:stop:"
 # Fleet invite feedback DM's Answer button, which opens the Discord form
 # (backend: fleets/helpers/invite_feedback_discord.py)
 INVITE_FEEDBACK_ANSWER_PREFIX = "invite_feedback:answer:"
+# Mentor class DMs (backend: learning/mentors/discord.py)
+MENTOR_PASS_PREFIX = "mentor:pass:"
+MENTOR_CANCEL_PREFIX = "mentor:cancel:"
+MENTOR_CONFIRM_PREFIX = "mentor:confirm:"
+# Pilot feedback 48 hours after a class, one prefix per answer.
+MENTOR_RATE_PREFIXES = {
+    "really": "mentor_rate:really:",
+    "bit": "mentor_rate:bit:",
+    "not": "mentor_rate:not:",
+    "didnt_happen": "mentor_rate:none:",
+}
+# Mentor close-out 48 hours after a class, one prefix per answer.
+MENTOR_CLOSE_PREFIXES = {
+    "done": "mentor_close:done:",
+    "another": "mentor_close:another:",
+    "no_show": "mentor_close:noshow:",
+    "moved": "mentor_close:moved:",
+}
 
 # Help tickets (bot-only: the bot posts these itself)
 HELP_TICKET_CLOSE_PREFIX = "help_ticket_close:"
@@ -68,20 +86,25 @@ NPSI_POST_TEMPLATE = template(NPSI_POST_PREFIX, "event_id")
 NPSI_POST_ALIAS_TEMPLATE = template(NPSI_POST_ALIAS_PREFIX, "event_id")
 NPSI_PREPING_TEMPLATE = template(NPSI_PREPING_PREFIX, "event_id")
 NPSI_TRACK_TEMPLATE = template(NPSI_TRACK_PREFIX, "event_id")
-TRIBE_INVITE_DECLINE_TEMPLATE = template(
-    TRIBE_INVITE_DECLINE_PREFIX, "invitation_id"
-)
-TRIBE_CHIEF_APPOINT_TEMPLATE = template(
-    TRIBE_CHIEF_APPOINT_PREFIX, "volunteer_id"
-)
-TRIBE_CHIEF_DECLINE_TEMPLATE = template(
-    TRIBE_CHIEF_DECLINE_PREFIX, "volunteer_id"
-)
+TRIBE_INVITE_DECLINE_TEMPLATE = template(TRIBE_INVITE_DECLINE_PREFIX, "invitation_id")
+TRIBE_CHIEF_APPOINT_TEMPLATE = template(TRIBE_CHIEF_APPOINT_PREFIX, "volunteer_id")
+TRIBE_CHIEF_DECLINE_TEMPLATE = template(TRIBE_CHIEF_DECLINE_PREFIX, "volunteer_id")
 FLEET_INVITE_OUT_TEMPLATE = template(FLEET_INVITE_OUT_PREFIX, "invite_id")
 FLEET_INVITE_STOP_TEMPLATE = template(FLEET_INVITE_STOP_PREFIX, "invite_id")
 INVITE_FEEDBACK_ANSWER_TEMPLATE = template(
     INVITE_FEEDBACK_ANSWER_PREFIX, "round_id"
 )
+MENTOR_PASS_TEMPLATE = template(MENTOR_PASS_PREFIX, "request_id")
+MENTOR_CANCEL_TEMPLATE = template(MENTOR_CANCEL_PREFIX, "request_id")
+MENTOR_CONFIRM_TEMPLATE = template(MENTOR_CONFIRM_PREFIX, "request_id")
+MENTOR_RATE_TEMPLATES = {
+    answer: template(prefix, "request_id")
+    for answer, prefix in MENTOR_RATE_PREFIXES.items()
+}
+MENTOR_CLOSE_TEMPLATES = {
+    answer: template(prefix, "request_id")
+    for answer, prefix in MENTOR_CLOSE_PREFIXES.items()
+}
 HELP_TICKET_CLOSE_TEMPLATE = template(HELP_TICKET_CLOSE_PREFIX, "ticket_id")
 HELP_TICKET_CLOSE_REASON_TEMPLATE = template(
     HELP_TICKET_CLOSE_REASON_PREFIX, "ticket_id"
