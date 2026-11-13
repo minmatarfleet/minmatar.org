@@ -180,6 +180,32 @@ def _role_id(role) -> int | None:
         return None
 
 
+def _held_permissions(guild: DiscordGuild, roles: list, member: dict) -> int:
+    """Permissions from @everyone plus the roles this member holds.
+
+    GET /guilds/{id}/members/{id} has no ``permissions`` field. That
+    field is only on an interaction member, so reading it reported every
+    real install as unable to edit roles.
+    """
+    by_id = {}
+    for role in roles:
+        role_id = _role_id(role)
+        if role_id is not None:
+            by_id[role_id] = role
+    held = {guild.guild_id}
+    for raw in member.get("roles") or []:
+        try:
+            held.add(int(raw))
+        except (TypeError, ValueError):
+            continue
+    bits = 0
+    for role_id in held:
+        role = by_id.get(role_id)
+        if role is not None:
+            bits |= _bits(role.get("permissions"))
+    return bits
+
+
 def _catalog(guild: DiscordGuild, roles: list, member: dict):
     bot_role_ids = {int(role_id) for role_id in member.get("roles") or []}
     positions = [
@@ -188,10 +214,8 @@ def _catalog(guild: DiscordGuild, roles: list, member: dict):
         if _role_id(role) in bot_role_ids
     ]
     bot_position = max(positions, default=0)
-    permissions = _bits(member.get("permissions"))
-    can_manage = bool(
-        permissions & ADMINISTRATOR or permissions & MANAGE_ROLES
-    )
+    permissions = _held_permissions(guild, roles, member)
+    can_manage = bool(permissions & (ADMINISTRATOR | MANAGE_ROLES))
     rows = []
     for role in roles:
         role_id = _role_id(role)
