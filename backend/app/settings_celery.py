@@ -519,6 +519,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Discord] Enforce corporation server member policies",
+        {
+            "task": "discord.tasks.enforce_guild_member_policy",
+            "schedule": crontab(minute=29, hour="*"),
+        },
+    ),
+    (
         "[Misc] Remove orphan discord user roles",
         {
             "task": "discord.tasks.remove_roles_from_unregistered_guild_members",

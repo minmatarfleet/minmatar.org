@@ -1,9 +1,11 @@
 """A corporation's Discord server, reached through our bot.
 
 The CEO or a director adds the bot to their server from the Settings tab.
-The install asks for Create Instant Invite, View Channel, and Manage Roles.
-The bot keeps one 7-day invite fresh, and can give existing roles to the
-right people. The corporation page links to the invite, so the link never
+The install asks for Create Instant Invite, View Channel, Manage Roles, and
+Kick Members.
+The bot keeps one 7-day invite fresh, can give existing roles to the
+right people, and can remove people who aren't in the corporation or
+alliance (discord.guild_access). The corporation page links to the invite, so the link never
 dies the way a pasted one can.
 
 - Page views never call Discord. The invite is made and rotated by Celery
@@ -31,6 +33,7 @@ from ratelimit import RateLimitException
 from requests import HTTPError, RequestException
 
 from discord.client import DiscordClient, discord_error_code
+from discord.guild_access import member_access_payload
 from discord.guild_roles import (
     clear_role_mappings,
     install_block_reason,
@@ -57,12 +60,16 @@ PROBE_LIMIT = 5
 
 # Create Instant Invite | View Channel. The public invite link stays at
 # these two so a bare link cannot reset a managed role to Manage Roles.
-# The OAuth install (authorize_url) also asks for Manage Roles.
+# The OAuth install (authorize_url) also asks for Manage Roles and Kick
+# Members.
 CREATE_INSTANT_INVITE = 1 << 0
 VIEW_CHANNEL = 1 << 10
+KICK_MEMBERS = 1 << 1
 MANAGE_ROLES = 1 << 28
 BOT_PERMISSIONS = CREATE_INSTANT_INVITE | VIEW_CHANNEL
-INSTALL_PERMISSIONS = BOT_PERMISSIONS | MANAGE_ROLES
+# Kick Members is only used when the corporation turns on a member policy
+# (discord.guild_access); the install page lets them untick it.
+INSTALL_PERMISSIONS = BOT_PERMISSIONS | MANAGE_ROLES | KICK_MEMBERS
 
 # Text and announcement channels can hold an invite.
 INVITE_CHANNEL_TYPES = {0, 5}
@@ -516,10 +523,12 @@ def refresh_bot_invite(corporation: EveCorporation) -> str | None:
         )
     if status == EveCorporation.DISCORD_BOT_REMOVED:
         guild.can_manage_roles = False
+        guild.can_kick_members = False
         guild.roles_checked_at = now
         guild.save(
             update_fields=[
                 "can_manage_roles",
+                "can_kick_members",
                 "roles_checked_at",
                 "updated_at",
             ]
@@ -595,6 +604,9 @@ def corporation_discord_settings(corporation: EveCorporation) -> dict:
         "bot": bot_settings(corporation),
         "page_source": page_source,
         "role_sync": role_sync_payload(
+            corporation.discord_guild if is_connected(corporation) else None
+        ),
+        "member_access": member_access_payload(
             corporation.discord_guild if is_connected(corporation) else None
         ),
     }

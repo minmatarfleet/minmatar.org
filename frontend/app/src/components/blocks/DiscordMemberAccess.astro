@@ -1,0 +1,254 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DiscordMemberAccess } from '@dtypes/api.minmatar.org'
+import type { UiKey } from '@helpers/corporations/discord_settings'
+import { discord_removal_eta, keep_member_action } from '@helpers/corporations/discord_settings'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import RadioCheckPill from '@components/blocks/RadioCheckPill.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+
+interface Props {
+    access: DiscordMemberAccess;
+    // Discord's install page; adding the bot again grants Kick Members.
+    connect_url: string;
+    [propName: string]: any;
+}
+
+const { access, connect_url } = Astro.props
+
+const POLICIES = [
+    { value: '', key: 'corporations.discord.members_policy_off' },
+    { value: 'corporation', key: 'corporations.discord.members_policy_corporation' },
+    { value: 'alliance', key: 'corporations.discord.members_policy_alliance' },
+] as const
+const REASON_KEYS: Record<string, UiKey> = {
+    unlinked: 'corporations.discord.members_reason_unlinked',
+    not_corporation: 'corporations.discord.members_reason_not_corporation',
+    not_alliance: 'corporations.discord.members_reason_not_alliance',
+}
+const grace_key = (hours: number) => `corporations.discord.members_grace_${hours}` as UiKey
+
+const policy = access.policy ?? ''
+const can_kick = access.can_kick_members
+const grace_choices = access.grace_choices.length ? access.grace_choices : [access.grace_hours]
+const exemptions = access.exemptions.map((row) => row.username).join('\n')
+const hidden = access.pending_total - access.pending.length
+const checked = access.checked_at
+    ? t('corporations.discord.members_checked')
+        .replace('{time}', new Date(access.checked_at).toLocaleString('en-GB', {
+            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+        }) + ' EVE')
+        .replace('{count}', String(access.last_removed))
+    : t('corporations.discord.members_never_checked')
+---
+
+<Flexblock gap="var(--space-s)" class="[ member-access ]">
+    <h4 class="[ member-access__title ]">{t('corporations.discord.members_title')}</h4>
+    <p class="[ member-access__muted ]">{t('corporations.discord.members_leading')}</p>
+
+    {!can_kick &&
+        <FlexInline gap="var(--space-xs)">
+            <p class="[ member-access__attention ]">{t('corporations.discord.members_needs_kick')}</p>
+            <Button href={connect_url} color="transparent" size="sm">
+                {t('corporations.discord.bot_add_again')}
+            </Button>
+        </FlexInline>
+    }
+
+    <fieldset class="[ member-access__policies ]">
+        <legend class="[ visually-hidden ]">{t('corporations.discord.members_title')}</legend>
+        <FlexInline gap="var(--space-s)">
+            {POLICIES.map((option) => (
+                <RadioCheckPill
+                    type="radio"
+                    name="member_policy"
+                    value={option.value}
+                    label={t(option.key)}
+                    checked={policy === option.value}
+                />
+            ))}
+        </FlexInline>
+    </fieldset>
+
+    <div class="[ member-access__row ]">
+        <label class="[ member-access__label ]" for="member-access-grace">
+            {t('corporations.discord.members_grace')}
+        </label>
+        <Select id="member-access-grace" name="member_grace_hours" size="sm">
+            {grace_choices.map((hours) => (
+                <option value={hours} selected={hours === access.grace_hours}>{t(grace_key(hours))}</option>
+            ))}
+        </Select>
+    </div>
+
+    <Flexblock gap="var(--space-3xs)">
+        <label class="[ member-access__label ]" for="member-access-exemptions">
+            {t('corporations.discord.members_exemptions')}
+        </label>
+        <Textarea
+            id="member-access-exemptions"
+            name="member_exemptions"
+            rows="4"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="username"
+            aria-describedby="member-access-exemptions-help"
+        >{exemptions}</Textarea>
+        <small id="member-access-exemptions-help" class="[ member-access__muted ]">
+            {t('corporations.discord.members_exemptions_help')}
+        </small>
+    </Flexblock>
+
+    <FlexInline gap="var(--space-xs)">
+        <Button type="submit" name="action" value="save_members" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+            {t('corporations.discord.members_save')}
+        </Button>
+        {policy && <small class="[ member-access__muted ]">{checked}</small>}
+    </FlexInline>
+
+    {policy && access.held &&
+        <FlexInline gap="var(--space-xs)" class="[ member-access__held ]">
+            <p role="status">
+                {access.held.approved
+                    ? t('corporations.discord.members_held_approved')
+                    : t('corporations.discord.members_held').replace('{count}', String(access.held.count))}
+            </p>
+            {!access.held.approved &&
+                <Button type="submit" name="action" value="approve_members" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                    {t('corporations.discord.members_approve')}
+                </Button>
+            }
+        </FlexInline>
+    }
+
+    {policy && access.checked_at &&
+        <Flexblock gap="var(--space-2xs)">
+            <h5 class="[ member-access__label ]">
+                {t('corporations.discord.members_pending').replace('{count}', String(access.pending_total))}
+            </h5>
+            {access.pending.length === 0 ?
+                <EmptyState title={t('corporations.discord.members_pending_empty')} />
+                :
+                <ul class="[ member-access__pending ]" role="list">
+                    {access.pending.map((row) => {
+                        const eta = discord_removal_eta(row.remove_after)
+                        return (
+                            <li class="[ member-access__person ]">
+                                <span class="[ member-access__name ]">
+                                    <span>{row.display_name ?? row.username ?? row.discord_id}</span>
+                                    {row.username && <small class="[ member-access__muted ]">@{row.username}</small>}
+                                </span>
+                                <small class="[ member-access__muted ]">{t(REASON_KEYS[row.reason] ?? REASON_KEYS.unlinked)}</small>
+                                <small class="[ member-access__eta ]">
+                                    {eta ? t('corporations.discord.members_in').replace('{time}', eta) : t('corporations.discord.members_due')}
+                                </small>
+                                <Button type="submit" name="action" value={keep_member_action(row.discord_id)} formnovalidate color="transparent" size="sm" narrow={true} off_disable={true}>
+                                    {t('corporations.discord.members_keep')}
+                                </Button>
+                            </li>
+                        )
+                    })}
+                </ul>
+            }
+            {hidden > 0 &&
+                <small class="[ member-access__muted ]">
+                    {t('corporations.discord.members_pending_more').replace('{count}', String(hidden))}
+                </small>
+            }
+        </Flexblock>
+    }
+</Flexblock>
+
+<style lang="scss">
+    // Flexblock spaces children with margin-block-start; keep that intact.
+    p,
+    h4,
+    h5 {
+        margin-block-end: 0;
+    }
+
+    .member-access__title {
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .member-access__label {
+        font-family: var(--button-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .member-access__muted {
+        color: var(--faded);
+    }
+
+    .member-access__attention {
+        color: var(--fleet-yellow);
+    }
+
+    .member-access__policies {
+        border: none;
+        padding: 0;
+        margin-inline: 0;
+    }
+
+    .member-access__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        align-items: center;
+    }
+
+    .member-access__row > :global(.relative) {
+        flex: 0 1 calc(var(--space-3xl) * 2);
+        min-width: 0;
+    }
+
+    .member-access__held {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--fleet-yellow);
+        background-color: var(--component-background);
+        color: var(--highlight);
+    }
+
+    .member-access__pending {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        border: solid 1px var(--border-color);
+    }
+
+    .member-access__person {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-s);
+        padding: var(--space-2xs) var(--space-s);
+
+        & + & {
+            border-top: solid 1px var(--hairline);
+        }
+    }
+
+    .member-access__name {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 calc(var(--space-3xl) * 2);
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: var(--highlight);
+    }
+
+    .member-access__eta {
+        color: var(--fleet-yellow);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

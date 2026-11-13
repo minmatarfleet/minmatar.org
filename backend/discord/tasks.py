@@ -43,6 +43,21 @@ def reconcile_guild_role_mappings(guild_pk: int | None = None):
 
 
 @app.task()
+def enforce_guild_member_policy(guild_pk: int | None = None):
+    """Remove people a corporation's member policy doesn't allow.
+
+    The beat calls this with no argument. Saving a policy queues the same
+    task for one guild. guild_access queues this task, so the import stays
+    inside the function.
+    """
+    from discord.guild_access import (  # pylint: disable=import-outside-toplevel
+        enforce_member_policies,
+    )
+
+    enforce_member_policies(guild_pk)
+
+
+@app.task()
 def snapshot_guild_roles_task(guild_pk: int):
     """Read one server's roles after a connect or a manual refresh.
 

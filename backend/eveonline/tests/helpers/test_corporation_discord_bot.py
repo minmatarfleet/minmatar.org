@@ -103,7 +103,7 @@ class AuthorizeUrlTestCase(SimpleTestCase):
         url = authorize_url("state-1")
         self.assertIn("scope=bot", url)
         # Create Instant Invite | View Channel | Manage Roles.
-        self.assertIn("permissions=268436481", url)
+        self.assertIn("permissions=268436483", url)
         self.assertIn("state=state-1", url)
         self.assertIn("redirect_uri=https%3A%2F%2Fapi.example%2Fcb", url)
 

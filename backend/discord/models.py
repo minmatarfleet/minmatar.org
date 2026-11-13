@@ -124,6 +124,37 @@ class DiscordGuild(models.Model):
     # id, name, position, managed, assignable. Role ids are strings:
     # snowflakes do not fit in a JavaScript number.
     roles = models.JSONField(default=list, blank=True, db_default=[])
+    # Who may stay on a corporation's server (discord.guild_access). Blank
+    # means anyone. The bot only removes people with Kick Members, and only
+    # after they have been on the pending list for member_grace_hours.
+    MEMBER_POLICY_OFF = ""
+    MEMBER_POLICY_CORPORATION = "corporation"
+    MEMBER_POLICY_ALLIANCE = "alliance"
+    MEMBER_POLICY_CHOICES = [
+        (MEMBER_POLICY_OFF, "Anyone"),
+        (MEMBER_POLICY_CORPORATION, "Corporation members only"),
+        (MEMBER_POLICY_ALLIANCE, "Alliance members only"),
+    ]
+    member_policy = models.CharField(
+        max_length=16,
+        choices=MEMBER_POLICY_CHOICES,
+        blank=True,
+        default="",
+        db_default="",
+    )
+    member_grace_hours = models.PositiveSmallIntegerField(
+        default=24, db_default=24
+    )
+    # From the last role snapshot, like can_manage_roles.
+    can_kick_members = models.BooleanField(default=False, db_default=False)
+    members_checked_at = models.DateTimeField(null=True, blank=True)
+    members_last_removed = models.PositiveIntegerField(default=0, db_default=0)
+    # Set when one pass would remove more people than the safety limit.
+    # Nobody is removed until a director approves; the approval covers
+    # everyone flagged before it.
+    members_held_at = models.DateTimeField(null=True, blank=True)
+    members_held_count = models.PositiveIntegerField(default=0, db_default=0)
+    members_approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -184,6 +215,78 @@ class DiscordRoleMapping(models.Model):
 
     def __str__(self) -> str:
         return f"{self.guild_id} {self.state} -> {self.role_id}"
+
+
+class DiscordGuildExemption(models.Model):
+    """A Discord username the member policy never removes.
+
+    Matched on the username, and on the account id once the bot has seen
+    them, so a rename doesn't drop the exemption.
+    """
+
+    guild = models.ForeignKey(
+        DiscordGuild,
+        on_delete=models.CASCADE,
+        related_name="member_exemptions",
+    )
+    username = models.CharField(max_length=32)
+    discord_id = models.BigIntegerField(null=True, blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["username"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["guild", "username"],
+                name="discord_guild_exemption_username",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.guild_id} {self.username}"
+
+
+class DiscordGuildRemoval(models.Model):
+    """Someone on a corporation's server who doesn't meet its member policy.
+
+    They are removed once flagged_at is member_grace_hours old, and the row
+    is dropped as soon as they qualify, leave, or are exempted.
+    """
+
+    REASON_UNLINKED = "unlinked"
+    REASON_NOT_CORPORATION = "not_corporation"
+    REASON_NOT_ALLIANCE = "not_alliance"
+    REASON_CHOICES = [
+        (REASON_UNLINKED, "No minmatar.org account"),
+        (REASON_NOT_CORPORATION, "Not in the corporation"),
+        (REASON_NOT_ALLIANCE, "Not in the alliance"),
+    ]
+
+    guild = models.ForeignKey(
+        DiscordGuild,
+        on_delete=models.CASCADE,
+        related_name="member_removals",
+    )
+    discord_id = models.BigIntegerField()
+    username = models.CharField(max_length=32, blank=True, default="")
+    display_name = models.CharField(max_length=100, blank=True, default="")
+    reason = models.CharField(max_length=16, choices=REASON_CHOICES)
+    flagged_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["flagged_at", "discord_id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["guild", "discord_id"],
+                name="discord_guild_removal_member",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.guild_id} {self.username or self.discord_id}"
 
 
 class DiscordChannel(models.Model):

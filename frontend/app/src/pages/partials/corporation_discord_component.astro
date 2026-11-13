@@ -9,12 +9,15 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import {
     DiscordInviteError,
     DiscordRoleError,
+    approve_corporation_discord_members,
     check_corporation_discord,
     disconnect_corporation_discord_bot,
     get_corporation_discord,
+    keep_corporation_discord_member,
     refresh_corporation_discord_roles,
     remove_corporation_discord,
     retry_corporation_discord_bot,
+    save_corporation_discord_members,
     save_corporation_discord_roles,
     update_corporation_discord,
 } from '@helpers/api.minmatar.org/corporations'
@@ -32,6 +35,8 @@ import {
     discord_server_initials,
     discord_status_key,
     parse_discord_action,
+    parse_exemptions,
+    parse_keep_member,
 } from '@helpers/corporations/discord_settings'
 import type { DiscordSettingsFlash } from '@helpers/corporations/discord_settings'
 import { query_string } from '@helpers/string'
@@ -39,6 +44,7 @@ import { query_string } from '@helpers/string'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import DiscordMemberAccess from '@components/blocks/DiscordMemberAccess.astro'
 import DiscordRoleMappings from '@components/blocks/DiscordRoleMappings.astro'
 import Input from '@components/blocks/Input.astro'
 
@@ -83,10 +89,26 @@ let editing = false
 
 if (Astro.request.method === 'POST') {
     const form = await Astro.request.formData()
-    const action = parse_discord_action(form.get('action'))
+    const keep_id = parse_keep_member(form.get('action'))
+    const action = keep_id ? 'keep_member' : parse_discord_action(form.get('action'))
     const typed_url = String(form.get('invite_url') ?? '').trim()
+    // Section saves that leave the pasted-link editor closed on failure.
+    const member_action = action === 'save_members' || action === 'approve_members' || action === 'keep_member'
     try {
-        if (action === 'check') {
+        if (keep_id) {
+            await keep_corporation_discord_member(auth_token, corporation_id, keep_id)
+            flash = { kind: 'success', key: 'corporations.discord.members_kept' }
+        } else if (action === 'save_members') {
+            await save_corporation_discord_members(auth_token, corporation_id, {
+                policy: String(form.get('member_policy') ?? '') || null,
+                grace_hours: parseInt(String(form.get('member_grace_hours') ?? '24')) || 24,
+                exemptions: parse_exemptions(form.get('member_exemptions')),
+            })
+            flash = { kind: 'success', key: 'corporations.discord.members_saved' }
+        } else if (action === 'approve_members') {
+            await approve_corporation_discord_members(auth_token, corporation_id)
+            flash = { kind: 'success', key: 'corporations.discord.members_approved' }
+        } else if (action === 'check') {
             editing = true
             draft_url = typed_url
             preview = await check_corporation_discord(auth_token, corporation_id, typed_url)
@@ -119,7 +141,7 @@ if (Astro.request.method === 'POST') {
     } catch (error) {
         if (action === 'refresh_roles')
             role_since = null
-        if (action !== 'save_roles' && action !== 'refresh_roles') {
+        if (action !== 'save_roles' && action !== 'refresh_roles' && !member_action) {
             editing = true
             draft_url = typed_url
             preview = null
@@ -333,6 +355,10 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
                         </Button>
                     </FlexInline>
                 </Flexblock>
+            }
+
+            {bot_connected && bot.status === 'ok' && roles_checked && settings.member_access &&
+                <DiscordMemberAccess access={settings.member_access} connect_url={BOT_CONNECT_URL} />
             }
 
             {offer_bot &&
