@@ -8,8 +8,9 @@ import { get_player_icon } from '@helpers/eve_image_server'
 /**
  * The Commanders tab: the Fleet Commanders tribe group in tiers, one per rank
  * (Strategic FC, Skirmish FC, ...), highest first. Members without a rank
- * are the plain "FC" tier at the bottom. Inside a tier, the most recently
- * active come first and pilots who have not led yet are dimmed.
+ * are the plain "FC" tier at the bottom. Inside a tier, the pilots who have
+ * led the most fleets come first (most recent breaks ties) and pilots who
+ * have not led yet are dimmed.
  */
 interface Props {
     commanders:     FleetCommander[];
@@ -39,6 +40,15 @@ for (const commander of commanders) {
 }
 
 const tiers = [...tiers_by_key.values()].sort((a, b) => a.order - b.order)
+
+const last_led_time = (commander:FleetCommander) => commander.last_led ? new Date(commander.last_led).getTime() : 0
+
+for (const tier of tiers) {
+    tier.commanders.sort((a, b) =>
+        (b.fleets_total ?? 0) - (a.fleets_total ?? 0) ||
+        last_led_time(b) - last_led_time(a)
+    )
+}
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -84,9 +94,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
                                 {commander.corporation_name &&
                                     <small>{commander.corporation_name}</small>
                                 }
-                                {commander.timezone?.source === 'activity' && commander.timezone.brackets.length > 0 &&
-                                    <TimezoneTags timezone={commander.timezone} />
-                                }
+                                <TimezoneTags timezone={commander.timezone} />
                                 <small>
                                     {t(commander.fleets_total === 1 ? 'fleets.commanders.total_one' : 'fleets.commanders.total').replace('{count}', String(commander.fleets_total ?? 0))}
                                     {commander.last_led &&
