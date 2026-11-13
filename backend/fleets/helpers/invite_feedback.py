@@ -34,6 +34,7 @@ from notifications.models import (
 from notifications.service import notify_users
 
 TYPE_KEY = "fleets.invite_feedback"
+PROBE_KEY = "invite-feedback-probe"
 WINDOW = timedelta(days=28)
 REMIND_AFTER = timedelta(days=3)
 COMMENT_MAX = 280
@@ -156,6 +157,57 @@ def preview_text() -> str:
     return _format_preview(report)
 
 
+def send_one(username: str) -> str:
+    """DM the form to one account. Does not open or change the real round."""
+    name = (username or "").strip()
+    if not name:
+        return "Name the pilot. Nothing was sent."
+    if _current_round() is not None:
+        return (
+            "The survey round already exists. Nothing was sent to " f"{name}."
+        )
+    user = User.objects.filter(username__iexact=name).first()
+    if user is None:
+        return f"No account named {name}. Nothing was sent."
+    kept, unused_drops = live_cohort()
+    items = kept.get(user.id, [])
+    pending = any(
+        item.answer == EveFleetInvite.ANSWER_PENDING for item in items
+    )
+    survey = FleetInviteFeedbackRound.objects.filter(key=PROBE_KEY).first()
+    if survey is None:
+        survey = FleetInviteFeedbackRound.objects.create(
+            key=PROBE_KEY,
+            since=timezone.now() - WINDOW,
+            status=FleetInviteFeedbackRound.STATUS_OPEN,
+        )
+    row, created = FleetInviteFeedback.objects.get_or_create(
+        round=survey,
+        user=user,
+        defaults={
+            "cohort": (
+                FleetInviteFeedback.COHORT_NO_ANSWER
+                if pending
+                else FleetInviteFeedback.COHORT_ANSWERED
+            ),
+            "invites": [snapshot_item(item) for item in items],
+        },
+    )
+    if not created and row.sent_at is not None:
+        return f"{user.username} already has this DM. Nothing else was sent."
+    delivered, muted = _notify(survey, reminder=False, only_user_ids=[user.id])
+    if delivered and items:
+        return f"Sent the form to {user.username}."
+    if delivered:
+        return (
+            f"Sent the form to {user.username}. They have no qualifying "
+            "invite in the window."
+        )
+    if muted:
+        return f"{user.username} has this DM turned off. Nothing was sent."
+    return "Nothing was sent."
+
+
 def send(*, confirm: bool) -> str:
     if not confirm:
         return (
@@ -183,7 +235,7 @@ def send(*, confirm: bool) -> str:
                 status=FleetInviteFeedbackRound.STATUS_OPEN,
             )
             _freeze(survey, kept)
-            delivered, muted = _notify(survey, remind=False)
+            delivered, muted = _notify(survey, reminder=False)
     except IntegrityError:
         return "Someone else just sent this. Run preview to see it."
     return _sent_line(delivered, muted)
@@ -202,7 +254,7 @@ def remind(*, confirm: bool) -> str:
         return "This survey is closed."
     ready, skips = _reminder_candidates(survey)
     delivered, muted = _notify(
-        survey, remind=True, only_user_ids=[row.user_id for row in ready]
+        survey, reminder=True, only_user_ids=[row.user_id for row in ready]
     )
     return _remind_line(delivered, muted, skips)
 
@@ -363,7 +415,11 @@ def format_when(value: str) -> str:
 
 
 def _current_round():
-    return FleetInviteFeedbackRound.objects.order_by("-id").first()
+    return (
+        FleetInviteFeedbackRound.objects.exclude(key=PROBE_KEY)
+        .order_by("-id")
+        .first()
+    )
 
 
 def _drop_reason(invite, now, opted) -> str | None:
@@ -400,7 +456,7 @@ def _freeze(survey, kept: dict[int, list]) -> None:
 
 
 def _retry_send(survey) -> str:
-    delivered, muted = _notify(survey, remind=False)
+    delivered, muted = _notify(survey, reminder=False)
     if delivered == 0 and muted == 0:
         return (
             "Everyone who can get this DM already has it. "
@@ -419,22 +475,24 @@ def _retry_send(survey) -> str:
     )
 
 
-def _notify(survey, *, remind: bool, only_user_ids=None) -> tuple[int, int]:
+def _notify(survey, *, reminder: bool, only_user_ids=None) -> tuple[int, int]:
     rows = survey.responses.select_related("user")
-    if remind:
+    if reminder:
         if not only_user_ids:
             return 0, 0
         rows = rows.filter(user_id__in=only_user_ids)
     else:
         rows = rows.filter(sent_at__isnull=True)
+        if only_user_ids is not None:
+            rows = rows.filter(user_id__in=only_user_ids)
     users = [row.user for row in rows]
     if not users:
         return 0, 0
-    key = _idempotency_key(survey, remind=remind)
+    key = _idempotency_key(survey, reminder=reminder)
     deliveries = notify_users(
         users,
         TYPE_KEY,
-        _dm_context(remind=remind),
+        _dm_context(reminder=reminder),
         idempotency_key=key,
         stagger_rate_limited_channels=True,
     )
@@ -446,7 +504,7 @@ def _notify(survey, *, remind: bool, only_user_ids=None) -> tuple[int, int]:
         ).values_list("user_id", flat=True)
     )
     ids = delivered_ids | existing
-    stamp = "reminded_at" if remind else "sent_at"
+    stamp = "reminded_at" if reminder else "sent_at"
     if ids:
         survey.responses.filter(
             user_id__in=ids, **{f"{stamp}__isnull": True}
@@ -459,7 +517,7 @@ def _reminder_candidates(survey):
     cutoff = now - REMIND_AFTER
     rows = list(survey.responses.all())
     opted = opted_out_user_ids([row.user_id for row in rows])
-    key = _idempotency_key(survey, remind=False)
+    key = _idempotency_key(survey, reminder=False)
     statuses = dict(
         NotificationDelivery.objects.filter(
             idempotency_key__in=[f"{key}:u{row.user_id}" for row in rows],
@@ -488,15 +546,15 @@ def _reminder_candidates(survey):
     return ready, skips
 
 
-def _idempotency_key(survey, *, remind: bool) -> str:
+def _idempotency_key(survey, *, reminder: bool) -> str:
     key = f"fleet-invite-feedback:{survey.id}"
-    if remind:
+    if reminder:
         key += ":remind"
     return key
 
 
-def _dm_context(*, remind: bool) -> dict:
-    if remind:
+def _dm_context(*, reminder: bool) -> dict:
+    if reminder:
         title = "Still got a minute?"
         body = "The fleet invite survey is still open. A few questions."
     else:

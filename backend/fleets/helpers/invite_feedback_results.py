@@ -8,7 +8,13 @@ submitted. Quotes are text only, and only on All.
 
 from __future__ import annotations
 
-from fleets.helpers.invite_feedback import FELT, IMPROVE, SITTING_OUT, WHY
+from fleets.helpers.invite_feedback import (
+    FELT,
+    IMPROVE,
+    PROBE_KEY,
+    SITTING_OUT,
+    WHY,
+)
 from fleets.models import FleetInviteFeedback, FleetInviteFeedbackRound
 
 MIN_CELL = 5
@@ -32,7 +38,11 @@ _FACTS = (
 
 
 def results_payload(cut: str = "all", *, link_only: bool = False) -> dict:
-    survey = FleetInviteFeedbackRound.objects.order_by("-id").first()
+    survey = (
+        FleetInviteFeedbackRound.objects.exclude(key=PROBE_KEY)
+        .order_by("-id")
+        .first()
+    )
     if survey is None or link_only:
         return _empty(
             show_link=survey is not None,

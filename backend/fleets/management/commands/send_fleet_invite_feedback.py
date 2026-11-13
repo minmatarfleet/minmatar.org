@@ -1,9 +1,10 @@
 """Send, remind, or close the one-round fleet invite feedback form.
 
-The same actions are on the Discord command /fleet-invite-feedback, which
-Strategic FCs run. This command is the shell entry for the same helper.
+The Discord command can preview, remind, and close. The full send is
+only this command.
 
     python manage.py send_fleet_invite_feedback --dry-run
+    python manage.py send_fleet_invite_feedback --user BearThatCares
     python manage.py send_fleet_invite_feedback --send
     python manage.py send_fleet_invite_feedback --remind
     python manage.py send_fleet_invite_feedback --close
@@ -11,7 +12,11 @@ Strategic FCs run. This command is the shell entry for the same helper.
 
 from django.core.management.base import BaseCommand, CommandError
 
-from fleets.helpers.invite_feedback import InviteFeedbackError, run_action
+from fleets.helpers.invite_feedback import (
+    InviteFeedbackError,
+    run_action,
+    send_one,
+)
 
 
 class Command(BaseCommand):
@@ -39,8 +44,19 @@ class Command(BaseCommand):
             action="store_true",
             help="Stop new answers.",
         )
+        group.add_argument(
+            "--user",
+            metavar="USERNAME",
+            help=(
+                "Send the form to this account only. Does not open the "
+                "real round."
+            ),
+        )
 
     def handle(self, *args, **options):
+        if options["user"]:
+            self.stdout.write(send_one(options["user"]))
+            return
         if options["dry_run"]:
             action, confirm = "preview", False
         elif options["send"]:

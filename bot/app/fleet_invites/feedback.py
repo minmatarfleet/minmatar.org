@@ -1,4 +1,4 @@
-"""Discord command that sends the fleet invite feedback form."""
+"""Discord command to preview, remind, or close fleet invite feedback."""
 
 from __future__ import annotations
 
@@ -70,16 +70,17 @@ def register_fleet_invite_feedback(tree: app_commands.CommandTree, guilds):
     @tree.command(
         guilds=guilds,
         name="fleet-invite-feedback",
-        description=("Preview, send, remind, or close the fleet invite feedback form"),
+        description=(
+            "Preview, remind, or close the fleet invite feedback form"
+        ),
     )
     @app_commands.describe(
-        action="Preview who would get it, send it, remind, or close it",
-        confirm="Required to send, remind, or close",
+        action="Preview who would get it, remind, or close it",
+        confirm="Required to remind or close",
     )
     @app_commands.choices(
         action=[
             app_commands.Choice(name="Preview", value="preview"),
-            app_commands.Choice(name="Send", value="send"),
             app_commands.Choice(name="Remind", value="remind"),
             app_commands.Choice(name="Close", value="close"),
         ]
