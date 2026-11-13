@@ -12148,7 +12148,9 @@
             ],
             "default": {
               "brackets": [],
-              "source": null
+              "secondary": [],
+              "source": null,
+              "weekend": []
             }
           },
           "user_id": {
@@ -40466,7 +40468,7 @@
         "type": "object"
       },
       "TimezoneTag": {
-        "description": "A pilot's timezones as every page shows them: the bracket codes\n(USTZ, EUTZ+, ...) and where they came from, \"activity\" or \"declared\".\nNo brackets means nothing is known yet.",
+        "description": "A pilot's timezones as every page shows them: the bracket codes\n(USTZ, EUTZ+, ...) and where they came from, \"activity\" or \"declared\".\nNo brackets means nothing is known yet.\n\n``secondary`` are the brackets outside the pilot's home region (a US\npilot who also flies EU evenings), and ``weekend`` the brackets they\nplay almost only on Friday to Sunday evenings. Both are subsets of\n``brackets``; pages show them muted.",
         "properties": {
           "brackets": {
             "default": [],
@@ -40474,6 +40476,14 @@
               "type": "string"
             },
             "title": "Brackets",
+            "type": "array"
+          },
+          "secondary": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Secondary",
             "type": "array"
           },
           "source": {
@@ -40486,6 +40496,14 @@
               }
             ],
             "title": "Source"
+          },
+          "weekend": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Weekend",
+            "type": "array"
           }
         },
         "title": "TimezoneTag",

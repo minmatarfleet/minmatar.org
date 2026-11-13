@@ -7,8 +7,9 @@ import { timezone_description } from '@helpers/timezones'
 
 /**
  * A pilot's timezones, the same on every page: one tag per bracket (solid
- * from activity, dashed when only declared), "No TZ yet" when nothing is
- * known, or "On Leave" in its place where leave matters.
+ * from activity, dashed when only declared, muted when it is outside their
+ * home region or weekend only), "No TZ yet" when nothing is known, or
+ * "On Leave" in its place where leave matters.
  */
 interface Props {
     timezone?:              TimezoneTag | null;
@@ -26,6 +27,16 @@ delete attributes.class
 
 const brackets = timezone?.brackets ?? []
 const declared = timezone?.source === 'declared'
+const secondary = new Set(timezone?.secondary ?? [])
+const weekend = new Set(timezone?.weekend ?? [])
+
+function tag_title(code:string) {
+    const notes = [
+        secondary.has(code) && t('timezones.secondary'),
+        weekend.has(code) && t('timezones.weekend_only'),
+    ].filter(Boolean)
+    return notes.length > 0 ? `${timezone_description(code, t)}: ${notes.join(', ')}` : undefined
+}
 const title = brackets.length > 0
     ? `${brackets.map(code => timezone_description(code, t)).join(', ')}. ${declared ? t('timezones.declared') : t('timezones.from_activity')}`
     : t('timezones.no_tz_yet_hint')
@@ -35,7 +46,12 @@ const title = brackets.length > 0
     {on_leave ?
         <span class="[ tz-tag tz-tag--leave ]">{t('timezones.on_leave')}</span> :
     brackets.length > 0 ?
-        brackets.map(code => <span class:list={['[ tz-tag ]', { 'tz-tag--declared': declared }]}>{code}</span>) :
+        brackets.map(code =>
+            <span
+                class:list={['[ tz-tag ]', { 'tz-tag--declared': declared, 'tz-tag--minor': secondary.has(code) || weekend.has(code) }]}
+                title={tag_title(code)}
+            >{code}</span>
+        ) :
         <span class="[ tz-tag tz-tag--none ]">{t('timezones.no_tz_yet')}</span>
     }
 </span>
@@ -62,6 +78,12 @@ const title = brackets.length > 0
         border-style: dashed;
         border-color: var(--hairline-strong);
         color: var(--foreground);
+    }
+
+    .tz-tag--minor {
+        border-color: var(--hairline-medium);
+        color: var(--text-muted);
+        font-weight: 500;
     }
 
     .tz-tag--none {

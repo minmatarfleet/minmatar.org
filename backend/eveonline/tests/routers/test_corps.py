@@ -385,11 +385,16 @@ class CorporationRouterTestCase(TestCase):
         )
         self.assertEqual(40005, recruiter_rows[0]["character_id"])
         self.assertEqual(
-            {"brackets": ["EUTZ"], "source": "activity"},
+            {
+                "brackets": ["EUTZ"],
+                "source": "activity",
+                "secondary": [],
+                "weekend": [],
+            },
             recruiter_rows[0]["timezone"],
         )
         self.assertEqual(
-            {"brackets": [], "source": None},
+            {"brackets": [], "source": None, "secondary": [], "weekend": []},
             by_role["ceo"][0]["timezone"],
         )
         self.assertEqual(
@@ -657,7 +662,12 @@ class CorporationRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         row = response.json()[0]
         self.assertEqual(
-            {"brackets": ["USTZ", "USTZ+"], "source": "activity"},
+            {
+                "brackets": ["USTZ", "USTZ+"],
+                "source": "activity",
+                "secondary": [],
+                "weekend": [],
+            },
             row["timezone"],
         )
         self.assertNotIn("prime_time", row)

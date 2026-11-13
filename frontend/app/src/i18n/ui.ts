@@ -5947,6 +5947,8 @@ export const ui = {
         'timezones.no_tz_yet_hint': 'No activity or declared prime time yet',
         'timezones.from_activity': 'From when they fly, fight and are on comms',
         'timezones.declared': 'Declared, not enough activity yet',
+        'timezones.secondary': 'outside their home timezone',
+        'timezones.weekend_only': 'weekends only',
         'timezones.on_leave': 'On Leave',
         'timezones.USTZ': 'US evening',
         'timezones.USTZ+': 'US late night',

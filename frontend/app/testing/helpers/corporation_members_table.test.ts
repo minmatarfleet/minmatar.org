@@ -39,7 +39,7 @@ describe('corporation member table', () => {
                 primary_character_name: 'Director Dan',
                 fleets_90d: 4,
                 registered: true,
-                timezone: { brackets: ['EUTZ'], source: 'activity' },
+                timezone: { brackets: ['EUTZ'], source: 'activity', secondary: [], weekend: [] },
             }),
             member({
                 character_id: 1,
@@ -49,7 +49,7 @@ describe('corporation member table', () => {
                 primary_character_name: 'Director Dan',
                 fleets_90d: 1,
                 token_count: 1,
-                timezone: { brackets: ['EUTZ'], source: 'activity' },
+                timezone: { brackets: ['EUTZ'], source: 'activity', secondary: [], weekend: [] },
             }),
             member({
                 character_id: 9,
@@ -77,7 +77,7 @@ describe('corporation member table', () => {
                 character_name: 'Alt Ace',
                 primary_character_id: 1,
                 primary_character_name: 'Director Dan',
-                timezone: { brackets: ['EUTZ'], source: 'activity' },
+                timezone: { brackets: ['EUTZ'], source: 'activity', secondary: [], weekend: [] },
             }),
             member({
                 character_id: 3,
@@ -104,17 +104,17 @@ describe('corporation member table', () => {
             member({
                 character_id: 1,
                 character_name: 'Ann',
-                timezone: { brackets: ['EUTZ'], source: 'activity' },
+                timezone: { brackets: ['EUTZ'], source: 'activity', secondary: [], weekend: [] },
             }),
             member({
                 character_id: 2,
                 character_name: 'Zed',
-                timezone: { brackets: ['USTZ+'], source: 'declared' },
+                timezone: { brackets: ['USTZ+'], source: 'declared', secondary: [], weekend: [] },
             }),
             member({
                 character_id: 3,
                 character_name: 'Mia',
-                timezone: { brackets: [], source: null },
+                timezone: { brackets: [], source: null, secondary: [], weekend: [] },
             }),
         ])
         const sorted = sort_corporation_member_rows(grouped, 'timezone')
@@ -157,9 +157,9 @@ describe('corporation member table', () => {
 
     it('filters by timezone and community status, searching alts too', () => {
         const rows = group_corporation_members([
-            member({ character_id: 1, character_name: 'Director Dan', user_name: 'dan', primary_character_id: 1, primary_character_name: 'Director Dan', timezone: { brackets: ['EUTZ'], source: 'activity' }, community_status: 'active' }),
+            member({ character_id: 1, character_name: 'Director Dan', user_name: 'dan', primary_character_id: 1, primary_character_name: 'Director Dan', timezone: { brackets: ['EUTZ'], source: 'activity', secondary: [], weekend: [] }, community_status: 'active' }),
             member({ character_id: 2, character_name: 'Alt Ace', user_name: 'dan', primary_character_id: 1, primary_character_name: 'Director Dan' }),
-            member({ character_id: 3, character_name: 'Trial Tom', user_name: 'tom', primary_character_id: 3, primary_character_name: 'Trial Tom', timezone: { brackets: ['USTZ+'], source: 'declared' }, community_status: 'trial' }),
+            member({ character_id: 3, character_name: 'Trial Tom', user_name: 'tom', primary_character_id: 3, primary_character_name: 'Trial Tom', timezone: { brackets: ['USTZ+'], source: 'declared', secondary: [], weekend: [] }, community_status: 'trial' }),
             member({ character_id: 4, character_name: 'Quiet Quinn', user_name: 'quinn', primary_character_id: 4, primary_character_name: 'Quiet Quinn' }),
         ])
         const names = (filters: Parameters<typeof filter_corporation_member_rows>[1]) =>
@@ -177,10 +177,10 @@ describe('corporation member table', () => {
 
     it('keeps the person timezone from whichever character carries it', () => {
         const [row] = group_corporation_members([
-            member({ character_id: 5, character_name: 'Main', user_name: 'd', primary_character_id: 5, timezone: { brackets: [], source: null } }),
-            member({ character_id: 6, character_name: 'Alt', user_name: 'd', primary_character_id: 5, timezone: { brackets: ['AUTZ'], source: 'declared' } }),
+            member({ character_id: 5, character_name: 'Main', user_name: 'd', primary_character_id: 5, timezone: { brackets: [], source: null, secondary: [], weekend: [] } }),
+            member({ character_id: 6, character_name: 'Alt', user_name: 'd', primary_character_id: 5, timezone: { brackets: ['AUTZ'], source: 'declared', secondary: [], weekend: [] } }),
         ])
-        expect(row.timezone).toEqual({ brackets: ['AUTZ'], source: 'declared' })
+        expect(row.timezone).toEqual({ brackets: ['AUTZ'], source: 'declared', secondary: [], weekend: [] })
     })
 
     it('parses only known timezone filters from the URL', () => {

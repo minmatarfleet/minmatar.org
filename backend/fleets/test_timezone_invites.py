@@ -214,7 +214,13 @@ class CandidateTimezoneTests(TimezoneInviteTestBase):
         ).json()
         pilot = next(row for row in rows if row["kind"] == "pilot")
         self.assertEqual(
-            pilot["timezone"], {"brackets": ["EUTZ"], "source": "activity"}
+            pilot["timezone"],
+            {
+                "brackets": ["EUTZ"],
+                "source": "activity",
+                "secondary": [],
+                "weekend": [],
+            },
         )
 
     def test_corporations_count_members_in_timezone(self):

@@ -28,7 +28,13 @@ from discord.models import DiscordUser
 from eveonline.models import EvePlayer
 from groups.models import UserCommunityStatus
 from timezones.activity import load_events
-from timezones.inference import WINDOW_DAYS, Assessment, assess
+from timezones.brackets import BRACKETS_BY_CODE
+from timezones.inference import (
+    WINDOW_DAYS,
+    Assessment,
+    assess,
+    weekend_only,
+)
 from timezones.models import PilotTimezone
 from timezones.schemas import TimezoneTag
 
@@ -60,7 +66,24 @@ def timezones_for(
 def timezone_tag(row: PilotTimezone | None) -> TimezoneTag:
     if row is None or not row.brackets:
         return TimezoneTag()
-    return TimezoneTag(brackets=list(row.brackets), source=row.home_source)
+    brackets = list(row.brackets)
+    known = [
+        BRACKETS_BY_CODE[code] for code in brackets if code in BRACKETS_BY_CODE
+    ]
+    return TimezoneTag(
+        brackets=brackets,
+        source=row.home_source,
+        secondary=[
+            bracket.code
+            for bracket in known
+            if row.home and bracket.region != row.home
+        ],
+        weekend=[
+            bracket.code
+            for bracket in known
+            if weekend_only(row.evenings or {}, bracket.region, bracket.kind)
+        ],
+    )
 
 
 def timezone_tags_for(
