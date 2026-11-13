@@ -17,7 +17,7 @@ from app.test import TestCase
 from app.testing import auth_headers
 from discord.models import DiscordUser
 from eveonline.models import EveLocation
-from fleets.helpers.invite_feedback import PROBE_KEY, run_action
+from fleets.helpers.invite_feedback import PROBE_KEY, _dm_context, run_action
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
@@ -37,6 +37,7 @@ from notifications.models import (
     NotificationDeliveryStatus,
     NotificationPreference,
 )
+from notifications.types.fleets import render_fleet_invite_feedback
 from tribes.tests.publishing_fixtures import make_user
 
 SECRET = "SECRET DROP"
@@ -446,6 +447,19 @@ class InviteFeedbackTests(TestCase):
         second = run_action("remind", confirm=True)
         self.assertIn("Reminded 0 pilots", second)
         self.assertIn("already reminded", second)
+
+    def test_dm_asks_for_two_minutes(self, unused_delay, unused_async):
+        payload = render_fleet_invite_feedback(_dm_context(reminder=False))
+        self.assertEqual(
+            payload["discord_message"],
+            (
+                "Hey! You've been invited to a few fleets lately- could "
+                "you take two minutes to share some feedback on the "
+                "process?"
+            ),
+        )
+        button = payload["discord_components"][0]["components"][0]
+        self.assertEqual(button["label"], "Provide feedback")
 
     def test_dry_run_command_writes_nothing(self, unused_delay, unused_async):
         pilot = make_user("pilot")
