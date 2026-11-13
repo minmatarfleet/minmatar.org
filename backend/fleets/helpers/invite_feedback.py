@@ -169,8 +169,13 @@ def send_one(username: str) -> str:
     user = User.objects.filter(username__iexact=name).first()
     if user is None:
         return f"No account named {name}. Nothing was sent."
-    kept, unused_drops = live_cohort()
-    items = kept.get(user.id, [])
+    # A test send lists every invite the pilot ever got, whatever its age or
+    # state, so the DM and form always have something to show.
+    items = list(
+        EveFleetInvite.objects.select_related("eve_fleet")
+        .filter(user=user)
+        .order_by("-eve_fleet__start_time")
+    )
     pending = any(
         item.answer == EveFleetInvite.ANSWER_PENDING for item in items
     )
@@ -200,8 +205,7 @@ def send_one(username: str) -> str:
         return f"Sent the form to {user.username}."
     if delivered:
         return (
-            f"Sent the form to {user.username}. They have no qualifying "
-            "invite in the window."
+            f"Sent the form to {user.username}. They have no fleet " "invites."
         )
     if muted:
         return f"{user.username} has this DM turned off. Nothing was sent."

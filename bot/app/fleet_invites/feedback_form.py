@@ -41,6 +41,7 @@ LABEL_MAX = 45
 DESCRIPTION_MAX = 100
 OPTION_MAX = 100
 COMMENT_MAX = 280
+LISTING_LIMIT = 10
 
 OTHER_HINT = "If you picked Other above, say the reason here."
 LOAD_FAILED = "The form didn't load. Try again, or answer on the website:"
@@ -93,6 +94,31 @@ def _clip(text: str, limit: int) -> str:
     return text[: limit - 1].rstrip() + "…"
 
 
+def modal_title(form: dict) -> str:
+    """Names what the form is about, e.g. "About your 3 fleet invites"."""
+    count = len(form.get("invites") or [])
+    if not count:
+        return TITLE
+    noun = "fleet invite" if count == 1 else "fleet invites"
+    return _clip(f"About your {count} {noun}", LABEL_MAX)
+
+
+def invite_listing(form: dict) -> str:
+    """The pilot's invites as markdown, the same list the DM shows."""
+    invites = (form.get("invites") or [])[:LISTING_LIMIT]
+    if not invites:
+        return ""
+    lines = [
+        f"- {invite['when']} · {invite['title']} · {invite['answer_label']}"
+        for invite in invites
+    ]
+    extra = len(form.get("invites") or []) - len(invites)
+    if extra > 0:
+        lines.append(f"and {extra} more")
+    heading = form.get("list_heading") or "Your invites"
+    return f"**{heading}**\n" + "\n".join(lines)
+
+
 def panel_text(panel: dict) -> str:
     """A closed, not-invited, or thanks panel as one message."""
     parts = [
@@ -107,10 +133,15 @@ class FeedbackModal(discord.ui.Modal):
     """One dropdown per question, then the comment. Built from the API form."""
 
     def __init__(self, form: dict):
-        super().__init__(title=TITLE, timeout=None)
+        super().__init__(title=modal_title(form), timeout=None)
         answers = form.get("answers") or {}
         questions = form.get("questions") or []
         self.selects: dict[str, discord.ui.Select] = {}
+        # The questions and the comment take up to all five items. When one
+        # is free (no open-invites question), the invite list goes first.
+        listing = invite_listing(form)
+        if listing and len(questions[: MAX_FIELDS - 1]) + 2 <= MAX_FIELDS:
+            self.add_item(discord.ui.TextDisplay(listing))
         has_other = False
         for question in questions[: MAX_FIELDS - 1]:
             select = self._select(question, answers.get(question["key"]))
