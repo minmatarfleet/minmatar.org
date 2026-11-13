@@ -16,7 +16,9 @@ from app.test import TestCase
 from app.testing import make_token
 from discord.channels import admin_picker_guilds
 from discord.guild_roles import (
+    ADMINISTRATOR,
     CORPORATION_STATES,
+    MANAGE_ROLES,
     TRIBE_STATES,
     MappingError,
     install_block_reason,
@@ -54,6 +56,16 @@ def member(discord_id, roles, bot=False):
     return {
         "user": {"id": str(discord_id), "bot": bot},
         "roles": [str(role_id) for role_id in roles],
+    }
+
+
+def role(role_id, name, position, permissions=0, managed=False):
+    return {
+        "id": str(role_id),
+        "name": name,
+        "position": position,
+        "permissions": str(permissions),
+        "managed": managed,
     }
 
 
@@ -339,31 +351,91 @@ class MappingSaveTestCase(GuildRoleFixture):
 
 
 class SnapshotAndPickerTestCase(GuildRoleFixture):
+    def _snapshot(self, client, member_roles, roles):
+        """Store a snapshot. The member payload has no permissions field,
+        matching GET /guilds/{id}/members/{id}."""
+        self.guild.can_manage_roles = False
+        self.guild.save(update_fields=["can_manage_roles"])
+        client.get_current_user.return_value = {"id": "5"}
+        client.get_user.return_value = {
+            "roles": [str(role_id) for role_id in member_roles],
+        }
+        client.get_roles.return_value = roles
+        self.assertTrue(snapshot_guild_roles(self.guild))
+        self.guild.refresh_from_db()
+
     @patch(CLIENT)
     def test_snapshot_marks_roles_the_bot_can_assign(self, client_cls):
         client = client_cls.for_guild.return_value
-        client.get_current_user.return_value = {"id": "5"}
-        client.get_user.return_value = {
-            "roles": ["2"],
-            "permissions": str(1 << 28),
-        }
-        client.get_roles.return_value = [
-            {"id": "4242", "name": "@everyone", "position": 0},
-            {"id": "2", "name": "Bot", "position": 5, "managed": True},
-            {"id": str(ROLE_MEMBER), "name": "Members", "position": 1},
-            {"id": str(ROLE_DIRECTOR), "name": "High", "position": 6},
-        ]
         self.map("director", ROLE_DIRECTOR)
-        self.assertTrue(snapshot_guild_roles(self.guild))
-        self.guild.refresh_from_db()
+        self._snapshot(
+            client,
+            ["2"],
+            [
+                role("4242", "@everyone", 0),
+                role("2", "Bot", 5, MANAGE_ROLES, managed=True),
+                role(ROLE_MEMBER, "Members", 1),
+                role(ROLE_DIRECTOR, "High", 6),
+            ],
+        )
         by_id = {row["id"]: row for row in self.guild.roles}
+        self.assertTrue(self.guild.can_manage_roles)
         self.assertTrue(by_id[str(ROLE_MEMBER)]["assignable"])
         self.assertFalse(by_id[str(ROLE_DIRECTOR)]["assignable"])
         self.assertFalse(by_id["4242"]["assignable"])
+        self.assertFalse(by_id["2"]["assignable"])
         self.assertEqual(
             "above_bot",
             self.guild.role_mappings.get(state="director").problem,
         )
+
+    @patch(CLIENT)
+    def test_snapshot_ignores_manage_roles_the_bot_does_not_hold(
+        self, client_cls
+    ):
+        client = client_cls.for_guild.return_value
+        self._snapshot(
+            client,
+            ["2"],
+            [
+                role("4242", "@everyone", 0),
+                role("2", "Bot", 5, 1 | (1 << 10), managed=True),
+                role("9", "Mods", 4, MANAGE_ROLES),
+                role(ROLE_MEMBER, "Members", 1),
+            ],
+        )
+        self.assertFalse(self.guild.can_manage_roles)
+        self.assertTrue(self.guild.roles)
+        self.assertFalse(any(row["assignable"] for row in self.guild.roles))
+
+    @patch(CLIENT)
+    def test_snapshot_counts_administrator_on_the_bot_role(self, client_cls):
+        client = client_cls.for_guild.return_value
+        self._snapshot(
+            client,
+            ["2"],
+            [
+                role("4242", "@everyone", 0),
+                role("2", "Bot", 5, ADMINISTRATOR, managed=True),
+            ],
+        )
+        self.assertTrue(self.guild.can_manage_roles)
+
+    @patch(CLIENT)
+    def test_snapshot_counts_manage_roles_on_everyone(self, client_cls):
+        client = client_cls.for_guild.return_value
+        self._snapshot(
+            client,
+            ["2"],
+            [
+                role("4242", "@everyone", 0, MANAGE_ROLES),
+                role("2", "Bot", 5, managed=True),
+                role(ROLE_MEMBER, "Members", 1),
+            ],
+        )
+        self.assertTrue(self.guild.can_manage_roles)
+        by_id = {row["id"]: row for row in self.guild.roles}
+        self.assertTrue(by_id[str(ROLE_MEMBER)]["assignable"])
 
     def test_a_tribe_server_stays_out_of_admin_channel_pickers(self):
         tribe = Tribe.objects.create(
