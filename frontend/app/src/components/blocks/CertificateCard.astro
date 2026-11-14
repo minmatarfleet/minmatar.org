@@ -35,8 +35,12 @@ const percent = total > 0 ? Math.round((100 * done) / total) : 0
 const slugs_json = JSON.stringify(slugs)
 const href = translatePath(certificatePath(certificate.slug))
 
-const guides_count_text = t(total !== 1 ? 'guides_plural' : 'guides_singular')
-    .replace('{count}', String(total))
+const required = certificate.required_certificates ?? []
+const guides_count_text = required.length > 0
+    ? t('learning_center.certificate.any_of_short')
+        .replace('{n}', String(certificate.required_count ?? required.length))
+        .replace('{total}', String(required.length))
+    : t(total !== 1 ? 'guides_plural' : 'guides_singular').replace('{count}', String(total))
 
 const authors_by_key = new Map<string, Author>()
 for (const learning of certificate.learnings) {
@@ -65,12 +69,12 @@ const sole_author = authors.length === 1 ? authors[0] : undefined
 
             <p class="[ certificate-card__meta ]">
                 <span>{guides_count_text}</span>
-                <span aria-hidden="true">·</span>
-                <span
+                {required.length === 0 && <span aria-hidden="true">·</span>}
+                {required.length === 0 && <span
                     x-text={`typeof certPercent === 'function' ? '${progress_label}: ' + certPercent(${slugs_json}) + '%' : '${progress_label}: ${percent}%'`}
                 >
                     {progress_label}: {percent}%
-                </span>
+                </span>}
             </p>
 
             <div class="[ certificate-card__authors ]">

@@ -48,7 +48,7 @@ const beacon_ring = 15 * MJFG_MAP.per_km
                 <circle r="1.8" cx={grid_x(ship.position.x)} cy={grid_y(ship.position.y)}
                     class={ship.scrammed ? 'ink-red' : 'ink-muted'}
                     x-bind:class={ship.scrammed ? `'ink-red'` : `r().jumped.has('${ship.id}') ? 'ink-yellow' : 'ink-muted'`} />
-                <text class="ink-text" font-size="2.8" x={grid_x(ship.position.x) + 2.4} y={grid_y(ship.position.y) + 1}>{ship.id}</text>
+                <text class="ink-text" font-size="3.4" x={grid_x(ship.position.x) + 2.4} y={grid_y(ship.position.y) + 1}>{ship.id}</text>
             </g>
         ))}
         <g x-bind:transform="`translate(${gx(state.x_km)} ${gy(state.y_km)}) rotate(${-state.heading})`" transform={`translate(${grid_x(-3)} ${grid_y(0)})`}>
@@ -58,23 +58,23 @@ const beacon_ring = 15 * MJFG_MAP.per_km
         </g>
         <g transform="translate(6 94)">
             <line class="ink-yellow-stroke" x1="0" y1="0" x2={MJFG_GRID.per_km * 2} y2="0" stroke-width="0.5" />
-            <text class="ink-muted" x={MJFG_GRID.per_km * 2 + 2} y="1.2" font-size="3">2 km</text>
+            <text class="ink-muted" x={MJFG_GRID.per_km * 2 + 2} y="1.2" font-size="3.4">2 km</text>
         </g>
 
         <rect class="ink-grid" x="101" y="1" width="98" height="98" stroke-width="0.3" />
         <text class="ink-muted" x="103" y="6" font-size="3.4">Where you land</text>
         <circle class="ink-zone" r={beacon_ring} cx={map_x(MJFG_BEACON.x)} cy={map_y(MJFG_BEACON.y)} stroke-width="0.3" />
         <circle class="ink-blue" r="1.6" cx={map_x(MJFG_BEACON.x)} cy={map_y(MJFG_BEACON.y)} />
-        <text class="ink-text" font-size="3" x={map_x(MJFG_BEACON.x) + 3} y={map_y(MJFG_BEACON.y) - 7}>safe beacon</text>
+        <text class="ink-text" font-size="3.4" x={map_x(MJFG_BEACON.x) + 3} y={map_y(MJFG_BEACON.y) - 7}>safe beacon</text>
         <circle class="ink-red" r="2.4" cx={map_x(MJFG_HOSTILES.x)} cy={map_y(MJFG_HOSTILES.y)} />
-        <text class="ink-text" font-size="3" x={map_x(MJFG_HOSTILES.x) - 6} y={map_y(MJFG_HOSTILES.y) + 6}>hostiles</text>
+        <text class="ink-text" font-size="3.4" x={map_x(MJFG_HOSTILES.x) - 6} y={map_y(MJFG_HOSTILES.y) + 6}>hostiles</text>
         <circle class="ink-muted" r="1.4" cx={map_x(0)} cy={map_y(0)} />
         <line class="ink-yellow-stroke" stroke-width="0.4" stroke-dasharray="1.2 0.8"
             x1={map_x(0)} y1={map_y(0)} x-bind:x2="mx(r().landing_km.x)" x-bind:y2="my(r().landing_km.y)" x2={map_x(97)} y2={map_y(0)} />
         <circle class="ink-yellow" r="1.8" x-bind:cx="mx(r().landing_km.x)" x-bind:cy="my(r().landing_km.y)" cx={map_x(97)} cy={map_y(0)} />
         <g transform="translate(106 94)">
             <line class="ink-yellow-stroke" x1="0" y1="0" x2={MJFG_MAP.per_km * 25} y2="0" stroke-width="0.5" />
-            <text class="ink-muted" x={MJFG_MAP.per_km * 25 + 2} y="1.2" font-size="3">25 km</text>
+            <text class="ink-muted" x={MJFG_MAP.per_km * 25 + 2} y="1.2" font-size="3.4">25 km</text>
         </g>
     </svg>
 

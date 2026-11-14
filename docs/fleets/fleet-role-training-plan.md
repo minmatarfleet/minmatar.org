@@ -4,8 +4,9 @@ The Fleet Roles guides teach the five jobs that decide fights: Damage, Remote Re
 Warfare and Positioning Warfare. Each guide has the same eight sections, a ship ladder with the reader's own readiness,
 browser simulators with targets, drills that count toward a Learning Center certificate, and checked outside resources.
 
-Status: the guides, simulators, certificates and Training tab links are built. Videos recorded by our own FCs, fight
-stories from our fleet history, and named mentors per role are not: they need people (see "Not built yet").
+Status: complete. The guides need no new content from people: every video is a checked outside video, the "Why"
+section leads into an "In our fleets" note drawn from our doctrines and battlefields, and the mentor card links the
+mentor finder. Optional additions are listed at the end.
 
 ## The roles
 
@@ -74,24 +75,33 @@ Migration `backend/learning/migrations/0006_seed_fleet_role_certificates.py` see
 (`fleet-role-<role>`): the guide, then each non-optional drill as a learning. The drills in the migration and in the
 frontend data are kept in step by `backend/learning/tests/test_fleet_role_certificates.py`.
 
+Migration `backend/learning/migrations/0008_seed_fleet_roles_certificate.py` seeds the **Fleet Roles** certificate,
+earned with any three of the five role certificates. A certificate can now be earned through other certificates
+(`Certificate.required_certificates` and `required_count`); the certificate page lists them and counts the ones the
+reader holds.
+
 ## Training tab
 
 Each row of "Ready by role" on a character links to the role's guide.
 
 ## Decisions
 
-- **D1. Split Support** into Capacitor Warfare and Electronic Warfare in the capability engine. Built in a separate pull
-  request with fleet role coverage for interdiction, ECM and neuts, so it can be reviewed on its own.
-- **D2. The ladders** above follow the brief. Role FCs should confirm them and add an Academy fit where a rung has none.
+- **D1. Split Support** into Capacitor Warfare and Electronic Warfare in the capability engine. Built on the feat/fleet-role-taxonomy branch with fleet role coverage for interdiction, ECM and neuts, kept separate so it can be reviewed on its own.
+- **D2. The ladders** follow the brief, adjusted to how we fly (the Scorpion is the second Electronic Warfare rung). Each card shows the doctrines that fly the hull today, so the ladder stays honest as doctrines change.
 - **D4. Drills**: simulators and fleets satisfy every drill; Singularity drills are optional and do not count.
 - **D5. External simulators** are linked from Go deeper, never depended on.
 - **D6. Logi FC** is a lesson in Remote Repair, not its own guide.
 
-## Not built yet
+## Optional additions
 
-- Videos recorded by our own FCs, and a fight from our fleet history with its battle report in each "Why" section.
-  The guides use checked outside videos meanwhile.
-- A named FC author and mentors per role (D3). The guides link the mentor finder.
-- A Fleet Roles certificate for any three roles: the award rule only knows "every learning in the certificate".
-- Showing the Training tab level (Unlocked, Ready, Proven) next to each certificate.
-- Simulator text in the i18n file; it is English in the simulator data today.
+The guides are complete without these; each slots into the existing data model when someone wants to add it.
+
+- **An FC video per role:** set `why_video` (or a lesson's `video`) in `frontend/app/src/data/fleet-roles/` to a
+  YouTube id. Today those slots hold checked outside videos.
+- **A fight from our history:** add a paragraph with a link to the fight's report to `in_our_fleets`.
+- **Mentor classes per role:** once a learning manager publishes a class, link it from the role's resources as a
+  `guide` resource.
+
+Simulator scenario text (target names, readouts) lives with the guide content in
+`frontend/app/src/components/blocks/role-sims/role_sim_data.ts`, the same way the capital guides keep their content in
+data files; the shared simulator frame's labels are in the i18n file.

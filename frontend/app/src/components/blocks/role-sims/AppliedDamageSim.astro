@@ -42,15 +42,15 @@ const approach_options = Object.entries(APPROACHES).map(([value, approach]) => (
     <svg slot="picture" viewBox="0 0 200 86" role="img" aria-label="Share of paper damage that lands at each range for the chosen ammo and approach">
         <rect class="ink-zone" y={box.y} height={box.height} stroke-width="0.25" x={box.x} width="0"
             x-bind:width="Math.max(0, Math.min(rx(r().optimal_km), rx(90)) - rx(0))" />
-        <text class="ink-muted" font-size="2.8" y={box.y + 4} x={box.x + 1}>optimal</text>
+        <text class="ink-muted" font-size="3.4" y={box.y + 4} x={box.x + 1}>optimal</text>
         {ticks(box, 'y', 25).map((t) => (
             <g>
                 <line class="ink-grid" x1={box.x} x2={box.x + box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
-                <text class="ink-muted" x={box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+                <text class="ink-muted" x={box.x - 2} y={t.at + 1} font-size="3.4" text-anchor="end">{t.value}</text>
             </g>
         ))}
         {ticks(box, 'x', 10).map((t) => (
-            <text class="ink-muted" x={t.at} y={box.y + box.height + 5} font-size="2.8" text-anchor="middle">{t.value} km</text>
+            <text class="ink-muted" x={t.at} y={box.y + box.height + 5} font-size="3.4" text-anchor="middle">{t.value} km</text>
         ))}
         <polyline class="ink-yellow-stroke" stroke-width="0.7" x-bind:points="curve_points()" points="" />
         <line class="ink-line" stroke-width="0.4" y1={box.y} y2={box.y + box.height} x1="0" x2="0"

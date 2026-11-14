@@ -22,6 +22,8 @@ const certificate: LearningCertificate = {
             order: 1,
         },
     ],
+    required_certificates: [],
+    required_count: null,
 }
 
 test('Open is a button without href/target so tip modal is not raced by native navigation', async () => {
@@ -39,4 +41,30 @@ test('Open is a button without href/target so tip modal is not raced by native n
     expect(result).toMatch(/<button[^>]*class="\[ button \] \[ learning-card__open \]"/)
     expect(result).not.toMatch(/href="https:\/\/wiki\.minmatar\.org\/plexing"/)
     expect(result).not.toMatch(/learning-card__open[^>]*target="_blank"/)
+})
+
+test('A certificate earned through others lists them and marks the ones held', async () => {
+    const container = await AstroContainer.create()
+    const result = await container.renderToString(LearningCertificateDetail, {
+        props: {
+            certificate: {
+                ...certificate,
+                slug: 'fleet-roles',
+                learnings: [],
+                learning_count: 0,
+                required_certificates: [
+                    { slug: 'fleet-role-damage', title: 'Damage' },
+                    { slug: 'fleet-role-remote-repair', title: 'Remote Repair' },
+                ],
+                required_count: 1,
+            },
+            completed_slugs: [],
+            auth_token: '',
+            percent: 100,
+            held_slugs: ['fleet-role-damage'],
+        },
+    })
+    expect(result).toContain('Earn any 1 of these certificates')
+    expect(result).toContain('/learning/certificates/fleet-role-remote-repair/')
+    expect(result).toMatch(/data-held="true"[^>]*>\s*<span[^>]*>✓/)
 })

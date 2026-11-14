@@ -5439,6 +5439,25 @@
             "title": "Personas",
             "type": "array"
           },
+          "required_certificates": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RequiredCertificateSchema"
+            },
+            "title": "Required Certificates",
+            "type": "array"
+          },
+          "required_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Count"
+          },
           "slug": {
             "title": "Slug",
             "type": "string"
@@ -38346,6 +38365,24 @@
           "rejected"
         ],
         "title": "RequestsBreakdown",
+        "type": "object"
+      },
+      "RequiredCertificateSchema": {
+        "properties": {
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "title"
+        ],
+        "title": "RequiredCertificateSchema",
         "type": "object"
       },
       "RequirementCapabilityOption": {

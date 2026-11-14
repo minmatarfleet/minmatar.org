@@ -9,9 +9,11 @@
  *   controls - SimRange / SimChoice inputs
  *   readout  - text bound to r(); announced through aria-live
  */
+import { i18n } from '@helpers/i18n'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import type { TargetSpec } from '@helpers/sims/scenarios'
 
 interface Props {
@@ -36,7 +38,11 @@ const {
 
 delete attributes.class
 
+const { t } = i18n(Astro.url)
 const heading_id = `role-sim-${sim_id}-title`
+const of_word = t('fleet_roles.sim_of')
+const done_word = t('fleet_roles.sim_done')
+const not_yet_word = t('fleet_roles.sim_not_yet')
 ---
 
 <ComponentBlock
@@ -53,13 +59,13 @@ const heading_id = `role-sim-${sim_id}-title`
     <Flexblock gap="var(--space-s)">
         <header class="role-sim__header">
             <h3 id={heading_id} class="role-sim__title">{title}</h3>
-            <span class="role-sim__beaten" x-show="beaten" x-cloak>Beaten</span>
+            <span class="role-sim__beaten" x-show="beaten" x-cloak>{t('fleet_roles.sim_beaten')}</span>
         </header>
         <p class="role-sim__summary">{summary}</p>
 
-        <div class="role-sim__picture">
+        <XFadeScroll class="role-sim__picture">
             <slot name="picture" />
-        </div>
+        </XFadeScroll>
 
         <FluidFixed width={compact ? '100%' : '20rem'} gap="var(--space-m)" class="role-sim__body">
             <Flexblock gap="var(--space-s)" class="role-sim__main">
@@ -75,20 +81,20 @@ const heading_id = `role-sim-${sim_id}-title`
             <Flexblock gap="var(--space-s)" class="role-sim__side">
                 <div class="role-sim__targets">
                     <h4 class="role-sim__targets-title">
-                        Targets <span class="role-sim__count" x-text={`ticked() + ' of ${targets.length}'`}>0 of {targets.length}</span>
+                        {t('fleet_roles.sim_targets')} <span class="role-sim__count" x-text={`ticked() + ' ${of_word} ${targets.length}'`}>0 {of_word} {targets.length}</span>
                     </h4>
                     <ul class="role-sim__target-list" role="list">
                         {targets.map((target) => (
                             <li class="role-sim__target" x-bind:data-done={`done['${target.id}'] ? 'true' : 'false'`} data-done="false">
                                 <span class="role-sim__tick" aria-hidden="true"></span>
                                 <span>{target.label}</span>
-                                <span class="visually-hidden" x-text={`done['${target.id}'] ? '(done)' : '(not yet)'`}>(not yet)</span>
+                                <span class="visually-hidden" x-text={`done['${target.id}'] ? '(${done_word})' : '(${not_yet_word})'`}>({not_yet_word})</span>
                             </li>
                         ))}
                     </ul>
                 </div>
 
-                <button type="button" class="role-sim__reset" x-on:click="reset()">Reset</button>
+                <button type="button" class="role-sim__reset" x-on:click="reset()">{t('fleet_roles.sim_reset')}</button>
             </Flexblock>
         </FluidFixed>
     </Flexblock>
@@ -148,9 +154,22 @@ const heading_id = `role-sim-${sim_id}-title`
         svg {
             display: block;
             inline-size: 100%;
+
             block-size: auto;
             max-block-size: 30rem;
             margin-inline: auto;
+        }
+    }
+
+    .role-sim {
+        container-type: inline-size;
+    }
+
+    /* On a phone the labels would shrink under 10px: keep the picture at a
+       readable width and let it scroll inside the fade instead. */
+    @container (max-width: 30rem) {
+        .role-sim__picture svg {
+            min-inline-size: 36rem;
         }
     }
 

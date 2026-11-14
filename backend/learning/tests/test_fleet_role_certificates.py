@@ -4,9 +4,16 @@ import importlib
 import re
 from pathlib import Path
 
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 
-from learning.models import Certificate, CertificateLearning, Learning
+from learning.helpers import mark_learning_complete
+from learning.models import (
+    Certificate,
+    CertificateLearning,
+    Learning,
+    UserCertificateAward,
+)
 
 migration = importlib.import_module(
     "learning.migrations.0006_seed_fleet_role_certificates"
@@ -75,3 +82,50 @@ class FleetRoleCertificatesTestCase(TestCase):
                 [drill[0] for drill in role["drills"]],
                 role["role"],
             )
+
+
+class FleetRolesUmbrellaCertificateTestCase(TestCase):
+    """Fleet Roles: any three of the five role certificates (migration 0008)."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="pilot")
+
+    def _finish(self, role):
+        slugs = [role["guide_slug"]] + [
+            migration.drill_slug(role["role"], drill[0])
+            for drill in role["drills"]
+        ]
+        for slug in slugs:
+            mark_learning_complete(self.user, Learning.objects.get(slug=slug))
+
+    def _held(self):
+        return set(
+            UserCertificateAward.objects.filter(user=self.user).values_list(
+                "certificate__slug", flat=True
+            )
+        )
+
+    def test_two_roles_are_not_enough_and_three_are(self):
+        for role in migration.FLEET_ROLES[:2]:
+            self._finish(role)
+        self.assertNotIn("fleet-roles", self._held())
+        self._finish(migration.FLEET_ROLES[2])
+        held = self._held()
+        self.assertIn("fleet-roles", held)
+        self.assertEqual(
+            len([s for s in held if s.startswith("fleet-role-")]), 3
+        )
+
+    def test_served_with_its_required_certificates(self):
+        response = Client().get("/api/learning/certificates/fleet-roles")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["required_count"], 3)
+        self.assertEqual(
+            [c["slug"] for c in data["required_certificates"]],
+            [
+                migration.certificate_slug(role["role"])
+                for role in migration.FLEET_ROLES
+            ],
+        )
+        self.assertEqual(data["learnings"], [])

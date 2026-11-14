@@ -42,20 +42,20 @@ const call_options = [
     {...attributes}
 >
     <svg slot="picture" viewBox="0 0 200 92" role="img" aria-label="The anchor's armor over 60 seconds">
-        <text class="ink-muted" x={box.x} y={box.y - 3} font-size="3.2">Anchor armor %</text>
+        <text class="ink-muted" x={box.x} y={box.y - 3} font-size="3.4">Anchor armor %</text>
         {ticks(box, 'y', 25).map((t) => (
             <g>
                 <line class="ink-grid" x1={box.x} x2={box.x + box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
-                <text class="ink-muted" x={box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+                <text class="ink-muted" x={box.x - 2} y={t.at + 1} font-size="3.4" text-anchor="end">{t.value}</text>
             </g>
         ))}
         {ticks(box, 'x', 10).map((t) => (
-            <text class="ink-muted" x={t.at} y={box.y + box.height + 5} font-size="2.8" text-anchor="middle">{t.value}s</text>
+            <text class="ink-muted" x={t.at} y={box.y + box.height + 5} font-size="3.4" text-anchor="middle">{t.value}s</text>
         ))}
         <line class="ink-green-stroke" stroke-width="0.4" stroke-dasharray="1 0.8"
             x-show="r().sim.first_rep_at !== null && r().sim.first_rep_at <= 60"
             x-bind:x1="tx(r().sim.first_rep_at ?? 0)" x-bind:x2="tx(r().sim.first_rep_at ?? 0)" y1={box.y} y2={box.y + box.height} x1="0" x2="0" />
-        <text class="ink-green" font-size="2.8" y={box.y + 4} x="0"
+        <text class="ink-green" font-size="3.4" y={box.y + 4} x="0"
             x-show="r().sim.first_rep_at !== null && r().sim.first_rep_at <= 60"
             x-bind:x="tx(r().sim.first_rep_at ?? 0) + 1">first rep</text>
         <polyline stroke-width="0.7" x-bind:class="r().sim.survived ? 'ink-yellow-stroke' : 'ink-red-stroke'" x-bind:points="hp_points()" points="" />

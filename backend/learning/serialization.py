@@ -3,6 +3,7 @@ from learning.schemas import (
     CertificateAwardSchema,
     CertificateSchema,
     LearningSchema,
+    RequiredCertificateSchema,
 )
 
 
@@ -41,6 +42,12 @@ def serialize_certificate(certificate: Certificate) -> CertificateSchema:
         personas=list(certificate.personas or []),
         learnings=learnings,
         learning_count=len(learnings),
+        required_certificates=[
+            RequiredCertificateSchema(slug=c.slug, title=c.title)
+            for c in certificate.required_certificates.order_by("sort_order")
+            if c.published
+        ],
+        required_count=certificate.required_count,
     )
 
 

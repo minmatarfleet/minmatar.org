@@ -12386,6 +12386,13 @@ export interface components {
             learnings: components["schemas"]["LearningSchema"][];
             /** Personas */
             personas: string[];
+            /**
+             * Required Certificates
+             * @default []
+             */
+            required_certificates?: components["schemas"]["RequiredCertificateSchema"][];
+            /** Required Count */
+            required_count?: number | null;
             /** Slug */
             slug: string;
             /** Sort Order */
@@ -25440,6 +25447,13 @@ export interface components {
             rejected: number;
             /** Total */
             total: number;
+        };
+        /** RequiredCertificateSchema */
+        RequiredCertificateSchema: {
+            /** Slug */
+            slug: string;
+            /** Title */
+            title: string;
         };
         /** RequirementCapabilityOption */
         RequirementCapabilityOption: {

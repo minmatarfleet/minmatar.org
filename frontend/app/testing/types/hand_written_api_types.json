@@ -200,7 +200,6 @@
       "PageProgressImportResult": "closest backend schema ImportedPageResult, no field or null drift found; alias it when its domain is next changed",
       "PageProgressImportResponse": "closest backend schema ImportPagesResponse, no field or null drift found; alias it when its domain is next changed",
       "LearningItem": "closest backend schema LearningSchema, no field or null drift found; alias it when its domain is next changed",
-      "LearningCertificate": "closest backend schema CertificateSchema, no field or null drift found; alias it when its domain is next changed",
       "LearningCertificateAward": "closest backend schema CertificateAwardSchema, no field or null drift found; alias it when its domain is next changed",
       "LearningPersonaRecommendation": "closest backend schema PersonaRecommendationSchema, no field or null drift found; alias it when its domain is next changed",
       "LearningPersonaResponse": "closest backend schema PersonaResponse, no field or null drift found; alias it when its domain is next changed",

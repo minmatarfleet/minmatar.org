@@ -143,6 +143,8 @@ def recompute_awards_for_user(
     for certificate in cert_qs.prefetch_related(
         "certificate_learnings__learning"
     ):
+        if certificate.required_certificates.exists():
+            continue
         required = set(certificate_published_learning_ids(certificate))
         if not required:
             continue
@@ -155,6 +157,42 @@ def recompute_awards_for_user(
         if created:
             awarded.append(award)
 
+    awarded += _award_certificates_of_certificates(user, completed)
+    return awarded
+
+
+def _award_certificates_of_certificates(
+    user, completed: set[int]
+) -> list[UserCertificateAward]:
+    """Award certificates earned through other certificates."""
+    held = set(
+        UserCertificateAward.objects.filter(user=user).values_list(
+            "certificate_id", flat=True
+        )
+    )
+    awarded = []
+    for certificate in (
+        Certificate.objects.filter(
+            published=True, required_certificates__isnull=False
+        )
+        .exclude(pk__in=held)
+        .distinct()
+        .prefetch_related(
+            "required_certificates", "certificate_learnings__learning"
+        )
+    ):
+        options = [c.pk for c in certificate.required_certificates.all()]
+        needed = certificate.required_count or len(options)
+        if len(held.intersection(options)) < needed:
+            continue
+        own = set(certificate_published_learning_ids(certificate))
+        if not own.issubset(completed):
+            continue
+        award, created = UserCertificateAward.objects.get_or_create(
+            user=user, certificate=certificate
+        )
+        if created:
+            awarded.append(award)
     return awarded
 
 

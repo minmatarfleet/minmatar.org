@@ -40,11 +40,11 @@ delete attributes.class
         {ticks(curve_box, 'y', 4).map((t) => (
             <g>
                 <line class="ink-grid" x1={curve_box.x} x2={curve_box.x + curve_box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
-                <text class="ink-muted" x={curve_box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+                <text class="ink-muted" x={curve_box.x - 2} y={t.at + 1} font-size="3.4" text-anchor="end">{t.value}</text>
             </g>
         ))}
         {ticks(curve_box, 'x', 25).map((t) => (
-            <text class="ink-muted" x={t.at} y={curve_box.y + curve_box.height + 5} font-size="2.8" text-anchor="middle">{t.value}%</text>
+            <text class="ink-muted" x={t.at} y={curve_box.y + curve_box.height + 5} font-size="3.4" text-anchor="middle">{t.value}%</text>
         ))}
         <line class="ink-red-stroke" stroke-width="0.4" stroke-dasharray="1 1"
             x1={curve_box.x} x2={curve_box.x + curve_box.width}
@@ -58,11 +58,11 @@ delete attributes.class
         {ticks(trace_box, 'y', 25).map((t) => (
             <g>
                 <line class="ink-grid" x1={trace_box.x} x2={trace_box.x + trace_box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
-                <text class="ink-muted" x={trace_box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+                <text class="ink-muted" x={trace_box.x - 2} y={t.at + 1} font-size="3.4" text-anchor="end">{t.value}</text>
             </g>
         ))}
         {ticks(trace_box, 'x', 60).map((t) => (
-            <text class="ink-muted" x={t.at} y={trace_box.y + trace_box.height + 5} font-size="2.8" text-anchor="middle">{t.value / 60}m</text>
+            <text class="ink-muted" x={t.at} y={trace_box.y + trace_box.height + 5} font-size="3.4" text-anchor="middle">{t.value / 60}m</text>
         ))}
         <polyline stroke-width="0.7" x-bind:class="r().settles === null ? 'ink-red-stroke' : 'ink-green-stroke'" x-bind:points="trace_points()" points="" />
     </svg>

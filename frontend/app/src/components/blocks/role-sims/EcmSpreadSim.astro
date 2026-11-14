@@ -48,16 +48,16 @@ const BAR_W = 60
         {kitsunes.map((i) => (
             <g>
                 <circle class="ink-yellow" r="3" cx="24" cy={ky(i)} />
-                <text class="ink-text" x="4" y={ky(i) + 8} font-size="3">Kitsune {i + 1}</text>
+                <text class="ink-text" x="4" y={ky(i) + 8} font-size="3.4">Kitsune {i + 1}</text>
             </g>
         ))}
         {SPREAD_LOGI.map((id, i) => (
             <g>
                 <circle class="ink-blue" r="3" cx="100" cy={ly(i)} />
-                <text class="ink-text" x="106" y={ly(i) + 1.2} font-size="3.2">{id}</text>
+                <text class="ink-text" x="106" y={ly(i) + 1.2} font-size="3.4">{id}</text>
                 <rect class="ink-grid" x={BAR_X} y={ly(i) - 4} width={BAR_W} height="8" stroke-width="0.3" />
                 <rect class="ink-green" x={BAR_X} y={ly(i) - 4} height="8" width="0" x-bind:width={`r().per_logi[${i}] * ${BAR_W}`} />
-                <text class="ink-strong" x={BAR_X + BAR_W + 2} y={ly(i) + 1.2} font-size="3" x-text={`Math.round(r().per_logi[${i}] * 100) + '%'`}></text>
+                <text class="ink-strong" x={BAR_X + BAR_W + 2} y={ly(i) + 1.2} font-size="3.4" x-text={`Math.round(r().per_logi[${i}] * 100) + '%'`}></text>
             </g>
         ))}
         <text class="ink-text" x="100" y="82" font-size="3.6" x-text="'Expected jammed: ' + r().expected.toFixed(2) + ' of 3'"></text>

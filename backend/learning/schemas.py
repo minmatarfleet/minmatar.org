@@ -12,6 +12,11 @@ class LearningSchema(Schema):
     order: int = 0
 
 
+class RequiredCertificateSchema(Schema):
+    slug: str
+    title: str
+
+
 class CertificateSchema(Schema):
     slug: str
     title: str
@@ -20,6 +25,9 @@ class CertificateSchema(Schema):
     personas: list[str]
     learnings: list[LearningSchema]
     learning_count: int
+    # Earned through other certificates: any required_count of these.
+    required_certificates: list[RequiredCertificateSchema] = []
+    required_count: int | None = None
 
 
 class CertificateAwardSchema(Schema):

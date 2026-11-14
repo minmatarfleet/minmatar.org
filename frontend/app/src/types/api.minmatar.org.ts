@@ -2328,15 +2328,7 @@ export interface LearningItem {
     order:                  number;
 }
 
-export interface LearningCertificate {
-    slug:                   string;
-    title:                  string;
-    summary:                string;
-    sort_order:             number;
-    personas:               LearningPersona[];
-    learnings:              LearningItem[];
-    learning_count:         number;
-}
+export type LearningCertificate = ApiResponse<'CertificateSchema'>
 
 export interface LearningCertificateAward {
     slug:                   string;

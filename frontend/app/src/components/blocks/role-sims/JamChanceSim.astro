@@ -51,15 +51,15 @@ const row_y = (i: number) => 14 + i * 26
         {[0, 25, 50, 75, 100].map((p) => (
             <g>
                 <line class="ink-grid" x1={BAR_X + (p / 100) * BAR_W} x2={BAR_X + (p / 100) * BAR_W} y1="6" y2="80" stroke-width="0.25" />
-                <text class="ink-muted" x={BAR_X + (p / 100) * BAR_W} y="84" font-size="2.8" text-anchor="middle">{p}%</text>
+                <text class="ink-muted" x={BAR_X + (p / 100) * BAR_W} y="84" font-size="3.4" text-anchor="middle">{p}%</text>
             </g>
         ))}
         <line class="ink-red-stroke" x1={BAR_X + 0.4 * BAR_W} x2={BAR_X + 0.4 * BAR_W} y1={row_y(0) - 6} y2={row_y(0) + 10} stroke-width="0.5" stroke-dasharray="1 0.8" />
-        <text class="ink-muted" x={BAR_X + 0.4 * BAR_W + 1} y={row_y(0) - 4} font-size="2.8">40%</text>
+        <text class="ink-muted" x={BAR_X + 0.4 * BAR_W + 1} y={row_y(0) - 4} font-size="3.4">40%</text>
         {JAM_HULLS.map((hull, i) => (
             <g>
                 <text class="ink-text" x="4" y={row_y(i) + 3} font-size="3.6">{hull.name}</text>
-                <text class="ink-muted" x="4" y={row_y(i) + 8} font-size="2.8">{hull.sensor_type} {hull.sensor_strength}</text>
+                <text class="ink-muted" x="4" y={row_y(i) + 8} font-size="3.4">{hull.sensor_type} {hull.sensor_strength}</text>
                 <rect class="ink-grid" x={BAR_X} y={row_y(i) - 2} width={BAR_W} height="10" stroke-width="0.3" />
                 <rect x={BAR_X} y={row_y(i) - 2} height="10" width="0"
                     x-bind:width={`r().rows[${i}].chance * ${BAR_W}`}

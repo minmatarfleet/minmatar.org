@@ -8,7 +8,7 @@ import { get_item_icon } from '@helpers/eve_image_server'
 import { guides } from '@/data/guides'
 import { getGuideCoverImage, getGuideSeoImage } from '@/data/guides/covers'
 import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
-import { guidePath } from '@/data/guides/urls'
+import { certificatePath, guidePath } from '@/data/guides/urls'
 import { FLEET_ROLES_HUB_SLUG, fleet_role_guides, guide_sims } from '@/data/fleet-roles'
 import CapitalGuidePage from '@components/blocks/capital-guide/CapitalGuidePage.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
@@ -76,7 +76,9 @@ const practice = fleet_role_guides.flatMap((guide) =>
                     ))}
                 </ul>
                 <p class="[ role-hub__muted ]">
-                    <a href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</a>
+                    {t('fleet_roles.hub_certificate')}
+                    <a href={translatePath(certificatePath('fleet-roles'))}>{t('fleet_roles.hub_certificate_link')}</a>
+                    · <a href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</a>
                 </p>
             </section>
 

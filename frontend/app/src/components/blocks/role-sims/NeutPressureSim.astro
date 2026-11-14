@@ -42,28 +42,28 @@ const falloff_x = optimal_x - SIM.heavy_neut_falloff_km * strip.per_km
     <svg slot="picture" viewBox="0 0 200 100" role="img" aria-label="Range strip from your neuts to the Guardian pair, and the Guardian's capacitor over 60 seconds">
         <rect class="ink-zone" x={optimal_x} y="12" width={target_x - optimal_x} height="18" stroke-width="0.3" />
         <rect class="ink-grid" x={falloff_x} y="12" width={optimal_x - falloff_x} height="18" stroke-width="0.3" />
-        <text class="ink-muted" x={optimal_x + 1} y="10" font-size="2.8">neut optimal</text>
-        <text class="ink-muted" x={falloff_x + 1} y="10" font-size="2.8">falloff</text>
+        <text class="ink-muted" x={optimal_x + 1} y="10" font-size="3.4">neut optimal</text>
+        <text class="ink-muted" x={falloff_x + 1} y="10" font-size="3.4">falloff</text>
         <circle class="ink-blue" r="2.4" cx={target_x + 2} cy="18" />
         <circle class="ink-blue" r="2.4" cx={target_x + 2} cy="25" />
         <line class="ink-blue-stroke" x1={target_x + 2} y1="18" x2={target_x + 2} y2="25" stroke-width="0.5" />
-        <text class="ink-text" x={target_x - 1} y="36" font-size="2.8" text-anchor="end">Guardian pair</text>
+        <text class="ink-text" x={target_x - 1} y="36" font-size="3.4" text-anchor="end">Guardian pair</text>
         <g x-bind:transform="`translate(${sx(state.range_km)} 21)`" transform={`translate(${strip.x0} 21)`}>
             <polygon class="ink-red" points="3,0 -2,-2.6 -2,2.6" />
-            <text class="ink-text" x="0" y="9" font-size="2.8" text-anchor="middle" x-text="state.neuts + ' neut' + (state.neuts > 1 ? 's' : '')">1 neut</text>
+            <text class="ink-text" x="0" y="9" font-size="3.4" text-anchor="middle" x-text="state.neuts + ' neut' + (state.neuts > 1 ? 's' : '')">1 neut</text>
         </g>
         <line class="ink-red-stroke" stroke-width="0.3" stroke-dasharray="1 1"
             x-bind:x1="sx(state.range_km) + 3" x2={target_x - 1} y1="21" y2="21" x1="0" />
 
-        <text class="ink-muted" x={box.x} y={box.y - 3} font-size="3.2">Target Guardian capacitor %, first 60 s</text>
+        <text class="ink-muted" x={box.x} y={box.y - 3} font-size="3.4">Target Guardian capacitor %, first 60 s</text>
         {ticks(box, 'y', 50).map((t) => (
             <g>
                 <line class="ink-grid" x1={box.x} x2={box.x + box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
-                <text class="ink-muted" x={box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+                <text class="ink-muted" x={box.x - 2} y={t.at + 1} font-size="3.4" text-anchor="end">{t.value}</text>
             </g>
         ))}
         {ticks(box, 'x', 12).map((t) => (
-            <text class="ink-muted" x={t.at} y={box.y + box.height + 5} font-size="2.8" text-anchor="middle">{t.value}s</text>
+            <text class="ink-muted" x={t.at} y={box.y + box.height + 5} font-size="3.4" text-anchor="middle">{t.value}s</text>
         ))}
         <polyline stroke-width="0.7" x-bind:class="r().sim.module_off_at === null ? 'ink-green-stroke' : 'ink-red-stroke'" x-bind:points="trace_points()" points="" />
         <line class="ink-red-stroke" stroke-width="0.5" stroke-dasharray="1 0.8"

@@ -70,6 +70,20 @@ class Certificate(models.Model):
         related_name="certificates",
         blank=True,
     )
+    # A certificate earned through other certificates (Fleet Roles: any
+    # three of the five role certificates). Its own learnings, if any, are
+    # still required.
+    required_certificates = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="unlocks",
+        blank=True,
+    )
+    required_count = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="How many of the required certificates; empty means all.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
