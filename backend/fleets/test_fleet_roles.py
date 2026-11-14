@@ -75,6 +75,55 @@ Warp Disruption Field Generator II
 Cynosural Field Generator I
 """
 
+# Production doctrine fits 87 (Griffin) and 95 (Bifrost), trimmed.
+GRIFFIN_EFT = """[Griffin, [FL33T] Griffin]
+
+5MN Cold-Gas Enduring Microwarpdrive
+Morpheus Enduring Magnetometric ECM
+Morpheus Enduring Magnetometric ECM
+
+
+FZ-3a Enduring Gravimetric ECM x4
+"""
+
+BIFROST_EFT = """[Bifrost, [FL33T] 0X Bifrost]
+
+5MN Quad LiF Restrained Microwarpdrive
+Micro Jump Field Generator
+Warp Scrambler II
+
+Rocket Launcher II
+"""
+
+SABRE_EFT = """[Sabre, [FL33T] Sabre]
+
+Warp Scrambler II
+
+Interdiction Sphere Launcher I
+
+
+Warp Disrupt Probe x60
+"""
+
+CURSE_EFT = """[Curse, Neut Curse]
+
+Large Cap Battery II
+
+Medium Energy Neutralizer II
+Heavy Gremlin Compact Energy Neutralizer
+Medium Energy Nosferatu II
+"""
+
+ONE_NEUT_EFT = """[Hurricane, Neut Cane]
+
+425mm AutoCannon II
+Medium Energy Neutralizer II
+
+
+ECCM Script x1
+Burst Jammer II x1
+"""
+
 DAMNATION_ID = 22474
 GUARDIAN_ID = 11987
 DEVOTER_ID = 12017
@@ -113,6 +162,23 @@ class FitRolesTestCase(SimpleTestCase):
     def test_cyno(self):
         self.assertTrue(fit_roles(DEVOTER_EFT).cyno)
         self.assertFalse(fit_roles(GUARDIAN_EFT).cyno)
+
+    def test_interdiction_from_bubbles_and_mjfg(self):
+        self.assertTrue(fit_roles(SABRE_EFT, "Interdictor").interdiction)
+        self.assertTrue(fit_roles(BIFROST_EFT).interdiction)
+        self.assertTrue(fit_roles(DEVOTER_EFT).interdiction)
+        self.assertFalse(fit_roles(GUARDIAN_EFT).interdiction)
+
+    def test_ecm_from_any_jammer_fitted(self):
+        self.assertTrue(fit_roles(GRIFFIN_EFT).ecm)
+        self.assertTrue(fit_roles("[Kitsune, K]\nBurst Jammer II\n").ecm)
+        # Cargo jammers and ECCM scripts don't count.
+        self.assertFalse(fit_roles(ONE_NEUT_EFT).ecm)
+
+    def test_neuts_need_two_neutralizers(self):
+        self.assertTrue(fit_roles(CURSE_EFT).neuts)
+        self.assertFalse(fit_roles(ONE_NEUT_EFT).neuts)
+        self.assertFalse(fit_roles(GRIFFIN_EFT).neuts)
 
     def test_non_links_fit_rejects_bursts(self):
         roles = fit_roles(GUARDIAN_EFT, "Logistics")
@@ -254,6 +320,38 @@ class FleetRolesRouterTestCase(TestCase):
         )
         cynos = dict(_motd_role_volunteers(self.fleet))["Cynos"]
         self.assertEqual([(1001, "Pilot One")], cynos)
+
+    def test_interdiction_ecm_and_neut_ships_fill_those_roles(self):
+        griffin = self._doctrine_fit("Griffin", 584, GRIFFIN_EFT, "support")
+        curse = self._doctrine_fit("Curse", 20125, CURSE_EFT, "support")
+        self._put(
+            {"character_id": 1001, "fitting_id": self.devoter.id},
+            {"character_id": 1002, "fitting_id": griffin.id},
+        )
+        EveCharacter.objects.create(
+            character_id=1003, character_name="Pilot Three", user=self.user
+        )
+        self._put({"character_id": 1003, "fitting_id": curse.id})
+
+        body = self._roles()
+
+        def names(role):
+            return [p["character_name"] for p in body[role]]
+
+        self.assertEqual(["Pilot One"], names("interdiction"))
+        self.assertEqual(["Pilot Two"], names("ecm"))
+        self.assertEqual(["Pilot Three"], names("neuts"))
+        # Not a strategic fleet: listed, no target.
+        self.assertEqual(
+            {"interdiction": 0, "neuts": 0, "ecm": 0}, body["wanted"]
+        )
+
+    def test_strategic_fleets_want_interdiction_neuts_and_ecm(self):
+        self.fleet.type = "strategic"
+        self.fleet.save()
+        self.assertEqual(
+            {"interdiction": 2, "neuts": 2, "ecm": 1}, self._roles()["wanted"]
+        )
 
     def test_resaving_the_same_ship_keeps_the_cyno_system(self):
         self._put({"character_id": 1001, "fitting_id": self.devoter.id})
@@ -402,6 +500,9 @@ class FleetRolesRouterTestCase(TestCase):
             damnation["bursts_fitted"],
         )
         self.assertTrue(by_name["Devoter"]["cyno"])
+        self.assertTrue(by_name["Devoter"]["interdiction"])
+        self.assertFalse(by_name["Devoter"]["ecm"])
+        self.assertFalse(by_name["Devoter"]["neuts"])
 
     def test_forbidden_without_fleet_access(self):
         other = User.objects.create(username="other")

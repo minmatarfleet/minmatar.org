@@ -4228,7 +4228,7 @@ export interface paths {
         };
         /**
          * Get Fleet Roles
-         * @description Fleet roles worked out from ships: links by burst kind, cynos and logi, from ship volunteers and pilots in the tracked fleet. Logi FC is the one role still signed up for. A hidden roster limits everyone but a Strategic FC to their own characters; a cyno system is only returned to the FC and the pilot.
+         * @description Fleet roles worked out from ships: links by burst kind, cynos, logi, interdiction, ECM and neuts, from ship volunteers and pilots in the tracked fleet. `wanted` is how many interdiction, neut and ECM ships the fleet asks for (strategic fleets; 0 elsewhere). Logi FC is the one role still signed up for. A hidden roster limits everyone but a Strategic FC to their own characters; a cyno system is only returned to the FC and the pilot.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_roles_get_fleet_roles"];
         put?: never;
@@ -15300,8 +15300,11 @@ export interface components {
              *       "bursts_fitted": {},
              *       "bursts_online": {},
              *       "cyno": false,
+             *       "ecm": false,
+             *       "interdiction": false,
              *       "links": false,
-             *       "logi": false
+             *       "logi": false,
+             *       "neuts": false
              *     }
              */
             fit_roles?: components["schemas"]["EveFleetFitRolesResponse"];
@@ -15601,6 +15604,16 @@ export interface components {
              */
             cyno?: boolean;
             /**
+             * Ecm
+             * @default false
+             */
+            ecm?: boolean;
+            /**
+             * Interdiction
+             * @default false
+             */
+            interdiction?: boolean;
+            /**
              * Links
              * @default false
              */
@@ -15610,6 +15623,11 @@ export interface components {
              * @default false
              */
             logi?: boolean;
+            /**
+             * Neuts
+             * @default false
+             */
+            neuts?: boolean;
         };
         /**
          * EveFleetFittingAccessResponse
@@ -15888,12 +15906,35 @@ export interface components {
         EveFleetRoleCoverageResponse: {
             /** Cynos */
             cynos: components["schemas"]["EveFleetRolePilot"][];
+            /**
+             * Ecm
+             * @default []
+             */
+            ecm?: components["schemas"]["EveFleetRolePilot"][];
+            /**
+             * Interdiction
+             * @default []
+             */
+            interdiction?: components["schemas"]["EveFleetRolePilot"][];
             /** Links */
             links: components["schemas"]["EveFleetLinkCoverage"][];
             /** Logi */
             logi: components["schemas"]["EveFleetRolePilot"][];
             /** Logi Fc */
             logi_fc: components["schemas"]["EveFleetRoleVolunteerResponse"][];
+            /**
+             * Neuts
+             * @default []
+             */
+            neuts?: components["schemas"]["EveFleetRolePilot"][];
+            /**
+             * @default {
+             *       "ecm": 0,
+             *       "interdiction": 0,
+             *       "neuts": 0
+             *     }
+             */
+            wanted?: components["schemas"]["EveFleetRoleWanted"];
         };
         /**
          * EveFleetRolePilot
@@ -15950,6 +15991,27 @@ export interface components {
             solar_system_name?: string | null;
             /** Subtype */
             subtype?: string | null;
+        };
+        /**
+         * EveFleetRoleWanted
+         * @description Pilots a fleet wants per role; 0 is no target (list only).
+         */
+        EveFleetRoleWanted: {
+            /**
+             * Ecm
+             * @default 0
+             */
+            ecm?: number;
+            /**
+             * Interdiction
+             * @default 0
+             */
+            interdiction?: number;
+            /**
+             * Neuts
+             * @default 0
+             */
+            neuts?: number;
         };
         /** EveFleetShipVolunteerResponse */
         EveFleetShipVolunteerResponse: {

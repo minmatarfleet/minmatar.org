@@ -293,12 +293,22 @@ export interface FleetLinkCoverage {
     pilots: FleetRolePilot[]
 }
 
+/** Pilots a fleet wants per role; 0 is no target (non-strategic fleets). */
+export type FleetRoleWanted = ApiResponse<'EveFleetRoleWanted'>
+
 export interface FleetRoleCoverage {
     /** Logi FC is the one role still signed up for. */
     logi_fc: FleetRoleVolunteer[]
     links: FleetLinkCoverage[]
     cynos: FleetRolePilot[]
     logi: FleetRolePilot[]
+    /** A bubble or Micro Jump Field Generator fitted. */
+    interdiction: FleetRolePilot[]
+    /** Any ECM jammer or ECM burst fitted. */
+    ecm: FleetRolePilot[]
+    /** Two or more energy neutralizers fitted. */
+    neuts: FleetRolePilot[]
+    wanted: FleetRoleWanted
 }
 
 export async function get_fleet_roles(access_token: string, fleet_id: number): Promise<FleetRoleCoverage> {
@@ -348,7 +358,7 @@ export interface FleetCompositionEntry {
     refits: { id: number; name: string }[]
     /** Module name → slot for every module named in the EFT, when the universe cache knows it. */
     module_slots: Record<string, ModuleSlot>
-    /** Links / cyno / logi this fit fills. */
+    /** Links / cyno / logi / interdiction / ECM / neuts this fit fills. */
     fit_roles: FleetFitRoles
 }
 
@@ -360,6 +370,9 @@ export interface FleetFitRoles {
     bursts_fitted: Partial<Record<BurstKind, number>>
     cyno: boolean
     logi: boolean
+    interdiction: boolean
+    ecm: boolean
+    neuts: boolean
 }
 
 export type ModuleSlot = 'high' | 'mid' | 'low' | 'rig'

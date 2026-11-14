@@ -9,10 +9,11 @@ import type {
     FleetRoleCoverage,
 } from '@helpers/api.minmatar.org/fleets'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { link_kinds, ships_for_role, CYNOS_WANTED } from '@helpers/fleet_roles'
+import { link_kinds, ship_role_rows, ships_for_role, CYNOS_WANTED, type ShipRoleKind } from '@helpers/fleet_roles'
 
 /**
- * Fleet roles, filled by ships: links, cynos and logi come from the ships
+ * Fleet roles, filled by ships: links, cynos, logi, interdiction, neuts and
+ * ECM come from the ships
  * pilots volunteer for or are flying in fleet. Logi FC is a person, so it
  * is the one role still signed up for.
  */
@@ -42,12 +43,17 @@ const links = link_kinds(roles, composition)
 const cyno_ships = ships_for_role(composition, entry => entry.fit_roles?.cyno ?? false)
 const logi_ships = ships_for_role(composition, entry => entry.fit_roles?.logi ?? false)
 const show_cynos = cyno_ships.length > 0 || roles.cynos.length > 0
+const ship_roles = ship_role_rows(roles, composition)
 
-// Rows with a target count towards "filled": Logi FC, cynos, each link kind.
+// Rows with a target count towards "filled": Logi FC, cynos, each link kind,
+// and interdiction / neuts / ECM when the fleet wants them (strategic).
 const targets = [
     roles.logi_fc.length >= 1,
     ...(show_cynos ? [roles.cynos.length >= CYNOS_WANTED] : []),
     ...links.map(row => row.pilots.length >= 1),
+    ...ship_roles
+        .filter(row => row.wanted !== undefined)
+        .map(row => row.pilots.length >= row.wanted!),
 ]
 const filled_roles = targets.filter(Boolean).length
 
@@ -56,6 +62,17 @@ const filled_roles = targets.filter(Boolean).length
 const LOGI_ICON_TYPE_ID = 26914
 const LOGI_SHIPS_ICON_TYPE_ID = 11987
 const CYNO_ICON_TYPE_ID = 21096
+// Interdiction Sphere Launcher I, Heavy Energy Neutralizer II, Multispectral ECM II.
+const SHIP_ROLE_ICON_TYPE_IDS:Record<ShipRoleKind, number> = {
+    interdiction: 22782,
+    neuts: 12271,
+    ecm: 2567,
+}
+const SHIP_ROLE_TITLES:Record<ShipRoleKind, string> = {
+    interdiction: t('interdiction_label'),
+    neuts: t('neuts_label'),
+    ecm: t('ecm_label'),
+}
 const BURST_ICON_TYPE_IDS:Record<BurstKind, number> = {
     armor: 42526,
     information: 42527,
@@ -124,6 +141,20 @@ import FleetRoleShips from '@components/blocks/FleetRoleShips.astro'
                     <img slot="icon" src={get_item_icon(CYNO_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
                 </FleetRoleShips>
             }
+
+            {ship_roles.map(row =>
+                <FleetRoleShips
+                    id={`${row.kind}-role`}
+                    title={SHIP_ROLE_TITLES[row.kind]}
+                    fleet_id={fleet_id}
+                    pilots={row.pilots}
+                    ship_names={row.ship_names}
+                    wanted={row.wanted}
+                    readonly={readonly}
+                >
+                    <img slot="icon" src={get_item_icon(SHIP_ROLE_ICON_TYPE_IDS[row.kind], 32)} width="32" height="32" alt="" loading="lazy" />
+                </FleetRoleShips>
+            )}
 
             {(logi_ships.length > 0 || roles.logi.length > 0) &&
                 <FleetRoleShips
