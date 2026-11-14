@@ -19,6 +19,7 @@ class EveBuybackSettingsAdmin(admin.ModelAdmin):
         "updated_at",
     )
     autocomplete_fields = ("coordinators",)
+    filter_horizontal = ("extra_locations",)
     fieldsets = (
         (
             None,
@@ -27,6 +28,7 @@ class EveBuybackSettingsAdmin(admin.ModelAdmin):
                     "active",
                     "assignee_name",
                     "location",
+                    "extra_locations",
                     "leading_text",
                     "discord_thread_url",
                 )

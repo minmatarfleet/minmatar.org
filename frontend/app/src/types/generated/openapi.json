@@ -3387,6 +3387,14 @@
               }
             ]
           },
+          "locations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BuybackLocationResponse"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
           "rate_rules": {
             "$ref": "#/components/schemas/BuybackRateRules"
           }

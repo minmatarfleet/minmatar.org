@@ -1874,6 +1874,7 @@ export const ui = {
         'buyback.contract.instruction_paragraph': 'Start creating a contract by selecting your items from your Inventory or Assets at the station below, then right-click and create contract.',
         'buyback.contract.step_1_title': 'Create Contract (1/4)',
         'buyback.contract.step_2_title': 'Pick items from (2/4)',
+        'buyback.contract.step_2_any_of': 'Any one of these locations:',
         'buyback.contract.step_3_title': 'Select Options (3/4)',
         'buyback.contract.step_4_title': 'Confirm (4/4)',
         'buyback.contract.step_4_text': 'Review everything and finish the contract. New contracts may take some time to appear here — they must first be scanned via ESI.',

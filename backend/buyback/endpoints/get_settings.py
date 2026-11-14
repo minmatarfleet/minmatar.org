@@ -42,6 +42,14 @@ def get_settings(request):
         assignee_name=settings.assignee_name,
         corporation_id=BUYBACK_CORPORATION_ID,
         location=location,
+        locations=[
+            BuybackLocationResponse(
+                location_id=loc.location_id,
+                name=loc.location_name,
+                short_name=loc.short_name or loc.location_name,
+            )
+            for loc in settings.accepted_locations()
+        ],
         accepted_categories=settings.accepted_categories,
         accepted_items=[
             BuybackAcceptedItemResponse(
