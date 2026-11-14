@@ -254,7 +254,7 @@ def import_learning_progress(
 
 def certificates_for_persona(persona: str | None) -> list[Certificate]:
     qs = (
-        Certificate.objects.filter(published=True)
+        Certificate.objects.filter(published=True, listed=True)
         .prefetch_related("certificate_learnings__learning")
         .order_by("sort_order", "title")
     )

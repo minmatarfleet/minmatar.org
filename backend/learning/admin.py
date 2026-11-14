@@ -46,11 +46,12 @@ class CertificateAdmin(admin.ModelAdmin):
         "title",
         "slug",
         "published",
+        "listed",
         "sort_order",
         "personas_display",
         "updated_at",
     )
-    list_filter = ("published",)
+    list_filter = ("published", "listed")
     search_fields = ("title", "slug", "summary")
     prepopulated_fields = {"slug": ("title",)}
     ordering = ("sort_order", "title")

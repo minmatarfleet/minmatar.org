@@ -77,6 +77,7 @@ const cover = getGuideCoverImage(meta)
     cover_alt=""
     structured_data={structured_data}
     progress={progress}
+    robots={meta.unlisted ? 'noindex, nofollow' : undefined}
     parent={{ href: guidePath(FLEET_ROLES_HUB_SLUG), label: t('fleet_roles.hub_title') }}
 >
     <RoleGuide guide={guide} sections={sections} />

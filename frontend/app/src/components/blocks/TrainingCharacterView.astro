@@ -15,7 +15,7 @@ import {
 } from '@helpers/training'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import { fleet_role_for_capability } from '@/data/fleet-roles'
+import { FLEET_ROLES_LISTED, fleet_role_for_capability } from '@/data/fleet-roles'
 import { guidePath } from '@/data/guides/urls'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -208,7 +208,7 @@ const training_id = character.training?.fitting_id
                         <tr>
                             <th scope="row">
                                 {role.capability}
-                                {fleet_role_for_capability(role.capability) &&
+                                {FLEET_ROLES_LISTED && fleet_role_for_capability(role.capability) &&
                                     <a
                                         class="[ training-roles__guide ]"
                                         href={translatePath(guidePath(fleet_role_for_capability(role.capability)!.guide_slug))}

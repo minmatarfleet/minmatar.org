@@ -306,6 +306,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "fleet-roles",
+        unlisted: true,
         title: "Fleet Roles",
         excerpt: "Five jobs that decide fights: Damage, Remote Repair, Capacitor Warfare, Electronic Warfare and Positioning. Guides, simulators and certificates.",
         category: "Fleet Roles",
@@ -318,6 +319,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "damage-guide",
+        unlisted: true,
         title: "Damage",
         excerpt: "Kill what the FC calls, fast: applied damage, target calling, ammo, overheating, and a simulator for what really lands.",
         category: "Fleet Roles",
@@ -330,6 +332,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "remote-repair-guide",
+        unlisted: true,
         title: "Remote Repair",
         excerpt: "Keep the fleet alive: the rep race, broadcasts, capacitor chains, logi anchoring and the Zarmazd.",
         category: "Fleet Roles",
@@ -342,6 +345,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "capacitor-warfare-guide",
+        unlisted: true,
         title: "Capacitor Warfare",
         excerpt: "Drain the enemy until nothing works: the capacitor curve, neuts versus nos, range and target priority.",
         category: "Fleet Roles",
@@ -354,6 +358,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "electronic-warfare-guide",
+        unlisted: true,
         title: "Electronic Warfare",
         excerpt: "Stop the enemy locking what they want: jam chance, spreading ECM across their logi, bursts and staying alive.",
         category: "Fleet Roles",
@@ -366,6 +371,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "positioning-warfare-guide",
+        unlisted: true,
         title: "Positioning Warfare",
         excerpt: "Decide where the enemy fleet is and whether it can leave: points, booshes, bumps, heavy tackle, and bubbles where they work.",
         category: "Fleet Roles",
@@ -567,7 +573,7 @@ export function getGuideBySlug(slug: string): (GuideMeta & { module: GuideModule
 }
 
 export function getIndexedGuides(): GuideMeta[] {
-    return guides.filter((guide) => !guide.hiddenFromIndex && !guide.comingSoon)
+    return guides.filter((guide) => !guide.hiddenFromIndex && !guide.comingSoon && !guide.unlisted)
 }
 
 export function getPublishedGuides(): GuideMeta[] {

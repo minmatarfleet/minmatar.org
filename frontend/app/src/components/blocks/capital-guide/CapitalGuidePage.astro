@@ -25,6 +25,8 @@ interface Props {
     progress: PageProgressProps
     /** An extra breadcrumb between Learning and this page, e.g. the Fleet Roles hub. */
     parent?: { href: string; label: string }
+    /** e.g. 'noindex, nofollow' for an unlisted guide. */
+    robots?: string
 }
 
 const {
@@ -38,6 +40,7 @@ const {
     structured_data,
     progress,
     parent,
+    robots,
 } = Astro.props
 ---
 
@@ -47,6 +50,7 @@ const {
     meta_image={meta_image}
     canonical_url={canonical_url}
     og_type="article"
+    robots={robots}
     components={{
         alert_dialog: true,
         confirm_dialog: true,

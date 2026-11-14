@@ -20,6 +20,13 @@ export const fleet_role_guides: FleetRoleGuide[] = [
 
 export const FLEET_ROLES_HUB_SLUG = 'fleet-roles'
 
+/**
+ * While false the guides open only by direct link: nothing else on the site
+ * links to them (the Training tab included), and data/guides marks them
+ * unlisted. Flip both when the guides launch.
+ */
+export const FLEET_ROLES_LISTED = false
+
 export function get_fleet_role(slug: string): FleetRoleGuide | undefined {
     return fleet_role_guides.find((guide) => guide.slug === slug)
 }

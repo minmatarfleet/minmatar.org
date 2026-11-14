@@ -129,3 +129,20 @@ class FleetRolesUmbrellaCertificateTestCase(TestCase):
             ],
         )
         self.assertEqual(data["learnings"], [])
+
+
+class FleetRolesUnlistedTestCase(TestCase):
+    """Built but hidden: not in the lists, still open by direct link."""
+
+    def test_not_in_the_learning_center_lists(self):
+        listed = [
+            c["slug"]
+            for c in Client().get("/api/learning/certificates").json()
+        ]
+        self.assertNotIn("fleet-roles", listed)
+        self.assertFalse(any(s.startswith("fleet-role-") for s in listed))
+        self.assertIn("alliance-onboarding", listed)
+
+    def test_still_open_by_direct_link(self):
+        response = Client().get("/api/learning/certificates/fleet-role-damage")
+        self.assertEqual(response.status_code, 200)

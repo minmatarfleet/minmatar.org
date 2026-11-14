@@ -55,6 +55,7 @@ const practice = fleet_role_guides.flatMap((guide) =>
     cover_alt=""
     structured_data={structured_data}
     progress={progress}
+    robots={meta.unlisted ? 'noindex, nofollow' : undefined}
 >
     <GuideShell title={t('fleet_roles.hub_title')} subtitle={t('fleet_roles.hub_subtitle')}>
         <div class="[ role-hub ]">

@@ -79,6 +79,13 @@ class Certificate(models.Model):
         related_name="unlocks",
         blank=True,
     )
+    listed = models.BooleanField(
+        default=True,
+        help_text=(
+            "Shown in the Learning Center lists. Unlisted certificates still "
+            "open by direct link and can be earned."
+        ),
+    )
     required_count = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
