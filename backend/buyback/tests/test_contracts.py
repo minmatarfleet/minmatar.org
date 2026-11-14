@@ -1,3 +1,6 @@
+import importlib
+
+from django.apps import apps as django_apps
 from django.test import Client, TestCase
 from django.utils import timezone
 from datetime import timedelta
@@ -17,6 +20,10 @@ from buyback.models import (
 )
 
 BASE_URL = "/api/buyback"
+
+accepted_locations_migration = importlib.import_module(
+    "buyback.migrations.0015_accepted_locations"
+)
 
 
 class BuybackContractProxyTestCase(TestCase):
@@ -97,6 +104,8 @@ class BuybackSettingsEndpointTestCase(TestCase):
             solar_system_name="Amo",
             short_name="Amo",
         )
+        # The migration skips seeding in tests; seed the stations here.
+        accepted_locations_migration.seed_accepted_locations(django_apps)
 
     def test_get_settings_defaults(self):
         response = self.client.get(f"{BASE_URL}/settings")

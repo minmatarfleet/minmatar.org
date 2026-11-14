@@ -1,3 +1,4 @@
+from django.conf import settings as django_settings
 from django.db import migrations, models
 
 # Auner VIII - Moon 10 - Thukker Mix Factory (NPC station, Heimatar).
@@ -23,6 +24,13 @@ HYDRA_FREEPORT = {
 
 
 def add_accepted_locations(apps, schema_editor):
+    # Test databases stay empty; tests call seed_accepted_locations.
+    if getattr(django_settings, "TESTING", False):
+        return
+    seed_accepted_locations(apps)
+
+
+def seed_accepted_locations(apps):
     """Idempotent: reuse a row that already exists, even soft-deleted."""
     EveLocation = apps.get_model("eveonline", "EveLocation")
     EveBuybackSettings = apps.get_model("buyback", "EveBuybackSettings")
