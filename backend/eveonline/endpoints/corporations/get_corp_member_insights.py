@@ -8,6 +8,7 @@ the row opens, so the roster itself stays one cached read.
 from ninja import Router
 
 from alliance.endpoints.trial.schemas import MemberInsightsResponse
+from alliance.helpers.status_change import available_actions
 from alliance.helpers.trial_report import member_insights
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -63,6 +64,12 @@ def get_corp_member_insights(request, corporation_id: int, character_id: int):
         on_trial=on_trial,
         can_promote=on_trial
         and can_promote_corporation_trials(request.user, corporation),
+        community_status=status,
+        status_actions=(
+            available_actions(request.user, character.user, status)
+            if character.user_id
+            else []
+        ),
         **insights,
     )
 

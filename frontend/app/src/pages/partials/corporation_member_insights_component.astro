@@ -11,7 +11,7 @@ if (!user)
     return HTTP_403_Forbidden()
 
 import type { MemberInsights } from '@dtypes/api.minmatar.org'
-import { get_corporation_member_insights, promote_corporation_member } from '@helpers/api.minmatar.org/corporations'
+import { get_corporation_member_insights, promote_corporation_member, set_corporation_member_status } from '@helpers/api.minmatar.org/corporations'
 import { get_item_icon } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
 
@@ -20,7 +20,8 @@ import { query_string } from '@helpers/string'
  * person compares with active pilots (and their trial bar while on trial),
  * the ships they bring to fleets, and their kills, so leadership doesn't
  * need zKillboard to check. The CEO, directors and People team can promote a
- * trial member to active from here; the roster then reloads.
+ * trial member to active from here, and take a member off leave (or, the
+ * CEO, put them on leave); the roster then reloads.
  */
 const params = Astro.url.searchParams
 const corporation_id = parseInt(params.get('corporation_id') ?? '0') || 0
@@ -36,6 +37,18 @@ if (Astro.request.method === 'POST' && params.get('action') === 'promote') {
         Astro.response.headers.set('HX-Trigger', 'corporation-members-changed')
     } catch (error) {
         promote_error = (error as Error).message || t('trial.promote_failed')
+    }
+}
+
+const status_action = params.get('action')
+let status_error:string | false = false
+
+if (Astro.request.method === 'POST' && (status_action === 'leave' || status_action === 'restore')) {
+    try {
+        await set_corporation_member_status(auth_token as string, corporation_id, character_id, status_action)
+        Astro.response.headers.set('HX-Trigger', 'corporation-members-changed')
+    } catch (error) {
+        status_error = (error as Error).message || t('trial.status_failed')
     }
 }
 
@@ -57,6 +70,12 @@ const promote_url = `${refetch_url}&action=promote`
 const promote_confirm = character_name
     ? t('trial.promote_confirm').replace('{name}', character_name)
     : t('trial.promote_confirm_unnamed')
+const status_confirm = (action:'leave' | 'restore') => character_name
+    ? t(action === 'leave' ? 'trial.status_leave_confirm' : 'trial.status_restore_confirm').replace('{name}', character_name)
+    : t('trial.status_confirm_unnamed')
+const status_actions = (insights?.status_actions ?? []).filter(
+    (action):action is 'leave' | 'restore' => action === 'leave' || action === 'restore',
+)
 const target_id = `member-insights-${character_id}`
 
 const SIGNALS = ['fleets', 'kills', 'voice'] as const
@@ -124,6 +143,24 @@ import Button from '@components/blocks/Button.astro'
                                 </Button>
                             </div>
                         }
+                    </div>
+                }
+                {(status_actions.length > 0 || status_error) &&
+                    <div class="[ member-insights__promote ]">
+                        {status_error && <p class="[ member-insights__error ]" role="alert">{status_error}</p>}
+                        {status_actions.map((action) =>
+                            <Button
+                                type="button"
+                                size="sm"
+                                color={action === 'restore' ? 'green' : 'transparent'}
+                                hx-post={`${refetch_url}&action=${action}`}
+                                hx-target={`#${target_id}`}
+                                hx-swap="outerHTML"
+                                hx-confirm={status_confirm(action)}
+                            >
+                                {t(action === 'leave' ? 'trial.status_leave' : 'trial.status_restore')}
+                            </Button>
+                        )}
                     </div>
                 }
                 <h4 class="[ member-insights__eyebrow ]">{t('trial.member_compare')}</h4>

@@ -60,6 +60,7 @@ describe('alliance_health_url', () => {
             by: 'name',
             dir: 'asc',
             page: 2,
+            size: 5,
         })
         expect(alliance_health_href('/alliance/health', params, alliance_health_section_hash('trials'))).toBe(
             '/alliance/health?trials=passing&trials_corp=FOSFO&trials_q=bob&trials_by=name&trials_dir=asc&trials_p=2#health-trials',
@@ -87,5 +88,20 @@ describe('alliance_health_url', () => {
         )
         expect(params.get('trials')).toBe('passing')
         expect(params.has('trials_p')).toBe(false)
+    })
+
+    it('keeps a chosen page size and drops the default or an unknown one', () => {
+        const params = new URLSearchParams()
+        write_alliance_health_list_params(params, 'leave', { size: 100 })
+        expect(params.get('leave_n')).toBe('100')
+        expect(read_alliance_health_list_state(params, 'leave', {}).size).toBe(100)
+        expect(patch_from_alliance_health_params(params, 'leave')).toEqual({ size: 100 })
+        write_alliance_health_list_params(params, 'leave', { size: 5 })
+        expect(params.has('leave_n')).toBe(false)
+        write_alliance_health_list_params(params, 'leave', { size: 1000 })
+        expect(params.has('leave_n')).toBe(false)
+        expect(
+            read_alliance_health_list_state(new URLSearchParams('leave_n=7'), 'leave', {}).size,
+        ).toBe(5)
     })
 })

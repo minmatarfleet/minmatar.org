@@ -11,6 +11,7 @@ import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import PageSizeSelect from '@components/blocks/PageSizeSelect.astro'
 import {
     read_alliance_health_list_state,
     type AllianceHealthUrlSection,
@@ -51,6 +52,7 @@ const page_query =
         ? read_alliance_health_list_state(Astro.url.searchParams, url_section, {
             corp: initial,
             page: 1,
+            size: page_size,
         })
         : null
 const list_corp =
@@ -59,6 +61,7 @@ const list_corp =
         : initial
 const initial_search = page_query?.q ?? ''
 const initial_page = page_query?.page ?? 1
+const initial_page_size = page_query?.size ?? page_size
 ---
 
 <div
@@ -67,13 +70,13 @@ const initial_page = page_query?.page ?? 1
         search: initial_search,
         corp: list_corp,
         page: initial_page,
-        page_size,
+        page_size: initial_page_size,
         csv_headers: headers,
         csv_filename,
         match_count: rows.length,
         total_pages: 1,
         url_section: url_section ?? '',
-        url_defaults: { corp: initial, page: 1 },
+        url_defaults: { corp: initial, page: 1, size: page_size },
         row_selector: 'tr[data-search]',
         sort: false,
     })})`}
@@ -127,6 +130,7 @@ const initial_page = page_query?.page ?? 1
                     {t('alliance.health.showing')}
                     <span x-text="match_count"></span>
                 </small>
+                <PageSizeSelect value={initial_page_size} />
                 <Button size="sm" color="transparent" x-on:click="prev()" x-bind:disabled="page <= 1">
                     {t('alliance.health.prev')}
                 </Button>

@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { api_request, api_response, type ApiToken } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -46,6 +46,17 @@ export async function promote_corporation_member(access_token: string, id: numbe
         method: 'POST',
         token: access_token,
         error: 'Error promoting member',
+    })
+}
+
+/** Put a member on leave (CEO) or take them off leave (CEO, directors,
+ * People team): the same rules as the alliance health lists. */
+export async function set_corporation_member_status(access_token: string, id: number, character_id: number, action: CorporationMemberStatusAction) {
+    return await api_request<CorporationMemberStatus>(`${API_ENDPOINT}/corporations/${id}/members/${character_id}/status`, {
+        method: 'POST',
+        token: access_token,
+        body: { action },
+        error: 'Error changing community status',
     })
 }
 

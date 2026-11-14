@@ -2662,6 +2662,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put a member on leave or take them off leave */
+        post: operations["eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/page_text": {
         parameters: {
             query?: never;
@@ -13571,6 +13588,19 @@ export interface components {
             /** To Status */
             to_status: string;
         };
+        /** CorporationMemberStatusRequest */
+        CorporationMemberStatusRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "leave" | "restore";
+        };
+        /** CorporationMemberStatusResponse */
+        CorporationMemberStatusResponse: {
+            /** Community Status */
+            community_status: string;
+        };
         /** CorporationMembersTopResponse */
         CorporationMembersTopResponse: {
             /** Members */
@@ -21552,6 +21582,8 @@ export interface components {
              * @default false
              */
             can_promote?: boolean;
+            /** Community Status */
+            community_status?: string | null;
             /** Compare */
             compare?: components["schemas"]["TrialCompareResponse"][] | null;
             /** Corporation Ticker */
@@ -21563,6 +21595,11 @@ export interface components {
              */
             on_trial?: boolean;
             ships: components["schemas"]["TrialShipsResponse"];
+            /**
+             * Status Actions
+             * @default []
+             */
+            status_actions?: string[];
             trial?: components["schemas"]["TrialProgressResponse"] | null;
         };
         /** MembershipCharacterHistorySchema */
@@ -35903,6 +35940,60 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationMemberStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationMemberStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
