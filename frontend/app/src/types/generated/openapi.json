@@ -39228,6 +39228,75 @@
         "title": "RightNow",
         "type": "object"
       },
+      "RoleFleetResponse": {
+        "properties": {
+          "doctrine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "objective": {
+            "title": "Objective",
+            "type": "string"
+          },
+          "pilots_in_role": {
+            "title": "Pilots In Role",
+            "type": "integer"
+          },
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "start_time",
+          "type",
+          "objective",
+          "doctrine",
+          "pilots_in_role"
+        ],
+        "title": "RoleFleetResponse",
+        "type": "object"
+      },
+      "RolePilotResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "fleets"
+        ],
+        "title": "RolePilotResponse",
+        "type": "object"
+      },
       "RoleResponse": {
         "properties": {
           "capability": {
@@ -39252,6 +39321,30 @@
           "fleets_365d"
         ],
         "title": "RoleResponse",
+        "type": "object"
+      },
+      "RoleSpotlightResponse": {
+        "properties": {
+          "fleets": {
+            "items": {
+              "$ref": "#/components/schemas/RoleFleetResponse"
+            },
+            "title": "Fleets",
+            "type": "array"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/RolePilotResponse"
+            },
+            "title": "Pilots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pilots",
+          "fleets"
+        ],
+        "title": "RoleSpotlightResponse",
         "type": "object"
       },
       "Roster": {
@@ -80989,6 +81082,53 @@
           }
         ],
         "summary": "Your best character and doctrine fit on each hull, for the Fleet Roles guide ladders",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/roles": {
+      "get": {
+        "description": "capabilities: comma-separated classes; type_ids: the ladder hulls.",
+        "operationId": "capabilities_endpoints_get_roles_get_roles",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "capabilities",
+            "required": true,
+            "schema": {
+              "title": "Capabilities",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type_ids",
+            "required": true,
+            "schema": {
+              "title": "Type Ids",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleSpotlightResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Who flies a role most this year, and recent fleets that flew it",
         "tags": [
           "Training"
         ]

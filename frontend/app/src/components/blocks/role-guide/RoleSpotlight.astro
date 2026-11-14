@@ -1,0 +1,116 @@
+---
+/**
+ * Real people and real fights for a Fleet Roles guide, from data the site
+ * keeps: the pilots with the most fleets in the role this year, or recent
+ * fleets that flew the role's ships. Rendered by role_spotlight_component.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { TrainingRoleSpotlight } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { format_date_short } from '@helpers/date'
+
+interface Props {
+    part: 'pilots' | 'fleets'
+    /** null: not logged in. */
+    spotlight: TrainingRoleSpotlight | null
+}
+
+const { part, spotlight } = Astro.props
+---
+
+<div class="[ role-spotlight ]">
+    <h3 class="[ role-spotlight__title ]">{t(part === 'pilots' ? 'fleet_roles.top_pilots' : 'fleet_roles.recent_fleets')}</h3>
+    {spotlight === null ? (
+        <p class="[ role-spotlight__muted ]">{t('fleet_roles.log_in_spotlight')}</p>
+    ) : part === 'pilots' ? (
+        spotlight.pilots.length > 0 ? (
+            <ul class="[ role-spotlight__list ]">
+                {spotlight.pilots.map((pilot) => (
+                    <li>
+                        <img src={get_player_icon(pilot.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                        <span>
+                            <span class="[ role-spotlight__name ]">{pilot.name}</span>
+                            <span class="[ role-spotlight__muted ]">{t('fleet_roles.top_pilot_fleets').replace('{n}', String(pilot.fleets))}</span>
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        ) : (
+            <p class="[ role-spotlight__muted ]">{t('fleet_roles.no_top_pilots')}</p>
+        )
+    ) : (
+        spotlight.fleets.length > 0 ? (
+            <ul class="[ role-spotlight__list ]">
+                {spotlight.fleets.map((fleet) => (
+                    <li>
+                        <span>
+                            <a class="[ role-spotlight__name ]" href={translatePath(`/fleets/history/${fleet.fleet_id}`)}>
+                                {fleet.objective || fleet.doctrine || fleet.type}
+                            </a>
+                            <span class="[ role-spotlight__muted ]">
+                                {format_date_short(lang, fleet.start_time)} · {fleet.type}{fleet.doctrine && fleet.objective ? ` · ${fleet.doctrine}` : ''} · {t('fleet_roles.recent_fleet_pilots').replace('{n}', String(fleet.pilots_in_role))}
+                            </span>
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        ) : (
+            <p class="[ role-spotlight__muted ]">{t('fleet_roles.no_recent_fleets')}</p>
+        )
+    )}
+</div>
+
+<style lang="scss">
+    .role-spotlight {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .role-spotlight__title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.04em;
+        color: var(--fleet-yellow);
+    }
+
+    .role-spotlight__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        li > span {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        img {
+            flex: none;
+            border-radius: 50%;
+        }
+    }
+
+    .role-spotlight__name {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .role-spotlight__muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+</style>

@@ -3199,6 +3199,8 @@ export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 // Fleet Roles guide ladders: the best character and fit on each hull.
 export type TrainingHullReadiness = ApiResponse<'HullReadinessResponse'>
+// Fleet Roles guides: who flies a role most, and recent fleets that flew it.
+export type TrainingRoleSpotlight = ApiResponse<'RoleSpotlightResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
 

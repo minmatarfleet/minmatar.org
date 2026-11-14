@@ -1,5 +1,7 @@
 """Response and request bodies of the Training API."""
 
+from datetime import datetime
+
 from ninja import Schema
 
 
@@ -204,3 +206,23 @@ class HullReadinessResponse(Schema):
     character_name: str | None
     ready: bool
     days: float | None
+
+
+class RolePilotResponse(Schema):
+    character_id: int
+    name: str
+    fleets: int
+
+
+class RoleFleetResponse(Schema):
+    fleet_id: int
+    start_time: datetime
+    type: str
+    objective: str
+    doctrine: str | None
+    pilots_in_role: int
+
+
+class RoleSpotlightResponse(Schema):
+    pilots: list[RolePilotResponse]
+    fleets: list[RoleFleetResponse]

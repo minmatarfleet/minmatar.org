@@ -58,6 +58,7 @@ const title_of = (id: string) => sections.find((section) => section.id === id)?.
                                     {t('fleet_roles.fleet_history_lead')}
                                     <a href={translatePath('/fleets/history/')}>{t('fleet_roles.fleet_history_link')}</a>.
                                 </p>
+                                <LazyPartial url={translatePath(`/partials/role_spotlight_component/?role=${guide.slug}&part=fleets`)} indicator={false} trigger="reveal" />
                             </div>
                         )}
                     </div>
@@ -161,7 +162,7 @@ const title_of = (id: string) => sections.find((section) => section.id === id)?.
                         <a href={translatePath(certificatePath(guide.certificate_slug))}>{t('fleet_roles.open_certificate')}</a>
                     </div>
                     <div class="[ role-guide__card ]">
-                        <h3>{t('fleet_roles.find_mentor')}</h3>
+                        <LazyPartial url={translatePath(`/partials/role_spotlight_component/?role=${guide.slug}&part=pilots`)} indicator={false} trigger="reveal" />
                         <p>{t('fleet_roles.mentor_lead')}</p>
                         <a href={translatePath('/learning/mentors/')}>{t('fleet_roles.find_mentor')}</a>
                     </div>

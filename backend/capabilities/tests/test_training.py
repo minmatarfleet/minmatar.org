@@ -1,10 +1,13 @@
 """The Training tab: goals, plans, suggestions and account moves."""
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import Client
+from django.utils import timezone
 
 from app.test import TestCase
 from capabilities import services, training
+from capabilities.role_spotlight import role_spotlight
 from capabilities.models import (
     CapabilitySkill,
     CharacterAccount,
@@ -23,6 +26,7 @@ from capabilities.tests.test_services import give_skills
 from applications.l3arn import L3ARN_CORPORATION_NAME
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 SDE = fixture_sde()
 GUARDIAN = 11987
@@ -447,3 +451,64 @@ class HullReadinessTest(TrainingTestCase):
             [row["ship_type_id"] for row in response.json()],
             [GUARDIAN, NAPOC],
         )
+
+
+class RoleSpotlightTest(TrainingTestCase):
+    def _fleet(self, members, **fields):
+        fleet = EveFleet.objects.create(
+            type="strategic",
+            start_time=timezone.now(),
+            objective="Hold the Amamake gate",
+            doctrine=self.doctrine,
+            **fields,
+        )
+        instance = EveFleetInstance.objects.create(
+            id=fleet.pk + 900000, eve_fleet=fleet, end_time=timezone.now()
+        )
+        for index, ship_type_id in enumerate(members):
+            EveFleetInstanceMember.objects.create(
+                eve_fleet_instance=instance,
+                character_id=5000 + index,
+                character_name=f"Pilot {index}",
+                role="squad_member",
+                role_name="Squad Member",
+                ship_type_id=ship_type_id,
+                ship_name="",
+                solar_system_id=1,
+                solar_system_name="Amamake",
+                squad_id=1,
+                wing_id=1,
+            )
+        return fleet
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    def test_pilots_who_flew_the_role_most(self):
+        self._fleet([GUARDIAN, NAPOC])
+        self._fleet([GUARDIAN])
+        self._fleet([GUARDIAN], invite_only=True)
+        pilots = role_spotlight(["Logistics"], [GUARDIAN])["pilots"]
+        self.assertEqual(
+            pilots[0], {"character_id": 5000, "name": "Pilot 0", "fleets": 2}
+        )
+        self.assertEqual(len(pilots), 1)
+
+    def test_recent_fleets_that_flew_the_role_skip_private_ones(self):
+        busy = self._fleet([GUARDIAN, GUARDIAN, NAPOC])
+        self._fleet([GUARDIAN], invite_only=True)
+        self._fleet([NAPOC])
+        fleets = role_spotlight(["Logistics"], [GUARDIAN])["fleets"]
+        self.assertEqual([f["fleet_id"] for f in fleets], [busy.pk])
+        self.assertEqual(fleets[0]["pilots_in_role"], 2)
+        self.assertEqual(fleets[0]["doctrine"], "Armor")
+        self.assertEqual(fleets[0]["objective"], "Hold the Amamake gate")
+
+    def test_endpoint(self):
+        response = self.client.get(
+            f"/api/training/roles?capabilities=Logistics&type_ids={GUARDIAN}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.json()), {"pilots", "fleets"})

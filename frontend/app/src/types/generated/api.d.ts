@@ -9113,6 +9113,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who flies a role most this year, and recent fleets that flew it
+         * @description capabilities: comma-separated classes; type_ids: the ladder hulls.
+         */
+        get: operations["capabilities_endpoints_get_roles_get_roles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/": {
         parameters: {
             query?: never;
@@ -25878,6 +25898,33 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** RoleFleetResponse */
+        RoleFleetResponse: {
+            /** Doctrine */
+            doctrine: string | null;
+            /** Fleet Id */
+            fleet_id: number;
+            /** Objective */
+            objective: string;
+            /** Pilots In Role */
+            pilots_in_role: number;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Type */
+            type: string;
+        };
+        /** RolePilotResponse */
+        RolePilotResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Fleets */
+            fleets: number;
+            /** Name */
+            name: string;
+        };
         /** RoleResponse */
         RoleResponse: {
             /** Capability */
@@ -25886,6 +25933,13 @@ export interface components {
             fleets_365d: number;
             /** Ready */
             ready: components["schemas"]["ShipResponse"][];
+        };
+        /** RoleSpotlightResponse */
+        RoleSpotlightResponse: {
+            /** Fleets */
+            fleets: components["schemas"]["RoleFleetResponse"][];
+            /** Pilots */
+            pilots: components["schemas"]["RolePilotResponse"][];
         };
         /** Roster */
         Roster: {
@@ -51570,6 +51624,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HullReadinessResponse"][];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_roles_get_roles: {
+        parameters: {
+            query: {
+                capabilities: string;
+                type_ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleSpotlightResponse"];
                 };
             };
         };

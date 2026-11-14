@@ -98,11 +98,14 @@ Every slot the original design held for alliance-made content is filled from wha
 | Slot | Filled with |
 | --- | --- |
 | A video in each Why section and in the video lessons | Checked outside videos (The Brave Dojo, EVE University, Gildii Auscent, Fua Consternation, Shizuka's Station, Imperium News, Zip Slings, Pandemic Horde), each confirmed to exist |
-| A fight from our history | The "In our fleets" note on our doctrines and battlefields, and a link to Fleet history, where every recent fleet has its battle report and fight timeline |
-| Named FCs and mentors | The mentor finder, where approved mentors offer one-to-one classes |
+| A fight from our history | "Recent fleets that flew it": the finished fleets of the last 60 days that brought the most pilots in the role's ladder ships, each linking to its fleet page and battle report (`backend/capabilities/role_spotlight.py`, `GET /api/training/roles`), under the "In our fleets" note |
+| Named FCs and mentors | "Pilots who fly it most": the five pilots who flew the role's ladder ships on the most fleets this year, by name and portrait, plus the mentor finder for one-to-one classes |
 | Which ships we fly | Live doctrine tags on each ladder card, from the public doctrines API |
 | Screenshots | The fleet window screenshot from the New Player Fleet Guide |
 
 Simulator scenario text (target names, readouts) lives with the guide content in
 `frontend/app/src/components/blocks/role-sims/role_sim_data.ts`, the same way the capital guides keep their content in
 data files; the shared simulator frame's labels are in the i18n file.
+
+Both live lists use only fleets anyone in the alliance may see (no private or members-only group fleets), are shown to
+logged-in members only, and are cached for an hour.
