@@ -7,6 +7,7 @@ export const GUIDES_INDEX_COVER = {
 
 const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
     'Onboarding': '/images/alliance-cover.jpg',
+    'Fleet Roles': '/images/fleets-cover.jpg',
     'Faction Warfare Mechanics': '/images/guides/wiki_frontlines.png',
     'Faction Warfare Ships': '/images/doctrines-cover.jpg',
     'PVP': '/images/fleets-cover.jpg',
@@ -44,9 +45,12 @@ const GUIDE_COVERS: Record<string, string> = {
     'selling-loyalty-points': '/images/loyalty-points-cover.webp',
     'isk-ladder': '/images/loyalty-points-cover.webp',
     'subcapital-basics': '/images/readiness-cover.webp',
-    'subcapital-dps-guide': '/images/dps-card.jpg',
-    'subcapital-logi-guide': '/images/logistics-card.jpg',
-    'subcapital-support-guide': '/images/support-card.jpg',
+    'fleet-roles': '/images/fleets-cover.jpg',
+    'damage-guide': '/images/dps-card.jpg',
+    'remote-repair-guide': '/images/logistics-card.jpg',
+    'capacitor-warfare-guide': '/images/support-card.jpg',
+    'electronic-warfare-guide': '/images/support-card.jpg',
+    'positioning-warfare-guide': '/images/doctrines-cover.jpg',
     'capital-ship-basics': '/images/capitals-cover.jpg',
     'force-auxiliary-carrier-guide': '/images/faxes-cover.webp',
     'dreadnought-guide': '/images/dreads-cover.webp',

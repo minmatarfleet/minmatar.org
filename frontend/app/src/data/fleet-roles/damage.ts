@@ -1,0 +1,120 @@
+import type { FleetRoleGuide } from './types'
+
+export const damage: FleetRoleGuide = {
+    slug: 'damage',
+    guide_slug: 'damage-guide',
+    certificate_slug: 'fleet-role-damage',
+    name: 'Damage',
+    short_name: 'Damage',
+    lede: 'Kill what the FC calls, fast. Then use your utility slots to shape the grid while you do it.',
+    capabilities: ['DPS'],
+    hero_type_id: 17732,
+    read_minutes: 20,
+    why: [
+        'Every other role exists so that damage lands on the right ship at the right time. Damage pilots are the fleet’s clock: the faster a primary dies, the fewer repairs the enemy gets to land and the sooner the next one starts.',
+        'Speed comes from discipline more than from fits. A volley split across five targets kills none of them. A fleet that shoots the broadcast, has the next target locked before the switch, and holds the right ammo for the range kills a ship every few seconds.',
+        'It is where everyone starts, and where good habits pay off in every other role later.',
+    ],
+    why_video: { youtube_id: 'JVwkmvLau70', title: 'Understanding Damage Application', source: 'Shizuka’s Station · 2021' },
+    ladder: [
+        { rung: 1, ship_type_id: 644, name: 'Typhoon', hull_class: 'Battleship', job: 'The entry battleship. Learn the calls on a cheaper hull.' },
+        { rung: 2, ship_type_id: 32311, name: 'Typhoon Fleet Issue', hull_class: 'Battleship', job: 'Faster and tougher, same job.' },
+        { rung: 3, ship_type_id: 17732, name: 'Tempest Fleet Issue', hull_class: 'Battleship', job: 'Artillery alpha from range.' },
+        { rung: 3, ship_type_id: 17726, name: 'Apocalypse Navy Issue', hull_class: 'Battleship', job: 'Lasers that reach, and a buffer that holds.' },
+    ],
+    featured_sim: 'applied-damage',
+    lessons: [
+        {
+            id: 'raw-versus-applied',
+            title: 'Raw versus applied',
+            summary: 'Tracking, signature and range: why the paper number is not what lands.',
+            format: 'sim',
+            sim: 'applied-damage',
+            body: [
+                'The DPS in your fitting window assumes every shot hits a target that is big, slow and inside your range. Real targets are not.',
+                'Turrets hit less when the target moves fast across your view relative to their tracking and its signature, and when it is past optimal range into falloff. Missiles do not miss, but they do less damage when the target is smaller than their explosion radius or faster than their explosion velocity.',
+                'In the simulator, change the target’s speed, size and range and watch how much of the paper number survives.',
+            ],
+        },
+        {
+            id: 'target-calling',
+            title: 'Target calling',
+            summary: 'Broadcasts, locking ahead, and switching on the call.',
+            format: 'video',
+            video: { youtube_id: 'NlWlLgU9k8w', title: 'Hotkeys: all the broadcasts', source: 'Fua Consternation · 2021' },
+            body: [
+                'Shoot the ship the FC broadcasts, even when something juicier is closer. Bind a key to lock the broadcast target, and keep the next call locked while you shoot the current one so the switch costs nothing.',
+                'When the call changes, switch immediately. A primary that is almost dead will die without you; the new primary will not.',
+            ],
+        },
+        {
+            id: 'utility-slots',
+            title: 'Utility slots',
+            summary: 'Neuts and an electronic mid slot, used without losing the primary.',
+            format: 'read',
+            body: [
+                'Many doctrine battleships carry a utility high slot or an electronic warfare mid slot: a neut, a target painter, a sensor booster. They are there to shape the grid while your guns keep shooting the primary.',
+                'Run them on whatever the FC asks: neuts on the tackle that is pointing our anchor, a painter on the primary so missiles apply. If no one asks, help the primary.',
+            ],
+        },
+        {
+            id: 'ammo-and-range',
+            title: 'Ammo and range',
+            summary: 'Switch before the FC has to ask.',
+            format: 'read',
+            body: [
+                'Long-range ammo reaches but hits softly. Short-range ammo hits hard and only up close. The fit in the MOTD tells you which charges to carry; carry all of them.',
+                'Watch the range to the primary. When the fight closes in, swap to the harder-hitting ammo during a quiet moment rather than in the middle of a call.',
+            ],
+        },
+        {
+            id: 'buffer-and-overheat',
+            title: 'Buffer and overheat',
+            summary: 'Living through the alpha. Heat is a resource, not a habit.',
+            format: 'video',
+            video: { youtube_id: '6HsJxe3pUzA', title: 'Overheating: an in-depth look', source: 'Fua Consternation · 2024' },
+            body: [
+                'Overheating makes modules stronger and damages them while it runs. Burnt modules stop working until they are repaired.',
+                'Heat when the FC calls it or when it decides the fight: guns on a primary that must die now, hardeners when you are the primary. Heat in bursts and stop well before a module burns.',
+            ],
+        },
+        {
+            id: 'ladder-in-practice',
+            title: 'The ladder in practice',
+            summary: 'What each hull brings to a strategic fleet.',
+            format: 'read',
+            body: [
+                'The Typhoon is how most pilots meet the battleship doctrines: cheap enough to lose while you learn the calls. The Typhoon Fleet Issue does the same job faster and with more buffer.',
+                'The Tempest Fleet Issue fires large artillery volleys from range, so primaries die before repairs land. The Apocalypse Navy Issue uses lasers that reach far and switch range instantly with crystals. The doctrine on the night decides which one you bring.',
+            ],
+        },
+    ],
+    phases: [
+        { name: 'Form-up', fc: 'Check your fit against the MOTD.', you: 'Load doctrine ammo, set broadcasts, and bind lock-broadcast to a key.' },
+        { name: 'Warp-in', fc: 'Align. Warp on my call.', you: 'Align on the broadcast and warp on the call, not before.' },
+        { name: 'First contact', fc: 'Primary is the called ship, secondary after it.', you: 'Shoot the primary with the secondary already locked.' },
+        { name: 'The brawl', fc: 'Switch. Overheat guns.', you: 'Switch on the call. Heat in bursts and watch module damage.' },
+        { name: 'Disengage', fc: 'Align out, keep shooting.', you: 'Keep shooting while aligned. Warp on the call.' },
+    ],
+    mistakes: [
+        { title: 'Shooting your own target', fix: 'Damage spread across five ships kills none of them. Shoot the broadcast.' },
+        { title: 'The wrong ammo for the range', fix: 'Long-range ammo at close range throws damage away. Swap as the fight closes.' },
+        { title: 'Overheating until it burns', fix: 'Burnt modules stop shooting. Heat in bursts and stop early.' },
+    ],
+    drills: [
+        { id: 'applied-sim', title: 'Beat the applied damage simulator', how: 'Land most of your paper DPS on a moving cruiser.', kind: 'sim', sim: 'applied-damage' },
+        { id: 'fleet-lock-ahead', title: 'Lock ahead on a fleet', how: 'Have the next target locked when the switch is called, every time.', kind: 'fleet' },
+        { id: 'setup-broadcasts', title: 'Set up broadcast hotkeys', how: 'Lock broadcast, align and warp to broadcast, on keys you can reach.', kind: 'setup' },
+        { id: 'fleet-strategic', title: 'Fly a strategic op in a doctrine battleship', how: 'Any hull from the ladder, in the doctrine the MOTD calls.', kind: 'fleet' },
+    ],
+    resources: [
+        { kind: 'video', title: 'Understanding Damage Application', source: 'Shizuka’s Station · 2021', why: 'Tracking, signature and explosion velocity, shown on screen.', url: 'https://www.youtube.com/watch?v=JVwkmvLau70' },
+        { kind: 'video', title: 'Overheating: an in-depth look', source: 'Fua Consternation · 2024', why: 'What heat does, what it burns, and how to manage it.', url: 'https://www.youtube.com/watch?v=6HsJxe3pUzA' },
+        { kind: 'video', title: 'Hotkeys: all the broadcasts', source: 'Fua Consternation · 2021', why: 'Every fleet broadcast and how to bind it.', url: 'https://www.youtube.com/watch?v=NlWlLgU9k8w' },
+        { kind: 'wiki', title: 'Turret mechanics', source: 'EVE University wiki', why: 'The hit-chance formula, with worked examples.', url: 'https://wiki.eveuniversity.org/Turret_mechanics' },
+        { kind: 'wiki', title: 'Missile mechanics', source: 'EVE University wiki', why: 'Explosion radius and velocity against signature and speed.', url: 'https://wiki.eveuniversity.org/Missile_mechanics' },
+        { kind: 'wiki', title: 'Overheating', source: 'EVE University wiki', why: 'Heat damage, racks, and which modules to heat.', url: 'https://wiki.eveuniversity.org/Overheating' },
+        { kind: 'wiki', title: 'Fleet interface', source: 'EVE University wiki', why: 'Broadcasts, the watchlist and target calling.', url: 'https://wiki.eveuniversity.org/Fleet_interface' },
+        { kind: 'tool', title: 'Pyfa', source: 'pyfa-org on GitHub', why: 'Graph your fit’s damage against any target profile.', url: 'https://github.com/pyfa-org/Pyfa' },
+    ],
+}

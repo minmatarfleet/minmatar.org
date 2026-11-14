@@ -1,0 +1,41 @@
+---
+// no-error-refetch: on an API failure the drills render without progress, the same as the page before it loads.
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { drill_learning_slug, get_fleet_role } from '@/data/fleet-roles'
+import { complete_learning, get_learning_me } from '@helpers/api.minmatar.org/learning'
+
+const guide = get_fleet_role(Astro.url.searchParams.get('role') ?? '')
+if (!guide)
+    return HTTP_404_Not_Found()
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (Astro.request.method === 'POST' && user && auth_token) {
+    const form = await Astro.request.formData()
+    const learning = String(form.get('learning') ?? '')
+    // Only this guide's own drills can be completed from here.
+    const allowed = guide.drills.map((drill) => drill_learning_slug(guide, drill.id))
+    if (allowed.includes(learning)) {
+        try {
+            await complete_learning(auth_token, learning)
+        } catch (error) {
+            console.log(`Could not complete drill ${learning}: ${error.message}`)
+        }
+    }
+}
+
+let completed: string[] | null = null
+if (user && auth_token) {
+    try {
+        completed = (await get_learning_me(auth_token)).completed_learning_slugs
+    } catch (error) {
+        console.log(`Drill progress unavailable: ${error.message}`)
+        completed = []
+    }
+}
+
+import RoleDrills from '@components/blocks/role-guide/RoleDrills.astro'
+---
+
+<RoleDrills guide={guide} completed={completed} />

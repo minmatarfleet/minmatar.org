@@ -1,0 +1,410 @@
+---
+/**
+ * The body of a Fleet Roles guide: eight sections in a fixed order, the same
+ * on every role (docs/fleets/fleet-role-training-plan.md, section 4).
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetRoleGuide } from '@/data/fleet-roles'
+import { fleet_role_guides, guide_sims } from '@/data/fleet-roles'
+import { certificatePath } from '@/data/guides/urls'
+import GuideShell from '@components/blocks/GuideShell.astro'
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import YTVideoWidget from '@components/blocks/YTVideoWidget.astro'
+import RoleLadder from '@components/blocks/role-guide/RoleLadder.astro'
+import RoleDrills from '@components/blocks/role-guide/RoleDrills.astro'
+import RoleLesson from '@components/blocks/role-guide/RoleLesson.astro'
+import RoleSimSlot from '@components/blocks/role-guide/RoleSimSlot.astro'
+
+export type RoleGuideSection = { id: string; title: string }
+
+interface Props {
+    guide: FleetRoleGuide
+    sections: RoleGuideSection[]
+}
+
+const { guide, sections } = Astro.props
+
+const id_prefix = guide.slug
+const index = fleet_role_guides.findIndex((g) => g.slug === guide.slug) + 1
+const sim_count = guide_sims(guide).length
+const video_count = guide.lessons.filter((lesson) => lesson.video).length + (guide.why_video ? 1 : 0)
+const subtitle = [
+    t('fleet_roles.role_of').replace('{n}', String(index)).replace('{total}', String(fleet_role_guides.length)),
+    t('fleet_roles.read_minutes').replace('{n}', String(guide.read_minutes)),
+    sim_count === 1 ? t('fleet_roles.simulator') : t('fleet_roles.simulators').replace('{n}', String(sim_count)),
+    t('fleet_roles.videos').replace('{n}', String(video_count)),
+].join(' · ')
+const title_of = (id: string) => sections.find((section) => section.id === id)?.title ?? id
+---
+
+<GuideShell title={guide.name} subtitle={subtitle}>
+    <div class="[ role-guide ]">
+        <p class="[ role-guide__lede ]">{guide.lede}</p>
+
+        <GuideContentsLayout sections={sections}>
+            <section id="why" data-section-id="why" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-why`}>
+                <h2 id={`${id_prefix}-why`} class="[ role-guide__title ]">{title_of('why')}</h2>
+                <div class="[ role-guide__split ]">
+                    <div class="[ role-guide__prose ]">
+                        {guide.why.map((paragraph) => <p set:html={paragraph} />)}
+                    </div>
+                    {guide.why_video && (
+                        <figure class="[ role-guide__video ]">
+                            <YTVideoWidget videoid={guide.why_video.youtube_id} videotitle={guide.why_video.title} />
+                            <figcaption>{guide.why_video.title} · {guide.why_video.source}</figcaption>
+                        </figure>
+                    )}
+                </div>
+            </section>
+
+            <section id="ladder" data-section-id="ladder" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-ladder`}>
+                <h2 id={`${id_prefix}-ladder`} class="[ role-guide__title ]">{title_of('ladder')}</h2>
+                <LazyPartial url={translatePath(`/partials/role_ladder_component/?role=${guide.slug}`)} indicator={false}>
+                    <RoleLadder guide={guide} />
+                </LazyPartial>
+            </section>
+
+            <section id="mechanics" data-section-id="mechanics" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-mechanics`}>
+                <h2 id={`${id_prefix}-mechanics`} class="[ role-guide__title ]">{title_of('mechanics')}</h2>
+                <RoleSimSlot sim={guide.featured_sim} />
+                <div class="[ role-guide__lessons ]">
+                    {guide.lessons.map((lesson, lesson_index) => (
+                        <RoleLesson
+                            lesson={lesson}
+                            index={lesson_index}
+                            featured_sim={guide.featured_sim}
+                            id_prefix={id_prefix}
+                        />
+                    ))}
+                </div>
+            </section>
+
+            <section id="ongrid" data-section-id="ongrid" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-ongrid`}>
+                <h2 id={`${id_prefix}-ongrid`} class="[ role-guide__title ]">{title_of('ongrid')}</h2>
+                <p class="[ role-guide__muted ]">{t('fleet_roles.ongrid_lead')}</p>
+                <ol class="[ role-guide__phases ]">
+                    {guide.phases.map((phase, phase_index) => (
+                        <li class="[ role-guide__phase ]">
+                            <span class="[ role-guide__phase-name ]">{String(phase_index + 1).padStart(2, '0')} · {phase.name}</span>
+                            <q class="[ role-guide__phase-fc ]">{phase.fc}</q>
+                            <span class="[ role-guide__phase-you ]">{phase.you}</span>
+                        </li>
+                    ))}
+                </ol>
+            </section>
+
+            <section id="mistakes" data-section-id="mistakes" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-mistakes`}>
+                <h2 id={`${id_prefix}-mistakes`} class="[ role-guide__title ]">{title_of('mistakes')}</h2>
+                <ol class="[ role-guide__mistakes ]">
+                    {guide.mistakes.map((mistake, mistake_index) => (
+                        <li>
+                            <span class="[ role-guide__mistake-number ]" aria-hidden="true">{mistake_index + 1}</span>
+                            <span class="[ role-guide__mistake-title ]">{mistake.title}</span>
+                            <span>{mistake.fix}</span>
+                        </li>
+                    ))}
+                </ol>
+            </section>
+
+            <section id="drills" data-section-id="drills" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-drills`}>
+                <h2 id={`${id_prefix}-drills`} class="[ role-guide__title ]">{title_of('drills')}</h2>
+                <LazyPartial url={translatePath(`/partials/role_drills_component/?role=${guide.slug}`)} indicator={false}>
+                    <RoleDrills guide={guide} />
+                </LazyPartial>
+            </section>
+
+            <section id="deeper" data-section-id="deeper" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-deeper`}>
+                <h2 id={`${id_prefix}-deeper`} class="[ role-guide__title ]">{title_of('deeper')}</h2>
+                <p class="[ role-guide__muted ]">{t('fleet_roles.deeper_lead')}</p>
+                <ul class="[ role-guide__resources ]">
+                    {guide.resources.map((resource) => (
+                        <li>
+                            <a class="[ role-guide__resource ]" href={resource.url} target="_blank" rel="noopener noreferrer">
+                                <span class:list={['[ role-guide__kind ]', `role-guide__kind--${resource.kind}`]}>
+                                    {t(t_key('fleet_roles.kind.', resource.kind))}
+                                </span>
+                                <span class="[ role-guide__resource-text ]">
+                                    <span class="[ role-guide__resource-title ]">{resource.title}</span>
+                                    <span class="[ role-guide__muted ]">{resource.source}</span>
+                                    <span>{resource.why}</span>
+                                </span>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+
+            <section id="certify" data-section-id="certify" class="[ role-guide__section ]" aria-labelledby={`${id_prefix}-certify`}>
+                <h2 id={`${id_prefix}-certify`} class="[ role-guide__title ]">{title_of('certify')}</h2>
+                <div class="[ role-guide__certify ]">
+                    <div class="[ role-guide__card ]">
+                        <h3>{t('fleet_roles.certificate_title').replace('{name}', guide.name)}</h3>
+                        <p>{t('fleet_roles.certificate_lead')}</p>
+                        <a href={translatePath(certificatePath(guide.certificate_slug))}>{t('fleet_roles.open_certificate')}</a>
+                    </div>
+                    <div class="[ role-guide__card ]">
+                        <h3>{t('fleet_roles.find_mentor')}</h3>
+                        <p>{t('fleet_roles.mentor_lead')}</p>
+                        <a href={translatePath('/learning/mentors/')}>{t('fleet_roles.find_mentor')}</a>
+                    </div>
+                </div>
+            </section>
+        </GuideContentsLayout>
+    </div>
+</GuideShell>
+
+<style lang="scss">
+    .role-guide {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        min-width: 0;
+    }
+
+    .role-guide__lede {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .role-guide__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--component-padding-block) var(--space-l-xl);
+        border: 1px solid var(--hairline-medium);
+        background: color-mix(in srgb, var(--component-background) 72%, transparent);
+        min-width: 0;
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
+
+        @media (max-width: 48rem) {
+            padding-inline: var(--space-s);
+        }
+    }
+
+    .role-guide__title {
+        margin: 0;
+        padding-bottom: var(--space-s);
+        border-bottom: 1px solid var(--hairline-medium);
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        letter-spacing: 0.04em;
+        color: var(--fleet-yellow);
+    }
+
+    .role-guide__split {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-l);
+        align-items: flex-start;
+    }
+
+    .role-guide__prose {
+        flex: 999 1 22rem;
+        max-width: var(--max-text-width);
+
+        :global(p) {
+            margin: 0 0 var(--space-s);
+            line-height: 1.7;
+        }
+    }
+
+    .role-guide__video {
+        display: flex;
+        flex: 1 1 18rem;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        min-width: 0;
+
+        figcaption {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+
+    .role-guide__muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-guide__lessons {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .role-guide__phases {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--hairline-medium);
+    }
+
+    .role-guide__phase {
+        display: grid;
+        grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--space-2xs) var(--space-s);
+        align-items: baseline;
+        padding: var(--space-xs) var(--space-s);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .role-guide__phase-name {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .role-guide__phase-fc {
+        font-style: italic;
+        color: var(--fleet-yellow);
+    }
+
+    .role-guide__phase-you {
+        font-size: var(--step--1);
+    }
+
+    .role-guide__mistakes {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 2rem minmax(0, 1fr);
+            column-gap: var(--space-xs);
+            max-width: var(--max-text-width);
+        }
+
+        li > span:not(.role-guide__mistake-number) {
+            grid-column: 2;
+        }
+    }
+
+    .role-guide__mistake-number {
+        grid-row: span 2;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        color: var(--fleet-red);
+    }
+
+    .role-guide__mistake-title {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .role-guide__resources {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .role-guide__resource {
+        display: flex;
+        gap: var(--space-s);
+        height: 100%;
+        box-sizing: border-box;
+        padding: var(--space-s);
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+        color: var(--foreground);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--hairline-strong);
+            }
+        }
+    }
+
+    .role-guide__kind {
+        flex: none;
+        align-self: flex-start;
+        width: 5.5rem;
+        box-sizing: border-box;
+        padding: var(--space-3xs) var(--space-2xs);
+        background: var(--hairline);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .role-guide__kind--video {
+        color: color-mix(in srgb, var(--alliance-blue) 40%, var(--highlight));
+    }
+
+    .role-guide__kind--sim {
+        color: var(--fleet-yellow);
+    }
+
+    .role-guide__resource-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        font-size: var(--step--1);
+    }
+
+    .role-guide__resource-title {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .role-guide__certify {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .role-guide__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-m);
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+        }
+
+        a {
+            margin-top: auto;
+            color: var(--highlight);
+        }
+    }
+</style>

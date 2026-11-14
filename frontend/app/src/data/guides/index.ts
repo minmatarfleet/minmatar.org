@@ -71,7 +71,7 @@ const guideModules = ({
     'onboarding-culture-map': onboarding_culture_map,
 } satisfies Record<string, MarkdownModule>) as Record<string, GuideModule>
 
-export const guideCategories = ["Onboarding","Faction Warfare Mechanics","Faction Warfare Ships","PVP","Subcapital Ships","Capital Ships","ISK Generation","Utility"] as const
+export const guideCategories = ["Onboarding","Fleet Roles","Faction Warfare Mechanics","Faction Warfare Ships","PVP","Subcapital Ships","Capital Ships","ISK Generation","Utility"] as const
 
 /** Preferred subsection order within a category (index page). */
 export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
@@ -305,48 +305,81 @@ export const guides: GuideMeta[] = [
         }],
     },
     {
+        slug: "fleet-roles",
+        title: "Fleet Roles",
+        excerpt: "Five jobs that decide fights: Damage, Remote Repair, Capacitor Warfare, Electronic Warfare and Positioning. Guides, simulators and certificates.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "damage-guide",
+        title: "Damage",
+        excerpt: "Kill what the FC calls, fast: applied damage, target calling, ammo, overheating, and a simulator for what really lands.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "remote-repair-guide",
+        title: "Remote Repair",
+        excerpt: "Keep the fleet alive: the rep race, broadcasts, capacitor chains, logi anchoring and the Zarmazd.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "capacitor-warfare-guide",
+        title: "Capacitor Warfare",
+        excerpt: "Drain the enemy until nothing works: the capacitor curve, neuts versus nos, range and target priority.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "electronic-warfare-guide",
+        title: "Electronic Warfare",
+        excerpt: "Stop the enemy locking what they want: jam chance, spreading ECM across their logi, bursts and staying alive.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "positioning-warfare-guide",
+        title: "Positioning Warfare",
+        excerpt: "Decide where the enemy fleet is and whether it can leave: points, booshes, bumps, heavy tackle, and bubbles where they work.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
         slug: "subcapital-basics",
         title: "Subcapital Basics",
         excerpt: "Fundamentals of flying subcapital ships in Minmatar Fleet doctrines.",
-        category: "Subcapital Ships",
-        author: "Minmatar Fleet",
-        authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
-        }],
-        comingSoon: true,
-    },
-    {
-        slug: "subcapital-dps-guide",
-        title: "DPS Guide",
-        excerpt: "DPS roles, fittings, and expectations for fleet subcaps.",
-        category: "Subcapital Ships",
-        author: "Minmatar Fleet",
-        authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
-        }],
-        comingSoon: true,
-    },
-    {
-        slug: "subcapital-logi-guide",
-        title: "Logi Guide",
-        excerpt: "Logistics roles, reps, and how to keep the fleet alive.",
-        category: "Subcapital Ships",
-        author: "Minmatar Fleet",
-        authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
-        }],
-        comingSoon: true,
-    },
-    {
-        slug: "subcapital-support-guide",
-        title: "Support Guide",
-        excerpt: "Ewar, tackle, and other support roles in subcapital fleets.",
         category: "Subcapital Ships",
         author: "Minmatar Fleet",
         authors: [{

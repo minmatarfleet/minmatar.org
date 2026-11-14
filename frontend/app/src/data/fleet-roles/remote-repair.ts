@@ -1,0 +1,130 @@
+import type { FleetRoleGuide } from './types'
+
+export const remote_repair: FleetRoleGuide = {
+    slug: 'remote-repair',
+    guide_slug: 'remote-repair-guide',
+    certificate_slug: 'fleet-role-remote-repair',
+    name: 'Remote Repair',
+    short_name: 'Logi',
+    lede: 'Keep the fleet alive. Lock fast, repair the broadcast, hold your cap chain, and stay on the logi anchor.',
+    capabilities: ['Logistics'],
+    hero_type_id: 11987,
+    read_minutes: 25,
+    why: [
+        'A fleet with logistics turns the enemy’s damage into a race it can lose. Every primary they call has to die faster than your repairs land, and every one that survives costs them time while your damage keeps landing.',
+        'Good logi is invisible: nothing dies, so nobody notices. Bad logi is the first thing anyone notices after a loss. The difference is mostly speed, the seconds between a broadcast and the first repair cycle, and discipline about where you sit.',
+        'It is also the role every strategic fleet needs most, and the one with the clearest path from a cheap Tech I cruiser to a ship the alliance builds doctrines around.',
+    ],
+    why_video: { youtube_id: 'xK02SAZbeaU', title: 'Intro to Logi', source: 'Amoni Panala · EVE University class · 2024' },
+    ladder: [
+        { rung: 1, ship_type_id: 625, name: 'Augoror', hull_class: 'Cruiser', job: 'Tech I armor logi. Learn the watchlist here.' },
+        { rung: 1, ship_type_id: 634, name: 'Exequror', hull_class: 'Cruiser', job: 'The Gallente Tech I option, same job.' },
+        { rung: 2, ship_type_id: 11987, name: 'Guardian', hull_class: 'Logistics', job: 'Tech II armor logi on a capacitor chain.' },
+        { rung: 3, ship_type_id: 49713, name: 'Zarmazd', hull_class: 'Logistics', job: 'Triglavian Tech II logi: repairs grow the longer you hold one target.' },
+    ],
+    featured_sim: 'rep-race',
+    lessons: [
+        {
+            id: 'rep-race',
+            title: 'The rep race',
+            summary: 'Incoming damage, lock time and repair cycles, against each other.',
+            format: 'sim',
+            sim: 'rep-race',
+            body: [
+                'From the moment the FC calls a primary, the target is losing hit points. Your repairs only start after you lock it, and an armor repair lands at the end of its cycle, not the start. Every second spent noticing, locking and cycling is hit points you do not get back.',
+                'That is why logi repair from broadcasts and pre-lock likely targets. Run the simulator twice, once repairing from broadcasts and once from eyeballs, and watch the gap.',
+            ],
+        },
+        {
+            id: 'watchlist-broadcasts',
+            title: 'Watchlist and broadcasts',
+            summary: 'The settings that make you fast, and the first ten seconds after a call.',
+            format: 'video',
+            video: { youtube_id: '19BRVGPREnQ', title: 'PVP Skills: Logistics 101', source: 'Murda Mike · The Brave Dojo · 2023' },
+            body: [
+                'Put your logi partners and the fleet’s anchors on your watchlist so you see their health without hunting for them. Filter the broadcast window so repair requests stand out, and bind a key to lock a broadcasting ship.',
+                'When a ship broadcasts for repairs: lock it, start repairs, say nothing on comms unless the FC asks. When the primary is called, lock it before the broadcast comes.',
+            ],
+        },
+        {
+            id: 'cap-chains',
+            title: 'Capacitor chains',
+            summary: 'Guardian pairs, who gives to whom, and what happens when one dies.',
+            format: 'diagram',
+            video: { youtube_id: 'g0ikhpmou6Q', title: 'Logi 101 and cap chain practice', source: 'Jinx De’Caire · The Brave Dojo · 2020' },
+            body: [
+                'Guardians cannot run their repairers on their own capacitor for long. They pair up, or join a ring, and keep a remote capacitor transmitter running on a partner. Each gives what the other burns.',
+                'Keep your transmitter on even when nothing is shooting, so you are never the one catching up. If your partner dies, say it in the logi channel at once and get a new partner from the logi FC.',
+            ],
+        },
+        {
+            id: 'range-and-falloff',
+            title: 'Range and falloff',
+            summary: 'Remote repairs have had falloff since December 2015.',
+            format: 'read',
+            body: [
+                'Remote repairers have an optimal range and a falloff. A Large Remote Armor Repairer II reaches {rr_optimal_km} km with {rr_falloff_km} km of falloff before ship bonuses; past optimal, each cycle repairs less.',
+                'Know where your optimal ends, and sit so the fleet is inside it. A repair that lands at half strength may not be enough to win the race.',
+            ],
+        },
+        {
+            id: 'logi-anchoring',
+            title: 'Logi anchoring',
+            summary: 'Where the logi anchor sits and why you never chase.',
+            format: 'video',
+            video: { youtube_id: 'XrIBa8vOng8', title: 'Horde Flightschool: logi anchoring', source: 'Pandemic Horde · 2017' },
+            body: [
+                'Logistics anchor on their own anchor, not on the fleet’s. The logi anchor keeps the wing at range from the fleet, inside everyone’s optimal and outside the enemy’s easy reach.',
+                'Never burn towards a broadcast. Chasing one ship drags you out of range of everyone else and off the anchor, where you are alone and easy to primary.',
+            ],
+        },
+        {
+            id: 'logi-fc',
+            title: 'Logi FC',
+            summary: 'Calling the wing, capacitor checks, moving the anchor.',
+            format: 'read',
+            body: [
+                'Larger fleets have a logi FC who runs the logi channel: assigns chain partners, calls capacitor checks, and moves the logi anchor when the fight moves. On fleet pages, the Logi FC is one of the roles the FC fills before form-up.',
+                'Answer capacitor checks in the logi channel with a number. If you are getting neuted, say so: the logi FC can move a partner onto you or move the wing.',
+            ],
+        },
+        {
+            id: 'zarmazd',
+            title: 'Flying the Zarmazd',
+            summary: 'Repairs that grow on one target: when to switch and when not to.',
+            format: 'read',
+            body: [
+                'The Zarmazd is a Triglavian Tech II logistics cruiser. Its mutadaptive remote armor repairer gets stronger every cycle it stays on the same target, up to its maximum.',
+                'Switching to a new target starts it from the bottom again. Hold your target through a primary call unless the new broadcast is clearly in more danger, and leave fast switches to the Guardians.',
+            ],
+        },
+    ],
+    phases: [
+        { name: 'Form-up', fc: 'Logi in the logi channel, chain partners set.', you: 'Set your partner, add anchors and partners to your watchlist, filter broadcasts to repairs.' },
+        { name: 'Warp-in', fc: 'Logi, warp at range.', you: 'Land at range on the logi anchor and lock your chain partner first.' },
+        { name: 'First contact', fc: 'Repairs on broadcasts only.', you: 'Repair the broadcast and pre-lock the next likely primary.' },
+        { name: 'The brawl', fc: 'Logi, capacitor check.', you: 'Answer in the logi channel. Hold the logi anchor, never chase.' },
+        { name: 'Disengage', fc: 'Logi align last, repairs stay on.', you: 'Keep repairs on until the fleet is in warp, then go.' },
+    ],
+    mistakes: [
+        { title: 'Chasing the broadcast', fix: 'Burning towards a target pulls you off the anchor and out of range of everyone else.' },
+        { title: 'Breaking the chain', fix: 'A Guardian that stops transmitting starves its partner. Keep the transmitter on even when nothing is shooting.' },
+        { title: 'Switching the Zarmazd too early', fix: 'Moving off a target throws its spool-up away. Switch for a ship in more danger, not for every broadcast.' },
+    ],
+    drills: [
+        { id: 'rep-race-sim', title: 'Beat the rep race simulator', how: 'Keep the anchor alive for 60 seconds.', kind: 'sim', sim: 'rep-race' },
+        { id: 'fleet-logi', title: 'Fly logi on a fleet', how: 'Any logistics hull on an Academy or kitchen-sink fleet, repairing from broadcasts.', kind: 'fleet' },
+        { id: 'fleet-chain', title: 'Hold a capacitor chain for a whole fleet', how: 'With the same partner from form-up to dock.', kind: 'fleet' },
+        { id: 'singularity', title: 'Practise the chain on Singularity', how: 'Optional. Two Guardians, one transmitter each, under neuts.', kind: 'optional' },
+    ],
+    resources: [
+        { kind: 'video', title: 'PVP Skills: Logistics 101', source: 'Murda Mike · The Brave Dojo · 2023', why: 'A full logi class: locking, broadcasts, positioning.', url: 'https://www.youtube.com/watch?v=19BRVGPREnQ' },
+        { kind: 'video', title: 'Intro to Logi', source: 'Amoni Panala · EVE University class · 2024', why: 'The basics from a teaching corporation.', url: 'https://www.youtube.com/watch?v=xK02SAZbeaU' },
+        { kind: 'video', title: 'Logi 101 and cap chain practice', source: 'Jinx De’Caire · The Brave Dojo · 2020', why: 'A capacitor chain practised live.', url: 'https://www.youtube.com/watch?v=g0ikhpmou6Q' },
+        { kind: 'video', title: 'Horde Flightschool: logi anchoring', source: 'Pandemic Horde · 2017', why: 'Anchoring in a big fleet, still how it works.', url: 'https://www.youtube.com/watch?v=XrIBa8vOng8' },
+        { kind: 'wiki', title: 'Logistics', source: 'EVE University wiki', why: 'Capacitor chains, the watchlist, broadcasts and anchoring.', url: 'https://wiki.eveuniversity.org/Logistics' },
+        { kind: 'wiki', title: 'Horde-flying logistics', source: 'EVE University wiki', why: 'Logi in a fleet with dozens of logi.', url: 'https://wiki.eveuniversity.org/Horde-Flying_Logistics' },
+        { kind: 'wiki', title: 'Zarmazd', source: 'EVE University wiki', why: 'Skills, fits and the mutadaptive repairer.', url: 'https://wiki.eveuniversity.org/Zarmazd' },
+        { kind: 'tool', title: 'Pyfa', source: 'pyfa-org on GitHub', why: 'Graph your remote repairs and capacitor stability.', url: 'https://github.com/pyfa-org/Pyfa' },
+    ],
+}

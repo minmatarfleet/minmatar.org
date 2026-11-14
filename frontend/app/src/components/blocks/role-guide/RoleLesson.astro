@@ -1,0 +1,117 @@
+---
+/** One lesson in a Fleet Roles guide's Mechanics section. */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { RoleLesson as Lesson, RoleSimId } from '@/data/fleet-roles'
+import RoleSimSlot from '@components/blocks/role-guide/RoleSimSlot.astro'
+import YTVideoWidget from '@components/blocks/YTVideoWidget.astro'
+
+interface Props {
+    lesson: Lesson
+    index: number
+    /** The section's featured simulator, already shown above the lessons. */
+    featured_sim: RoleSimId
+    id_prefix: string
+}
+
+const { lesson, index, featured_sim, id_prefix } = Astro.props
+const heading_id = `${id_prefix}-lesson-${lesson.id}`
+const show_sim = lesson.sim && lesson.sim !== featured_sim
+---
+
+<article class="[ role-lesson ]" id={`lesson-${lesson.id}`} aria-labelledby={heading_id}>
+    <header class="[ role-lesson__header ]">
+        <span class="[ role-lesson__number ]">{String(index + 1).padStart(2, '0')}</span>
+        <h3 id={heading_id} class="[ role-lesson__title ]">{lesson.title}</h3>
+        <span class:list={['[ role-lesson__format ]', `role-lesson__format--${lesson.format}`]}>
+            {t(t_key('fleet_roles.format.', lesson.format))}
+        </span>
+    </header>
+    <div class="[ role-lesson__body ]">
+        {lesson.body.map((paragraph) => <p set:html={paragraph} />)}
+        {lesson.sim === featured_sim && <p class="[ role-lesson__note ]">{t('fleet_roles.simulator_above')}</p>}
+    </div>
+    {show_sim && lesson.sim && <RoleSimSlot sim={lesson.sim} />}
+    {lesson.video && (
+        <figure class="[ role-lesson__video ]">
+            <YTVideoWidget videoid={lesson.video.youtube_id} videotitle={lesson.video.title} />
+            <figcaption>{lesson.video.title} · {lesson.video.source}</figcaption>
+        </figure>
+    )}
+</article>
+
+<style lang="scss">
+    .role-lesson {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding-top: var(--space-m);
+        border-top: 1px solid var(--hairline);
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
+    }
+
+    .role-lesson__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+    }
+
+    .role-lesson__number {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-lesson__title {
+        flex: 1 1 12rem;
+        margin: 0;
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .role-lesson__format {
+        padding: var(--space-3xs) var(--space-2xs);
+        background: var(--hairline);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .role-lesson__format--sim {
+        color: var(--fleet-yellow);
+    }
+
+    .role-lesson__body {
+        max-width: var(--max-text-width);
+
+        :global(p) {
+            margin: 0 0 var(--space-s);
+            line-height: 1.7;
+        }
+
+        :global(strong) {
+            color: var(--highlight);
+        }
+    }
+
+    .role-lesson__note {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-lesson__video {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        max-width: 48rem;
+
+        figcaption {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+</style>

@@ -23,6 +23,8 @@ interface Props {
     cover_alt: string
     structured_data: Record<string, unknown>
     progress: PageProgressProps
+    /** An extra breadcrumb between Learning and this page, e.g. the Fleet Roles hub. */
+    parent?: { href: string; label: string }
 }
 
 const {
@@ -35,6 +37,7 @@ const {
     cover_alt,
     structured_data,
     progress,
+    parent,
 } = Astro.props
 ---
 
@@ -68,6 +71,7 @@ const {
                         <nav class="cap-guide-page__breadcrumb" aria-label="Breadcrumb">
                             <ol>
                                 <li><a href={translatePath(LEARNING_HUB_PATH)}>{t('learning.page_title')}</a></li>
+                                {parent && <li><a href={translatePath(parent.href)}>{parent.label}</a></li>}
                                 <li aria-current="page">{page_title}</li>
                             </ol>
                         </nav>

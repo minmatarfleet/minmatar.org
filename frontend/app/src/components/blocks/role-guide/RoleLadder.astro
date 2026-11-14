@@ -1,0 +1,207 @@
+---
+/**
+ * A Fleet Roles guide's ship ladder. Rendered without readiness in the page
+ * (what logged-out readers and search engines see) and again, with the
+ * reader's readiness from the Training API, by role_ladder_component.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetRoleGuide } from '@/data/fleet-roles'
+import type { TrainingHullReadiness } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { fitting_path } from '@helpers/ship_paths'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+interface Props {
+    guide: FleetRoleGuide
+    /** null: not logged in. undefined: still loading (the page's own render). */
+    readiness?: TrainingHullReadiness[] | null
+    [propName: string]: any
+}
+
+const { guide, readiness, ...attributes } = Astro.props
+delete attributes.class
+
+const by_type = new Map((readiness ?? []).map((row) => [row.ship_type_id, row]))
+
+function state(type_id: number) {
+    if (!readiness) return null
+    const row = by_type.get(type_id)
+    if (!row || !row.in_doctrine) return { tone: 'none', label: t('fleet_roles.not_in_doctrine'), row }
+    if (row.ready) return { tone: 'ready', label: t('fleet_roles.ready'), row }
+    if (row.days === null || row.days === undefined) return { tone: 'none', label: t('fleet_roles.no_pilot'), row }
+    return {
+        tone: 'training',
+        label: t('fleet_roles.days_to_ready').replace('{days}', String(Math.max(1, Math.ceil(row.days)))),
+        row,
+    }
+}
+---
+
+<div class:list={['[ role-ladder ]', Astro.props.class]} {...attributes}>
+    <XFadeScroll>
+    <ol class="[ role-ladder__list ]">
+        {guide.ladder.map((rung) => {
+            const status = state(rung.ship_type_id)
+            return (
+                <li class="[ role-ladder__card ]">
+                    <div class="[ role-ladder__art ]">
+                        <img
+                            src={get_item_icon(rung.ship_type_id, 256)}
+                            alt=""
+                            width="160"
+                            height="160"
+                            loading="lazy"
+                        />
+                        <span class="[ role-ladder__rung ]">{t('fleet_roles.rung').replace('{n}', String(rung.rung))}</span>
+                    </div>
+                    <div class="[ role-ladder__body ]">
+                        <h3 class="[ role-ladder__name ]">{rung.name}</h3>
+                        <p class="[ role-ladder__class ]">{rung.hull_class}</p>
+                        <p class="[ role-ladder__job ]">{rung.job}</p>
+                        {status && (
+                            <p class:list={['[ role-ladder__state ]', `role-ladder__state--${status.tone}`]}>
+                                <span>{status.label}</span>
+                                {status.row?.character_name && status.tone !== 'none' && (
+                                    <small>{status.row.character_name}</small>
+                                )}
+                            </p>
+                        )}
+                        {status?.row?.fitting_id && (
+                            <a class="[ role-ladder__fit ]" href={translatePath(fitting_path(status.row.fitting_id, status.row.fitting_name))}>
+                                {t('fleet_roles.doctrine_fit')}
+                            </a>
+                        )}
+                    </div>
+                </li>
+            )
+        })}
+    </ol>
+    </XFadeScroll>
+    {guide.ladder_note && <p class="[ role-ladder__note ]">{guide.ladder_note}</p>}
+    {readiness === null && <p class="[ role-ladder__note ]">{t('fleet_roles.log_in_readiness')}</p>}
+    {readiness && readiness.length > 0 && (
+        <p class="[ role-ladder__note ]">
+            {t('fleet_roles.ladder_for_you')} <a href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</a>
+        </p>
+    )}
+</div>
+
+<style lang="scss">
+    .role-ladder {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .role-ladder__list {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(9.5rem, 1fr);
+        gap: var(--space-xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .role-ladder__card {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+        overflow: hidden;
+    }
+
+    .role-ladder__art {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        background: var(--background);
+
+        img {
+            width: 100%;
+            max-width: 10rem;
+            height: auto;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+    }
+
+    .role-ladder__rung {
+        position: absolute;
+        top: var(--space-2xs);
+        left: var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .role-ladder__body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-xs) var(--space-s) var(--space-s);
+    }
+
+    .role-ladder__name {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+    }
+
+    .role-ladder__class,
+    .role-ladder__note {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-ladder__job {
+        flex: 1;
+        margin: 0;
+        font-size: var(--step--1);
+    }
+
+    .role-ladder__state {
+        display: flex;
+        flex-direction: column;
+        align-self: flex-start;
+        margin: var(--space-2xs) 0 0;
+        padding: var(--space-3xs) var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+
+        small {
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+    }
+
+    .role-ladder__state--ready {
+        background: color-mix(in srgb, var(--green) 22%, transparent);
+    }
+
+    .role-ladder__state--training {
+        background: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
+        color: var(--fleet-yellow);
+    }
+
+    .role-ladder__state--none {
+        background: var(--hairline);
+        color: var(--text-muted);
+    }
+
+    .role-ladder__fit {
+        margin-top: var(--space-2xs);
+        font-size: var(--step--1);
+    }
+
+    .role-ladder__note a {
+        color: var(--highlight);
+    }
+</style>
