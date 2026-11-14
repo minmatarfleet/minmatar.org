@@ -125,6 +125,10 @@
                     this.$dispatch('alliance-health-corp', this.corp)
                 })
                 this.$watch('page', () => { this.refresh(); this.sync_url() })
+                this.$watch('page_size', () => {
+                    if (this.page !== 1) this.page = 1
+                    else { this.refresh(); this.sync_url() }
+                })
                 if (this.sort) {
                     this.$watch('order_by', () => { this.page = 1; this.refresh(); this.sync_url() })
                     this.$watch('order_dir', () => { this.page = 1; this.refresh(); this.sync_url() })
@@ -137,6 +141,7 @@
                 if (from_url.corp) this.corp = from_url.corp
                 if (from_url.q !== undefined) this.search = from_url.q
                 if (from_url.page) this.page = from_url.page
+                if (from_url.size) this.page_size = from_url.size
                 if (this.sort && from_url.by && this.order_kinds?.[from_url.by]) {
                     this.order_by = from_url.by
                 }
@@ -148,6 +153,7 @@
                     corp: this.corp,
                     q: this.search,
                     page: this.page,
+                    size: this.page_size,
                 }
                 if (this.sort) {
                     patch.by = this.order_by

@@ -1,0 +1,46 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { PAGE_SIZE_OPTIONS } from '@helpers/alliance_health_url'
+
+import Select from '@components/blocks/Select.astro'
+
+/**
+ * Rows-per-page picker for a list paged by an Alpine component: binds to
+ * that component's `page_size` (`model`), so it only changes which
+ * already-rendered rows are shown.
+ */
+interface Props {
+    value:      number;
+    options?:   readonly number[];
+    model?:     string;
+    [propName: string]: any;
+}
+
+const {
+    value,
+    options = PAGE_SIZE_OPTIONS,
+    model = 'page_size',
+    ...attributes
+} = Astro.props
+delete attributes.class
+---
+
+<label class:list={['[ page-size-select ]', Astro.props.class]} {...attributes}>
+    <small>{t('pager.rows_per_page')}</small>
+    <Select size="sm" width="6rem" x-model.number={model}>
+        {options.map((size) => (
+            <option value={size} selected={size === value}>{size}</option>
+        ))}
+    </Select>
+</label>
+
+<style lang="scss">
+    .page-size-select {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        color: var(--faded);
+    }
+</style>

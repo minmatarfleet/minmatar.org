@@ -8413,6 +8413,36 @@
         "title": "CorporationMemberStatusChange",
         "type": "object"
       },
+      "CorporationMemberStatusRequest": {
+        "properties": {
+          "action": {
+            "enum": [
+              "leave",
+              "restore"
+            ],
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "CorporationMemberStatusRequest",
+        "type": "object"
+      },
+      "CorporationMemberStatusResponse": {
+        "properties": {
+          "community_status": {
+            "title": "Community Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "community_status"
+        ],
+        "title": "CorporationMemberStatusResponse",
+        "type": "object"
+      },
       "CorporationMembersTopResponse": {
         "properties": {
           "members": {
@@ -28724,6 +28754,17 @@
             "title": "Can Promote",
             "type": "boolean"
           },
+          "community_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Community Status"
+          },
           "compare": {
             "anyOf": [
               {
@@ -28759,6 +28800,14 @@
           },
           "ships": {
             "$ref": "#/components/schemas/TrialShipsResponse"
+          },
+          "status_actions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Status Actions",
+            "type": "array"
           },
           "trial": {
             "anyOf": [
@@ -57509,6 +57558,93 @@
           }
         ],
         "summary": "Move a trial member to active (CEO, directors, People team)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/status": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationMemberStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationMemberStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put a member on leave or take them off leave",
         "tags": [
           "Corporations",
           "Corporations"

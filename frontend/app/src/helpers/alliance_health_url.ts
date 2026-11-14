@@ -37,6 +37,18 @@ export const ALLIANCE_HEALTH_DEFAULT_BUCKETS = {
 
 export type AllianceHealthUrlOrderDir = 'asc' | 'desc'
 
+/** Rows a health list can show per page; the default stays 5. */
+export const PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const
+export const DEFAULT_PAGE_SIZE = 5
+
+export function parse_page_size(raw: string | null | undefined): number | undefined {
+    if (!raw) return undefined
+    const size = Number.parseInt(raw, 10)
+    return (PAGE_SIZE_OPTIONS as readonly number[]).includes(size)
+        ? size
+        : undefined
+}
+
 export interface AllianceHealthUrlListState {
     bucket?: string
     corp: string
@@ -44,6 +56,7 @@ export interface AllianceHealthUrlListState {
     by: string
     dir: AllianceHealthUrlOrderDir
     page: number
+    size: number
 }
 
 export interface AllianceHealthUrlListPatch {
@@ -53,6 +66,7 @@ export interface AllianceHealthUrlListPatch {
     by?: string
     dir?: AllianceHealthUrlOrderDir
     page?: number
+    size?: number
 }
 
 export interface AllianceHealthUrlListDefaults {
@@ -61,6 +75,7 @@ export interface AllianceHealthUrlListDefaults {
     by?: string
     dir?: AllianceHealthUrlOrderDir
     page?: number
+    size?: number
 }
 
 export function alliance_health_section_hash(
@@ -90,6 +105,7 @@ function keys_for(section: AllianceHealthUrlSection) {
         by: `${section}_by`,
         dir: `${section}_dir`,
         page: `${section}_p`,
+        size: `${section}_n`,
     }
 }
 
@@ -120,12 +136,17 @@ export function read_alliance_health_list_state(
     const by = params.get(keys.by)?.trim() || fallback_by
     const dir = parse_dir(params.get(keys.dir)) ?? fallback_dir
     const page = parse_page(params.get(keys.page)) ?? fallback_page
+    const size =
+        parse_page_size(params.get(keys.size)) ??
+        defaults.size ??
+        DEFAULT_PAGE_SIZE
     const state: AllianceHealthUrlListState = {
         corp,
         q,
         by,
         dir,
         page,
+        size,
     }
     if (section !== 'corps') {
         state.bucket = parse_alliance_health_bucket(
@@ -152,6 +173,8 @@ export function patch_from_alliance_health_params(
     if (params.has(keys.dir) && dir) patch.dir = dir
     const page = parse_page(params.get(keys.page))
     if (page) patch.page = page
+    const size = parse_page_size(params.get(keys.size))
+    if (size) patch.size = size
     return patch
 }
 
@@ -208,6 +231,12 @@ export function write_alliance_health_list_params(
         const page = Math.max(1, Math.trunc(patch.page) || 1)
         if (page === (defaults.page ?? 1)) params.delete(keys.page)
         else params.set(keys.page, String(page))
+    }
+    if (patch.size !== undefined) {
+        const size = parse_page_size(String(patch.size))
+        if (!size || size === (defaults.size ?? DEFAULT_PAGE_SIZE))
+            params.delete(keys.size)
+        else params.set(keys.size, String(size))
     }
 }
 

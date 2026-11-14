@@ -4,6 +4,8 @@ from copy import deepcopy
 from datetime import timedelta
 
 import jwt
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User
 from django.db.models import signals
@@ -817,6 +819,42 @@ class AllianceHealthEndpointTestCase(TestCase):
         body = response.json()
         self.assertEqual(body["bucket"], "returning")
         self.assertEqual(body["counts"]["returning"], 0)
+
+    def _leave_queries(self, count: int) -> int:
+        snap = AllianceHealthSnapshot.objects.latest("computed_at")
+        snap.payload["hygiene"]["leave"]["current"] = [
+            {
+                "user_id": 1000 + i,
+                "username": f"leave_{i}",
+                "pilot": f"Leave Pilot {i}",
+                "corp": "Test Corp",
+                "corporation_id": 1,
+                "character_id": 5000 + i,
+                "fleets": 0,
+                "kills": 0,
+                "voice_hours": 0.0,
+                "story": "Away",
+                "conf": "high",
+                "reason": "Away",
+            }
+            for i in range(count)
+        ]
+        snap.save()
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(
+                "/api/alliance/health/leave?bucket=current",
+                **self._auth(self.staff_token),
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["pilots"]), count)
+        return len(ctx.captured_queries)
+
+    def test_leave_list_queries_do_not_grow_with_rows(self):
+        # The page can show up to 100 rows at once; the list must stay a
+        # fixed number of queries however long it is. The first request
+        # warms the feature cache.
+        self._leave_queries(1)
+        self.assertEqual(self._leave_queries(1), self._leave_queries(150))
 
     def test_leave_csv(self):
         response = self.client.get(

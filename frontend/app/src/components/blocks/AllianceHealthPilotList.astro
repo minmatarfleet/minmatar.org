@@ -21,6 +21,7 @@ import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import AllianceHealthPilotCard from '@components/blocks/AllianceHealthPilotCard.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import PageSizeSelect from '@components/blocks/PageSizeSelect.astro'
 
 interface Props {
     rows: AllianceHealthPilotListRow[]
@@ -75,6 +76,7 @@ const page_query =
             by: default_by,
             dir: default_dir,
             page: 1,
+            size: page_size,
         })
         : null
 
@@ -85,6 +87,7 @@ const order_by =
 const order_dir: AllianceHealthOrderDir = page_query?.dir ?? default_dir
 const initial_search = page_query?.q ?? ''
 const initial_page = page_query?.page ?? 1
+const initial_page_size = page_query?.size ?? page_size
 const list_corp = page_query?.corp ?? default_corp
 const corps = Array.from(
     new Set(
@@ -108,7 +111,7 @@ const visible_keys = new Set(
         order_dir,
         order_kinds,
         page: initial_page,
-        page_size,
+        page_size: initial_page_size,
     }).map((row) => row.row_id ?? `${row.name}:${row.corp}`),
 )
 const csv_headers = csv_headers_from_pilot(colored_rows[0], {
@@ -126,7 +129,7 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
         search: initial_search,
         corp: list_corp,
         page: initial_page,
-        page_size,
+        page_size: initial_page_size,
         match_count: rows.length,
         total_pages: 1,
         order_by,
@@ -140,6 +143,7 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
             by: default_by,
             dir: default_dir,
             page: 1,
+            size: page_size,
         },
         row_selector: '[data-health-card]',
         sort: true,
@@ -222,6 +226,7 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
                     {t('alliance.health.showing')}
                     <span x-text="match_count"></span>
                 </small>
+                <PageSizeSelect value={initial_page_size} />
                 <Button size="sm" color="transparent" x-on:click="prev()" x-bind:disabled="page <= 1">
                     {t('alliance.health.prev')}
                 </Button>
