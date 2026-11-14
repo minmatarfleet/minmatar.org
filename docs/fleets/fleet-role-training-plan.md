@@ -28,8 +28,8 @@ bubbles for the fleets that leave it.
 
 Every guide renders these sections in this order (`frontend/app/src/components/blocks/role-guide/RoleGuide.astro`):
 
-1. **Why this role wins fights**, with an optional lead video.
-2. **The ladder**: ship cards. A logged-in reader sees their best character's readiness on each hull and a link to the
+1. **Why this role wins fights**, with an optional lead video and an "In our fleets" note on where the role shows up in our doctrines and battlefields.
+2. **The ladder**: ship cards. Each card lists the current doctrines that fly the hull and the slot it fills (Primary, Academy, Support, Utility), read live from the public doctrines API, so the ladder never names a retired doctrine. A logged-in reader sees their best character's readiness on each hull and a link to the
    doctrine fit, from `GET /api/training/hulls` (`backend/capabilities/endpoints/get_hulls.py`), loaded by
    `role_ladder_component`.
 3. **The mechanics**: the featured simulator, then each lesson (read, simulator, video or diagram).
@@ -37,7 +37,7 @@ Every guide renders these sections in this order (`frontend/app/src/components/b
 5. **Mistakes that lose fights.**
 6. **Drills**: a simulator drill completes itself when the simulator is beaten (the simulator dispatches
    `fleet-role-sim:beaten` and `role_drills_component` posts the completion); a fleet drill has a Mark done button.
-7. **Go deeper**: outside videos, EVE University pages, CCP dev blogs and tools, each opened and checked.
+7. **Go deeper**: our own guides and site tools first (New Player Fleet Guide, Faction Warfare Battlefields, Doctrines, d-scan, Skill plans, the Training tab), then outside videos, EVE University pages, CCP dev blogs and tools, each opened and checked.
 8. **Ask, then certify**: the role's certificate and the mentor finder.
 
 Guide content lives in `frontend/app/src/data/fleet-roles/`, one file per role. Prose quotes module numbers as
