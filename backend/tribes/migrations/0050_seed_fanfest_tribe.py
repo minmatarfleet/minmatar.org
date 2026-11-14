@@ -6,16 +6,45 @@ the tribe is created without a chief (the alliance executor stands in until
 one is appointed). Re-running leaves an existing tribe untouched, except that
 a still-empty chief seat is filled.
 
-The tribe's Discord role and channel are not created here; link them by hand
-in the admin (Tribe.group and Tribe.discord_channel_id).
+The tribe and group get auth groups ("Tribe - Fanfest" and
+"Tribe Group - Fanfest Attendees"). They are created with the real Group
+model so the discord signals create the matching Discord roles. If Discord
+cannot be reached, that group is skipped and the deploy carries on; link it
+in the admin later. Discord channels are never created automatically; set
+discord_channel_id in the admin if one is wanted.
 """
 
+import logging
+
 from django.conf import settings
-from django.db import migrations
+from django.db import migrations, transaction
+
+logger = logging.getLogger(__name__)
 
 TRIBE_SLUG = "fanfest"
 GROUP_CODE = "fanfest.attendees"
 CHIEF_CHARACTER_NAME = "Sycamoria"
+TRIBE_AUTH_GROUP = "Tribe - Fanfest"
+GROUP_AUTH_GROUP = "Tribe Group - Fanfest Attendees"
+
+
+def ensure_auth_group_id(name):
+    """Create (or reuse) an auth group and return its id, or None.
+
+    Uses the real Group model, not the historical one, so the discord
+    group_post_save signal fires and creates the Discord role. A Discord
+    failure rolls back only this savepoint.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from django.contrib.auth.models import Group  # noqa: PLC0415
+
+    try:
+        with transaction.atomic():
+            group, _ = Group.objects.get_or_create(name=name)
+            return group.id
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Could not create auth group %s", name)
+        return None
 
 
 def find_chief_id(apps):
@@ -37,10 +66,11 @@ def create_fanfest_tribe(apps, schema_editor):
     # Test databases stay empty; tests call seed_fanfest_tribe.
     if getattr(settings, "TESTING", False):
         return
-    seed_fanfest_tribe(apps)
+    seed_fanfest_tribe(apps, auth_group_id=ensure_auth_group_id)
 
 
-def seed_fanfest_tribe(apps):
+def seed_fanfest_tribe(apps, auth_group_id=None):
+    """Create the tribe and group. auth_group_id(name) -> id links roles."""
     Tribe = apps.get_model("tribes", "Tribe")
     TribeGroup = apps.get_model("tribes", "TribeGroup")
 
@@ -62,14 +92,25 @@ def seed_fanfest_tribe(apps):
         tribe.chief_id = chief_id
         tribe.save(update_fields=["chief"])
 
-    if not TribeGroup.objects.filter(code=GROUP_CODE).exists():
-        TribeGroup.objects.create(
+    group = TribeGroup.objects.filter(code=GROUP_CODE).first()
+    if group is None:
+        group = TribeGroup.objects.create(
             tribe=tribe,
             name="Attendees",
             code=GROUP_CODE,
             description="Pilots attending or helping organise EVE Fanfest.",
             is_active=True,
         )
+
+    if auth_group_id is None:
+        return
+    for row, name in ((tribe, TRIBE_AUTH_GROUP), (group, GROUP_AUTH_GROUP)):
+        if row.group_id is not None:
+            continue
+        group_id = auth_group_id(name)
+        if group_id is not None:
+            row.group_id = group_id
+            row.save(update_fields=["group"])
 
 
 class Migration(migrations.Migration):
