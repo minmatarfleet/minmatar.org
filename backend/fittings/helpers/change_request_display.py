@@ -32,6 +32,7 @@ COMPOSITION_ROLE_LABELS = {
     "secondary": "Academy",
     "support": "Support",
     "utility": "Utility",
+    "alts": "Alts",
     "capitals": "Capitals",
 }
 

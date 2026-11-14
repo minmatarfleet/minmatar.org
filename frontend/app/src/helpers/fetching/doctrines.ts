@@ -34,6 +34,7 @@ export async function fetch_doctrine_options(): Promise<DoctrineType[]> {
         secondary_fittings: [],
         support_fittings: [],
         utility_fittings: [],
+        alts_fittings: [],
         capitals_fittings: [],
         location_ids: doctrine.location_ids ?? [],
     }))
@@ -81,6 +82,7 @@ export async function fetch_doctrines() {
             secondary_fittings: await Promise.all(doctrine.secondary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
             support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
             utility_fittings: await Promise.all((doctrine.utility_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
+            alts_fittings: await Promise.all((doctrine.alts_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
             capitals_fittings: await Promise.all((doctrine.capitals_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
             location_ids: doctrine.location_ids ?? []
         } as DoctrineType
@@ -103,6 +105,7 @@ export async function fetch_doctrine_by_id(id:number) {
         secondary_fittings: await Promise.all(doctrine.secondary_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         support_fittings: await Promise.all(doctrine.support_fittings.map(async (fitting) => await get_fitting_item(fitting) )),
         utility_fittings: await Promise.all((doctrine.utility_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
+        alts_fittings: await Promise.all((doctrine.alts_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
         capitals_fittings: await Promise.all((doctrine.capitals_fittings ?? []).map(async (fitting) => await get_fitting_item(fitting) )),
         location_ids: doctrine.location_ids ?? [],
         retired: doctrine.retired ?? false,

@@ -46,6 +46,7 @@ ROLE_ORDER = (
     "primary",
     "support",
     "utility",
+    "alts",
     "capitals",
     ACADEMY_ROLE,
     OFF_DOCTRINE,
@@ -63,9 +64,9 @@ def latest_payload() -> Optional[dict]:
 
 
 def helpful_role(role: Optional[str], academy: bool) -> bool:
-    """Primary, support, utility and capitals help a fleet; Academy fits
-    only from Academy pilots; off-doctrine hulls never."""
-    if role in ("primary", "support", "utility", "capitals"):
+    """Primary, support, utility, alts and capitals help a fleet; Academy
+    fits only from Academy pilots; off-doctrine hulls never."""
+    if role in ("primary", "support", "utility", "alts", "capitals"):
         return True
     return role == ACADEMY_ROLE and academy
 

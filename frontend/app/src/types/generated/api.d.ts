@@ -14962,6 +14962,11 @@ export interface components {
         /** DoctrineCompositionRequest */
         DoctrineCompositionRequest: {
             /**
+             * Alts
+             * @default []
+             */
+            alts?: number[];
+            /**
              * Capitals
              * @default []
              */
@@ -15011,6 +15016,11 @@ export interface components {
          * @description Doctrines API Response
          */
         DoctrineResponse: {
+            /**
+             * Alts Fittings
+             * @default []
+             */
+            alts_fittings?: components["schemas"]["FittingResponse"][];
             /** Capitals Fittings */
             capitals_fittings: components["schemas"]["FittingResponse"][];
             /**
