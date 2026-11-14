@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("fittings", "0041_doctrine_soft_delete"),
+        ("fittings", "0042_alter_evedoctrinefitting_role"),
     ]
 
     operations = [
