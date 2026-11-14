@@ -39336,6 +39336,13 @@
             "title": "Fleets Days",
             "type": "integer"
           },
+          "mentors": {
+            "items": {
+              "$ref": "#/components/schemas/RolePilotResponse"
+            },
+            "title": "Mentors",
+            "type": "array"
+          },
           "pilots": {
             "items": {
               "$ref": "#/components/schemas/RolePilotResponse"
@@ -39345,6 +39352,7 @@
           }
         },
         "required": [
+          "mentors",
           "pilots",
           "fleets",
           "fleets_days"

@@ -224,6 +224,8 @@ class RoleFleetResponse(Schema):
 
 
 class RoleSpotlightResponse(Schema):
+    # Approved mentors taking requests who fly the role.
+    mentors: list[RolePilotResponse]
     pilots: list[RolePilotResponse]
     fleets: list[RoleFleetResponse]
     # 60, or 365 when no fleet in the last 60 days flew the role.

@@ -21,6 +21,22 @@ const { part, spotlight } = Astro.props
 ---
 
 <div class="[ role-spotlight ]">
+    {part === 'pilots' && spotlight && spotlight.mentors.length > 0 && (
+        <>
+            <h3 class="[ role-spotlight__title ]">{t('fleet_roles.role_mentors')}</h3>
+            <ul class="[ role-spotlight__list ]">
+                {spotlight.mentors.map((mentor) => (
+                    <li>
+                        <img src={get_player_icon(mentor.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                        <span>
+                            <a class="[ role-spotlight__name ]" href={translatePath('/learning/mentors/')}>{mentor.name}</a>
+                            <span class="[ role-spotlight__muted ]">{t('fleet_roles.role_mentor_line').replace('{n}', String(mentor.fleets))}</span>
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        </>
+    )}
     <h3 class="[ role-spotlight__title ]">
         {t(part === 'pilots' ? 'fleet_roles.top_pilots' : (spotlight && spotlight.fleets_days > 60 ? 'fleet_roles.year_fleets' : 'fleet_roles.recent_fleets'))}
     </h3>

@@ -29,6 +29,7 @@ from applications.l3arn import L3ARN_CORPORATION_NAME
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from learning.models import MentorProfile
 
 SDE = fixture_sde()
 GUARDIAN = 11987
@@ -514,7 +515,26 @@ class RoleSpotlightTest(TrainingTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            set(response.json()), {"pilots", "fleets", "fleets_days"}
+            set(response.json()),
+            {"mentors", "pilots", "fleets", "fleets_days"},
+        )
+
+    def test_mentors_who_fly_the_role(self):
+        mentor = User.objects.create_user(username="mentor")
+        EveCharacter.objects.create(
+            character_id=5000, character_name="Pilot 0", user=mentor
+        )
+        MentorProfile.objects.create(user=mentor, status="approved")
+        self._fleet([GUARDIAN, GUARDIAN])
+        result = role_spotlight(["Logistics"], [GUARDIAN])
+        self.assertEqual(
+            result["mentors"],
+            [{"character_id": 5000, "name": "Pilot 0", "fleets": 1}],
+        )
+        MentorProfile.objects.filter(user=mentor).update(taking_requests=False)
+        cache.clear()
+        self.assertEqual(
+            role_spotlight(["Logistics"], [GUARDIAN])["mentors"], []
         )
 
     def test_a_quiet_role_widens_to_the_year(self):

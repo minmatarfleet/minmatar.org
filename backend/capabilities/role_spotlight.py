@@ -16,14 +16,16 @@ from django.db.models import Count
 from django.utils import timezone
 
 from app.cache import cache_get, cache_set
+from eveonline.models import EveCharacter
 from fleets.helpers.visibility import alliance_fleets_q
 from fleets.models import EveFleet, EveFleetInstanceMember
+from learning.models import MentorProfile
 
 RECENT_DAYS = 60
 PILOT_DAYS = 365
 LIMIT = 5
 CACHE_SECONDS = 60 * 60
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 
 
 def role_spotlight(capabilities: list[str], ship_type_ids: list[int]) -> dict:
@@ -41,6 +43,7 @@ def role_spotlight(capabilities: list[str], ship_type_ids: list[int]) -> dict:
         # A quiet role still shows real fights: widen to the year.
         fleets, days = _fleets(ship_type_ids, PILOT_DAYS), PILOT_DAYS
     result = {
+        "mentors": _mentors(ship_type_ids),
         "pilots": _pilots(ship_type_ids),
         "fleets": fleets,
         "fleets_days": days,
@@ -74,6 +77,57 @@ def _pilots(ship_type_ids: list[int]) -> list[dict]:
             {
                 "character_id": row["character_id"],
                 "name": row["character_name"],
+                "fleets": row["fleets"],
+            }
+        )
+        if len(out) == LIMIT:
+            break
+    return out
+
+
+def _mentors(ship_type_ids: list[int]) -> list[dict]:
+    """
+    Approved mentors taking requests whose characters flew these hulls this
+    year, most fleets first: the people to ask about this role by name.
+    """
+    if not ship_type_ids:
+        return []
+    mentor_users = set(
+        MentorProfile.objects.filter(
+            status=MentorProfile.STATUS_APPROVED, taking_requests=True
+        ).values_list("user_id", flat=True)
+    )
+    if not mentor_users:
+        return []
+    characters = {
+        c.character_id: c
+        for c in EveCharacter.objects.filter(user_id__in=mentor_users)
+    }
+    if not characters:
+        return []
+    since = timezone.now() - timedelta(days=PILOT_DAYS)
+    rows = (
+        EveFleetInstanceMember.objects.filter(
+            character_id__in=list(characters),
+            ship_type_id__in=ship_type_ids,
+            eve_fleet_instance__end_time__isnull=False,
+            eve_fleet_instance__start_time__gte=since,
+            eve_fleet_instance__eve_fleet__in=_visible_fleets(),
+        )
+        .values("character_id")
+        .annotate(fleets=Count("eve_fleet_instance__eve_fleet", distinct=True))
+        .order_by("-fleets")
+    )
+    out, seen_users = [], set()
+    for row in rows:
+        character = characters[row["character_id"]]
+        if character.user_id in seen_users:
+            continue
+        seen_users.add(character.user_id)
+        out.append(
+            {
+                "character_id": character.character_id,
+                "name": character.character_name,
                 "fleets": row["fleets"],
             }
         )

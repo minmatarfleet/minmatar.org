@@ -2975,6 +2975,8 @@ export const ui = {
         'fleet_roles.recent_fleet_pilots': '{n} in the role',
         'fleet_roles.no_recent_fleets': 'No finished fleet flew these ships this year yet.',
         'fleet_roles.top_pilots': 'Pilots who fly it most',
+        'fleet_roles.role_mentors': 'Mentors who fly it',
+        'fleet_roles.role_mentor_line': 'Mentor · {n} fleets in the role this year',
         'fleet_roles.top_pilot_fleets': '{n} fleets this year',
         'fleet_roles.no_top_pilots': 'Nobody has flown this role on a tracked fleet this year yet.',
         'fleet_roles.log_in_spotlight': 'Log in to see the pilots and fleets.',

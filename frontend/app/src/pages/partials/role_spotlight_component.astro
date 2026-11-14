@@ -19,7 +19,7 @@ if (user && auth_token) {
         spotlight = await get_training_roles(auth_token, guide.capabilities, guide.ladder.map((rung) => rung.ship_type_id))
     } catch (error) {
         console.log(`Role spotlight unavailable: ${error.message}`)
-        spotlight = { pilots: [], fleets: [], fleets_days: 60 }
+        spotlight = { mentors: [], pilots: [], fleets: [], fleets_days: 60 }
     }
 }
 

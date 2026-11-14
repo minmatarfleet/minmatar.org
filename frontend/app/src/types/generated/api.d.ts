@@ -25940,6 +25940,8 @@ export interface components {
             fleets: components["schemas"]["RoleFleetResponse"][];
             /** Fleets Days */
             fleets_days: number;
+            /** Mentors */
+            mentors: components["schemas"]["RolePilotResponse"][];
             /** Pilots */
             pilots: components["schemas"]["RolePilotResponse"][];
         };
