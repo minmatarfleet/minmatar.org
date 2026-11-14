@@ -10,6 +10,44 @@ jargon ("hook", "beat", "fear-kill", "weave").
 
 ---
 
+## 2026-11-14 a video picked for the post, and second replies
+
+Recruiter correction, two parts.
+
+**Videos.** The kit closed every r/evejobs and forum reply with Bring Fun
+Shit, plus Rock Hoppin' for miners. The alliance now has newer videos on
+`youtube.com/@MinmatarFleet` and `youtube.com/@FayeVaelent` (the year in
+review, The Cope fight episodes, town hall highlights, skits, Shorts). Each
+reply now carries one video picked for what the post asks about, from the
+Video shelf in SKILL.md. Pre-scout lists both channels with
+`fetch_videos.py` and refreshes the shelf. Bring Fun Shit is the fallback
+when nothing fits. Miners get Rock Hoppin' alone, not Bring Fun Shit plus
+Rock Hoppin'.
+
+The first shelf was built from titles and descriptions, not from watching
+the videos. When a recruiter swaps a pick before pasting, record the swap
+here: which post, which video went out, and why.
+
+**Second replies.** A reply from another alliance recruiter used to mark the
+thread Responded with no draft, including the Academy paste on threads that
+needed Extraction or a wormhole redirect. Now only a reply from this tool
+(`u/BearThatCares`, `u/MinmatarFleet`) closes a thread outright. When
+another recruiter replied and the pilot fits a different alliance corp,
+draft a second reply for the routed seat. Leave the thread alone when their
+reply already names the right seat and answers the post, or when the pilot
+already said yes.
+
+This overturns the 5 Oct and 27 Sep notes below that say the
+`u/420skateman` Academy paste is Responded "even when the seat should have
+been Extraction". Those threads would now get a second reply. The rest of
+those notes still hold: an Alpha does not get Academy, and a pilot who
+refused highsec does not get a second highsec pitch.
+
+Older entries below that list "Bring Fun Shit on every send" are historical
+sends, not the current proof stack.
+
+---
+
 ## 2026-11-08 replies read as AI
 
 Recruiter correction. The Sep 24 to Nov 7 r/evejobs sends all had the same

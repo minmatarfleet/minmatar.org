@@ -19,9 +19,13 @@ implementation.
 **Agent (primary):**
 
 1. Pre-scout: corp profiles from `api.minmatar.org`, recent `u/MinmatarFleet` ads,
-   recent AARs / capital videos from `u/BearThatCares`
+   recent AARs / capital videos from `u/BearThatCares`, the newest uploads on
+   the alliance YouTube channels
 2. Scout: find LFC posts on Reddit and EVE Forums
-3. Judge responded vs open, route to corp, draft outreach
+3. Judge each thread: replied from this tool, replied by another alliance
+   recruiter, or open. Another recruiter's reply only closes the thread when it
+   already pitches the right corp
+4. Route to a corp, pick the video that fits the post, draft outreach
 
 **Scripts (optional):** run only the fetchers you need. No keyword filtering.
 
@@ -32,6 +36,7 @@ implementation.
 | `fetch_corporations.py` | Corp profiles from public API | No |
 | `fetch_recruitment_ads.py` | `u/MinmatarFleet` ads (default 30d) | Yes |
 | `fetch_proof_media.py` | `u/BearThatCares` AARs / capital videos (default 45d) | Yes |
+| `fetch_videos.py` | Newest uploads on the alliance YouTube channels (default 180d) | No |
 | `fetch_reddit.py` | Raw subreddit `/new` (default 7d) | Yes |
 | `fetch_forums.py` | Forum recruitment-center latest (default 7d) | No |
 | `match_corp_ads.py` | Map ad URLs → corp names | No |
@@ -51,6 +56,7 @@ set -a && source ../../../backend/.env && set +a
 python scripts/fetch_corporations.py --json
 python scripts/fetch_recruitment_ads.py --days 30 --json
 python scripts/fetch_proof_media.py --days 45 --json
+python scripts/fetch_videos.py --json
 python scripts/fetch_reddit.py --days 7 --json
 python scripts/fetch_forums.py --days 7 --json
 ```
@@ -68,6 +74,16 @@ Recent battle reports and capital fight videos are pulled from
 
 Browse manually: https://www.reddit.com/user/BearThatCares/submitted/
 
+### Videos (YouTube)
+
+Every r/evejobs and forum reply carries one video, picked for what the post
+asks about. `fetch_videos.py` lists the newest uploads on the channels in
+`youtube.channels` from their public feeds (no API key, newest 15 per channel),
+and the agent keeps the "Video shelf" in `SKILL.md` current from that list.
+
+Browse manually: https://www.youtube.com/@MinmatarFleet/videos and
+https://www.youtube.com/@FayeVaelent/videos
+
 ## Configuration
 
 `config.json` tells the fetchers where to look. Triage and routing live in the skill.
@@ -78,12 +94,14 @@ Browse manually: https://www.reddit.com/user/BearThatCares/submitted/
 | `corporation_types` | Corp groups to load (`alliance`, `associate`, etc.) |
 | `reddit.recruitment_account` | Recruitment Reddit user (`MinmatarFleet`) |
 | `reddit.proof_accounts` | Reddit users for AAR / capital video pre-scout |
+| `reddit.scout_accounts` | Accounts this tool's replies are posted from; a reply from anyone else in the alliance does not close a thread by itself |
+| `youtube.channels` | Alliance YouTube channels (handle and channel id) for `fetch_videos.py` |
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | Invite link for outreach closers (skill only) |
 | `tracked_links.targets` | Click-tracked link targets (`my.minmatar.org/go/<code>/<target>`) |
-| `proof_videos.always` | Bring Fun Shit — every r/evejobs and forum send; not on r/eve |
-| `proof_videos.mining` | Rock Hoppin' — extra mining/industry close |
+| `proof_videos.shelf` | Videos to pick from, one per r/evejobs and forum send, matched to the post; not on r/eve |
+| `proof_videos.fallback` | Bring Fun Shit — when nothing on the shelf fits |
 | `proof_aars` | Current billion-ISK AARs (rotate when a new one posts) |
 | `proof_pages` | Warzone report, Amamake market report, corp directory, freight, optional sieges |
 
@@ -104,7 +122,7 @@ set -a && source backend/.env && set +a
 python scripts/fetch_reddit.py --json
 ```
 
-`fetch_corporations.py` and `fetch_forums.py` work without OAuth.
+`fetch_corporations.py`, `fetch_forums.py` and `fetch_videos.py` work without OAuth.
 
 ### Click tracking
 
