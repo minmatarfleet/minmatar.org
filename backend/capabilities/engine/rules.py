@@ -6,7 +6,7 @@ mismatch and recomputes every fitting. The rule IDs (R1...) match
 docs/capabilities/capability-engine-design.md.
 """
 
-RULES_VERSION = 1
+RULES_VERSION = 2
 
 # R8: core floor is this mastery level (I..V).
 CORE_MASTERY_LEVEL = 3
@@ -44,6 +44,8 @@ CAPABILITIES = (
     "Logistics",
     "Links",
     "Support",
+    "Capacitor Warfare",
+    "Electronic Warfare",
     "Tackle",
     "Recon",
     "Dreads",
@@ -71,6 +73,22 @@ CORE_BUCKETS = {
     },
     "Links": {"support", "tank", "capacitor", "navigation", "fitting"},
     "Support": {
+        "support",
+        "tank",
+        "capacitor",
+        "navigation",
+        "targeting",
+        "fitting",
+    },
+    "Capacitor Warfare": {
+        "support",
+        "tank",
+        "capacitor",
+        "navigation",
+        "targeting",
+        "fitting",
+    },
+    "Electronic Warfare": {
         "support",
         "tank",
         "capacitor",

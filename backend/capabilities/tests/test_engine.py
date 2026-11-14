@@ -7,8 +7,10 @@ from capabilities.engine.fit import parse_fit
 from capabilities.engine.readiness import FitChecker, evaluate, train_next
 from capabilities.engine.requirements import (
     Override,
+    classify,
     compute,
     hard_requirements,
+    support_class,
 )
 from capabilities.tests.helpers import all_skills_at, fixture_eft, fixture_sde
 
@@ -130,6 +132,56 @@ class GoldenChecksTest(SimpleTestCase):
         self.assertEqual(req.rows[skill("Surgical Strike")].tier, "optimal")
 
 
+class SupportSplitTest(SimpleTestCase):
+    """R2: the old Support class tells cap warfare from EWAR."""
+
+    def _classify(self, name, roles=("primary",)):
+        return classify(SDE, parse_fit(SDE, fixture_eft(name)), roles)
+
+    def test_neut_curse_is_capacitor_warfare(self):
+        # Its web and scram are not EWAR; one Nosferatu among neuts is fine..
+        self.assertEqual(self._classify("neut_curse"), "Capacitor Warfare")
+
+    def test_griffin_with_jammers_is_electronic_warfare(self):
+        self.assertEqual(
+            self._classify("ecm_griffin", roles=("support",)),
+            "Electronic Warfare",
+        )
+
+    def test_griffin_in_a_primary_slot_stays_dps(self):
+        self.assertEqual(self._classify("ecm_griffin"), "DPS")
+
+    def test_web_huginn_stays_support(self):
+        # Two webs, one painter, one Nosferatu: led by its webs.
+        self.assertEqual(self._classify("web_huginn"), "Support")
+
+    def test_bifrost_with_mjfg_is_tackle(self):
+        self.assertEqual(self._classify("mjfg_bifrost"), "Tackle")
+
+    def test_new_classes_compute_requirements(self):
+        _, req = requirements("neut_curse")
+        self.assertEqual(req.capability, "Capacitor Warfare")
+        self.assertIn("Capacitor Emission Systems", core_names(req))
+
+    def test_support_class_rules(self):
+        neut = "energy neutralizer"
+        nos = "energy nosferatu"
+        damp = "sensor dampener"
+        web = "stasis web"
+        cases = (
+            ([neut, neut, nos, web, web], "Capacitor Warfare"),
+            ([neut, nos], "Capacitor Warfare"),
+            ([damp, damp, "weapon disruptor", nos], "Electronic Warfare"),
+            (["burst jammer", "ecm"], "Electronic Warfare"),
+            ([neut, neut, damp, damp], "Support"),  # both kinds
+            ([web, web], "Support"),  # webs alone
+            ([web, web, "target painter", "target painter"], "Support"),
+            ([neut], "Support"),
+        )
+        for groups, expected in cases:
+            self.assertEqual(support_class(groups), expected, groups)
+
+
 class FitCheckTest(SimpleTestCase):
     def test_every_fixture_fit_fits_with_all_skills_at_five(self):
         for name in (
@@ -139,6 +191,10 @@ class FitCheckTest(SimpleTestCase):
             "damnation",
             "tackle_punisher",
             "links_brutix_navy",
+            "neut_curse",
+            "ecm_griffin",
+            "web_huginn",
+            "mjfg_bifrost",
         ):
             fit = parse_fit(SDE, fixture_eft(name))
             result = check_fit(SDE, fit.fit_items(), all_skills_at(SDE, 5))

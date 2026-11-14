@@ -48,7 +48,7 @@ class FittingRequirementSet(models.Model):
         max_length=64,
         help_text="Hash of everything the result depends on; unchanged means no recompute.",
     )
-    capability = models.CharField(max_length=16, choices=CAPABILITY_CHOICES)
+    capability = models.CharField(max_length=32, choices=CAPABILITY_CHOICES)
     capability_source = models.CharField(max_length=16, default="auto")
     strategic = models.BooleanField(
         default=False,
@@ -172,7 +172,7 @@ class CharacterCapability(models.Model):
     character = models.ForeignKey(
         EveCharacter, on_delete=models.CASCADE, related_name="capabilities"
     )
-    capability = models.CharField(max_length=16, choices=CAPABILITY_CHOICES)
+    capability = models.CharField(max_length=32, choices=CAPABILITY_CHOICES)
     level = models.SmallIntegerField(choices=LEVEL_CHOICES, default=LEVEL_NONE)
     best_fitting = models.ForeignKey(
         EveFitting,
