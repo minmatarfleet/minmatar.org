@@ -1,7 +1,8 @@
 """Map existing Discord roles on a corporation or tribe server.
 
 The alliance Discord and a Fishermen server are not mapped here. This module
-adds and removes mapped roles for linked accounts. It does not kick anyone,
+adds and removes mapped roles for linked accounts, and sets their nickname
+to `[TICKER] Main`, as the alliance Discord does. It does not kick anyone,
 and it does not create, rename, or delete roles.
 """
 
@@ -14,8 +15,12 @@ from django.utils import timezone
 from ratelimit import RateLimitException
 
 from discord.client import DiscordClient, discord_error_code
+from discord.core import format_discord_nickname
 from discord.models import DiscordGuild, DiscordRoleMapping, DiscordUser
 from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_users,
+)
 from eveonline.models import EveCharacter, EveCorporation
 from tribes.models import Tribe, TribeGroupMembership
 
@@ -30,6 +35,10 @@ MISSING_PERMISSIONS = 50013
 UNKNOWN_GUILD = 10004
 UNKNOWN_MEMBER = 10007
 UNKNOWN_ROLE = 10011
+# Missing Permissions on one nickname means that person outranks the bot
+# (or owns the server). On this many in a row, the bot has lost Manage
+# Nicknames, so the pass stops renaming.
+NICKNAME_LOST_AFTER = 3
 
 # A call that means this server can no longer be managed.
 STOP_CODES = {
@@ -611,6 +620,18 @@ def _accounts(members: list) -> list[tuple[int, set[int], int | None]]:
     ]
 
 
+def _nicks(members: list) -> dict[int, str | None]:
+    """Discord id -> the nickname the member has on this server."""
+    nicks = {}
+    for member in members:
+        user = member.get("user") or {}
+        try:
+            nicks[int(user["id"])] = member.get("nick")
+        except (KeyError, TypeError, ValueError):
+            continue
+    return nicks
+
+
 def _sync_account(
     client,
     discord_id: int,
@@ -637,6 +658,82 @@ def _sync_account(
         adds += int(should)
         removes += int(not should)
     return adds, removes
+
+
+def _expected_nicknames(user_ids) -> dict[int, str]:
+    """Site user id -> `[TICKER] Main`, like the alliance Discord."""
+    mains = primary_characters_for_users(user_ids)
+    corporation_ids = {
+        main.corporation_id for main in mains.values() if main.corporation_id
+    }
+    tickers = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in=corporation_ids
+        ).values_list("corporation_id", "ticker")
+    )
+    return {
+        user_id: format_discord_nickname(
+            f"[{tickers.get(main.corporation_id) or '?'}] ",
+            main.character_name,
+        )
+        for user_id, main in mains.items()
+        if main.character_name
+    }
+
+
+class _Nicknames:
+    """Set each linked member's nickname, once per pass, until the bot
+    turns out not to have Manage Nicknames."""
+
+    def __init__(self, guild: DiscordGuild, client, expected: dict):
+        self.guild = guild
+        self.client = client
+        self.expected = expected
+        self.denied_in_a_row = 0
+        self.stopped = False
+        self.renamed = 0
+
+    def sync(self, discord_id: int, user_id: int, current) -> None:
+        expected = self.expected.get(user_id)
+        if self.stopped or not expected or current == expected:
+            return
+        try:
+            self.client.update_user(discord_id, expected)
+        except requests.HTTPError as error:
+            self._failed(discord_id, error)
+            return
+        except requests.RequestException as error:
+            logger.warning(
+                "Discord nickname on guild %s for %s failed: %s",
+                self.guild.guild_id,
+                discord_id,
+                error,
+            )
+            return
+        self.denied_in_a_row = 0
+        self.renamed += 1
+
+    def _failed(self, discord_id: int, error) -> None:
+        code = discord_error_code(error)
+        if code == UNKNOWN_MEMBER:
+            return
+        if code != MISSING_PERMISSIONS:
+            logger.warning(
+                "Discord nickname on guild %s for %s failed: %s",
+                self.guild.guild_id,
+                discord_id,
+                error,
+            )
+            return
+        # The server owner, or someone whose top role is above the bot's.
+        self.denied_in_a_row += 1
+        if self.denied_in_a_row >= NICKNAME_LOST_AFTER:
+            self.stopped = True
+            logger.warning(
+                "Discord guild %s: bot cannot set nicknames (needs Manage "
+                "Nicknames and a role above the members)",
+                self.guild.guild_id,
+            )
 
 
 def _save_problems(mappings, problems: dict) -> None:
@@ -691,10 +788,20 @@ def reconcile_guild(guild: DiscordGuild) -> None:
     failed: set[int] = set()
     adds = 0
     removes = 0
+    accounts = _accounts(members)
+    nicknames = _Nicknames(
+        guild,
+        client,
+        _expected_nicknames(
+            {user_id for _, _, user_id in accounts if user_id is not None}
+        ),
+    )
+    current_nicks = _nicks(members)
     try:
-        for discord_id, current, user_id in _accounts(members):
+        for discord_id, current, user_id in accounts:
             if user_id is None:
                 continue
+            nicknames.sync(discord_id, user_id, current_nicks.get(discord_id))
             added, removed = _sync_account(
                 client,
                 discord_id,
@@ -712,12 +819,14 @@ def reconcile_guild(guild: DiscordGuild) -> None:
         return
 
     _save_problems(mappings, problems)
-    if adds or removes:
+    if adds or removes or nicknames.renamed:
         logger.info(
-            "Discord guild %s role mappings: %s added, %s removed",
+            "Discord guild %s role mappings: %s added, %s removed, "
+            "%s renamed",
             guild.guild_id,
             adds,
             removes,
+            nicknames.renamed,
         )
 
 

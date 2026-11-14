@@ -60,16 +60,20 @@ PROBE_LIMIT = 5
 
 # Create Instant Invite | View Channel. The public invite link stays at
 # these two so a bare link cannot reset a managed role to Manage Roles.
-# The OAuth install (authorize_url) also asks for Manage Roles and Kick
-# Members.
+# The OAuth install (authorize_url) also asks for Manage Roles, Manage
+# Nicknames and Kick Members.
 CREATE_INSTANT_INVITE = 1 << 0
 VIEW_CHANNEL = 1 << 10
 KICK_MEMBERS = 1 << 1
 MANAGE_ROLES = 1 << 28
+# Role sync also sets linked members' nicknames to `[TICKER] Main`.
+MANAGE_NICKNAMES = 1 << 27
 BOT_PERMISSIONS = CREATE_INSTANT_INVITE | VIEW_CHANNEL
 # Kick Members is only used when the corporation turns on a member policy
 # (discord.guild_access); the install page lets them untick it.
-INSTALL_PERMISSIONS = BOT_PERMISSIONS | MANAGE_ROLES | KICK_MEMBERS
+INSTALL_PERMISSIONS = (
+    BOT_PERMISSIONS | MANAGE_ROLES | MANAGE_NICKNAMES | KICK_MEMBERS
+)
 
 # Text and announcement channels can hold an invite.
 INVITE_CHANNEL_TYPES = {0, 5}

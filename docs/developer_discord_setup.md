@@ -119,11 +119,16 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
 
 A corporation's CEO or a director adds the bot from the corporation Settings
 tab. A tribe chief does the same from the tribe page. The install asks for
-Create Instant Invite, View Channel, and Manage Roles (and Kick Members for a
-corporation). The bot keeps one
+Create Instant Invite, View Channel, Manage Roles, and Manage Nicknames (and
+Kick Members for a corporation). The bot keeps one
 7-day invite fresh for a corporation page, and on either kind of server it
 adds or removes existing roles that a director or chief mapped
-(`discord/guild_roles.py`). It reads no messages and never creates roles.
+(`discord/guild_roles.py`). The same pass sets each linked member's nickname
+to `[TICKER] Main`, as on the alliance Discord. Discord refuses that for the
+server owner and anyone whose top role is at or above the bot's; after three
+refusals in a row the pass stops renaming and logs a warning. Servers added
+before this need Manage Nicknames given to the bot's role (or the bot added
+again). It reads no messages and never creates roles.
 A bare invite link still asks only for Create Instant Invite and View
 Channel, so it cannot reset a managed role to Manage Roles.
 
