@@ -39,6 +39,11 @@ function isk_tip(value: number | null | undefined): string | undefined {
             <span slot="value" data-tippy-content={isk_tip(stats.stockpile_value)}>
                 {isk_display(stats.stockpile_value)}
             </span>
+            {stats.reserved_value > 0 &&
+                <span slot="hint" data-tippy-content={isk_tip(stats.reserved_value)}>
+                    {t('buyback.stocks.metrics.reserved_hint').replace('{value}', isk_display(stats.reserved_value))}
+                </span>
+            }
         </StatCard>
 
         <StatCard label={t('buyback.stocks.metrics.remaining_isk')}>

@@ -86,6 +86,7 @@ class BuybackOnHandResponse(BaseModel):
 
 class BuybackStockStatsResponse(BaseModel):
     stockpile_value: int
+    reserved_value: int = 0
     remaining_isk: Optional[int] = None
     turnover_value: int
     window_days: int = 30
