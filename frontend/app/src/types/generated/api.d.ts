@@ -3063,6 +3063,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/invites/{invite_id}/discord-available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Invite Discord Available
+         * @description I'm available from the invite DM's button (bot): a sign-up link for the pilot who pressed it, valid for 10 minutes.
+         */
+        post: operations["fleets_endpoints_private_rsvp_post_invite_discord_available"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/invites/{invite_id}/discord-out": {
         parameters: {
             query?: never;
@@ -3320,6 +3340,50 @@ export interface paths {
         get: operations["fleets_endpoints_metrics_get_fleet_results_get_fleet_results"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/rsvp/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rsvp
+         * @description The sign-up form behind a one-time link: the fleet, the pilot's characters that can fly it with the fits each can fly, and a submit_token for sending the answer. No login; the token is the key.
+         */
+        get: operations["fleets_endpoints_private_rsvp_get_rsvp"];
+        put?: never;
+        /**
+         * Post Rsvp
+         * @description Sign up through a one-time link (use submit_token): the ships each character brings, and how sure the pilot is (high, medium: might be 10-15 minutes late, low: might not make it and isn't counted). No picks signs up with no ship yet.
+         */
+        post: operations["fleets_endpoints_private_rsvp_post_rsvp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/rsvp/{token}/not-available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Rsvp Not Available
+         * @description I'm not available, through a one-time link (use submit_token). Only skips this fleet.
+         */
+        post: operations["fleets_endpoints_private_rsvp_post_rsvp_not_available"];
         delete?: never;
         options?: never;
         head?: never;
@@ -26254,6 +26318,155 @@ export interface components {
              */
             xl_fee_millions?: number;
         };
+        /** RsvpCharacterResponse */
+        RsvpCharacterResponse: {
+            /** Account */
+            account?: number | null;
+            /** Character Id */
+            character_id: number;
+            /** Fits */
+            fits: components["schemas"]["RsvpFitResponse"][];
+            /** Name */
+            name: string;
+            /**
+             * Picked
+             * @default false
+             */
+            picked?: boolean;
+            /**
+             * Picked Key
+             * @default
+             */
+            picked_key?: string;
+            /**
+             * Suggested Fleets
+             * @default 0
+             */
+            suggested_fleets?: number;
+            /**
+             * Suggested Key
+             * @default
+             */
+            suggested_key?: string;
+        };
+        /** RsvpFitResponse */
+        RsvpFitResponse: {
+            /** Fitting Id */
+            fitting_id?: number | null;
+            /** Fleet Fitting Id */
+            fleet_fitting_id?: number | null;
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /** Ship Id */
+            ship_id: number;
+            /** Ship Name */
+            ship_name: string;
+        };
+        /** RsvpFleetResponse */
+        RsvpFleetResponse: {
+            /** Doctrine */
+            doctrine?: string | null;
+            /** Fc Character Id */
+            fc_character_id?: number | null;
+            /** Fc Name */
+            fc_name: string;
+            /** Formup */
+            formup?: string | null;
+            /** Id */
+            id: number;
+            /** Invite Only */
+            invite_only: boolean;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+            /** Type Label */
+            type_label: string;
+            /**
+             * Wanted
+             * @default []
+             */
+            wanted?: string[];
+        };
+        /** RsvpFormResponse */
+        RsvpFormResponse: {
+            /** Answer */
+            answer: string;
+            /** Any Ship */
+            any_ship: boolean;
+            /** Characters */
+            characters: components["schemas"]["RsvpCharacterResponse"][];
+            /** Confidence */
+            confidence: string;
+            fleet: components["schemas"]["RsvpFleetResponse"];
+            /** Hidden Count */
+            hidden_count: number;
+            /** Pilot Character Id */
+            pilot_character_id?: number | null;
+            /** Pilot Name */
+            pilot_name: string;
+            /** Submit Token */
+            submit_token: string;
+        };
+        /** RsvpLinkResponse */
+        RsvpLinkResponse: {
+            /** Expires Minutes */
+            expires_minutes: number;
+            /** Url */
+            url: string;
+        };
+        /** RsvpPickRequest */
+        RsvpPickRequest: {
+            /** Character Id */
+            character_id: number;
+            /** Fitting Id */
+            fitting_id?: number | null;
+            /** Fleet Fitting Id */
+            fleet_fitting_id?: number | null;
+        };
+        /** RsvpResultResponse */
+        RsvpResultResponse: {
+            /** Answer */
+            answer: string;
+            /** Confidence */
+            confidence: string;
+            fleet: components["schemas"]["RsvpFleetResponse"];
+            /** Ships */
+            ships: components["schemas"]["RsvpShipResponse"][];
+        };
+        /** RsvpShipResponse */
+        RsvpShipResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Ship Id */
+            ship_id?: number | null;
+            /** Ship Name */
+            ship_name: string;
+        };
+        /** RsvpSubmitRequest */
+        RsvpSubmitRequest: {
+            /**
+             * Confidence
+             * @default high
+             */
+            confidence?: string;
+            /**
+             * Picks
+             * @default []
+             */
+            picks?: components["schemas"]["RsvpPickRequest"][];
+        };
         /** ScheduleChange */
         ScheduleChange: {
             /**
@@ -36952,6 +37165,68 @@ export interface operations {
             };
         };
     };
+    fleets_endpoints_private_rsvp_post_invite_discord_available: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordSitOutRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RsvpLinkResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     fleets_endpoints_private_answers_post_invite_discord_out: {
         parameters: {
             query?: never;
@@ -37576,6 +37851,157 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetResultResponse"][];
+                };
+            };
+        };
+    };
+    fleets_endpoints_private_rsvp_get_rsvp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RsvpFormResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_private_rsvp_post_rsvp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RsvpSubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RsvpResultResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_private_rsvp_post_rsvp_not_available: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RsvpResultResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

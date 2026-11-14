@@ -39,6 +39,7 @@ TRIBE_CHIEF_APPOINT_PREFIX = "tribe_chief:appoint:"
 TRIBE_CHIEF_DECLINE_PREFIX = "tribe_chief:decline:"
 
 # Fleet invite DMs (backend: fleets/helpers/private_fleet_discord.py)
+FLEET_INVITE_IN_PREFIX = "fleet_invite:in:"
 FLEET_INVITE_OUT_PREFIX = "fleet_invite:out:"
 FLEET_INVITE_STOP_PREFIX = "fleet_invite:stop:"
 
@@ -103,6 +104,7 @@ TRIBE_CHIEF_APPOINT_TEMPLATE = template(
 TRIBE_CHIEF_DECLINE_TEMPLATE = template(
     TRIBE_CHIEF_DECLINE_PREFIX, "volunteer_id"
 )
+FLEET_INVITE_IN_TEMPLATE = template(FLEET_INVITE_IN_PREFIX, "invite_id")
 FLEET_INVITE_OUT_TEMPLATE = template(FLEET_INVITE_OUT_PREFIX, "invite_id")
 FLEET_INVITE_STOP_TEMPLATE = template(FLEET_INVITE_STOP_PREFIX, "invite_id")
 INVITE_FEEDBACK_ANSWER_TEMPLATE = template(

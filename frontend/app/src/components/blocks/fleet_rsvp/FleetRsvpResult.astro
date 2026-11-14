@@ -1,0 +1,161 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { RsvpResult } from '@dtypes/api.minmatar.org'
+import { DISCORD_DMS_URL, rsvp_portrait, rsvp_ship_icon } from '@helpers/fleet_rsvp'
+
+import Button from '@components/blocks/Button.astro'
+import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
+import FleetRsvpWhen from '@components/blocks/fleet_rsvp/FleetRsvpWhen.astro'
+
+/**
+ * After the answer: "You're signed up" with the ships each character
+ * brings, or "You're not available for this one". "Change ships" opens the
+ * link again, which works while it is still within its 10 minutes.
+ */
+interface Props {
+    result:                 RsvpResult;
+    form_href:              string;
+    pilot_name?:            string | null;
+    pilot_character_id?:    number | null;
+    [propName: string]: any;
+}
+
+const {
+    result,
+    form_href,
+    pilot_name = null,
+    pilot_character_id = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const signed_up = result.answer !== 'out'
+const fc = result.fleet.fc_name
+---
+
+<FleetRsvpShell
+    pilot_name={pilot_name}
+    pilot_character_id={pilot_character_id}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <div class="[ fleet-rsvp__screen ]">
+        <div class="[ fleet-rsvp__main rsvp-result ]">
+            <div class="[ rsvp-result__head ]">
+                <span class:list={['[ rsvp-result__mark ]', { 'is-out': !signed_up }]} aria-hidden="true">
+                    {signed_up ?
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7" /></svg>
+                        :
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    }
+                </span>
+                <h1>{signed_up ? t('fleets.rsvp.signed_up_title') : t('fleets.rsvp.out_title')}</h1>
+                <p class="[ fleet-rsvp__muted ]">
+                    {signed_up ? t('fleets.rsvp.signed_up_body').replace('{fc}', fc) : t('fleets.rsvp.out_body')}
+                </p>
+            </div>
+
+            <FleetRsvpWhen fleet={result.fleet} variant="result">
+                {signed_up && result.ships.map((ship) =>
+                    <div class="[ rsvp-result__ship ]">
+                        <img class="[ fleet-rsvp__portrait ]" src={rsvp_portrait(ship.character_id)} alt="" width="40" height="40" loading="lazy" />
+                        <span class="[ rsvp-result__ship-text ]">
+                            <span class="[ rsvp-result__name ]">{ship.character_name}</span>
+                            <span class="[ fleet-rsvp__muted ]">{ship.ship_name}</span>
+                        </span>
+                        {ship.ship_id && <img class="[ fleet-rsvp__ship-icon ]" src={rsvp_ship_icon(ship.ship_id)} alt={ship.ship_name} width="40" height="40" loading="lazy" />}
+                    </div>
+                )}
+                {signed_up && result.ships.length === 0 &&
+                    <p class="[ fleet-rsvp__muted rsvp-result__no-ship ]">{t('fleets.rsvp.no_ship')}</p>
+                }
+            </FleetRsvpWhen>
+        </div>
+
+        <div class="[ fleet-rsvp__actions ]">
+            <div>
+                <Button href={DISCORD_DMS_URL}>{t('fleets.rsvp.back_to_discord')}</Button>
+                <a class="[ fleet-rsvp__text-button ]" href={form_href} data-astro-reload>
+                    {signed_up ? t('fleets.rsvp.change_ships') : t('fleets.rsvp.change_answer')}
+                </a>
+            </div>
+        </div>
+    </div>
+</FleetRsvpShell>
+
+<style lang="scss">
+    .rsvp-result {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        padding-block-start: var(--space-xl);
+    }
+
+    .rsvp-result__head {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-xs);
+        text-align: center;
+
+        h1 {
+            margin: 0;
+            font-size: var(--step-3);
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+        }
+    }
+
+    .rsvp-result__mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: var(--space-2xl);
+        block-size: var(--space-2xl);
+        border-radius: 50%;
+        border: 1px solid var(--green);
+        background-color: color-mix(in srgb, var(--green) 18%, transparent);
+        color: var(--green);
+
+        svg {
+            inline-size: 50%;
+            block-size: 50%;
+        }
+
+        &.is-out {
+            border-color: var(--hairline-strong);
+            background-color: var(--component-background);
+            color: var(--text-muted);
+        }
+    }
+
+    .rsvp-result__ship {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+    }
+
+    .rsvp-result__ship-text {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .rsvp-result__name {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .rsvp-result__no-ship {
+        margin: 0;
+        padding: var(--space-xs) var(--space-s);
+    }
+</style>

@@ -322,13 +322,13 @@ class WaveTests(PrivateFleetTestBase):
             payload = client.send_dm.call_args.kwargs["payload"]
             embed = payload["embeds"][0]
             self.assertTrue(embed["title"].startswith("Still coming?"))
-            self.assertIn("Hit **Sitting out**", embed["description"])
+            self.assertIn("Hit **I'm not available**", embed["description"])
             self.assertNotIn("fields", embed)
             self.assertEqual(payload["message_reference"]["message_id"], "55")
             labels = [
                 b["label"] for b in payload["components"][0]["components"]
             ]
-            self.assertIn("Sitting out", labels)
+            self.assertIn("I'm not available", labels)
 
             # Answered since the re-ping was queued: no nudge.
             EveFleetInvite.objects.update(answer=EveFleetInvite.ANSWER_OUT)

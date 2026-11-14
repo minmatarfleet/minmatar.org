@@ -1,5 +1,5 @@
-"""Tell the API a pilot pressed Sitting out or Stop fleet invites on a
-fleet invite DM."""
+"""Tell the API a pilot pressed I'm available, I'm not available or Stop
+fleet invites on a fleet invite DM."""
 
 import requests
 from pydantic import BaseModel
@@ -18,6 +18,11 @@ class SitOutError(Exception):
     pass
 
 
+def sign_up_link(invite_id: int, discord_user_id: int) -> str:
+    """A sign-up link only this pilot gets (10 minutes, no login)."""
+    return _post(invite_id, "discord-available", discord_user_id)["url"]
+
+
 def sit_out(invite_id: int, discord_user_id: int) -> None:
     _post(invite_id, "discord-out", discord_user_id)
 
@@ -26,7 +31,7 @@ def stop_invites(invite_id: int, discord_user_id: int) -> None:
     _post(invite_id, "discord-stop", discord_user_id)
 
 
-def _post(invite_id: int, action: str, discord_user_id: int) -> None:
+def _post(invite_id: int, action: str, discord_user_id: int) -> dict:
     response = requests.post(
         f"{FLEETS_BASE_URL}/invites/{invite_id}/{action}",
         headers=AUTH_HEADERS,
@@ -42,3 +47,7 @@ def _post(invite_id: int, action: str, discord_user_id: int) -> None:
         except Exception:
             detail = response.text or detail
         raise SitOutError(str(detail))
+    try:
+        return response.json()
+    except ValueError:
+        return {}

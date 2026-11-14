@@ -1,0 +1,57 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * The sign-up page behind I'm available on a fleet invite DM. No login and
+ * no site nav: the signed token in the URL is the only key (10 minutes), so
+ * nothing about the fleet renders without a valid one. Not indexed, not in
+ * the sitemap, no analytics (the URL is the secret).
+ */
+import { login_url } from '@helpers/http_responses'
+import { get_rsvp_form } from '@helpers/api.minmatar.org/rsvp' // pragma: allowlist secret
+import type { RsvpForm } from '@dtypes/api.minmatar.org'
+
+Astro.response.headers.set('Cache-Control', 'no-store')
+Astro.response.headers.set('Referrer-Policy', 'no-referrer')
+
+const token = Astro.params.token ?? ''
+
+let form: RsvpForm | null = null
+let failed = false
+try {
+    const outcome = await get_rsvp_form(token)
+    if (outcome.ok) form = outcome.data
+} catch {
+    failed = true
+}
+
+const partial_url = translatePath('/partials/fleet_rsvp_component/')
+const sign_in_href = login_url(Astro, new URL(translatePath('/fleets/upcoming/'), Astro.url.origin).href)
+
+import GuestsViewport from '@layouts/GuestsViewport.astro'
+import FleetRsvpForm from '@components/blocks/fleet_rsvp/FleetRsvpForm.astro'
+import FleetRsvpExpired from '@components/blocks/fleet_rsvp/FleetRsvpExpired.astro'
+import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
+---
+
+<GuestsViewport
+    title={t('fleets.rsvp.page_title')}
+    meta_description={t('fleets.rsvp.meta_description')}
+    robots="noindex, nofollow"
+    analytics={false}
+>
+    {form ?
+        <FleetRsvpForm form={form} page_token={token} partial_url={partial_url} />
+        : failed ?
+        <FleetRsvpShell>
+            <div class="[ fleet-rsvp__screen ]">
+                <div class="[ fleet-rsvp__main ]">
+                    <p>{t('fleets.rsvp.load_error')}</p>
+                </div>
+            </div>
+        </FleetRsvpShell>
+        :
+        <FleetRsvpExpired sign_in_href={sign_in_href} />
+    }
+</GuestsViewport>

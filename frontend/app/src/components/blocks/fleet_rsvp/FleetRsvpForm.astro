@@ -1,0 +1,595 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { RsvpForm } from '@dtypes/api.minmatar.org'
+import { default_fit_key, rsvp_confidence, rsvp_portrait, rsvp_ship_icon } from '@helpers/fleet_rsvp'
+
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
+import FleetRsvpWhen from '@components/blocks/fleet_rsvp/FleetRsvpWhen.astro'
+
+/**
+ * The sign-up picker behind the I'm available link: how sure the pilot is,
+ * which characters come and the ship each brings. Alpine only keeps the
+ * ticks, the switch and the shared-account warning over this rendered list;
+ * the answer posts to the partial, which swaps in the result screen.
+ */
+interface Props {
+    form:           RsvpForm;
+    /** The link's token, for "Change ships" on the result screen. */
+    page_token:     string;
+    partial_url:    string;
+    error?:         string | null;
+    [propName: string]: any;
+}
+
+const {
+    form,
+    page_token,
+    partial_url,
+    error = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const { fleet, characters, any_ship } = form
+const confidence = rsvp_confidence(form.confidence || 'high')
+
+const rows = characters.map((character) => {
+    const fit_key = default_fit_key(character)
+    const fit = character.fits.find((f) => f.key === fit_key) ?? null
+    const fits_count = character.fits.length
+    return {
+        character,
+        id: String(character.character_id),
+        fit_key,
+        ship_id: fit?.ship_id ?? null,
+        can_fly: any_ship ? '' : fits_count === 1 ?
+            t('fleets.rsvp.can_fly_one') :
+            t('fleets.rsvp.can_fly').replace('{count}', String(fits_count)),
+        usual: character.suggested_fleets > 1 ?
+            t('fleets.rsvp.usual').replace('{count}', String(character.suggested_fleets)) :
+            (character.suggested_fleets === 1 ? t('fleets.rsvp.usual_once') : ''),
+    }
+})
+
+// What a ticked row says when it isn't the pilot's usual: the fit count (any_ship: nothing to count).
+const ticked_sub = (row: typeof rows[number]) => row.usual || (any_ship ? '' : row.can_fly)
+
+const picked = Object.fromEntries(rows.map((row) => [row.id, row.character.picked]))
+// DOM order, for "which ticked character got the account first".
+const accounts = rows.map((row) => [row.id, row.character.account, row.character.name])
+
+const sure_options = [
+    { value: 'high', label: t('fleets.rsvp.sure_high'), hint: t('fleets.rsvp.hint_high') },
+    { value: 'medium', label: t('fleets.rsvp.sure_medium'), hint: t('fleets.rsvp.hint_medium').replace('{fc}', fleet.fc_name) },
+    { value: 'low', label: t('fleets.rsvp.sure_low'), hint: t('fleets.rsvp.hint_low') },
+]
+
+const labels = {
+    sign_up: t('fleets.rsvp.sign_up'),
+    maybe: t('fleets.rsvp.sign_up_maybe'),
+    count: t('fleets.rsvp.sign_up_count'),
+    pick: t('fleets.rsvp.pick_character'),
+    picked: t('fleets.rsvp.picked_count'),
+    same_picked: t('fleets.rsvp.same_account_as'),
+    same_unpicked: t('fleets.rsvp.same_account_unpicked'),
+}
+
+const doctrine = fleet.doctrine
+const hidden_note = form.hidden_count <= 0 ? '' :
+    doctrine ?
+        (form.hidden_count === 1 ? t('fleets.rsvp.hidden_doctrine_one') : t('fleets.rsvp.hidden_doctrine'))
+            .replace('{count}', String(form.hidden_count)).replace('{doctrine}', doctrine) :
+        (form.hidden_count === 1 ? t('fleets.rsvp.hidden_fleet_one') : t('fleets.rsvp.hidden_fleet'))
+            .replace('{count}', String(form.hidden_count))
+
+const initial_count = rows.filter((row) => row.character.picked).length
+const initial_verb = confidence === 'low' ? labels.maybe : labels.sign_up
+const initial_label = initial_count === 0 && !any_ship ? labels.pick :
+    initial_count > 1 ? labels.count.replace('{label}', initial_verb).replace('{count}', String(initial_count)) : initial_verb
+
+const hidden = 'display: none'
+---
+
+<FleetRsvpShell
+    pilot_name={form.pilot_name}
+    pilot_character_id={form.pilot_character_id}
+    wide={true}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <form
+        class="[ fleet-rsvp__screen rsvp-form ]"
+        hx-post={partial_url}
+        hx-target="#fleet-rsvp"
+        hx-swap="outerHTML show:window:top"
+        hx-disabled-elt="#fleet-rsvp button"
+        x-data={`{
+            picked: ${JSON.stringify(picked)},
+            confidence: ${JSON.stringify(confidence)},
+            accounts: ${JSON.stringify(accounts)},
+            any_ship: ${any_ship ? 'true' : 'false'},
+            labels: ${JSON.stringify(labels)},
+            get count() { return this.accounts.filter((row) => this.picked[row[0]]).length },
+            get can_submit() { return this.any_ship || this.count > 0 },
+            get submit_label() {
+                if (!this.can_submit) return this.labels.pick
+                const verb = this.confidence === 'low' ? this.labels.maybe : this.labels.sign_up
+                return this.count > 1 ? this.labels.count.replace('{label}', verb).replace('{count}', this.count) : verb
+            },
+            get picked_text() { return this.labels.picked.replace('{count}', this.count).replace('{total}', this.accounts.length) },
+            holder(id) {
+                const row = this.accounts.find((r) => r[0] === id)
+                if (!row || row[1] == null) return ''
+                const first = this.accounts.find((r) => r[1] === row[1] && this.picked[r[0]])
+                return first && first[0] !== id ? first[2] : ''
+            },
+            clash(id) { return !!this.picked[id] && this.holder(id) !== '' },
+        }`}
+    >
+        <input type="hidden" name="submit_token" value={form.submit_token} />
+        <input type="hidden" name="page_token" value={page_token} />
+        <input type="hidden" name="pilot_name" value={form.pilot_name} />
+        <input type="hidden" name="pilot_character_id" value={form.pilot_character_id ?? ''} />
+
+        <div class="[ fleet-rsvp__main ]">
+            <FixedFluid width="22rem" breakpoint="55%" gap="var(--space-l) var(--space-xl)">
+                <section class="[ rsvp-form__fleet ]">
+                    <Flexblock gap="var(--space-s)">
+                        <div class="[ rsvp-form__invited ]">
+                            <img class="[ fleet-rsvp__portrait ]" src={rsvp_portrait(fleet.fc_character_id)} alt="" width="40" height="40" />
+                            <div class="[ rsvp-form__invited-text ]">
+                                <span class="[ fleet-rsvp__muted ]">{t('fleets.rsvp.invited_you').replace('{fc}', fleet.fc_name)}</span>
+                                <span class="[ rsvp-form__type ]">{fleet.type_label}</span>
+                            </div>
+                        </div>
+                        <h1 class="[ rsvp-form__title ]">{fleet.title}</h1>
+                        <FleetRsvpWhen fleet={fleet} />
+                    </Flexblock>
+                </section>
+
+                <div class="[ rsvp-form__picker ]">
+                    <Flexblock gap="var(--space-l)">
+                        {error && <p class="[ rsvp-form__error ]" role="alert">{error}</p>}
+
+                        <fieldset class="[ rsvp-form__sure ]">
+                            <legend class="[ fleet-rsvp__label ]">{t('fleets.rsvp.how_sure')}</legend>
+                            <div class="[ rsvp-switch ]">
+                                {sure_options.map((option) =>
+                                    <label class="[ rsvp-switch__option ]" x-bind:class={`{ 'is-on': confidence === '${option.value}' }`} class:list={[{ 'is-on': option.value === confidence }]}>
+                                        <input
+                                            type="radio"
+                                            class="[ visually-hidden ]"
+                                            name="confidence"
+                                            value={option.value}
+                                            checked={option.value === confidence}
+                                            x-model="confidence"
+                                        />
+                                        {option.label}
+                                    </label>
+                                )}
+                            </div>
+                            {sure_options.map((option) =>
+                                <div
+                                    class="[ fleet-rsvp__muted ]"
+                                    x-show={`confidence === '${option.value}'`}
+                                    style={option.value === confidence ? undefined : hidden}
+                                >{option.hint}</div>
+                            )}
+                        </fieldset>
+
+                        <section class="[ rsvp-form__who ]">
+                            <div class="[ rsvp-form__who-head ]">
+                                <h2 class="[ fleet-rsvp__label ]">{t('fleets.rsvp.whos_coming')}</h2>
+                                {rows.length > 0 &&
+                                    <span class="[ fleet-rsvp__muted ]" x-text="picked_text">
+                                        {labels.picked.replace('{count}', String(initial_count)).replace('{total}', String(rows.length))}
+                                    </span>
+                                }
+                            </div>
+
+                            {rows.length === 0 && <EmptyState title={t('fleets.rsvp.no_characters')} />}
+
+                            {rows.map((row) =>
+                                <div
+                                    class:list={['[ rsvp-row ]', { 'is-picked': row.character.picked }]}
+                                    x-bind:class={`{ 'is-picked': picked[${row.id}], 'is-clash': clash('${row.id}') }`}
+                                    x-data={`{ ship: ${row.ship_id ?? 'null'} }`}
+                                >
+                                    <label class="[ rsvp-row__head ]">
+                                        <input
+                                            type="checkbox"
+                                            class="[ visually-hidden ]"
+                                            name="character"
+                                            value={row.id}
+                                            checked={row.character.picked}
+                                            x-model={`picked[${row.id}]`}
+                                        />
+                                        <span class="[ rsvp-row__tick ]" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7" /></svg>
+                                        </span>
+                                        <img class="[ fleet-rsvp__portrait ]" src={rsvp_portrait(row.character.character_id)} alt="" width="40" height="40" loading="lazy" />
+                                        <span class="[ rsvp-row__text ]">
+                                            <span class="[ rsvp-row__name ]">{row.character.name}</span>
+                                            {row.can_fly &&
+                                                <span
+                                                    class="[ fleet-rsvp__muted ]"
+                                                    x-show={`!picked[${row.id}] && !holder('${row.id}')`}
+                                                    style={row.character.picked ? hidden : undefined}
+                                                >{row.can_fly}</span>
+                                            }
+                                            <span
+                                                class="[ fleet-rsvp__muted ]"
+                                                x-show={`!picked[${row.id}] && holder('${row.id}')`}
+                                                x-text={`labels.same_unpicked.replace('{name}', holder('${row.id}'))`}
+                                                style={hidden}
+                                            ></span>
+                                            {ticked_sub(row) &&
+                                                <span
+                                                    class="[ fleet-rsvp__muted ]"
+                                                    x-show={`picked[${row.id}] && !clash('${row.id}')`}
+                                                    style={row.character.picked ? undefined : hidden}
+                                                >{ticked_sub(row)}</span>
+                                            }
+                                            <span
+                                                class="[ rsvp-row__warning ]"
+                                                x-show={`clash('${row.id}')`}
+                                                x-text={`labels.same_picked.replace('{name}', holder('${row.id}'))`}
+                                                style={hidden}
+                                            ></span>
+                                        </span>
+                                    </label>
+
+                                    <div class="[ rsvp-row__clash ]" role="status" x-show={`clash('${row.id}')`} style={hidden}>
+                                        <span>{t('fleets.rsvp.clash_note')}</span>
+                                        <span class="[ fleet-rsvp__muted ]">{t('fleets.rsvp.clash_fix')}</span>
+                                    </div>
+
+                                    <div
+                                        class="[ rsvp-row__ship ]"
+                                        x-show={`picked[${row.id}]`}
+                                        style={row.character.picked ? undefined : hidden}
+                                    >
+                                        {any_ship || row.character.fits.length === 0 ?
+                                            <span class="[ fleet-rsvp__muted ]">{t('fleets.rsvp.no_ship')}</span>
+                                            :
+                                            <label class="[ rsvp-row__ship-pick ]">
+                                                <img
+                                                    class="[ fleet-rsvp__ship-icon ]"
+                                                    src={rsvp_ship_icon(row.ship_id)}
+                                                    x-bind:src="'https://images.evetech.net/types/' + ship + '/icon?size=64'"
+                                                    alt=""
+                                                    width="40"
+                                                    height="40"
+                                                />
+                                                <span class="[ visually-hidden ]">{t('fleets.rsvp.ship_for').replace('{name}', row.character.name)}</span>
+                                                <Select
+                                                    name={`fit_${row.id}`}
+                                                    size="sm"
+                                                    x-on:change="ship = Number($event.target.selectedOptions[0].dataset.ship)"
+                                                >
+                                                    {row.character.fits.map((fit) =>
+                                                        <option value={fit.key} data-ship={fit.ship_id} selected={fit.key === row.fit_key}>{fit.name}</option>
+                                                    )}
+                                                </Select>
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {hidden_note && <div class="[ fleet-rsvp__muted rsvp-form__hidden-note ]">{hidden_note}</div>}
+                        </section>
+                    </Flexblock>
+                </div>
+            </FixedFluid>
+        </div>
+
+        <div class="[ fleet-rsvp__actions ]">
+            <div class="[ rsvp-form__actions ]">
+                <Button
+                    type="submit"
+                    name="intent"
+                    value="sign_up"
+                    class="[ rsvp-form__submit ]"
+                    x-bind:disabled="!can_submit"
+                    disabled={initial_count === 0 && !any_ship}
+                >
+                    <span x-text="submit_label">{initial_label}</span>
+                </Button>
+                <button type="submit" name="intent" value="not_available" class="[ fleet-rsvp__text-button ]">
+                    {t('fleets.rsvp.not_available')}
+                </button>
+            </div>
+        </div>
+    </form>
+</FleetRsvpShell>
+
+<style lang="scss">
+    .rsvp-form__invited {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .rsvp-form__invited-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .rsvp-form__type {
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .rsvp-form__title {
+        /* Margins only on the sides: Flexblock spaces its children with margin-block-start. */
+        margin-inline: 0;
+        margin-block-end: 0;
+        font-size: var(--step-2);
+        line-height: 1.2;
+        color: var(--highlight);
+        overflow-wrap: anywhere;
+    }
+
+    .rsvp-form__error {
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--fleet-red);
+        background-color: color-mix(in srgb, var(--fleet-red) 15%, transparent);
+    }
+
+    .rsvp-form__sure {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+
+        legend {
+            margin-bottom: var(--space-2xs);
+            padding: 0;
+        }
+    }
+
+    .rsvp-switch {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-3xs);
+        padding: var(--space-3xs);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+
+        &:has(:focus-visible) {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .rsvp-switch__option {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--space-xl);
+        padding: var(--space-3xs);
+        border-radius: var(--space-3xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: center;
+        color: var(--highlight);
+        cursor: pointer;
+        transition: background-color var(--fast-transition);
+
+        &.is-on {
+            background-color: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+
+    .rsvp-form__who {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        .rsvp-form__hidden-note {
+            margin-block-start: var(--space-3xs);
+        }
+    }
+
+    .rsvp-form__who-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-xs);
+
+        h2 {
+            margin: 0;
+        }
+    }
+
+    .rsvp-row {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+        overflow: hidden;
+
+        &.is-picked {
+            border-color: var(--fleet-yellow);
+            background-color: color-mix(in srgb, var(--fleet-yellow) 5%, var(--component-background));
+        }
+
+        &.is-clash {
+            border-color: color-mix(in srgb, var(--attention) 60%, transparent);
+        }
+    }
+
+    .rsvp-row__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-block-size: var(--space-2xl);
+        padding: var(--space-2xs) var(--space-xs);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+
+        &:has(:focus-visible) {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: color-mix(in srgb, var(--fleet-yellow) 5%, transparent);
+            }
+        }
+
+        @media (hover: none) {
+            &:active {
+                background-color: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+            }
+        }
+    }
+
+    .rsvp-row__text {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .rsvp-row__name {
+        font-weight: 600;
+        color: var(--highlight);
+        overflow-wrap: anywhere;
+    }
+
+    .rsvp-row__warning {
+        font-size: var(--step--1);
+        color: var(--attention);
+    }
+
+    /* Round tick: on the right on phones, first on wide screens (DesktopPick). */
+    .rsvp-row__tick {
+        order: 3;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: var(--space-m);
+        block-size: var(--space-m);
+        border-radius: 50%;
+        border: 2px solid var(--faded);
+        color: transparent;
+
+        svg {
+            inline-size: 60%;
+            block-size: 60%;
+        }
+
+        .is-picked & {
+            border-color: var(--fleet-yellow);
+            background-color: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+
+    .rsvp-row__clash {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0 var(--space-xs) var(--space-3xs);
+        padding: var(--space-2xs) var(--space-xs);
+        border-radius: var(--space-3xs);
+        background-color: color-mix(in srgb, var(--attention) 10%, transparent);
+        font-size: var(--step--1);
+    }
+
+    .rsvp-row__ship {
+        padding: var(--space-xs) var(--space-xs) var(--space-s);
+        border-top: 1px solid var(--hairline-medium);
+    }
+
+    .rsvp-row__ship-pick {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        > :global(:last-child) {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+    }
+
+    .rsvp-form__actions {
+        .fleet-rsvp__text-button {
+            min-block-size: var(--space-xl);
+        }
+    }
+
+    /* Wide screens: tick first; the actions sit on one line at the right, not pinned. */
+    @media (min-width: 60rem) {
+        .rsvp-row__tick {
+            order: -1;
+        }
+
+        /* The ship picker sits on the row's right (DesktopPick); the account note goes under both. */
+        .rsvp-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+        }
+
+        .rsvp-row__head {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .rsvp-row__ship {
+            grid-column: 2;
+            grid-row: 1;
+            padding: var(--space-2xs) var(--space-s) var(--space-2xs) 0;
+            border-top: 0;
+        }
+
+        .rsvp-row__ship-pick > :global(:last-child) {
+            inline-size: 15rem;
+        }
+
+        .rsvp-row__clash {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            margin-block-end: var(--space-xs);
+        }
+
+        .fleet-rsvp__actions {
+            position: static;
+        }
+
+        .fleet-rsvp__actions .rsvp-form__actions {
+            flex-direction: row-reverse;
+            align-items: center;
+            justify-content: flex-start;
+            gap: var(--space-s);
+
+            :global(.button) {
+                inline-size: auto;
+            }
+        }
+    }
+</style>

@@ -1,0 +1,95 @@
+---
+// no-error-refetch: a form answer; a failed save swaps the form back with the error, or the expired screen.
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * The answer from the fleet sign-up link page (/fleets/rsvp/<token>/). No
+ * login: the form carries the API's `submit_token` (valid for an hour), and
+ * that token is the only key. Answers with the whole screen (`#fleet-rsvp`):
+ * signed up / not available, the form again with the error, or expired.
+ */
+import { login_url } from '@helpers/http_responses'
+import { is_rsvp_token, rsvp_intent, rsvp_submit_from_form } from '@helpers/fleet_rsvp'
+import {
+    get_rsvp_form,
+    rsvp_not_available,
+    submit_rsvp,
+} from '@helpers/api.minmatar.org/rsvp' // pragma: allowlist secret
+import type { RsvpForm, RsvpResult } from '@dtypes/api.minmatar.org'
+
+import FleetRsvpForm from '@components/blocks/fleet_rsvp/FleetRsvpForm.astro'
+import FleetRsvpResult from '@components/blocks/fleet_rsvp/FleetRsvpResult.astro'
+import FleetRsvpExpired from '@components/blocks/fleet_rsvp/FleetRsvpExpired.astro'
+import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
+
+if (Astro.request.method !== 'POST')
+    return new Response(null, { status: 405, headers: { Allow: 'POST' } })
+
+Astro.response.headers.set('Cache-Control', 'no-store')
+
+const data = await Astro.request.formData()
+const submit_token = String(data.get('submit_token') ?? '')
+const raw_page_token = String(data.get('page_token') ?? '')
+const page_token = is_rsvp_token(raw_page_token) ? raw_page_token : submit_token
+// Display only, echoed from the form the pilot was shown.
+const pilot_name = String(data.get('pilot_name') ?? '').slice(0, 100) || null
+const pilot_character_id = Number(data.get('pilot_character_id')) || null
+
+const partial_url = translatePath('/partials/fleet_rsvp_component/')
+const form_href = translatePath(`/fleets/rsvp/${encodeURIComponent(page_token)}/`)
+const sign_in_href = login_url(Astro, new URL(translatePath('/fleets/upcoming/'), Astro.url.origin).href)
+
+let result: RsvpResult | null = null
+let expired = false
+let error: string | null = null
+
+try {
+    const outcome = rsvp_intent(data) === 'not_available' ?
+        await rsvp_not_available(submit_token) :
+        await submit_rsvp(submit_token, rsvp_submit_from_form(data))
+    if (outcome.ok)
+        result = outcome.data
+    else if (outcome.status === 400)
+        error = outcome.detail || t('fleets.rsvp.save_error')
+    else
+        expired = true
+} catch {
+    error = t('fleets.rsvp.save_error')
+}
+
+// A refused or failed answer shows the form again, fresh from the API, with the error.
+let form: RsvpForm | null = null
+let reload_failed = false
+if (error) {
+    try {
+        const outcome = await get_rsvp_form(submit_token)
+        if (outcome.ok) form = outcome.data
+        else expired = true
+    } catch {
+        reload_failed = true
+    }
+}
+---
+
+{result ?
+    <FleetRsvpResult
+        result={result}
+        form_href={form_href}
+        pilot_name={pilot_name}
+        pilot_character_id={pilot_character_id}
+    />
+    : form ?
+    <FleetRsvpForm form={form} page_token={page_token} partial_url={partial_url} error={error} />
+    : expired || !reload_failed ?
+    <FleetRsvpExpired sign_in_href={sign_in_href} />
+    :
+    <FleetRsvpShell pilot_name={pilot_name} pilot_character_id={pilot_character_id}>
+        <div class="[ fleet-rsvp__screen ]">
+            <div class="[ fleet-rsvp__main ]">
+                <p role="alert">{error}</p>
+                <a href={form_href} data-astro-reload>{t('fleets.rsvp.try_again')}</a>
+            </div>
+        </div>
+    </FleetRsvpShell>
+}

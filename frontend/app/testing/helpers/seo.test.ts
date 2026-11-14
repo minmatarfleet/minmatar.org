@@ -15,6 +15,7 @@ describe('seo', () => {
     it('detects noindex paths', () => {
         expect(is_noindex_path('/partials/fitting_finder_component')).toBe(true)
         expect(is_noindex_path('/redirects/auth_init')).toBe(true)
+        expect(is_noindex_path('/fleets/rsvp/abc/')).toBe(true)
         expect(is_noindex_path('/alliance/')).toBe(false)
     })
 

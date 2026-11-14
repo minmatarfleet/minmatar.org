@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { DISCORD_DMS_URL } from '@helpers/fleet_rsvp'
+
+import Button from '@components/blocks/Button.astro'
+import LockIcon from '@components/icons/LockIcon.astro'
+import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
+
+/**
+ * A sign-up link that can't be used: expired, forwarded, bad, or the fleet
+ * already started. Says nothing about which fleet it was.
+ */
+interface Props {
+    sign_in_href:   string;
+    [propName: string]: any;
+}
+
+const {
+    sign_in_href,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<FleetRsvpShell class={Astro.props.class} {...attributes}>
+    <div class="[ fleet-rsvp__screen ]">
+        <div class="[ fleet-rsvp__main rsvp-expired ]">
+            <span class="[ rsvp-expired__mark ]"><LockIcon size={28} /></span>
+            <h1>{t('fleets.rsvp.expired_title')}</h1>
+            <p>{t('fleets.rsvp.expired_body')}</p>
+            <p class="[ fleet-rsvp__muted ]">{t('fleets.rsvp.expired_hint')}</p>
+        </div>
+
+        <div class="[ fleet-rsvp__actions ]">
+            <div>
+                <Button href={DISCORD_DMS_URL}>{t('fleets.rsvp.back_to_discord')}</Button>
+                <a class="[ fleet-rsvp__text-button ]" href={sign_in_href}>{t('fleets.rsvp.sign_in')}</a>
+            </div>
+        </div>
+    </div>
+</FleetRsvpShell>
+
+<style lang="scss">
+    .rsvp-expired {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block-start: var(--space-3xl);
+        text-align: center;
+
+        h1 {
+            margin: 0;
+            font-size: var(--step-3);
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+            max-inline-size: 20rem;
+        }
+    }
+
+    .rsvp-expired__mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: var(--space-2xl);
+        block-size: var(--space-2xl);
+        border-radius: 50%;
+        border: 1px solid var(--hairline-strong);
+        background-color: var(--component-background);
+        color: var(--fleet-yellow);
+    }
+</style>
