@@ -8,7 +8,7 @@ export const positioning_warfare: FleetRoleGuide = {
     short_name: 'Positioning',
     lede: 'Decide where the enemy fleet is and whether it can leave. Points, booshes, bumps, heavy tackle on their anchor, and in null-sec, bubbles.',
     capabilities: ['Tackle'],
-    hero_type_id: 12013,
+    hero_type_id: 12017,
     read_minutes: 25,
     why: [
         'A fight only happens when one side cannot leave. Every other role assumes someone has already made that true: the battleships need targets that stay in range, the neuts need the logi to hold still, the FC needs the enemy anchor to be where the fleet is shooting.',
@@ -23,8 +23,8 @@ export const positioning_warfare: FleetRoleGuide = {
     ladder: [
         { rung: 1, ship_type_id: 17713, name: 'Stabber Fleet Issue', hull_class: 'Cruiser', job: 'Fast, tough tackle: a long point on their anchor and the buffer to hold it.' },
         { rung: 2, ship_type_id: 37480, name: 'Bifrost', hull_class: 'Command Destroyer', job: 'Micro Jump Field Generator: boosh their logi off their DPS.' },
-        { rung: 3, ship_type_id: 22456, name: 'Sabre', hull_class: 'Interdictor', job: 'Bubbles on gates and on the enemy fleet, outside the warzone.' },
-        { rung: 4, ship_type_id: 12013, name: 'Broadsword', hull_class: 'Heavy Interdiction Cruiser', job: 'An infinite point that stops booshes, or a bubble you can tank in null-sec.' },
+        { rung: 3, ship_type_id: 22452, name: 'Heretic', hull_class: 'Interdictor', job: 'Bubbles on gates and on the enemy fleet, outside the warzone.' },
+        { rung: 4, ship_type_id: 12017, name: 'Devoter', hull_class: 'Heavy Interdiction Cruiser', job: 'An infinite point that stops booshes, or a bubble you can tank in null-sec.' },
     ],
     ladder_note: 'Bubbles do not work in most of the warzone, so the Stabber Fleet Issue and Bifrost rungs are the ones you will fly most in Faction Warfare.',
     featured_sim: 'bubbles',
@@ -71,7 +71,7 @@ export const positioning_warfare: FleetRoleGuide = {
             body: [
                 'A heavy interdiction cruiser carries a warp disruption field generator. Unscripted, it makes a {hic_bubble_radius_km} km bubble around the HIC itself, in null-sec only. While the bubble is up the HIC cannot receive remote repairs and its signature grows, so it needs a buffer and a plan.',
                 'With a focused script loaded, the same module becomes a single-target point with infinite strength. It works in low-sec, warp core stabilisers do not help the target, and the scrambling script shuts down the target’s Micro Jump Drive and Micro Jump Field Generator. That is the job in the warzone: hold the enemy anchor or their command destroyer so they cannot leave or boosh.',
-                'The four empire hulls are the Broadsword, Devoter, Onyx and Phobos.',
+                'The four empire hulls are the Devoter, Broadsword, Onyx and Phobos.',
             ],
         },
         {

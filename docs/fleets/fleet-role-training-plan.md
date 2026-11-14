@@ -15,7 +15,7 @@ fills each slot the design held for alliance-made material.
 | Remote Repair | `/learning/guides/remote-repair-guide/` | Augoror / Exequror, Guardian, Zarmazd | Logistics |
 | Capacitor Warfare | `/learning/guides/capacitor-warfare-guide/` | Armageddon, Ashimmu / Curse / Legion, Bhaalgorn | Capacitor Warfare, Support |
 | Electronic Warfare | `/learning/guides/electronic-warfare-guide/` | Griffin, Kitsune, Scorpion, Tengu | Electronic Warfare, Support |
-| Positioning Warfare | `/learning/guides/positioning-warfare-guide/` | Stabber Fleet Issue, Bifrost, Sabre, Broadsword | Tackle |
+| Positioning Warfare | `/learning/guides/positioning-warfare-guide/` | Stabber Fleet Issue, Bifrost, Heretic, Devoter | Tackle |
 
 The hub is `/learning/guides/fleet-roles/`. The Capacitor Warfare and Electronic Warfare classes come from splitting the
 engine's Support class (decision D1 below); until that ships, both guides read "Support".
