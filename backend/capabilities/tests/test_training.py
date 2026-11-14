@@ -411,3 +411,39 @@ class TrainingApiTest(TrainingTestCase):
 
     def test_needs_a_login(self):
         self.assertEqual(Client().get("/api/training/").status_code, 401)
+
+
+class HullReadinessTest(TrainingTestCase):
+    def test_the_best_character_on_each_hull(self):
+        [guardian, napoc] = training.hull_readiness(
+            self.user, [GUARDIAN, NAPOC]
+        )
+        self.assertEqual(guardian["ship_type_id"], GUARDIAN)
+        self.assertTrue(guardian["in_doctrine"])
+        self.assertTrue(guardian["ready"])
+        self.assertIsNone(guardian["days"])
+        self.assertEqual(guardian["character_name"], "Logi")
+        self.assertEqual(guardian["fitting_id"], self.guardian.pk)
+        self.assertEqual(guardian["fitting_name"], "Guardian")
+        # No doctrine fit on the hull: nothing to train for yet.
+        self.assertFalse(napoc["in_doctrine"])
+        self.assertIsNone(napoc["fitting_id"])
+        self.assertIsNone(napoc["character_id"])
+
+    def test_not_ready_says_how_long(self):
+        training.set_not_for_fleets(self.user, self.logi.character_id, True)
+        [guardian] = training.hull_readiness(self.user, [GUARDIAN])
+        self.assertEqual(guardian["character_name"], "Alt")
+        self.assertFalse(guardian["ready"])
+        self.assertGreater(guardian["days"], 0)
+
+    def test_endpoint_reads_a_comma_list(self):
+        response = self.client.get(
+            "/api/training/hulls?type_ids=11987,junk,17726",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row["ship_type_id"] for row in response.json()],
+            [GUARDIAN, NAPOC],
+        )

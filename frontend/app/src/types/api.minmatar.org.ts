@@ -3205,6 +3205,8 @@ export type MemberInsights = ApiResponse<'MemberInsightsResponse'>
 export type CorporationMemberPromote = ApiResponse<'CorporationMemberPromoteResponse'>
 export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
+// Fleet Roles guide ladders: the best character and fit on each hull.
+export type TrainingHullReadiness = ApiResponse<'HullReadinessResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
 

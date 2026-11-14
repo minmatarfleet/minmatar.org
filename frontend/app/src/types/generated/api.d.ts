@@ -9093,6 +9093,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/training/hulls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your best character and doctrine fit on each hull, for the Fleet Roles guide ladders
+         * @description type_ids: comma-separated ship type ids, at most twelve.
+         */
+        get: operations["capabilities_endpoints_get_hulls_get_hulls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/": {
         parameters: {
             query?: never;
@@ -19347,6 +19367,25 @@ export interface components {
             short_name: string;
             /** Solar System Name */
             solar_system_name: string;
+        };
+        /** HullReadinessResponse */
+        HullReadinessResponse: {
+            /** Character Id */
+            character_id: number | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Days */
+            days: number | null;
+            /** Fitting Id */
+            fitting_id: number | null;
+            /** Fitting Name */
+            fitting_name: string | null;
+            /** In Doctrine */
+            in_doctrine: boolean;
+            /** Ready */
+            ready: boolean;
+            /** Ship Type Id */
+            ship_type_id: number;
         };
         /** HygieneCounts */
         HygieneCounts: {
@@ -51495,6 +51534,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_hulls_get_hulls: {
+        parameters: {
+            query: {
+                type_ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HullReadinessResponse"][];
                 };
             };
         };

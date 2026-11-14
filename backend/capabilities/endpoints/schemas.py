@@ -193,3 +193,14 @@ class AccountMoveRequest(Schema):
 
 class TrainingChangeResponse(Schema):
     ok: bool
+
+
+class HullReadinessResponse(Schema):
+    ship_type_id: int
+    in_doctrine: bool
+    fitting_id: int | None
+    fitting_name: str | None
+    character_id: int | None
+    character_name: str | None
+    ready: bool
+    days: float | None

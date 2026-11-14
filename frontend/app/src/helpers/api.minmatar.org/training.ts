@@ -4,6 +4,7 @@ import type {
     TrainingAccountOptions,
     TrainingCharacter,
     TrainingDoctrineCell,
+    TrainingHullReadiness,
     TrainingGoalPatch,
     TrainingOverview,
     TrainingPlan,
@@ -18,6 +19,14 @@ export async function get_training_overview(access_token:string) {
     return await api_request<TrainingOverview>(`${API_ENDPOINT}/`, {
         token: access_token,
         error: 'Error fetching training',
+    })
+}
+
+/** Fleet Roles ladders: your best character and doctrine fit on each hull. */
+export async function get_training_hulls(access_token:string, type_ids:number[]) {
+    return await api_request<TrainingHullReadiness[]>(`${API_ENDPOINT}/hulls?type_ids=${type_ids.join(',')}`, {
+        token: access_token,
+        error: 'Error fetching hull readiness',
     })
 }
 

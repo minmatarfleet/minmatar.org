@@ -23261,6 +23261,89 @@
         "title": "HubResponse",
         "type": "object"
       },
+      "HullReadinessResponse": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days"
+          },
+          "fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
+          },
+          "fitting_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Name"
+          },
+          "in_doctrine": {
+            "title": "In Doctrine",
+            "type": "boolean"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "in_doctrine",
+          "fitting_id",
+          "fitting_name",
+          "character_id",
+          "character_name",
+          "ready",
+          "days"
+        ],
+        "title": "HullReadinessResponse",
+        "type": "object"
+      },
       "HygieneCounts": {
         "properties": {
           "leave": {
@@ -80827,6 +80910,48 @@
           }
         ],
         "summary": "One doctrine's ships for one role, and who flies each",
+        "tags": [
+          "Training"
+        ]
+      }
+    },
+    "/api/training/hulls": {
+      "get": {
+        "description": "type_ids: comma-separated ship type ids, at most twelve.",
+        "operationId": "capabilities_endpoints_get_hulls_get_hulls",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type_ids",
+            "required": true,
+            "schema": {
+              "title": "Type Ids",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HullReadinessResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Your best character and doctrine fit on each hull, for the Fleet Roles guide ladders",
         "tags": [
           "Training"
         ]
