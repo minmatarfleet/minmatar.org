@@ -9,7 +9,10 @@ import type {
 } from '@helpers/alliance_health_pilot_list'
 import { health_confidence_label, health_pilot_card_id, timezone_text } from '@helpers/alliance_health_pilot_list'
 
-import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import {
+    alliance_health_table_params,
+    leave_bucket_can_restore,
+} from '@helpers/api.minmatar.org/alliance_health'
 import { query_string } from '@helpers/string'
 import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
 
@@ -48,7 +51,7 @@ const extra_query = alliance_health_table_params({
 
 const can_act = (pilot: AllianceHealthLeavePilot) =>
     can_restore &&
-    (bucket === 'returning' || bucket === 'remove') &&
+    leave_bucket_can_restore(bucket) &&
     (alliance_wide ||
         (pilot.corporation_id != null &&
             officer_corp_ids.includes(pilot.corporation_id)))

@@ -62,6 +62,8 @@ class BuybackSettingsResponse(BaseModel):
     assignee_name: str
     corporation_id: int
     location: Optional[BuybackLocationResponse] = None
+    # Main location first, then the other accepted contract locations.
+    locations: List[BuybackLocationResponse] = []
     accepted_categories: List[str]
     accepted_items: List[BuybackAcceptedItemResponse] = []
     rate_rules: BuybackRateRules
@@ -86,6 +88,7 @@ class BuybackOnHandResponse(BaseModel):
 
 class BuybackStockStatsResponse(BaseModel):
     stockpile_value: int
+    reserved_value: int = 0
     remaining_isk: Optional[int] = None
     turnover_value: int
     window_days: int = 30

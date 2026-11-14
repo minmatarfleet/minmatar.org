@@ -9,7 +9,7 @@ from typing import Iterable
 from eveuniverse.models import EveType
 
 from industry.helpers.plan_stock import parse_stock_paste
-from market.helpers.contract_match import fitting_type_quantities_bulk
+from market.helpers.contract_match import eft_type_quantities_bulk
 from market.helpers.fitting_buy_allocations import (
     allocated_variant_qtys,
     cached_jita_item_fields,
@@ -25,7 +25,7 @@ from market.models.fitting_buy_order import (
 @dataclass(frozen=True)
 class LineBom:
     line_id: int
-    fitting_id: int
+    fitting_id: int | None
     quantity: int
     per_ship: dict[int, int]
     total: dict[int, int]
@@ -68,14 +68,15 @@ def line_type_quantities(
     lines = list(lines)
     if not lines:
         return []
-    fittings = [line.fitting for line in lines]
-    bulk = fitting_type_quantities_bulk(fittings)
-    hull_ids = {f.id: f.ship_id for f in fittings}
+    # Keyed by line, not fitting: pasted fits have no EveFitting.
+    bulk = eft_type_quantities_bulk(
+        {line.id: line.eft_format for line in lines}
+    )
     result: list[LineBom] = []
     for line in lines:
-        per_ship = dict(bulk.get(line.fitting_id, {}))
+        per_ship = dict(bulk.get(line.id, {}))
         if not include_hull:
-            ship_id = hull_ids.get(line.fitting_id)
+            ship_id = line.fit_ship_id
             if ship_id:
                 per_ship.pop(ship_id, None)
 

@@ -37,6 +37,10 @@ if (data_fetching_error || !settings || !settings.location) {
 const assignee_name = settings.assignee_name
 const location_name = settings.location.name
 const location_short = settings.location.short_name
+// Older backends send no `locations`: fall back to the main location.
+const accepted_locations = settings.locations?.length
+    ? settings.locations
+    : [settings.location]
 
 import {
     get_location_video_cover,
@@ -129,7 +133,12 @@ const page_title = t('buyback.contract.page_title');
                 <ComponentBlock width='narrow'>
                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                         <h2>{t('buyback.contract.step_2_title')}</h2>
-                        <p>{location_name}</p>
+                        {accepted_locations.length > 1 && (
+                            <p>{t('buyback.contract.step_2_any_of')}</p>
+                        )}
+                        {accepted_locations.map((location) => (
+                            <p>{location.name}</p>
+                        ))}
                     </Flexblock>
                 </ComponentBlock>
 

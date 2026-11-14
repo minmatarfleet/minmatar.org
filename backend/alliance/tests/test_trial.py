@@ -21,6 +21,7 @@ from app.test import TestCase
 from app.testing import make_token
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import (
+    EveAlliance,
     EveCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
@@ -470,3 +471,119 @@ class PromoteFromTrialTestCase(TestCase):
         self.assertTrue(ready())
         self.client.post(PROMOTE_URL, **self._as(self.director))
         self.assertFalse(ready())
+
+
+STATUS_URL = (
+    f"/api/eveonline/corporations/corporations/{CORP_ID}/members/2001/status"
+)
+
+
+class MemberStatusFromRosterTestCase(TestCase):
+    """Leave / take off leave from the corp Members tab, with the same
+    rules as the alliance health lists."""
+
+    def setUp(self):
+        super().setUp()
+        Group.objects.get_or_create(name="On Leave")
+        alliance = EveAlliance.objects.create(
+            alliance_id=99011978, name="Minmatar Fleet Alliance", ticker="MFA"
+        )
+        self.corporation = EveCorporation.objects.create(
+            corporation_id=CORP_ID,
+            name="Fosfo Test",
+            ticker="FOSFO",
+            alliance=alliance,
+        )
+        self.character = EveCharacter.objects.create(
+            character_id=2001,
+            character_name="Vosk Arran",
+            user=self.user,
+            corporation_id=CORP_ID,
+        )
+        set_primary_character(self.user, self.character)
+        UserCommunityStatus.objects.create(
+            user=self.user, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+        self.director = User.objects.create(username="director")
+        self.corporation.directors.add(
+            EveCharacter.objects.create(
+                character_id=2002,
+                character_name="Director",
+                user=self.director,
+                corporation_id=CORP_ID,
+            )
+        )
+        self.ceo = User.objects.create(username="ceo")
+        self.corporation.ceo = EveCharacter.objects.create(
+            character_id=2004,
+            character_name="Boss",
+            user=self.ceo,
+            corporation_id=CORP_ID,
+        )
+        self.corporation.save()
+        self.client = Client()
+
+    def _as(self, user):
+        return {"HTTP_AUTHORIZATION": f"Bearer {make_token(user)}"}
+
+    def _post(self, user, action):
+        return self.client.post(
+            STATUS_URL,
+            data={"action": action},
+            content_type="application/json",
+            **self._as(user),
+        )
+
+    def _status(self):
+        return UserCommunityStatus.objects.get(user=self.user).status
+
+    def test_director_takes_member_off_leave(self):
+        data = self.client.get(INSIGHTS_URL, **self._as(self.director)).json()
+        self.assertEqual(data["community_status"], "on_leave")
+        self.assertEqual(data["status_actions"], ["restore"])
+        response = self._post(self.director, "restore")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"community_status": "active"})
+        self.assertEqual(self._status(), "active")
+        change = UserCommunityStatusHistory.objects.filter(
+            user=self.user, to_status="active"
+        ).first()
+        self.assertEqual(change.changed_by, self.director)
+        self.assertIn("FOSFO", change.reason)
+
+    def test_director_cannot_put_on_leave(self):
+        UserCommunityStatus.objects.filter(user=self.user).update(
+            status="active"
+        )
+        data = self.client.get(INSIGHTS_URL, **self._as(self.director)).json()
+        self.assertEqual(data["status_actions"], [])
+        self.assertEqual(self._post(self.director, "leave").status_code, 403)
+        self.assertEqual(self._status(), "active")
+
+    def test_ceo_puts_member_on_leave(self):
+        UserCommunityStatus.objects.filter(user=self.user).update(
+            status="active"
+        )
+        data = self.client.get(INSIGHTS_URL, **self._as(self.ceo)).json()
+        self.assertEqual(data["status_actions"], ["leave"])
+        self.assertEqual(self._post(self.ceo, "leave").status_code, 200)
+        self.assertEqual(self._status(), "on_leave")
+
+    def test_restore_needs_member_on_leave(self):
+        UserCommunityStatus.objects.filter(user=self.user).update(
+            status="active"
+        )
+        self.assertEqual(self._post(self.director, "restore").status_code, 400)
+
+    def test_recruiter_cannot_change_status(self):
+        recruiter = User.objects.create(username="recruiter")
+        self.corporation.recruiters.add(
+            EveCharacter.objects.create(
+                character_id=2003,
+                character_name="Recruiter",
+                user=recruiter,
+                corporation_id=CORP_ID,
+            )
+        )
+        self.assertEqual(self._post(recruiter, "restore").status_code, 403)
+        self.assertEqual(self._status(), "on_leave")

@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-14 — Open technology threads (batch, Discord MCP on production)
+
+**Category:** pulse.technology
+**Verdict:** mixed (bug, feature, clarify, note-to-self)
+**Discord:** fix or feature + PR URL in each live thread; archived threads got none
+**PR:** one fix PR per ticket, plus this skill-only PR
+**Symptom vs cause:** The workspace Discord MCP reached the production guild, so replies landed for the first time. A stockpile headline counted the whole hangar while the list excluded pending purchase reservations. A request for EVE names on a corp server hit the role-mapping reconciler, which never set nicknames. Two extra buyback stations were display and data only. An Alts doctrine category and a Fanfest tribe were additive features. Fitting orders gained EFT paste stored on the line. An old associate onboarding ticket was already fixed in code; only production group settings could still block tribe applies. Health lists hard-coded five rows and showed one status button on one tab; the Reddit link error was a missing production setting.
+**Durable rule:** Ingest every open thread first; archived ones are “Channel not found” and get no reply. Note-to-self tickets with one line get no PR without the owner's scope. Summary numbers must share the list's function. Check every bot-managed server type for Discord sync gaps.
+**Skill update:** MCP note, and rows for stockpile headline, health page size and status buttons, Reddit link setting, buyback locations, corp-server nicknames, doctrine categories, tribe creation, associate tribe apply; fitting-paste row rewritten.
+
 ## 2026-11-13 — Buyback sale threads close from Discord buttons
 
 **Category:** pulse.technology (buyback forum; no HelpTicket row)

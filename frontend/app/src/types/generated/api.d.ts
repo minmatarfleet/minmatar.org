@@ -843,7 +843,7 @@ export interface paths {
         };
         /**
          * Get Stock Stats
-         * @description Buyback stockpile overview: on-hand Jita guide value, M-EXC corp wallet balance, and 30d stockpile turnover.
+         * @description Buyback stockpile overview: Jita guide value of the stock listed for sale (same pool as /stock), value held for pending purchases, M-EXC corp wallet balance, and 30d stockpile turnover.
          */
         get: operations["buyback_endpoints_get_stock_stats_get_stock_stats"];
         put?: never;
@@ -2656,6 +2656,23 @@ export interface paths {
         put?: never;
         /** Move a trial member to active (CEO, directors, People team) */
         post: operations["eveonline_endpoints_corporations_post_corp_member_promote_post_corp_member_promote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put a member on leave or take them off leave */
+        post: operations["eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7038,6 +7055,23 @@ export interface paths {
         put?: never;
         /** Create a fitting buy order */
         post: operations["market_endpoints_fitting_buy_orders_post_order_post_fitting_buy_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market/fitting-buy-orders/custom-fit-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a pasted EFT fit before adding it to a buy order */
+        post: operations["market_endpoints_fitting_buy_orders_post_custom_fit_check_post_fitting_buy_custom_fit_check"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11467,12 +11501,22 @@ export interface components {
             /** Leading Text */
             leading_text: string;
             location?: components["schemas"]["BuybackLocationResponse"] | null;
+            /**
+             * Locations
+             * @default []
+             */
+            locations?: components["schemas"]["BuybackLocationResponse"][];
             rate_rules: components["schemas"]["BuybackRateRules"];
         };
         /** BuybackStockStatsResponse */
         BuybackStockStatsResponse: {
             /** Remaining Isk */
             remaining_isk?: number | null;
+            /**
+             * Reserved Value
+             * @default 0
+             */
+            reserved_value?: number;
             /** Stockpile Value */
             stockpile_value: number;
             /** Turnover Value */
@@ -13613,6 +13657,19 @@ export interface components {
             /** To Status */
             to_status: string;
         };
+        /** CorporationMemberStatusRequest */
+        CorporationMemberStatusRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "leave" | "restore";
+        };
+        /** CorporationMemberStatusResponse */
+        CorporationMemberStatusResponse: {
+            /** Community Status */
+            community_status: string;
+        };
         /** CorporationMembersTopResponse */
         CorporationMembersTopResponse: {
             /** Members */
@@ -14103,6 +14160,19 @@ export interface components {
             /** Year */
             year: number;
         };
+        /**
+         * CreateCustomFitLineRequest
+         * @description A fit pasted as EFT. It stays on this order: no site fitting.
+         */
+        CreateCustomFitLineRequest: {
+            /** Eft */
+            eft: string;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity?: number;
+        };
         /** CreateEveFleetFittingRefitRequest */
         CreateEveFleetFittingRefitRequest: {
             /** Cargo Modules */
@@ -14245,6 +14315,11 @@ export interface components {
         };
         /** CreateFittingBuyOrderRequest */
         CreateFittingBuyOrderRequest: {
+            /**
+             * Custom Fits
+             * @default []
+             */
+            custom_fits?: components["schemas"]["CreateCustomFitLineRequest"][];
             /**
              * Include Hull
              * @default false
@@ -14516,6 +14591,43 @@ export interface components {
         /** CurrentFleetWindowResponse */
         CurrentFleetWindowResponse: {
             window?: components["schemas"]["FleetWindowResponse"] | null;
+        };
+        /** CustomFitCheckRequest */
+        CustomFitCheckRequest: {
+            /** Eft */
+            eft: string;
+        };
+        /** CustomFitCheckResponse */
+        CustomFitCheckResponse: {
+            /**
+             * Error
+             * @default
+             */
+            error?: string;
+            /**
+             * Fit Name
+             * @default
+             */
+            fit_name?: string;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count?: number;
+            /** Ok */
+            ok: boolean;
+            /** Ship Id */
+            ship_id?: number | null;
+            /**
+             * Ship Name
+             * @default
+             */
+            ship_name?: string;
+            /**
+             * Unknown Names
+             * @default []
+             */
+            unknown_names?: string[];
         };
         /**
          * DamageAnalysis
@@ -15009,6 +15121,11 @@ export interface components {
         /** DoctrineCompositionRequest */
         DoctrineCompositionRequest: {
             /**
+             * Alts
+             * @default []
+             */
+            alts?: number[];
+            /**
              * Capitals
              * @default []
              */
@@ -15058,6 +15175,11 @@ export interface components {
          * @description Doctrines API Response
          */
         DoctrineResponse: {
+            /**
+             * Alts Fittings
+             * @default []
+             */
+            alts_fittings?: components["schemas"]["FittingResponse"][];
             /** Capitals Fittings */
             capitals_fittings: components["schemas"]["FittingResponse"][];
             /**
@@ -16724,7 +16846,7 @@ export interface components {
             /** Fitting Cost */
             fitting_cost?: string | null;
             /** Fitting Id */
-            fitting_id: number;
+            fitting_id: number | null;
             /** Fitting Name */
             fitting_name: string;
             /**
@@ -16959,7 +17081,7 @@ export interface components {
              */
             fit_copies?: components["schemas"]["FittingBuyFitCopySchema"][];
             /** Fitting Id */
-            fitting_id: number;
+            fitting_id: number | null;
             /** Fitting Name */
             fitting_name: string;
             /**
@@ -16969,6 +17091,11 @@ export interface components {
             has_swaps?: boolean;
             /** Id */
             id: number;
+            /**
+             * Is Custom
+             * @default false
+             */
+            is_custom?: boolean;
             /** Max Completable */
             max_completable?: number | null;
             /**
@@ -17131,7 +17258,7 @@ export interface components {
         /** FittingBuyOrderListShipSchema */
         FittingBuyOrderListShipSchema: {
             /** Fitting Id */
-            fitting_id: number;
+            fitting_id: number | null;
             /** Fitting Name */
             fitting_name: string;
             /** Quantity */
@@ -21665,6 +21792,8 @@ export interface components {
              * @default false
              */
             can_promote?: boolean;
+            /** Community Status */
+            community_status?: string | null;
             /** Compare */
             compare?: components["schemas"]["TrialCompareResponse"][] | null;
             /** Corporation Ticker */
@@ -21676,6 +21805,11 @@ export interface components {
              */
             on_trial?: boolean;
             ships: components["schemas"]["TrialShipsResponse"];
+            /**
+             * Status Actions
+             * @default []
+             */
+            status_actions?: string[];
             trial?: components["schemas"]["TrialProgressResponse"] | null;
         };
         /** MembershipCharacterHistorySchema */
@@ -36070,6 +36204,60 @@ export interface operations {
             };
         };
     };
+    eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationMemberStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationMemberStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     eveonline_endpoints_corporations_get_corporation_page_text_get_corporation_page_text: {
         parameters: {
             query?: never;
@@ -46554,6 +46742,39 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_fitting_buy_orders_post_custom_fit_check_post_fitting_buy_custom_fit_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomFitCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFitCheckResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

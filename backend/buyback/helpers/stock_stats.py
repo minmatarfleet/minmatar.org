@@ -9,13 +9,13 @@ from decimal import Decimal
 from django.utils import timezone
 from eveuniverse.models import EveType
 
-from buyback.helpers.valuation import batch_estimate_guide_isk
-from buyback.models import (
-    BUYBACK_CORPORATION_ID,
-    BuybackAcceptedItem,
-    BuybackHangarSnapshot,
-    BuybackLedgerEntry,
+from buyback.helpers.remaining import (
+    available_stock_quantities,
+    hangar_snapshot_quantities,
+    pending_purchase_quantities,
 )
+from buyback.helpers.valuation import batch_estimate_guide_isk
+from buyback.models import BUYBACK_CORPORATION_ID, BuybackLedgerEntry
 from eveonline.client import EsiClient
 from eveonline.helpers.corporations import (
     SCOPE_CORPORATION_WALLET,
@@ -32,40 +32,41 @@ SALE_REASONS = (
 )
 
 
-def hangar_quantities() -> dict[int, int]:
-    """Latest hangar snapshot quantities, else accepted-item stockpile fields."""
-    snapshot = BuybackHangarSnapshot.objects.order_by("-taken_at").first()
-    quantities: dict[int, int] = {}
-    if snapshot is not None:
-        for key, qty in (snapshot.quantities or {}).items():
-            try:
-                quantities[int(key)] = int(qty)
-            except (TypeError, ValueError):
-                continue
-        return quantities
-
-    for type_id, qty in BuybackAcceptedItem.objects.filter(
-        active=True
-    ).values_list("eve_type_id", "stockpile_quantity"):
-        quantities[int(type_id)] = int(qty or 0)
-    return quantities
-
-
-def compute_stockpile_value() -> int:
-    quantities = hangar_quantities()
-    rows: list[tuple[int, str, int]] = []
+def _guide_value(quantities: dict[int, int]) -> int:
     type_ids = [type_id for type_id, qty in quantities.items() if qty > 0]
     names = {
         eve_type.id: eve_type.name
         for eve_type in EveType.objects.filter(id__in=type_ids)
     }
-    for type_id in type_ids:
-        name = names.get(type_id)
-        if not name:
-            continue
-        rows.append((type_id, name, quantities[type_id]))
+    rows = [
+        (type_id, names[type_id], quantities[type_id])
+        for type_id in type_ids
+        if names.get(type_id)
+    ]
     totals = batch_estimate_guide_isk(rows)
     return int(round(sum(value for value in totals if value is not None)))
+
+
+def compute_stockpile_value() -> int:
+    """
+    Jita guide value of the stock the page lists for sale.
+
+    Same pool as GET /stock: hangar snapshot minus sales since the scan
+    minus pending purchase reservations.
+    """
+    return _guide_value(available_stock_quantities())
+
+
+def compute_reserved_value() -> int:
+    """Value of hangar stock held for pending purchase orders."""
+    hangar = hangar_snapshot_quantities()
+    pending = pending_purchase_quantities()
+    if hangar is not None:
+        pending = {
+            type_id: min(qty, max(hangar.get(type_id, 0), 0))
+            for type_id, qty in pending.items()
+        }
+    return _guide_value(pending)
 
 
 def fetch_corporation_wallet_balance() -> int | None:
@@ -125,6 +126,7 @@ def compute_turnover_value(*, window_days: int = TURNOVER_WINDOW_DAYS) -> int:
 def compute_stock_stats() -> dict:
     return {
         "stockpile_value": compute_stockpile_value(),
+        "reserved_value": compute_reserved_value(),
         "remaining_isk": fetch_corporation_wallet_balance(),
         "turnover_value": compute_turnover_value(),
         "window_days": TURNOVER_WINDOW_DAYS,

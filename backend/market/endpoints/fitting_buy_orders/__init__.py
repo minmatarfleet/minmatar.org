@@ -2,6 +2,12 @@
 
 from ninja import Router
 
+from market.endpoints.fitting_buy_orders.post_custom_fit_check import (
+    PATH as post_custom_fit_check_path,
+    METHOD as post_custom_fit_check_method,
+    ROUTE_SPEC as post_custom_fit_check_spec,
+    post_fitting_buy_custom_fit_check,
+)
 from market.endpoints.fitting_buy_orders.delete_line import (
     PATH as delete_line_path,
     METHOD as delete_line_method,
@@ -95,6 +101,12 @@ _ROUTES = (
         post_order_path,
         post_order_spec,
         post_fitting_buy_order,
+    ),
+    (
+        post_custom_fit_check_method,
+        post_custom_fit_check_path,
+        post_custom_fit_check_spec,
+        post_fitting_buy_custom_fit_check,
     ),
     (get_order_method, get_order_path, get_order_spec, get_fitting_buy_order),
     (

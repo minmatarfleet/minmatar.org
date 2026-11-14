@@ -3387,6 +3387,14 @@
               }
             ]
           },
+          "locations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/BuybackLocationResponse"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
           "rate_rules": {
             "$ref": "#/components/schemas/BuybackRateRules"
           }
@@ -3416,6 +3424,11 @@
               }
             ],
             "title": "Remaining Isk"
+          },
+          "reserved_value": {
+            "default": 0,
+            "title": "Reserved Value",
+            "type": "integer"
           },
           "stockpile_value": {
             "title": "Stockpile Value",
@@ -8432,6 +8445,36 @@
         "title": "CorporationMemberStatusChange",
         "type": "object"
       },
+      "CorporationMemberStatusRequest": {
+        "properties": {
+          "action": {
+            "enum": [
+              "leave",
+              "restore"
+            ],
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "CorporationMemberStatusRequest",
+        "type": "object"
+      },
+      "CorporationMemberStatusResponse": {
+        "properties": {
+          "community_status": {
+            "title": "Community Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "community_status"
+        ],
+        "title": "CorporationMemberStatusResponse",
+        "type": "object"
+      },
       "CorporationMembersTopResponse": {
         "properties": {
           "members": {
@@ -9784,6 +9827,25 @@
         "title": "CreateCampaignRequest",
         "type": "object"
       },
+      "CreateCustomFitLineRequest": {
+        "description": "A fit pasted as EFT. It stays on this order: no site fitting.",
+        "properties": {
+          "eft": {
+            "title": "Eft",
+            "type": "string"
+          },
+          "quantity": {
+            "default": 1,
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "eft"
+        ],
+        "title": "CreateCustomFitLineRequest",
+        "type": "object"
+      },
       "CreateEveFleetFittingRefitRequest": {
         "properties": {
           "cargo_modules": {
@@ -10167,6 +10229,14 @@
       },
       "CreateFittingBuyOrderRequest": {
         "properties": {
+          "custom_fits": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CreateCustomFitLineRequest"
+            },
+            "title": "Custom Fits",
+            "type": "array"
+          },
           "include_hull": {
             "default": false,
             "title": "Include Hull",
@@ -10871,6 +10941,71 @@
           }
         },
         "title": "CurrentFleetWindowResponse",
+        "type": "object"
+      },
+      "CustomFitCheckRequest": {
+        "properties": {
+          "eft": {
+            "title": "Eft",
+            "type": "string"
+          }
+        },
+        "required": [
+          "eft"
+        ],
+        "title": "CustomFitCheckRequest",
+        "type": "object"
+      },
+      "CustomFitCheckResponse": {
+        "properties": {
+          "error": {
+            "default": "",
+            "title": "Error",
+            "type": "string"
+          },
+          "fit_name": {
+            "default": "",
+            "title": "Fit Name",
+            "type": "string"
+          },
+          "item_count": {
+            "default": 0,
+            "title": "Item Count",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "ship_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Id"
+          },
+          "ship_name": {
+            "default": "",
+            "title": "Ship Name",
+            "type": "string"
+          },
+          "unknown_names": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Unknown Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "CustomFitCheckResponse",
         "type": "object"
       },
       "DamageAnalysis": {
@@ -11867,6 +12002,14 @@
       },
       "DoctrineCompositionRequest": {
         "properties": {
+          "alts": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Alts",
+            "type": "array"
+          },
           "capitals": {
             "default": [],
             "items": {
@@ -11956,6 +12099,14 @@
       "DoctrineResponse": {
         "description": "Doctrines API Response",
         "properties": {
+          "alts_fittings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FittingResponse"
+            },
+            "title": "Alts Fittings",
+            "type": "array"
+          },
           "capitals_fittings": {
             "items": {
               "$ref": "#/components/schemas/FittingResponse"
@@ -16591,8 +16742,15 @@
             "title": "Fitting Cost"
           },
           "fitting_id": {
-            "title": "Fitting Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
           },
           "fitting_name": {
             "title": "Fitting Name",
@@ -17138,8 +17296,15 @@
             "type": "array"
           },
           "fitting_id": {
-            "title": "Fitting Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
           },
           "fitting_name": {
             "title": "Fitting Name",
@@ -17153,6 +17318,11 @@
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "is_custom": {
+            "default": false,
+            "title": "Is Custom",
+            "type": "boolean"
           },
           "max_completable": {
             "anyOf": [
@@ -17484,8 +17654,15 @@
       "FittingBuyOrderListShipSchema": {
         "properties": {
           "fitting_id": {
-            "title": "Fitting Id",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
           },
           "fitting_name": {
             "title": "Fitting Name",
@@ -28902,6 +29079,17 @@
             "title": "Can Promote",
             "type": "boolean"
           },
+          "community_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Community Status"
+          },
           "compare": {
             "anyOf": [
               {
@@ -28937,6 +29125,14 @@
           },
           "ships": {
             "$ref": "#/components/schemas/TrialShipsResponse"
+          },
+          "status_actions": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Status Actions",
+            "type": "array"
           },
           "trial": {
             "anyOf": [
@@ -50883,7 +51079,7 @@
     },
     "/api/buyback/stock/stats": {
       "get": {
-        "description": "Buyback stockpile overview: on-hand Jita guide value, M-EXC corp wallet balance, and 30d stockpile turnover.",
+        "description": "Buyback stockpile overview: Jita guide value of the stock listed for sale (same pool as /stock), value held for pending purchases, M-EXC corp wallet balance, and 30d stockpile turnover.",
         "operationId": "buyback_endpoints_get_stock_stats_get_stock_stats",
         "parameters": [],
         "responses": {
@@ -57811,6 +58007,93 @@
           }
         ],
         "summary": "Move a trial member to active (CEO, directors, People team)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/members/{character_id}/status": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationMemberStatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationMemberStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put a member on leave or take them off leave",
         "tags": [
           "Corporations",
           "Corporations"
@@ -73177,6 +73460,54 @@
           }
         ],
         "summary": "Create a fitting buy order",
+        "tags": [
+          "Market",
+          "Market"
+        ]
+      }
+    },
+    "/api/market/fitting-buy-orders/custom-fit-check": {
+      "post": {
+        "operationId": "market_endpoints_fitting_buy_orders_post_custom_fit_check_post_fitting_buy_custom_fit_check",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomFitCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFitCheckResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Check a pasted EFT fit before adding it to a buy order",
         "tags": [
           "Market",
           "Market"

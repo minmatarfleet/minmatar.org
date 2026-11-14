@@ -29,7 +29,7 @@ from discord.guild_roles import (
 )
 from discord.models import DiscordGuild, DiscordRoleMapping, DiscordUser
 from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from groups.helpers import CORPORATION_GROUP_SUFFIXES
 from groups.models import EveCorporationGroup
 from tribes.models import (
@@ -52,10 +52,11 @@ def http_error(code: int) -> HTTPError:
     return HTTPError(response=response)
 
 
-def member(discord_id, roles, bot=False):
+def member(discord_id, roles, bot=False, nick=None):
     return {
         "user": {"id": str(discord_id), "bot": bot},
         "roles": [str(role_id) for role_id in roles],
+        "nick": nick,
     }
 
 
@@ -254,6 +255,79 @@ class ReconcileRolesTestCase(GuildRoleFixture):
         self.assertFalse(self.guild.can_manage_roles)
         self.assertIsNotNone(self.guild.roles_checked_at)
         client.add_user_role.assert_not_called()
+
+
+class ReconcileNicknamesTestCase(GuildRoleFixture):
+    def setUp(self):
+        super().setUp()
+        self.map("member", ROLE_MEMBER)
+        self.corporation.ticker = "RAT"
+        self.corporation.save()
+        EvePlayer.objects.create(
+            user=self.user, primary_character=self.ceo, nickname="ceo"
+        )
+        DiscordUser.objects.create(id=555, discord_tag="pilot", user=self.user)
+
+    @patch(CLIENT)
+    def test_linked_member_gets_ticker_and_main_name(self, client_cls):
+        client = client_cls.for_guild.return_value
+        client.get_members.return_value = [
+            member(555, [ROLE_MEMBER], nick="discordname"),
+            member(777, [], nick="stranger"),
+        ]
+        reconcile_guild_role_mappings(self.guild.pk)
+        client.update_user.assert_called_once_with(555, "[RAT] Ceo")
+
+    @patch(CLIENT)
+    def test_matching_nickname_is_left_alone(self, client_cls):
+        client = client_cls.for_guild.return_value
+        client.get_members.return_value = [
+            member(555, [ROLE_MEMBER], nick="[RAT] Ceo"),
+        ]
+        reconcile_guild_role_mappings(self.guild.pk)
+        client.update_user.assert_not_called()
+
+    @patch(CLIENT)
+    def test_no_main_means_no_rename(self, client_cls):
+        EvePlayer.objects.filter(user=self.user).delete()
+        client = client_cls.for_guild.return_value
+        client.get_members.return_value = [member(555, [ROLE_MEMBER])]
+        reconcile_guild_role_mappings(self.guild.pk)
+        client.update_user.assert_not_called()
+
+    @patch(CLIENT)
+    def test_denied_nickname_keeps_roles_and_the_guild(self, client_cls):
+        client = client_cls.for_guild.return_value
+        client.get_members.return_value = [member(555, [])]
+        client.update_user.side_effect = http_error(50013)
+        reconcile_guild_role_mappings(self.guild.pk)
+        client.add_user_role.assert_called_once_with(555, ROLE_MEMBER)
+        self.guild.refresh_from_db()
+        self.assertTrue(self.guild.can_manage_roles)
+
+    @patch(CLIENT)
+    def test_stops_renaming_after_repeated_denials(self, client_cls):
+        client = client_cls.for_guild.return_value
+        members = [member(555, [ROLE_MEMBER])]
+        for index in range(5):
+            other = User.objects.create(username=f"pilot{index}")
+            character = EveCharacter.objects.create(
+                character_id=3000 + index,
+                character_name=f"Pilot {index}",
+                user=other,
+                corporation_id=98726134,
+            )
+            EvePlayer.objects.create(
+                user=other, primary_character=character, nickname=f"p{index}"
+            )
+            DiscordUser.objects.create(
+                id=600 + index, discord_tag=f"p{index}", user=other
+            )
+            members.append(member(600 + index, [ROLE_MEMBER]))
+        client.get_members.return_value = members
+        client.update_user.side_effect = http_error(50013)
+        reconcile_guild_role_mappings(self.guild.pk)
+        self.assertEqual(3, client.update_user.call_count)
 
 
 class InstallBlockTestCase(GuildRoleFixture):

@@ -147,6 +147,16 @@ export function can_leave_alliance_health_pilot(
     )
 }
 
+/** Leave tabs whose pilots are on leave now, so "Take off leave" applies. */
+export function leave_bucket_can_restore(bucket: string): boolean {
+    return (
+        bucket === 'current' ||
+        bucket === 'inactive' ||
+        bucket === 'returning' ||
+        bucket === 'remove'
+    )
+}
+
 export function can_act_on_alliance_health_corp(
     alliance_wide: boolean,
     corporation_id: number | null | undefined,

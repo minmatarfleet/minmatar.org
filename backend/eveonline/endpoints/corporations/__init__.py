@@ -26,6 +26,9 @@ from eveonline.endpoints.corporations.get_corp_member_insights import (
 from eveonline.endpoints.corporations.post_corp_member_promote import (
     router as post_corp_member_promote_router,
 )
+from eveonline.endpoints.corporations.post_corp_member_status import (
+    router as post_corp_member_status_router,
+)
 from eveonline.endpoints.corporations.get_corp_member_top import (
     router as get_corp_member_top_router,
 )
@@ -62,6 +65,7 @@ router.add_router("", get_corporation_info_router)
 router.add_router("", get_corp_member_details_router)
 router.add_router("", get_corp_member_insights_router)
 router.add_router("", post_corp_member_promote_router)
+router.add_router("", post_corp_member_status_router)
 router.add_router("", get_corp_member_top_router)
 router.add_router("", get_corporation_admin_router)
 router.add_router("", get_corporation_applications_open_router)

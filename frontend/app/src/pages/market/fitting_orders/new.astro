@@ -17,6 +17,9 @@ import type { Fitting } from '@dtypes/api.minmatar.org'
 let fittings: Fitting[] = []
 let fetch_error: string | false = false
 let submitted_lines: { fitting_id: number; quantity: number }[] = []
+// A pasted EFT fit: kept on this order only, never added to the site fittings.
+let custom_eft = ''
+let custom_quantity = 1
 
 if (Astro.request.method === 'POST') {
     try {
@@ -29,12 +32,16 @@ if (Astro.request.method === 'POST') {
                 quantity: Math.max(1, Number(row.quantity) || 1),
             }))
             .filter((row) => row.fitting_id > 0)
+        custom_eft = String(form.get('custom_eft') ?? '')
+        custom_quantity = Math.max(1, parseInt(String(form.get('custom_quantity') ?? ''), 10) || 1)
+        const custom_fits = custom_eft.trim() ? [{ eft: custom_eft, quantity: custom_quantity }] : []
 
-        if (submitted_lines.length === 0)
+        if (submitted_lines.length === 0 && custom_fits.length === 0)
             throw new Error(t('fitting_buy.empty_cart'))
 
         const created = await create_fitting_buy_order(auth_token as string, {
             lines: submitted_lines,
+            custom_fits,
         })
         return Astro.redirect(translatePath(`/market/fitting_orders/${created.id}/`))
     } catch (error) {
@@ -74,6 +81,7 @@ import TextBox from '@components/layout/TextBox.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
 const page_title = t('fitting_buy.create_page_title')
@@ -90,6 +98,8 @@ const fittings_json = JSON.stringify(
     }))
 )
 const quantity_label = t('fitting_buy.quantity')
+const FORM_ID = 'fitting-buy-create'
+const CUSTOM_FIT_CHECK_URL = translatePath('/partials/fitting_buy_custom_fit_component/')
 ---
 
 <Viewport title={page_title} meta_description={t('fitting_buy.meta_description')}>
@@ -117,6 +127,7 @@ const quantity_label = t('fitting_buy.quantity')
                 search: '',
                 result_qty: {},
                 cart: ${cart_seed_json},
+                custom_eft: ${JSON.stringify(custom_eft)},
                 get filtered() {
                     const q = this.search.trim().toLowerCase()
                     if (!q) return []
@@ -244,7 +255,7 @@ const quantity_label = t('fitting_buy.quantity')
                 <ComponentBlock class="[ fitting-buy-panel fitting-buy-cart-panel ]">
                     <Flexblock gap="var(--space-s)" class="[ fitting-buy-panel-body ]">
                         <h3>{t('fitting_buy.order_cart')}</h3>
-                        <p x-show="cart.length === 0" x-cloak class="[ text-[var(--highlight)] fitting-buy-cart-empty ]">
+                        <p x-show="cart.length === 0 && !custom_eft.trim()" x-cloak class="[ text-[var(--highlight)] fitting-buy-cart-empty ]">
                             {t('fitting_buy.empty_cart')}
                         </p>
                         <ul class="[ fitting-buy-cart ]" x-show="cart.length > 0" x-cloak>
@@ -283,13 +294,17 @@ const quantity_label = t('fitting_buy.quantity')
                             </template>
                         </ul>
 
-                        <form method="post" class="[ fitting-buy-submit ]">
+                        <p x-show="custom_eft.trim()" x-cloak class="[ text-[var(--step--1)] ]">
+                            + {t('fitting_buy.paste_fit')}
+                        </p>
+
+                        <form method="post" id={FORM_ID} class="[ fitting-buy-submit ]">
                             <input type="hidden" name="lines_json" :value="lines_json()" />
                             <Button
                                 type="submit"
                                 size="sm"
                                 off_disable={true}
-                                x-bind:disabled="cart.length === 0"
+                                x-bind:disabled="cart.length === 0 && !custom_eft.trim()"
                             >
                                 {t('fitting_buy.submit_order')}
                             </Button>
@@ -297,6 +312,44 @@ const quantity_label = t('fitting_buy.quantity')
                     </Flexblock>
                 </ComponentBlock>
             </FluidFixed>
+
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h3>{t('fitting_buy.paste_fit')}</h3>
+                    <p class="[ text-[var(--step--1)] text-[var(--highlight)] ]">{t('fitting_buy.paste_fit_hint')}</p>
+                    <label class="[ visually-hidden ]" for="fitting-buy-custom-eft">{t('fitting_buy.paste_fit_label')}</label>
+                    <Textarea
+                        id="fitting-buy-custom-eft"
+                        name="custom_eft"
+                        form={FORM_ID}
+                        rows="10"
+                        spellcheck="false"
+                        autocomplete="off"
+                        placeholder={'[Hurricane, My Hurricane]\nGyrostabilizer II\n...'}
+                        x-model="custom_eft"
+                        hx-post={CUSTOM_FIT_CHECK_URL}
+                        hx-trigger={custom_eft.trim() ? 'load, input changed delay:500ms' : 'input changed delay:500ms'}
+                        hx-target="#fitting-buy-custom-fit-check"
+                        hx-swap="innerHTML"
+                        hx-sync="this:replace"
+                    >{custom_eft}</Textarea>
+                    <FlexInline justification="space-between" gap="var(--space-s)" class="[ w-full flex-wrap items-center ]">
+                        <div id="fitting-buy-custom-fit-check" class="[ min-w-0 ]"></div>
+                        <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                            <label for="fitting-buy-custom-quantity">{quantity_label}</label>
+                            <input
+                                id="fitting-buy-custom-quantity"
+                                type="number"
+                                min="1"
+                                name="custom_quantity"
+                                form={FORM_ID}
+                                class="[ fitting-buy-qty ]"
+                                value={custom_quantity}
+                            />
+                        </FlexInline>
+                    </FlexInline>
+                </Flexblock>
+            </ComponentBlock>
         </Flexblock>
     </PageWide>
 </Viewport>

@@ -45,6 +45,7 @@ export interface TribeCharacterRef {
 
 export type TimezoneTag = ApiResponse<'TimezoneTag'>
 export type TribeQualifyingAssetType = ApiResponse<'QualifyingAssetTypeSchema'>
+export type FittingBuyCustomFitCheck = ApiResponse<'CustomFitCheckResponse'>
 
 export interface TribeQualifyingSkill {
     skill_type_id:  number;
@@ -867,6 +868,7 @@ export interface Doctrine {
     secondary_fittings: Fitting[];
     support_fittings:   Fitting[];
     utility_fittings?:  Fitting[];
+    alts_fittings?:     Fitting[];
     capitals_fittings?: Fitting[];
     sig_ids:            number[];
     location_ids:       number[];
@@ -1610,6 +1612,7 @@ export interface BuybackSettings {
     assignee_name:          string;
     corporation_id:         number;
     location:               BuybackLocation | null;
+    locations?:             BuybackLocation[];
     accepted_categories:    string[];
     accepted_items:         BuybackAcceptedItem[];
     rate_rules:             BuybackRateRules;
@@ -1632,12 +1635,7 @@ export interface BuybackOnHand {
     updated_at: string | null;
 }
 
-export interface BuybackStockStats {
-    stockpile_value: number;
-    remaining_isk: number | null;
-    turnover_value: number;
-    window_days: number;
-}
+export type BuybackStockStats = ApiResponse<'BuybackStockStatsResponse'>
 
 export type BuybackLedgerReason =
     | 'in_contract'
@@ -3195,6 +3193,8 @@ export type TrialShips = ApiResponse<'TrialShipsResponse'>
 export type TrialFleet = ApiResponse<'TrialFleetResponse'>
 export type MemberInsights = ApiResponse<'MemberInsightsResponse'>
 export type CorporationMemberPromote = ApiResponse<'CorporationMemberPromoteResponse'>
+export type CorporationMemberStatus = ApiResponse<'CorporationMemberStatusResponse'>
+export type CorporationMemberStatusAction = ApiRequest<'CorporationMemberStatusRequest'>['action']
 export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
 // Fleet Roles guide ladders: the best character and fit on each hull.

@@ -81,7 +81,8 @@ class FittingBuyFitCopySchema(Schema):
 
 class FittingBuyLineSchema(Schema):
     id: int
-    fitting_id: int
+    # Null for a fit the owner pasted in (is_custom).
+    fitting_id: int | None
     fitting_name: str
     ship_id: int
     quantity: int
@@ -94,6 +95,7 @@ class FittingBuyLineSchema(Schema):
     swapped_quantity: int = 0
     has_swaps: bool = False
     fit_copies: list[FittingBuyFitCopySchema] = []
+    is_custom: bool = False
 
 
 class FittingBuyItemSchema(Schema):
@@ -127,7 +129,7 @@ class FittingBuySubstitutionSchema(Schema):
 
 
 class FittingBuyOrderListShipSchema(Schema):
-    fitting_id: int
+    fitting_id: int | None
     fitting_name: str
     ship_id: int
     quantity: int
@@ -192,7 +194,7 @@ class FittingBuyHullSourceChoiceSchema(Schema):
 
 class FittingBuyContractPriceSchema(Schema):
     line_id: int
-    fitting_id: int
+    fitting_id: int | None
     fitting_name: str
     ship_id: int
     ship_name: str = ""
@@ -303,8 +305,8 @@ def serialize_order_list_item(order, request_user=None) -> dict:
     ships = [
         {
             "fitting_id": line.fitting_id,
-            "fitting_name": line.fitting.name,
-            "ship_id": line.fitting.ship_id,
+            "fitting_name": line.fit_name,
+            "ship_id": line.fit_ship_id,
             "quantity": line.quantity,
         }
         for line in lines
@@ -626,7 +628,7 @@ def serialize_order_detail(  # noqa: C901
                     "notes": str(swap.get("notes") or ""),
                 }
             )
-        original_eft = line.fitting.eft_format or ""
+        original_eft = line.eft_format
         swapped_eft = eft_by_line.get(line.id, "")
         quantity = int(line.quantity)
         fit_copies = fit_copies_by_line.get(line.id) or [
@@ -648,8 +650,8 @@ def serialize_order_detail(  # noqa: C901
             {
                 "id": line.id,
                 "fitting_id": line.fitting_id,
-                "fitting_name": line.fitting.name,
-                "ship_id": line.fitting.ship_id,
+                "fitting_name": line.fit_name,
+                "ship_id": line.fit_ship_id,
                 "quantity": quantity,
                 "swaps": swaps,
                 "max_completable": (
@@ -662,9 +664,10 @@ def serialize_order_detail(  # noqa: C901
                 "swapped_quantity": swapped_quantity,
                 "has_swaps": bool(swaps) or swapped_quantity > 0,
                 "fit_copies": fit_copies,
+                "is_custom": line.is_custom,
             }
         )
-    fitting_ids = [line.fitting_id for line in order_lines]
+    fitting_ids = [line.fitting_id for line in order_lines if line.fitting_id]
     short_preferred_ids = {
         item["type_id"]
         for item in item_schemas

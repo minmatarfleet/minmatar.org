@@ -36,7 +36,7 @@ describe('dynamic i18n key families cover their values', () => {
     })
 
     it('fitting_role_<role> (fleet_add_ships_modal)', () => {
-        const roles: FleetFittingRole[] = ['primary', 'secondary', 'support', 'utility']
+        const roles: FleetFittingRole[] = ['primary', 'secondary', 'support', 'utility', 'alts', 'capitals']
         expect(missing(roles.map((role) => `fitting_role_${role}`))).toEqual([])
     })
 

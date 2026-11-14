@@ -44,7 +44,7 @@ class TrialFleetResponse(Schema):
     doctrine_name: Optional[str] = None
     ship_type_id: int
     ship_name: str
-    # primary | support | utility | secondary (Academy) | off_doctrine;
+    # primary | support | utility | alts | secondary (Academy) | off_doctrine;
     # None when the fleet had no doctrine.
     role: Optional[str] = None
     helpful: bool
@@ -79,6 +79,9 @@ class MemberInsightsResponse(Schema):
     # Live community status, and whether the viewer may promote them.
     on_trial: bool = False
     can_promote: bool = False
+    # Live status and the leave actions the viewer may take right now.
+    community_status: Optional[str] = None
+    status_actions: list[str] = []
     trial: Optional[TrialProgressResponse] = None
     compare: Optional[list[TrialCompareResponse]] = None
     academy: bool = False

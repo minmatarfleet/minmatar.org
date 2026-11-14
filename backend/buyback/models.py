@@ -105,6 +105,15 @@ class EveBuybackSettings(models.Model):
         blank=True,
         related_name="buyback_settings",
     )
+    extra_locations = models.ManyToManyField(
+        EveLocation,
+        blank=True,
+        related_name="buyback_extra_settings",
+        help_text=(
+            "Further stations or structures where contracts are accepted, "
+            "listed after the main location in the contract walkthrough."
+        ),
+    )
     assignee_name = models.CharField(
         max_length=255,
         default=BUYBACK_CORP_FALLBACK_NAME,
@@ -211,6 +220,16 @@ class EveBuybackSettings(models.Model):
     def load(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    def accepted_locations(self) -> list[EveLocation]:
+        """Main location first, then the extra accepted locations."""
+        locations = [self.location] if self.location_id else []
+        seen = {loc.location_id for loc in locations}
+        for loc in self.extra_locations.order_by("location_name"):
+            if loc.location_id not in seen:
+                seen.add(loc.location_id)
+                locations.append(loc)
+        return locations
 
     def __str__(self):
         return "Buyback settings (M-EXC)"
