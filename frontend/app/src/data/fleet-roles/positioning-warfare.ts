@@ -21,12 +21,12 @@ export const positioning_warfare: FleetRoleGuide = {
     ],
     why_video: { youtube_id: 'ynAhyO2_BJ0', title: 'How to Control a Grid in EVE', source: 'Zip Slings · 2021' },
     ladder: [
-        { rung: 1, ship_type_id: 622, name: 'Stabber', hull_class: 'Cruiser', job: 'Fast tackle: a long point on their anchor and the speed to stay alive.' },
+        { rung: 1, ship_type_id: 17713, name: 'Stabber Fleet Issue', hull_class: 'Cruiser', job: 'Fast, tough tackle: a long point on their anchor and the buffer to hold it.' },
         { rung: 2, ship_type_id: 37480, name: 'Bifrost', hull_class: 'Command Destroyer', job: 'Micro Jump Field Generator: boosh their logi off their DPS.' },
         { rung: 3, ship_type_id: 22456, name: 'Sabre', hull_class: 'Interdictor', job: 'Bubbles on gates and on the enemy fleet, outside the warzone.' },
         { rung: 4, ship_type_id: 12013, name: 'Broadsword', hull_class: 'Heavy Interdiction Cruiser', job: 'An infinite point that stops booshes, or a bubble you can tank in null-sec.' },
     ],
-    ladder_note: 'Bubbles do not work in most of the warzone, so the Stabber and Bifrost rungs are the ones you will fly most in Faction Warfare.',
+    ladder_note: 'Bubbles do not work in most of the warzone, so the Stabber Fleet Issue and Bifrost rungs are the ones you will fly most in Faction Warfare.',
     featured_sim: 'bubbles',
     lessons: [
         {
