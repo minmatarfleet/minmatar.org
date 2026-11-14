@@ -136,6 +136,40 @@ class BuybackSettingsEndpointTestCase(TestCase):
             data["location"]["location_id"], self.location.location_id
         )
 
+    def test_locations_lists_main_then_extra(self):
+        settings = EveBuybackSettings.load()
+        settings.location = self.location
+        settings.save()
+        data = self.client.get(f"{BASE_URL}/settings").json()
+        ids = [loc["location_id"] for loc in data["locations"]]
+        self.assertEqual(ids[0], self.location.location_id)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertIn(60014131, ids)
+        self.assertIn(1055209321122, ids)
+
+    def test_main_location_not_repeated_when_also_extra(self):
+        settings = EveBuybackSettings.load()
+        settings.location = self.location
+        settings.save()
+        settings.extra_locations.add(self.location)
+        data = self.client.get(f"{BASE_URL}/settings").json()
+        ids = [loc["location_id"] for loc in data["locations"]]
+        self.assertEqual(ids.count(self.location.location_id), 1)
+
+    def test_migration_added_stations(self):
+        settings = EveBuybackSettings.load()
+        thukker = settings.extra_locations.get(location_id=60014131)
+        self.assertFalse(thukker.is_structure)
+        self.assertEqual(thukker.solar_system_name, "Auner")
+        hydra = settings.extra_locations.get(location_id=1055209321122)
+        self.assertTrue(hydra.is_structure)
+
+    def test_no_location_means_no_locations(self):
+        settings = EveBuybackSettings.load()
+        settings.extra_locations.clear()
+        data = self.client.get(f"{BASE_URL}/settings").json()
+        self.assertEqual(data["locations"], [])
+
 
 class BuybackContractsEndpointTestCase(TestCase):
     def setUp(self):

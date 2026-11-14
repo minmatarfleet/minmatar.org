@@ -11427,6 +11427,11 @@ export interface components {
             /** Leading Text */
             leading_text: string;
             location?: components["schemas"]["BuybackLocationResponse"] | null;
+            /**
+             * Locations
+             * @default []
+             */
+            locations?: components["schemas"]["BuybackLocationResponse"][];
             rate_rules: components["schemas"]["BuybackRateRules"];
         };
         /** BuybackStockStatsResponse */

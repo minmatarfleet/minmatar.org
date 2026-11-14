@@ -62,6 +62,8 @@ class BuybackSettingsResponse(BaseModel):
     assignee_name: str
     corporation_id: int
     location: Optional[BuybackLocationResponse] = None
+    # Main location first, then the other accepted contract locations.
+    locations: List[BuybackLocationResponse] = []
     accepted_categories: List[str]
     accepted_items: List[BuybackAcceptedItemResponse] = []
     rate_rules: BuybackRateRules

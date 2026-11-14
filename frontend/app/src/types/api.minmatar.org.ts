@@ -1610,6 +1610,7 @@ export interface BuybackSettings {
     assignee_name:          string;
     corporation_id:         number;
     location:               BuybackLocation | null;
+    locations?:             BuybackLocation[];
     accepted_categories:    string[];
     accepted_items:         BuybackAcceptedItem[];
     rate_rules:             BuybackRateRules;
