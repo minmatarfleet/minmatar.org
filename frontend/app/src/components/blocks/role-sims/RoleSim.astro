@@ -1,0 +1,370 @@
+---
+/**
+ * Shared chrome for the fleet-role simulators: title, one-line summary, the
+ * picture, controls, a live readout, the Targets checklist and Reset.
+ *
+ * The sim component passes its Alpine.data name (`alpine_name`), registered in
+ * its own <script> with register_role_sim (role_sim_data.ts). Slots:
+ *   picture  - inline SVG bound to Alpine state
+ *   controls - SimRange / SimChoice inputs
+ *   readout  - text bound to r(); announced through aria-live
+ */
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import type { TargetSpec } from '@helpers/sims/scenarios'
+
+interface Props {
+    sim_id:             string;
+    alpine_name:        string;
+    title:              string;
+    summary:            string;
+    targets:            TargetSpec[];
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    sim_id,
+    alpine_name,
+    title,
+    summary,
+    targets,
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const heading_id = `role-sim-${sim_id}-title`
+---
+
+<ComponentBlock
+    class:list={['[ role-sim ]', Astro.props.class, { 'role-sim--compact': compact }]}
+    padding_block="var(--space-m)"
+    padding_inline="var(--space-m)"
+    data-sim-id={sim_id}
+    x-data={alpine_name}
+    x-effect="track()"
+    role="group"
+    aria-labelledby={heading_id}
+    {...attributes}
+>
+    <Flexblock gap="var(--space-s)">
+        <header class="role-sim__header">
+            <h3 id={heading_id} class="role-sim__title">{title}</h3>
+            <span class="role-sim__beaten" x-show="beaten" x-cloak>Beaten</span>
+        </header>
+        <p class="role-sim__summary">{summary}</p>
+
+        <div class="role-sim__picture">
+            <slot name="picture" />
+        </div>
+
+        <FluidFixed width={compact ? '100%' : '20rem'} gap="var(--space-m)" class="role-sim__body">
+            <Flexblock gap="var(--space-s)" class="role-sim__main">
+                <div class="role-sim__controls">
+                    <slot name="controls" />
+                </div>
+
+                <div class="role-sim__readout" aria-live="polite" aria-atomic="true">
+                    <slot name="readout" />
+                </div>
+            </Flexblock>
+
+            <Flexblock gap="var(--space-s)" class="role-sim__side">
+                <div class="role-sim__targets">
+                    <h4 class="role-sim__targets-title">
+                        Targets <span class="role-sim__count" x-text={`ticked() + ' of ${targets.length}'`}>0 of {targets.length}</span>
+                    </h4>
+                    <ul class="role-sim__target-list" role="list">
+                        {targets.map((target) => (
+                            <li class="role-sim__target" x-bind:data-done={`done['${target.id}'] ? 'true' : 'false'`} data-done="false">
+                                <span class="role-sim__tick" aria-hidden="true"></span>
+                                <span>{target.label}</span>
+                                <span class="visually-hidden" x-text={`done['${target.id}'] ? '(done)' : '(not yet)'`}>(not yet)</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <button type="button" class="role-sim__reset" x-on:click="reset()">Reset</button>
+            </Flexblock>
+        </FluidFixed>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss" is:global>
+    // Shared by every sim: the controls and pictures come from the sim
+    // components' slots, so these rules are global under .role-sim.
+    .role-sim {
+        --role-sim-target-size: calc(var(--space-l) + var(--space-2xs));
+        --role-sim-ink: var(--foreground);
+        --role-sim-muted: var(--text-muted);
+        --role-sim-line: var(--hairline-strong);
+
+        max-inline-size: 100%;
+        color: var(--foreground);
+
+        [x-cloak] {
+            display: none !important;
+        }
+    }
+
+    .role-sim__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+    }
+
+    .role-sim__title {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .role-sim__summary {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        margin: 0;
+    }
+
+    .role-sim__beaten {
+        font-size: var(--step--1);
+        color: var(--green);
+        border: solid var(--space-3xs) color-mix(in srgb, var(--green) 40%, transparent);
+        border-width: thin;
+        padding: 0 var(--space-2xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .role-sim__picture {
+        background-color: var(--surface-sunken);
+        border: thin solid var(--hairline);
+        padding: var(--space-2xs);
+
+        svg {
+            display: block;
+            inline-size: 100%;
+            block-size: auto;
+            max-block-size: 30rem;
+            margin-inline: auto;
+        }
+    }
+
+    .role-sim--compact .role-sim__picture svg {
+        max-block-size: 18rem;
+    }
+
+    .role-sim__controls {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .role-sim__readout {
+        font-size: var(--step--1);
+        background-color: var(--surface-sunken);
+        border-inline-start: thin solid var(--fleet-yellow);
+        padding: var(--space-2xs) var(--space-xs);
+        min-block-size: var(--role-sim-target-size);
+
+        p {
+            margin: 0;
+        }
+
+        p + p {
+            margin-block-start: var(--space-3xs);
+        }
+
+        .role-sim__aside {
+            color: var(--text-muted);
+        }
+    }
+
+    .role-sim__targets-title {
+        font-size: var(--step-0);
+        margin: 0 0 var(--space-2xs);
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+    }
+
+    .role-sim__count {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        font-weight: normal;
+    }
+
+    .role-sim__target-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .role-sim__target {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        &[data-done="true"] {
+            color: var(--foreground);
+
+            .role-sim__tick {
+                background-color: var(--green);
+                border-color: var(--green);
+
+                &::after {
+                    content: '';
+                    position: absolute;
+                    inset-inline-start: 30%;
+                    inset-block-start: 10%;
+                    inline-size: 30%;
+                    block-size: 55%;
+                    border: solid var(--highlight);
+                    border-width: 0 0.15em 0.15em 0;
+                    transform: rotate(45deg);
+                }
+            }
+        }
+    }
+
+    .role-sim__tick {
+        position: relative;
+        flex: none;
+        inline-size: 1em;
+        block-size: 1em;
+        margin-block-start: 0.2em;
+        border: thin solid var(--hairline-strong);
+        transition: var(--fast-transition);
+    }
+
+    .role-sim__reset,
+    .role-sim__choice label {
+        min-block-size: var(--role-sim-target-size);
+        min-inline-size: var(--role-sim-target-size);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        color: var(--button-color);
+        background-color: var(--component-background);
+        border: thin solid var(--hairline-strong);
+        padding-inline: var(--space-s);
+        cursor: pointer;
+        transition: var(--fast-transition);
+    }
+
+    .role-sim__reset {
+        align-self: flex-start;
+
+        &:hover {
+            border-color: var(--fleet-yellow);
+        }
+    }
+
+    // Range slider with a visible label and value
+    .role-sim__range {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        .role-sim__range-label {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-2xs);
+            font-size: var(--step--1);
+        }
+
+        output {
+            white-space: nowrap;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="range"] {
+            inline-size: 100%;
+            min-block-size: var(--role-sim-target-size);
+            accent-color: var(--fleet-yellow);
+            margin: 0;
+        }
+    }
+
+    // Segmented radio group
+    .role-sim__choice {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-inline-size: 0;
+
+        legend {
+            font-size: var(--step--1);
+            padding: 0;
+            margin-block-end: var(--space-3xs);
+        }
+
+        .role-sim__choice-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-3xs);
+        }
+
+        input {
+            position: absolute;
+            opacity: 0;
+            inline-size: 0;
+            block-size: 0;
+            margin: 0;
+        }
+
+        label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding-inline: var(--space-xs);
+        }
+
+        input:checked + label {
+            border-color: var(--fleet-yellow);
+            background-color: color-mix(in srgb, var(--fleet-yellow) 15%, transparent);
+            color: var(--highlight);
+        }
+
+        input:focus-visible + label {
+            outline: medium solid var(--highlight);
+            outline-offset: var(--space-3xs);
+        }
+    }
+
+    // SVG inks (presentation attributes cannot take var())
+    .role-sim svg {
+        .ink-line { stroke: var(--role-sim-line); fill: none; }
+        .ink-muted { fill: var(--text-muted); }
+        .ink-text { fill: var(--foreground); }
+        .ink-strong { fill: var(--highlight); }
+        .ink-yellow-stroke { stroke: var(--fleet-yellow); fill: none; }
+        .ink-yellow { fill: var(--fleet-yellow); }
+        .ink-red-stroke { stroke: var(--fleet-red); fill: none; }
+        .ink-red { fill: var(--fleet-red); }
+        .ink-green-stroke { stroke: var(--green); fill: none; }
+        .ink-green { fill: var(--green); }
+        .ink-blue-stroke { stroke: var(--alliance-blue); fill: none; }
+        .ink-blue { fill: var(--alliance-blue); }
+        .ink-bubble { fill: color-mix(in srgb, var(--alliance-blue) 25%, transparent); stroke: var(--alliance-blue); }
+        .ink-zone { fill: color-mix(in srgb, var(--fleet-yellow) 8%, transparent); stroke: var(--fleet-yellow); stroke-dasharray: 1 1; }
+        .ink-grid { stroke: var(--hairline); fill: none; }
+    }
+
+    .role-sim.role-sim--compact {
+        max-inline-size: var(--max-landing-width);
+
+        .role-sim__summary {
+            display: none;
+        }
+    }
+</style>

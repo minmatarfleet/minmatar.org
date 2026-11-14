@@ -1,0 +1,86 @@
+---
+/**
+ * ECM spread: three Kitsunes against three Scimitars. Each Kitsune puts both
+ * of its jammers on one Scimitar. Spreading keeps more logi jammed on average
+ * than stacking, because a second jammer on an already-jammed ship is wasted.
+ */
+import RoleSim from '@components/blocks/role-sims/RoleSim.astro'
+import SimChoice from '@components/blocks/role-sims/SimChoice.astro'
+import { SPREAD_JAMMERS_PER_SHIP, SPREAD_LOGI, SPREAD_TARGETS } from '@helpers/sims/scenarios'
+
+interface Props {
+    sim_id?:            string;
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    sim_id = 'ecm-spread',
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const kitsunes = [0, 1, 2]
+const ky = (i: number) => 18 + i * 26
+const ly = (i: number) => 18 + i * 26
+const logi_options = SPREAD_LOGI.map((id) => ({ value: id, label: `Scimitar ${id}` }))
+const BAR_X = 128
+const BAR_W = 60
+---
+
+<RoleSim
+    sim_id={sim_id}
+    alpine_name="role_sim_ecm_spread"
+    title="Spread the jams"
+    summary={`Three Kitsunes, each with ${SPREAD_JAMMERS_PER_SHIP} Ladar ECM II, against three Scimitars. Each line is one Kitsune's jammers; each bar is that Scimitar's chance to be jammed this cycle.`}
+    targets={SPREAD_TARGETS}
+    compact={compact}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <svg slot="picture" viewBox="0 0 200 86" role="img" aria-label="Kitsunes assigned to Scimitars, with each Scimitar's jam chance">
+        {kitsunes.map((i) => (
+            <line class="ink-yellow-stroke" stroke-width="0.6" x1="28" y1={ky(i)} x2="96"
+                x-bind:y2={`${ly(0)} + ['A', 'B', 'C'].indexOf(state.assign[${i}]) * 26`} y2={ly(0)} />
+        ))}
+        {kitsunes.map((i) => (
+            <g>
+                <circle class="ink-yellow" r="3" cx="24" cy={ky(i)} />
+                <text class="ink-text" x="4" y={ky(i) + 8} font-size="3">Kitsune {i + 1}</text>
+            </g>
+        ))}
+        {SPREAD_LOGI.map((id, i) => (
+            <g>
+                <circle class="ink-blue" r="3" cx="100" cy={ly(i)} />
+                <text class="ink-text" x="106" y={ly(i) + 1.2} font-size="3.2">{id}</text>
+                <rect class="ink-grid" x={BAR_X} y={ly(i) - 4} width={BAR_W} height="8" stroke-width="0.3" />
+                <rect class="ink-green" x={BAR_X} y={ly(i) - 4} height="8" width="0" x-bind:width={`r().per_logi[${i}] * ${BAR_W}`} />
+                <text class="ink-strong" x={BAR_X + BAR_W + 2} y={ly(i) + 1.2} font-size="3" x-text={`Math.round(r().per_logi[${i}] * 100) + '%'`}></text>
+            </g>
+        ))}
+        <text class="ink-text" x="100" y="82" font-size="3.6" x-text="'Expected jammed: ' + r().expected.toFixed(2) + ' of 3'"></text>
+    </svg>
+
+    <Fragment slot="controls">
+        {kitsunes.map((i) => (
+            <SimChoice legend={`Kitsune ${i + 1} jams`} name={`assign_${i}`} model={`state.assign[${i}]`} options={logi_options} />
+        ))}
+    </Fragment>
+
+    <Fragment slot="readout">
+        <p x-text="r().readout"></p>
+    </Fragment>
+</RoleSim>
+
+<script>
+    import { register_role_sim, role_sim_data } from '@components/blocks/role-sims/role_sim_data'
+    import { SPREAD_DEFAULT, SPREAD_TARGETS, spread_scenario } from '@helpers/sims/scenarios'
+
+    register_role_sim('role_sim_ecm_spread', role_sim_data({
+        targets: SPREAD_TARGETS,
+        defaults: () => ({ assign: [...SPREAD_DEFAULT.assign] }),
+        compute: spread_scenario,
+    }))
+</script>

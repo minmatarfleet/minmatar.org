@@ -1,0 +1,95 @@
+---
+/**
+ * Jam chance: pick a jammer for each of three logistics hulls. A racial jammer
+ * is strong against one sensor type; multispectral is middling against all.
+ */
+import RoleSim from '@components/blocks/role-sims/RoleSim.astro'
+import SimChoice from '@components/blocks/role-sims/SimChoice.astro'
+import { JAM_HULLS, JAM_SHIPS, JAM_TARGETS, JAMMER_KINDS } from '@helpers/sims/scenarios'
+import { ECM_RULES } from '@helpers/sims/ecm'
+
+interface Props {
+    sim_id?:            string;
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    sim_id = 'jam-chance',
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const KIND_LABELS: Record<string, string> = {
+    radar: 'Radar',
+    ladar: 'Ladar',
+    magnetometric: 'Magneto',
+    gravimetric: 'Gravi',
+    multispectral: 'Multi',
+}
+const kind_options = JAMMER_KINDS.map((kind) => ({ value: kind, label: KIND_LABELS[kind] }))
+const ship_options = Object.entries(JAM_SHIPS).map(([value, ship]) => ({ value, label: ship.name }))
+
+const BAR_X = 52
+const BAR_W = 140
+const row_y = (i: number) => 14 + i * 26
+---
+
+<RoleSim
+    sim_id={sim_id}
+    alpine_name="role_sim_jam_chance"
+    title="Pick the right jammer"
+    summary={`Jam chance per 20 s cycle is jammer strength against the hull's sensor strength, capped at 100%. ${ECM_RULES.jammed_ship_can_lock_jammer ? 'A jammed ship can still lock the ship that jammed it.' : ''}`}
+    targets={JAM_TARGETS}
+    compact={compact}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <svg slot="picture" viewBox="0 0 200 86" role="img" aria-label="Jam chance per hull with the chosen jammers">
+        {[0, 25, 50, 75, 100].map((p) => (
+            <g>
+                <line class="ink-grid" x1={BAR_X + (p / 100) * BAR_W} x2={BAR_X + (p / 100) * BAR_W} y1="6" y2="80" stroke-width="0.25" />
+                <text class="ink-muted" x={BAR_X + (p / 100) * BAR_W} y="84" font-size="2.8" text-anchor="middle">{p}%</text>
+            </g>
+        ))}
+        <line class="ink-red-stroke" x1={BAR_X + 0.4 * BAR_W} x2={BAR_X + 0.4 * BAR_W} y1={row_y(0) - 6} y2={row_y(0) + 10} stroke-width="0.5" stroke-dasharray="1 0.8" />
+        <text class="ink-muted" x={BAR_X + 0.4 * BAR_W + 1} y={row_y(0) - 4} font-size="2.8">40%</text>
+        {JAM_HULLS.map((hull, i) => (
+            <g>
+                <text class="ink-text" x="4" y={row_y(i) + 3} font-size="3.6">{hull.name}</text>
+                <text class="ink-muted" x="4" y={row_y(i) + 8} font-size="2.8">{hull.sensor_type} {hull.sensor_strength}</text>
+                <rect class="ink-grid" x={BAR_X} y={row_y(i) - 2} width={BAR_W} height="10" stroke-width="0.3" />
+                <rect x={BAR_X} y={row_y(i) - 2} height="10" width="0"
+                    x-bind:width={`r().rows[${i}].chance * ${BAR_W}`}
+                    x-bind:class={`r().rows[${i}].matches ? 'ink-green' : 'ink-yellow'`} />
+                <text class="ink-strong" y={row_y(i) + 5} font-size="3.4" x={BAR_X + 2}
+                    x-bind:x={`${BAR_X} + r().rows[${i}].chance * ${BAR_W} + 2`}
+                    x-text={`Math.round(r().rows[${i}].chance * 100) + '%'`}></text>
+            </g>
+        ))}
+    </svg>
+
+    <Fragment slot="controls">
+        <SimChoice legend="Your ship (Caldari Frigate V)" name="ship" options={ship_options} />
+        {JAM_HULLS.map((hull) => (
+            <SimChoice legend={`Jammer on the ${hull.name}`} name={`pick_${hull.id}`} model={`state.picks.${hull.id}`} options={kind_options} />
+        ))}
+    </Fragment>
+
+    <Fragment slot="readout">
+        <p x-text="r().readout"></p>
+    </Fragment>
+</RoleSim>
+
+<script>
+    import { register_role_sim, role_sim_data } from '@components/blocks/role-sims/role_sim_data'
+    import { JAM_DEFAULT, JAM_TARGETS, jam_scenario } from '@helpers/sims/scenarios'
+
+    register_role_sim('role_sim_jam_chance', role_sim_data({
+        targets: JAM_TARGETS,
+        defaults: () => ({ ...JAM_DEFAULT, picks: { ...JAM_DEFAULT.picks } }),
+        compute: jam_scenario,
+    }))
+</script>

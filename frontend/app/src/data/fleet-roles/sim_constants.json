@@ -1,0 +1,1503 @@
+{
+    "generated_by": "scripts/extract_role_sim_constants.mjs",
+    "sde_build": 3316380,
+    "note": "Generated from the SDE. Do not edit by hand; re-run the script.",
+    "values": {
+        "probe_radius_km": {
+            "value": 20,
+            "unit": "km",
+            "type_id": 22778,
+            "type_name": "Warp Disrupt Probe",
+            "attribute_id": 103,
+            "attribute_name": "Warp Disruption Range",
+            "sde_value": 20000
+        },
+        "mobile_large_bubble_radius_km": {
+            "value": 26.5,
+            "unit": "km",
+            "type_id": 12200,
+            "type_name": "Mobile Large Warp Disruptor I",
+            "attribute_id": 103,
+            "attribute_name": "Warp Disruption Range",
+            "sde_value": 26500
+        },
+        "hic_bubble_radius_km": {
+            "value": 20,
+            "unit": "km",
+            "type_id": 4248,
+            "type_name": "Warp Disruption Field Generator II",
+            "attribute_id": 103,
+            "attribute_name": "Warp Disruption Range",
+            "sde_value": 20000
+        },
+        "hic_bubble_duration_s": {
+            "value": 30,
+            "unit": "s",
+            "type_id": 4248,
+            "type_name": "Warp Disruption Field Generator II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 30000
+        },
+        "web_probe_radius_km": {
+            "value": 15,
+            "unit": "km",
+            "type_id": 56748,
+            "type_name": "Stasis Webification Probe",
+            "attribute_id": 2279,
+            "attribute_name": "AOE Range",
+            "sde_value": 15000
+        },
+        "web_probe_duration_s": {
+            "value": 30,
+            "unit": "s",
+            "type_id": 56748,
+            "type_name": "Stasis Webification Probe",
+            "attribute_id": 2280,
+            "attribute_name": "AOE Duration",
+            "sde_value": 30000
+        },
+        "web_probe_velocity_bonus_percent": {
+            "value": -20,
+            "unit": "%",
+            "type_id": 56748,
+            "type_name": "Stasis Webification Probe",
+            "attribute_id": 20,
+            "attribute_name": "Maximum Velocity Bonus"
+        },
+        "mjfg_radius_km": {
+            "value": 6,
+            "unit": "km",
+            "type_id": 37479,
+            "type_name": "Micro Jump Field Generator",
+            "attribute_id": 2067,
+            "attribute_name": "Area Effect Radius",
+            "sde_value": 6000
+        },
+        "mjfg_spool_s": {
+            "value": 9,
+            "unit": "s",
+            "type_id": 37479,
+            "type_name": "Micro Jump Field Generator",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 9000
+        },
+        "mjfg_distance_km": {
+            "value": 100,
+            "unit": "km",
+            "type_id": 37479,
+            "type_name": "Micro Jump Field Generator",
+            "attribute_id": 2066,
+            "attribute_name": "Jump Distance",
+            "sde_value": 100000
+        },
+        "mjfg_max_ships": {
+            "value": 24,
+            "unit": "ships",
+            "type_id": 37479,
+            "type_name": "Micro Jump Field Generator",
+            "attribute_id": 2832,
+            "attribute_name": "Maximum Ship Jump cap"
+        },
+        "mjfg_reactivation_s": {
+            "value": 160,
+            "unit": "s",
+            "type_id": 37479,
+            "type_name": "Micro Jump Field Generator",
+            "attribute_id": 669,
+            "attribute_name": "Reactivation Delay",
+            "sde_value": 160000
+        },
+        "heavy_neut_amount_gj": {
+            "value": 600,
+            "unit": "GJ",
+            "type_id": 12271,
+            "type_name": "Heavy Energy Neutralizer II",
+            "attribute_id": 97,
+            "attribute_name": "Neutralization Amount"
+        },
+        "heavy_neut_optimal_km": {
+            "value": 20,
+            "unit": "km",
+            "type_id": 12271,
+            "type_name": "Heavy Energy Neutralizer II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 20000
+        },
+        "heavy_neut_falloff_km": {
+            "value": 10,
+            "unit": "km",
+            "type_id": 12271,
+            "type_name": "Heavy Energy Neutralizer II",
+            "attribute_id": 2044,
+            "attribute_name": "Effectiveness Falloff",
+            "sde_value": 10000
+        },
+        "heavy_neut_cycle_s": {
+            "value": 24,
+            "unit": "s",
+            "type_id": 12271,
+            "type_name": "Heavy Energy Neutralizer II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 24000
+        },
+        "medium_neut_amount_gj": {
+            "value": 180,
+            "unit": "GJ",
+            "type_id": 12267,
+            "type_name": "Medium Energy Neutralizer II",
+            "attribute_id": 97,
+            "attribute_name": "Neutralization Amount"
+        },
+        "medium_neut_optimal_km": {
+            "value": 10,
+            "unit": "km",
+            "type_id": 12267,
+            "type_name": "Medium Energy Neutralizer II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 10000
+        },
+        "medium_neut_falloff_km": {
+            "value": 5,
+            "unit": "km",
+            "type_id": 12267,
+            "type_name": "Medium Energy Neutralizer II",
+            "attribute_id": 2044,
+            "attribute_name": "Effectiveness Falloff",
+            "sde_value": 5000
+        },
+        "medium_neut_cycle_s": {
+            "value": 12,
+            "unit": "s",
+            "type_id": 12267,
+            "type_name": "Medium Energy Neutralizer II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 12000
+        },
+        "large_rar_amount_hp": {
+            "value": 512,
+            "unit": "HP",
+            "type_id": 26914,
+            "type_name": "Large Remote Armor Repairer II",
+            "attribute_id": 84,
+            "attribute_name": "Armor Hitpoints Repaired"
+        },
+        "large_rar_cycle_s": {
+            "value": 6,
+            "unit": "s",
+            "type_id": 26914,
+            "type_name": "Large Remote Armor Repairer II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 6000
+        },
+        "large_rar_cap_gj": {
+            "value": 365,
+            "unit": "GJ",
+            "type_id": 26914,
+            "type_name": "Large Remote Armor Repairer II",
+            "attribute_id": 6,
+            "attribute_name": "Activation Cost"
+        },
+        "large_rar_optimal_km": {
+            "value": 14.4,
+            "unit": "km",
+            "type_id": 26914,
+            "type_name": "Large Remote Armor Repairer II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 14400
+        },
+        "large_rar_falloff_km": {
+            "value": 4.2,
+            "unit": "km",
+            "type_id": 26914,
+            "type_name": "Large Remote Armor Repairer II",
+            "attribute_id": 2044,
+            "attribute_name": "Effectiveness Falloff",
+            "sde_value": 4200
+        },
+        "large_rct_amount_gj": {
+            "value": 351,
+            "unit": "GJ",
+            "type_id": 12102,
+            "type_name": "Large Remote Capacitor Transmitter II",
+            "attribute_id": 90,
+            "attribute_name": "Energy transfer amount"
+        },
+        "large_rct_cycle_s": {
+            "value": 5,
+            "unit": "s",
+            "type_id": 12102,
+            "type_name": "Large Remote Capacitor Transmitter II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 5000
+        },
+        "large_rct_cap_gj": {
+            "value": 366,
+            "unit": "GJ",
+            "type_id": 12102,
+            "type_name": "Large Remote Capacitor Transmitter II",
+            "attribute_id": 6,
+            "attribute_name": "Activation Cost"
+        },
+        "large_rct_optimal_km": {
+            "value": 9.75,
+            "unit": "km",
+            "type_id": 12102,
+            "type_name": "Large Remote Capacitor Transmitter II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 9750
+        },
+        "multispectral_ecm_gravimetric_strength": {
+            "value": 2.6,
+            "unit": "points",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 238,
+            "attribute_name": "Gravimetric ECM Jammer Strength"
+        },
+        "ladar_ecm_gravimetric_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 238,
+            "attribute_name": "Gravimetric ECM Jammer Strength"
+        },
+        "radar_ecm_gravimetric_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2575,
+            "type_name": "Radar ECM II",
+            "attribute_id": 238,
+            "attribute_name": "Gravimetric ECM Jammer Strength"
+        },
+        "gravimetric_ecm_gravimetric_strength": {
+            "value": 4,
+            "unit": "points",
+            "type_id": 2571,
+            "type_name": "Gravimetric ECM II",
+            "attribute_id": 238,
+            "attribute_name": "Gravimetric ECM Jammer Strength"
+        },
+        "magnetometric_ecm_gravimetric_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2563,
+            "type_name": "Magnetometric ECM II",
+            "attribute_id": 238,
+            "attribute_name": "Gravimetric ECM Jammer Strength"
+        },
+        "multispectral_ecm_ladar_strength": {
+            "value": 2.6,
+            "unit": "points",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 239,
+            "attribute_name": "Ladar ECM Jammer Strength"
+        },
+        "ladar_ecm_ladar_strength": {
+            "value": 4,
+            "unit": "points",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 239,
+            "attribute_name": "Ladar ECM Jammer Strength"
+        },
+        "radar_ecm_ladar_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2575,
+            "type_name": "Radar ECM II",
+            "attribute_id": 239,
+            "attribute_name": "Ladar ECM Jammer Strength"
+        },
+        "gravimetric_ecm_ladar_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2571,
+            "type_name": "Gravimetric ECM II",
+            "attribute_id": 239,
+            "attribute_name": "Ladar ECM Jammer Strength"
+        },
+        "magnetometric_ecm_ladar_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2563,
+            "type_name": "Magnetometric ECM II",
+            "attribute_id": 239,
+            "attribute_name": "Ladar ECM Jammer Strength"
+        },
+        "multispectral_ecm_magnetometric_strength": {
+            "value": 2.6,
+            "unit": "points",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 240,
+            "attribute_name": "Magnetometric ECM Jammer Strength"
+        },
+        "ladar_ecm_magnetometric_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 240,
+            "attribute_name": "Magnetometric ECM Jammer Strength"
+        },
+        "radar_ecm_magnetometric_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2575,
+            "type_name": "Radar ECM II",
+            "attribute_id": 240,
+            "attribute_name": "Magnetometric ECM Jammer Strength"
+        },
+        "gravimetric_ecm_magnetometric_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2571,
+            "type_name": "Gravimetric ECM II",
+            "attribute_id": 240,
+            "attribute_name": "Magnetometric ECM Jammer Strength"
+        },
+        "magnetometric_ecm_magnetometric_strength": {
+            "value": 4,
+            "unit": "points",
+            "type_id": 2563,
+            "type_name": "Magnetometric ECM II",
+            "attribute_id": 240,
+            "attribute_name": "Magnetometric ECM Jammer Strength"
+        },
+        "multispectral_ecm_radar_strength": {
+            "value": 2.6,
+            "unit": "points",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 241,
+            "attribute_name": "RADAR ECM Jammer Strength"
+        },
+        "ladar_ecm_radar_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 241,
+            "attribute_name": "RADAR ECM Jammer Strength"
+        },
+        "radar_ecm_radar_strength": {
+            "value": 4,
+            "unit": "points",
+            "type_id": 2575,
+            "type_name": "Radar ECM II",
+            "attribute_id": 241,
+            "attribute_name": "RADAR ECM Jammer Strength"
+        },
+        "gravimetric_ecm_radar_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2571,
+            "type_name": "Gravimetric ECM II",
+            "attribute_id": 241,
+            "attribute_name": "RADAR ECM Jammer Strength"
+        },
+        "magnetometric_ecm_radar_strength": {
+            "value": 1.3,
+            "unit": "points",
+            "type_id": 2563,
+            "type_name": "Magnetometric ECM II",
+            "attribute_id": 241,
+            "attribute_name": "RADAR ECM Jammer Strength"
+        },
+        "multispectral_ecm_optimal_km": {
+            "value": 23.04,
+            "unit": "km",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 23040
+        },
+        "multispectral_ecm_falloff_km": {
+            "value": 21.6,
+            "unit": "km",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 2044,
+            "attribute_name": "Effectiveness Falloff",
+            "sde_value": 21600
+        },
+        "multispectral_ecm_cycle_s": {
+            "value": 20,
+            "unit": "s",
+            "type_id": 2567,
+            "type_name": "Multispectral ECM II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 20000
+        },
+        "racial_ecm_optimal_km": {
+            "value": 34.56,
+            "unit": "km",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 34560
+        },
+        "racial_ecm_falloff_km": {
+            "value": 32.4,
+            "unit": "km",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 2044,
+            "attribute_name": "Effectiveness Falloff",
+            "sde_value": 32400
+        },
+        "racial_ecm_cycle_s": {
+            "value": 20,
+            "unit": "s",
+            "type_id": 2559,
+            "type_name": "Ladar ECM II",
+            "attribute_id": 73,
+            "attribute_name": "Activation time / duration",
+            "sde_value": 20000
+        },
+        "guardian_radar_strength": {
+            "value": 19,
+            "unit": "points",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 208,
+            "attribute_name": "RADAR Sensor Strength"
+        },
+        "guardian_ladar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 209,
+            "attribute_name": "Ladar Sensor Strength"
+        },
+        "guardian_magnetometric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 210,
+            "attribute_name": "Magnetometric Sensor Strength"
+        },
+        "guardian_gravimetric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 211,
+            "attribute_name": "Gravimetric Sensor Strength"
+        },
+        "guardian_signature_m": {
+            "value": 70,
+            "unit": "m",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 552,
+            "attribute_name": "Signature Radius"
+        },
+        "guardian_max_velocity_ms": {
+            "value": 209,
+            "unit": "m/s",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "guardian_cap_gj": {
+            "value": 2250,
+            "unit": "GJ",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 482,
+            "attribute_name": "Capacitor Capacity"
+        },
+        "guardian_cap_recharge_s": {
+            "value": 500,
+            "unit": "s",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 55,
+            "attribute_name": "Capacitor Recharge time",
+            "sde_value": 500000
+        },
+        "guardian_armor_hp": {
+            "value": 2109,
+            "unit": "HP",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 265,
+            "attribute_name": "Armor Hitpoints"
+        },
+        "guardian_shield_hp": {
+            "value": 1055,
+            "unit": "HP",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 263,
+            "attribute_name": "Shield Capacity"
+        },
+        "guardian_scan_resolution_mm": {
+            "value": 385,
+            "unit": "mm",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "attribute_id": 564,
+            "attribute_name": "Scan Resolution"
+        },
+        "scimitar_radar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 208,
+            "attribute_name": "RADAR Sensor Strength"
+        },
+        "scimitar_ladar_strength": {
+            "value": 17,
+            "unit": "points",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 209,
+            "attribute_name": "Ladar Sensor Strength"
+        },
+        "scimitar_magnetometric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 210,
+            "attribute_name": "Magnetometric Sensor Strength"
+        },
+        "scimitar_gravimetric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 211,
+            "attribute_name": "Gravimetric Sensor Strength"
+        },
+        "scimitar_signature_m": {
+            "value": 65,
+            "unit": "m",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 552,
+            "attribute_name": "Signature Radius"
+        },
+        "scimitar_max_velocity_ms": {
+            "value": 253,
+            "unit": "m/s",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "scimitar_cap_gj": {
+            "value": 1750,
+            "unit": "GJ",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 482,
+            "attribute_name": "Capacitor Capacity"
+        },
+        "scimitar_cap_recharge_s": {
+            "value": 390,
+            "unit": "s",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 55,
+            "attribute_name": "Capacitor Recharge time",
+            "sde_value": 390000
+        },
+        "scimitar_armor_hp": {
+            "value": 1681,
+            "unit": "HP",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 265,
+            "attribute_name": "Armor Hitpoints"
+        },
+        "scimitar_shield_hp": {
+            "value": 1618,
+            "unit": "HP",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 263,
+            "attribute_name": "Shield Capacity"
+        },
+        "scimitar_scan_resolution_mm": {
+            "value": 400,
+            "unit": "mm",
+            "type_id": 11978,
+            "type_name": "Scimitar",
+            "attribute_id": 564,
+            "attribute_name": "Scan Resolution"
+        },
+        "typhoon_radar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 208,
+            "attribute_name": "RADAR Sensor Strength"
+        },
+        "typhoon_ladar_strength": {
+            "value": 19,
+            "unit": "points",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 209,
+            "attribute_name": "Ladar Sensor Strength"
+        },
+        "typhoon_magnetometric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 210,
+            "attribute_name": "Magnetometric Sensor Strength"
+        },
+        "typhoon_gravimetric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 211,
+            "attribute_name": "Gravimetric Sensor Strength"
+        },
+        "typhoon_signature_m": {
+            "value": 330,
+            "unit": "m",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 552,
+            "attribute_name": "Signature Radius"
+        },
+        "typhoon_max_velocity_ms": {
+            "value": 130,
+            "unit": "m/s",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "typhoon_cap_gj": {
+            "value": 5400,
+            "unit": "GJ",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 482,
+            "attribute_name": "Capacitor Capacity"
+        },
+        "typhoon_cap_recharge_s": {
+            "value": 1100,
+            "unit": "s",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 55,
+            "attribute_name": "Capacitor Recharge time",
+            "sde_value": 1100000
+        },
+        "typhoon_armor_hp": {
+            "value": 6600,
+            "unit": "HP",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 265,
+            "attribute_name": "Armor Hitpoints"
+        },
+        "typhoon_shield_hp": {
+            "value": 7150,
+            "unit": "HP",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 263,
+            "attribute_name": "Shield Capacity"
+        },
+        "typhoon_scan_resolution_mm": {
+            "value": 150,
+            "unit": "mm",
+            "type_id": 644,
+            "type_name": "Typhoon",
+            "attribute_id": 564,
+            "attribute_name": "Scan Resolution"
+        },
+        "vagabond_radar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 208,
+            "attribute_name": "RADAR Sensor Strength"
+        },
+        "vagabond_ladar_strength": {
+            "value": 21,
+            "unit": "points",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 209,
+            "attribute_name": "Ladar Sensor Strength"
+        },
+        "vagabond_magnetometric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 210,
+            "attribute_name": "Magnetometric Sensor Strength"
+        },
+        "vagabond_gravimetric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 211,
+            "attribute_name": "Gravimetric Sensor Strength"
+        },
+        "vagabond_signature_m": {
+            "value": 115,
+            "unit": "m",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 552,
+            "attribute_name": "Signature Radius"
+        },
+        "vagabond_max_velocity_ms": {
+            "value": 295,
+            "unit": "m/s",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "vagabond_cap_gj": {
+            "value": 1200,
+            "unit": "GJ",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 482,
+            "attribute_name": "Capacitor Capacity"
+        },
+        "vagabond_cap_recharge_s": {
+            "value": 245,
+            "unit": "s",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 55,
+            "attribute_name": "Capacitor Recharge time",
+            "sde_value": 245000
+        },
+        "vagabond_armor_hp": {
+            "value": 1400,
+            "unit": "HP",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 265,
+            "attribute_name": "Armor Hitpoints"
+        },
+        "vagabond_shield_hp": {
+            "value": 1800,
+            "unit": "HP",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 263,
+            "attribute_name": "Shield Capacity"
+        },
+        "vagabond_scan_resolution_mm": {
+            "value": 330,
+            "unit": "mm",
+            "type_id": 11999,
+            "type_name": "Vagabond",
+            "attribute_id": 564,
+            "attribute_name": "Scan Resolution"
+        },
+        "caracal_radar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 208,
+            "attribute_name": "RADAR Sensor Strength"
+        },
+        "caracal_ladar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 209,
+            "attribute_name": "Ladar Sensor Strength"
+        },
+        "caracal_magnetometric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 210,
+            "attribute_name": "Magnetometric Sensor Strength"
+        },
+        "caracal_gravimetric_strength": {
+            "value": 16,
+            "unit": "points",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 211,
+            "attribute_name": "Gravimetric Sensor Strength"
+        },
+        "caracal_signature_m": {
+            "value": 125,
+            "unit": "m",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 552,
+            "attribute_name": "Signature Radius"
+        },
+        "caracal_max_velocity_ms": {
+            "value": 230,
+            "unit": "m/s",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "caracal_cap_gj": {
+            "value": 1250,
+            "unit": "GJ",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 482,
+            "attribute_name": "Capacitor Capacity"
+        },
+        "caracal_cap_recharge_s": {
+            "value": 445,
+            "unit": "s",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 55,
+            "attribute_name": "Capacitor Recharge time",
+            "sde_value": 445000
+        },
+        "caracal_armor_hp": {
+            "value": 1200,
+            "unit": "HP",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 265,
+            "attribute_name": "Armor Hitpoints"
+        },
+        "caracal_shield_hp": {
+            "value": 1700,
+            "unit": "HP",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 263,
+            "attribute_name": "Shield Capacity"
+        },
+        "caracal_scan_resolution_mm": {
+            "value": 270,
+            "unit": "mm",
+            "type_id": 621,
+            "type_name": "Caracal",
+            "attribute_id": 564,
+            "attribute_name": "Scan Resolution"
+        },
+        "rifter_radar_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 208,
+            "attribute_name": "RADAR Sensor Strength"
+        },
+        "rifter_ladar_strength": {
+            "value": 8,
+            "unit": "points",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 209,
+            "attribute_name": "Ladar Sensor Strength"
+        },
+        "rifter_magnetometric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 210,
+            "attribute_name": "Magnetometric Sensor Strength"
+        },
+        "rifter_gravimetric_strength": {
+            "value": 0,
+            "unit": "points",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 211,
+            "attribute_name": "Gravimetric Sensor Strength"
+        },
+        "rifter_signature_m": {
+            "value": 35,
+            "unit": "m",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 552,
+            "attribute_name": "Signature Radius"
+        },
+        "rifter_max_velocity_ms": {
+            "value": 365,
+            "unit": "m/s",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "rifter_cap_gj": {
+            "value": 250,
+            "unit": "GJ",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 482,
+            "attribute_name": "Capacitor Capacity"
+        },
+        "rifter_cap_recharge_s": {
+            "value": 125,
+            "unit": "s",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 55,
+            "attribute_name": "Capacitor Recharge time",
+            "sde_value": 125000
+        },
+        "rifter_armor_hp": {
+            "value": 450,
+            "unit": "HP",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 265,
+            "attribute_name": "Armor Hitpoints"
+        },
+        "rifter_shield_hp": {
+            "value": 450,
+            "unit": "HP",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 263,
+            "attribute_name": "Shield Capacity"
+        },
+        "rifter_scan_resolution_mm": {
+            "value": 660,
+            "unit": "mm",
+            "type_id": 587,
+            "type_name": "Rifter",
+            "attribute_id": 564,
+            "attribute_name": "Scan Resolution"
+        },
+        "howitzer_1400_optimal_km": {
+            "value": 48,
+            "unit": "km",
+            "type_id": 2961,
+            "type_name": "1400mm Howitzer Artillery II",
+            "attribute_id": 54,
+            "attribute_name": "Optimal Range",
+            "sde_value": 48000
+        },
+        "howitzer_1400_falloff_km": {
+            "value": 35,
+            "unit": "km",
+            "type_id": 2961,
+            "type_name": "1400mm Howitzer Artillery II",
+            "attribute_id": 158,
+            "attribute_name": "Accuracy falloff",
+            "sde_value": 35000
+        },
+        "howitzer_1400_tracking": {
+            "value": 0.9,
+            "unit": "rad/s",
+            "type_id": 2961,
+            "type_name": "1400mm Howitzer Artillery II",
+            "attribute_id": 160,
+            "attribute_name": "Turret Tracking"
+        },
+        "howitzer_1400_damage_multiplier": {
+            "value": 12.807,
+            "unit": "x",
+            "type_id": 2961,
+            "type_name": "1400mm Howitzer Artillery II",
+            "attribute_id": 64,
+            "attribute_name": "Damage Modifier"
+        },
+        "howitzer_1400_signature_resolution_m": {
+            "value": 40000,
+            "unit": "m",
+            "type_id": 2961,
+            "type_name": "1400mm Howitzer Artillery II",
+            "attribute_id": 620,
+            "attribute_name": "Signature Resolution"
+        },
+        "howitzer_1400_rate_of_fire_s": {
+            "value": 40.163,
+            "unit": "s",
+            "type_id": 2961,
+            "type_name": "1400mm Howitzer Artillery II",
+            "attribute_id": 51,
+            "attribute_name": "Rate of fire",
+            "sde_value": 40163
+        },
+        "republic_fleet_emp_l_range_multiplier": {
+            "value": 0.5,
+            "unit": "x",
+            "type_id": 21894,
+            "type_name": "Republic Fleet EMP L",
+            "attribute_id": 120,
+            "attribute_name": "Range bonus"
+        },
+        "republic_fleet_emp_l_tracking_multiplier": {
+            "value": 1,
+            "unit": "x",
+            "type_id": 21894,
+            "type_name": "Republic Fleet EMP L",
+            "attribute_id": 244,
+            "attribute_name": "Tracking Speed Multiplier"
+        },
+        "republic_fleet_emp_l_em_damage": {
+            "value": 41.4,
+            "unit": "HP",
+            "type_id": 21894,
+            "type_name": "Republic Fleet EMP L",
+            "attribute_id": 114,
+            "attribute_name": "EM damage"
+        },
+        "republic_fleet_emp_l_explosive_damage": {
+            "value": 9.2,
+            "unit": "HP",
+            "type_id": 21894,
+            "type_name": "Republic Fleet EMP L",
+            "attribute_id": 116,
+            "attribute_name": "Explosive damage"
+        },
+        "republic_fleet_emp_l_kinetic_damage": {
+            "value": 4.6,
+            "unit": "HP",
+            "type_id": 21894,
+            "type_name": "Republic Fleet EMP L",
+            "attribute_id": 117,
+            "attribute_name": "Kinetic damage"
+        },
+        "republic_fleet_emp_l_thermal_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 21894,
+            "type_name": "Republic Fleet EMP L",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "hail_l_range_multiplier": {
+            "value": 0.5,
+            "unit": "x",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 120,
+            "attribute_name": "Range bonus"
+        },
+        "hail_l_tracking_multiplier": {
+            "value": 0.75,
+            "unit": "x",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 244,
+            "attribute_name": "Tracking Speed Multiplier"
+        },
+        "hail_l_em_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 114,
+            "attribute_name": "EM damage"
+        },
+        "hail_l_explosive_damage": {
+            "value": 55.7,
+            "unit": "HP",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 116,
+            "attribute_name": "Explosive damage"
+        },
+        "hail_l_kinetic_damage": {
+            "value": 15.2,
+            "unit": "HP",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 117,
+            "attribute_name": "Kinetic damage"
+        },
+        "hail_l_thermal_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "barrage_l_range_multiplier": {
+            "value": 1,
+            "unit": "x",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 120,
+            "attribute_name": "Range bonus"
+        },
+        "barrage_l_tracking_multiplier": {
+            "value": 0.75,
+            "unit": "x",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 244,
+            "attribute_name": "Tracking Speed Multiplier"
+        },
+        "barrage_l_em_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 114,
+            "attribute_name": "EM damage"
+        },
+        "barrage_l_explosive_damage": {
+            "value": 24,
+            "unit": "HP",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 116,
+            "attribute_name": "Explosive damage"
+        },
+        "barrage_l_kinetic_damage": {
+            "value": 20,
+            "unit": "HP",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 117,
+            "attribute_name": "Kinetic damage"
+        },
+        "barrage_l_thermal_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "nuclear_l_range_multiplier": {
+            "value": 1.6,
+            "unit": "x",
+            "type_id": 195,
+            "type_name": "Nuclear L",
+            "attribute_id": 120,
+            "attribute_name": "Range bonus"
+        },
+        "nuclear_l_tracking_multiplier": {
+            "value": 1.05,
+            "unit": "x",
+            "type_id": 195,
+            "type_name": "Nuclear L",
+            "attribute_id": 244,
+            "attribute_name": "Tracking Speed Multiplier"
+        },
+        "nuclear_l_em_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 195,
+            "type_name": "Nuclear L",
+            "attribute_id": 114,
+            "attribute_name": "EM damage"
+        },
+        "nuclear_l_explosive_damage": {
+            "value": 16,
+            "unit": "HP",
+            "type_id": 195,
+            "type_name": "Nuclear L",
+            "attribute_id": 116,
+            "attribute_name": "Explosive damage"
+        },
+        "nuclear_l_kinetic_damage": {
+            "value": 4,
+            "unit": "HP",
+            "type_id": 195,
+            "type_name": "Nuclear L",
+            "attribute_id": 117,
+            "attribute_name": "Kinetic damage"
+        },
+        "nuclear_l_thermal_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 195,
+            "type_name": "Nuclear L",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "tremor_l_range_multiplier": {
+            "value": 1.8,
+            "unit": "x",
+            "type_id": 12765,
+            "type_name": "Tremor L",
+            "attribute_id": 120,
+            "attribute_name": "Range bonus"
+        },
+        "tremor_l_tracking_multiplier": {
+            "value": 0.25,
+            "unit": "x",
+            "type_id": 12765,
+            "type_name": "Tremor L",
+            "attribute_id": 244,
+            "attribute_name": "Tracking Speed Multiplier"
+        },
+        "tremor_l_em_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 12765,
+            "type_name": "Tremor L",
+            "attribute_id": 114,
+            "attribute_name": "EM damage"
+        },
+        "tremor_l_explosive_damage": {
+            "value": 20,
+            "unit": "HP",
+            "type_id": 12765,
+            "type_name": "Tremor L",
+            "attribute_id": 116,
+            "attribute_name": "Explosive damage"
+        },
+        "tremor_l_kinetic_damage": {
+            "value": 12,
+            "unit": "HP",
+            "type_id": 12765,
+            "type_name": "Tremor L",
+            "attribute_id": 117,
+            "attribute_name": "Kinetic damage"
+        },
+        "tremor_l_thermal_damage": {
+            "value": 0,
+            "unit": "HP",
+            "type_id": 12765,
+            "type_name": "Tremor L",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "barrage_l_falloff_multiplier": {
+            "value": 1.5,
+            "unit": "x",
+            "type_id": 12775,
+            "type_name": "Barrage L",
+            "attribute_id": 517,
+            "attribute_name": "Falloff Modifier"
+        },
+        "hail_l_falloff_multiplier": {
+            "value": 0.75,
+            "unit": "x",
+            "type_id": 12779,
+            "type_name": "Hail L",
+            "attribute_id": 517,
+            "attribute_name": "Falloff Modifier"
+        },
+        "cruise_launcher_rate_of_fire_s": {
+            "value": 16.54,
+            "unit": "s",
+            "type_id": 19739,
+            "type_name": "Cruise Missile Launcher II",
+            "attribute_id": 51,
+            "attribute_name": "Rate of fire",
+            "sde_value": 16540
+        },
+        "inferno_cruise_thermal_damage": {
+            "value": 375,
+            "unit": "HP",
+            "type_id": 204,
+            "type_name": "Inferno Cruise Missile",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "inferno_cruise_explosion_radius_m": {
+            "value": 330,
+            "unit": "m",
+            "type_id": 204,
+            "type_name": "Inferno Cruise Missile",
+            "attribute_id": 654,
+            "attribute_name": "Explosion Radius"
+        },
+        "inferno_cruise_explosion_velocity_ms": {
+            "value": 69,
+            "unit": "m/s",
+            "type_id": 204,
+            "type_name": "Inferno Cruise Missile",
+            "attribute_id": 653,
+            "attribute_name": "Explosion Velocity"
+        },
+        "inferno_cruise_drf": {
+            "value": 0.882,
+            "unit": "x",
+            "type_id": 204,
+            "type_name": "Inferno Cruise Missile",
+            "attribute_id": 1353,
+            "attribute_name": "aoeDamageReductionFactor"
+        },
+        "inferno_cruise_velocity_ms": {
+            "value": 4700,
+            "unit": "m/s",
+            "type_id": 204,
+            "type_name": "Inferno Cruise Missile",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "inferno_cruise_flight_time_s": {
+            "value": 14,
+            "unit": "s",
+            "type_id": 204,
+            "type_name": "Inferno Cruise Missile",
+            "attribute_id": 281,
+            "attribute_name": "Maximum Flight Time",
+            "sde_value": 14000
+        },
+        "inferno_fury_cruise_thermal_damage": {
+            "value": 525,
+            "unit": "HP",
+            "type_id": 2621,
+            "type_name": "Inferno Fury Cruise Missile",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "inferno_fury_cruise_explosion_radius_m": {
+            "value": 567,
+            "unit": "m",
+            "type_id": 2621,
+            "type_name": "Inferno Fury Cruise Missile",
+            "attribute_id": 654,
+            "attribute_name": "Explosion Radius"
+        },
+        "inferno_fury_cruise_explosion_velocity_ms": {
+            "value": 58,
+            "unit": "m/s",
+            "type_id": 2621,
+            "type_name": "Inferno Fury Cruise Missile",
+            "attribute_id": 653,
+            "attribute_name": "Explosion Velocity"
+        },
+        "inferno_fury_cruise_drf": {
+            "value": 0.908,
+            "unit": "x",
+            "type_id": 2621,
+            "type_name": "Inferno Fury Cruise Missile",
+            "attribute_id": 1353,
+            "attribute_name": "aoeDamageReductionFactor"
+        },
+        "inferno_fury_cruise_velocity_ms": {
+            "value": 4700,
+            "unit": "m/s",
+            "type_id": 2621,
+            "type_name": "Inferno Fury Cruise Missile",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "inferno_fury_cruise_flight_time_s": {
+            "value": 10.5,
+            "unit": "s",
+            "type_id": 2621,
+            "type_name": "Inferno Fury Cruise Missile",
+            "attribute_id": 281,
+            "attribute_name": "Maximum Flight Time",
+            "sde_value": 10500
+        },
+        "inferno_precision_cruise_thermal_damage": {
+            "value": 375,
+            "unit": "HP",
+            "type_id": 2637,
+            "type_name": "Inferno Precision Cruise Missile",
+            "attribute_id": 118,
+            "attribute_name": "Thermal damage"
+        },
+        "inferno_precision_cruise_explosion_radius_m": {
+            "value": 297,
+            "unit": "m",
+            "type_id": 2637,
+            "type_name": "Inferno Precision Cruise Missile",
+            "attribute_id": 654,
+            "attribute_name": "Explosion Radius"
+        },
+        "inferno_precision_cruise_explosion_velocity_ms": {
+            "value": 83,
+            "unit": "m/s",
+            "type_id": 2637,
+            "type_name": "Inferno Precision Cruise Missile",
+            "attribute_id": 653,
+            "attribute_name": "Explosion Velocity"
+        },
+        "inferno_precision_cruise_drf": {
+            "value": 0.735,
+            "unit": "x",
+            "type_id": 2637,
+            "type_name": "Inferno Precision Cruise Missile",
+            "attribute_id": 1353,
+            "attribute_name": "aoeDamageReductionFactor"
+        },
+        "inferno_precision_cruise_velocity_ms": {
+            "value": 4700,
+            "unit": "m/s",
+            "type_id": 2637,
+            "type_name": "Inferno Precision Cruise Missile",
+            "attribute_id": 37,
+            "attribute_name": "Maximum Velocity"
+        },
+        "inferno_precision_cruise_flight_time_s": {
+            "value": 7,
+            "unit": "s",
+            "type_id": 2637,
+            "type_name": "Inferno Precision Cruise Missile",
+            "attribute_id": 281,
+            "attribute_name": "Maximum Flight Time",
+            "sde_value": 7000
+        },
+        "griffin_ecm_strength_bonus_per_level": {
+            "value": 15,
+            "unit": "%/level",
+            "type_id": 584,
+            "type_name": "Griffin",
+            "trait_skill": "Caldari Frigate",
+            "trait_text": "bonus to ECM Target Jammer strength"
+        },
+        "kitsune_ecm_strength_bonus_per_level": {
+            "value": 20,
+            "unit": "%/level",
+            "type_id": 11194,
+            "type_name": "Kitsune",
+            "trait_skill": "Caldari Frigate",
+            "trait_text": "bonus to ECM Target Jammer strength"
+        },
+        "guardian_rar_cap_reduction_per_level": {
+            "value": 15,
+            "unit": "%/level",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "trait_skill": "Logistics Cruisers",
+            "trait_text": "reduction in Remote Armor Repairer activation cost"
+        },
+        "guardian_rct_cap_reduction_per_level": {
+            "value": 15,
+            "unit": "%/level",
+            "type_id": 11987,
+            "type_name": "Guardian",
+            "trait_skill": "Logistics Cruisers",
+            "trait_text": "reduction in Remote Capacitor Transmitter activation cost"
+        }
+    }
+}

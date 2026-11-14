@@ -1,0 +1,106 @@
+---
+/**
+ * Bubble placement: a warp disrupt probe in front of a stargate, two warp-in
+ * lines (the Sun along the horizontal, Planet IV at an angle). Move the bubble
+ * and see where each warp-in drops out.
+ */
+import RoleSim from '@components/blocks/role-sims/RoleSim.astro'
+import SimRange from '@components/blocks/role-sims/SimRange.astro'
+import { BUBBLE_ALONG_RANGE, BUBBLE_OFF_RANGE, BUBBLE_TARGETS, PLANET_ANGLE_DEGREES } from '@helpers/sims/scenarios'
+import { GATE_JUMP_RANGE_M } from '@helpers/sims/bubbles'
+import { SIM } from '@helpers/sims/constants'
+
+interface Props {
+    sim_id?:            string;
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    sim_id = 'bubble',
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const radius = SIM.probe_radius_km
+const angle = (PLANET_ANGLE_DEGREES * Math.PI) / 180
+const planet_end = { x: -Math.cos(angle) * 130, y: -Math.sin(angle) * 130 }
+const planet_label = { x: -Math.cos(angle) * 72, y: -Math.sin(angle) * 72 - 3 }
+---
+
+<RoleSim
+    sim_id={sim_id}
+    alpine_name="role_sim_bubble"
+    title="Bubble the gate"
+    summary={`Top-down view of a stargate (right) with a ${radius} km warp disrupt probe. Ships warp in from the Sun and from Planet IV; a bubble on their line pulls them out of warp at its edge.`}
+    targets={BUBBLE_TARGETS}
+    compact={compact}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <svg slot="picture" viewBox="-108 -66 168 130" role="img" aria-label="Top-down map: stargate, warp-in lines from the Sun and Planet IV, and the bubble">
+        <line class="ink-line" x1="-108" y1="0" x2="0" y2="0" stroke-width="0.5" />
+        <line class="ink-line" x1="0" y1="0" x2={planet_end.x} y2={planet_end.y} stroke-width="0.5" />
+        <text class="ink-muted" x="-106" y="-2" font-size="4">← from the Sun</text>
+        <text class="ink-muted" x={planet_label.x} y={planet_label.y} font-size="4" text-anchor="end">from Planet IV ↖</text>
+
+        <circle class="ink-bubble" r={radius} stroke-width="0.5"
+            x-bind:cx="-state.along_km" x-bind:cy="-state.off_km" cx="-50" cy="-30" />
+        <text class="ink-text" font-size="3.5" text-anchor="middle"
+            x-bind:x="-state.along_km" x-bind:y="-state.off_km + 1.2" x="-50" y="-28.8">bubble</text>
+
+        <circle class="ink-zone" r={GATE_JUMP_RANGE_M / 1000} stroke-width="0.3" cx="0" cy="0" />
+        <rect class="ink-yellow" x="-1.6" y="-1.6" width="3.2" height="3.2" transform="rotate(45)" />
+        <text class="ink-text" x="4" y="9" font-size="4">Stargate</text>
+
+        <line class="ink-red-stroke" stroke-width="0.6" stroke-dasharray="1.5 1"
+            x-show="r().sun.caught && !r().sun.in_jump_range"
+            x-bind:x1="r().sun.landing.x / 1000" x-bind:y1="-r().sun.landing.y / 1000" x2="0" y2="0" />
+        <line class="ink-red-stroke" stroke-width="0.6" stroke-dasharray="1.5 1"
+            x-show="r().planet.caught && !r().planet.in_jump_range"
+            x-bind:x1="r().planet.landing.x / 1000" x-bind:y1="-r().planet.landing.y / 1000" x2="0" y2="0" />
+
+        <circle r="2" stroke-width="0.5"
+            x-bind:class="r().sun.caught && !r().sun.in_jump_range ? 'ink-red' : 'ink-green'"
+            x-bind:cx="r().sun.landing.x / 1000" x-bind:cy="-r().sun.landing.y / 1000" cx="0" cy="0" />
+        <circle r="2" stroke-width="0.5"
+            x-bind:class="r().planet.caught && !r().planet.in_jump_range ? 'ink-red' : 'ink-green'"
+            x-bind:cx="r().planet.landing.x / 1000" x-bind:cy="-r().planet.landing.y / 1000" cx="0" cy="0" />
+
+        <g transform="translate(-104 58)">
+            <line class="ink-yellow-stroke" x1="0" y1="0" x2="10" y2="0" stroke-width="0.6" />
+            <line class="ink-yellow-stroke" x1="0" y1="-1.5" x2="0" y2="1.5" stroke-width="0.6" />
+            <line class="ink-yellow-stroke" x1="10" y1="-1.5" x2="10" y2="1.5" stroke-width="0.6" />
+            <text class="ink-muted" x="12" y="1.4" font-size="3.5">10 km</text>
+        </g>
+        <g transform="translate(18 58)">
+            <circle class="ink-red" r="1.6" cx="0" cy="0" />
+            <text class="ink-muted" x="3" y="1.3" font-size="3.5">caught</text>
+            <circle class="ink-green" r="1.6" cx="20" cy="0" />
+            <text class="ink-muted" x="23" y="1.3" font-size="3.5">jumps out</text>
+        </g>
+    </svg>
+
+    <Fragment slot="controls">
+        <SimRange label="Bubble along the Sun line" field="along_km" min={BUBBLE_ALONG_RANGE.min} max={BUBBLE_ALONG_RANGE.max} unit="km" />
+        <SimRange label="Bubble off the line (+ toward Planet IV)" field="off_km" min={BUBBLE_OFF_RANGE.min} max={BUBBLE_OFF_RANGE.max} unit="km" />
+    </Fragment>
+
+    <Fragment slot="readout">
+        <p><strong>Sun:</strong> <span x-text="r().readouts.sun"></span></p>
+        <p><strong>Planet IV:</strong> <span x-text="r().readouts.planet"></span></p>
+    </Fragment>
+</RoleSim>
+
+<script>
+    import { register_role_sim, role_sim_data } from '@components/blocks/role-sims/role_sim_data'
+    import { BUBBLE_DEFAULT, BUBBLE_TARGETS, bubble_scenario } from '@helpers/sims/scenarios'
+
+    register_role_sim('role_sim_bubble', role_sim_data({
+        targets: BUBBLE_TARGETS,
+        defaults: () => ({ ...BUBBLE_DEFAULT }),
+        compute: bubble_scenario,
+    }))
+</script>

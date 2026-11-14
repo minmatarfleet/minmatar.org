@@ -1,0 +1,101 @@
+---
+/**
+ * Capacitor recharge curve: the rate peaks at 25%, so a drain bigger than the
+ * peak empties the capacitor for good, and anything smaller settles.
+ */
+import RoleSim from '@components/blocks/role-sims/RoleSim.astro'
+import SimRange from '@components/blocks/role-sims/SimRange.astro'
+import { CAP_CURVE_SECONDS, CAP_CURVE_TARGETS } from '@helpers/sims/scenarios'
+import { SIM } from '@helpers/sims/constants'
+import { CAP_CURVE_BOX as curve_box, CAP_TRACE_BOX as trace_box, ticks } from '@components/blocks/role-sims/pictures'
+
+interface Props {
+    sim_id?:            string;
+    compact?:           boolean;
+    [propName: string]: any;
+}
+
+const {
+    sim_id = 'capacitor-curve',
+    compact = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+---
+
+<RoleSim
+    sim_id={sim_id}
+    alpine_name="role_sim_capacitor_curve"
+    title="Find the capacitor peak"
+    summary={`A Guardian hull (${SIM.guardian_cap_gj} GJ, ${SIM.guardian_cap_recharge_s} s recharge). Left: how fast it recharges at each level. Right: the next ${CAP_CURVE_SECONDS / 60} minutes under a steady drain.`}
+    targets={CAP_CURVE_TARGETS}
+    compact={compact}
+    class={Astro.props.class}
+    {...attributes}
+>
+    <svg slot="picture" viewBox="0 0 200 96" role="img" aria-label="Recharge rate against capacitor level, and capacitor over time under the chosen drain">
+        <text class="ink-muted" x={curve_box.x} y="6" font-size="3.4">Recharge (GJ/s) by capacitor level</text>
+        {ticks(curve_box, 'y', 4).map((t) => (
+            <g>
+                <line class="ink-grid" x1={curve_box.x} x2={curve_box.x + curve_box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
+                <text class="ink-muted" x={curve_box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+            </g>
+        ))}
+        {ticks(curve_box, 'x', 25).map((t) => (
+            <text class="ink-muted" x={t.at} y={curve_box.y + curve_box.height + 5} font-size="2.8" text-anchor="middle">{t.value}%</text>
+        ))}
+        <line class="ink-red-stroke" stroke-width="0.4" stroke-dasharray="1 1"
+            x1={curve_box.x} x2={curve_box.x + curve_box.width}
+            x-bind:y1="cy(state.drain_gjs)" x-bind:y2="cy(state.drain_gjs)" y1="0" y2="0" />
+        <polyline class="ink-yellow-stroke" stroke-width="0.7" x-bind:points="curve_points()" points="" />
+        <line class="ink-line" stroke-width="0.4"
+            x-bind:x1="cx(state.level_percent)" x-bind:x2="cx(state.level_percent)" y1={curve_box.y} y2={curve_box.y + curve_box.height} x1="0" x2="0" />
+        <circle class="ink-strong" r="1.6" x-bind:cx="cx(state.level_percent)" x-bind:cy="cy(r().rate)" cx="0" cy="0" />
+
+        <text class="ink-muted" x={trace_box.x} y="6" font-size="3.4">Capacitor % under the drain</text>
+        {ticks(trace_box, 'y', 25).map((t) => (
+            <g>
+                <line class="ink-grid" x1={trace_box.x} x2={trace_box.x + trace_box.width} y1={t.at} y2={t.at} stroke-width="0.25" />
+                <text class="ink-muted" x={trace_box.x - 2} y={t.at + 1} font-size="2.8" text-anchor="end">{t.value}</text>
+            </g>
+        ))}
+        {ticks(trace_box, 'x', 60).map((t) => (
+            <text class="ink-muted" x={t.at} y={trace_box.y + trace_box.height + 5} font-size="2.8" text-anchor="middle">{t.value / 60}m</text>
+        ))}
+        <polyline stroke-width="0.7" x-bind:class="r().settles === null ? 'ink-red-stroke' : 'ink-green-stroke'" x-bind:points="trace_points()" points="" />
+    </svg>
+
+    <Fragment slot="controls">
+        <SimRange label="Capacitor level" field="level_percent" min={0} max={100} unit="%" />
+        <SimRange label="Steady drain on the Guardian" field="drain_gjs" min={0} max={20} step={0.25} unit="GJ/s" />
+    </Fragment>
+
+    <Fragment slot="readout">
+        <p x-text="r().readout"></p>
+    </Fragment>
+</RoleSim>
+
+<script>
+    import { register_role_sim, role_sim_data } from '@components/blocks/role-sims/role_sim_data'
+    import { CAP_CURVE_BOX as curve_box, CAP_TRACE_BOX as trace_box, chart_points, chart_x, chart_y } from '@components/blocks/role-sims/pictures'
+    import { CAP_CURVE_DEFAULT, CAP_CURVE_TARGETS, cap_curve_scenario } from '@helpers/sims/scenarios'
+
+    register_role_sim('role_sim_capacitor_curve', role_sim_data({
+        targets: CAP_CURVE_TARGETS,
+        defaults: () => ({ ...CAP_CURVE_DEFAULT }),
+        compute: cap_curve_scenario,
+        methods: {
+            cx: (level: number) => chart_x(curve_box, level),
+            cy: (rate: number) => chart_y(curve_box, rate),
+            curve_points(this: any) {
+                return chart_points(curve_box, this.r().curve.map((p: { level: number, rate: number }) => [p.level, p.rate]))
+            },
+            trace_points(this: any) {
+                const r = this.r()
+                return chart_points(trace_box, r.trace.map((p: { t: number, cap: number }) => [p.t, (p.cap / r.cap_max) * 100]))
+            },
+        },
+    }))
+</script>
