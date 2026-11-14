@@ -12782,8 +12782,11 @@
               "bursts_fitted": {},
               "bursts_online": {},
               "cyno": false,
+              "ecm": false,
+              "interdiction": false,
               "links": false,
-              "logi": false
+              "logi": false,
+              "neuts": false
             }
           },
           "fitting_id": {
@@ -13641,6 +13644,16 @@
             "title": "Cyno",
             "type": "boolean"
           },
+          "ecm": {
+            "default": false,
+            "title": "Ecm",
+            "type": "boolean"
+          },
+          "interdiction": {
+            "default": false,
+            "title": "Interdiction",
+            "type": "boolean"
+          },
           "links": {
             "default": false,
             "title": "Links",
@@ -13649,6 +13662,11 @@
           "logi": {
             "default": false,
             "title": "Logi",
+            "type": "boolean"
+          },
+          "neuts": {
+            "default": false,
+            "title": "Neuts",
             "type": "boolean"
           }
         },
@@ -14461,6 +14479,22 @@
             "title": "Cynos",
             "type": "array"
           },
+          "ecm": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EveFleetRolePilot"
+            },
+            "title": "Ecm",
+            "type": "array"
+          },
+          "interdiction": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EveFleetRolePilot"
+            },
+            "title": "Interdiction",
+            "type": "array"
+          },
           "links": {
             "items": {
               "$ref": "#/components/schemas/EveFleetLinkCoverage"
@@ -14481,6 +14515,26 @@
             },
             "title": "Logi Fc",
             "type": "array"
+          },
+          "neuts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EveFleetRolePilot"
+            },
+            "title": "Neuts",
+            "type": "array"
+          },
+          "wanted": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EveFleetRoleWanted"
+              }
+            ],
+            "default": {
+              "ecm": 0,
+              "interdiction": 0,
+              "neuts": 0
+            }
           }
         },
         "required": [
@@ -14644,6 +14698,28 @@
           "role"
         ],
         "title": "EveFleetRoleVolunteerResponse",
+        "type": "object"
+      },
+      "EveFleetRoleWanted": {
+        "description": "Pilots a fleet wants per role; 0 is no target (list only).",
+        "properties": {
+          "ecm": {
+            "default": 0,
+            "title": "Ecm",
+            "type": "integer"
+          },
+          "interdiction": {
+            "default": 0,
+            "title": "Interdiction",
+            "type": "integer"
+          },
+          "neuts": {
+            "default": 0,
+            "title": "Neuts",
+            "type": "integer"
+          }
+        },
+        "title": "EveFleetRoleWanted",
         "type": "object"
       },
       "EveFleetShipVolunteerResponse": {
@@ -62648,7 +62724,7 @@
     },
     "/api/fleets/{fleet_id}/roles": {
       "get": {
-        "description": "Fleet roles worked out from ships: links by burst kind, cynos and logi, from ship volunteers and pilots in the tracked fleet. Logi FC is the one role still signed up for. A hidden roster limits everyone but a Strategic FC to their own characters; a cyno system is only returned to the FC and the pilot.",
+        "description": "Fleet roles worked out from ships: links by burst kind, cynos, logi, interdiction, ECM and neuts, from ship volunteers and pilots in the tracked fleet. `wanted` is how many interdiction, neut and ECM ships the fleet asks for (strategic fleets; 0 elsewhere). Logi FC is the one role still signed up for. A hidden roster limits everyone but a Strategic FC to their own characters; a cyno system is only returned to the FC and the pilot.",
         "operationId": "fleets_endpoints_fleet_get_fleet_roles_get_fleet_roles",
         "parameters": [
           {

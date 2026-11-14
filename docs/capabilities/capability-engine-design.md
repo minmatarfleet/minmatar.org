@@ -235,6 +235,8 @@ brackets, prototype names) live in `capabilities/engine/rules.py`.
   | Logistics | support, tank, capacitor, navigation, targeting, fitting |
   | Links | support, tank, capacitor, navigation, fitting |
   | Support | support, tank, capacitor, navigation, targeting, fitting |
+  | Capacitor Warfare | support, tank, capacitor, navigation, targeting, fitting |
+  | Electronic Warfare | support, tank, capacitor, navigation, targeting, fitting |
   | Tackle | support, tank, navigation, targeting, fitting, capacitor |
   | Recon | navigation, jump, targeting, fitting, support |
   | Dreads | damage, tank, capacitor, targeting, jump, fitting, navigation |
@@ -309,18 +311,41 @@ override it per fitting (answer 5). The order of the checks matters:
 
 1. Dreadnought → **Dreads**; Carrier → **Carriers**.
 2. Logistics or FAX hull, or 2+ remote reps → **Logistics**.
-3. An online command burst → **Links**.
-4. Interdictor, HIC or interceptor → **Tackle**.
-5. Black Ops, Covert Ops, or a cyno with no weapons → **Recon**.
-6. A Force Recon picks between the two: a cloak or cyno makes it **Recon**,
-   EWAR makes it **Support**.
-7. 2+ EWAR modules (ECM, damps, TDs, webs, neuts, painters) on a support or
-   secondary slot → **Support**.
-8. A point on a support or secondary sub-battleship slot → **Tackle**.
-9. Anything else → **DPS**.
+3. A Command Destroyer with an online Micro Jump Field Generator →
+   **Tackle** (it is there to boson the enemy, whatever bursts it carries).
+4. An online command burst → **Links**.
+5. Interdictor, HIC or interceptor → **Tackle**.
+6. Black Ops, Covert Ops, or a cyno with no weapons → **Recon**.
+7. A Combat Recon, Force Recon or Electronic Attack Ship picks: a cloak or
+   cyno with no EWAR makes it **Recon**, otherwise it takes the support
+   class below.
+8. 2+ EWAR modules (ECM, ECM bursts, damps, TDs, webs, neuts, painters) on a
+   support, secondary or utility slot → the support class below.
+9. A point on a support or secondary sub-battleship slot → **Tackle**.
+10. Anything else → **DPS**.
 
-On the 51 prod fittings that gives 14 DPS, 11 Logistics, 9 Links, 7 Tackle,
-6 Support, 3 Carriers and 1 Dreads. Golden hulls all land correctly:
+**The support class** (`support_class`, rules version 2) splits the old
+Support class so "Proven in Support" can tell a Griffin pilot from a
+Bhaalgorn pilot. It counts three kinds of module:
+
+- cap warfare: energy neutralizers and Nosferatu;
+- EWAR: ECM, ECM bursts, sensor dampeners, weapon (tracking and guidance)
+  disruptors, target painters;
+- webs: stasis webifiers and grapplers.
+
+2+ cap warfare and fewer than 2 EWAR → **Capacitor Warfare** (webs don't
+count against it: a Bhaalgorn webs and neuts). 2+ EWAR, fewer than 2 cap
+warfare and fewer webs than EWAR → **Electronic Warfare** (one Nosferatu or
+one painter is filler). Anything else carries both kinds or is led by webs
+and stays **Support** (a web Huginn, the AC Thrasher). A stored Support
+override stays valid; the doctrine team can move a fit to the new classes
+by hand. Off-doctrine hulls (section 7) keep their hull-group map, so a
+Combat Recon or Electronic Attack Ship outside every doctrine is still
+Support.
+
+Before the split (rules version 1), on the 51 prod fittings that gave 14
+DPS, 11 Logistics, 9 Links, 7 Tackle, 6 Support, 3 Carriers and 1 Dreads.
+Golden hulls all landed correctly:
 Revelation is Dreads, Napoc DPS, Guardian Logistics, Damnation Links,
 Bhaalgorn and Vindicator Support, Devoter Tackle. These need a doctrine-team
 look:

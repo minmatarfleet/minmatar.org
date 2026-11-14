@@ -25,6 +25,14 @@ from fleets.helpers.fit_roles import (
     LOGI_HULL_GROUPS,
 )
 
+# What a strategic fleet asks for of the roles below logi and links. Other
+# fleets list who brings them without a target. CYNOS_WANTED lives in the
+# website (frontend helpers/fleet_roles.ts), as it always has.
+INTERDICTION_WANTED = 2
+NEUTS_WANTED = 2
+ECM_WANTED = 1
+STRATEGIC_FLEET_TYPE = "strategic"
+
 # The poller rewrites every present member and then stamps the instance;
 # a member not touched on the latest pass has left.
 PRESENT_SLACK = timedelta(minutes=5)
@@ -164,8 +172,19 @@ def fleet_role_pilots(fleet, visible=lambda character_id: True):
     return list(pilots.values())
 
 
+def role_wanted(fleet) -> dict:
+    """Pilots wanted per role; 0 means no target (non-strategic fleets)."""
+    strategic = fleet.type == STRATEGIC_FLEET_TYPE
+    return {
+        "interdiction": INTERDICTION_WANTED if strategic else 0,
+        "neuts": NEUTS_WANTED if strategic else 0,
+        "ecm": ECM_WANTED if strategic else 0,
+    }
+
+
 def fleet_role_coverage(fleet, visible=lambda character_id: True) -> dict:
-    """Links by kind, cynos and logi, from ``fleet_role_pilots``."""
+    """Links by kind, cynos, logi, interdiction, ECM and neuts, from
+    ``fleet_role_pilots``."""
     pilots = fleet_role_pilots(fleet, visible)
     links = []
     for kind in BURST_KINDS:
@@ -184,4 +203,8 @@ def fleet_role_coverage(fleet, visible=lambda character_id: True) -> dict:
         "links": links,
         "cynos": [pilot for pilot in pilots if pilot.roles.cyno],
         "logi": [pilot for pilot in pilots if pilot.roles.logi],
+        "interdiction": [p for p in pilots if p.roles.interdiction],
+        "ecm": [p for p in pilots if p.roles.ecm],
+        "neuts": [p for p in pilots if p.roles.neuts],
+        "wanted": role_wanted(fleet),
     }

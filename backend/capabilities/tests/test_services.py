@@ -9,6 +9,7 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
 from capabilities import services, tasks
+from capabilities.engine import rules
 from capabilities.engine import sde as sde_mod
 from capabilities.models import (
     CharacterAccount,
@@ -249,7 +250,8 @@ class CapabilityServicesTestCase(TestCase):
             ).doctrine_ready
         )
         self.assertEqual(
-            CharacterCapability.objects.filter(character=pilot).count(), 8
+            CharacterCapability.objects.filter(character=pilot).count(),
+            len(rules.CAPABILITIES),
         )
 
     def test_unchanged_readiness_is_not_rewritten(self):
@@ -257,7 +259,9 @@ class CapabilityServicesTestCase(TestCase):
         services.recompute_all_requirements()
         self.assertEqual(services.refresh_readiness(), 1)
         self.assertEqual(services.refresh_readiness(), 0)
-        self.assertEqual(services.refresh_capabilities(), 8)
+        self.assertEqual(
+            services.refresh_capabilities(), len(rules.CAPABILITIES)
+        )
         self.assertEqual(services.refresh_capabilities(), 0)
         EveCharacterSkill.objects.filter(
             character=pilot, skill_id=SDE.resolve("Capacitor Management")

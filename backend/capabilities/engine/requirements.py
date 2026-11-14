@@ -53,6 +53,7 @@ CHAR_BUCKETS = {212: "targeting", 352: "drones"}
 
 EWAR_WORDS = (
     "ecm",
+    "burst jammer",
     "sensor dampener",
     "weapon disruptor",
     "stasis web",
@@ -60,6 +61,21 @@ EWAR_WORDS = (
     "target painter",
 )
 TACKLE_WORDS = ("warp scrambler", "warp disrupt", "interdiction sphere")
+# The two halves of the old Support class (R2): draining capacitor, and
+# electronic warfare that breaks locks, range or tracking. Webs and
+# grapplers are neither; a fit led by them stays Support.
+CAP_WARFARE_WORDS = ("energy neutralizer", "energy nosferatu")
+EW_WORDS = (
+    "ecm",
+    "burst jammer",
+    "sensor dampener",
+    "weapon disruptor",
+    "target painter",
+)
+WEB_WORDS = ("stasis web", "stasis grappler")
+# A kind leads the fit from this many modules; one Nosferatu or one painter
+# is filler.
+SUPPORT_KIND_MIN = 2
 _BURST_RE = re.compile(r"Command Burst|Mining Foreman Burst")
 _REMOTE_RE = re.compile(
     r"Remote (Armor Repairer|Shield Booster|Hull Repairer|Capacitor Transmitter)"
@@ -256,6 +272,31 @@ def trait_touches(sde: SdeData, hull: int) -> dict[int, Touch]:
 
 
 # ---------------------------------------------------------------- capability
+def support_class(groups: list[str]) -> str:
+    """Capacitor Warfare, Electronic Warfare or (mixed, webs) Support.
+
+    ``groups`` are the lower-cased module group names. Neuts and Nosferatu
+    lead when the fit has no second EWAR module (a Bhaalgorn's webs don't
+    count). EWAR leads when the fit has fewer than two cap warfare modules
+    and fewer webs than EWAR modules. Anything else carries both kinds or
+    is led by webs, and stays Support.
+    """
+
+    def count(words):
+        return sum(any(w in g for w in words) for g in groups)
+
+    cap, ew, webs = (
+        count(CAP_WARFARE_WORDS),
+        count(EW_WORDS),
+        count(WEB_WORDS),
+    )
+    if ew < SUPPORT_KIND_MIN <= cap:
+        return "Capacitor Warfare"
+    if cap < SUPPORT_KIND_MIN <= ew and webs < ew:
+        return "Electronic Warfare"
+    return "Support"
+
+
 def classify(sde: SdeData, fit: ParsedFit, roles=()) -> str:
     """One capability per doctrine fitting; roles are its doctrine roles."""
     hull_group = sde.group_name(fit.hull)
@@ -276,6 +317,10 @@ def classify(sde: SdeData, fit: ParsedFit, roles=()) -> str:
     tackle = sum(any(w in g for w in TACKLE_WORDS) for g in groups)
     cyno = any("cynosural" in n.lower() for n in names)
     supportish = bool(set(roles) & {"support", "secondary", "utility"})
+    mjfg = any(
+        online and "micro jump field" in sde.group_name(tid).lower()
+        for (tid, online, _) in fit.modules
+    )
     if hull_group in ("Dreadnought", "Lancer Dreadnought"):
         return "Dreads"
     if hull_group == "Carrier":
@@ -285,6 +330,10 @@ def classify(sde: SdeData, fit: ParsedFit, roles=()) -> str:
         or remote >= 2
     ):
         return "Logistics"
+    # A Command Destroyer running its Micro Jump Field Generator is there to
+    # boson the enemy fleet, whatever bursts it also carries.
+    if hull_group == "Command Destroyer" and mjfg:
+        return "Tackle"
     if online_bursts:
         return "Links"
     if hull_group in (
@@ -303,9 +352,11 @@ def classify(sde: SdeData, fit: ParsedFit, roles=()) -> str:
         "Electronic Attack Ship",
     ):
         cloaked = any("cloaking" in g for g in groups)
-        return "Recon" if (cyno or cloaked) and not ewar else "Support"
+        if (cyno or cloaked) and not ewar:
+            return "Recon"
+        return support_class(groups)
     if ewar >= 2 and supportish:
-        return "Support"
+        return support_class(groups)
     if tackle and supportish and "Battleship" not in hull_group:
         return "Tackle"
     return "DPS"
