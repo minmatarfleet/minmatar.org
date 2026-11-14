@@ -391,6 +391,44 @@ class StockAndLedgerEndpointTestCase(TestCase):
         self.assertEqual(data["turnover_value"], 5_000_000)
         self.assertEqual(data["window_days"], 30)
 
+    @patch("buyback.helpers.stock_stats.fetch_corporation_wallet_balance")
+    @patch("buyback.endpoints.get_stock.batch_estimate_guide_isk")
+    @patch("buyback.helpers.stock_stats.batch_estimate_guide_isk")
+    def test_stock_stats_value_matches_listed_stock(
+        self, mock_stats_estimate, mock_stock_estimate, mock_wallet
+    ):
+        """Headline value uses the listed pool, not the whole hangar."""
+
+        def per_unit(rows):
+            return [float(qty * 1000) for _, _, qty in rows]
+
+        mock_stats_estimate.side_effect = per_unit
+        mock_stock_estimate.side_effect = per_unit
+        mock_wallet.return_value = None
+        user = User.objects.create(username="buyer")
+        order = BuybackPurchaseOrder.objects.create(
+            created_by=user,
+            paste="Compressed Veldspar\t23",
+            contract_total=1,
+            sell_price_basis=SellPriceBasis.JITA_SPLIT,
+            sell_markup=0,
+        )
+        order.lines.create(
+            eve_type=self.eve_type,
+            name=self.eve_type.name,
+            quantity=23,
+            unit_price=Decimal("1.00"),
+            line_total=Decimal("23.00"),
+        )
+
+        stats = self.client.get(f"{BASE_URL}/stock/stats").json()
+        stock = self.client.get(f"{BASE_URL}/stock").json()
+
+        listed = sum(item["isk_value"] for item in stock["items"])
+        self.assertEqual(stats["stockpile_value"], 100_000)
+        self.assertEqual(stats["stockpile_value"], listed)
+        self.assertEqual(stats["reserved_value"], 23_000)
+
     def test_settings_includes_stockpile_and_demand_status(self):
         response = self.client.get(f"{BASE_URL}/settings")
         self.assertEqual(response.status_code, 200)

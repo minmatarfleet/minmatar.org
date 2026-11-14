@@ -3417,6 +3417,11 @@
             ],
             "title": "Remaining Isk"
           },
+          "reserved_value": {
+            "default": 0,
+            "title": "Reserved Value",
+            "type": "integer"
+          },
           "stockpile_value": {
             "title": "Stockpile Value",
             "type": "integer"
@@ -50581,7 +50586,7 @@
     },
     "/api/buyback/stock/stats": {
       "get": {
-        "description": "Buyback stockpile overview: on-hand Jita guide value, M-EXC corp wallet balance, and 30d stockpile turnover.",
+        "description": "Buyback stockpile overview: Jita guide value of the stock listed for sale (same pool as /stock), value held for pending purchases, M-EXC corp wallet balance, and 30d stockpile turnover.",
         "operationId": "buyback_endpoints_get_stock_stats_get_stock_stats",
         "parameters": [],
         "responses": {

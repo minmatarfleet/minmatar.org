@@ -140,7 +140,6 @@
       "BuybackSettings": "closest backend schema BuybackSettingsResponse, no field or null drift found; alias it when its domain is next changed",
       "BuybackOnHandItem": "closest backend schema BuybackOnHandItem, no field or null drift found; alias it when its domain is next changed",
       "BuybackOnHand": "closest backend schema BuybackOnHandResponse, no field or null drift found; alias it when its domain is next changed",
-      "BuybackStockStats": "closest backend schema BuybackStockStatsResponse, no field or null drift found; alias it when its domain is next changed",
       "BuybackLedgerEntry": "closest backend schema BuybackLedgerEntryResponse, no field or null drift found; alias it when its domain is next changed",
       "BuybackLedger": "closest backend schema BuybackLedgerResponse, no field or null drift found; alias it when its domain is next changed",
       "BuybackAppraisalLine": "closest backend schema BuybackAppraisalLine, no field or null drift found; alias it when its domain is next changed",

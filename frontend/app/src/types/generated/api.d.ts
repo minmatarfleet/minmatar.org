@@ -843,7 +843,7 @@ export interface paths {
         };
         /**
          * Get Stock Stats
-         * @description Buyback stockpile overview: on-hand Jita guide value, M-EXC corp wallet balance, and 30d stockpile turnover.
+         * @description Buyback stockpile overview: Jita guide value of the stock listed for sale (same pool as /stock), value held for pending purchases, M-EXC corp wallet balance, and 30d stockpile turnover.
          */
         get: operations["buyback_endpoints_get_stock_stats_get_stock_stats"];
         put?: never;
@@ -11433,6 +11433,11 @@ export interface components {
         BuybackStockStatsResponse: {
             /** Remaining Isk */
             remaining_isk?: number | null;
+            /**
+             * Reserved Value
+             * @default 0
+             */
+            reserved_value?: number;
             /** Stockpile Value */
             stockpile_value: number;
             /** Turnover Value */

@@ -1632,12 +1632,7 @@ export interface BuybackOnHand {
     updated_at: string | null;
 }
 
-export interface BuybackStockStats {
-    stockpile_value: number;
-    remaining_isk: number | null;
-    turnover_value: number;
-    window_days: number;
-}
+export type BuybackStockStats = ApiResponse<'BuybackStockStatsResponse'>
 
 export type BuybackLedgerReason =
     | 'in_contract'
