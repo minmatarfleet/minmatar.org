@@ -330,7 +330,7 @@ def build_fit_copies_by_line(
 
     result: dict[int, list[dict]] = {}
     for line in order_lines:
-        original_eft = line.fitting.eft_format or ""
+        original_eft = line.eft_format
         swapped_eft = effective_eft_for_line(line, type_names=names)
         bom = unswapped_boms.get(line.id)
         preferred_modules = line_modules.get(line.id) or {}

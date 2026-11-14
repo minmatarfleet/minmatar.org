@@ -7044,6 +7044,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/market/fitting-buy-orders/custom-fit-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a pasted EFT fit before adding it to a buy order */
+        post: operations["market_endpoints_fitting_buy_orders_post_custom_fit_check_post_fitting_buy_custom_fit_check"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/market/fitting-buy-orders/{order_id}": {
         parameters: {
             query?: never;
@@ -14056,6 +14073,19 @@ export interface components {
             /** Year */
             year: number;
         };
+        /**
+         * CreateCustomFitLineRequest
+         * @description A fit pasted as EFT. It stays on this order: no site fitting.
+         */
+        CreateCustomFitLineRequest: {
+            /** Eft */
+            eft: string;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity?: number;
+        };
         /** CreateEveFleetFittingRefitRequest */
         CreateEveFleetFittingRefitRequest: {
             /** Cargo Modules */
@@ -14198,6 +14228,11 @@ export interface components {
         };
         /** CreateFittingBuyOrderRequest */
         CreateFittingBuyOrderRequest: {
+            /**
+             * Custom Fits
+             * @default []
+             */
+            custom_fits?: components["schemas"]["CreateCustomFitLineRequest"][];
             /**
              * Include Hull
              * @default false
@@ -14469,6 +14504,43 @@ export interface components {
         /** CurrentFleetWindowResponse */
         CurrentFleetWindowResponse: {
             window?: components["schemas"]["FleetWindowResponse"] | null;
+        };
+        /** CustomFitCheckRequest */
+        CustomFitCheckRequest: {
+            /** Eft */
+            eft: string;
+        };
+        /** CustomFitCheckResponse */
+        CustomFitCheckResponse: {
+            /**
+             * Error
+             * @default
+             */
+            error?: string;
+            /**
+             * Fit Name
+             * @default
+             */
+            fit_name?: string;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count?: number;
+            /** Ok */
+            ok: boolean;
+            /** Ship Id */
+            ship_id?: number | null;
+            /**
+             * Ship Name
+             * @default
+             */
+            ship_name?: string;
+            /**
+             * Unknown Names
+             * @default []
+             */
+            unknown_names?: string[];
         };
         /**
          * DamageAnalysis
@@ -16615,7 +16687,7 @@ export interface components {
             /** Fitting Cost */
             fitting_cost?: string | null;
             /** Fitting Id */
-            fitting_id: number;
+            fitting_id: number | null;
             /** Fitting Name */
             fitting_name: string;
             /**
@@ -16850,7 +16922,7 @@ export interface components {
              */
             fit_copies?: components["schemas"]["FittingBuyFitCopySchema"][];
             /** Fitting Id */
-            fitting_id: number;
+            fitting_id: number | null;
             /** Fitting Name */
             fitting_name: string;
             /**
@@ -16860,6 +16932,11 @@ export interface components {
             has_swaps?: boolean;
             /** Id */
             id: number;
+            /**
+             * Is Custom
+             * @default false
+             */
+            is_custom?: boolean;
             /** Max Completable */
             max_completable?: number | null;
             /**
@@ -17022,7 +17099,7 @@ export interface components {
         /** FittingBuyOrderListShipSchema */
         FittingBuyOrderListShipSchema: {
             /** Fitting Id */
-            fitting_id: number;
+            fitting_id: number | null;
             /** Fitting Name */
             fitting_name: string;
             /** Quantity */
@@ -46381,6 +46458,39 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    market_endpoints_fitting_buy_orders_post_custom_fit_check_post_fitting_buy_custom_fit_check: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomFitCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFitCheckResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
