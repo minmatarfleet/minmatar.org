@@ -10,6 +10,7 @@ The tribe's Discord role and channel are not created here; link them by hand
 in the admin (Tribe.group and Tribe.discord_channel_id).
 """
 
+from django.conf import settings
 from django.db import migrations
 
 TRIBE_SLUG = "fanfest"
@@ -33,6 +34,13 @@ def find_chief_id(apps):
 
 
 def create_fanfest_tribe(apps, schema_editor):
+    # Test databases stay empty; tests call seed_fanfest_tribe.
+    if getattr(settings, "TESTING", False):
+        return
+    seed_fanfest_tribe(apps)
+
+
+def seed_fanfest_tribe(apps):
     Tribe = apps.get_model("tribes", "Tribe")
     TribeGroup = apps.get_model("tribes", "TribeGroup")
 

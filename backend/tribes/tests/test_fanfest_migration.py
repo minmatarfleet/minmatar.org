@@ -24,7 +24,7 @@ MUTED = (
 @factory.django.mute_signals(*MUTED)
 class FanfestTribeMigrationTestCase(TestCase):
     def setUp(self):
-        # The migration already ran when the test database was built.
+        # The migration skips seeding in tests; start from no tribe.
         TribeGroup.objects.filter(code=migration.GROUP_CODE).delete()
         Tribe.objects.filter(slug=migration.TRIBE_SLUG).delete()
 
@@ -34,7 +34,7 @@ class FanfestTribeMigrationTestCase(TestCase):
         )
 
     def test_creates_tribe_and_group_without_chief_when_pilot_missing(self):
-        migration.create_fanfest_tribe(apps, None)
+        migration.seed_fanfest_tribe(apps)
 
         tribe = Tribe.objects.get(slug="fanfest")
         self.assertIsNone(tribe.chief_id)
@@ -49,7 +49,7 @@ class FanfestTribeMigrationTestCase(TestCase):
         user = User.objects.create(username="fan-chief")
         self._character("Sycamoria", 9100001, user)
 
-        migration.create_fanfest_tribe(apps, None)
+        migration.seed_fanfest_tribe(apps)
 
         self.assertEqual(Tribe.objects.get(slug="fanfest").chief_id, user.pk)
 
@@ -59,13 +59,13 @@ class FanfestTribeMigrationTestCase(TestCase):
         self._character("Sycamoria", 9100002, user_a)
         self._character("sycamoria", 9100003, user_b)
 
-        migration.create_fanfest_tribe(apps, None)
+        migration.seed_fanfest_tribe(apps)
 
         self.assertIsNone(Tribe.objects.get(slug="fanfest").chief_id)
 
     def test_is_idempotent_and_fills_empty_chief_only(self):
-        migration.create_fanfest_tribe(apps, None)
-        migration.create_fanfest_tribe(apps, None)
+        migration.seed_fanfest_tribe(apps)
+        migration.seed_fanfest_tribe(apps)
         self.assertEqual(Tribe.objects.filter(slug="fanfest").count(), 1)
         self.assertEqual(
             TribeGroup.objects.filter(code="fanfest.attendees").count(), 1
@@ -73,10 +73,10 @@ class FanfestTribeMigrationTestCase(TestCase):
 
         user = User.objects.create(username="late-chief")
         self._character("Sycamoria", 9100004, user)
-        migration.create_fanfest_tribe(apps, None)
+        migration.seed_fanfest_tribe(apps)
         self.assertEqual(Tribe.objects.get(slug="fanfest").chief_id, user.pk)
 
         other = User.objects.create(username="other")
         Tribe.objects.filter(slug="fanfest").update(chief=other)
-        migration.create_fanfest_tribe(apps, None)
+        migration.seed_fanfest_tribe(apps)
         self.assertEqual(Tribe.objects.get(slug="fanfest").chief_id, other.pk)
