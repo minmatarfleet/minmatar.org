@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { composition_changes, hull_filters_for, type DoctrineComposition } from '@helpers/doctrine_editor'
 
 const comp = (parts:Partial<DoctrineComposition>):DoctrineComposition => ({
-    primary: [], secondary: [], support: [], utility: [], capitals: [], ...parts,
+    primary: [], secondary: [], support: [], utility: [], alts: [], capitals: [], ...parts,
 })
 
 describe('composition_changes', () => {

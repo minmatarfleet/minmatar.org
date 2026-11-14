@@ -39,6 +39,7 @@ const ROLE_LABELS:Record<DoctrineRole, string> = {
     secondary: t('doctrine_changes.role_academy'),
     support: t('doctrine_changes.role_support'),
     utility: t('doctrine_changes.role_utility'),
+    alts: t('doctrine_changes.role_alts'),
     capitals: t('doctrine_changes.role_capitals'),
 }
 
@@ -97,6 +98,7 @@ if (Astro.request.method === 'POST') {
             secondary: live.secondary_fittings.map((fitting) => fitting.id),
             support: live.support_fittings.map((fitting) => fitting.id),
             utility: (live.utility_fittings ?? []).map((fitting) => fitting.id),
+            alts: (live.alts_fittings ?? []).map((fitting) => fitting.id),
             capitals: (live.capitals_fittings ?? []).map((fitting) => fitting.id),
         }
 

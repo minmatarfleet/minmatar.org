@@ -56,6 +56,16 @@ import DoctrineTier from '@components/blocks/DoctrineTier.astro';
                 </Flexblock>
             }
 
+            {(doctrine.alts_fittings?.length ?? 0) > 0 &&
+                <Flexblock gap='var(--space-m)'>
+                    <h2>{doctrine.alts_fittings!.length !== 1 ? t('alts_fittings') : t('alts_fitting')}</h2>
+                    <p>{t('alts_fittings_description')}</p>
+                    <DoctrineTier
+                        fittings={doctrine.alts_fittings!}
+                    />
+                </Flexblock>
+            }
+
             {doctrine.capitals_fittings.length > 0 &&
                 <Flexblock gap='var(--space-m)'>
                     <h2>{doctrine.capitals_fittings.length !== 1 ? t('capitals_fittings') : t('capitals_fitting')}</h2>

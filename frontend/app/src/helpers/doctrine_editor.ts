@@ -27,7 +27,7 @@ export async function can_edit_doctrines(gates: GateContext): Promise<boolean> {
 }
 
 /** Doctrine roles in display order. The stored key "secondary" is Academy. */
-export const DOCTRINE_ROLES = ['primary', 'secondary', 'support', 'utility', 'capitals'] as const
+export const DOCTRINE_ROLES = ['primary', 'secondary', 'support', 'utility', 'alts', 'capitals'] as const
 export type DoctrineRole = typeof DOCTRINE_ROLES[number]
 export type DoctrineComposition = Record<DoctrineRole, number[]>
 

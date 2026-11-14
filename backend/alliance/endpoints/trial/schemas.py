@@ -44,7 +44,7 @@ class TrialFleetResponse(Schema):
     doctrine_name: Optional[str] = None
     ship_type_id: int
     ship_name: str
-    # primary | support | utility | secondary (Academy) | off_doctrine;
+    # primary | support | utility | alts | secondary (Academy) | off_doctrine;
     # None when the fleet had no doctrine.
     role: Optional[str] = None
     helpful: bool

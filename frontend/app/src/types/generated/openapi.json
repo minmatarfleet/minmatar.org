@@ -11853,6 +11853,14 @@
       },
       "DoctrineCompositionRequest": {
         "properties": {
+          "alts": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Alts",
+            "type": "array"
+          },
           "capitals": {
             "default": [],
             "items": {
@@ -11942,6 +11950,14 @@
       "DoctrineResponse": {
         "description": "Doctrines API Response",
         "properties": {
+          "alts_fittings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FittingResponse"
+            },
+            "title": "Alts Fittings",
+            "type": "array"
+          },
           "capitals_fittings": {
             "items": {
               "$ref": "#/components/schemas/FittingResponse"

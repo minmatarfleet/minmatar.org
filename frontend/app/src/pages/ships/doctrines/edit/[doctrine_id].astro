@@ -90,6 +90,7 @@ const ROLE_FIELDS:Record<DoctrineRole, keyof Doctrine> = {
     secondary: 'secondary_fittings',
     support: 'support_fittings',
     utility: 'utility_fittings',
+    alts: 'alts_fittings',
     capitals: 'capitals_fittings',
 }
 const ROLE_LABELS:Record<DoctrineRole, string> = {
@@ -97,6 +98,7 @@ const ROLE_LABELS:Record<DoctrineRole, string> = {
     secondary: t('doctrine_changes.role_academy'),
     support: t('doctrine_changes.role_support'),
     utility: t('doctrine_changes.role_utility'),
+    alts: t('doctrine_changes.role_alts'),
     capitals: t('doctrine_changes.role_capitals'),
 }
 const ROLE_EMPTY:Record<DoctrineRole, string> = {
@@ -104,6 +106,7 @@ const ROLE_EMPTY:Record<DoctrineRole, string> = {
     secondary: t('doctrine_changes.empty_academy'),
     support: t('doctrine_changes.empty_support'),
     utility: t('doctrine_changes.empty_utility'),
+    alts: t('doctrine_changes.empty_alts'),
     capitals: t('doctrine_changes.empty_capitals'),
 }
 const ROLE_HINTS:Partial<Record<DoctrineRole, string>> = {

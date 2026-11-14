@@ -19,6 +19,8 @@ class DoctrineResponse(BaseModel):
     secondary_fittings: List[FittingResponse]
     support_fittings: List[FittingResponse]
     utility_fittings: List[FittingResponse]
+    # Added later: older payloads and clients without it read as empty.
+    alts_fittings: List[FittingResponse] = []
     capitals_fittings: List[FittingResponse]
     sig_ids: List[int]
     location_ids: List[int]

@@ -63,7 +63,8 @@ ROLE_ORDER = {
     "secondary": 1,
     "support": 2,
     "utility": 3,
-    "capitals": 4,
+    "alts": 4,
+    "capitals": 5,
 }
 
 # Hulls outside every doctrine map to a capability by group.

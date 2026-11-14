@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import Client
 from django.urls import reverse
 
+from alliance.helpers.trial_report import helpful_role
 from app.test import TestCase
 
 from eveonline.models import EveLocation
@@ -37,6 +38,8 @@ from fittings.helpers.permissions import (
     protection_tier_for_doctrine_type,
 )
 from fittings.models import (
+    DOCTRINE_FITTING_ROLE_LABELS,
+    DOCTRINE_FITTING_ROLES,
     DOCTRINE_TYPE_CAPITAL,
     ChangeRequestStatus,
     DOCTRINE_TYPE_EXPERIMENTAL,
@@ -657,6 +660,110 @@ class DoctrineUtilityRoleTestCase(TestCase):
         html = format_doctrine_change_request_html(req)
         self.assertIn("Utility", html)
         self.assertIn("Atron Cyno", html)
+
+
+class DoctrineAltsRoleTestCase(TestCase):
+    """Alts fits (boxers flown next to the main) are their own role."""
+
+    def setUp(self):
+        super().setUp()
+        self.doctrine = EveDoctrine.objects.create(
+            name="Alts Doc",
+            type=DOCTRINE_TYPE_EXPERIMENTAL,
+            description="",
+        )
+        self.primary = EveFitting.objects.create(
+            name="Hurricane Fleet",
+            eft_format="[Hurricane, Hurricane Fleet]",
+            ship_id=24702,
+            description="",
+        )
+        self.boxer = EveFitting.objects.create(
+            name="Heron Boxer",
+            eft_format="[Heron, Heron Boxer]",
+            ship_id=605,
+            description="",
+        )
+
+    def _payload(self, composition):
+        return {
+            "name": "Alts Doc",
+            "type": DOCTRINE_TYPE_EXPERIMENTAL,
+            "description": "",
+            "composition": composition,
+            "location_ids": [],
+        }
+
+    def test_alts_follows_utility_and_precedes_capitals(self):
+        roles = list(DOCTRINE_FITTING_ROLES)
+        self.assertEqual("Alts", DOCTRINE_FITTING_ROLE_LABELS["alts"])
+        self.assertEqual(roles.index("utility") + 1, roles.index("alts"))
+        self.assertEqual(roles.index("alts") + 1, roles.index("capitals"))
+        # Existing keys are untouched: released apps read them.
+        for key in ("primary", "secondary", "support", "utility", "capitals"):
+            self.assertIn(key, roles)
+
+    def test_apply_payload_links_alts_fits(self):
+        apply_doctrine_payload(
+            self.doctrine,
+            self._payload(
+                {"primary": [self.primary.pk], "alts": [self.boxer.pk]}
+            ),
+        )
+        self.assertEqual(
+            "alts",
+            EveDoctrineFitting.objects.get(
+                doctrine=self.doctrine, fitting=self.boxer
+            ).role,
+        )
+        self.assertEqual(
+            [self.boxer.pk],
+            composition_snapshot_for_doctrine(self.doctrine)["alts"],
+        )
+        apply_doctrine_payload(
+            self.doctrine, self._payload({"primary": [self.primary.pk]})
+        )
+        self.assertFalse(
+            EveDoctrineFitting.objects.filter(
+                doctrine=self.doctrine, role="alts"
+            ).exists()
+        )
+
+    def test_api_returns_alts_fittings(self):
+        EveDoctrineFitting.objects.create(
+            doctrine=self.doctrine, fitting=self.boxer, role="alts"
+        )
+        for url in (f"/api/doctrines/{self.doctrine.id}", "/api/doctrines/"):
+            body = self.client.get(url).json()
+            doctrine = body[0] if isinstance(body, list) else body
+            self.assertEqual(
+                [self.boxer.pk], [f["id"] for f in doctrine["alts_fittings"]]
+            )
+            self.assertEqual([], doctrine["utility_fittings"])
+
+    def test_change_request_html_shows_alts(self):
+        self.user.user_permissions.add(_perm("change_doctrine_strategic"))
+        req = submit_doctrine_change_request(
+            EveDoctrine.objects.create(
+                name="Strat Alts",
+                type=DOCTRINE_TYPE_STRATEGIC,
+                description="",
+            ),
+            {
+                "name": "Strat Alts",
+                "type": DOCTRINE_TYPE_STRATEGIC,
+                "description": "",
+                "composition": {"alts": [self.boxer.pk]},
+                "location_ids": [],
+            },
+            self.user,
+        )
+        html = format_doctrine_change_request_html(req)
+        self.assertIn("Alts", html)
+        self.assertIn("Heron Boxer", html)
+
+    def test_alts_help_a_trial_pilot_like_utility(self):
+        self.assertTrue(helpful_role("alts", academy=False))
 
 
 class FittingChangeRequestTestCase(TestCase):

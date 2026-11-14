@@ -344,6 +344,7 @@ def sync_production_fittings():
             ("support_fittings", "support"),
             ("secondary_fittings", "secondary"),
             ("utility_fittings", "utility"),
+            ("alts_fittings", "alts"),
             ("capitals_fittings", "capitals"),
         ]
 

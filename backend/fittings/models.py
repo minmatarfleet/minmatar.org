@@ -76,12 +76,15 @@ def _eve_doctrine_scalar_equal(field: str, old_val, new_val) -> bool:
 
 # Doctrine fitting roles in display order. Utility holds ships a fleet
 # brings a few of regardless of doctrine size: cynos, boosters, scouts.
-# Capitals holds the dreadnoughts, carriers and FAX a doctrine brings.
+# Alts holds the hulls a pilot flies on alt accounts next to their main
+# (boxers). Capitals holds the dreadnoughts, carriers and FAX a doctrine
+# brings.
 DOCTRINE_FITTING_ROLES = (
     "primary",
     "secondary",
     "support",
     "utility",
+    "alts",
     "capitals",
 )
 # The "secondary" role is shown as Academy: only Minmatar Fleet Academy pilots
@@ -93,6 +96,7 @@ DOCTRINE_FITTING_ROLE_LABELS = {
     ACADEMY_ROLE: "Academy",
     "support": "Support",
     "utility": "Utility",
+    "alts": "Alts",
     "capitals": "Capitals",
 }
 

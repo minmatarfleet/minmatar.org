@@ -55,6 +55,7 @@ class DoctrineCompositionRequest(BaseModel):
     secondary: List[int] = []
     support: List[int] = []
     utility: List[int] = []
+    alts: List[int] = []
     capitals: List[int] = []
 
 
