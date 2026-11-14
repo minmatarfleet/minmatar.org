@@ -14,16 +14,77 @@
     }
   },
   "proof_videos": {
-    "always": {
+    "_note": "One video per r/evejobs and forum send, picked for the post (SKILL.md, 'Pick the video for the post'). The shelf is refreshed from youtube.channels on every run; the fallback is used when nothing on the shelf fits.",
+    "fallback": {
       "title": "Bring Fun Shit",
       "url": "https://youtu.be/7-eGTtq9vWo",
-      "use_for": "every r/evejobs and forum send"
+      "use_for": "no shelf video fits the post"
     },
-    "mining": {
-      "title": "Rock Hoppin'",
-      "url": "https://youtu.be/XCApG7Pt6m4",
-      "use_for": "mining, industry, Extraction, MFA rock fleets, highsec bulwark miners — in addition to Bring Fun Shit"
-    }
+    "shelf": [
+      {
+        "title": "Minmatar Fleet Alliance YC128 In Review",
+        "url": "https://youtu.be/Vu7IXZd80bQ",
+        "channel": "FayeVaelent",
+        "published": "2026-11-14",
+        "use_for": "thin or general post, 'what do you actually do'"
+      },
+      {
+        "title": "The Cope - The Battle of Amamake II",
+        "url": "https://youtu.be/ORIlXO7iw-8",
+        "channel": "FayeVaelent",
+        "published": "2026-11-07",
+        "use_for": "newest big fight; where's the action, returning to shoot"
+      },
+      {
+        "title": "Minmatar Fleet Town Hall #38 - November YC128",
+        "url": "https://youtu.be/qZwMM5xm7c0",
+        "channel": "MinmatarFleet",
+        "published": "2026-11-07",
+        "use_for": "how the alliance is run; wants a role (FC, capitals, industry, logistics); corp looking for an alliance"
+      },
+      {
+        "title": "The Cope - The Imperium declares war on LOWSEC",
+        "url": "https://youtu.be/FQf0IybswYU",
+        "channel": "FayeVaelent",
+        "published": "2026-11-01",
+        "use_for": "nullsec or bloc pilot asking whether lowsec has fights at their scale"
+      },
+      {
+        "title": "Minmatar tackles a DREADNOUGHT. Lasts two seconds. (Short)",
+        "url": "https://youtu.be/AUL2zM8Igrc",
+        "channel": "MinmatarFleet",
+        "published": "2026-09-09",
+        "use_for": "brand-new pilot who is afraid of being useless or dying"
+      },
+      {
+        "title": "AT XXII SUPER FEEDERS",
+        "url": "https://youtu.be/09-PtM6K3Xs",
+        "channel": "MinmatarFleet",
+        "published": "2026-09-02",
+        "use_for": "wants laid-back people, jokes about their own killboard, tired of sweaty groups"
+      },
+      {
+        "title": "Rock Hoppin' | Minmatar Extraction Company",
+        "url": "https://youtu.be/XCApG7Pt6m4",
+        "channel": "MinmatarFleet",
+        "published": "2026-07-31",
+        "use_for": "mining, industry, Extraction, MFA rock fleets, highsec bulwark miners"
+      },
+      {
+        "title": "Minmatar Fleet Alliance brawls in Amamake",
+        "url": "https://youtu.be/6OZd594h2CM",
+        "channel": "FayeVaelent",
+        "published": "2026-07-12",
+        "use_for": "small gang and fleet brawls without the news framing"
+      },
+      {
+        "title": "The Cope - Dread Brawl in Dal",
+        "url": "https://youtu.be/8T6DGictq-g",
+        "channel": "FayeVaelent",
+        "published": "2026-02-23",
+        "use_for": "capitals and dreads, until a newer capital video posts"
+      }
+    ]
   },
   "proof_aars": [
     {
@@ -49,7 +110,22 @@
   "reddit": {
     "recruitment_account": "MinmatarFleet",
     "proof_accounts": ["BearThatCares"],
+    "scout_accounts": ["BearThatCares", "MinmatarFleet"],
     "subreddits": ["evejobs", "eve"]
+  },
+  "youtube": {
+    "channels": [
+      {
+        "handle": "MinmatarFleet",
+        "channel_id": "UCOpoQXgiKXG_Mur08LfFlrQ",
+        "about": "Official alliance channel: town hall highlights, Rock Hoppin', skits, Shorts"
+      },
+      {
+        "handle": "FayeVaelent",
+        "channel_id": "UCqaKxotXvDw5Tt9Ovr4ID3A",
+        "about": "Faye Vaelent's edits: year in review, The Cope (news parody of the big fights), brawl montages"
+      }
+    ]
   },
   "forums": {
     "recruitment_center_category": "corporations-alliances/recruitment-center/63"
