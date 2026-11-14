@@ -1,6 +1,8 @@
 """The Training tab: goals, plans, suggestions and account moves."""
 
 from django.contrib.auth.models import User
+from datetime import timedelta
+
 from django.core.cache import cache
 from django.test import Client
 from django.utils import timezone
@@ -511,4 +513,15 @@ class RoleSpotlightTest(TrainingTestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.json()), {"pilots", "fleets"})
+        self.assertEqual(
+            set(response.json()), {"pilots", "fleets", "fleets_days"}
+        )
+
+    def test_a_quiet_role_widens_to_the_year(self):
+        fleet = self._fleet([GUARDIAN])
+        EveFleetInstance.objects.filter(eve_fleet=fleet).update(
+            start_time=timezone.now() - timedelta(days=200)
+        )
+        result = role_spotlight(["Logistics"], [GUARDIAN])
+        self.assertEqual(result["fleets_days"], 365)
+        self.assertEqual([f["fleet_id"] for f in result["fleets"]], [fleet.pk])

@@ -39332,6 +39332,10 @@
             "title": "Fleets",
             "type": "array"
           },
+          "fleets_days": {
+            "title": "Fleets Days",
+            "type": "integer"
+          },
           "pilots": {
             "items": {
               "$ref": "#/components/schemas/RolePilotResponse"
@@ -39342,7 +39346,8 @@
         },
         "required": [
           "pilots",
-          "fleets"
+          "fleets",
+          "fleets_days"
         ],
         "title": "RoleSpotlightResponse",
         "type": "object"

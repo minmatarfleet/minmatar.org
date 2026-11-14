@@ -23,7 +23,7 @@ RECENT_DAYS = 60
 PILOT_DAYS = 365
 LIMIT = 5
 CACHE_SECONDS = 60 * 60
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 
 
 def role_spotlight(capabilities: list[str], ship_type_ids: list[int]) -> dict:
@@ -36,9 +36,14 @@ def role_spotlight(capabilities: list[str], ship_type_ids: list[int]) -> dict:
     cached = cache_get(key)
     if cached is not None:
         return cached
+    fleets, days = _fleets(ship_type_ids, RECENT_DAYS), RECENT_DAYS
+    if not fleets:
+        # A quiet role still shows real fights: widen to the year.
+        fleets, days = _fleets(ship_type_ids, PILOT_DAYS), PILOT_DAYS
     result = {
         "pilots": _pilots(ship_type_ids),
-        "fleets": _fleets(ship_type_ids),
+        "fleets": fleets,
+        "fleets_days": days,
     }
     cache_set(key, result, CACHE_SECONDS)
     return result
@@ -84,11 +89,11 @@ def _visible_fleets():
     )
 
 
-def _fleets(ship_type_ids: list[int]) -> list[dict]:
+def _fleets(ship_type_ids: list[int], days: int) -> list[dict]:
     """Recent finished fleets where pilots flew these hulls, most first."""
     if not ship_type_ids:
         return []
-    since = timezone.now() - timedelta(days=RECENT_DAYS)
+    since = timezone.now() - timedelta(days=days)
     visible = _visible_fleets()
     counts = (
         EveFleetInstanceMember.objects.filter(

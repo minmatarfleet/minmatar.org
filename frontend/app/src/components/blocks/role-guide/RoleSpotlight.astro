@@ -21,7 +21,9 @@ const { part, spotlight } = Astro.props
 ---
 
 <div class="[ role-spotlight ]">
-    <h3 class="[ role-spotlight__title ]">{t(part === 'pilots' ? 'fleet_roles.top_pilots' : 'fleet_roles.recent_fleets')}</h3>
+    <h3 class="[ role-spotlight__title ]">
+        {t(part === 'pilots' ? 'fleet_roles.top_pilots' : (spotlight && spotlight.fleets_days > 60 ? 'fleet_roles.year_fleets' : 'fleet_roles.recent_fleets'))}
+    </h3>
     {spotlight === null ? (
         <p class="[ role-spotlight__muted ]">{t('fleet_roles.log_in_spotlight')}</p>
     ) : part === 'pilots' ? (
