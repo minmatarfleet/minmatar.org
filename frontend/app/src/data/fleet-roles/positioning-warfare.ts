@@ -15,6 +15,10 @@ export const positioning_warfare: FleetRoleGuide = {
         'Positioning pilots make it true. You hold the anchor so their fleet cannot warp off together. You boosh their logistics away from the ships they were repairing. You bump a battleship off its align so it is still on grid when the volley lands. None of it shows up on a killmail as damage, and all of it decides whose killmails they are.',
         'It is also the role fleets are shortest on. A single pilot in a fast cruiser with a long point changes what the FC can take.',
     ],
+    in_our_fleets: [
+        'On battlefields, tackle sits on the enemy and neutral landing beacons, never the Minmatar one (<a href="/learning/guides/faction-warfare-battlefields/">Faction Warfare Battlefields</a>). It is the easiest place to practise holding a point.',
+        'Most nights, fast tackle is the most useful thing you can bring when you cannot fly the doctrine, which is what our onboarding guides tell new pilots. The tags on the ladder show which doctrines carry each hull today.',
+    ],
     ladder: [
         { rung: 1, ship_type_id: 622, name: 'Stabber', hull_class: 'Cruiser', job: 'Fast tackle: a long point on their anchor and the speed to stay alive.' },
         { rung: 2, ship_type_id: 37480, name: 'Bifrost', hull_class: 'Command Destroyer', job: 'Micro Jump Field Generator: boosh their logi off their DPS.' },
@@ -129,17 +133,17 @@ export const positioning_warfare: FleetRoleGuide = {
     drills: [
         { id: 'bubble-sim', title: 'Beat the bubble simulator', how: 'All three targets.', kind: 'sim', sim: 'bubbles' },
         { id: 'mjfg-sim', title: 'Beat the Micro Jump Field simulator', how: 'Boosh their logi off grid and leave your own behind.', kind: 'sim', sim: 'mjfg' },
-        { id: 'fleet-tackle', title: 'Hold the anchor on a fleet', how: 'Point the called target on an Academy or kitchen-sink fleet and call it on comms.', kind: 'fleet' },
+        { id: 'fleet-tackle', title: 'Hold the anchor on a fleet', how: 'Tackle the enemy or neutral landing on a battlefield, or point the called target on a fleet, and call it on comms.', kind: 'fleet' },
         { id: 'singularity', title: 'Practise bubbles on Singularity', how: 'Optional. Launch, burn out, and catch a friend warping to a gate.', kind: 'optional' },
     ],
     resources: [
+        { kind: 'guide', title: 'Faction Warfare Battlefields', source: 'Minmatar Fleet', why: 'Where tackle sits on a battlefield, and why not on our own landing.', url: '/learning/guides/faction-warfare-battlefields/' },
+        { kind: 'guide', title: 'Doctrines', source: 'Minmatar Fleet', why: 'Which doctrines carry a command destroyer or tackle.', url: '/ships/doctrines/list/' },
         { kind: 'video', title: 'Interdictors and Bubbles 101', source: 'Stath Vaille · The Brave Dojo · 2019', why: 'A full class on dictor flying: launching, placement, staying alive.', url: 'https://www.youtube.com/watch?v=Zmf9LuFTNsM' },
         { kind: 'video', title: 'How to Control a Grid in EVE', source: 'Zip Slings · 2021', why: 'Tackle, range and grid control as one skill.', url: 'https://www.youtube.com/watch?v=ynAhyO2_BJ0' },
         { kind: 'wiki', title: 'Interdictors', source: 'EVE University wiki', why: 'Drag and stop bubbles drawn out, plus the web probe.', url: 'https://wiki.eveuniversity.org/Interdictors' },
         { kind: 'wiki', title: 'Heavy Interdiction Cruisers', source: 'EVE University wiki', why: 'The bubble, the focused scripts, and the four hulls.', url: 'https://wiki.eveuniversity.org/Heavy_Interdiction_Cruisers' },
         { kind: 'wiki', title: 'Micro Jump Field Generator', source: 'EVE University wiki', why: 'How booshing works and what stops it.', url: 'https://wiki.eveuniversity.org/Propulsion_equipment#Micro_Jump_Field_Generator' },
-        { kind: 'wiki', title: 'Bumping', source: 'EVE University wiki', why: 'Mass, speed and angle with worked examples.', url: 'https://wiki.eveuniversity.org/Advanced_piloting_techniques#Bumping' },
-        { kind: 'ccp', title: 'Howling Interdictors: new update', source: 'CCP dev blog · October 2020', why: 'Where the stasis webification probe came from.', url: 'https://www.eveonline.com/article/qik2z4/howling-interdictors-new-update' },
         { kind: 'sim', title: 'EVE Combat Sim', source: 'eve-cs.com · scenarios and duels', why: 'Practise whole engagements once these simulators are easy.', url: 'https://eve-cs.com/' },
     ],
 }

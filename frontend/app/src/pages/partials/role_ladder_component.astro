@@ -4,7 +4,9 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_fleet_role } from '@/data/fleet-roles'
 import { get_training_hulls } from '@helpers/api.minmatar.org/training'
-import type { TrainingHullReadiness } from '@dtypes/api.minmatar.org'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import type { Doctrine, TrainingHullReadiness } from '@dtypes/api.minmatar.org'
+import type { HullDoctrine } from '@components/blocks/role-guide/RoleLadder.astro'
 
 const guide = get_fleet_role(Astro.url.searchParams.get('role') ?? '')
 if (!guide)
@@ -23,7 +25,35 @@ if (user && auth_token) {
     }
 }
 
+// Which current doctrines fly each ladder hull, and in which slot. Public, so
+// logged-out readers see it too.
+const SLOTS = [
+    ['primary_fittings', 'primary'],
+    ['secondary_fittings', 'secondary'],
+    ['support_fittings', 'support'],
+    ['utility_fittings', 'utility'],
+] as const
+const hulls = new Set(guide.ladder.map((rung) => rung.ship_type_id))
+const doctrines: Record<number, HullDoctrine[]> = {}
+let all_doctrines: Doctrine[] = []
+try {
+    all_doctrines = await get_doctrines()
+} catch (error) {
+    console.log(`Ladder doctrines unavailable: ${error.message}`)
+}
+for (const doctrine of all_doctrines) {
+    if (doctrine.retired) continue
+    for (const [field, role] of SLOTS) {
+        for (const fitting of doctrine[field] ?? []) {
+            if (!hulls.has(fitting.ship_id)) continue
+            const list = (doctrines[fitting.ship_id] ??= [])
+            if (!list.some((d) => d.doctrine_id === doctrine.id))
+                list.push({ doctrine_id: doctrine.id, name: doctrine.name, role })
+        }
+    }
+}
+
 import RoleLadder from '@components/blocks/role-guide/RoleLadder.astro'
 ---
 
-<RoleLadder guide={guide} readiness={readiness} />
+<RoleLadder guide={guide} readiness={readiness} doctrines={all_doctrines.length > 0 ? doctrines : undefined} />

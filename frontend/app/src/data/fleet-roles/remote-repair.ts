@@ -15,6 +15,10 @@ export const remote_repair: FleetRoleGuide = {
         'Good logi is invisible: nothing dies, so nobody notices. Bad logi is the first thing anyone notices after a loss. The difference is mostly speed, the seconds between a broadcast and the first repair cycle, and discipline about where you sit.',
         'It is also the role every strategic fleet needs most, and the one with the clearest path from a cheap Tech I cruiser to a ship the alliance builds doctrines around.',
     ],
+    in_our_fleets: [
+        'Logistics fly on every strategic battleship fleet, and the cheaper doctrines use the Tech I hulls. The tags on the ladder show which of our doctrines fly each hull today, including the Academy slots.',
+        'Battlefields always want logistics: a Scythe or an Exequror keeps the point holders alive (<a href="/learning/guides/faction-warfare-battlefields/">Faction Warfare Battlefields</a>). The logi channel is for logistics pilots only; join it when you fly logi, as the <a href="/learning/guides/new-player-fleet-guide/">New Player Fleet Guide</a> says.',
+    ],
     why_video: { youtube_id: 'xK02SAZbeaU', title: 'Intro to Logi', source: 'Amoni Panala · EVE University class · 2024' },
     ladder: [
         { rung: 1, ship_type_id: 625, name: 'Augoror', hull_class: 'Cruiser', job: 'Tech I armor logi. Learn the watchlist here.' },
@@ -41,6 +45,7 @@ export const remote_repair: FleetRoleGuide = {
             summary: 'The settings that make you fast, and the first ten seconds after a call.',
             format: 'video',
             video: { youtube_id: '19BRVGPREnQ', title: 'PVP Skills: Logistics 101', source: 'Murda Mike · The Brave Dojo · 2023' },
+            image: { src: '/images/guides/fleetui.png', alt: 'The EVE fleet window with the Broadcasts tab open', caption: 'The fleet window, from our <a href="/learning/guides/new-player-fleet-guide/">New Player Fleet Guide</a>.' },
             body: [
                 'Put your logi partners and the fleet’s anchors on your watchlist so you see their health without hunting for them. Filter the broadcast window so repair requests stand out, and bind a key to lock a broadcasting ship.',
                 'When a ship broadcasts for repairs: lock it, start repairs, say nothing on comms unless the FC asks. When the primary is called, lock it before the broadcast comes.',
@@ -113,11 +118,13 @@ export const remote_repair: FleetRoleGuide = {
     ],
     drills: [
         { id: 'rep-race-sim', title: 'Beat the rep race simulator', how: 'Keep the anchor alive for 60 seconds.', kind: 'sim', sim: 'rep-race' },
-        { id: 'fleet-logi', title: 'Fly logi on a fleet', how: 'Any logistics hull on an Academy or kitchen-sink fleet, repairing from broadcasts.', kind: 'fleet' },
+        { id: 'fleet-logi', title: 'Fly logi on a fleet', how: 'Any logistics hull on a battlefield, an Academy or a kitchen-sink fleet, repairing from broadcasts.', kind: 'fleet' },
         { id: 'fleet-chain', title: 'Hold a capacitor chain for a whole fleet', how: 'With the same partner from form-up to dock.', kind: 'fleet' },
         { id: 'singularity', title: 'Practise the chain on Singularity', how: 'Optional. Two Guardians, one transmitter each, under neuts.', kind: 'optional' },
     ],
     resources: [
+        { kind: 'guide', title: 'New Player Fleet Guide', source: 'Minmatar Fleet', why: 'Broadcasting for repairs and what the logi channel is for.', url: '/learning/guides/new-player-fleet-guide/' },
+        { kind: 'guide', title: 'Faction Warfare Battlefields', source: 'Minmatar Fleet', why: 'Where logistics fit on a battlefield, and why they are always welcome.', url: '/learning/guides/faction-warfare-battlefields/' },
         { kind: 'video', title: 'PVP Skills: Logistics 101', source: 'Murda Mike · The Brave Dojo · 2023', why: 'A full logi class: locking, broadcasts, positioning.', url: 'https://www.youtube.com/watch?v=19BRVGPREnQ' },
         { kind: 'video', title: 'Intro to Logi', source: 'Amoni Panala · EVE University class · 2024', why: 'The basics from a teaching corporation.', url: 'https://www.youtube.com/watch?v=xK02SAZbeaU' },
         { kind: 'video', title: 'Logi 101 and cap chain practice', source: 'Jinx De’Caire · The Brave Dojo · 2020', why: 'A capacitor chain practised live.', url: 'https://www.youtube.com/watch?v=g0ikhpmou6Q' },

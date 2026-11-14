@@ -67,7 +67,7 @@ FLEET_ROLES = [
             (
                 "fleet-logi",
                 "Fly logi on a fleet",
-                "Any logistics hull on an Academy or kitchen-sink fleet, repairing from broadcasts.",
+                "Any logistics hull on a battlefield, an Academy or a kitchen-sink fleet, repairing from broadcasts.",
             ),
             (
                 "fleet-chain",
@@ -136,7 +136,7 @@ FLEET_ROLES = [
             (
                 "fleet-griffin",
                 "Fly ECM on a fleet",
-                "Fly a Griffin on an Academy or kitchen-sink fleet and jam the logi.",
+                "Fly a Griffin on a battlefield, an Academy or a kitchen-sink fleet and jam the logi.",
             ),
         ],
     },
@@ -165,7 +165,7 @@ FLEET_ROLES = [
             (
                 "fleet-tackle",
                 "Hold the anchor on a fleet",
-                "Point the called target on an Academy or kitchen-sink fleet and call it on comms.",
+                "Tackle the enemy or neutral landing on a battlefield, or point the called target on a fleet, and call it on comms.",
             ),
         ],
     },

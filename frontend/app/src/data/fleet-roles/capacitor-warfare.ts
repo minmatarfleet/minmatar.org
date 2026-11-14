@@ -15,6 +15,10 @@ export const capacitor_warfare: FleetRoleGuide = {
         'That makes neuts the fastest way to switch off the ships that matter most. Damage has to chew through a buffer and the repairs on top of it. Capacitor warfare goes around both: empty the logistics wing and the enemy fleet’s buffer is all it has left.',
         'It is one of the most oppressive things in the game when it is done well, and it is done well by pilots who know the capacitor curve, their range, and which ship to drain first.',
     ],
+    in_our_fleets: [
+        'Neuts ride in the support and Academy slots of our battleship doctrines rather than as their own fleet. The tags on the ladder show which doctrines carry each neut hull today.',
+        'On kitchen-sink fleets any neut ship is welcome: tell the FC what you brought and take the logi they assign.',
+    ],
     why_video: { youtube_id: 'vYiUIvjVqrM', title: 'Newbee Tuesday: capacitor warfare', source: 'Imperium News · 2015' },
     ladder: [
         { rung: 1, ship_type_id: 643, name: 'Armageddon', hull_class: 'Battleship', job: 'Battleship neuts with bonused range, and drones.' },
@@ -120,8 +124,10 @@ export const capacitor_warfare: FleetRoleGuide = {
         { id: 'singularity', title: 'Practise on Singularity', how: 'Optional. Neut a friend’s Guardian pair and watch the chain break.', kind: 'optional' },
     ],
     resources: [
+        { kind: 'guide', title: 'Doctrines', source: 'Minmatar Fleet', why: 'Which doctrines carry neut ships, and the fits.', url: '/ships/doctrines/list/' },
+        { kind: 'guide', title: 'Training tab', source: 'Minmatar Fleet', why: 'Which neut hulls your characters can fly, and how long until the rest.', url: '/account/#training' },
+        { kind: 'guide', title: 'Skill plans', source: 'Minmatar Fleet', why: 'The alliance skill plans for doctrine hulls.', url: '/learning/skillplans/' },
         { kind: 'video', title: 'Newbee Tuesday: capacitor warfare', source: 'Imperium News · 2015', why: 'Neuts and nos explained. Older, still right on the basics.', url: 'https://www.youtube.com/watch?v=vYiUIvjVqrM' },
-        { kind: 'video', title: 'Using energy neutralizers effectively', source: 'EVE Pro Guides · 2012', why: 'Tactics hold up. Ranges predate the 2015 falloff change.', url: 'https://www.youtube.com/watch?v=6L1HfB_lp-o' },
         { kind: 'wiki', title: 'Capacitor warfare', source: 'EVE University wiki', why: 'Neut versus nos and every hull on this ladder.', url: 'https://wiki.eveuniversity.org/Capacitor_warfare' },
         { kind: 'wiki', title: 'Capacitor', source: 'EVE University wiki', why: 'The recharge curve and why low capacitor is hard to recover.', url: 'https://wiki.eveuniversity.org/Capacitor' },
         { kind: 'wiki', title: 'Nosferatu', source: 'EVE University wiki', why: 'When a nos helps and when it does nothing.', url: 'https://wiki.eveuniversity.org/Nosferatu' },

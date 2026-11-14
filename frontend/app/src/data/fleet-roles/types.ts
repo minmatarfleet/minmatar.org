@@ -49,6 +49,8 @@ export type RoleLesson = {
     body: string[]
     sim?: RoleSimId
     video?: RoleVideo
+    /** A screenshot from public/images, e.g. the fleet window from the New Player Fleet Guide. */
+    image?: { src: string; alt: string; caption: string }
 }
 
 export type RolePhase = {
@@ -76,7 +78,8 @@ export type RoleDrill = {
     sim?: RoleSimId
 }
 
-export type ResourceKind = 'video' | 'wiki' | 'ccp' | 'tool' | 'sim'
+/** `guide` is one of our own guides or site tools; the rest are outside. */
+export type ResourceKind = 'guide' | 'video' | 'wiki' | 'ccp' | 'tool' | 'sim'
 
 export type RoleResource = {
     kind: ResourceKind
@@ -100,6 +103,8 @@ export type FleetRoleGuide = {
     hero_type_id: number
     /** "Why this role wins fights": HTML paragraphs. */
     why: string[]
+    /** How the role shows up on our own fleets: HTML paragraphs under the Why section. */
+    in_our_fleets: string[]
     /** Optional lead-in video for the Why section. */
     why_video?: RoleVideo
     ladder: RoleRung[]

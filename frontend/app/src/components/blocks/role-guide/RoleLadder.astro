@@ -4,24 +4,35 @@
  * (what logged-out readers and search engines see) and again, with the
  * reader's readiness from the Training API, by role_ladder_component.
  */
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetRoleGuide } from '@/data/fleet-roles'
 import type { TrainingHullReadiness } from '@dtypes/api.minmatar.org'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { fitting_path } from '@helpers/ship_paths'
+import { doctrine_path, fitting_path } from '@helpers/ship_paths'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+/** One doctrine a hull is flown in, and the slot it fills there. */
+export type HullDoctrine = {
+    doctrine_id: number
+    name: string
+    role: 'primary' | 'secondary' | 'support' | 'utility'
+}
 
 interface Props {
     guide: FleetRoleGuide
+    /** Current doctrines per hull type id; undefined while loading. */
+    doctrines?: Record<number, HullDoctrine[]>
     /** null: not logged in. undefined: still loading (the page's own render). */
     readiness?: TrainingHullReadiness[] | null
     [propName: string]: any
 }
 
-const { guide, readiness, ...attributes } = Astro.props
+const { guide, readiness, doctrines, ...attributes } = Astro.props
 delete attributes.class
+
+const SLOT_ORDER = ['primary', 'secondary', 'support', 'utility'] as const
 
 const by_type = new Map((readiness ?? []).map((row) => [row.ship_type_id, row]))
 
@@ -60,6 +71,24 @@ function state(type_id: number) {
                         <h3 class="[ role-ladder__name ]">{rung.name}</h3>
                         <p class="[ role-ladder__class ]">{rung.hull_class}</p>
                         <p class="[ role-ladder__job ]">{rung.job}</p>
+                        {doctrines && (
+                            (doctrines[rung.ship_type_id] ?? []).length > 0 ? (
+                                <dl class="[ role-ladder__doctrines ]">
+                                    {SLOT_ORDER.filter((slot) => doctrines[rung.ship_type_id].some((d) => d.role === slot)).map((slot) => (
+                                        <div>
+                                            <dt>{t(t_key('fleet_roles.doctrine_role.', slot))}</dt>
+                                            <dd>
+                                                {doctrines[rung.ship_type_id].filter((d) => d.role === slot).map((doctrine, index) => (
+                                                    <>{index > 0 && ', '}<a href={translatePath(doctrine_path(doctrine.doctrine_id, doctrine.name))}>{doctrine.name}</a></>
+                                                ))}
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            ) : (
+                                <p class="[ role-ladder__class ]">{t('fleet_roles.no_doctrine')}</p>
+                            )
+                        )}
                         {status && (
                             <p class:list={['[ role-ladder__state ]', `role-ladder__state--${status.tone}`]}>
                                 <span>{status.label}</span>
@@ -165,6 +194,29 @@ function state(type_id: number) {
         flex: 1;
         margin: 0;
         font-size: var(--step--1);
+    }
+
+    .role-ladder__doctrines {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        font-size: var(--step--1);
+
+        dt {
+            font-size: var(--step--2);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+        }
+
+        a {
+            color: var(--highlight);
+        }
     }
 
     .role-ladder__state {

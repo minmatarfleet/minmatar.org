@@ -15,6 +15,10 @@ export const damage: FleetRoleGuide = {
         'Speed comes from discipline more than from fits. A volley split across five targets kills none of them. A fleet that shoots the broadcast, has the next target locked before the switch, and holds the right ammo for the range kills a ship every few seconds.',
         'It is where everyone starts, and where good habits pay off in every other role later.',
     ],
+    in_our_fleets: [
+        'Most nights are kitchen sink: bring what you can fly and shoot the broadcast. When a strategic op is tagged, the MOTD names the battleship doctrine. The tags on the ladder below show which of our doctrines fly each hull today.',
+        'Buy one doctrine hull, not all of them. <a href="/learning/guides/onboarding-fleet-types-and-hangar/">Fleet Types and Your Hangar</a> explains why, and <a href="/learning/guides/faction-warfare-battlefields/">Faction Warfare Battlefields</a> covers the cheap Navy damage that holds the points most evenings.',
+    ],
     why_video: { youtube_id: 'JVwkmvLau70', title: 'Understanding Damage Application', source: 'Shizuka’s Station · 2021' },
     ladder: [
         { rung: 1, ship_type_id: 644, name: 'Typhoon', hull_class: 'Battleship', job: 'The entry battleship. Learn the calls on a cheaper hull.' },
@@ -42,6 +46,7 @@ export const damage: FleetRoleGuide = {
             summary: 'Broadcasts, locking ahead, and switching on the call.',
             format: 'video',
             video: { youtube_id: 'NlWlLgU9k8w', title: 'Hotkeys: all the broadcasts', source: 'Fua Consternation · 2021' },
+            image: { src: '/images/guides/fleetui.png', alt: 'The EVE fleet window with the Broadcasts tab open', caption: 'The fleet window, from our <a href="/learning/guides/new-player-fleet-guide/">New Player Fleet Guide</a>.' },
             body: [
                 'Shoot the ship the FC broadcasts, even when something juicier is closer. Bind a key to lock the broadcast target, and keep the next call locked while you shoot the current one so the switch costs nothing.',
                 'When the call changes, switch immediately. A primary that is almost dead will die without you; the new primary will not.',
@@ -108,12 +113,14 @@ export const damage: FleetRoleGuide = {
         { id: 'fleet-strategic', title: 'Fly a strategic op in a doctrine battleship', how: 'Any hull from the ladder, in the doctrine the MOTD calls.', kind: 'fleet' },
     ],
     resources: [
+        { kind: 'guide', title: 'New Player Fleet Guide', source: 'Minmatar Fleet', why: 'Broadcasts, the overview, and who to shoot when the fight starts.', url: '/learning/guides/new-player-fleet-guide/' },
+        { kind: 'guide', title: 'Fleet Types and Your Hangar', source: 'Minmatar Fleet', why: 'Which doctrine hull to buy first, and which to skip.', url: '/learning/guides/onboarding-fleet-types-and-hangar/' },
+        { kind: 'guide', title: 'Doctrines', source: 'Minmatar Fleet', why: 'Every current doctrine and its fits.', url: '/ships/doctrines/list/' },
         { kind: 'video', title: 'Understanding Damage Application', source: 'Shizuka’s Station · 2021', why: 'Tracking, signature and explosion velocity, shown on screen.', url: 'https://www.youtube.com/watch?v=JVwkmvLau70' },
         { kind: 'video', title: 'Overheating: an in-depth look', source: 'Fua Consternation · 2024', why: 'What heat does, what it burns, and how to manage it.', url: 'https://www.youtube.com/watch?v=6HsJxe3pUzA' },
         { kind: 'video', title: 'Hotkeys: all the broadcasts', source: 'Fua Consternation · 2021', why: 'Every fleet broadcast and how to bind it.', url: 'https://www.youtube.com/watch?v=NlWlLgU9k8w' },
         { kind: 'wiki', title: 'Turret mechanics', source: 'EVE University wiki', why: 'The hit-chance formula, with worked examples.', url: 'https://wiki.eveuniversity.org/Turret_mechanics' },
         { kind: 'wiki', title: 'Missile mechanics', source: 'EVE University wiki', why: 'Explosion radius and velocity against signature and speed.', url: 'https://wiki.eveuniversity.org/Missile_mechanics' },
-        { kind: 'wiki', title: 'Overheating', source: 'EVE University wiki', why: 'Heat damage, racks, and which modules to heat.', url: 'https://wiki.eveuniversity.org/Overheating' },
         { kind: 'wiki', title: 'Fleet interface', source: 'EVE University wiki', why: 'Broadcasts, the watchlist and target calling.', url: 'https://wiki.eveuniversity.org/Fleet_interface' },
         { kind: 'tool', title: 'Pyfa', source: 'pyfa-org on GitHub', why: 'Graph your fit’s damage against any target profile.', url: 'https://github.com/pyfa-org/Pyfa' },
     ],

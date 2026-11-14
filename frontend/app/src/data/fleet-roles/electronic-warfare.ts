@@ -15,11 +15,15 @@ export const electronic_warfare: FleetRoleGuide = {
         'Pointed at the enemy logistics wing, a few cheap Griffins stop repairs that would otherwise outheal your whole fleet. Pointed at their tackle, they let your fleet leave. Pointed at the ships shooting your anchor, they buy the logi time.',
         'It is oppressive enough that the enemy will try to kill you first. Knowing your range and when to burn out is half the role.',
     ],
+    in_our_fleets: [
+        'ECM rides in the Academy and support slots of our battleship doctrines, and Griffins come on kitchen-sink fleets and battlefields. The tags on the ladder show which doctrines carry each hull today.',
+        'Before a fight, paste a d-scan of the enemy into our <a href="/dscan/">d-scan tool</a> to see their hulls, then load jammers for their race.',
+    ],
     why_video: { youtube_id: 'mJJffgoSOQg', title: 'What the pod is... ECM?! Complete guide to ECM modules', source: 'Gildii Auscent · 2024' },
     ladder: [
         { rung: 1, ship_type_id: 584, name: 'Griffin', hull_class: 'Frigate', job: 'Cheap jams. Learn range and kiting here.' },
-        { rung: 2, ship_type_id: 11194, name: 'Kitsune', hull_class: 'Electronic Attack Ship', job: 'Small, fast and much stronger jams.' },
-        { rung: 3, ship_type_id: 640, name: 'Scorpion', hull_class: 'Battleship', job: 'Strong jams on a battleship tank.' },
+        { rung: 2, ship_type_id: 640, name: 'Scorpion', hull_class: 'Battleship', job: 'Strong jams on a battleship tank, flown with the battleship doctrines.' },
+        { rung: 3, ship_type_id: 11194, name: 'Kitsune', hull_class: 'Electronic Attack Ship', job: 'Small, fast and much stronger jams.' },
         { rung: 4, ship_type_id: 29984, name: 'Tengu', hull_class: 'Strategic Cruiser', job: 'An ECM subsystem on a strategic cruiser.' },
     ],
     featured_sim: 'ecm-spread',
@@ -42,7 +46,7 @@ export const electronic_warfare: FleetRoleGuide = {
             sim: 'jam-chance',
             body: [
                 'Each cycle, the chance a jammer lands is its strength divided by the target’s sensor strength, up to 100%. Each jammer rolls on its own.',
-                'Racial jammers are strong against one sensor type and weak against the rest. Amarr ships use radar, Caldari gravimetric, Gallente magnetometric, and Minmatar ladar. A multispectral jammer works on every type at a lower strength and costs more capacitor. Check the enemy doctrine in the MOTD and load the jammer that matches it.',
+                'Racial jammers are strong against one sensor type and weak against the rest. Amarr ships use radar, Caldari gravimetric, Gallente magnetometric, and Minmatar ladar. A multispectral jammer works on every type at a lower strength and costs more capacitor. Check the enemy doctrine in the MOTD, or paste a d-scan into our <a href="/dscan/">d-scan tool</a>, and load the jammer that matches it.',
                 'Bigger ships have stronger sensors, so a jam on a battleship is a long shot and a jam on a logistics cruiser is not.',
             ],
         },
@@ -115,17 +119,17 @@ export const electronic_warfare: FleetRoleGuide = {
     drills: [
         { id: 'jam-chance-sim', title: 'Beat the jam chance simulator', how: 'Pick the right jammer for three hulls.', kind: 'sim', sim: 'jam-chance' },
         { id: 'spread-sim', title: 'Beat the ECM spread simulator', how: 'Keep two of three logi jammed on average.', kind: 'sim', sim: 'ecm-spread' },
-        { id: 'fleet-griffin', title: 'Fly ECM on a fleet', how: 'Fly a Griffin on an Academy or kitchen-sink fleet and jam the logi.', kind: 'fleet' },
+        { id: 'fleet-griffin', title: 'Fly ECM on a fleet', how: 'Fly a Griffin on a battlefield, an Academy or a kitchen-sink fleet and jam the logi.', kind: 'fleet' },
         { id: 'singularity', title: 'Practise on Singularity', how: 'Optional. Jam a friend and watch which locks drop.', kind: 'optional' },
     ],
     resources: [
+        { kind: 'guide', title: 'D-scan tool', source: 'Minmatar Fleet', why: 'See the enemy hulls, and so their sensor types, before you load jammers.', url: '/dscan/' },
+        { kind: 'guide', title: 'Doctrines', source: 'Minmatar Fleet', why: 'Which doctrines carry ECM ships, and the fits.', url: '/ships/doctrines/list/' },
         { kind: 'video', title: 'What the pod is... ECM?! Complete guide to ECM modules', source: 'Gildii Auscent · 2024', why: 'Every ECM module and how jam chance works.', url: 'https://www.youtube.com/watch?v=mJJffgoSOQg' },
         { kind: 'video', title: 'Newbie PVP EWAR 101', source: 'Nater Ormand · The Brave Dojo · 2023', why: 'All electronic warfare types, for a first fleet.', url: 'https://www.youtube.com/watch?v=UdHsobtlGvw' },
-        { kind: 'video', title: 'Make yourself impossible to hit using EWAR', source: 'Gildii Auscent · 2026', why: 'Damps and disruptors used as defence.', url: 'https://www.youtube.com/watch?v=sYEImuVSPjs' },
         { kind: 'wiki', title: 'Electronic Countermeasures', source: 'EVE University wiki', why: 'The jam formula, bursts, and locking the jammer.', url: 'https://wiki.eveuniversity.org/Electronic_Countermeasures' },
         { kind: 'wiki', title: 'ECM guide', source: 'EVE University wiki', why: 'Fitting and flying ECM ships.', url: 'https://wiki.eveuniversity.org/ECM_Guide' },
         { kind: 'wiki', title: 'Electronic warfare', source: 'EVE University wiki', why: 'Every electronic warfare type on one page.', url: 'https://wiki.eveuniversity.org/Electronic_warfare' },
-        { kind: 'wiki', title: 'Remote Sensor Dampener', source: 'EVE University wiki', why: 'When a damp beats a jam.', url: 'https://wiki.eveuniversity.org/Remote_Sensor_Dampener' },
         { kind: 'ccp', title: 'October Balance Pass', source: 'CCP dev blog · September 2018', why: 'The change that lets a jammed ship lock its jammer.', url: 'https://www.eveonline.com/news/view/october-balance-pass' },
     ],
 }

@@ -32,6 +32,12 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
         {lesson.body.map((paragraph) => <p set:html={paragraph} />)}
         {lesson.sim === featured_sim && <p class="[ role-lesson__note ]">{t('fleet_roles.simulator_above')}</p>}
     </div>
+    {lesson.image && (
+        <figure class="[ role-lesson__image ]">
+            <img src={lesson.image.src} alt={lesson.image.alt} loading="lazy" />
+            <figcaption set:html={lesson.image.caption} />
+        </figure>
+    )}
     {show_sim && lesson.sim && <RoleSimSlot sim={lesson.sim} />}
     {lesson.video && (
         <figure class="[ role-lesson__video ]">
@@ -100,6 +106,29 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
     .role-lesson__note {
         font-size: var(--step--1);
         color: var(--text-muted);
+    }
+
+    .role-lesson__image {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        max-width: 40rem;
+
+        img {
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--hairline-medium);
+        }
+
+        figcaption {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+
+            :global(a) {
+                color: var(--highlight);
+            }
+        }
     }
 
     .role-lesson__video {
