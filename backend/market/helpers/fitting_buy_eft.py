@@ -52,7 +52,7 @@ def effective_eft_for_line(
     *,
     type_names: dict[int, str] | None = None,
 ) -> str:
-    eft = line.fitting.eft_format or ""
+    eft = line.eft_format
     swaps = line.swaps or []
     if not swaps:
         return eft

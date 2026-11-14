@@ -45,6 +45,7 @@ export interface TribeCharacterRef {
 
 export type TimezoneTag = ApiResponse<'TimezoneTag'>
 export type TribeQualifyingAssetType = ApiResponse<'QualifyingAssetTypeSchema'>
+export type FittingBuyCustomFitCheck = ApiResponse<'CustomFitCheckResponse'>
 
 export interface TribeQualifyingSkill {
     skill_type_id:  number;

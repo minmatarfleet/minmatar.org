@@ -45,25 +45,35 @@ def fitting_type_quantities_bulk(
 
     Returns ``{fitting_id: {type_id: qty}}``.
     """
-    if not fittings:
+    return eft_type_quantities_bulk({f.id: f.eft_format for f in fittings})
+
+
+def eft_type_quantities_bulk(efts: dict) -> dict:
+    """
+    Full EFT type quantities for many EFT blocks in one EveType lookup.
+
+    Takes ``{key: eft}`` and returns ``{key: {type_id: qty}}``. Names that
+    match no EveType are left out.
+    """
+    if not efts:
         return {}
-    per_fitting_names: dict[int, dict[str, int]] = {}
+    per_key_names: dict = {}
     all_names: set[str] = set()
-    for fitting in fittings:
-        names = item_quantities(fitting.eft_format)
-        per_fitting_names[fitting.id] = names
+    for key, eft in efts.items():
+        names = item_quantities(eft)
+        per_key_names[key] = names
         all_names.update(names.keys())
     name_to_id = dict(
         EveType.objects.filter(name__in=all_names).values_list("name", "id")
     )
-    result: dict[int, dict[int, int]] = {}
-    for fit_id, names in per_fitting_names.items():
+    result: dict = {}
+    for key, names in per_key_names.items():
         aggregated: dict[int, int] = defaultdict(int)
         for name, qty in names.items():
             type_id = name_to_id.get(name)
             if type_id:
                 aggregated[type_id] += qty
-        result[fit_id] = dict(aggregated)
+        result[key] = dict(aggregated)
     return result
 
 

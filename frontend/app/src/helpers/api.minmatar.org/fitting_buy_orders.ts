@@ -1,4 +1,5 @@
 import { api_request } from '@helpers/api.minmatar.org/client'
+import type { FittingBuyCustomFitCheck } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/market`
 
@@ -18,7 +19,8 @@ export interface FittingBuyFitCopy {
 
 export interface FittingBuyLine {
     id: number
-    fitting_id: number
+    /** Null for a fit the owner pasted in (is_custom). */
+    fitting_id: number | null
     fitting_name: string
     ship_id: number
     quantity: number
@@ -31,6 +33,7 @@ export interface FittingBuyLine {
     swapped_quantity: number
     has_swaps: boolean
     fit_copies: FittingBuyFitCopy[]
+    is_custom: boolean
 }
 
 export interface FittingBuyAlternate {
@@ -124,7 +127,7 @@ export interface FittingBuyHullSourceChoice {
 
 export interface FittingBuyContractPrice {
     line_id: number
-    fitting_id: number
+    fitting_id: number | null
     fitting_name: string
     ship_id: number
     ship_name: string
@@ -158,7 +161,7 @@ export interface FittingBuyContractPrice {
 }
 
 export interface FittingBuyOrderListShip {
-    fitting_id: number
+    fitting_id: number | null
     fitting_name: string
     ship_id: number
     quantity: number
@@ -239,6 +242,8 @@ export async function create_fitting_buy_order(
         notes?: string
         include_hull?: boolean
         lines: { fitting_id: number; quantity: number }[]
+        /** Fits pasted as EFT; they stay on this order, no site fitting is made. */
+        custom_fits?: { eft: string; quantity: number }[]
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders`
@@ -246,6 +251,16 @@ export async function create_fitting_buy_order(
         method: 'POST',
         token: access_token,
         body: payload,
+    })
+}
+
+/** Parses a pasted EFT fit and names every item the site doesn't know. Saves nothing. */
+export async function check_fitting_buy_custom_fit(access_token: string, eft: string) {
+    const endpoint = `${API_ENDPOINT}/fitting-buy-orders/custom-fit-check`
+    return await api_request<FittingBuyCustomFitCheck>(endpoint, {
+        method: 'POST',
+        token: access_token,
+        body: { eft },
     })
 }
 

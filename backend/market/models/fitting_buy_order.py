@@ -132,7 +132,20 @@ class FittingBuyOrderLine(models.Model):
         EveFitting,
         on_delete=models.PROTECT,
         related_name="fitting_buy_order_lines",
+        null=True,
+        blank=True,
+        help_text="Site fitting. Empty for a fit the owner pasted in.",
     )
+    custom_eft = models.TextField(
+        blank=True,
+        default="",
+        help_text=(
+            "EFT the owner pasted in, used instead of a site fitting. "
+            "Private to this order: no EveFitting is created."
+        ),
+    )
+    custom_name = models.CharField(max_length=255, blank=True, default="")
+    custom_ship_id = models.IntegerField(null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     swaps = models.JSONField(
         default=list,
@@ -161,10 +174,38 @@ class FittingBuyOrderLine(models.Model):
                 fields=["order", "fitting"],
                 name="unique_fitting_buy_order_fitting",
             ),
+            models.CheckConstraint(
+                condition=models.Q(fitting__isnull=False)
+                | ~models.Q(custom_eft=""),
+                name="fitting_buy_line_fitting_or_custom_eft",
+            ),
         ]
 
     def __str__(self):
-        return f"{self.fitting_id} x{self.quantity} on order {self.order_id}"
+        return f"{self.fit_name} x{self.quantity} on order {self.order_id}"
+
+    @property
+    def is_custom(self) -> bool:
+        return self.fitting_id is None
+
+    @property
+    def eft_format(self) -> str:
+        """The fit's EFT: the site fitting's, or the pasted one."""
+        if self.fitting_id is not None:
+            return self.fitting.eft_format or ""
+        return self.custom_eft or ""
+
+    @property
+    def fit_name(self) -> str:
+        if self.fitting_id is not None:
+            return self.fitting.name
+        return self.custom_name
+
+    @property
+    def fit_ship_id(self) -> int:
+        if self.fitting_id is not None:
+            return int(self.fitting.ship_id or 0)
+        return int(self.custom_ship_id or 0)
 
 
 class FittingBuyOrderItem(models.Model):

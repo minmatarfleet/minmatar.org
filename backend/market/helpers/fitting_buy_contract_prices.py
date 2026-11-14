@@ -422,7 +422,7 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         copies = fit_copies.get(line.id) or [
             {
                 "quantity": int(line.quantity),
-                "eft": line.fitting.eft_format or "",
+                "eft": line.eft_format,
                 "is_swapped": False,
                 "variant_type_id": None,
                 "variant_name": "",
@@ -442,9 +442,9 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         all_type_ids - set(pasted) - stock_covered
     )
     ship_ids = {
-        int(line.fitting.ship_id)
+        int(line.fit_ship_id)
         for line, copy, per_ship in per_copy_boms
-        if line.fitting.ship_id
+        if line.fit_ship_id
     }
     hull_decisions = {
         ship_id: resolve_hull_price(
@@ -464,7 +464,7 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
 
     rows: list[dict] = []
     for line, copy, per_ship in per_copy_boms:
-        ship_id = int(line.fitting.ship_id) if line.fitting.ship_id else 0
+        ship_id = int(line.fit_ship_id) if line.fit_ship_id else 0
         hull_cost = Decimal("0")
         fitting_cost = Decimal("0")
         hull_complete = ship_id not in per_ship
@@ -587,11 +587,11 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
             {
                 "line_id": line.id,
                 "fitting_id": line.fitting_id,
-                "fitting_name": line.fitting.name,
-                "ship_id": line.fitting.ship_id,
+                "fitting_name": line.fit_name,
+                "ship_id": line.fit_ship_id,
                 "ship_name": ship_names.get(
-                    int(line.fitting.ship_id),
-                    str(line.fitting.ship_id),
+                    int(line.fit_ship_id),
+                    str(line.fit_ship_id),
                 ),
                 "eft": str(copy.get("eft") or ""),
                 "quantity": int(copy.get("quantity") or 0),
