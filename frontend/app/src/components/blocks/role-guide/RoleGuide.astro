@@ -54,6 +54,10 @@ const title_of = (id: string) => sections.find((section) => section.id === id)?.
                             <div class="[ role-guide__ours ]">
                                 <h3>{t('fleet_roles.in_our_fleets')}</h3>
                                 {guide.in_our_fleets.map((paragraph) => <p set:html={paragraph} />)}
+                                <p>
+                                    {t('fleet_roles.fleet_history_lead')}
+                                    <a href={translatePath('/fleets/history/')}>{t('fleet_roles.fleet_history_link')}</a>.
+                                </p>
                             </div>
                         )}
                     </div>

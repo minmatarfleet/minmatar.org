@@ -19,6 +19,7 @@ export const positioning_warfare: FleetRoleGuide = {
         'On battlefields, tackle sits on the enemy and neutral landing beacons, never the Minmatar one (<a href="/learning/guides/faction-warfare-battlefields/">Faction Warfare Battlefields</a>). It is the easiest place to practise holding a point.',
         'Most nights, fast tackle is the most useful thing you can bring when you cannot fly the doctrine, which is what our onboarding guides tell new pilots. The tags on the ladder show which doctrines carry each hull today.',
     ],
+    why_video: { youtube_id: 'ynAhyO2_BJ0', title: 'How to Control a Grid in EVE', source: 'Zip Slings · 2021' },
     ladder: [
         { rung: 1, ship_type_id: 622, name: 'Stabber', hull_class: 'Cruiser', job: 'Fast tackle: a long point on their anchor and the speed to stay alive.' },
         { rung: 2, ship_type_id: 37480, name: 'Bifrost', hull_class: 'Command Destroyer', job: 'Micro Jump Field Generator: boosh their logi off their DPS.' },
@@ -109,8 +110,7 @@ export const positioning_warfare: FleetRoleGuide = {
             id: 'anchor-tackle',
             title: 'Heavy tackle on the anchor',
             summary: 'The fast, sturdy cruiser on the enemy FC: point, web, survive.',
-            format: 'video',
-            video: { youtube_id: 'ynAhyO2_BJ0', title: 'How to Control a Grid in EVE', source: 'Zip Slings · 2021' },
+            format: 'read',
             body: [
                 'The enemy fleet follows its anchor. Hold the anchor and the fleet stays. Your ship needs the speed to reach it first, the range to point it from outside their guns, and enough buffer to live through the first primary call when they notice you.',
                 'Call your tackle in fleet chat or on comms the moment it lands, with the ship and the name. The FC plans the fight around what is held.',

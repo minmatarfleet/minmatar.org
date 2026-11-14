@@ -90,7 +90,7 @@ const done = new Set(completed ?? [])
 
     .role-drills__item {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
         gap: var(--space-xs) var(--space-s);
         padding: var(--space-xs) var(--space-s);
@@ -120,7 +120,7 @@ const done = new Set(completed ?? [])
 
     .role-drills__text {
         display: flex;
-        flex: 1 1 16rem;
+        flex: 1 1 0;
         flex-direction: column;
         min-width: 0;
     }
@@ -137,7 +137,14 @@ const done = new Set(completed ?? [])
         color: var(--text-muted);
     }
 
+    @media (max-width: 30rem) {
+        .role-drills__item {
+            flex-wrap: wrap;
+        }
+    }
+
     .role-drills__kind {
+        flex: none;
         padding: var(--space-3xs) var(--space-2xs);
         background: var(--hairline);
         font-size: var(--step--2);

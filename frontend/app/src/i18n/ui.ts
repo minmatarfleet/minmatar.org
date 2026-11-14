@@ -2970,6 +2970,8 @@ export const ui = {
         'fleet_roles.kind.guide': 'Our guide',
         'fleet_roles.kind.video': 'Video',
         'fleet_roles.in_our_fleets': 'In our fleets',
+        'fleet_roles.fleet_history_lead': 'Watch it happen in real fights: every recent fleet has its battle report and fight timeline in ',
+        'fleet_roles.fleet_history_link': 'Fleet history',
         'fleet_roles.doctrine_role.primary': 'Primary',
         'fleet_roles.doctrine_role.secondary': 'Academy',
         'fleet_roles.doctrine_role.support': 'Support',

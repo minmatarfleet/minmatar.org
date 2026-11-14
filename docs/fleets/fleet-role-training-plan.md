@@ -4,9 +4,8 @@ The Fleet Roles guides teach the five jobs that decide fights: Damage, Remote Re
 Warfare and Positioning Warfare. Each guide has the same eight sections, a ship ladder with the reader's own readiness,
 browser simulators with targets, drills that count toward a Learning Center certificate, and checked outside resources.
 
-Status: complete. The guides need no new content from people: every video is a checked outside video, the "Why"
-section leads into an "In our fleets" note drawn from our doctrines and battlefields, and the mentor card links the
-mentor finder. Optional additions are listed at the end.
+Status: complete. The guides need no new content from people; "Content without new recordings" at the end shows what
+fills each slot the design held for alliance-made material.
 
 ## The roles
 
@@ -92,15 +91,17 @@ Each row of "Ready by role" on a character links to the role's guide.
 - **D5. External simulators** are linked from Go deeper, never depended on.
 - **D6. Logi FC** is a lesson in Remote Repair, not its own guide.
 
-## Optional additions
+## Content without new recordings
 
-The guides are complete without these; each slots into the existing data model when someone wants to add it.
+Every slot the original design held for alliance-made content is filled from what already exists:
 
-- **An FC video per role:** set `why_video` (or a lesson's `video`) in `frontend/app/src/data/fleet-roles/` to a
-  YouTube id. Today those slots hold checked outside videos.
-- **A fight from our history:** add a paragraph with a link to the fight's report to `in_our_fleets`.
-- **Mentor classes per role:** once a learning manager publishes a class, link it from the role's resources as a
-  `guide` resource.
+| Slot | Filled with |
+| --- | --- |
+| A video in each Why section and in the video lessons | Checked outside videos (The Brave Dojo, EVE University, Gildii Auscent, Fua Consternation, Shizuka's Station, Imperium News, Zip Slings, Pandemic Horde), each confirmed to exist |
+| A fight from our history | The "In our fleets" note on our doctrines and battlefields, and a link to Fleet history, where every recent fleet has its battle report and fight timeline |
+| Named FCs and mentors | The mentor finder, where approved mentors offer one-to-one classes |
+| Which ships we fly | Live doctrine tags on each ladder card, from the public doctrines API |
+| Screenshots | The fleet window screenshot from the New Player Fleet Guide |
 
 Simulator scenario text (target names, readouts) lives with the guide content in
 `frontend/app/src/components/blocks/role-sims/role_sim_data.ts`, the same way the capital guides keep their content in
