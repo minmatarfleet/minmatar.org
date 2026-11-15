@@ -82,8 +82,6 @@ class MyTasksResponse(Schema):
     can_assign: bool
     # The Neocom count.
     needs_you: int
-    # Ask once: "Want one Discord DM a week?"
-    weekly_prompt: bool = False
     snoozed: int
     now: list[TaskResponse]
     this_week: list[TaskResponse]
@@ -184,8 +182,11 @@ class TeamRulePilotResponse(Schema):
     opened_at: datetime
     # A leader's one reminder, if sent.
     reminded_at: Optional[datetime] = None
-    # It has waited long enough and nobody reminded them yet.
+    # It has waited long enough, nobody reminded them yet, and they turned
+    # reminders on.
     can_remind: bool = False
+    # The pilot hasn't opted in to reminders.
+    reminders_off: bool = False
 
 
 class ProjectRowResponse(Schema):
@@ -318,8 +319,10 @@ class TaskPreferencesResponse(Schema):
     paused: bool
     # On Leave also pauses tasks; only reviewers change it.
     on_leave: bool
-    # The weekly list on Discord.
-    weekly_dm: bool = False
+    # Discord DMs, all off until the pilot opts in.
+    dm_weekly: bool = False
+    dm_reminders: bool = False
+    dm_assigned: bool = False
     # Quiet hours in EVE (UTC) hours; both null means none.
     quiet_start: Optional[int] = None
     quiet_end: Optional[int] = None
@@ -328,8 +331,9 @@ class TaskPreferencesResponse(Schema):
 class TaskPreferencesPatch(Schema):
     show_suggestions: Optional[bool] = None
     paused: Optional[bool] = None
-    # Yes or no to the weekly list (answers the one-time prompt too).
-    weekly_dm: Optional[bool] = None
+    dm_weekly: Optional[bool] = None
+    dm_reminders: Optional[bool] = None
+    dm_assigned: Optional[bool] = None
     quiet_start: Optional[int] = None
     quiet_end: Optional[int] = None
     # Clear quiet hours.

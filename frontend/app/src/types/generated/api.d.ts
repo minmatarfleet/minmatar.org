@@ -23301,11 +23301,6 @@ export interface components {
             this_week: components["schemas"]["TaskResponse"][];
             /** Up For Grabs */
             up_for_grabs: components["schemas"]["TaskResponse"][];
-            /**
-             * Weekly Prompt
-             * @default false
-             */
-            weekly_prompt?: boolean;
         };
         /**
          * NestedBreakdownNode
@@ -28550,6 +28545,12 @@ export interface components {
              * @default false
              */
             clear_quiet_hours?: boolean;
+            /** Dm Assigned */
+            dm_assigned?: boolean | null;
+            /** Dm Reminders */
+            dm_reminders?: boolean | null;
+            /** Dm Weekly */
+            dm_weekly?: boolean | null;
             /** Paused */
             paused?: boolean | null;
             /** Quiet End */
@@ -28558,11 +28559,24 @@ export interface components {
             quiet_start?: number | null;
             /** Show Suggestions */
             show_suggestions?: boolean | null;
-            /** Weekly Dm */
-            weekly_dm?: boolean | null;
         };
         /** TaskPreferencesResponse */
         TaskPreferencesResponse: {
+            /**
+             * Dm Assigned
+             * @default false
+             */
+            dm_assigned?: boolean;
+            /**
+             * Dm Reminders
+             * @default false
+             */
+            dm_reminders?: boolean;
+            /**
+             * Dm Weekly
+             * @default false
+             */
+            dm_weekly?: boolean;
             /** On Leave */
             on_leave: boolean;
             /** Paused */
@@ -28573,11 +28587,6 @@ export interface components {
             quiet_start?: number | null;
             /** Show Suggestions */
             show_suggestions: boolean;
-            /**
-             * Weekly Dm
-             * @default false
-             */
-            weekly_dm?: boolean;
         };
         /** TaskResponse */
         TaskResponse: {
@@ -28717,6 +28726,11 @@ export interface components {
             pilot?: components["schemas"]["PersonResponse"] | null;
             /** Reminded At */
             reminded_at?: string | null;
+            /**
+             * Reminders Off
+             * @default false
+             */
+            reminders_off?: boolean;
             /** Task Id */
             task_id: number;
         };

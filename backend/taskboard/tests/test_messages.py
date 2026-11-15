@@ -62,8 +62,8 @@ def open_task(user, days_old: int = 5, now=None, **fields) -> Task:
     return Task.objects.create(**values)
 
 
-def say_yes(user):
-    messages.set_weekly_dm(user, True)
+def say_yes(user, key=TASKS_WEEKLY_KEY):
+    messages.set_discord(user, key, True)
 
 
 def deliveries(user, key):
@@ -174,6 +174,7 @@ class QuietHoursTestCase(TestCase):
         TaskPreferences.objects.create(
             user=self.pilot, quiet_start=0, quiet_end=23
         )
+        say_yes(self.pilot, TASKS_REMINDER_KEY)
         with patch.object(
             timezone, "now", return_value=SUNDAY_17.replace(hour=5)
         ):
@@ -204,6 +205,7 @@ class RemindTestCase(TestCase):
         TribeGroupMembership.objects.create(
             user=self.pilot, tribe_group=self.group, status="active"
         )
+        say_yes(self.pilot, TASKS_REMINDER_KEY)
 
     def remind_url(self, task):
         return (
@@ -223,6 +225,19 @@ class RemindTestCase(TestCase):
         with self.assertRaises(TaskError) as raised:
             messages.remind(self.chief, old)
         self.assertEqual(raised.exception.status_code, 409)
+
+    def test_pilots_who_never_opted_in_cannot_be_reminded(self):
+        NotificationPreference.objects.filter(user=self.pilot).delete()
+        task = open_task(self.pilot, days_old=15, now=timezone.now())
+        listing = self.client.get(
+            f"/api/tasks/teams/tribe_group/{self.group.pk}/rules/"
+            "reauth_character",
+            **auth_headers(self.chief),
+        ).json()
+        self.assertFalse(listing[0]["can_remind"])
+        self.assertTrue(listing[0]["reminders_off"])
+        with self.assertRaises(TaskError):
+            messages.remind(self.chief, task)
 
     def test_the_pilots_own_chief_can_remind_from_the_team_view(self):
         task = open_task(self.pilot, days_old=15, now=timezone.now())
@@ -252,8 +267,8 @@ class AssignedAndPreferencesTestCase(TestCase):
         self.root = User.objects.create_superuser("root", "r@x", "pw")
         self.pilot = make_pilot("Teysha", 9001)
 
-    def test_a_new_task_tells_the_assignee(self):
-        response = self.client.post(
+    def post_task(self):
+        return self.client.post(
             "/api/tasks",
             data=json.dumps(
                 {"title": "Write it", "assignee_id": self.pilot.pk}
@@ -261,27 +276,36 @@ class AssignedAndPreferencesTestCase(TestCase):
             content_type="application/json",
             **auth_headers(self.root),
         )
-        self.assertEqual(response.status_code, 201)
+
+    def test_no_dm_for_a_new_task_until_the_pilot_opts_in(self):
+        self.assertEqual(self.post_task().status_code, 201)
+        self.assertFalse(deliveries(self.pilot, TASKS_ASSIGNED_KEY).exists())
+        say_yes(self.pilot, TASKS_ASSIGNED_KEY)
+        self.post_task()
         delivery = deliveries(self.pilot, TASKS_ASSIGNED_KEY).get()
         self.assertIn("Write it", delivery.payload["discord_message"])
 
-    def test_weekly_prompt_is_asked_once(self):
-        mine = self.client.get("/api/tasks/mine", **auth_headers(self.pilot))
-        self.assertTrue(mine.json()["weekly_prompt"])
+    def test_every_dm_starts_off_and_the_pilot_opts_in(self):
+        prefs = self.client.get(
+            "/api/tasks/preferences", **auth_headers(self.pilot)
+        ).json()
+        self.assertEqual(
+            (prefs["dm_weekly"], prefs["dm_reminders"], prefs["dm_assigned"]),
+            (False, False, False),
+        )
         response = self.client.patch(
             "/api/tasks/preferences",
-            data=json.dumps({"weekly_dm": False}),
+            data=json.dumps({"dm_reminders": True}),
             content_type="application/json",
             **auth_headers(self.pilot),
         )
-        self.assertFalse(response.json()["weekly_dm"])
-        mine = self.client.get("/api/tasks/mine", **auth_headers(self.pilot))
-        self.assertFalse(mine.json()["weekly_prompt"])
+        self.assertTrue(response.json()["dm_reminders"])
+        self.assertFalse(response.json()["dm_weekly"])
         self.assertTrue(
             NotificationPreference.objects.filter(
                 user=self.pilot,
-                notification_type=TASKS_WEEKLY_KEY,
-                enabled=False,
+                notification_type=TASKS_REMINDER_KEY,
+                enabled=True,
             ).exists()
         )
 

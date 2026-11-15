@@ -366,8 +366,6 @@ class TaskPreferences(models.Model):
     # and go out together when they end. Both unset: no quiet hours.
     quiet_start = models.PositiveSmallIntegerField(null=True, blank=True)
     quiet_end = models.PositiveSmallIntegerField(null=True, blank=True)
-    # The pilot answered "Want one Discord DM a week?" (yes or no).
-    weekly_prompt_answered = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user} task preferences"

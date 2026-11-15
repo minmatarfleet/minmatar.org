@@ -75,8 +75,7 @@ try {
 }
 
 const main_character = pilots.find((pilot) => pilot.is_primary) ?? null
-// Always on: the Tasks switches live here.
-const has_notifications = true
+const has_notifications = can_use_push_notifications || notification_features.length > 0
 
 // Tabs follow SectionTabs: /account/#notifications opens that tab.
 const tabs = [
@@ -103,7 +102,6 @@ const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_di
 const ACCOUNT_REFERRALS_PARTIAL_URL = translatePath('/partials/account_referrals_component/')
 const TRAINING_PARTIAL_URL = translatePath('/partials/training_component/')
 const TRIAL_PARTIAL_URL = translatePath('/partials/trial_component/')
-const TASK_PREFERENCES_PARTIAL_URL = translatePath('/partials/tasks_preferences_component/')
 
 const fix_esi_token_error = Astro.url.searchParams.get('error') as string
 
@@ -264,12 +262,6 @@ const page_title = t('account.page_title');
                 {has_notifications &&
                     <SectionTabPanel id="notifications" id_prefix="account">
                         <Flexblock gap='var(--space-l)'>
-                            <LazyPartial url={TASK_PREFERENCES_PARTIAL_URL} trigger="reveal" swap="outerHTML">
-                                <FlexInline class="[ items-center ]" gap='var(--space-3xs)'>
-                                    <RifterIcon class="small" />
-                                    <p class="[ loading ]">{t('loading')}</p>
-                                </FlexInline>
-                            </LazyPartial>
 
                             {can_use_push_notifications &&
                                 <ComponentBlock>

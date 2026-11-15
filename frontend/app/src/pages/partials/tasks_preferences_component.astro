@@ -5,7 +5,7 @@
  * (show_suggestions or paused, "on"/"off" or a checkbox) and re-renders.
  * The My tasks "I'm back" button posts here too (from=mine).
  */
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { TaskPreferences, TaskPreferencesPatch } from '@dtypes/api.minmatar.org'
@@ -17,6 +17,7 @@ const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const SELF_URL = translatePath('/partials/tasks_preferences_component/')
+const DM_SWITCHES = ['dm_weekly', 'dm_reminders', 'dm_assigned'] as const
 
 let prefs: TaskPreferences | null = null
 let error: Error | null = null
@@ -32,7 +33,9 @@ try {
         if (form.has('paused') && !field) patch.paused = value('paused')
         if (field === 'paused') patch.paused = value('paused')
         if (field === 'show_suggestions') patch.show_suggestions = value('show_suggestions')
-        if (field === 'weekly_dm') patch.weekly_dm = value('weekly_dm')
+        if (field === 'dm_weekly') patch.dm_weekly = value('dm_weekly')
+        if (field === 'dm_reminders') patch.dm_reminders = value('dm_reminders')
+        if (field === 'dm_assigned') patch.dm_assigned = value('dm_assigned')
         if (field === 'quiet_hours') {
             const hour = (name:string) => {
                 const raw = parseInt(String(form.get(name) ?? ''))
@@ -74,7 +77,17 @@ const hour_label = (hour:number) => `${String(hour).padStart(2, '0')}:00`
         ? (
             <ComponentBlock>
                 <Flexblock gap="0">
-                    <h2 class="[ account-page__heading ]">{t('tasks.prefs.title')}</h2>
+                    <h3 class="[ manage-eyebrow ][ tasks-prefs__head ]">{t('tasks.prefs.discord')}</h3>
+                    <small class="[ manage-muted ]">{t('tasks.prefs.discord_hint')}</small>
+                    {DM_SWITCHES.map((name) => (
+                        <SettingRow title={t(t_key('tasks.prefs.', name))} description={t(t_key('tasks.prefs.', name, '_hint'))}>
+                            <form hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
+                                <input type="hidden" name="field" value={name} />
+                                <ManageSwitch name={name} label={t(t_key('tasks.prefs.', name))} hide_label={true} checked={prefs![name]} />
+                            </form>
+                        </SettingRow>
+                    ))}
+                    <h3 class="[ manage-eyebrow ][ tasks-prefs__head tasks-prefs__group ]">{t('tasks.prefs.list')}</h3>
                     <SettingRow title={t('tasks.prefs.show_suggestions')} description={t('tasks.prefs.show_suggestions_hint')}>
                         <form hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
                             <input type="hidden" name="field" value="show_suggestions" />
@@ -108,7 +121,6 @@ const hour_label = (hour:number) => `${String(hour).padStart(2, '0')}:00`
                     </SettingRow>
                     <SettingRow title={t('tasks.prefs.visibility')} description={t('tasks.prefs.visibility_hint')} />
                     <SettingRow title={t('tasks.prefs.consequence')} description={t('tasks.prefs.consequence_hint')} />
-                    <small class="[ manage-muted ]">{t('tasks.prefs.messages')}</small>
                 </Flexblock>
             </ComponentBlock>
         )
@@ -124,6 +136,14 @@ const hour_label = (hour:number) => `${String(hour).padStart(2, '0')}:00`
 </div>
 
 <style lang="scss">
+    .tasks-prefs__head {
+        font-size: var(--step--1);
+    }
+
+    .tasks-prefs__group {
+        margin-block-start: var(--space-l);
+    }
+
     .tasks-quiet {
         display: flex;
         align-items: center;

@@ -46,7 +46,7 @@ from taskboard.models import (
     Weight,
 )
 from taskboard.queries import paused_ids, people
-from taskboard.reminders import can_remind
+from taskboard.reminders import can_remind, wants_reminders
 from taskboard.services import TaskError, is_paused
 
 # A task joins the weekly list once it has waited this long (or is due
@@ -149,6 +149,8 @@ def remind(leader, task: Task) -> Task:
         raise TaskError("This one can't be reminded yet.")
     if is_paused(task.user):
         raise TaskError("They are away; their tasks are paused.")
+    if not wants_reminders(task.user_id):
+        raise TaskError("They haven't turned on reminders.")
     task.reminded_at = now
     task.reminded_by = leader
     task.save(update_fields=["reminded_at", "reminded_by"])
@@ -289,32 +291,31 @@ def weekly_stats(now: Optional[datetime] = None) -> dict:
     }
 
 
-def set_weekly_dm(user, enabled: bool) -> None:
-    """The pilot's yes or no to the weekly list (Discord)."""
+# The Discord switches a pilot flips in Tasks › Settings, by name.
+DM_TYPES = {
+    "dm_weekly": TASKS_WEEKLY_KEY,
+    "dm_reminders": TASKS_REMINDER_KEY,
+    "dm_assigned": TASKS_ASSIGNED_KEY,
+}
+
+
+def set_discord(user, type_key: str, enabled: bool) -> None:
     NotificationPreference.objects.update_or_create(
         user=user,
-        notification_type=TASKS_WEEKLY_KEY,
+        notification_type=type_key,
         channel=NotificationChannel.DISCORD,
         defaults={"enabled": enabled},
     )
-    TaskPreferences.objects.update_or_create(
-        user=user, defaults={"weekly_prompt_answered": True}
+
+
+def discord_switches(user) -> dict[str, bool]:
+    """Each task DM's Discord switch (all off until the pilot opts in)."""
+    enabled = set(
+        NotificationPreference.objects.filter(
+            user=user,
+            notification_type__in=DM_TYPES.values(),
+            channel=NotificationChannel.DISCORD,
+            enabled=True,
+        ).values_list("notification_type", flat=True)
     )
-
-
-def weekly_dm_enabled(user) -> bool:
-    return NotificationPreference.objects.filter(
-        user=user,
-        notification_type=TASKS_WEEKLY_KEY,
-        channel=NotificationChannel.DISCORD,
-        enabled=True,
-    ).exists()
-
-
-def show_weekly_prompt(user) -> bool:
-    prefs = TaskPreferences.objects.filter(user=user).first()
-    if prefs and prefs.weekly_prompt_answered:
-        return False
-    return not NotificationPreference.objects.filter(
-        user=user, notification_type=TASKS_WEEKLY_KEY
-    ).exists()
+    return {name: key in enabled for name, key in DM_TYPES.items()}

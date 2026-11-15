@@ -1,8 +1,8 @@
 """Task messages: the weekly list, a leader's reminder, a new task.
 
 Sent by taskboard.messages, which holds them during a pilot's quiet hours.
-The weekly list is opt-in (Discord off until the pilot says yes); the
-other two only ever reach a pilot about one task at a time.
+All three are opt-in: Discord and Eve mail start off, and a pilot turns
+them on in Tasks › Settings (or Account › Notifications).
 """
 
 from __future__ import annotations
@@ -93,7 +93,6 @@ TASKS_WEEKLY = register(
             "One message a week, only when something is waiting on you."
         ),
         channels=(NotificationChannel.DISCORD, NotificationChannel.EVE_MAIL),
-        # Opt-in: nobody gets it until they say yes.
         defaults={
             NotificationChannel.DISCORD: False,
             NotificationChannel.EVE_MAIL: False,
@@ -114,7 +113,7 @@ TASKS_REMINDER = register(
         ),
         channels=(NotificationChannel.DISCORD, NotificationChannel.EVE_MAIL),
         defaults={
-            NotificationChannel.DISCORD: True,
+            NotificationChannel.DISCORD: False,
             NotificationChannel.EVE_MAIL: False,
         },
         render=render_reminder,
@@ -130,7 +129,7 @@ TASKS_ASSIGNED = register(
         description="Sent when a leader gives you a task.",
         channels=(NotificationChannel.DISCORD, NotificationChannel.EVE_MAIL),
         defaults={
-            NotificationChannel.DISCORD: True,
+            NotificationChannel.DISCORD: False,
             NotificationChannel.EVE_MAIL: False,
         },
         render=render_assigned,

@@ -32113,11 +32113,6 @@
             },
             "title": "Up For Grabs",
             "type": "array"
-          },
-          "weekly_prompt": {
-            "default": false,
-            "title": "Weekly Prompt",
-            "type": "boolean"
           }
         },
         "required": [
@@ -44665,6 +44660,39 @@
             "title": "Clear Quiet Hours",
             "type": "boolean"
           },
+          "dm_assigned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dm Assigned"
+          },
+          "dm_reminders": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dm Reminders"
+          },
+          "dm_weekly": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dm Weekly"
+          },
           "paused": {
             "anyOf": [
               {
@@ -44708,17 +44736,6 @@
               }
             ],
             "title": "Show Suggestions"
-          },
-          "weekly_dm": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Weekly Dm"
           }
         },
         "title": "TaskPreferencesPatch",
@@ -44726,6 +44743,21 @@
       },
       "TaskPreferencesResponse": {
         "properties": {
+          "dm_assigned": {
+            "default": false,
+            "title": "Dm Assigned",
+            "type": "boolean"
+          },
+          "dm_reminders": {
+            "default": false,
+            "title": "Dm Reminders",
+            "type": "boolean"
+          },
+          "dm_weekly": {
+            "default": false,
+            "title": "Dm Weekly",
+            "type": "boolean"
+          },
           "on_leave": {
             "title": "On Leave",
             "type": "boolean"
@@ -44758,11 +44790,6 @@
           },
           "show_suggestions": {
             "title": "Show Suggestions",
-            "type": "boolean"
-          },
-          "weekly_dm": {
-            "default": false,
-            "title": "Weekly Dm",
             "type": "boolean"
           }
         },
@@ -45201,6 +45228,11 @@
               }
             ],
             "title": "Reminded At"
+          },
+          "reminders_off": {
+            "default": false,
+            "title": "Reminders Off",
+            "type": "boolean"
           },
           "task_id": {
             "title": "Task Id",

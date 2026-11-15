@@ -7,7 +7,10 @@ from typing import Optional
 
 from django.utils import timezone
 
+from notifications.models import NotificationPreference
 from taskboard.models import Task, TaskRuleSetting, Weight
+
+TASKS_REMINDER_KEY = "tasks.reminder"
 
 DEFAULT_REMIND_AFTER_DAYS = 14
 
@@ -32,3 +35,10 @@ def can_remind(task: Task, now: Optional[datetime] = None) -> bool:
         and not task.team_kind
         and task.opened_at <= now - remind_after(task.rule)
     )
+
+
+def wants_reminders(user_id: int) -> bool:
+    """Reminders are opt-in: the pilot turned on at least one channel."""
+    return NotificationPreference.objects.filter(
+        user_id=user_id, notification_type=TASKS_REMINDER_KEY, enabled=True
+    ).exists()

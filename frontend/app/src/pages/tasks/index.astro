@@ -49,7 +49,7 @@ const tabs = [
     },
     ...(leads_teams ? [{ id: 'team', label: t('tasks.tab.team') }] : []),
     { id: 'projects', label: t('tasks.tab.projects') },
-    ...(show_settings ? [{ id: 'settings', label: t('tasks.tab.settings') }] : []),
+    { id: 'settings', label: t('tasks.tab.settings') },
 ]
 
 const page_title = t('tasks.page_title')
@@ -131,16 +131,29 @@ import RifterIcon from '@components/icons/RifterIcon.astro'
                 </LazyPartial>
             </SectionTabPanel>
 
-            {show_settings &&
-                <SectionTabPanel id="settings" id_prefix="tasks">
-                    <LazyPartial url={translatePath('/partials/manage_hub_component/?waiting=0')} trigger="reveal" swap="outerHTML">
-                        <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
-                            <RifterIcon class="small" />
-                            <p class="[ loading ]">{t('loading')}</p>
-                        </FlexInline>
-                    </LazyPartial>
-                </SectionTabPanel>
-            }
+            <SectionTabPanel id="settings" id_prefix="tasks">
+                <Flexblock gap="var(--space-xl)">
+                    <section aria-labelledby="tasks-my-settings">
+                        <Flexblock gap="var(--space-s)">
+                            <h2 id="tasks-my-settings">{t('tasks.prefs.my_settings')}</h2>
+                            <LazyPartial url={translatePath('/partials/tasks_preferences_component/')} trigger="reveal" swap="outerHTML">
+                                <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
+                                    <RifterIcon class="small" />
+                                    <p class="[ loading ]">{t('loading')}</p>
+                                </FlexInline>
+                            </LazyPartial>
+                        </Flexblock>
+                    </section>
+                    {show_settings &&
+                        <LazyPartial url={translatePath('/partials/manage_hub_component/?waiting=0')} trigger="reveal" swap="outerHTML">
+                            <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
+                                <RifterIcon class="small" />
+                                <p class="[ loading ]">{t('loading')}</p>
+                            </FlexInline>
+                        </LazyPartial>
+                    }
+                </Flexblock>
+            </SectionTabPanel>
         </SectionTabs>
     </Flexblock>
 </PageLanding>

@@ -28,7 +28,7 @@ from taskboard.models import (
     TeamKind,
     Weight,
 )
-from taskboard.reminders import can_remind
+from taskboard.reminders import can_remind, wants_reminders
 from taskboard.rules import RULES
 from taskboard.services import can_edit_project, is_paused
 from taskboard.teams import Membership, can_assign
@@ -549,7 +549,9 @@ def team_rule_pilots(user, kind: str, team_id: int, rule_code: str):
             "detail": task.title,
             "opened_at": task.opened_at,
             "reminded_at": task.reminded_at,
-            "can_remind": can_remind(task, now),
+            "can_remind": can_remind(task, now)
+            and wants_reminders(task.user_id),
+            "reminders_off": not wants_reminders(task.user_id),
         }
         for task in tasks
     ]
