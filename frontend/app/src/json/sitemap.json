@@ -758,6 +758,13 @@
         }
     },
     {
+        "slug": "fleets.invite_changes",
+        "path": "/fleets/invite-feedback/results/",
+        "publish": true,
+        "description": "page_finder.fleets.invite_changes.description",
+        "keywords": ["fleet invites", "survey", "release notes", "rsvp", "Discord"]
+    },
+    {
         "slug": "fleets.history",
         "path": "/fleets/history/",
         "publish": true,

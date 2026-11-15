@@ -64,7 +64,8 @@ NOT_INVITED_BODY = (
     "your copy."
 )
 CLOSED_HEADING = "This survey is closed."
-CLOSED_BODY = "Thanks if you already answered."
+CLOSED_BODY = "Thanks if you already answered. See the results:"
+RESULTS_PATH = "/fleets/invite-feedback/results/"
 
 ERR_FELT = "Pick how the direct fleet invitations felt."
 ERR_SITTING = "Pick what Sitting out felt like."
@@ -275,6 +276,15 @@ def close(*, confirm: bool) -> str:
     return f"Closed. {submitted} of {cohort} answered."
 
 
+def _closed_panel() -> dict:
+    """Closed: point at the survey's results."""
+    return _panel(
+        "closed",
+        CLOSED_HEADING,
+        f"{CLOSED_BODY} {site_url(RESULTS_PATH)}",
+    )
+
+
 def form_for(user, *, edit: bool) -> dict:
     row = (
         FleetInviteFeedback.objects.select_related("round")
@@ -285,7 +295,7 @@ def form_for(user, *, edit: bool) -> dict:
     if row is None:
         return _panel("not_invited", NOT_INVITED_HEADING, NOT_INVITED_BODY)
     if row.round.status == FleetInviteFeedbackRound.STATUS_CLOSED:
-        return _panel("closed", CLOSED_HEADING, CLOSED_BODY)
+        return _closed_panel()
     if row.submitted_at and not edit:
         return _panel(
             "thanks", THANKS_HEADING, THANKS_BODY, detail=THANKS_DETAIL
@@ -303,7 +313,7 @@ def submit(user, payload: dict, *, source: str = SOURCE_WEB) -> dict:
     if row is None:
         return _panel("not_invited", NOT_INVITED_HEADING, NOT_INVITED_BODY)
     if row.round.status == FleetInviteFeedbackRound.STATUS_CLOSED:
-        return _panel("closed", CLOSED_HEADING, CLOSED_BODY)
+        return _closed_panel()
     if source == SOURCE_DISCORD:
         payload = discord_payload(payload)
     errors = validate(row, payload, require_why_text=source != SOURCE_DISCORD)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { answers_from_form, bar_max, bar_width } from '@helpers/fleet_invite_feedback'
+import { answers_from_form, bar_max, bar_width, INVITE_CHANGES_PATH, survey_closed } from '@helpers/fleet_invite_feedback'
 
 describe('answers_from_form', () => {
     it('reads one answer per question', () => {
@@ -34,5 +34,18 @@ describe('bar_width', () => {
         expect(bar_width(8, 8)).toBe('100%')
         expect(bar_width(4, 8)).toBe('50%')
         expect(bar_width(0, 0)).toBe('0%')
+    })
+})
+
+describe('survey_closed', () => {
+    it('is true only for the closed panel', () => {
+        expect(survey_closed({ state: 'closed' })).toBe(true)
+        expect(survey_closed({ state: 'thanks' })).toBe(false)
+        expect(survey_closed({ state: 'form' })).toBe(false)
+        expect(survey_closed(null)).toBe(false)
+    })
+
+    it('points at the release notes page', () => {
+        expect(INVITE_CHANGES_PATH).toBe('/fleets/invite-feedback/results/')
     })
 })

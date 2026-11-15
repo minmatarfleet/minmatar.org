@@ -374,6 +374,7 @@ class InviteFeedbackTests(TestCase):
             "/api/fleets/invite-feedback", **auth_headers(pilot)
         )
         self.assertEqual(closed.json()["state"], "closed")
+        self.assertIn("/fleets/invite-feedback/results/", str(closed.json()))
         self.assertEqual(closed.json()["heading"], "This survey is closed.")
         posted = self.client.post(
             "/api/fleets/invite-feedback",

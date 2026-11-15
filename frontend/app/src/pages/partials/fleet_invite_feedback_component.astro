@@ -3,7 +3,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, partial_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
 const { auth_token, user } = get_request_user(Astro)
@@ -11,6 +11,8 @@ if (!user) return HTTP_403_Forbidden()
 
 import {
     answers_from_form,
+    INVITE_CHANGES_PATH,
+    survey_closed,
 } from '@helpers/fleet_invite_feedback'
 import type { InviteFeedbackAnswers, InviteFeedbackForm } from '@helpers/fleet_invite_feedback'
 import {
@@ -47,6 +49,9 @@ if (!form) {
         form = null
     }
 }
+
+// The survey has closed: htmx navigates the whole window to the release notes.
+if (survey_closed(form)) return partial_redirect(Astro.request, translatePath(INVITE_CHANGES_PATH))
 
 const partial_url = translatePath('/partials/fleet_invite_feedback_component/')
 const edit_href = `${translatePath('/fleets/invite-feedback/')}?edit=1`
