@@ -10,6 +10,7 @@ import {
     DiscordInviteError,
     DiscordRoleError,
     approve_corporation_discord_members,
+    approve_corporation_discord_role_strip,
     check_corporation_discord,
     disconnect_corporation_discord_bot,
     get_corporation_discord,
@@ -89,7 +90,7 @@ if (Astro.request.method === 'POST') {
     // save_roles and save_members come from a page loaded before the one
     // Save; they post the same form.
     const access_save = action === 'save_access' || action === 'save_roles' || action === 'save_members'
-    const member_action = access_save || action === 'approve_members' || action === 'keep_member'
+    const member_action = access_save || action === 'approve_members' || action === 'approve_role_strip' || action === 'keep_member'
     try {
         if (keep_id) {
             await keep_corporation_discord_member(auth_token, corporation_id, keep_id)
@@ -101,7 +102,7 @@ if (Astro.request.method === 'POST') {
                 await save_corporation_discord_roles(auth_token, corporation_id, DISCORD_CORPORATION_ROLE_STATES.map((state) => ({
                     state,
                     role_id: String(form.get(`role_${state}`) ?? '').trim() || null,
-                })))
+                })), form.has('role_strip_present') ? form.has('role_strip_on_leave') : undefined)
             if (form.has('member_policy'))
                 await save_corporation_discord_members(auth_token, corporation_id, {
                     policy: String(form.get('member_policy') ?? '') || null,
@@ -114,6 +115,9 @@ if (Astro.request.method === 'POST') {
         } else if (action === 'approve_members') {
             await approve_corporation_discord_members(auth_token, corporation_id)
             flash = { kind: 'success', key: 'corporations.discord.members_approved' }
+        } else if (action === 'approve_role_strip') {
+            await approve_corporation_discord_role_strip(auth_token, corporation_id)
+            flash = { kind: 'success', key: 'corporations.discord.roles_strip_approved_flash' }
         } else if (action === 'check') {
             editing = true
             draft_url = typed_url

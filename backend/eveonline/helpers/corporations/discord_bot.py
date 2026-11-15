@@ -15,7 +15,9 @@ dies the way a pasted one can.
   expire, never deleted: at most two of ours sit in the server's list.
 - The bot reads no messages and never creates roles. It makes invites in
   the channel it picked (the server's system channel, else the first one
-  everyone can see), and a separate pass adds or removes mapped roles.
+  everyone can see), and a separate pass adds or removes mapped roles
+  (and, if the corporation turns it on, every role of people who left:
+  discord.guild_departures).
 - The pasted invite (``discord_invite``) stays as the fallback while the
   bot is setting up or can't make invites.
 """

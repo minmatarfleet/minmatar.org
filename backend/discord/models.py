@@ -172,6 +172,22 @@ class DiscordGuild(models.Model):
     members_held_at = models.DateTimeField(null=True, blank=True)
     members_held_count = models.PositiveIntegerField(default=0, db_default=0)
     members_approved_at = models.DateTimeField(null=True, blank=True)
+    # Off by default. When on, a linked account that is no longer in the
+    # corporation or an alliance member loses every role the bot can
+    # remove, not only the mapped ones (discord.guild_departures). They
+    # stay on the server; the member policy decides about kicking.
+    strip_roles_on_leave = models.BooleanField(default=False, db_default=False)
+    # The same safety brake as the member policy: a pass that would strip
+    # too many people waits for a director. An approval covers one pass.
+    roles_strip_held_at = models.DateTimeField(null=True, blank=True)
+    roles_strip_held_count = models.PositiveIntegerField(
+        default=0, db_default=0
+    )
+    roles_strip_approved_at = models.DateTimeField(null=True, blank=True)
+    roles_strip_checked_at = models.DateTimeField(null=True, blank=True)
+    roles_strip_last_count = models.PositiveIntegerField(
+        default=0, db_default=0
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

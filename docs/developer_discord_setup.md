@@ -72,7 +72,10 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
        - Requires OAuth2 Code Grant: False
      - **Privileged Gateway Intents**:       
        - Presence Intent: False
-       - Server Members Intent: True
+       - Server Members Intent: True (required: without it Discord refuses
+         to list a server's members with `403 Missing Access`, so role sync,
+         the member policy and role stripping can't run, and Settings wrongly
+         says the bot needs Manage Roles)
        - Message Content Intent: True
    
 3. **Get Bot Token**:
@@ -149,6 +152,17 @@ Ban Members, or a role at or above the bot's). A pass that would remove more
 than a quarter of the server (and more than 10 people) removes nobody until a
 director approves it in Settings. Servers added before this need the bot
 added again to pick up Kick Members.
+
+A corporation can also turn on "Remove all roles from pilots who leave"
+(`discord/guild_departures.py`, off by default). Every 15 minutes
+(`discord.tasks.strip_departed_guild_roles`) the bot takes every role it can
+remove off linked pilots who are no longer in the corporation and have no
+character in an alliance member corporation, not only the mapped roles. They
+stay on the server; kicking is still the member policy's job. Unlinked
+accounts, bots, the server owner, exempted usernames and staff are left
+alone, and @everyone, managed roles and roles at or above the bot's are never
+removed. The same brake applies: a pass that would strip more than a quarter
+of the server (and more than 10 people) waits for a director to approve it.
 
 - Set `DISCORD_CORP_BOT_REDIRECT_URL` and `DISCORD_TRIBE_BOT_REDIRECT_URL` to
   the callbacks above (and list both under OAuth2 > Redirects). Without the

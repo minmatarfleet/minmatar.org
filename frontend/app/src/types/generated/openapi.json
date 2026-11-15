@@ -7407,7 +7407,11 @@
               "checked": false,
               "checked_at": null,
               "mappings": [],
-              "roles": []
+              "roles": [],
+              "strip_checked_at": null,
+              "strip_held": null,
+              "strip_last_count": 0,
+              "strip_on_leave": false
             }
           },
           "status": {
@@ -11738,6 +11742,17 @@
             },
             "title": "Mappings",
             "type": "array"
+          },
+          "strip_on_leave": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strip On Leave"
           }
         },
         "required": [
@@ -11785,6 +11800,38 @@
             },
             "title": "Roles",
             "type": "array"
+          },
+          "strip_checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strip Checked At"
+          },
+          "strip_held": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscordMemberHold"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "strip_last_count": {
+            "default": 0,
+            "title": "Strip Last Count",
+            "type": "integer"
+          },
+          "strip_on_leave": {
+            "default": false,
+            "title": "Strip On Leave",
+            "type": "boolean"
           }
         },
         "title": "DiscordRoleSync",
@@ -57325,6 +57372,74 @@
           }
         ],
         "summary": "Re-read this corporation's Discord roles (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles/strip/approve": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_discord_roles_strip_approve_post_corporation_discord_roles_strip_approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationDiscordSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve a held pass that would remove all roles from many people at once (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"

@@ -2,6 +2,7 @@
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from discord.guild_departures import set_strip_on_leave
 from discord.guild_roles import (
     CORPORATION_STATES,
     MappingError,
@@ -52,4 +53,6 @@ def put_corporation_discord_roles(
         )
     except MappingError as error:
         return 400, ErrorResponse(detail=error.code)
+    if payload.strip_on_leave is not None:
+        set_strip_on_leave(corporation.discord_guild, payload.strip_on_leave)
     return corporation_discord_settings(corporation)

@@ -533,6 +533,14 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Discord] Strip roles from people who left corporation servers",
+        {
+            "task": "discord.tasks.strip_departed_guild_roles",
+            "schedule": crontab(minute="12,27,42,57", hour="*"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
         "[Misc] Remove orphan discord user roles",
         {
             "task": "discord.tasks.remove_roles_from_unregistered_guild_members",

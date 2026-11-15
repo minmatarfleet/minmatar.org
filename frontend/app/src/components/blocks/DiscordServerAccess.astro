@@ -16,6 +16,7 @@ import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 /**
@@ -70,6 +71,8 @@ const grace_choices = access.grace_choices.length ? access.grace_choices : [acce
 const exemptions = access.exemptions.map((row) => row.username)
 const hidden = access.pending_total - access.pending.length
 const held = Boolean(access.held && !access.held.approved)
+const strip_on_leave = Boolean(role_sync.strip_on_leave)
+const strip_held = Boolean(role_sync.strip_held && !role_sync.strip_held.approved)
 
 const roles = discord_access_roles(role_sync.mappings)
 const mappings = new Map(role_sync.mappings.map((mapping) => [mapping.state, mapping]))
@@ -236,6 +239,35 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                 </ActionMenuItem>
                             ))}
                         </ActionMenu>
+                    </div>
+                    <div class="[ server-access__strip ]">
+                        {/* An unticked box posts nothing; the marker says the page has the option. */}
+                        <input type="hidden" name="role_strip_present" value="1" />
+                        <Switch name="role_strip_on_leave" value="1" checked={strip_on_leave}>
+                            <span class="[ server-access__option-title ]">{t('corporations.discord.roles_strip_title')}</span>
+                            <span class="[ server-access__option-sub ]">{t('corporations.discord.roles_strip_sub')}</span>
+                        </Switch>
+                        {strip_held && role_sync.strip_held &&
+                            <div class="[ server-access__paused ]" role="status">
+                                <div class="[ server-access__grow ]">
+                                    <p class="[ server-access__paused-title ]">{t('corporations.discord.roles_strip_held').replace('{count}', String(role_sync.strip_held.count))}</p>
+                                    <p class="[ server-access__sub ]">{t('corporations.discord.roles_strip_held_help')}</p>
+                                </div>
+                                <Button type="submit" name="action" value="approve_role_strip" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                                    {t('corporations.discord.roles_strip_approve').replace('{count}', String(role_sync.strip_held.count))}
+                                </Button>
+                            </div>
+                        }
+                        {role_sync.strip_held?.approved &&
+                            <p class="[ server-access__sub ]" role="status">{t('corporations.discord.roles_strip_approved')}</p>
+                        }
+                        {strip_on_leave && role_sync.strip_checked_at && !strip_held &&
+                            <small class="[ server-access__sub ]">
+                                {t('corporations.discord.roles_strip_checked')
+                                    .replace('{time}', eve_time(role_sync.strip_checked_at))
+                                    .replace('{count}', String(role_sync.strip_last_count))}
+                            </small>
+                        }
                     </div>
                 </>
             }
@@ -498,6 +530,19 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         flex-direction: column;
         gap: var(--space-s);
         padding: var(--space-s) var(--space-m);
+    }
+
+    .server-access__strip {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-top: var(--space-s);
+        border-top: solid 1px var(--hairline);
+
+        .server-access__option-title,
+        .server-access__option-sub {
+            display: block;
+        }
     }
 
     .server-access__options {

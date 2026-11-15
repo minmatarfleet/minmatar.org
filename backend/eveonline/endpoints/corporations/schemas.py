@@ -314,16 +314,31 @@ class DiscordRoleMappingRow(Schema):
     problem: Optional[str] = None
 
 
+class DiscordMemberHold(Schema):
+    since: datetime
+    count: int
+    approved: bool = False
+
+
 class DiscordRoleSync(Schema):
     can_manage_roles: bool = False
     checked: bool = False
     checked_at: Optional[datetime] = None
     roles: List[DiscordRoleChoice] = []
     mappings: List[DiscordRoleMappingRow] = []
+    # Take every role off linked people who left the corporation and the
+    # alliance, not only the mapped ones.
+    strip_on_leave: bool = False
+    # Set when one strip pass would affect too many people at once.
+    strip_held: Optional[DiscordMemberHold] = None
+    strip_checked_at: Optional[datetime] = None
+    strip_last_count: int = 0
 
 
 class DiscordRoleMappingUpdate(Schema):
     mappings: List[DiscordRoleMappingRow]
+    # Left out (an older page), the current setting is kept.
+    strip_on_leave: Optional[bool] = None
 
 
 class DiscordMemberExemption(Schema):
@@ -342,12 +357,6 @@ class DiscordPendingRemoval(Schema):
     # When they are removed, or (action "notify") when the CEO is told.
     remove_after: datetime
     notified_at: Optional[datetime] = None
-
-
-class DiscordMemberHold(Schema):
-    since: datetime
-    count: int
-    approved: bool = False
 
 
 class DiscordMemberAccess(Schema):
