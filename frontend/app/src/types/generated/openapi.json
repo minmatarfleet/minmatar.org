@@ -984,6 +984,82 @@
         "title": "AssignRoleVolunteerSystemRequest",
         "type": "object"
       },
+      "AssigneePersonResponse": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "open_tasks": {
+            "default": 0,
+            "title": "Open Tasks",
+            "type": "integer"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "name"
+        ],
+        "title": "AssigneePersonResponse",
+        "type": "object"
+      },
+      "AssigneeTeamResponse": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "screen": {
+            "title": "Screen",
+            "type": "string"
+          }
+        },
+        "required": [
+          "screen",
+          "label"
+        ],
+        "title": "AssigneeTeamResponse",
+        "type": "object"
+      },
+      "AssigneesResponse": {
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/AssigneePersonResponse"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/AssigneeTeamResponse"
+            },
+            "title": "Teams",
+            "type": "array"
+          }
+        },
+        "required": [
+          "people",
+          "teams"
+        ],
+        "title": "AssigneesResponse",
+        "type": "object"
+      },
       "AssignmentBreakdownResponse": {
         "description": "Material breakdown for one assignment (character + quantity) on an order item.",
         "properties": {
@@ -31863,6 +31939,105 @@
         "title": "MyTargetHangarResponse",
         "type": "object"
       },
+      "MyTasksResponse": {
+        "properties": {
+          "can_assign": {
+            "title": "Can Assign",
+            "type": "boolean"
+          },
+          "closed_this_week": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Closed This Week",
+            "type": "array"
+          },
+          "later": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Later",
+            "type": "array"
+          },
+          "me": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minute": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Minute",
+            "type": "array"
+          },
+          "needs_you": {
+            "title": "Needs You",
+            "type": "integer"
+          },
+          "now": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Now",
+            "type": "array"
+          },
+          "paused": {
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "show_suggestions": {
+            "title": "Show Suggestions",
+            "type": "boolean"
+          },
+          "snoozed": {
+            "title": "Snoozed",
+            "type": "integer"
+          },
+          "stopped": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Stopped",
+            "type": "array"
+          },
+          "this_week": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "This Week",
+            "type": "array"
+          },
+          "up_for_grabs": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Up For Grabs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "paused",
+          "show_suggestions",
+          "can_assign",
+          "needs_you",
+          "snoozed",
+          "now",
+          "this_week",
+          "later",
+          "minute",
+          "up_for_grabs",
+          "closed_this_week",
+          "stopped"
+        ],
+        "title": "MyTasksResponse",
+        "type": "object"
+      },
       "NestedBreakdownNode": {
         "description": "One node in a nested material breakdown tree.\nindustry_product_id is set when this type is an IndustryProduct, so the client\ncan fetch this node's breakdown via GET /products/{industry_product_id}/breakdown.",
         "properties": {
@@ -34159,6 +34334,35 @@
           "site_kinds"
         ],
         "title": "PayoutCodesOut",
+        "type": "object"
+      },
+      "PersonResponse": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "name"
+        ],
+        "title": "PersonResponse",
         "type": "object"
       },
       "PersonaRecommendationSchema": {
@@ -37307,6 +37511,588 @@
           "worst_profit"
         ],
         "title": "ProfitSummaryTotalsResponse",
+        "type": "object"
+      },
+      "ProjectCreateRequest": {
+        "properties": {
+          "lead_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Id"
+          },
+          "link_url": {
+            "default": "",
+            "title": "Link Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "starts_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts On"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ProjectCreateRequest",
+        "type": "object"
+      },
+      "ProjectDetailResponse": {
+        "properties": {
+          "can_edit": {
+            "title": "Can Edit",
+            "type": "boolean"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "kind_label": {
+            "title": "Kind Label",
+            "type": "string"
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_label": {
+            "title": "Link Label",
+            "type": "string"
+          },
+          "link_url": {
+            "title": "Link Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPersonResponse"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageResponse"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "starts_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts On"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "tasks_done": {
+            "title": "Tasks Done",
+            "type": "integer"
+          },
+          "tasks_total": {
+            "title": "Tasks Total",
+            "type": "integer"
+          },
+          "team_label": {
+            "title": "Team Label",
+            "type": "string"
+          },
+          "up_for_grabs": {
+            "title": "Up For Grabs",
+            "type": "integer"
+          },
+          "update_missing": {
+            "title": "Update Missing",
+            "type": "boolean"
+          },
+          "updates": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectUpdateResponse"
+            },
+            "title": "Updates",
+            "type": "array"
+          },
+          "waiting_longest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WaitingOnResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "kind_label",
+          "status",
+          "team_label",
+          "link_url",
+          "link_label",
+          "tasks_total",
+          "tasks_done",
+          "up_for_grabs",
+          "health",
+          "update_missing",
+          "can_edit",
+          "stages",
+          "updates",
+          "people"
+        ],
+        "title": "ProjectDetailResponse",
+        "type": "object"
+      },
+      "ProjectListRowResponse": {
+        "properties": {
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "i_have_tasks": {
+            "title": "I Have Tasks",
+            "type": "boolean"
+          },
+          "i_lead": {
+            "title": "I Lead",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "kind_label": {
+            "title": "Kind Label",
+            "type": "string"
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link_label": {
+            "title": "Link Label",
+            "type": "string"
+          },
+          "link_url": {
+            "title": "Link Url",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "starts_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts On"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Date"
+          },
+          "tasks_done": {
+            "title": "Tasks Done",
+            "type": "integer"
+          },
+          "tasks_total": {
+            "title": "Tasks Total",
+            "type": "integer"
+          },
+          "team_label": {
+            "title": "Team Label",
+            "type": "string"
+          },
+          "up_for_grabs": {
+            "title": "Up For Grabs",
+            "type": "integer"
+          },
+          "update_missing": {
+            "title": "Update Missing",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "kind_label",
+          "status",
+          "team_label",
+          "link_url",
+          "link_label",
+          "tasks_total",
+          "tasks_done",
+          "up_for_grabs",
+          "health",
+          "update_missing",
+          "i_lead",
+          "i_have_tasks"
+        ],
+        "title": "ProjectListRowResponse",
+        "type": "object"
+      },
+      "ProjectPersonResponse": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "is_lead": {
+            "title": "Is Lead",
+            "type": "boolean"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/PersonResponse"
+          }
+        },
+        "required": [
+          "person",
+          "is_lead",
+          "open",
+          "done"
+        ],
+        "title": "ProjectPersonResponse",
+        "type": "object"
+      },
+      "ProjectStageResponse": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "done",
+          "total",
+          "tasks"
+        ],
+        "title": "ProjectStageResponse",
+        "type": "object"
+      },
+      "ProjectTemplateResponse": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "task_count": {
+            "title": "Task Count",
+            "type": "integer"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateTaskResponse"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "description",
+          "task_count",
+          "tasks"
+        ],
+        "title": "ProjectTemplateResponse",
+        "type": "object"
+      },
+      "ProjectTemplateRowResponse": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "task_count": {
+            "title": "Task Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "description",
+          "task_count"
+        ],
+        "title": "ProjectTemplateRowResponse",
+        "type": "object"
+      },
+      "ProjectUpdateRequest": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          }
+        },
+        "required": [
+          "health",
+          "body"
+        ],
+        "title": "ProjectUpdateRequest",
+        "type": "object"
+      },
+      "ProjectUpdateResponse": {
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "health": {
+            "title": "Health",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "health",
+          "body",
+          "created_at"
+        ],
+        "title": "ProjectUpdateResponse",
+        "type": "object"
+      },
+      "ProjectsResponse": {
+        "properties": {
+          "can_start": {
+            "title": "Can Start",
+            "type": "boolean"
+          },
+          "finished": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectListRowResponse"
+            },
+            "title": "Finished",
+            "type": "array"
+          },
+          "open": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectListRowResponse"
+            },
+            "title": "Open",
+            "type": "array"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectTemplateRowResponse"
+            },
+            "title": "Templates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "can_start",
+          "open",
+          "finished",
+          "templates"
+        ],
+        "title": "ProjectsResponse",
         "type": "object"
       },
       "PublishableGroupSchema": {
@@ -40598,6 +41384,143 @@
         "title": "RsvpSubmitRequest",
         "type": "object"
       },
+      "RuleRollupResponse": {
+        "properties": {
+          "closed_this_week": {
+            "title": "Closed This Week",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "label",
+          "weight",
+          "waiting",
+          "closed_this_week"
+        ],
+        "title": "RuleRollupResponse",
+        "type": "object"
+      },
+      "RuleSettingPatch": {
+        "properties": {
+          "claim_expires_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Expires Days"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "stop_after_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop After Days"
+          }
+        },
+        "title": "RuleSettingPatch",
+        "type": "object"
+      },
+      "RuleSettingResponse": {
+        "properties": {
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
+          "claim_expires_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Expires Days"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "open_now": {
+            "title": "Open Now",
+            "type": "integer"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "stop_after_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop After Days"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "label",
+          "description",
+          "audience",
+          "weight",
+          "enabled",
+          "open_now"
+        ],
+        "title": "RuleSettingResponse",
+        "type": "object"
+      },
       "ScheduleChange": {
         "properties": {
           "created_at": {
@@ -43246,6 +44169,891 @@
           "past_fleets"
         ],
         "title": "TargetSuggestionsResponse",
+        "type": "object"
+      },
+      "TaskCommentRequest": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "title": "TaskCommentRequest",
+        "type": "object"
+      },
+      "TaskCommentResponse": {
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "body",
+          "created_at"
+        ],
+        "title": "TaskCommentResponse",
+        "type": "object"
+      },
+      "TaskCountResponse": {
+        "properties": {
+          "needs_you": {
+            "title": "Needs You",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "needs_you"
+        ],
+        "title": "TaskCountResponse",
+        "type": "object"
+      },
+      "TaskCreateRequest": {
+        "properties": {
+          "assignee_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Id"
+          },
+          "body": {
+            "default": "",
+            "title": "Body",
+            "type": "string"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "link_url": {
+            "default": "",
+            "title": "Link Url",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "screen": {
+            "default": "",
+            "title": "Screen",
+            "type": "string"
+          },
+          "stage_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "when": {
+            "default": "this_week",
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "TaskCreateRequest",
+        "type": "object"
+      },
+      "TaskDetailResponse": {
+        "properties": {
+          "actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "close_note": {
+            "title": "Close Note",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "comment_count": {
+            "title": "Comment Count",
+            "type": "integer"
+          },
+          "comments": {
+            "items": {
+              "$ref": "#/components/schemas/TaskCommentResponse"
+            },
+            "title": "Comments",
+            "type": "array"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "link_label": {
+            "title": "Link Label",
+            "type": "string"
+          },
+          "link_url": {
+            "title": "Link Url",
+            "type": "string"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "recurrence": {
+            "title": "Recurrence",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "snoozed_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snoozed Until"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "still_needed": {
+            "title": "Still Needed",
+            "type": "boolean"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_kind": {
+            "title": "Team Kind",
+            "type": "string"
+          },
+          "team_label": {
+            "title": "Team Label",
+            "type": "string"
+          },
+          "team_role": {
+            "title": "Team Role",
+            "type": "string"
+          },
+          "thanked_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "waiting_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WaitingOnResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "string"
+          },
+          "when": {
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "rule",
+          "title",
+          "detail",
+          "body",
+          "link_url",
+          "link_label",
+          "weight",
+          "status",
+          "when",
+          "recurrence",
+          "opened_at",
+          "close_note",
+          "team_kind",
+          "team_role",
+          "team_label",
+          "project_name",
+          "stage",
+          "still_needed",
+          "comment_count",
+          "actions",
+          "comments"
+        ],
+        "title": "TaskDetailResponse",
+        "type": "object"
+      },
+      "TaskPreferencesPatch": {
+        "properties": {
+          "paused": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused"
+          },
+          "show_suggestions": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Suggestions"
+          }
+        },
+        "title": "TaskPreferencesPatch",
+        "type": "object"
+      },
+      "TaskPreferencesResponse": {
+        "properties": {
+          "on_leave": {
+            "title": "On Leave",
+            "type": "boolean"
+          },
+          "paused": {
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "show_suggestions": {
+            "title": "Show Suggestions",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "show_suggestions",
+          "paused",
+          "on_leave"
+        ],
+        "title": "TaskPreferencesResponse",
+        "type": "object"
+      },
+      "TaskResponse": {
+        "properties": {
+          "actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "close_note": {
+            "title": "Close Note",
+            "type": "string"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "comment_count": {
+            "title": "Comment Count",
+            "type": "integer"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "link_label": {
+            "title": "Link Label",
+            "type": "string"
+          },
+          "link_url": {
+            "title": "Link Url",
+            "type": "string"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "recurrence": {
+            "title": "Recurrence",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "snoozed_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snoozed Until"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "still_needed": {
+            "title": "Still Needed",
+            "type": "boolean"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_kind": {
+            "title": "Team Kind",
+            "type": "string"
+          },
+          "team_label": {
+            "title": "Team Label",
+            "type": "string"
+          },
+          "team_role": {
+            "title": "Team Role",
+            "type": "string"
+          },
+          "thanked_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "waiting_on": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WaitingOnResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "string"
+          },
+          "when": {
+            "title": "When",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "rule",
+          "title",
+          "detail",
+          "body",
+          "link_url",
+          "link_label",
+          "weight",
+          "status",
+          "when",
+          "recurrence",
+          "opened_at",
+          "close_note",
+          "team_kind",
+          "team_role",
+          "team_label",
+          "project_name",
+          "stage",
+          "still_needed",
+          "comment_count",
+          "actions"
+        ],
+        "title": "TaskResponse",
+        "type": "object"
+      },
+      "TeamDetailResponse": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/TeamGroupResponse"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "leader_closed_this_week": {
+            "title": "Leader Closed This Week",
+            "type": "integer"
+          },
+          "leader_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Leader Tasks",
+            "type": "array"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/RuleRollupResponse"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "members_paused": {
+            "title": "Members Paused",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "leader_tasks",
+          "leader_closed_this_week",
+          "groups",
+          "members",
+          "members_paused"
+        ],
+        "title": "TeamDetailResponse",
+        "type": "object"
+      },
+      "TeamGroupResponse": {
+        "properties": {
+          "chief": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_this_week": {
+            "title": "Closed This Week",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "tribe_id": {
+            "title": "Tribe Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tribe_id",
+          "name",
+          "open",
+          "closed_this_week"
+        ],
+        "title": "TeamGroupResponse",
+        "type": "object"
+      },
+      "TeamOverviewResponse": {
+        "properties": {
+          "corporations": {
+            "items": {
+              "$ref": "#/components/schemas/TeamRowResponse"
+            },
+            "title": "Corporations",
+            "type": "array"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/RuleRollupResponse"
+            },
+            "title": "Pilots",
+            "type": "array"
+          },
+          "tribes": {
+            "items": {
+              "$ref": "#/components/schemas/TeamRowResponse"
+            },
+            "title": "Tribes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "corporations",
+          "tribes",
+          "pilots"
+        ],
+        "title": "TeamOverviewResponse",
+        "type": "object"
+      },
+      "TeamRowResponse": {
+        "properties": {
+          "closed_this_week": {
+            "title": "Closed This Week",
+            "type": "integer"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "open",
+          "closed_this_week",
+          "detail"
+        ],
+        "title": "TeamRowResponse",
+        "type": "object"
+      },
+      "TeamRulePilotResponse": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "pilot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "task_id",
+          "detail",
+          "opened_at"
+        ],
+        "title": "TeamRulePilotResponse",
+        "type": "object"
+      },
+      "TemplateTaskResponse": {
+        "properties": {
+          "goes_to": {
+            "title": "Goes To",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "offset_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset Days"
+          },
+          "recurrence": {
+            "title": "Recurrence",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "stage",
+          "title",
+          "goes_to",
+          "recurrence"
+        ],
+        "title": "TemplateTaskResponse",
         "type": "object"
       },
       "TestFleetCreationRequest": {
@@ -47303,6 +49111,24 @@
           }
         },
         "title": "VolunteerRequest",
+        "type": "object"
+      },
+      "WaitingOnResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WaitingOnResponse",
         "type": "object"
       },
       "WarzoneBriefingResponse": {
@@ -80590,6 +82416,1011 @@
         "tags": [
           "Surveys",
           "Surveys - Manage"
+        ]
+      }
+    },
+    "/api/tasks": {
+      "post": {
+        "operationId": "taskboard_endpoints_post_task_post_task",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Give a person or a team a task",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/assignees": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_assignees_get_assignees",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssigneesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pilots matching a name, and the teams this leader can assign",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/mine": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_my_tasks_get_my_tasks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTasksResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "My tasks: what needs me, suggestions, team work up for grabs",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/mine/count": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_my_task_count_get_my_task_count",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCountResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "How many open tasks need the signed-in pilot",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/preferences": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_preferences_get_preferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskPreferencesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Show suggestions, and whether tasks are paused",
+        "tags": [
+          "Tasks"
+        ]
+      },
+      "patch": {
+        "operationId": "taskboard_endpoints_patch_preferences_patch_preferences",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskPreferencesPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskPreferencesResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Change the pilot's own task switches",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/projects": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_projects_get_projects",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Projects this user can see and the templates to start from",
+        "tags": [
+          "Tasks - Projects"
+        ]
+      },
+      "post": {
+        "operationId": "taskboard_endpoints_post_project_post_project",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Start a project; a template fills in its stages and tasks",
+        "tags": [
+          "Tasks - Projects"
+        ]
+      }
+    },
+    "/api/tasks/projects/{project_id}": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_project_get_project",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "One project",
+        "tags": [
+          "Tasks - Projects"
+        ]
+      }
+    },
+    "/api/tasks/projects/{project_id}/finish": {
+      "post": {
+        "operationId": "taskboard_endpoints_post_project_finish_post_project_finish",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Finish a project; its open tasks close",
+        "tags": [
+          "Tasks - Projects"
+        ]
+      }
+    },
+    "/api/tasks/projects/{project_id}/updates": {
+      "post": {
+        "operationId": "taskboard_endpoints_post_project_update_post_project_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post a project update: on track, at risk or off track",
+        "tags": [
+          "Tasks - Projects"
+        ]
+      }
+    },
+    "/api/tasks/rules": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_rules_get_rules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RuleSettingResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Each automatic task: who gets it, whether it is on, its timers",
+        "tags": [
+          "Tasks - Settings"
+        ]
+      }
+    },
+    "/api/tasks/rules/{rule}": {
+      "patch": {
+        "operationId": "taskboard_endpoints_patch_rule_patch_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule",
+            "required": true,
+            "schema": {
+              "title": "Rule",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuleSettingPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuleSettingResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Change one automatic task's settings",
+        "tags": [
+          "Tasks - Settings"
+        ]
+      }
+    },
+    "/api/tasks/teams": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_teams_get_teams",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamOverviewResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Open and closed-this-week counts for each team this user leads",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/teams/{kind}/{team_id}": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_team_get_team",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "title": "Team Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A team's leader tasks and its members' tasks by kind",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/teams/{kind}/{team_id}/rules/{rule}": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_team_rule_get_team_rule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "title": "Team Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule",
+            "required": true,
+            "schema": {
+              "title": "Rule",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeamRulePilotResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Which members have one kind of task waiting (never suggestions)",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/templates": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_templates_get_templates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectTemplateResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Project templates: stages, tasks and who gets each",
+        "tags": [
+          "Tasks - Settings"
+        ]
+      }
+    },
+    "/api/tasks/{task_id}": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_task_get_task",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "One task with its comments",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/{task_id}/actions/{action}": {
+      "post": {
+        "operationId": "taskboard_endpoints_post_task_action_post_task_action",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "title": "Action",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Act on a task: done, snooze, not_now, bring_back, hand_back, take, keep, let_close or thank",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/{task_id}/comments": {
+      "post": {
+        "operationId": "taskboard_endpoints_post_task_comment_post_task_comment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCommentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Comment on a task",
+        "tags": [
+          "Tasks"
         ]
       }
     },

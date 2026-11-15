@@ -17,10 +17,8 @@ const {
 const primary_character = Astro.cookies.has('primary_pilot')
 
 const can_view_fleets = can(gates, 'fleets.view')
-// manage.hub: reaches at least one manage screen. The queue count loads lazily.
-const can_manage = can_manage_hub(gates)
-
-import { can_manage_hub } from '@helpers/manage'
+// Every signed-in pilot has Tasks; its count (what needs them) loads lazily.
+// The manage screens moved to the Tasks Settings tab.
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import ManageEvEIcon from '@components/icons/ManageEvEIcon.astro'
 
@@ -205,18 +203,18 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                     >
                         <TutorialIcon />
                     </NeocomButton>
-                    {can_manage &&
+                    {authenticated &&
                         <NeocomButton
-                            active={page.startsWith(translatePath('/manage'))}
-                            title='neocom.manage'
-                            description='manage.neocom_description'
-                            href={translatePath('/manage/')}
+                            active={page.startsWith(translatePath('/tasks')) || page.startsWith(translatePath('/manage'))}
+                            title='neocom.tasks'
+                            description='tasks.neocom_description'
+                            href={translatePath('/tasks/')}
                         >
                             <ManageEvEIcon />
                             <LazyPartial
                                 slot="badge"
                                 class="[ neocom-badge-slot ]"
-                                url={translatePath('/partials/manage_neocom_badge_component/')}
+                                url={translatePath('/partials/tasks_neocom_badge_component/')}
                                 swap="outerHTML"
                                 indicator={false}
                             />

@@ -9,8 +9,9 @@ import { can, feature_allows, legacy_superuser, type GateContext, type GateKey }
  * (backend/manage_hub/screens.py); its tests fail when the two drift.
  */
 
-export type ManageGroupKey = 'fleets' | 'market' | 'content' | 'learning' | 'ships' | 'people'
+export type ManageGroupKey = 'tasks' | 'fleets' | 'market' | 'content' | 'learning' | 'ships' | 'people'
 export type ManageScreenKey =
+    | 'task_rules' | 'project_templates'
     | 'campaigns' | 'payout_codes' | 'npsi_feeds' | 'structure_timers'
     | 'market_hubs' | 'buyback' | 'freight_routes' | 'lp_desk'
     | 'help_tickets' | 'post_tags' | 'reddit' | 'creators'

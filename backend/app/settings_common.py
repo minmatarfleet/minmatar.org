@@ -95,6 +95,8 @@ INSTALLED_APPS = [
     "timezones.apps.TimezonesConfig",
     # Manage hub: the settings screens and queues waiting on each user
     "manage_hub.apps.ManageHubConfig",
+    # Tasks: what waits on each pilot, team work and projects
+    "taskboard.apps.TaskboardConfig",
 ]
 
 # Discord Login

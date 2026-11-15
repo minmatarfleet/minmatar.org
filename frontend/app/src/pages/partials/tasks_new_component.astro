@@ -1,0 +1,55 @@
+---
+/**
+ * Creates a task from the New task dialog. Answers with a line for the
+ * dialog's result slot; on success it fires "tasks-created" (the dialog
+ * closes) and "tasks-changed" (open lists refresh).
+ */
+// no-error-refetch: a form submit; its result line says what went wrong.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TaskCreate } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { create_task } from '@helpers/api.minmatar.org/tasks'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const WHEN = ['this_week', 'no_rush', 'date']
+
+let error: string | null = null
+try {
+    const form = await Astro.request.formData()
+    const number = (name:string) => {
+        const value = parseInt(String(form.get(name) ?? ''))
+        return Number.isFinite(value) && value > 0 ? value : null
+    }
+    const when = String(form.get('when') ?? 'this_week')
+    const screen = String(form.get('screen') ?? '')
+    const assignee_id = number('assignee_id')
+    const task:TaskCreate = {
+        title: String(form.get('title') ?? ''),
+        assignee_id: screen ? null : assignee_id,
+        screen: assignee_id && !screen ? '' : screen,
+        when: WHEN.includes(when) ? when : 'this_week',
+        due_date: when === 'date' ? String(form.get('due_date') ?? '') || null : null,
+        body: String(form.get('body') ?? ''),
+        project_id: number('project_id'),
+        stage_id: number('stage_id'),
+    }
+    await create_task(auth_token, task)
+    Astro.response.headers.set('HX-Trigger', JSON.stringify({
+        'tasks-created': true,
+        'tasks-changed': true,
+        'tasks-count-changed': true,
+    }))
+} catch (failure) {
+    error = (failure as Error).message
+}
+---
+
+{error
+    ? <p class="[ manage-field__error ]" role="alert">{error}</p>
+    : <p class="[ manage-saved ]">{t('tasks.new.created')}</p>
+}

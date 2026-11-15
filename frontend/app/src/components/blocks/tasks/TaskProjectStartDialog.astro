@@ -1,0 +1,93 @@
+---
+/**
+ * "Start a project": one tile per template (and Blank). Each opens the
+ * same dialog with that template picked. The template fills in the stages
+ * and tasks; the lead gets theirs, shared ones go up for grabs.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TaskProjectTemplateRow } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    templates: TaskProjectTemplateRow[];
+}
+
+const { templates } = Astro.props
+
+const CREATE_URL = translatePath('/partials/tasks_project_new_component/')
+
+const choices = [
+    ...templates.map((template) => ({
+        id: String(template.id),
+        name: template.name,
+        detail: t('tasks.projects.task_count').replace('~N', String(template.task_count)),
+    })),
+    { id: '', name: t('tasks.projects.blank'), detail: '' },
+]
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+<ul class="[ manage-tiles ][ task-start-tiles ]" role="list">
+    {choices.map((choice) => (
+        <li>
+            <DialogButton size="sm" color="transparent" max_width="40rem" class="[ task-start-tile ]">
+                <span>{choice.name}</span>
+                {choice.detail && <span class="[ manage-muted ]">{choice.detail}</span>}
+
+                <form
+                    slot="dialog"
+                    hx-post={CREATE_URL}
+                    hx-target="find .task-start-result"
+                    hx-swap="innerHTML"
+                >
+                    <Flexblock gap="var(--space-m)">
+                        <h2>{t('tasks.projects.start')} · {choice.name}</h2>
+                        <input type="hidden" name="template_id" value={choice.id} />
+                        <ManageField label={t('tasks.start.name')} for={`start-${choice.id || 'blank'}-name`}>
+                            <Input id={`start-${choice.id || 'blank'}-name`} name="name" maxlength="120" required autocomplete="off" />
+                        </ManageField>
+                        <div class="[ manage-fields ]">
+                            <ManageField label={t('tasks.start.starts')} for={`start-${choice.id || 'blank'}-starts`}>
+                                <Input id={`start-${choice.id || 'blank'}-starts`} name="starts_on" type="date" />
+                            </ManageField>
+                            <ManageField label={t('tasks.start.target')} for={`start-${choice.id || 'blank'}-target`}>
+                                <Input id={`start-${choice.id || 'blank'}-target`} name="target_date" type="date" />
+                            </ManageField>
+                        </div>
+                        <small class="[ manage-muted ]">{t('tasks.start.lead_me')}</small>
+                        <div class="[ task-start-result ]" aria-live="polite"></div>
+                        <div class="[ manage-actions ]">
+                            <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.start.create')}</Button>
+                            <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
+                        </div>
+                    </Flexblock>
+                </form>
+            </DialogButton>
+        </li>
+    ))}
+</ul>
+
+<style lang="scss">
+    .task-start-tiles {
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+    }
+
+    .task-start-tiles :global(button) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        width: 100%;
+        min-height: var(--space-2xl);
+        padding-inline: var(--space-s);
+        background: var(--component-background);
+        color: var(--highlight);
+        font-weight: 500;
+    }
+</style>

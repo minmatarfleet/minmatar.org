@@ -96,6 +96,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'corporations.members.view_all': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.view_evecorporation'),
     'industry.order.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryorder'),
     'surveys.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('surveys.change_surveycampaign'),
+    'tasks.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('taskboard.change_taskrulesetting'),
     'surveys.results.view': (is_superuser) => is_superuser,
     'learning.manage': (is_superuser, user_permissions) => is_superuser
         || user_permissions.includes('learning.change_certificate'),

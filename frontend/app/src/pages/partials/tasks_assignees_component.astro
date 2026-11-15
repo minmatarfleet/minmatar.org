@@ -1,0 +1,71 @@
+---
+/**
+ * Pilots matching the New task search, as radios named assignee_id, each
+ * with how many tasks they already have open.
+ */
+// no-error-refetch: a search box; a failed search shows its message and the next keystroke retries.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TaskAssigneePerson } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_task_assignees } from '@helpers/api.minmatar.org/tasks'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const query = (Astro.url.searchParams.get('q') ?? '').trim()
+
+let people: TaskAssigneePerson[] = []
+let error: string | null = null
+if (query.length >= 2) {
+    try {
+        people = (await get_task_assignees(auth_token, query)).people
+    } catch (failure) {
+        error = (failure as Error).message
+    }
+}
+---
+
+{error && <small class="[ manage-field__error ]" role="alert">{error}</small>}
+{!error && query.length < 2 && <small class="[ manage-muted ]">{t('tasks.new.search_hint')}</small>}
+{!error && query.length >= 2 && people.length === 0 && <small class="[ manage-muted ]">{t('tasks.new.no_match')}</small>}
+{people.map((person) => (
+    <label class="[ task-person-option ]">
+        <input type="radio" name="assignee_id" value={person.user_id} />
+        {person.character_id && <img src={get_player_icon(person.character_id, 64)} alt="" width="32" height="32" loading="lazy" />}
+        <span class="[ manage-who__name ]">{person.name}</span>
+        <small class="[ manage-muted ]">{t('tasks.new.open_count').replace('~N', String(person.open_tasks))}</small>
+    </label>
+))}
+
+<style lang="scss" is:global>
+    .task-person-option {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: var(--space-xl);
+        padding-inline: var(--space-xs);
+        border: 1px solid var(--hairline-medium);
+        cursor: pointer;
+
+        input {
+            accent-color: var(--fleet-red);
+        }
+
+        img {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+
+        small {
+            margin-inline-start: auto;
+        }
+
+        &:has(input:checked) {
+            border-color: var(--fleet-yellow);
+        }
+    }
+</style>

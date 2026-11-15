@@ -1,0 +1,59 @@
+---
+/**
+ * The pilots behind one needs-you count on a team's Members table (an
+ * opened ExpandRow). Suggestions are never listed by name.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TaskTeamRulePilot } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_task_team_rule } from '@helpers/api.minmatar.org/tasks'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { waiting_label } from '@helpers/tasks'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const kind = Astro.url.searchParams.get('kind') ?? ''
+const team_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
+const rule = Astro.url.searchParams.get('rule') ?? ''
+if (!kind || !team_id || !rule) return HTTP_404_Not_Found()
+
+let pilots: TaskTeamRulePilot[] = []
+let error: Error | null = null
+try {
+    pilots = await get_task_team_rule(auth_token, kind, team_id, rule)
+} catch (failure) {
+    error = failure as Error
+}
+
+const now = new Date()
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{error
+    ? (
+        <ErrorRefetch args={{
+            partial: translatePath(`/partials/tasks_team_rule_component/?${Astro.url.searchParams.toString()}`),
+            error,
+            delay: 0,
+        }} />
+    )
+    : (
+        <ul class="[ task-pilots ]" role="list">
+            {pilots.map((row) => (
+                <li>
+                    <span class="[ manage-who ]">
+                        {row.pilot?.character_id && <img src={get_player_icon(row.pilot.character_id, 64)} alt="" width="40" height="40" loading="lazy" />}
+                        <span class="[ manage-who__name ]">{row.pilot?.name ?? ''}</span>
+                    </span>
+                    <span class="[ manage-muted ]">{row.detail}</span>
+                    <span>{waiting_label(t, row.opened_at, now)}</span>
+                </li>
+            ))}
+        </ul>
+    )
+}

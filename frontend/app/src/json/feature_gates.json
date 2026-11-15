@@ -158,6 +158,10 @@
             "feature": "surveys.manage",
             "legacy": { "perms": ["surveys.change_surveycampaign"], "superuser": true }
         },
+        "tasks.manage": {
+            "feature": "tasks.manage",
+            "legacy": { "perms": ["taskboard.change_taskrulesetting"], "superuser": true }
+        },
         "surveys.results.view": {
             "feature": "surveys.results.view",
             "legacy": { "perms": [], "superuser": true }

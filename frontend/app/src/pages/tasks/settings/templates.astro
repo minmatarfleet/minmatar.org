@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TaskProjectTemplate } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { get_task_templates } from '@helpers/api.minmatar.org/tasks'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+if (!can(await get_gates(Astro), 'tasks.manage')) return HTTP_403_Forbidden()
+
+let templates: TaskProjectTemplate[] = []
+let error: Error | null = null
+try {
+    templates = await get_task_templates(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+
+const page_title = t('tasks.settings.templates_title')
+
+const breadcrumbs = [
+    { page_title: t('tasks.page_title'), accumulated_path: translatePath('/tasks/') },
+    { page_title: t('tasks.tab.settings'), accumulated_path: translatePath('/tasks/#settings') },
+    { page_title, accumulated_path: translatePath('/tasks/settings/templates/') },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import TaskTemplateRow from '@components/blocks/tasks/TaskTemplateRow.astro'
+---
+
+<Viewport title={page_title} meta_description={t('tasks.description')}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero
+                title={page_title}
+                fact={t('tasks.settings.templates_fact').replace('~N', String(templates.length))}
+            />
+        </Flexblock>
+
+        {error
+            ? <ErrorRefetch args={{ partial: translatePath('/tasks/settings/templates/'), error, delay: 0 }} />
+            : (
+                <ManageTable
+                    caption={page_title}
+                    min_width="36rem"
+                    columns={[
+                        { label: t('tasks.projects.project') },
+                        { label: t('tasks.project.tasks'), align: 'num' },
+                    ]}
+                >
+                    {templates.map((template, index) => (
+                        <TaskTemplateRow template={template} open={index === 0} />
+                    ))}
+                </ManageTable>
+            )
+        }
+    </Flexblock>
+</PageLanding>
+</Viewport>

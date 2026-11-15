@@ -1,0 +1,89 @@
+---
+/**
+ * A project's Tasks tab: one TaskGroup per stage, open tasks first, done
+ * ones behind "Show". Re-rendered by tasks_project_tasks_component after
+ * an action and when a task is created.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TaskProjectDetail } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    project:        TaskProjectDetail;
+    action_error?:  string | null;
+}
+
+const { project, action_error = null } = Astro.props
+
+const SELF_URL = translatePath(`/partials/tasks_project_tasks_component/?project_id=${project.id}`)
+const TARGET = `project-${project.id}-tasks`
+
+import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+<div
+    id={TARGET}
+    class="[ project-tasks ][ task-stack is-loose ]"
+    hx-get={SELF_URL}
+    hx-trigger="tasks-changed from:body"
+    hx-select={`#${TARGET}`}
+    hx-swap="outerHTML"
+    hx-disinherit="*"
+    x-data="{ show_done: false }"
+>
+    {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}
+    {project.stages.every((stage) => stage.total === 0) && <EmptyState title={t('tasks.empty_title')} />}
+
+    {project.stages.map((stage) => {
+        const open = stage.tasks.filter((task) => task.status === 'open')
+        const done = stage.tasks.filter((task) => task.status !== 'open')
+        return stage.total > 0 && (
+            <div class="[ task-stack ]">
+                <TaskGroup
+                    id={`stage-${stage.id}`}
+                    title={stage.name}
+                    tasks={open}
+                    action_url={SELF_URL}
+                    target={TARGET}
+                    in_project={true}
+                >
+                    {done.length > 0 &&
+                        <small slot="aside" class="[ manage-good ]">
+                            {t('tasks.projects.progress').replace('~DONE', String(stage.done)).replace('~TOTAL', String(stage.total))}
+                        </small>
+                    }
+                </TaskGroup>
+                {open.length === 0 &&
+                    <div class="[ task-group__head ]">
+                        <h3 class="[ manage-eyebrow ]">{stage.name}</h3>
+                        <small class="[ manage-good ]">{t('tasks.projects.progress').replace('~DONE', String(stage.done)).replace('~TOTAL', String(stage.total))}</small>
+                    </div>
+                }
+                {done.length > 0 &&
+                    <div x-show="show_done" x-cloak>
+                        <TaskGroup
+                            id={`stage-${stage.id}-done`}
+                            title={t('tasks.group.closed')}
+                            tasks={done}
+                            action_url={SELF_URL}
+                            target={TARGET}
+                            in_project={true}
+                        />
+                    </div>
+                }
+            </div>
+        )
+    })}
+
+    {project.stages.some((stage) => stage.done > 0) &&
+        <div class="[ task-more ]">
+            <button type="button" class="[ task-quiet ]" x-on:click="show_done = !show_done" x-text={`show_done ? '${t('tasks.hide')}' : '${t('tasks.show')}'`}>
+                {t('tasks.show')}
+            </button>
+            <span>{t('tasks.group.closed')}</span>
+        </div>
+    }
+</div>
+

@@ -77,6 +77,9 @@ GATES: dict[str, HubGate] = {
     "srp.programs.manage": HubGate(
         "srp.programs.manage", ("srp.change_shipreimbursementprogram",)
     ),
+    "tasks.manage": HubGate(
+        "tasks.manage", ("taskboard.change_taskrulesetting",)
+    ),
     "surveys.manage": HubGate(
         "surveys.manage", ("surveys.change_surveycampaign",)
     ),
@@ -95,6 +98,8 @@ class Screen:
 
 # Display order, as in manage_screens.json.
 SCREENS: tuple[Screen, ...] = (
+    Screen("task_rules", "tasks", gate="tasks.manage"),
+    Screen("project_templates", "tasks", gate="tasks.manage"),
     Screen("campaigns", "fleets", gate="campaigns.manage"),
     Screen("payout_codes", "fleets", gate="campaigns.manage"),
     Screen("npsi_feeds", "fleets", gate="fleets.npsi_sources.manage"),

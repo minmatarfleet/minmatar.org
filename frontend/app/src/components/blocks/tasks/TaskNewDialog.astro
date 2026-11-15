@@ -1,0 +1,145 @@
+---
+/**
+ * The New task button and dialog. A leader gives a pilot (searched by
+ * name, with how much they already have open) or one of their teams a
+ * task. No date by default: "This week" or "No rush", a date only when it
+ * is real. Inside a project the task joins it, in the stage picked.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TaskAssignees, TaskProjectStage } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    teams:          TaskAssignees['teams'];
+    project_id?:    number;
+    stages?:        Pick<TaskProjectStage, 'id' | 'name'>[];
+    label?:         string;
+    color?:         'fleet-red' | 'transparent';
+}
+
+const {
+    teams,
+    project_id,
+    stages = [],
+    label,
+    color = 'fleet-red',
+} = Astro.props
+
+const CREATE_URL = translatePath('/partials/tasks_new_component/')
+const PEOPLE_URL = translatePath('/partials/tasks_assignees_component/')
+const id = project_id ? `task-new-${project_id}` : 'task-new'
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+<DialogButton size="sm" color={color} max_width="44rem">
+    {label ?? t('tasks.new_task')}
+
+    <form
+        slot="dialog"
+        class="[ task-new ]"
+        hx-post={CREATE_URL}
+        hx-target={`#${id}-result`}
+        hx-swap="innerHTML"
+        x-data="{ when: 'this_week', picked: '', screen: '' }"
+        x-on:tasks-created.window="close_dialog(); $el.reset(); when = 'this_week'; picked = ''; screen = ''"
+    >
+        <Flexblock gap="var(--space-m)">
+            <h2>{t('tasks.new_task')}</h2>
+
+            {project_id && <input type="hidden" name="project_id" value={project_id} />}
+
+            <ManageField label={t('tasks.new.what')} for={`${id}-title`}>
+                <Input id={`${id}-title`} name="title" maxlength="200" required autocomplete="off" />
+            </ManageField>
+
+            <fieldset class="[ task-new__who ]">
+                <legend class="[ manage-field__label ]">{t('tasks.new.who')}</legend>
+                <label class="[ visually-hidden ]" for={`${id}-search`}>{t('tasks.new.search')}</label>
+                <Input
+                    id={`${id}-search`}
+                    name="q"
+                    autocomplete="off"
+                    placeholder={t('tasks.new.search')}
+                    hx-get={PEOPLE_URL}
+                    hx-trigger="input changed delay:300ms"
+                    hx-target={`#${id}-people`}
+                    hx-swap="innerHTML"
+                    hx-include="this"
+                />
+                <div id={`${id}-people`} class="[ task-new__people ]" aria-live="polite">
+                    <small class="[ manage-muted ]">{t('tasks.new.search_hint')}</small>
+                </div>
+                {teams.length > 0 &&
+                    <ManageField label={t('tasks.new.team')} for={`${id}-screen`}>
+                        <Select id={`${id}-screen`} name="screen" size="sm" x-model="screen">
+                            <option value="">{t('tasks.new.no_team')}</option>
+                            {teams.map((team) => (
+                                <option value={team.screen}>{t(t_key('manage.screen_', team.screen))}</option>
+                            ))}
+                        </Select>
+                    </ManageField>
+                }
+            </fieldset>
+
+            <fieldset class="[ manage-chips ]">
+                <legend class="[ manage-field__label ]">{t('tasks.new.when')}</legend>
+                {(['this_week', 'no_rush', 'date'] as const).map((value) => (
+                    <label class="[ manage-chip ]">
+                        <input type="radio" name="when" value={value} x-model="when" checked={value === 'this_week'} />
+                        {t(t_key('tasks.new.when_', value))}
+                    </label>
+                ))}
+            </fieldset>
+
+            <div x-show="when === 'date'" x-cloak>
+                <ManageField label={t('tasks.new.date')} for={`${id}-date`}>
+                    <Input id={`${id}-date`} name="due_date" type="date" x-bind:required="when === 'date'" />
+                </ManageField>
+            </div>
+
+            {stages.length > 0 &&
+                <ManageField label={t('tasks.project.stages')} for={`${id}-stage`}>
+                    <Select id={`${id}-stage`} name="stage_id" size="sm">
+                        {stages.map((stage) => <option value={stage.id}>{stage.name}</option>)}
+                    </Select>
+                </ManageField>
+            }
+
+            <ManageField label={t('tasks.new.notes')} for={`${id}-body`}>
+                <Textarea id={`${id}-body`} name="body" rows="3" maxlength="4000" />
+            </ManageField>
+
+            <div id={`${id}-result`} aria-live="polite"></div>
+
+            <div class="[ manage-actions ]">
+                <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.new.create')}</Button>
+                <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
+            </div>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    .task-new__who {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .task-new__people {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+</style>

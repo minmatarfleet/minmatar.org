@@ -100,6 +100,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `alliance.health` | `staff` | `alliance.view_alliancehealth` | staff permission (no `on_leave` deny) |
 | `alliance.health.executor` | `auth_group` | — | People Team auth group (every corporation on the health board, change any member's community status) |
 | `surveys.manage` | `staff` | `surveys.change_surveycampaign` | staff permission (no `on_leave` deny); response content stays superuser-only |
+| `tasks.manage` | `staff` | `taskboard.change_taskrulesetting` | staff permission (no `on_leave` deny); automatic task settings and project templates |
 
 ## Site gates
 

@@ -1,0 +1,446 @@
+// Tasks: rows grouped by when they need you (src/components/blocks/tasks).
+// Built on the manage kit (_manage.scss): eyebrows, chips, tables, tiles.
+
+.task-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+
+    &.is-loose {
+        gap: var(--space-l);
+    }
+}
+
+.task-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+}
+
+.task-group__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-s);
+}
+
+.task-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--component-background);
+}
+
+.task-row {
+    border-bottom: 1px solid var(--hairline-medium);
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    &.is-open {
+        background: var(--hairline);
+    }
+}
+
+.task-row__summary {
+    display: grid;
+    grid-template-columns: var(--space-l) minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-s);
+    min-height: var(--space-2xl);
+    padding: var(--space-xs) var(--space-m);
+}
+
+.task-row__picture,
+.task-row__glyph {
+    width: var(--space-l);
+    height: var(--space-l);
+}
+
+.task-row__glyph {
+    display: grid;
+    place-items: center;
+    background: var(--surface-sunken);
+    color: var(--fleet-yellow);
+
+    svg {
+        width: 55%;
+        height: 55%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    &.is-done {
+        color: var(--manage_good);
+    }
+}
+
+.task-row__title {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--highlight);
+        outline-offset: 4px;
+    }
+}
+
+.task-row__name {
+    font-weight: 600;
+    color: var(--highlight);
+    line-height: 1.3;
+}
+
+.task-row.is-done .task-row__name {
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.task-row__sub {
+    font-size: var(--step--1);
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.task-row__when {
+    font-size: var(--step--1);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: end;
+
+    &.is-warn {
+        color: var(--manage_warn);
+    }
+
+    &.is-good {
+        color: var(--manage_good);
+    }
+}
+
+.task-row__action {
+    min-width: 9rem;
+    text-align: end;
+}
+
+.task-row__detail {
+    padding: 0 var(--space-m) var(--space-m) calc(var(--space-m) + var(--space-l) + var(--space-s));
+
+    // Nothing loaded yet: take no space, even before Alpine runs.
+    &:empty {
+        display: none;
+    }
+}
+
+.task-detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+    padding-top: var(--space-s);
+    border-top: 1px solid var(--hairline-medium);
+    font-size: var(--step--1);
+}
+
+.task-detail p {
+    margin: 0;
+    font-size: var(--step--1);
+}
+
+.task-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-s) var(--space-m);
+}
+
+.task-detail__note {
+    color: var(--text-muted);
+}
+
+.task-comments {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.task-comment {
+    display: flex;
+    gap: var(--space-xs);
+    align-items: flex-start;
+
+    img {
+        flex: 0 0 auto;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+}
+
+.task-comment__who {
+    color: var(--highlight);
+    font-weight: 600;
+}
+
+.task-comment__when {
+    color: var(--text-muted);
+    margin-inline-start: var(--space-3xs);
+}
+
+.task-comment-form {
+    display: flex;
+    gap: var(--space-2xs);
+    align-items: stretch;
+
+    > :first-of-type:not(label) {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+}
+
+// A quiet text action: the row's one action and the detail's others.
+.task-quiet {
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--highlight);
+    font: 600 var(--step--1) var(--default-font);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &.is-dim {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: progress;
+    }
+
+    @media (hover: hover) {
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--highlight);
+        outline-offset: 2px;
+    }
+}
+
+.task-more {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2xs);
+    padding-inline: var(--space-m);
+    font-size: var(--step--1);
+    color: var(--text-muted);
+}
+
+.task-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s) var(--space-m);
+    padding: var(--space-xs) var(--space-m);
+    border: 1px solid var(--hairline-strong);
+    font-size: var(--step--1);
+}
+
+.task-bar {
+    position: relative;
+    height: var(--space-3xs);
+    min-width: 6rem;
+    background: var(--surface-sunken);
+
+    > span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        background: var(--fleet-yellow);
+    }
+
+    &.is-done > span {
+        background: var(--manage_good);
+    }
+}
+
+.task-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+
+    .task-bar {
+        flex: 1 1 auto;
+    }
+
+    > span:last-child {
+        min-width: 4.5rem;
+        text-align: end;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.task-stage-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: var(--component-background);
+}
+
+.task-stage {
+    display: grid;
+    grid-template-columns: minmax(8rem, 16rem) minmax(0, 1fr) 5rem;
+    align-items: center;
+    gap: var(--space-m);
+    min-height: var(--space-xl);
+    padding-inline: var(--space-m);
+    border-bottom: 1px solid var(--hairline-medium);
+    font-variant-numeric: tabular-nums;
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    > span:last-child {
+        text-align: end;
+        font-size: var(--step--1);
+    }
+}
+
+.task-health {
+    display: inline-block;
+    padding: 0.1em 0.5em;
+    border: 1px solid var(--hairline-strong);
+    font-size: var(--step--2);
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--highlight);
+
+    &.is-on_track {
+        border-color: color-mix(in srgb, var(--manage_good) 50%, transparent);
+        color: var(--manage_good);
+    }
+
+    &.is-at_risk,
+    &.is-off_track {
+        border-color: color-mix(in srgb, var(--manage_warn) 50%, transparent);
+        color: var(--manage_warn);
+    }
+}
+
+.task-update {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-m);
+    border-bottom: 1px solid var(--hairline-medium);
+
+    &:last-child {
+        border-bottom: 0;
+    }
+
+    p {
+        margin: 0;
+        white-space: pre-line;
+    }
+}
+
+.task-people {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+    gap: var(--space-s);
+}
+
+.task-pilots {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: var(--space-xl);
+        border-bottom: 1px solid var(--hairline-medium);
+        font-size: var(--step--1);
+    }
+
+    li:last-child {
+        border-bottom: 0;
+    }
+}
+
+@media (max-width: 48rem) {
+    .task-row__summary {
+        grid-template-columns: var(--space-l) minmax(0, 1fr);
+        padding-inline: var(--space-s);
+        row-gap: var(--space-3xs);
+    }
+
+    .task-row__when,
+    .task-row__action {
+        grid-column: 2;
+        min-width: 0;
+        text-align: start;
+    }
+
+    .task-row__detail {
+        padding-inline: var(--space-s);
+    }
+
+    .task-stage {
+        grid-template-columns: minmax(0, 1fr) 5rem;
+
+        .task-bar {
+            grid-column: 1 / -1;
+            grid-row: 2;
+        }
+    }
+}
+
+// Chips that are buttons (Team and Projects filters) start transparent.
+button.manage-chip {
+    background: transparent;
+}
+
+// Number columns line up across the stacked tables of a tab.
+.tasks-team,
+.tasks-projects {
+    .manage-table th.num,
+    .manage-table td.num {
+        width: 11rem;
+    }
+
+    .manage-table th.act,
+    .manage-table td.act {
+        width: 7rem;
+    }
+}
+
+fieldset.manage-chips {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}

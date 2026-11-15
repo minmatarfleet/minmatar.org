@@ -9,9 +9,11 @@ import type { ManageQueue, ManageSummary } from '@dtypes/api.minmatar.org'
 
 interface Props {
     summary: ManageSummary;
+    /** The Tasks Settings tab leaves this out: those queues are tasks now. */
+    show_waiting?: boolean;
 }
 
-const { summary } = Astro.props
+const { summary, show_waiting = true } = Astro.props
 
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath, lang } = i18n(Astro.url)
@@ -78,6 +80,7 @@ const groups = MANAGE_GROUPS
 ---
 
 <Flexblock gap="var(--space-2xl)">
+    {show_waiting &&
     <section class="[ manage-hub-section ]" aria-labelledby="manage-waiting">
         <Flexblock gap="var(--space-s)">
             <h2 id="manage-waiting">{t('manage.waiting')}</h2>
@@ -99,6 +102,7 @@ const groups = MANAGE_GROUPS
             }
         </Flexblock>
     </section>
+    }
 
     {groups.length > 0 &&
         <section aria-labelledby="manage-settings">

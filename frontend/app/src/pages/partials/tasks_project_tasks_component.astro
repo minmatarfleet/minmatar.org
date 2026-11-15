@@ -1,0 +1,58 @@
+---
+/**
+ * A project's Tasks tab. GET re-renders it; POST with task_id and action
+ * acts on one of its tasks first.
+ */
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { TaskProjectDetail } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_task_project, is_task_action, post_task_action } from '@helpers/api.minmatar.org/tasks'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const project_id = parseInt(Astro.url.searchParams.get('project_id') ?? '0')
+if (!project_id) return HTTP_404_Not_Found()
+
+let action_error: string | null = null
+if (Astro.request.method === 'POST') {
+    const task_id = parseInt(Astro.url.searchParams.get('task_id') ?? '0')
+    const action = Astro.url.searchParams.get('action')
+    if (task_id && is_task_action(action)) {
+        try {
+            await post_task_action(auth_token, task_id, action)
+            Astro.response.headers.set('HX-Trigger', 'tasks-count-changed')
+        } catch (failure) {
+            action_error = (failure as Error).message
+        }
+    }
+}
+
+let project: TaskProjectDetail | null = null
+let error: Error | null = null
+try {
+    project = await get_task_project(auth_token, project_id)
+} catch (failure) {
+    error = failure as Error
+}
+
+import ProjectTaskList from '@components/blocks/tasks/ProjectTaskList.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{project
+    ? <ProjectTaskList project={project} action_error={action_error} />
+    : (
+        <div id={`project-${project_id}-tasks`}>
+            <ErrorRefetch args={{
+                partial: translatePath(`/partials/tasks_project_tasks_component/?project_id=${project_id}`),
+                error: error ?? new Error('Error fetching the project'),
+                delay: 0,
+                target: `#project-${project_id}-tasks`,
+            }} />
+        </div>
+    )
+}
