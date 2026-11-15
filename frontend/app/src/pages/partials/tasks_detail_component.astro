@@ -1,0 +1,166 @@
+---
+/**
+ * An opened task row: its notes, the actions that don't fit on the row,
+ * and comments. GET renders it; POST adds a comment and renders it again.
+ *
+ * `action_url` and `target` are the list the row sits in: actions post
+ * there and swap that list, so the row moves group when it should.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { PrimeTime, TaskDetail } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_task, post_task_comment } from '@helpers/api.minmatar.org/tasks'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { recurrence_day, task_date } from '@helpers/tasks'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const task_id = parseInt(Astro.url.searchParams.get('task_id') ?? '0')
+if (!task_id) return HTTP_404_Not_Found()
+
+const SAME_ORIGIN = /^\/[^/]/
+const raw_action_url = Astro.url.searchParams.get('action_url') ?? ''
+const action_url = SAME_ORIGIN.test(raw_action_url) ? raw_action_url : translatePath('/partials/tasks_mine_component/')
+const target = (Astro.url.searchParams.get('target') ?? 'tasks-mine').replace(/[^a-z0-9_-]/gi, '')
+
+let comment_error: string | null = null
+if (Astro.request.method === 'POST') {
+    try {
+        const form = await Astro.request.formData()
+        await post_task_comment(auth_token, task_id, String(form.get('body') ?? ''))
+    } catch (failure) {
+        comment_error = (failure as Error).message
+    }
+}
+
+let task: TaskDetail | null = null
+let error: Error | null = null
+try {
+    task = await get_task(auth_token, task_id)
+} catch (failure) {
+    error = failure as Error
+}
+
+const SELF_URL = `${translatePath('/partials/tasks_detail_component/')}?${Astro.url.searchParams.toString()}`
+const sep = action_url.includes('?') ? '&' : '?'
+const post_url = (action:string) => `${action_url}${sep}task_id=${task_id}&action=${action}`
+
+// The row shows one action; these are the others.
+const SECONDARY = ['done', 'snooze', 'not_now', 'hand_back', 'let_close'] as const
+const actions = SECONDARY.filter((action) => task?.actions.includes(action))
+const repeats = task ? recurrence_day(task.recurrence, lang) : null
+// The row already shows the link unless one of these takes its place.
+const ROW_ACTIONS = ['take', 'keep', 'bring_back', 'thank']
+const row_shows_other = !!task && ROW_ACTIONS.some((action) => task!.actions.includes(action))
+const link = task && task.status === 'open' && task.link_url && row_shows_other ? translatePath(task.link_url) : null
+// A pilot's own automatic task needs no discussion; everything else can.
+const has_comments = !!task && (task.kind === 'assigned' || !!task.team_kind)
+
+// The timezone suggestion is answered right here.
+let player: Awaited<ReturnType<typeof get_current_player>> | null = null
+if (task?.rule === 'set_timezone' && task.status === 'open') {
+    try {
+        player = await get_current_player(auth_token)
+    } catch (failure) {
+        console.log(failure)
+    }
+}
+
+import { get_current_player } from '@helpers/api.minmatar.org/players'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import PrimeTimezone from '@components/blocks/PrimeTimezone.astro'
+---
+
+{task
+    ? (
+        <div class="[ task-detail ]">
+            {task.body && <p>{task.body}</p>}
+
+            {player?.nickname && <PrimeTimezone nickname={player.nickname} prime_time={(player.prime_time as PrimeTime | null) ?? null} />}
+
+            {task.still_needed && <p class="[ task-detail__note ]">{t('tasks.still_needed')}</p>}
+            {repeats && <p class="[ task-detail__note ]">{t('tasks.repeats').replace('~DAY', repeats)}</p>}
+
+            {(link || actions.length > 0) &&
+                <div class="[ task-detail__actions ]">
+                    {link && <Button size="sm" color="fleet-red" href={link}>{task.link_label || t('tasks.show')}</Button>}
+                    {actions.map((action) => (
+                        <button
+                            type="button"
+                            class="[ task-quiet ]"
+                            hx-post={post_url(action)}
+                            hx-target={`#${target}`}
+                            hx-select={`#${target}`}
+                            hx-swap="outerHTML"
+                            hx-disabled-elt="this"
+                        >
+                            {t(t_key('tasks.action.', action))}
+                        </button>
+                    ))}
+                </div>
+            }
+
+            {task.kind === 'automatic' && !task.team_kind && task.status === 'open' &&
+                <p class="[ task-detail__note ]">{t('tasks.closes_itself')}</p>
+            }
+
+            {has_comments &&
+            <section class="[ task-stack ]" aria-label={t('tasks.comments')}>
+                {task.comments.length > 0 &&
+                    <ul class="[ task-comments ]" role="list">
+                        {task.comments.map((note) => (
+                            <li class="[ task-comment ]">
+                                {note.author?.character_id
+                                    ? <img src={get_player_icon(note.author.character_id, 64)} alt="" width="30" height="30" loading="lazy" />
+                                    : <span aria-hidden="true"></span>
+                                }
+                                <div>
+                                    <div>
+                                        <span class="[ task-comment__who ]">{note.author?.name ?? ''}</span>
+                                        <span class="[ task-comment__when ]">{task_date(note.created_at, lang)}</span>
+                                    </div>
+                                    <p>{note.body}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                }
+                {task.status === 'open' &&
+                    <form
+                        class="[ task-comment-form ]"
+                        hx-post={SELF_URL}
+                        hx-target="closest .task-row__detail"
+                        hx-swap="innerHTML"
+                    >
+                        <label class="[ visually-hidden ]" for={`task-${task.id}-comment`}>{t('tasks.comment_label')}</label>
+                        <Input
+                            id={`task-${task.id}-comment`}
+                            name="body"
+                            size="sm"
+                            maxlength="2000"
+                            placeholder={t('tasks.comment_label')}
+                            autocomplete="off"
+                            required
+                        />
+                        <Button size="sm" type="submit" hx-disabled-elt="this">{t('tasks.comment')}</Button>
+                    </form>
+                }
+                {comment_error && <p class="[ manage-field__error ]" role="alert">{comment_error}</p>}
+            </section>
+            }
+        </div>
+    )
+    : (
+        <ErrorRefetch args={{
+            partial: SELF_URL,
+            error: error ?? new Error('Error fetching the task'),
+            delay: 0,
+        }} />
+    )
+}

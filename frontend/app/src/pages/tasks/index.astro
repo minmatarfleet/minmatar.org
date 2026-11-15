@@ -1,0 +1,147 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { MyTasks, TaskAssignees } from '@dtypes/api.minmatar.org'
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { can_manage_hub } from '@helpers/manage'
+import { get_my_tasks, get_task_assignees, get_task_teams } from '@helpers/api.minmatar.org/tasks'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+
+let board: MyTasks | null = null
+let board_error: Error | null = null
+try {
+    board = await get_my_tasks(auth_token)
+} catch (failure) {
+    board_error = failure as Error
+}
+
+// Leaders see Team (their corporations and tribes) and can give out tasks.
+let leads_teams = false
+let teams: TaskAssignees['teams'] = []
+if (board?.can_assign) {
+    try {
+        const overview = await get_task_teams(auth_token)
+        leads_teams = overview.corporations.length + overview.tribes.length + overview.pilots.length > 0
+        teams = (await get_task_assignees(auth_token, '')).teams
+    } catch (failure) {
+        console.log(failure)
+    }
+}
+
+const character_id = board?.me?.character_id ?? null
+
+const show_settings = can_manage_hub(gates) || can(gates, 'tasks.manage')
+const needs_you = board?.needs_you ?? 0
+
+const tabs = [
+    {
+        id: 'mine',
+        label: t('tasks.tab.mine'),
+        ...(needs_you > 0 && { meta: String(needs_you), flag: 'attention' as const }),
+    },
+    ...(leads_teams ? [{ id: 'team', label: t('tasks.tab.team') }] : []),
+    { id: 'projects', label: t('tasks.tab.projects') },
+    ...(show_settings ? [{ id: 'settings', label: t('tasks.tab.settings') }] : []),
+]
+
+const page_title = t('tasks.page_title')
+const fact = board
+    ? (board.paused
+        ? t('tasks.paused_title')
+        : needs_you === 0 ? t('tasks.nothing_open') : needs_you === 1 ? t('tasks.need_you_one') : t('tasks.need_you').replace('~COUNT', String(needs_you)))
+    : undefined
+
+const breadcrumbs = [
+    { page_title, accumulated_path: translatePath('/tasks/') },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import MyTaskList from '@components/blocks/tasks/MyTaskList.astro'
+import TaskNewDialog from '@components/blocks/tasks/TaskNewDialog.astro'
+import RifterIcon from '@components/icons/RifterIcon.astro'
+---
+
+<Viewport title={page_title} meta_description={t('tasks.description')} components={{ confirm_dialog: true, modal: true }}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero
+                title={page_title}
+                image={character_id ? get_player_icon(character_id, 128) : undefined}
+                fact={fact}
+            >
+                <Fragment slot="actions">
+                    {board?.can_assign && <TaskNewDialog teams={teams} />}
+                </Fragment>
+            </ManageHero>
+        </Flexblock>
+
+        <SectionTabs aria_label={t('tasks.tabs_label')} id_prefix="tasks" tabs={tabs}>
+            <SectionTabPanel id="mine" id_prefix="tasks" is_default={true}>
+                {board
+                    ? <MyTaskList board={board} />
+                    : (
+                        <div id="tasks-mine">
+                            <ErrorRefetch args={{
+                                partial: translatePath('/partials/tasks_mine_component/'),
+                                error: board_error ?? new Error('Error fetching your tasks'),
+                                delay: 0,
+                                target: '#tasks-mine',
+                            }} />
+                        </div>
+                    )
+                }
+            </SectionTabPanel>
+
+            {leads_teams &&
+                <SectionTabPanel id="team" id_prefix="tasks">
+                    <LazyPartial url={translatePath('/partials/tasks_team_component/')} trigger="reveal" swap="outerHTML">
+                        <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
+                            <RifterIcon class="small" />
+                            <p class="[ loading ]">{t('loading')}</p>
+                        </FlexInline>
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            <SectionTabPanel id="projects" id_prefix="tasks">
+                <LazyPartial url={translatePath('/partials/tasks_projects_component/')} trigger="reveal" swap="outerHTML">
+                    <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
+                        <RifterIcon class="small" />
+                        <p class="[ loading ]">{t('loading')}</p>
+                    </FlexInline>
+                </LazyPartial>
+            </SectionTabPanel>
+
+            {show_settings &&
+                <SectionTabPanel id="settings" id_prefix="tasks">
+                    <LazyPartial url={translatePath('/partials/manage_hub_component/?waiting=0')} trigger="reveal" swap="outerHTML">
+                        <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
+                            <RifterIcon class="small" />
+                            <p class="[ loading ]">{t('loading')}</p>
+                        </FlexInline>
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+        </SectionTabs>
+    </Flexblock>
+</PageLanding>
+</Viewport>

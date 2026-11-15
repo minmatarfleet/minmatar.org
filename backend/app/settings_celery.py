@@ -350,6 +350,25 @@ CELERYBEAT_TRIBES = [
     ),
 ]
 
+# Tasks (docs/tasks/README.md)
+CELERYBEAT_TASKS = [
+    (
+        "[Tasks] Open and close automatic tasks",
+        {
+            "task": "taskboard.tasks.sync_automatic_tasks",
+            "schedule": crontab(minute="*/15"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
+        "[Tasks] Stop asking, return quiet claims, ask still needed",
+        {
+            "task": "taskboard.tasks.sweep_tasks",
+            "schedule": crontab(minute=40),
+        },
+    ),
+]
+
 # Learning Center mentors (docs/learning/mentors.md)
 CELERYBEAT_LEARNING = [
     (
@@ -789,6 +808,7 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES
     + CELERYBEAT_LEARNING
+    + CELERYBEAT_TASKS
     + CELERYBEAT_FEED
     + CELERYBEAT_INTEL
     + CELERYBEAT_SURVEYS

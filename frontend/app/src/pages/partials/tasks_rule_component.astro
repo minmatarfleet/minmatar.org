@@ -1,0 +1,45 @@
+---
+/**
+ * Saves one automatic task's settings and answers with its row (inside a
+ * table, so htmx keeps the <tbody>). toggle=1 flips it on or off.
+ */
+// no-error-refetch: a save; the row shows what went wrong.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TaskRuleSetting, TaskRuleSettingPatch } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_task_rules, patch_task_rule } from '@helpers/api.minmatar.org/tasks'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const code = Astro.url.searchParams.get('rule') ?? ''
+const toggle = Astro.url.searchParams.get('toggle') === '1'
+
+let rule: TaskRuleSetting | null = null
+let error: string | null = null
+try {
+    const form = await Astro.request.formData()
+    const days = (name:string) => {
+        const value = parseInt(String(form.get(name) ?? ''))
+        return Number.isFinite(value) ? value : null
+    }
+    const patch:TaskRuleSettingPatch = toggle
+        ? { enabled: form.get('enabled') === 'on' }
+        : { stop_after_days: days('stop_after_days'), claim_expires_days: days('claim_expires_days') }
+    rule = await patch_task_rule(auth_token, code, patch)
+} catch (failure) {
+    error = (failure as Error).message
+    const rules: TaskRuleSetting[] = await get_task_rules(auth_token).catch(() => [])
+    rule = rules.find((row) => row.rule === code) ?? null
+}
+if (!rule) return HTTP_404_Not_Found()
+
+import TaskRuleRow from '@components/blocks/tasks/TaskRuleRow.astro'
+---
+
+<table>
+    <TaskRuleRow rule={rule} open={!toggle} saved={!error && !toggle} error={error} />
+</table>

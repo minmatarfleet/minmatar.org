@@ -403,6 +403,18 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="surveys.change_surveycampaign",
         deny_community_statuses=(),
     ),
+    "tasks.manage": FeatureDefinition(
+        code="tasks.manage",
+        label="Manage tasks",
+        scope=FeatureScope.STAFF,
+        description=(
+            "Turn automatic tasks on or off, set their timers, and see "
+            "project templates."
+        ),
+        staff_permission="taskboard.change_taskrulesetting",
+        legacy_permission="taskboard.change_taskrulesetting",
+        deny_community_statuses=(),
+    ),
     "intel.view": FeatureDefinition(
         code="intel.view",
         label="View intel",

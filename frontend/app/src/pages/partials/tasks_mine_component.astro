@@ -1,0 +1,57 @@
+---
+/**
+ * The My tasks list. GET re-renders it ("tasks-changed", or a retry);
+ * POST with task_id and action acts on a task first.
+ */
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { MyTasks } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_my_tasks, is_task_action, post_task_action } from '@helpers/api.minmatar.org/tasks'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+let action_error: string | null = null
+if (Astro.request.method === 'POST') {
+    const task_id = parseInt(Astro.url.searchParams.get('task_id') ?? '0')
+    const action = Astro.url.searchParams.get('action')
+    if (task_id && is_task_action(action)) {
+        try {
+            await post_task_action(auth_token, task_id, action)
+            Astro.response.headers.set('HX-Trigger', 'tasks-count-changed')
+        } catch (failure) {
+            action_error = (failure as Error).message
+        }
+    }
+}
+
+let board: MyTasks | null = null
+let error: Error | null = null
+try {
+    board = await get_my_tasks(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+
+import MyTaskList from '@components/blocks/tasks/MyTaskList.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{board
+    ? (
+        <MyTaskList board={board} action_error={action_error} />
+    )
+    : (
+        <div id="tasks-mine">
+            <ErrorRefetch args={{
+                partial: translatePath('/partials/tasks_mine_component/'),
+                error: error ?? new Error('Error fetching your tasks'),
+                delay: 0,
+                target: '#tasks-mine',
+            }} />
+        </div>
+    )
+}

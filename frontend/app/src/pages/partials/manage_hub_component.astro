@@ -15,6 +15,7 @@ const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const show_waiting = Astro.url.searchParams.get('waiting') !== '0'
 let summary: ManageSummary | null = null
 let error: Error | null = null
 try {
@@ -25,9 +26,9 @@ try {
 ---
 
 {summary
-    ? <ManageHubBody summary={summary} />
+    ? <ManageHubBody summary={summary} show_waiting={show_waiting} />
     : <ErrorRefetch args={{
-        partial: translatePath('/partials/manage_hub_component/'),
+        partial: translatePath(`/partials/manage_hub_component/${show_waiting ? '' : '?waiting=0'}`),
         error: error ?? new Error('Error fetching the manage summary'),
         delay,
     }} />

@@ -1,0 +1,100 @@
+---
+/**
+ * The My tasks tab: what needs the pilot (Now, This week, Later), then
+ * suggestions, team work up for grabs, and what closed this week. Rendered
+ * by /tasks/ and by tasks_mine_component, which re-renders it after an
+ * action or when a task is created ("tasks-changed").
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { MyTasks } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    board:          MyTasks;
+    /** Why the last action failed, shown above the list. */
+    action_error?:  string | null;
+}
+
+const { board, action_error = null } = Astro.props
+
+const MINE_URL = translatePath('/partials/tasks_mine_component/')
+const PREFS_URL = translatePath('/partials/tasks_preferences_component/?from=mine')
+const TARGET = 'tasks-mine'
+
+const needs_you = board.now.length + board.this_week.length + board.later.length
+const nothing = needs_you === 0 && board.minute.length === 0 && board.up_for_grabs.length === 0
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
+---
+
+<div
+    id={TARGET}
+    class="[ tasks-mine ][ task-stack is-loose ]"
+    hx-get={MINE_URL}
+    hx-trigger="tasks-changed from:body"
+    hx-select={`#${TARGET}`}
+    hx-swap="outerHTML"
+    hx-disinherit="*"
+>
+    {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}
+
+    {board.paused &&
+        <div class="[ task-notice ]" role="status">
+            <span>
+                <strong>{t('tasks.paused_title')}.</strong>
+                {' '}{t('tasks.paused_hint')}
+            </span>
+            <button
+                type="button"
+                class="[ task-quiet ]"
+                hx-post={PREFS_URL}
+                hx-vals='{"paused": "off"}'
+                hx-swap="none"
+            >
+                {t('tasks.resume')}
+            </button>
+        </div>
+    }
+
+    {nothing &&
+        <EmptyState
+            title={t('tasks.empty_title')}
+            hint={board.closed_this_week.length > 0
+                ? t('tasks.closed_count').replace('~COUNT', String(board.closed_this_week.length))
+                : t('tasks.empty_hint')}
+        />
+    }
+
+    <TaskGroup id="tasks-now" title={t('tasks.group.now')} tasks={board.now} action_url={MINE_URL} target={TARGET} urgent={true} />
+    <TaskGroup id="tasks-week" title={t('tasks.group.week')} tasks={board.this_week} action_url={MINE_URL} target={TARGET} />
+    <TaskGroup id="tasks-later" title={t('tasks.group.later')} tasks={board.later} action_url={MINE_URL} target={TARGET} />
+    <TaskGroup id="tasks-minute" title={t('tasks.group.minute')} tasks={board.minute} action_url={MINE_URL} target={TARGET} />
+    <TaskGroup id="tasks-grabs" title={t('tasks.group.grabs')} tasks={board.up_for_grabs} action_url={MINE_URL} target={TARGET} />
+
+    {(board.closed_this_week.length > 0 || board.stopped.length > 0 || board.snoozed > 0) &&
+        <div x-data="{ show_closed: false }" class="[ task-stack ]">
+            <div class="[ task-more ]">
+                {board.closed_this_week.length > 0 &&
+                    <span class="[ manage-good ]">
+                        {t('tasks.closed_count').replace('~COUNT', String(board.closed_this_week.length))}
+                    </span>
+                }
+                {board.snoozed > 0 &&
+                    <span>{t('tasks.snoozed').replace('~COUNT', String(board.snoozed))}</span>
+                }
+                {(board.closed_this_week.length > 0 || board.stopped.length > 0) &&
+                    <button type="button" class="[ task-quiet ]" x-on:click="show_closed = !show_closed" x-text={`show_closed ? '${t('tasks.hide')}' : '${t('tasks.show')}'`}>
+                        {t('tasks.show')}
+                    </button>
+                }
+            </div>
+            <div x-show="show_closed" x-cloak class="[ task-stack ]">
+                <TaskGroup id="tasks-closed" title={t('tasks.group.closed')} tasks={board.closed_this_week} action_url={MINE_URL} target={TARGET} />
+                <TaskGroup id="tasks-stopped" title={t('tasks.group.stopped')} tasks={board.stopped} action_url={MINE_URL} target={TARGET} />
+            </div>
+        </div>
+    }
+</div>
+

@@ -1,0 +1,138 @@
+---
+/**
+ * One task, as a Members row: a picture (the person it is about) or the
+ * task's glyph, the title over one line, one "when" cell, and one quiet
+ * action. Clicking the title opens the row in place; the detail (notes,
+ * comments, the other actions) loads from its partial the first time.
+ *
+ * Actions post to `action_url` (with `task_id` and `action` added) and
+ * swap `target`, the list the row sits in.
+ *
+ *   <TaskRow task={task} action_url={MINE_URL} target="tasks-mine" />
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TaskItem } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { sub_label, task_glyph, task_person, when_label } from '@helpers/tasks'
+
+interface Props {
+    task:           TaskItem;
+    action_url:     string;
+    /** Id (no #) of the list this row sits in. */
+    target:         string;
+    /** Warn colour on the "when" cell (the Now group). */
+    warn?:          boolean;
+    open?:          boolean;
+    /** Inside a project page: name who does it, not the project. */
+    in_project?:    boolean;
+}
+
+const {
+    task,
+    action_url,
+    target,
+    warn = false,
+    open = false,
+    in_project = false,
+} = Astro.props
+
+const now = new Date()
+const team_label = task.team_kind === 'staff'
+    ? t(t_key('manage.screen_', task.team_role))
+    : task.team_label
+const person = task_person(task, in_project)
+const sub = sub_label(t, task, team_label, in_project)
+const when = when_label(t, lang, task, now)
+
+const sep = action_url.includes('?') ? '&' : '?'
+const post_url = (action:string) => `${action_url}${sep}task_id=${task.id}&action=${action}`
+const detail_url = `${translatePath('/partials/tasks_detail_component/')}?task_id=${task.id}&target=${encodeURIComponent(target)}&action_url=${encodeURIComponent(action_url)}`
+
+// One action on the row; the rest live in the opened detail.
+const PRIMARY = ['take', 'keep', 'bring_back', 'thank'] as const
+const primary_action = PRIMARY.find((action) => task.actions.includes(action))
+const link = task.status === 'open' && task.link_url ? translatePath(task.link_url) : null
+const row_id = `task-${task.id}`
+const done = task.status !== 'open'
+---
+
+<li
+    id={row_id}
+    class:list={['[ task-row ]', { 'is-done': done }]}
+    x-data={`{ open: ${open ? 'true' : 'false'} }`}
+    x-bind:class="open && 'is-open'"
+>
+    <div class="[ task-row__summary ]">
+        {person?.character_id
+            ? <img class="[ task-row__picture ]" src={get_player_icon(person.character_id, 64)} alt="" width="44" height="44" loading="lazy" />
+            : (
+                <span class:list={['[ task-row__glyph ]', { 'is-done': task.status === 'done' }]} aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d={task_glyph(task)} /></svg>
+                </span>
+            )
+        }
+        <button
+            type="button"
+            class="[ task-row__title ]"
+            aria-expanded="false"
+            x-bind:aria-expanded="open.toString()"
+            aria-controls={`${row_id}-detail`}
+            x-on:click="open = !open"
+            hx-get={detail_url}
+            hx-trigger="click once"
+            hx-target={`#${row_id}-detail`}
+            hx-swap="innerHTML"
+        >
+            <span class="[ task-row__name ]">{task.title}</span>
+            {sub && <span class="[ task-row__sub ]">{sub}</span>}
+        </button>
+        <span class:list={['[ task-row__when ]', { 'is-warn': warn && !done, 'is-good': task.status === 'done' }]}>{when}</span>
+        <span class="[ task-row__action ]">
+            {primary_action
+                ? (
+                    <button
+                        type="button"
+                        class="[ task-quiet ]"
+                        hx-post={post_url(primary_action)}
+                        hx-target={`#${target}`}
+                        hx-select={`#${target}`}
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this"
+                    >
+                        {t(t_key('tasks.action.', primary_action))}
+                    </button>
+                )
+                : link
+                    ? <a class="[ task-quiet ]" href={link}>{task.link_label || t('tasks.show')}</a>
+                    : task.actions.includes('done')
+                        ? (
+                            <button
+                                type="button"
+                                class="[ task-quiet ]"
+                                hx-post={post_url('done')}
+                                hx-target={`#${target}`}
+                                hx-select={`#${target}`}
+                                hx-swap="outerHTML"
+                                hx-disabled-elt="this"
+                            >
+                                {t('tasks.action.done')}
+                            </button>
+                        )
+                        : task.status === 'open' && task.link_label
+                            ? (
+                                <button
+                                    type="button"
+                                    class="[ task-quiet ]"
+                                    x-on:click="if (!open) $el.closest('.task-row').querySelector('.task-row__title').click()"
+                                >
+                                    {task.link_label}
+                                </button>
+                            )
+                            : null
+            }
+        </span>
+    </div>
+    <div id={`${row_id}-detail`} class="[ task-row__detail ]" x-show="open" x-cloak></div>
+</li>

@@ -1,0 +1,47 @@
+---
+/**
+ * A titled list of TaskRows ("Now", "This week"...). Renders nothing when
+ * there are no tasks, so empty groups never take space.
+ */
+import type { TaskItem } from '@dtypes/api.minmatar.org'
+import TaskRow from '@components/blocks/tasks/TaskRow.astro'
+
+interface Props {
+    id:             string;
+    title:          string;
+    tasks:          TaskItem[];
+    action_url:     string;
+    target:         string;
+    /** Red eyebrow and warn "when" cells (the Now group). */
+    urgent?:        boolean;
+    in_project?:    boolean;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    title,
+    tasks,
+    action_url,
+    target,
+    urgent = false,
+    in_project = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+{tasks.length > 0 &&
+    <section class:list={['[ task-group ]', Astro.props.class]} aria-labelledby={`${id}-title`} {...attributes}>
+        <div class="[ task-group__head ]">
+            <h3 id={`${id}-title`} class:list={['[ manage-eyebrow ]', { 'is-red': urgent }]}>{title}</h3>
+            <slot name="aside" />
+        </div>
+        <ul class="[ task-list ]" role="list">
+            {tasks.map((task) => (
+                <TaskRow task={task} action_url={action_url} target={target} warn={urgent} in_project={in_project} />
+            ))}
+        </ul>
+    </section>
+}

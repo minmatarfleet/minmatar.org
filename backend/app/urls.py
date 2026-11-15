@@ -66,6 +66,7 @@ from campaigns.router import router as campaigns_router
 from capabilities.endpoints import router as training_router
 from intel.router import router as intel_router
 from manage_hub.router import router as manage_router
+from taskboard.router import router as tasks_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
@@ -106,6 +107,7 @@ api.add_router("campaigns", campaigns_router)
 api.add_router("training", training_router)
 api.add_router("intel", intel_router)
 api.add_router("manage", manage_router)
+api.add_router("tasks", tasks_router)
 
 
 @api.exception_handler(UnauthorizedError)

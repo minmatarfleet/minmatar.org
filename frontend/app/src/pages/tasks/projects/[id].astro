@@ -1,0 +1,294 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TaskAssignees, TaskProjectDetail } from '@dtypes/api.minmatar.org'
+import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_task_assignees, get_task_project } from '@helpers/api.minmatar.org/tasks'
+import { get_player_icon } from '@helpers/eve_image_server'
+import { task_date } from '@helpers/tasks'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+
+const project_id = parseInt(Astro.params.id ?? '0')
+if (!project_id) return HTTP_404_Not_Found()
+
+let project: TaskProjectDetail | null = null
+try {
+    project = await get_task_project(auth_token, project_id)
+} catch (failure) {
+    if ((failure as Error).cause === 404) return HTTP_404_Not_Found()
+    throw failure
+}
+
+let teams: TaskAssignees['teams'] = []
+if (project.can_edit) {
+    try {
+        teams = (await get_task_assignees(auth_token, '')).teams
+    } catch (failure) {
+        console.log(failure)
+    }
+}
+
+const now = new Date()
+const page_title = project.name
+const open_count = project.stages.reduce((sum, stage) => sum + stage.tasks.filter((task) => task.status === 'open').length, 0)
+const latest = project.updates[0] ?? null
+const days_left = project.target_date
+    ? Math.max(0, Math.ceil((new Date(`${project.target_date}T23:59:59Z`).getTime() - now.getTime()) / 86400000))
+    : null
+// "29 d" for the open task that has waited longest.
+const longest_task = project.waiting_longest
+    ? project.stages.flatMap((stage) => stage.tasks).find((task) => task.id === project!.waiting_longest!.id)
+    : undefined
+const longest_days = longest_task
+    ? Math.floor((now.getTime() - new Date(longest_task.opened_at).getTime()) / 86400000)
+    : 0
+// Only worth a card once something has waited a day.
+const longest_waited = longest_days >= 1 ? `${longest_days} d` : null
+const facts = [
+    project.lead ? t('tasks.project.led_by').replace('~NAME', project.lead.name) : '',
+    project.status === 'open'
+        ? (project.target_date ? t('tasks.project.target_on').replace('~DATE', task_date(project.target_date, lang)) : '')
+        : (project.finished_at ? t('tasks.project.finished').replace('~DATE', task_date(project.finished_at, lang)) : ''),
+].filter(Boolean).join(' · ')
+
+const tabs = [
+    { id: 'overview', label: t('tasks.project.overview') },
+    { id: 'tasks', label: t('tasks.project.tasks'), ...(open_count > 0 && { meta: String(open_count) }) },
+    { id: 'updates', label: t('tasks.project.updates') },
+]
+
+const UPDATE_URL = translatePath(`/partials/tasks_project_update_component/?project_id=${project.id}`)
+
+const breadcrumbs = [
+    { page_title: t('tasks.page_title'), accumulated_path: translatePath('/tasks/') },
+    { page_title: t('tasks.tab.projects'), accumulated_path: translatePath('/tasks/#projects') },
+    { page_title, accumulated_path: translatePath(`/tasks/projects/${project.id}/`) },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Button from '@components/blocks/Button.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+import ProjectTaskList from '@components/blocks/tasks/ProjectTaskList.astro'
+import TaskNewDialog from '@components/blocks/tasks/TaskNewDialog.astro'
+---
+
+<Viewport title={page_title} meta_description={t('tasks.description')} components={{ confirm_dialog: true, modal: true }}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero
+                title={project.name}
+                role={project.kind_label || undefined}
+                fact={facts}
+                path={translatePath(`/tasks/projects/${project.id}/`)}
+            >
+                <Fragment slot="actions">
+                    {project.link_url &&
+                        <Button color="transparent" href={translatePath(project.link_url)}>
+                            {project.link_label || t('tasks.show')}
+                        </Button>
+                    }
+                    {project.can_edit && project.status === 'open' &&
+                        <TaskNewDialog
+                            teams={teams}
+                            project_id={project.id}
+                            stages={project.stages.filter((stage) => stage.id > 0).map((stage) => ({ id: stage.id, name: stage.name }))}
+                        />
+                    }
+                </Fragment>
+            </ManageHero>
+        </Flexblock>
+
+        <SectionTabs aria_label={t('tasks.tabs_label')} id_prefix="project" tabs={tabs}>
+            <SectionTabPanel id="overview" id_prefix="project" is_default={true}>
+                <Flexblock gap="var(--space-xl)">
+                    <ComponentBlock>
+                        <Flexblock gap="var(--space-s)">
+                            <div class="[ task-group__head ]">
+                                <h3 class="[ manage-eyebrow ]">{t('tasks.project.latest')}</h3>
+                                {project.updates.length > 1 && <a href="#updates">{t('tasks.project.all_updates')}</a>}
+                            </div>
+                            {latest
+                                ? (
+                                    <>
+                                        <span class="[ manage-who ]">
+                                            {latest.author?.character_id && <img src={get_player_icon(latest.author.character_id, 64)} alt="" width="40" height="40" loading="lazy" />}
+                                            <span class="[ manage-who__text ]">
+                                                <span class="[ manage-who__name ]">
+                                                    {latest.author?.name ?? ''}
+                                                    {' '}<span class={`[ task-health is-${latest.health} ]`}>{t(t_key('tasks.project.health_', latest.health))}</span>
+                                                </span>
+                                                <span class="[ manage-who__sub ]">{task_date(latest.created_at, lang)}</span>
+                                            </span>
+                                        </span>
+                                        <p class="[ project-update-body ]">{latest.body}</p>
+                                    </>
+                                )
+                                : <EmptyState title={t('tasks.project.no_updates')} hint={t('tasks.project.no_updates_hint')} />
+                            }
+                        </Flexblock>
+                    </ComponentBlock>
+
+                    <div class="[ manage-stats ]">
+                        <ManageStatCard
+                            label={t('tasks.project.stat_done')}
+                            value={project.tasks_done}
+                            detail={t('tasks.project.stat_of').replace('~N', String(project.tasks_total))}
+                        />
+                        <ManageStatCard
+                            label={t('tasks.project.stat_grabs')}
+                            value={project.up_for_grabs}
+                            href="#tasks"
+                        />
+                        <ManageStatCard
+                            label={t('tasks.project.stat_longest')}
+                            value={longest_waited ?? '—'}
+                            detail={longest_waited ? project.waiting_longest?.title : undefined}
+                            tone={longest_waited ? 'warn' : undefined}
+                        />
+                        <ManageStatCard
+                            label={t('tasks.project.stat_days_left')}
+                            value={days_left ?? '—'}
+                            detail={project.starts_on ? t('tasks.project.stat_started').replace('~DATE', task_date(project.starts_on, lang)) : t('tasks.project.no_target')}
+                        />
+                    </div>
+
+                    <section class="[ task-stack ]" aria-labelledby="project-stages">
+                        <h3 id="project-stages" class="[ manage-eyebrow ]">{t('tasks.project.stages')}</h3>
+                        <ul class="[ task-stage-list ]" role="list">
+                            {project.stages.filter((stage) => stage.total > 0).map((stage) => (
+                                <li class="[ task-stage ]">
+                                    <span class="[ manage-who__name ]">{stage.name}</span>
+                                    <div class:list={['[ task-bar ]', { 'is-done': stage.done === stage.total }]} aria-hidden="true">
+                                        <span style={`width: ${Math.round(100 * stage.done / stage.total)}%`}></span>
+                                    </div>
+                                    <span class:list={[{ 'manage-good': stage.done === stage.total }]}>
+                                        {t('tasks.projects.progress').replace('~DONE', String(stage.done)).replace('~TOTAL', String(stage.total))}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    {project.people.length > 0 &&
+                        <section class="[ task-stack ]" aria-labelledby="project-people">
+                            <h3 id="project-people" class="[ manage-eyebrow ]">{t('tasks.project.people')}</h3>
+                            <ul class="[ task-people ]" role="list">
+                                {project.people.map((row) => (
+                                    <li>
+                                        <ComponentBlock>
+                                            <span class="[ manage-who ]">
+                                                {row.person.character_id && <img src={get_player_icon(row.person.character_id, 64)} alt="" width="40" height="40" loading="lazy" />}
+                                                <span class="[ manage-who__text ]">
+                                                    <span class="[ manage-who__name ]">{row.person.name}</span>
+                                                    <span class="[ manage-who__sub ]">
+                                                        {row.is_lead && `${t('tasks.project.lead_role')} · `}
+                                                        {t('tasks.project.person_counts').replace('~DONE', String(row.done)).replace('~OPEN', String(row.open))}
+                                                    </span>
+                                                </span>
+                                            </span>
+                                        </ComponentBlock>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    }
+                </Flexblock>
+            </SectionTabPanel>
+
+            <SectionTabPanel id="tasks" id_prefix="project">
+                <ProjectTaskList project={project} />
+            </SectionTabPanel>
+
+            <SectionTabPanel id="updates" id_prefix="project">
+                <Flexblock gap="var(--space-xl)">
+                    {project.can_edit && project.status === 'open' &&
+                        <ComponentBlock>
+                            <form class="[ task-stack ]" hx-post={UPDATE_URL} hx-target="find .project-update-result" hx-swap="innerHTML">
+                                <h3 class="[ manage-eyebrow ]">{t('tasks.project.this_week_update')}</h3>
+                                <ManageField label={t('tasks.project.update_label')} for="project-update-body">
+                                    <Textarea id="project-update-body" name="body" rows="4" maxlength="4000" required />
+                                </ManageField>
+                                <div class="[ manage-actions ]">
+                                    <fieldset class="[ manage-chips ]">
+                                        <legend class="[ visually-hidden ]">{t('tasks.project.update_label')}</legend>
+                                        {(['on_track', 'at_risk', 'off_track'] as const).map((health) => (
+                                            <label class="[ manage-chip ]">
+                                                <input type="radio" name="health" value={health} checked={health === 'on_track'} />
+                                                {t(t_key('tasks.project.health_', health))}
+                                            </label>
+                                        ))}
+                                    </fieldset>
+                                    <div class="[ manage-actions__end ]">
+                                        <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.project.post_update')}</Button>
+                                    </div>
+                                </div>
+                                <div class="[ project-update-result ]" aria-live="polite"></div>
+                            </form>
+                        </ComponentBlock>
+                    }
+
+                    {project.updates.length === 0
+                        ? <EmptyState title={t('tasks.project.no_updates')} hint={t('tasks.project.no_updates_hint')} />
+                        : (
+                            <ul class="[ task-list ]" role="list">
+                                {project.updates.map((update) => (
+                                    <li class="[ task-update ]">
+                                        <span class="[ manage-who ]">
+                                            {update.author?.character_id && <img src={get_player_icon(update.author.character_id, 64)} alt="" width="40" height="40" loading="lazy" />}
+                                            <span class="[ manage-who__text ]">
+                                                <span class="[ manage-who__name ]">
+                                                    {update.author?.name ?? ''}
+                                                    {' '}<span class={`[ task-health is-${update.health} ]`}>{t(t_key('tasks.project.health_', update.health))}</span>
+                                                </span>
+                                                <span class="[ manage-who__sub ]">{task_date(update.created_at, lang)}</span>
+                                            </span>
+                                        </span>
+                                        <p>{update.body}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        )
+                    }
+
+                    {project.can_edit && project.status === 'open' &&
+                        <div id="project-finish">
+                            <ConfirmAction
+                                label={t('tasks.project.finish')}
+                                title={t('tasks.project.finish')}
+                                consequence={t('tasks.project.finish_confirm')}
+                                confirm_label={t('tasks.project.finish')}
+                                url={`${UPDATE_URL}&action=finish`}
+                                target="#project-finish"
+                            />
+                        </div>
+                    }
+                </Flexblock>
+            </SectionTabPanel>
+        </SectionTabs>
+    </Flexblock>
+</PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .project-update-body {
+        margin: 0;
+        white-space: pre-line;
+    }
+</style>

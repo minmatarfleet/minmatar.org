@@ -8726,6 +8726,314 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give a person or a team a task */
+        post: operations["taskboard_endpoints_post_task_post_task"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/assignees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pilots matching a name, and the teams this leader can assign */
+        get: operations["taskboard_endpoints_get_assignees_get_assignees"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My tasks: what needs me, suggestions, team work up for grabs */
+        get: operations["taskboard_endpoints_get_my_tasks_get_my_tasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/mine/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many open tasks need the signed-in pilot */
+        get: operations["taskboard_endpoints_get_my_task_count_get_my_task_count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show suggestions, and whether tasks are paused */
+        get: operations["taskboard_endpoints_get_preferences_get_preferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change the pilot's own task switches */
+        patch: operations["taskboard_endpoints_patch_preferences_patch_preferences"];
+        trace?: never;
+    };
+    "/api/tasks/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Projects this user can see and the templates to start from */
+        get: operations["taskboard_endpoints_get_projects_get_projects"];
+        put?: never;
+        /** Start a project; a template fills in its stages and tasks */
+        post: operations["taskboard_endpoints_post_project_post_project"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One project */
+        get: operations["taskboard_endpoints_get_project_get_project"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/projects/{project_id}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finish a project; its open tasks close */
+        post: operations["taskboard_endpoints_post_project_finish_post_project_finish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/projects/{project_id}/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post a project update: on track, at risk or off track */
+        post: operations["taskboard_endpoints_post_project_update_post_project_update"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each automatic task: who gets it, whether it is on, its timers */
+        get: operations["taskboard_endpoints_get_rules_get_rules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/rules/{rule}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change one automatic task's settings */
+        patch: operations["taskboard_endpoints_patch_rule_patch_rule"];
+        trace?: never;
+    };
+    "/api/tasks/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open and closed-this-week counts for each team this user leads */
+        get: operations["taskboard_endpoints_get_teams_get_teams"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/teams/{kind}/{team_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A team's leader tasks and its members' tasks by kind */
+        get: operations["taskboard_endpoints_get_team_get_team"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/teams/{kind}/{team_id}/rules/{rule}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which members have one kind of task waiting (never suggestions) */
+        get: operations["taskboard_endpoints_get_team_rule_get_team_rule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project templates: stages, tasks and who gets each */
+        get: operations["taskboard_endpoints_get_templates_get_templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One task with its comments */
+        get: operations["taskboard_endpoints_get_task_get_task"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{task_id}/actions/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Act on a task: done, snooze, not_now, bring_back, hand_back, take, keep, let_close or thank */
+        post: operations["taskboard_endpoints_post_task_action_post_task_action"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/{task_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Comment on a task */
+        post: operations["taskboard_endpoints_post_task_comment_post_task_comment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tech/assets": {
         parameters: {
             query?: never;
@@ -10634,6 +10942,34 @@ export interface components {
             solar_system_id?: number | null;
             /** Solar System Name */
             solar_system_name?: string | null;
+        };
+        /** AssigneePersonResponse */
+        AssigneePersonResponse: {
+            /** Character Id */
+            character_id?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Open Tasks
+             * @default 0
+             */
+            open_tasks?: number;
+            /** User Id */
+            user_id: number;
+        };
+        /** AssigneeTeamResponse */
+        AssigneeTeamResponse: {
+            /** Label */
+            label: string;
+            /** Screen */
+            screen: string;
+        };
+        /** AssigneesResponse */
+        AssigneesResponse: {
+            /** People */
+            people: components["schemas"]["AssigneePersonResponse"][];
+            /** Teams */
+            teams: components["schemas"]["AssigneeTeamResponse"][];
         };
         /**
          * AssignmentBreakdownResponse
@@ -22746,6 +23082,34 @@ export interface components {
             /** Lines By Ship */
             lines_by_ship: components["schemas"]["ShipLine"][];
         };
+        /** MyTasksResponse */
+        MyTasksResponse: {
+            /** Can Assign */
+            can_assign: boolean;
+            /** Closed This Week */
+            closed_this_week: components["schemas"]["TaskResponse"][];
+            /** Later */
+            later: components["schemas"]["TaskResponse"][];
+            me?: components["schemas"]["PersonResponse"] | null;
+            /** Minute */
+            minute: components["schemas"]["TaskResponse"][];
+            /** Needs You */
+            needs_you: number;
+            /** Now */
+            now: components["schemas"]["TaskResponse"][];
+            /** Paused */
+            paused: boolean;
+            /** Show Suggestions */
+            show_suggestions: boolean;
+            /** Snoozed */
+            snoozed: number;
+            /** Stopped */
+            stopped: components["schemas"]["TaskResponse"][];
+            /** This Week */
+            this_week: components["schemas"]["TaskResponse"][];
+            /** Up For Grabs */
+            up_for_grabs: components["schemas"]["TaskResponse"][];
+        };
         /**
          * NestedBreakdownNode
          * @description One node in a nested material breakdown tree.
@@ -23618,6 +23982,15 @@ export interface components {
             site_kinds: string[];
             /** Unmapped */
             unmapped: components["schemas"]["UnmappedPayoutCodeOut"][];
+        };
+        /** PersonResponse */
+        PersonResponse: {
+            /** Character Id */
+            character_id?: number | null;
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id: number;
         };
         /** PersonaRecommendationSchema */
         PersonaRecommendationSchema: {
@@ -25001,6 +25374,193 @@ export interface components {
             worst_name: string | null;
             /** Worst Profit */
             worst_profit: number | null;
+        };
+        /** ProjectCreateRequest */
+        ProjectCreateRequest: {
+            /** Lead Id */
+            lead_id?: number | null;
+            /**
+             * Link Url
+             * @default
+             */
+            link_url?: string;
+            /** Name */
+            name: string;
+            /** Starts On */
+            starts_on?: string | null;
+            /** Target Date */
+            target_date?: string | null;
+            /** Template Id */
+            template_id?: number | null;
+        };
+        /** ProjectDetailResponse */
+        ProjectDetailResponse: {
+            /** Can Edit */
+            can_edit: boolean;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Health */
+            health: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Kind Label */
+            kind_label: string;
+            lead?: components["schemas"]["PersonResponse"] | null;
+            /** Link Label */
+            link_label: string;
+            /** Link Url */
+            link_url: string;
+            /** Name */
+            name: string;
+            /** People */
+            people: components["schemas"]["ProjectPersonResponse"][];
+            /** Stages */
+            stages: components["schemas"]["ProjectStageResponse"][];
+            /** Starts On */
+            starts_on?: string | null;
+            /** Status */
+            status: string;
+            /** Target Date */
+            target_date?: string | null;
+            /** Tasks Done */
+            tasks_done: number;
+            /** Tasks Total */
+            tasks_total: number;
+            /** Team Label */
+            team_label: string;
+            /** Up For Grabs */
+            up_for_grabs: number;
+            /** Update Missing */
+            update_missing: boolean;
+            /** Updates */
+            updates: components["schemas"]["ProjectUpdateResponse"][];
+            waiting_longest?: components["schemas"]["WaitingOnResponse"] | null;
+        };
+        /** ProjectListRowResponse */
+        ProjectListRowResponse: {
+            /** Finished At */
+            finished_at?: string | null;
+            /** Health */
+            health: string;
+            /** I Have Tasks */
+            i_have_tasks: boolean;
+            /** I Lead */
+            i_lead: boolean;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Kind Label */
+            kind_label: string;
+            lead?: components["schemas"]["PersonResponse"] | null;
+            /** Link Label */
+            link_label: string;
+            /** Link Url */
+            link_url: string;
+            /** Name */
+            name: string;
+            /** Starts On */
+            starts_on?: string | null;
+            /** Status */
+            status: string;
+            /** Target Date */
+            target_date?: string | null;
+            /** Tasks Done */
+            tasks_done: number;
+            /** Tasks Total */
+            tasks_total: number;
+            /** Team Label */
+            team_label: string;
+            /** Up For Grabs */
+            up_for_grabs: number;
+            /** Update Missing */
+            update_missing: boolean;
+        };
+        /** ProjectPersonResponse */
+        ProjectPersonResponse: {
+            /** Done */
+            done: number;
+            /** Is Lead */
+            is_lead: boolean;
+            /** Open */
+            open: number;
+            person: components["schemas"]["PersonResponse"];
+        };
+        /** ProjectStageResponse */
+        ProjectStageResponse: {
+            /** Done */
+            done: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Tasks */
+            tasks: components["schemas"]["TaskResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** ProjectTemplateResponse */
+        ProjectTemplateResponse: {
+            /** Description */
+            description: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Task Count */
+            task_count: number;
+            /** Tasks */
+            tasks: components["schemas"]["TemplateTaskResponse"][];
+        };
+        /** ProjectTemplateRowResponse */
+        ProjectTemplateRowResponse: {
+            /** Description */
+            description: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Task Count */
+            task_count: number;
+        };
+        /** ProjectUpdateRequest */
+        ProjectUpdateRequest: {
+            /** Body */
+            body: string;
+            /** Health */
+            health: string;
+        };
+        /** ProjectUpdateResponse */
+        ProjectUpdateResponse: {
+            author?: components["schemas"]["PersonResponse"] | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Health */
+            health: string;
+            /** Id */
+            id: number;
+        };
+        /** ProjectsResponse */
+        ProjectsResponse: {
+            /** Can Start */
+            can_start: boolean;
+            /** Finished */
+            finished: components["schemas"]["ProjectListRowResponse"][];
+            /** Open */
+            open: components["schemas"]["ProjectListRowResponse"][];
+            /** Templates */
+            templates: components["schemas"]["ProjectTemplateRowResponse"][];
         };
         /** PublishableGroupSchema */
         PublishableGroupSchema: {
@@ -26467,6 +27027,49 @@ export interface components {
              */
             picks?: components["schemas"]["RsvpPickRequest"][];
         };
+        /** RuleRollupResponse */
+        RuleRollupResponse: {
+            /** Closed This Week */
+            closed_this_week: number;
+            /** Label */
+            label: string;
+            /** Rule */
+            rule: string;
+            /** Waiting */
+            waiting: number;
+            /** Weight */
+            weight: string;
+        };
+        /** RuleSettingPatch */
+        RuleSettingPatch: {
+            /** Claim Expires Days */
+            claim_expires_days?: number | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Stop After Days */
+            stop_after_days?: number | null;
+        };
+        /** RuleSettingResponse */
+        RuleSettingResponse: {
+            /** Audience */
+            audience: string;
+            /** Claim Expires Days */
+            claim_expires_days?: number | null;
+            /** Description */
+            description: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Label */
+            label: string;
+            /** Open Now */
+            open_now: number;
+            /** Rule */
+            rule: string;
+            /** Stop After Days */
+            stop_after_days?: number | null;
+            /** Weight */
+            weight: string;
+        };
         /** ScheduleChange */
         ScheduleChange: {
             /**
@@ -27560,6 +28163,293 @@ export interface components {
             doctrine: components["schemas"]["SuggestedTargetLine"][];
             /** Past Fleets */
             past_fleets: components["schemas"]["PastTargetFleet"][];
+        };
+        /** TaskCommentRequest */
+        TaskCommentRequest: {
+            /** Body */
+            body: string;
+        };
+        /** TaskCommentResponse */
+        TaskCommentResponse: {
+            author?: components["schemas"]["PersonResponse"] | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+        };
+        /** TaskCountResponse */
+        TaskCountResponse: {
+            /** Needs You */
+            needs_you: number;
+        };
+        /** TaskCreateRequest */
+        TaskCreateRequest: {
+            /** Assignee Id */
+            assignee_id?: number | null;
+            /**
+             * Body
+             * @default
+             */
+            body?: string;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Link Url
+             * @default
+             */
+            link_url?: string;
+            /** Project Id */
+            project_id?: number | null;
+            /**
+             * Screen
+             * @default
+             */
+            screen?: string;
+            /** Stage Id */
+            stage_id?: number | null;
+            /** Title */
+            title: string;
+            /**
+             * When
+             * @default this_week
+             */
+            when?: string;
+        };
+        /** TaskDetailResponse */
+        TaskDetailResponse: {
+            /** Actions */
+            actions: string[];
+            assignee?: components["schemas"]["PersonResponse"] | null;
+            /** Body */
+            body: string;
+            /** Close Note */
+            close_note: string;
+            /** Closed At */
+            closed_at?: string | null;
+            /** Comment Count */
+            comment_count: number;
+            /** Comments */
+            comments: components["schemas"]["TaskCommentResponse"][];
+            created_by?: components["schemas"]["PersonResponse"] | null;
+            /** Detail */
+            detail: string;
+            /** Due Date */
+            due_date?: string | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Link Label */
+            link_label: string;
+            /** Link Url */
+            link_url: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /** Project Id */
+            project_id?: number | null;
+            /** Project Name */
+            project_name: string;
+            /** Recurrence */
+            recurrence: string;
+            /** Rule */
+            rule: string;
+            /** Snoozed Until */
+            snoozed_until?: string | null;
+            /** Stage */
+            stage: string;
+            /** Status */
+            status: string;
+            /** Still Needed */
+            still_needed: boolean;
+            /** Team Id */
+            team_id?: number | null;
+            /** Team Kind */
+            team_kind: string;
+            /** Team Label */
+            team_label: string;
+            /** Team Role */
+            team_role: string;
+            thanked_by?: components["schemas"]["PersonResponse"] | null;
+            /** Title */
+            title: string;
+            waiting_on?: components["schemas"]["WaitingOnResponse"] | null;
+            /** Weight */
+            weight: string;
+            /** When */
+            when: string;
+        };
+        /** TaskPreferencesPatch */
+        TaskPreferencesPatch: {
+            /** Paused */
+            paused?: boolean | null;
+            /** Show Suggestions */
+            show_suggestions?: boolean | null;
+        };
+        /** TaskPreferencesResponse */
+        TaskPreferencesResponse: {
+            /** On Leave */
+            on_leave: boolean;
+            /** Paused */
+            paused: boolean;
+            /** Show Suggestions */
+            show_suggestions: boolean;
+        };
+        /** TaskResponse */
+        TaskResponse: {
+            /** Actions */
+            actions: string[];
+            assignee?: components["schemas"]["PersonResponse"] | null;
+            /** Body */
+            body: string;
+            /** Close Note */
+            close_note: string;
+            /** Closed At */
+            closed_at?: string | null;
+            /** Comment Count */
+            comment_count: number;
+            created_by?: components["schemas"]["PersonResponse"] | null;
+            /** Detail */
+            detail: string;
+            /** Due Date */
+            due_date?: string | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Link Label */
+            link_label: string;
+            /** Link Url */
+            link_url: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /** Project Id */
+            project_id?: number | null;
+            /** Project Name */
+            project_name: string;
+            /** Recurrence */
+            recurrence: string;
+            /** Rule */
+            rule: string;
+            /** Snoozed Until */
+            snoozed_until?: string | null;
+            /** Stage */
+            stage: string;
+            /** Status */
+            status: string;
+            /** Still Needed */
+            still_needed: boolean;
+            /** Team Id */
+            team_id?: number | null;
+            /** Team Kind */
+            team_kind: string;
+            /** Team Label */
+            team_label: string;
+            /** Team Role */
+            team_role: string;
+            thanked_by?: components["schemas"]["PersonResponse"] | null;
+            /** Title */
+            title: string;
+            waiting_on?: components["schemas"]["WaitingOnResponse"] | null;
+            /** Weight */
+            weight: string;
+            /** When */
+            when: string;
+        };
+        /** TeamDetailResponse */
+        TeamDetailResponse: {
+            /** Groups */
+            groups: components["schemas"]["TeamGroupResponse"][];
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Leader Closed This Week */
+            leader_closed_this_week: number;
+            /** Leader Tasks */
+            leader_tasks: components["schemas"]["TaskResponse"][];
+            /** Members */
+            members: components["schemas"]["RuleRollupResponse"][];
+            /** Members Paused */
+            members_paused: number;
+            /** Name */
+            name: string;
+        };
+        /** TeamGroupResponse */
+        TeamGroupResponse: {
+            chief?: components["schemas"]["PersonResponse"] | null;
+            /** Closed This Week */
+            closed_this_week: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Open */
+            open: number;
+            /** Tribe Id */
+            tribe_id: number;
+        };
+        /** TeamOverviewResponse */
+        TeamOverviewResponse: {
+            /** Corporations */
+            corporations: components["schemas"]["TeamRowResponse"][];
+            /** Pilots */
+            pilots: components["schemas"]["RuleRollupResponse"][];
+            /** Tribes */
+            tribes: components["schemas"]["TeamRowResponse"][];
+        };
+        /** TeamRowResponse */
+        TeamRowResponse: {
+            /** Closed This Week */
+            closed_this_week: number;
+            /** Detail */
+            detail: string;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Open */
+            open: number;
+        };
+        /** TeamRulePilotResponse */
+        TeamRulePilotResponse: {
+            /** Detail */
+            detail: string;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            pilot?: components["schemas"]["PersonResponse"] | null;
+            /** Task Id */
+            task_id: number;
+        };
+        /** TemplateTaskResponse */
+        TemplateTaskResponse: {
+            /** Goes To */
+            goes_to: string;
+            /** Id */
+            id: number;
+            /** Offset Days */
+            offset_days?: number | null;
+            /** Recurrence */
+            recurrence: string;
+            /** Stage */
+            stage: string;
+            /** Title */
+            title: string;
         };
         /**
          * TestFleetCreationRequest
@@ -29227,6 +30117,13 @@ export interface components {
             note?: string;
             /** Tribe Group Id */
             tribe_group_id?: number | null;
+        };
+        /** WaitingOnResponse */
+        WaitingOnResponse: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
         };
         /** WarzoneBriefingResponse */
         WarzoneBriefingResponse: {
@@ -51175,6 +52072,688 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_task_post_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_assignees_get_assignees: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssigneesResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_my_tasks_get_my_tasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTasksResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_my_task_count_get_my_task_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCountResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_preferences_get_preferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskPreferencesResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_patch_preferences_patch_preferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskPreferencesPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskPreferencesResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_projects_get_projects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectsResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_project_post_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_project_get_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_project_finish_post_project_finish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_project_update_post_project_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_rules_get_rules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSettingResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_patch_rule_patch_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleSettingPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSettingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_teams_get_teams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamOverviewResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_team_get_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_team_rule_get_team_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                team_id: number;
+                rule: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamRulePilotResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_templates_get_templates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTemplateResponse"][];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_get_task_get_task: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_task_action_post_task_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+                action: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_task_comment_post_task_comment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

@@ -1,0 +1,516 @@
+"""Automatic tasks: what opens one, for whom, and what it says.
+
+Each rule collects the things that should have an open task right now.
+``taskboard.sync`` opens a task for each new thing, refreshes the text of
+the ones still there, and closes the ones that are gone, so a task closes
+by itself once the pilot fixes what it is about.
+
+Links are site paths; the website adds its own origin and language.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Callable, Iterable, Optional
+
+from django.db.models import Count, Min, Q
+from django.utils import timezone
+
+from applications.models import EveCorporationApplication
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from fittings.models import EveDoctrineChangeRequest, EveFittingChangeRequest
+from fleets.models import EveFleetInvite
+from manage_hub.summary import npsi_feeds, payout_codes, reddit_posts
+from taskboard.models import TeamKind, Weight
+from tribes.models import (
+    TribeGroup,
+    TribeGroupInvitation,
+    TribeGroupMembership,
+)
+
+AUDIENCE_PILOT = "pilot"
+AUDIENCE_CHIEF = "chief"
+AUDIENCE_CEO = "ceo"
+AUDIENCE_STAFF = "staff"
+AUDIENCES = (AUDIENCE_PILOT, AUDIENCE_CHIEF, AUDIENCE_CEO, AUDIENCE_STAFF)
+
+
+@dataclass
+class Item:
+    """One thing that should have an open task."""
+
+    source_key: str
+    title: str
+    detail: str = ""
+    link_url: str = ""
+    link_label: str = ""
+    # A pilot's own task...
+    user_id: Optional[int] = None
+    # ...or work shared by a team until someone takes it.
+    team_kind: str = ""
+    team_id: Optional[int] = None
+    team_role: str = ""
+    team_label: str = ""
+    # When the thing started waiting, when the site knows.
+    since: Optional[datetime] = None
+
+
+@dataclass(frozen=True)
+class Rule:
+    code: str
+    # Settings and team views name the rule with these.
+    label: str
+    description: str
+    audience: str
+    weight: str
+    # collect(user_ids): the items that should be open now. user_ids limits
+    # a pilot rule to those users (a quick refresh when a pilot opens their
+    # list); team rules ignore it.
+    collect: Callable[[Optional[set[int]]], list[Item]]
+    stop_after_days: Optional[int] = None
+    claim_expires_days: Optional[int] = None
+
+    @property
+    def is_pilot_rule(self) -> bool:
+        return self.audience == AUDIENCE_PILOT
+
+
+def _limit(queryset, field: str, user_ids: Optional[set[int]]):
+    if user_ids is None:
+        return queryset
+    return queryset.filter(**{f"{field}__in": user_ids})
+
+
+# --- Pilot rules -------------------------------------------------------
+
+
+def collect_reauth_character(user_ids: Optional[set[int]]) -> list[Item]:
+
+    rows = _limit(
+        EveCharacter.objects.filter(esi_suspended=True, user__isnull=False),
+        "user_id",
+        user_ids,
+    ).values_list("user_id", "character_id", "character_name")
+    return [
+        Item(
+            source_key=f"character:{character_id}",
+            user_id=user_id,
+            title=f"Re-add {name or character_id}",
+            detail="Its ESI token stopped working",
+            link_url="/account/",
+            link_label="Re-add character",
+        )
+        for user_id, character_id, name in rows
+    ]
+
+
+def collect_pick_main(user_ids: Optional[set[int]]) -> list[Item]:
+
+    with_characters = set(
+        _limit(
+            EveCharacter.objects.filter(user__isnull=False),
+            "user_id",
+            user_ids,
+        ).values_list("user_id", flat=True)
+    )
+    with_main = set(
+        EvePlayer.objects.filter(
+            user_id__in=with_characters, primary_character__isnull=False
+        ).values_list("user_id", flat=True)
+    )
+    return [
+        Item(
+            source_key="main",
+            user_id=user_id,
+            title="Pick your main character",
+            detail="Leaders and fleet tools show you by your main",
+            link_url="/account/",
+            link_label="Pick main",
+        )
+        for user_id in sorted(with_characters - with_main)
+    ]
+
+
+def collect_fleet_invite(user_ids: Optional[set[int]]) -> list[Item]:
+
+    now = timezone.now()
+    invites = _limit(
+        EveFleetInvite.objects.filter(
+            answer=EveFleetInvite.ANSWER_PENDING,
+            eve_fleet__start_time__gt=now,
+        ),
+        "user_id",
+        user_ids,
+    ).select_related("eve_fleet", "eve_fleet__created_by")
+    items = []
+    for invite in invites:
+        fleet = invite.eve_fleet
+        fc = fleet.created_by.username if fleet.created_by else ""
+        items.append(
+            Item(
+                source_key=f"fleet:{fleet.pk}",
+                user_id=invite.user_id,
+                title=f"Answer your {fleet.get_type_display()} fleet invite",
+                detail=f"{fc} invited you" if fc else "You were invited",
+                link_url=f"/fleets/upcoming/{fleet.pk}",
+                link_label="Answer",
+                since=invite.sent_at or invite.created_at,
+            )
+        )
+    return items
+
+
+def collect_tribe_invitation(user_ids: Optional[set[int]]) -> list[Item]:
+
+    now = timezone.now()
+    invitations = _limit(
+        TribeGroupInvitation.objects.filter(
+            status=TribeGroupInvitation.STATUS_PENDING, expires_at__gt=now
+        ),
+        "user_id",
+        user_ids,
+    ).select_related("tribe_group", "invited_by")
+    items = []
+    for invitation in invitations:
+        group = invitation.tribe_group
+        inviter = (
+            invitation.invited_by.username if invitation.invited_by else ""
+        )
+        items.append(
+            Item(
+                source_key=f"invitation:{invitation.pk}",
+                user_id=invitation.user_id,
+                title=f"Answer your invitation to {group.name}",
+                detail=f"{inviter} invited you" if inviter else "",
+                link_url=f"/alliance/tribes/{group.tribe_id}/{group.pk}/",
+                link_label="Open invite",
+                since=invitation.created_at,
+            )
+        )
+    return items
+
+
+def collect_set_timezone(user_ids: Optional[set[int]]) -> list[Item]:
+    """Pilots with a main but no declared prime time (EvePlayer.prime_time,
+    which the timezones app reads as the declared timezone)."""
+
+    players = _limit(
+        EvePlayer.objects.filter(
+            user__isnull=False, primary_character__isnull=False
+        ).filter(Q(prime_time__isnull=True) | Q(prime_time="")),
+        "user_id",
+        user_ids,
+    ).values_list("user_id", flat=True)
+    return [
+        Item(
+            source_key="timezone",
+            user_id=user_id,
+            title="Set your timezone",
+            detail="Fleet invites follow the hours you play",
+            link_label="Set timezone",
+        )
+        for user_id in players
+    ]
+
+
+# --- Team rules ----------------------------------------------------------
+
+
+def collect_review_applications(user_ids=None) -> list[Item]:
+    del user_ids  # a team rule collects for everyone
+
+    rows = list(
+        EveCorporationApplication.objects.filter(status="pending")
+        .order_by()
+        .values("corporation_id")
+        .annotate(n=Count("id"), first=Min("created_at"))
+    )
+    names = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in=[row["corporation_id"] for row in rows]
+        ).values_list("corporation_id", "name")
+    )
+    items = []
+    for row in rows:
+        corporation_id = row["corporation_id"]
+        name = names.get(corporation_id, str(corporation_id))
+        count = row["n"]
+        items.append(
+            Item(
+                source_key=f"corporation:{corporation_id}",
+                title=(
+                    f"Review {count} application{'s' if count != 1 else ''}"
+                    f" to {name}"
+                ),
+                link_url="/alliance/corporations/applications/",
+                link_label="Review",
+                team_kind=TeamKind.CORPORATION,
+                team_id=corporation_id,
+                team_role="recruiters",
+                team_label=name,
+                since=row["first"],
+            )
+        )
+    return items
+
+
+def collect_review_join_requests(user_ids=None) -> list[Item]:
+    del user_ids  # a team rule collects for everyone
+
+    rows = list(
+        TribeGroupMembership.objects.filter(status="pending")
+        .order_by()
+        .values("tribe_group_id")
+        .annotate(n=Count("id"), first=Min("created_at"))
+    )
+    groups = TribeGroup.objects.in_bulk(
+        [row["tribe_group_id"] for row in rows]
+    )
+    items = []
+    for row in rows:
+        group = groups.get(row["tribe_group_id"])
+        if group is None:
+            continue
+        count = row["n"]
+        items.append(
+            Item(
+                source_key=f"tribe_group:{group.pk}",
+                title=(
+                    f"Review {count} request{'s' if count != 1 else ''}"
+                    f" to join {group.name}"
+                ),
+                link_url=(
+                    f"/alliance/tribes/{group.tribe_id}/{group.pk}/members"
+                ),
+                link_label="Review",
+                team_kind=TeamKind.TRIBE_GROUP,
+                team_id=group.pk,
+                team_role="leaders",
+                team_label=group.name,
+                since=row["first"],
+            )
+        )
+    return items
+
+
+def _staff_item(
+    screen: str, title: str, detail: str, link: str, label: str, since
+) -> Item:
+    return Item(
+        source_key=f"screen:{screen}",
+        title=title,
+        detail=detail,
+        link_url=link,
+        link_label=label,
+        team_kind=TeamKind.STAFF,
+        team_role=screen,
+        team_label="",
+        since=since,
+    )
+
+
+def collect_doctrine_changes(user_ids=None) -> list[Item]:
+    del user_ids  # a team rule collects for everyone
+
+    count = 0
+    first = None
+    for model in (EveDoctrineChangeRequest, EveFittingChangeRequest):
+        row = model.objects.filter(status="pending").aggregate(
+            n=Count("id"), first=Min("submitted_at")
+        )
+        count += row["n"] or 0
+        if row["first"] and (first is None or row["first"] < first):
+            first = row["first"]
+    if not count:
+        return []
+    return [
+        _staff_item(
+            "doctrines",
+            f"Review {count} doctrine change{'s' if count != 1 else ''}",
+            "",
+            "/ships/doctrines/review/",
+            "Review",
+            first,
+        )
+    ]
+
+
+def collect_reddit_posts(user_ids=None) -> list[Item]:
+    del user_ids  # a team rule collects for everyone
+
+    queue = reddit_posts()
+    if not queue.count:
+        return []
+    return [
+        _staff_item(
+            "reddit",
+            f"Approve {queue.count} Reddit post"
+            f"{'s' if queue.count != 1 else ''}",
+            f"{queue.next_label} is next" if queue.next_label else "",
+            "/alliance/reddit-review/",
+            "Review",
+            queue.oldest_at,
+        )
+    ]
+
+
+def collect_payout_codes(user_ids=None) -> list[Item]:
+    del user_ids  # a team rule collects for everyone
+
+    queue = payout_codes()
+    if not queue.count:
+        return []
+    return [
+        _staff_item(
+            "payout_codes",
+            f"Map {queue.count} new payout code"
+            f"{'s' if queue.count != 1 else ''}",
+            f"Code {queue.next_label} is the oldest",
+            "/campaigns/event-codes/",
+            "Map codes",
+            queue.oldest_at,
+        )
+    ]
+
+
+def collect_npsi_feeds(user_ids=None) -> list[Item]:
+    del user_ids  # a team rule collects for everyone
+
+    queue = npsi_feeds()
+    if not queue.count:
+        return []
+    title = (
+        f"Fix the {queue.next_label} calendar feed"
+        if queue.count == 1 and queue.next_label
+        else f"Fix {queue.count} calendar feeds"
+    )
+    return [
+        _staff_item(
+            "npsi_feeds",
+            title,
+            "It stopped reading",
+            "/fleets/npsi-sources/",
+            "Open feeds",
+            queue.oldest_at,
+        )
+    ]
+
+
+RULES: dict[str, Rule] = {
+    rule.code: rule
+    for rule in (
+        Rule(
+            "reauth_character",
+            "Re-add a character",
+            "Opens when a character's ESI token stops working",
+            AUDIENCE_PILOT,
+            Weight.NEEDS_YOU,
+            collect_reauth_character,
+        ),
+        Rule(
+            "pick_main",
+            "Pick a main character",
+            "Opens when an account has characters but no main",
+            AUDIENCE_PILOT,
+            Weight.NEEDS_YOU,
+            collect_pick_main,
+        ),
+        Rule(
+            "fleet_invite",
+            "Answer a fleet invite",
+            "Opens when an FC invites the pilot",
+            AUDIENCE_PILOT,
+            Weight.NEEDS_YOU,
+            collect_fleet_invite,
+        ),
+        Rule(
+            "tribe_invitation",
+            "Answer a group invitation",
+            "Opens when a chief invites the pilot to a tribe group",
+            AUDIENCE_PILOT,
+            Weight.NEEDS_YOU,
+            collect_tribe_invitation,
+        ),
+        Rule(
+            "set_timezone",
+            "Set your timezone",
+            "Opens when no timezone is on record",
+            AUDIENCE_PILOT,
+            Weight.SUGGESTION,
+            collect_set_timezone,
+            stop_after_days=30,
+        ),
+        Rule(
+            "review_join_requests",
+            "Review requests to join a group",
+            "Opens when pilots ask to join a tribe group",
+            AUDIENCE_CHIEF,
+            Weight.NEEDS_YOU,
+            collect_review_join_requests,
+            claim_expires_days=14,
+        ),
+        Rule(
+            "review_applications",
+            "Review applications",
+            "Opens when pilots apply to a corporation",
+            AUDIENCE_CEO,
+            Weight.NEEDS_YOU,
+            collect_review_applications,
+            claim_expires_days=14,
+        ),
+        Rule(
+            "review_doctrine_changes",
+            "Review doctrine changes",
+            "Opens when a doctrine or fitting change is sent for review",
+            AUDIENCE_STAFF,
+            Weight.NEEDS_YOU,
+            collect_doctrine_changes,
+            claim_expires_days=14,
+        ),
+        Rule(
+            "approve_reddit_posts",
+            "Approve Reddit posts",
+            "Opens when a corporation's Reddit post waits for approval",
+            AUDIENCE_STAFF,
+            Weight.NEEDS_YOU,
+            collect_reddit_posts,
+            claim_expires_days=14,
+        ),
+        Rule(
+            "map_payout_codes",
+            "Map new payout codes",
+            "Opens when a campaign payout code has no meaning yet",
+            AUDIENCE_STAFF,
+            Weight.NEEDS_YOU,
+            collect_payout_codes,
+            claim_expires_days=14,
+        ),
+        Rule(
+            "fix_calendar_feeds",
+            "Fix a calendar feed",
+            "Opens when an NPSI calendar feed fails to read",
+            AUDIENCE_STAFF,
+            Weight.NEEDS_YOU,
+            collect_npsi_feeds,
+            claim_expires_days=14,
+        ),
+    )
+}
+
+
+def pilot_rules() -> Iterable[Rule]:
+    return (rule for rule in RULES.values() if rule.is_pilot_rule)
+
+
+def stop_after(rule: Rule, setting) -> Optional[timedelta]:
+    days = setting.stop_after_days if setting else rule.stop_after_days
+    return timedelta(days=days) if days else None
+
+
+def claim_expiry(rule: Optional[Rule], setting) -> Optional[timedelta]:
+    if setting and setting.claim_expires_days:
+        return timedelta(days=setting.claim_expires_days)
+    if rule and rule.claim_expires_days:
+        return timedelta(days=rule.claim_expires_days)
+    return None

@@ -1,7 +1,9 @@
 {
     "$comment": "The Manage hub's settings screens and queues, in display order. Each screen opens with the site gate its page uses (feature_gates.json) or, where the page asks the API instead, a named backend check. Read by src/helpers/manage.ts (links, labels, the Neocom check). The backend decides access from its copy in backend/manage_hub/screens.py; its tests fail when the two drift. Paths are where the pages live today.",
-    "groups": ["fleets", "market", "content", "learning", "ships", "people"],
+    "groups": ["tasks", "fleets", "market", "content", "learning", "ships", "people"],
     "screens": [
+        { "key": "task_rules", "group": "tasks", "path": "/tasks/settings/rules/", "gate": "tasks.manage" },
+        { "key": "project_templates", "group": "tasks", "path": "/tasks/settings/templates/", "gate": "tasks.manage" },
         { "key": "campaigns", "group": "fleets", "path": "/campaigns/", "gate": "campaigns.manage" },
         { "key": "payout_codes", "group": "fleets", "path": "/campaigns/event-codes/", "gate": "campaigns.manage" },
         { "key": "npsi_feeds", "group": "fleets", "path": "/fleets/npsi-sources/", "gate": "fleets.npsi_sources.manage" },

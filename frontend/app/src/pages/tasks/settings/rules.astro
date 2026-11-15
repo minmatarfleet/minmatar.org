@@ -1,0 +1,92 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TaskRuleSetting } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { get_task_rules } from '@helpers/api.minmatar.org/tasks'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+if (!can(await get_gates(Astro), 'tasks.manage')) return HTTP_403_Forbidden()
+
+const AUDIENCES = ['pilot', 'chief', 'ceo', 'staff'] as const
+type Audience = typeof AUDIENCES[number]
+
+let rules: TaskRuleSetting[] = []
+let error: Error | null = null
+try {
+    rules = await get_task_rules(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+
+const page_title = t('tasks.settings.rules_title')
+const fact = t('tasks.settings.rules_fact')
+    .replace('~ON', String(rules.filter((rule) => rule.enabled).length))
+    .replace('~TOTAL', String(rules.length))
+
+const breadcrumbs = [
+    { page_title: t('tasks.page_title'), accumulated_path: translatePath('/tasks/') },
+    { page_title: t('tasks.tab.settings'), accumulated_path: translatePath('/tasks/#settings') },
+    { page_title, accumulated_path: translatePath('/tasks/settings/rules/') },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import TaskRuleRow from '@components/blocks/tasks/TaskRuleRow.astro'
+---
+
+<Viewport title={page_title} meta_description={t('tasks.description')}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} fact={fact} />
+        </Flexblock>
+
+        {error
+            ? <ErrorRefetch args={{ partial: translatePath('/tasks/settings/rules/'), error, delay: 0 }} />
+            : (
+                <div x-data="{ audience: 'pilot' }" class="[ task-stack ]">
+                    <fieldset class="[ manage-chips ]">
+                        <legend class="[ visually-hidden ]">{page_title}</legend>
+                        {AUDIENCES.map((audience: Audience) => (
+                            <label class="[ manage-chip ]">
+                                <input type="radio" name="audience" value={audience} x-model="audience" checked={audience === 'pilot'} />
+                                {t(t_key('tasks.settings.audience_', audience))}
+                                <span class="[ manage-chip__count ]">{rules.filter((rule) => rule.audience === audience).length}</span>
+                            </label>
+                        ))}
+                    </fieldset>
+
+                    {AUDIENCES.map((audience: Audience) => (
+                        <div x-show={`audience === '${audience}'`} x-cloak={audience !== 'pilot' ? true : undefined}>
+                            <ManageTable
+                                caption={t(t_key('tasks.settings.audience_', audience))}
+                                min_width="36rem"
+                                columns={[
+                                    { label: t('tasks.settings.task') },
+                                    { label: t('tasks.settings.open_now'), align: 'num' },
+                                    { label: t('tasks.settings.enabled'), align: 'num' },
+                                ]}
+                            >
+                                {rules.filter((rule) => rule.audience === audience).map((rule) => (
+                                    <TaskRuleRow rule={rule} />
+                                ))}
+                            </ManageTable>
+                        </div>
+                    ))}
+                </div>
+            )
+        }
+    </Flexblock>
+</PageLanding>
+</Viewport>

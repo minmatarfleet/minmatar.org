@@ -1,0 +1,89 @@
+---
+/**
+ * One automatic task on the settings screen: its name, what opens it, how
+ * many are open, and whether it is on. It opens in place to its timers.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TaskRuleSetting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    rule:       TaskRuleSetting;
+    open?:      boolean;
+    saved?:     boolean;
+    error?:     string | null;
+}
+
+const { rule, open = false, saved = false, error = null } = Astro.props
+
+const ROW_ID = `rule-${rule.rule}`
+const SAVE_URL = translatePath(`/partials/tasks_rule_component/?rule=${encodeURIComponent(rule.rule)}`)
+const is_suggestion = rule.weight === 'suggestion'
+const has_timers = is_suggestion || rule.audience !== 'pilot'
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import Input from '@components/blocks/Input.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<ExpandRow id={ROW_ID} colspan={4} label={rule.label} open={open} dim={!rule.enabled}>
+    <td>
+        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+            <span class="[ manage-who__text ]">
+                <span class="[ manage-who__name ]">
+                    {rule.label}
+                    {is_suggestion && <span class="[ manage-muted ]"> · {t('tasks.settings.suggestion')}</span>}
+                </span>
+                <span class="[ manage-who__sub ]">{rule.description}</span>
+            </span>
+        </button>
+    </td>
+    <td class="[ num ]">{rule.open_now}</td>
+    <td class="[ num ]">
+        <ManageSwitch
+            name="enabled"
+            label={t('tasks.settings.enabled')}
+            hide_label={true}
+            checked={rule.enabled}
+            hx-post={`${SAVE_URL}&toggle=1`}
+            hx-trigger="change"
+            hx-target={`#${ROW_ID}`}
+            hx-select={`#${ROW_ID}`}
+            hx-swap="outerHTML"
+        />
+    </td>
+
+    <div slot="detail">
+    {!has_timers && <p class="[ manage-muted ]">{t('tasks.settings.nothing_to_set')}</p>}
+    {has_timers &&
+    <form
+        class="[ manage-form ]"
+        hx-post={SAVE_URL}
+        hx-target={`#${ROW_ID}`}
+        hx-select={`#${ROW_ID}`}
+        hx-swap="outerHTML"
+    >
+        <div class="[ manage-fields ]">
+            {is_suggestion &&
+                <ManageField label={t('tasks.settings.stop_after')} for={`${ROW_ID}-stop`}>
+                    <Input id={`${ROW_ID}-stop`} name="stop_after_days" type="number" min="1" max="365" size="sm" value={rule.stop_after_days ?? ''} />
+                </ManageField>
+            }
+            {rule.audience !== 'pilot' &&
+                <ManageField label={t('tasks.settings.claim_expires')} for={`${ROW_ID}-claim`}>
+                    <Input id={`${ROW_ID}-claim`} name="claim_expires_days" type="number" min="1" max="365" size="sm" value={rule.claim_expires_days ?? ''} />
+                </ManageField>
+            }
+        </div>
+        <div class="[ manage-actions ]">
+            <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.settings.save')}</Button>
+            {saved && <span class="[ manage-saved ]">{t('tasks.settings.saved')}</span>}
+            {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+        </div>
+    </form>
+    }
+    </div>
+</ExpandRow>

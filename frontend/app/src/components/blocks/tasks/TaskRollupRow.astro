@@ -1,0 +1,56 @@
+---
+/**
+ * One kind of member task on a team's Members table: how many wait and
+ * how many closed this week. A needs-you kind opens in place to the pilots
+ * behind it; a suggestion stays a count. Its own component because Astro
+ * drops table rows written inside an expression.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TaskRuleRollup } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    row:        TaskRuleRollup;
+    team_kind:  string;
+    team_id:    number;
+}
+
+const { row, team_kind, team_id } = Astro.props
+
+const opens = row.weight === 'needs_you' && row.waiting > 0
+const url = translatePath(`/partials/tasks_team_rule_component/?kind=${team_kind}&id=${team_id}&rule=${encodeURIComponent(row.rule)}`)
+
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+---
+
+{opens
+    ? (
+        <ExpandRow colspan={4} label={t('tasks.team.see_pilots')} url={url}>
+            <td>
+                <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                    <span class="[ manage-who__text ]">
+                        <span class="[ manage-who__name ]">{row.label}</span>
+                    </span>
+                </button>
+            </td>
+            <td class="[ num ]">{row.waiting}</td>
+            <td class="[ num manage-good ]">{row.closed_this_week}</td>
+        </ExpandRow>
+    )
+    : (
+        <tbody>
+            <tr class="[ manage-row ]">
+                <td>
+                    <span class="[ manage-who__text ]">
+                        <span class="[ manage-who__name ]">{row.label}</span>
+                        {row.weight === 'suggestion' && <span class="[ manage-who__sub ]">{t('tasks.team.suggestion')}</span>}
+                    </span>
+                </td>
+                <td class="[ num ]">{row.waiting}</td>
+                <td class="[ num manage-good ]">{row.closed_this_week}</td>
+                <td></td>
+            </tr>
+        </tbody>
+    )
+}
