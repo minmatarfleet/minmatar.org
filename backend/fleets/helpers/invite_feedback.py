@@ -285,7 +285,18 @@ def _closed_panel() -> dict:
     )
 
 
+def _survey_closed() -> bool:
+    """Once the real round closes, everyone gets the results: test-send
+    recipients and pilots who were never asked too."""
+    survey = _current_round()
+    return bool(
+        survey and survey.status == FleetInviteFeedbackRound.STATUS_CLOSED
+    )
+
+
 def form_for(user, *, edit: bool) -> dict:
+    if _survey_closed():
+        return _closed_panel()
     row = (
         FleetInviteFeedback.objects.select_related("round")
         .filter(user=user)
@@ -304,6 +315,8 @@ def form_for(user, *, edit: bool) -> dict:
 
 
 def submit(user, payload: dict, *, source: str = SOURCE_WEB) -> dict:
+    if _survey_closed():
+        return _closed_panel()
     row = (
         FleetInviteFeedback.objects.select_related("round")
         .filter(user=user)
