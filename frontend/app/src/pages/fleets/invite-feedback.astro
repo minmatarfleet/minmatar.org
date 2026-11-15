@@ -10,6 +10,8 @@ if (!user) return login_redirect(Astro)
 
 import {
     answers_from_form,
+    INVITE_CHANGES_PATH,
+    survey_closed,
 } from '@helpers/fleet_invite_feedback'
 import type { InviteFeedbackAnswers, InviteFeedbackForm } from '@helpers/fleet_invite_feedback'
 import {
@@ -46,6 +48,9 @@ if (!form && !load_error) {
         load_error = true
     }
 }
+
+// The survey has closed: send pilots to what changed because of it.
+if (survey_closed(form)) return Astro.redirect(translatePath(INVITE_CHANGES_PATH), 302)
 
 const page_title = t('fleets.invite_feedback.page_title')
 const partial_url = translatePath('/partials/fleet_invite_feedback_component/')

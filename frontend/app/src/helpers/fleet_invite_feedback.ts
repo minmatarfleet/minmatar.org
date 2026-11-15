@@ -127,3 +127,11 @@ export function bar_width(count: number, max: number) {
 export function bar_max(bars: InviteFeedbackBar[]) {
     return bars.reduce((max, bar) => Math.max(max, bar.count), 0)
 }
+
+/** Where the survey sends pilots once it has closed: its public results. */
+export const INVITE_CHANGES_PATH = '/fleets/invite-feedback/results/'
+
+/** The survey is over: the page and its partial redirect instead of showing the closed panel. */
+export function survey_closed(form: Pick<InviteFeedbackForm, 'state'> | null) {
+    return form?.state === 'closed'
+}

@@ -12,7 +12,7 @@ interface Props {
 }
 
 const { results } = Astro.props
-const results_path = translatePath('/fleets/invite-feedback/results/')
+const results_path = translatePath('/fleets/invite-feedback/responses/')
 const has_answers = results.response_count > 0
 
 function href_for(key: string) {

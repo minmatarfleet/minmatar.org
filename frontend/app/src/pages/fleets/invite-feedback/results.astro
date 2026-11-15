@@ -2,42 +2,26 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
-import { get_request_user } from '@helpers/request_user'
+import { fleet_invite_changes as notes } from '@/data/fleet_invite_changes'
 
-const { auth_token, user } = get_request_user(Astro)
-if (!user) return login_redirect(Astro)
-
-import { get_gates, can } from '@helpers/gates'
-const gates = await get_gates(Astro)
-if (!can(gates, 'fleets.manage_any')) return HTTP_403_Forbidden()
-
-import type { InviteFeedbackResults } from '@helpers/fleet_invite_feedback'
-import { get_invite_feedback_results } from '@helpers/api.minmatar.org/invite_feedback' // pragma: allowlist secret
-
-const cut = Astro.url.searchParams.get('cut') ?? 'all'
-let results: InviteFeedbackResults | null = null
-let load_error = false
-try {
-    results = await get_invite_feedback_results(auth_token as string, cut)
-} catch {
-    load_error = true
-}
-
-const page_title = t('fleets.invite_feedback.results_title')
+const page_title = t('fleets.invite_changes.page_title')
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FleetInviteFeedbackResults from '@components/blocks/FleetInviteFeedbackResults.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import InviteChangesChart from '@components/blocks/fleet_invite_changes/InviteChangesChart.astro'
 ---
 
 <Viewport
-    title={page_title}
-    meta_description={t('fleets.invite_feedback.results_meta')}
+    title={t('fleets.invite_changes.meta_title')}
+    meta_description={t('fleets.invite_changes.meta_description')}
 >
     <PageWide
+        padding_block="var(--space-m)"
         cover={{
             image: '/images/fleets-cover.jpg',
             image_990: '/images/fleets-cover.jpg',
@@ -49,17 +33,209 @@ import FleetInviteFeedbackResults from '@components/blocks/FleetInviteFeedbackRe
             accumulated_path: '/fleets/upcoming/',
             page_title: t('fleets.hub.upcoming'),
         }, {
+            accumulated_path: '/fleets/invite-feedback/',
+            page_title: t('fleets.invite_feedback.page_title'),
+        }, {
             accumulated_path: '/fleets/invite-feedback/results/',
-            page_title: page_title,
+            page_title: t('fleets.invite_changes.breadcrumb'),
         }]}
     >
-        <Flexblock slot="header" gap="var(--space-3xs)">
+        <Flexblock slot="header" gap="var(--space-2xs)" class="[ hero ]">
+            <span class="[ kicker ]">{notes.kicker}</span>
             <PageTitle>{page_title}</PageTitle>
         </Flexblock>
-        {load_error || !results ?
-            <p>{t('fleets.invite_feedback.load_error')}</p>
-            :
-            <FleetInviteFeedbackResults results={results} />
-        }
+
+        <TextBox max_width="var(--max-landing-width)" class="[ invite-changes ]">
+            <Flexblock gap="var(--space-2xl)">
+                <p class="[ intro ]">{notes.intro}</p>
+
+                <section aria-label="Headline results">
+                    <FlexInline class="[ stats ]" gap="var(--space-s)">
+                        {notes.stats.map((stat) =>
+                            <ComponentBlock class="[ stat ]" padding_block="var(--space-m)" padding_inline="var(--space-m)">
+                                <Flexblock gap="var(--space-3xs)">
+                                    <span class="[ stat-value ]">{stat.value}{stat.suffix && <span class="[ stat-suffix ]">{stat.suffix}</span>}</span>
+                                    <span class="[ stat-label ]">{stat.label}</span>
+                                </Flexblock>
+                            </ComponentBlock>
+                        )}
+                    </FlexInline>
+                </section>
+
+                <section aria-labelledby="invite-changes-told">
+                    <Flexblock gap="var(--space-l)">
+                        <h2 id="invite-changes-told">{notes.told_title}</h2>
+                        {notes.charts.map((chart) => <InviteChangesChart chart={chart} />)}
+                        <FlexInline class="[ quotes ]" gap="var(--space-s)">
+                            {notes.quotes.map((quote) =>
+                                <blockquote class="[ quote ]">
+                                    <p>"{quote}"</p>
+                                    <span class="[ quote-by ]">{notes.quote_by}</span>
+                                </blockquote>
+                            )}
+                        </FlexInline>
+                    </Flexblock>
+                </section>
+
+                <section aria-labelledby="invite-changes-changing">
+                    <Flexblock gap="var(--space-s)">
+                        <Flexblock gap="var(--space-2xs)">
+                            <h2 id="invite-changes-changing">{notes.changing_title}</h2>
+                            <p class="[ muted ]">{notes.changing_intro}</p>
+                        </Flexblock>
+                        <ol class="[ changes ]">
+                            {notes.changes.map((change, index) =>
+                                <li>
+                                    <span class="[ change-number ]" aria-hidden="true">{index + 1}</span>
+                                    <span class="[ change-text ]">
+                                        <span class="[ change-title ]">{change.title}</span>
+                                        <span class="[ muted ]">{change.text}</span>
+                                    </span>
+                                </li>
+                            )}
+                        </ol>
+                    </Flexblock>
+                </section>
+
+                <section aria-labelledby="invite-changes-later">
+                    <Flexblock gap="var(--space-s)">
+                        <h2 id="invite-changes-later">{notes.later_title}</h2>
+                        <FlexInline class="[ later ]" gap="var(--space-s)">
+                            {notes.later.map((item) =>
+                                <div class="[ later-card ]">
+                                    <h3>{item.title}</h3>
+                                    <p class="[ muted ]">{item.text}</p>
+                                </div>
+                            )}
+                        </FlexInline>
+                    </Flexblock>
+                </section>
+            </Flexblock>
+        </TextBox>
     </PageWide>
 </Viewport>
+
+<style lang="scss">
+    .invite-changes {
+        color: var(--highlight);
+    }
+
+    .kicker {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    // Body copy at the page's base size, like the design; the global p is a step larger.
+    p {
+        font-size: inherit;
+    }
+
+    .intro {
+        font-size: var(--step-0);
+        color: var(--glow);
+        max-width: 42rem;
+    }
+
+    h2 {
+        font-size: var(--step-2);
+        color: var(--highlight);
+    }
+
+    h3 {
+        font-family: var(--default-font);
+        font-size: var(--step-0);
+        font-weight: 700;
+        text-transform: none;
+        color: var(--highlight);
+    }
+
+    .muted {
+        color: var(--glow);
+    }
+
+    .stats,
+    .quotes,
+    .later {
+        align-items: stretch;
+    }
+
+    .stat {
+        flex: 1 1 15rem;
+    }
+
+    .stat-value {
+        white-space: nowrap;
+        font-size: var(--step-4);
+        font-weight: 700;
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .stat-suffix {
+        font-size: var(--step-1);
+        color: var(--text-muted);
+    }
+
+    .stat-label {
+        font-weight: 600;
+    }
+
+    .quote {
+        flex: 1 1 15rem;
+        margin: 0;
+        padding: var(--space-s);
+        background: var(--component-background);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .quote-by {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .changes {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border-bottom: solid 1px var(--hairline-medium);
+
+        li {
+            display: flex;
+            gap: var(--space-s);
+            padding-block: var(--space-s);
+            border-top: solid 1px var(--hairline-medium);
+        }
+    }
+
+    .change-number {
+        flex: none;
+        width: var(--space-m);
+        font-weight: 700;
+        color: var(--fleet-yellow);
+    }
+
+    .change-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .change-title {
+        font-weight: 700;
+        color: var(--highlight);
+    }
+
+    .later-card {
+        flex: 1 1 20rem;
+        padding: var(--space-m);
+        border: dashed 1px color-mix(in srgb, var(--highlight) 16%, transparent);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+</style>

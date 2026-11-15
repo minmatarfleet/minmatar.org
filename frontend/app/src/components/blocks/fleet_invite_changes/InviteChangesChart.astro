@@ -1,0 +1,128 @@
+---
+import type { InviteChangesChart } from '@/data/fleet_invite_changes'
+import { bar_percent, bar_tip } from '@/data/fleet_invite_changes'
+
+interface Props {
+    chart: InviteChangesChart
+    [propName: string]: any
+}
+
+const { chart, ...attributes } = Astro.props
+
+delete attributes.class
+
+const share = (count: number) => (chart.total ? Math.round((100 * count) / chart.total) : 0)
+---
+
+<figure class:list={['[ invite-chart ]', Astro.props.class]} {...attributes}>
+    <figcaption>{chart.title}</figcaption>
+    <ul class="[ rows ]" aria-hidden="true">
+        {chart.rows.map((row) =>
+            <li class="[ row ]" title={bar_tip(row, chart.total)}>
+                <span class="[ label ]">{row.label}</span>
+                <span class="[ track ]"><span class="[ fill ]" style={`width: ${bar_percent(row.count, chart.rows)}%`}></span></span>
+                <span class="[ count ]">{row.count}</span>
+            </li>
+        )}
+    </ul>
+    <!-- A table ignores width: 1px, so the wrapper is the visually hidden box. -->
+    <div class="[ visually-hidden ]">
+    <table>
+        <caption>{chart.title}</caption>
+        <thead>
+            <tr><th scope="col">Answer</th><th scope="col">Pilots</th><th scope="col">Share</th></tr>
+        </thead>
+        <tbody>
+            {chart.rows.map((row) =>
+                <tr><th scope="row">{row.label}</th><td>{row.count} of {chart.total}</td><td>{share(row.count)}%</td></tr>
+            )}
+        </tbody>
+    </table>
+    </div>
+</figure>
+
+<style lang="scss">
+    .invite-chart {
+        position: relative;
+        // Block margins stay: Flexblock spaces its children with margin-block-start.
+        margin-inline: 0;
+        margin-block-end: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    figcaption {
+        font-weight: 700;
+        color: var(--highlight);
+    }
+
+    .rows {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .row {
+        display: grid;
+        grid-template-columns: minmax(0, 20rem) minmax(0, 1fr) var(--space-l);
+        align-items: center;
+        gap: var(--space-xs);
+        min-height: var(--space-m);
+        font-size: var(--step--1);
+    }
+
+    .label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .track {
+        display: block;
+        height: var(--space-xs);
+        background: var(--hairline);
+        border-radius: var(--space-3xs);
+        overflow: hidden;
+    }
+
+    .fill {
+        display: block;
+        height: 100%;
+        background: var(--fleet-yellow);
+        border-radius: 0 var(--space-3xs) var(--space-3xs) 0;
+        transition: var(--fast-transition);
+    }
+
+    .count {
+        font-weight: 600;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    @media (hover: hover) {
+        .row:hover .fill {
+            background: var(--highlight);
+        }
+    }
+
+    // Phones: the label takes its own line above the bar so it is not cut to a word.
+    @media (max-width: 40rem) {
+        .row {
+            grid-template-columns: minmax(0, 1fr) var(--space-l);
+            row-gap: var(--space-3xs);
+        }
+
+        .rows {
+            gap: var(--space-xs);
+        }
+
+        .label {
+            grid-column: 1 / -1;
+        }
+    }
+</style>
