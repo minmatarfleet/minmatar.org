@@ -400,6 +400,9 @@ def make_fit_roles_response(roles):
         bursts_fitted=roles.bursts_fitted,
         cyno=roles.cyno,
         logi=roles.logi,
+        interdiction=roles.interdiction,
+        ecm=roles.ecm,
+        neuts=roles.neuts,
     )
 
 

@@ -1,5 +1,7 @@
 """Response and request bodies of the Training API."""
 
+from datetime import datetime
+
 from ninja import Schema
 
 
@@ -193,3 +195,48 @@ class AccountMoveRequest(Schema):
 
 class TrainingChangeResponse(Schema):
     ok: bool
+
+
+class HullReadinessResponse(Schema):
+    ship_type_id: int
+    in_doctrine: bool
+    fitting_id: int | None
+    fitting_name: str | None
+    character_id: int | None
+    character_name: str | None
+    ready: bool
+    days: float | None
+
+
+class RolePilotResponse(Schema):
+    character_id: int
+    name: str
+    fleets: int
+
+
+class RoleFleetResponse(Schema):
+    fleet_id: int
+    start_time: datetime
+    type: str
+    objective: str
+    doctrine: str | None
+    pilots_in_role: int
+
+
+class RoleHullUsageResponse(Schema):
+    ship_type_id: int
+    # Finished fleets in the last `days` days that brought the hull.
+    fleets: int
+    fleets_per_month: float
+    pilots: int
+    days: int
+
+
+class RoleSpotlightResponse(Schema):
+    # Approved mentors taking requests who fly the role.
+    mentors: list[RolePilotResponse]
+    pilots: list[RolePilotResponse]
+    fleets: list[RoleFleetResponse]
+    # 60, or 365 when no fleet in the last 60 days flew the role.
+    fleets_days: int
+    hulls: list[RoleHullUsageResponse] = []

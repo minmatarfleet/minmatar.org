@@ -4,6 +4,7 @@ import type {
     FleetFitRoles,
     FleetLinkCoverage,
     FleetRoleCoverage,
+    FleetRolePilot,
 } from '@helpers/api.minmatar.org/fleets'
 
 export const BURST_KINDS:BurstKind[] = ['armor', 'shield', 'skirmish', 'information', 'mining']
@@ -36,8 +37,41 @@ export const link_kinds = (
 /** Cynos the roles list asks for. */
 export const CYNOS_WANTED = 2
 
+/** Roles read from fits beyond links, cynos and logi, in list order. */
+export const SHIP_ROLE_KINDS = ['interdiction', 'neuts', 'ecm'] as const
+export type ShipRoleKind = typeof SHIP_ROLE_KINDS[number]
+
+export interface ShipRoleRow {
+    kind: ShipRoleKind
+    pilots: FleetRolePilot[]
+    /** Composition ships that fill this role. */
+    ship_names: string[]
+    /** Pilots the fleet wants (strategic fleets); undefined lists without a target. */
+    wanted?: number
+}
+
+/**
+ * Interdiction, neut and ECM rows worth showing: a composition fit fills the
+ * role, or a pilot already brings it. The backend sets the wanted counts
+ * (strategic fleets only); older backends send none, so the rows are lists.
+ */
+export const ship_role_rows = (
+    roles:FleetRoleCoverage,
+    composition:FleetCompositionEntry[],
+):ShipRoleRow[] => SHIP_ROLE_KINDS
+    .map(kind => {
+        const wanted = roles.wanted?.[kind] ?? 0
+        return {
+            kind,
+            pilots: roles[kind] ?? [],
+            ship_names: ships_for_role(composition, entry => entry.fit_roles?.[kind] ?? false),
+            wanted: wanted > 0 ? wanted : undefined,
+        }
+    })
+    .filter(row => row.ship_names.length > 0 || row.pilots.length > 0)
+
 export interface RoleTally {
-    /** Rows with a target: Logi FC, cynos (when the fits carry one), each link kind. */
+    /** Rows with a target: Logi FC, cynos (when the fits carry one), each link kind, and interdiction / neuts / ECM on strategic fleets. */
     total: number
     filled: number
     /** Labels of the rows still short, in list order. */
@@ -51,13 +85,16 @@ export interface RoleTally {
 export const role_tally = (
     roles:FleetRoleCoverage,
     composition:FleetCompositionEntry[],
-    labels:{ logi_fc:string, cynos:string },
+    labels:{ logi_fc:string, cynos:string } & Partial<Record<ShipRoleKind, string>>,
 ):RoleTally => {
     const show_cynos = ships_for_role(composition, entry => entry.fit_roles?.cyno ?? false).length > 0 || roles.cynos.length > 0
     const rows = [
         { label: labels.logi_fc, filled: roles.logi_fc.length >= 1 },
         ...(show_cynos ? [{ label: labels.cynos, filled: roles.cynos.length >= CYNOS_WANTED }] : []),
         ...link_kinds(roles, composition).map(row => ({ label: row.label, filled: row.pilots.length >= 1 })),
+        ...ship_role_rows(roles, composition)
+            .filter(row => row.wanted !== undefined)
+            .map(row => ({ label: labels[row.kind] ?? row.kind, filled: row.pilots.length >= row.wanted! })),
     ]
     return {
         total: rows.length,

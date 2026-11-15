@@ -1,0 +1,242 @@
+---
+/** One hull in a Fleet Roles guide's doctrine ship section (RoleShips). */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { RoleShip } from '@helpers/fleet_role_ships'
+import type { TrainingHullReadiness, TrainingRoleHullUsage } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { doctrine_path, fitting_path } from '@helpers/ship_paths'
+
+interface Props {
+    ship: RoleShip
+    usage?: TrainingRoleHullUsage
+    readiness?: TrainingHullReadiness
+    /** What this hull does for the role, shown under its name. */
+    job?: string
+    /** Show the hull as a ship for the role only: no doctrines or doctrine fit. */
+    jobs_only?: boolean
+    [propName: string]: any
+}
+
+const { ship, usage, readiness, job, jobs_only = false, ...attributes } = Astro.props
+delete attributes.class
+
+function state(row?: TrainingHullReadiness) {
+    if (!row || !row.in_doctrine) return null
+    if (row.ready) return { tone: 'ready', label: t('fleet_roles.ready') }
+    if (row.days === null || row.days === undefined) return { tone: 'none', label: t('fleet_roles.no_pilot') }
+    return { tone: 'training', label: t('fleet_roles.days_to_ready').replace('{days}', String(Math.max(1, Math.ceil(row.days)))) }
+}
+
+const per_month = (value: number) => value >= 10 ? String(Math.round(value)) : value.toFixed(1).replace(/\.0$/, '')
+const status = state(readiness)
+const doctrines = [...new Map(ship.fits.map((fit) => [fit.doctrine_id, fit])).values()]
+---
+
+<li class:list={['[ role-ship ]', Astro.props.class]} {...attributes}>
+    <div class="[ role-ship__head ]">
+        <img src={get_item_icon(ship.ship_type_id, 128)} alt="" width="64" height="64" loading="lazy" />
+        <div class="[ role-ship__name ]">
+            <h3>{ship.name}</h3>
+            {job ? <p>{job}</p> : ship.family && <p>{t(t_key('fleet_roles.family.', ship.family))}</p>}
+        </div>
+        {usage && !jobs_only && (
+            <p class="[ role-ship__usage ]">
+                <strong>{per_month(usage.fleets_per_month)}</strong>
+                <span>{t('fleet_roles.fleets_a_month')}</span>
+            </p>
+        )}
+    </div>
+
+    {jobs_only ? null : doctrines.length > 0 ? (
+        <ul class="[ role-ship__doctrines ]" aria-label={t('fleet_roles.flown_in')}>
+            {doctrines.map((fit) => (
+                <li>
+                    {fit.doctrine_ship_id && <img src={get_item_icon(fit.doctrine_ship_id, 64)} alt="" width="24" height="24" loading="lazy" />}
+                    <a href={translatePath(doctrine_path(fit.doctrine_id, fit.doctrine_name))}>{fit.doctrine_name}</a>
+                    <span>{t(t_key('fleet_roles.doctrine_role.', fit.slot))}</span>
+                </li>
+            ))}
+        </ul>
+    ) : (
+        <p class="[ role-ship__none ]">{t('fleet_roles.no_doctrine')}</p>
+    )}
+
+    {ship.charges.length > 0 && (
+        <p class="[ role-ship__ammo ]">
+            <span>{t('fleet_roles.carries')}</span> {ship.charges.slice(0, 4).join(', ')}{ship.charges.length > 4 && <span> {t('fleet_roles.and_more').replace('{n}', String(ship.charges.length - 4))}</span>}
+        </p>
+    )}
+
+    {!jobs_only && (status || readiness?.fitting_id) && (
+        <div class="[ role-ship__you ]">
+            {status && (
+                <p class:list={['[ role-ship__state ]', `role-ship__state--${status.tone}`]}>
+                    {status.label}
+                    {readiness?.character_name && status.tone !== 'none' && <small>{readiness.character_name}</small>}
+                </p>
+            )}
+            {readiness?.fitting_id && (
+                <a href={translatePath(fitting_path(readiness.fitting_id, readiness.fitting_name ?? ''))}>{t('fleet_roles.doctrine_fit')}</a>
+            )}
+        </div>
+    )}
+</li>
+
+<style lang="scss">
+    .role-ship {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+        padding: var(--space-s);
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+        scroll-snap-align: start;
+    }
+
+    .role-ship__head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+
+        img {
+            flex: none;
+            width: calc(var(--space-2xl) + var(--space-s));
+            height: auto;
+            aspect-ratio: 1;
+        }
+    }
+
+    .role-ship__name {
+        flex: 1 1 auto;
+        min-width: 0;
+
+        h3 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            letter-spacing: 0.03em;
+            color: var(--highlight);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+
+    .role-ship__usage {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        align-items: flex-end;
+        margin: 0;
+        line-height: 1.1;
+        text-align: right;
+
+        strong {
+            font-family: var(--heading-font);
+            font-size: var(--step-2);
+            color: var(--fleet-yellow);
+        }
+
+        span {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+
+    .role-ship__none {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-ship__doctrines {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
+            border: 1px solid var(--hairline-medium);
+            font-size: var(--step--1);
+        }
+
+        img {
+            flex: none;
+            width: var(--space-m);
+            height: auto;
+        }
+
+        a {
+            color: var(--foreground);
+        }
+
+        span {
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+    }
+
+    .role-ship__ammo {
+        margin: 0;
+        font-size: var(--step--1);
+
+        span {
+            color: var(--text-muted);
+        }
+    }
+
+    .role-ship__you {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-2xs) var(--space-s);
+        margin-top: auto;
+        padding-top: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+        font-size: var(--step--1);
+
+        a {
+            color: var(--highlight);
+        }
+    }
+
+    .role-ship__state {
+        display: flex;
+        gap: var(--space-2xs);
+        align-items: baseline;
+        margin: 0;
+        font-weight: 600;
+
+        small {
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+    }
+
+    .role-ship__state--ready {
+        color: var(--green);
+    }
+
+    .role-ship__state--training {
+        color: var(--fleet-yellow);
+    }
+
+    .role-ship__state--none {
+        color: var(--text-muted);
+    }
+</style>

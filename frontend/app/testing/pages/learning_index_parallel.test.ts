@@ -66,13 +66,15 @@ async function render() {
 function parts(html: string) {
     return {
         readiness: html.includes(`/account/tags/${READINESS_ID}`),
+        fleet_roles: html.includes('How fleet roles work'),
+        // Certificates are hidden behind SHOW_CERTIFICATES while Fleet roles replaces them.
         certificates_admin: html.includes('aria-label="Manage certificates and guides"'),
         certificates_error: html.includes('Could not load certificates'),
     }
 }
 
-const ALL = { readiness: true, certificates_admin: true, certificates_error: false }
-const NO_PERSONAL = { readiness: false, certificates_admin: false, certificates_error: false }
+const ALL = { readiness: true, fleet_roles: true, certificates_admin: false, certificates_error: false }
+const NO_PERSONAL = { readiness: false, fleet_roles: true, certificates_admin: false, certificates_error: false }
 
 test('with every call answering, every part renders', async () => {
     expect(parts(await render())).toEqual(ALL)
@@ -102,9 +104,9 @@ test('a readiness summary failure also hides the admin link, as before', async (
     expect(parts(await render())).toEqual(NO_PERSONAL)
 })
 
-test('a certificates failure shows the certificates error and nothing else changes', async () => {
+test('a certificates failure changes nothing while certificates are hidden', async () => {
     failing.add('/api/learning/certificates')
-    expect(parts(await render())).toEqual({ ...ALL, certificates_error: true })
+    expect(parts(await render())).toEqual(ALL)
 })
 
 test('the personal calls run in two rounds: summary and certificates start before either answers', async () => {

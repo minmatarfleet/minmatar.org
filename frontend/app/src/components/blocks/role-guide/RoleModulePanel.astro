@@ -1,0 +1,249 @@
+---
+/**
+ * One card for a lesson's utility modules: the selected module's name and the
+ * three biggest things it does in a fight, with every module's icon along the
+ * bottom to switch between them. All panels render on the server; Alpine only
+ * shows the selected one (tabs with arrow-key support).
+ */
+import type { RoleModuleCard } from '@/data/fleet-roles'
+import { get_item_icon } from '@helpers/eve_image_server'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+interface Props {
+    modules: RoleModuleCard[]
+    id_prefix: string
+    [propName: string]: any
+}
+
+const { modules, id_prefix, ...attributes } = Astro.props
+delete attributes.class
+const tab_id = (i: number) => `${id_prefix}-module-tab-${i}`
+const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
+---
+
+<div
+    class:list={['[ role-modules ]', Astro.props.class]}
+    x-data={`{ active: 0, count: ${modules.length}, pick(i) { this.active = (i + this.count) % this.count; this.$nextTick(() => this.$refs['tab' + this.active]?.focus()) } }`}
+    {...attributes}
+>
+    {modules.map((module, i) => (
+        <section
+            class="[ role-modules__panel ]"
+            id={panel_id(i)}
+            role="tabpanel"
+            aria-labelledby={tab_id(i)}
+            x-show={`active === ${i}`}
+            x-cloak={i === 0 ? undefined : true}
+            style={i === 0 ? undefined : 'display: none'}
+        >
+            <header class="[ role-modules__head ]">
+                <img src={get_item_icon(module.type_id, 64)} alt="" width="48" height="48" loading="lazy" />
+                <div>
+                    <h4>{module.name}</h4>
+                    <p>{module.example}</p>
+                </div>
+                <div class="[ role-modules__actions ]">
+                    {module.learn && (
+                        <a class="[ role-modules__learn ]" href={module.learn.url} target="_blank" rel="noopener noreferrer">{module.learn.title}</a>
+                    )}
+                    {module.practice && (
+                        <a class="[ role-modules__practice ]" href={module.practice.url} target="_blank" rel="noopener noreferrer">{module.practice.title}</a>
+                    )}
+                </div>
+            </header>
+            <ol class="[ role-modules__impacts ]">
+                {module.impacts.map((impact, k) => (
+                    <li>
+                        <span class="[ role-modules__number ]" aria-hidden="true">{k + 1}</span>
+                        <strong>{impact.title}</strong>
+                        <span set:html={impact.detail} />
+                    </li>
+                ))}
+            </ol>
+        </section>
+    ))}
+
+    <XFadeScroll class="[ role-modules__scroll ]">
+    <div class="[ role-modules__tabs ]" role="tablist" aria-label="Utility modules" style={`--count: ${modules.length}`}>
+        {modules.map((module, i) => (
+            <button
+                type="button"
+                role="tab"
+                id={tab_id(i)}
+                aria-controls={panel_id(i)}
+                aria-selected={i === 0 ? 'true' : 'false'}
+                tabindex={i === 0 ? '0' : '-1'}
+                x-ref={`tab${i}`}
+                x-bind:aria-selected={`active === ${i} ? 'true' : 'false'`}
+                x-bind:tabindex={`active === ${i} ? '0' : '-1'`}
+                x-on:click={`active = ${i}`}
+                x-on:keydown.arrow-right.prevent={`pick(${i + 1})`}
+                x-on:keydown.arrow-left.prevent={`pick(${i - 1})`}
+                class="[ role-modules__tab ]"
+            >
+                <img src={get_item_icon(module.type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                <span>{module.short}</span>
+            </button>
+        ))}
+    </div>
+    </XFadeScroll>
+</div>
+
+<style lang="scss">
+    .role-modules {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-m);
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+
+        [x-cloak] {
+            display: none !important;
+        }
+    }
+
+    .role-modules__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+
+        img {
+            flex: none;
+            width: var(--space-xl);
+            height: auto;
+        }
+
+        h4 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            letter-spacing: 0.03em;
+            color: var(--fleet-yellow);
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+
+    .role-modules__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin-left: auto;
+    }
+
+    .role-modules__learn {
+        padding: var(--space-2xs) var(--space-s);
+        border: 1px solid var(--hairline-strong);
+        font-size: var(--step--1);
+        color: var(--foreground);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .role-modules__practice {
+        padding: var(--space-2xs) var(--space-s);
+        border: 1px solid var(--fleet-yellow);
+        font-size: var(--step--1);
+        color: var(--highlight);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            }
+        }
+    }
+
+    .role-modules__impacts {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        @media (max-width: 48rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+        gap: var(--space-s);
+        margin: var(--space-s) 0 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            padding: var(--space-s);
+            border: 1px solid var(--hairline-medium);
+            background: var(--background);
+            font-size: var(--step--1);
+        }
+
+        strong {
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .role-modules__number {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        line-height: 1;
+        color: var(--fleet-red);
+    }
+
+    .role-modules__scroll {
+        padding-top: var(--space-s);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .role-modules__tabs {
+        display: grid;
+        grid-template-columns: repeat(var(--count), minmax(4.5rem, 1fr));
+        gap: var(--space-2xs);
+    }
+
+    .role-modules__tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding: var(--space-2xs);
+        border: 1px solid var(--hairline);
+        background: var(--background);
+        color: var(--text-muted);
+        font: inherit;
+        font-size: var(--step--2);
+        cursor: pointer;
+
+        img {
+            width: var(--space-l);
+            height: auto;
+        }
+
+        &[aria-selected='true'] {
+            border-color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+            color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 1px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--hairline-strong);
+            }
+        }
+    }
+</style>

@@ -298,6 +298,12 @@ class EveFleetFitRolesResponse(BaseModel):
     bursts_fitted: Dict[str, int] = {}
     cyno: bool = False
     logi: bool = False
+    # A bubble or Micro Jump Field Generator fitted.
+    interdiction: bool = False
+    # Any ECM jammer or ECM burst fitted.
+    ecm: bool = False
+    # Two or more energy neutralizers fitted.
+    neuts: bool = False
 
 
 class EveFleetShipVolunteerResponse(BaseModel):
@@ -513,6 +519,14 @@ class EveFleetLinkCoverage(BaseModel):
     pilots: List[EveFleetRolePilot]
 
 
+class EveFleetRoleWanted(BaseModel):
+    """Pilots a fleet wants per role; 0 is no target (list only)."""
+
+    interdiction: int = 0
+    neuts: int = 0
+    ecm: int = 0
+
+
 class EveFleetRoleCoverageResponse(BaseModel):
     """Who fills each fleet role, worked out from ships."""
 
@@ -520,6 +534,10 @@ class EveFleetRoleCoverageResponse(BaseModel):
     links: List[EveFleetLinkCoverage]
     cynos: List[EveFleetRolePilot]
     logi: List[EveFleetRolePilot]
+    interdiction: List[EveFleetRolePilot] = []
+    ecm: List[EveFleetRolePilot] = []
+    neuts: List[EveFleetRolePilot] = []
+    wanted: EveFleetRoleWanted = EveFleetRoleWanted()
 
 
 class FleetWindowFleet(BaseModel):

@@ -1,0 +1,84 @@
+---
+/**
+ * Everything a Fleet Roles guide page needs, from its role slug: SEO,
+ * structured data, page progress and the shared guide chrome. Each page
+ * under pages/learning/guides/<role>-guide/ renders this with its slug.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_site_origin } from '@helpers/seo'
+import { pageProgressFromSections } from '@helpers/pageProgress'
+import { guides } from '@/data/guides'
+import { getGuideCoverImage, getGuideSeoImage } from '@/data/guides/covers'
+import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
+import { guidePath } from '@/data/guides/urls'
+import { FLEET_ROLES_HUB_SLUG, get_fleet_role, resolved_guide } from '@/data/fleet-roles'
+import CapitalGuidePage from '@components/blocks/capital-guide/CapitalGuidePage.astro'
+import RoleGuide from '@components/blocks/role-guide/RoleGuide.astro'
+
+interface Props {
+    role_slug: string
+}
+
+const role = get_fleet_role(Astro.props.role_slug)
+const meta = role && guides.find((guide) => guide.slug === role.guide_slug)
+if (!role || !meta)
+    return HTTP_404_Not_Found()
+
+const guide = resolved_guide(role)
+const site_origin = get_site_origin(Astro.url.origin)
+const seo = getGuidePageSeo({
+    guide: meta,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    translatePath,
+    t,
+    coverImage: getGuideSeoImage(meta),
+})
+const structured_data = buildGuideJsonLd({
+    guide: meta,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    ...seo,
+})
+
+const all_sections = [
+    { id: 'why', title: t('fleet_roles.section_why') },
+    { id: 'ladder', title: t(guide.ship_jobs ? 'fleet_roles.section_role_ships' : guide.ships_from_doctrines ? 'fleet_roles.section_ships' : 'fleet_roles.section_ladder') },
+    { id: 'mechanics', title: t('fleet_roles.section_mechanics') },
+    { id: 'mistakes', title: t('fleet_roles.section_mistakes') },
+    { id: 'drills', title: t('fleet_roles.section_drills') },
+    { id: 'deeper', title: t('fleet_roles.section_deeper') },
+    { id: 'certify', title: t('fleet_roles.section_certify') },
+]
+const sections = all_sections
+
+const progress = pageProgressFromSections({
+    page_key: `guides/${guide.guide_slug}`,
+    page_title: guide.name,
+    sections,
+    version_source: JSON.stringify({
+        sections: sections.map((section) => section.id),
+        lessons: guide.lessons.map((lesson) => lesson.id),
+    }),
+})
+const cover = getGuideCoverImage(meta)
+---
+
+<CapitalGuidePage
+    page_title={meta.title}
+    meta_title={seo.metaTitle}
+    meta_description={seo.metaDescription}
+    meta_image={seo.metaImage}
+    canonical_url={seo.canonicalUrl}
+    cover_image={cover}
+    cover_alt=""
+    structured_data={structured_data}
+    progress={progress}
+    robots={meta.unlisted ? 'noindex, nofollow' : undefined}
+    parent={{ href: guidePath(FLEET_ROLES_HUB_SLUG), label: t('fleet_roles.hub_title') }}
+>
+    <RoleGuide guide={guide} sections={sections} />
+</CapitalGuidePage>

@@ -15,6 +15,11 @@ export type GuideMeta = {
     authors: Author[]
     path?: string
     hiddenFromIndex?: boolean
+    /**
+     * Built but not linked anywhere yet: left out of the catalog, the hubs and
+     * the sitemap, and marked noindex. The page still opens by direct link.
+     */
+    unlisted?: boolean
     /** Shown on the guides index with a disabled Coming soon state (no page yet). */
     comingSoon?: boolean
     /**

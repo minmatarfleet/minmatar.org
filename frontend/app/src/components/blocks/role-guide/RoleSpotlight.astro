@@ -1,0 +1,94 @@
+---
+/**
+ * The pilots who flew a Fleet Roles guide's ships on the most fleets in the
+ * last 90 days, from fleet membership the site already keeps. Rendered by
+ * role_spotlight_component at the end of every guide.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TrainingRoleSpotlight } from '@dtypes/api.minmatar.org'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    /** null: not logged in. */
+    spotlight: TrainingRoleSpotlight | null
+}
+
+const { spotlight } = Astro.props
+---
+
+<div class="[ role-spotlight ]">
+    <h3 class="[ role-spotlight__title ]">{t('fleet_roles.top_pilots')}</h3>
+    <p class="[ role-spotlight__muted ]">{t('fleet_roles.top_pilots_lead')}</p>
+    {spotlight === null ? (
+        <p class="[ role-spotlight__muted ]">{t('fleet_roles.log_in_spotlight')}</p>
+    ) : spotlight.pilots.length > 0 ? (
+        <ol class="[ role-spotlight__list ]">
+            {spotlight.pilots.map((pilot) => (
+                <li>
+                    <img src={get_player_icon(pilot.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                    <span class="[ role-spotlight__name ]">{pilot.name}</span>
+                    <span class="[ role-spotlight__count ]">{t('fleet_roles.top_pilot_fleets').replace('{n}', String(pilot.fleets))}</span>
+                </li>
+            ))}
+        </ol>
+    ) : (
+        <p class="[ role-spotlight__muted ]">{t('fleet_roles.no_top_pilots')}</p>
+    )}
+</div>
+
+<style lang="scss">
+    .role-spotlight {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .role-spotlight__title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.04em;
+        color: var(--fleet-yellow);
+    }
+
+    .role-spotlight__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin: var(--space-xs) 0 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+
+        img {
+            flex: none;
+            border-radius: 50%;
+        }
+    }
+
+    .role-spotlight__name {
+        flex: 1;
+        min-width: 0;
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .role-spotlight__count {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-spotlight__muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+</style>

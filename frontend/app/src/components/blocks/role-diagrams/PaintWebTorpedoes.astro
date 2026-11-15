@@ -1,0 +1,99 @@
+---
+/**
+ * How much of a torpedo lands on a target that is unpainted, painted, webbed
+ * or both, for the two torpedo types our Typhoon doctrine carries. Numbers
+ * come from the SDE (ammo.json) and the missile damage formula:
+ * min(1, S/E, (S/E · Ve/Vt)^DRF). One Target Painter II (+30% signature)
+ * and one Stasis Webifier II (−60% speed), no skills or hull bonuses.
+ */
+import { AMMO, AMMO_TARGETS, type AmmoCharge, type AmmoTarget } from '@helpers/fleet_role_ships'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+type Charge = AmmoCharge
+type Target = AmmoTarget
+
+const charges = AMMO
+const targets = AMMO_TARGETS
+
+const PAINT = 1.3
+const WEB = 0.4
+
+const TORPEDOES = [
+    { key: 'Scourge Rage Torpedo', label: 'Rage', tone: 'rd-yellow' },
+    { key: 'Caldari Navy Scourge Torpedo', label: 'Caldari Navy', tone: 'rd-blue' },
+]
+const TARGETS = [
+    { key: 'Guardian', label: 'Guardian (logistics cruiser)' },
+    { key: 'Typhoon', label: 'Typhoon (battleship)' },
+]
+const STATES = [
+    { label: 'Nothing', paint: false, web: false },
+    { label: 'Painted', paint: true, web: false },
+    { label: 'Webbed', paint: false, web: true },
+    { label: 'Painted and webbed', paint: true, web: true },
+]
+
+function applied(charge: Charge, target: Target, paint: boolean, web: boolean): number {
+    const sig = target.signature_m * (paint ? PAINT : 1)
+    const speed = target.velocity_ms * (web ? WEB : 1)
+    const ratio = sig / (charge.explosion_radius_m ?? 1)
+    return Math.min(1, ratio, Math.pow(ratio * ((charge.explosion_velocity_ms ?? 1) / speed), charge.drf ?? 1))
+}
+const raw = (c: Charge) => c.em + c.thermal + c.kinetic + c.explosive
+
+const W = 720
+const PANEL = 340
+const LABEL = 118
+const BAR = 160
+const ROW = 46
+const TOP = 34
+const H = TOP + STATES.length * ROW + 30
+
+const panels = TARGETS.map((target, t) => ({
+    x: t * (PANEL + 40),
+    label: targets[target.key] ? target.label : '',
+    rows: STATES.map((state, s) => ({
+        y: TOP + s * ROW,
+        label: state.label,
+        bars: TORPEDOES.map((torp, b) => {
+            const charge = charges[torp.key]
+            const share = applied(charge, targets[target.key], state.paint, state.web)
+            return { y: TOP + s * ROW + b * 14, width: Math.max(1, share * BAR), share, damage: Math.round(share * raw(charge)), tone: torp.tone }
+        }),
+    })),
+}))
+---
+
+<XFadeScroll class="rd-scroll">
+<svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="How much of each torpedo lands on a Guardian and on a Typhoon when the target is unpainted, painted, webbed, or painted and webbed. Painting and webbing a cruiser more than triples what lands; Caldari Navy torpedoes land more on small ships than Rage.">
+    {panels.map((panel) => (
+        <g transform={`translate(${panel.x} 0)`}>
+            <text class="rd-strong" x="0" y="16" font-size="13">{panel.label}</text>
+            {panel.rows.map((row) => (
+                <g>
+                    <text class="rd-text" x="0" y={row.y + 14} font-size="11">{row.label}</text>
+                    {row.bars.map((bar) => (
+                        <g>
+                            <rect class="rd-track" x={LABEL} y={bar.y + 4} width={BAR} height="10" />
+                            <rect class={bar.tone} x={LABEL} y={bar.y + 4} width={bar.width.toFixed(1)} height="10" />
+                            <text class="rd-muted" x={LABEL + BAR + 6} y={bar.y + 13} font-size="10">{Math.round(bar.share * 100)}% · {bar.damage}</text>
+                        </g>
+                    ))}
+                </g>
+            ))}
+        </g>
+    ))}
+    <g transform={`translate(0 ${H - 10})`}>
+        {TORPEDOES.map((torp, i) => (
+            <g transform={`translate(${i * 130} 0)`}>
+                <rect class={torp.tone} x="0" y="-9" width="10" height="10" />
+                <text class="rd-text" x="16" y="0" font-size="11">{torp.label} torpedo</text>
+            </g>
+        ))}
+        <text class="rd-muted" x="270" y="0" font-size="10">% of the torpedo that lands · damage per torpedo</text>
+    </g>
+</svg>
+</XFadeScroll>
+<figcaption>
+    <strong>Paint and web the small targets.</strong> Our Typhoons’ torpedoes barely scratch a logistics cruiser on their own. A painter and a web together more than triple what lands, and Caldari Navy torpedoes land more than Rage on small ships. One Target Painter II and one Stasis Webifier II, before skills and hull bonuses.
+</figcaption>

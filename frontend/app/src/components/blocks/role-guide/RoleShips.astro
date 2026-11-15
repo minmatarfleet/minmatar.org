@@ -1,0 +1,125 @@
+---
+/**
+ * A Fleet Roles guide's ship section built from our current doctrines: each
+ * hull that flies the role today, most-flown first for members. The first
+ * six show; the rest open under "More". On phones the cards are a swipeable
+ * row. Rendered by role_ladder_component.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { RoleShip } from '@helpers/fleet_role_ships'
+import type { TrainingHullReadiness, TrainingRoleHullUsage } from '@dtypes/api.minmatar.org'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import RoleShipCard from '@components/blocks/role-guide/RoleShipCard.astro'
+
+interface Props {
+    ships: RoleShip[]
+    /** null: not logged in. */
+    readiness: TrainingHullReadiness[] | null
+    usage: TrainingRoleHullUsage[] | null
+    /** What each hull does for the role; when set, cards leave out doctrines. */
+    jobs?: Record<number, string>
+    [propName: string]: any
+}
+
+const { ships, readiness, usage, jobs, ...attributes } = Astro.props
+delete attributes.class
+
+const SHOWN = 6
+const by_usage = new Map((usage ?? []).map((row) => [row.ship_type_id, row]))
+const by_readiness = new Map((readiness ?? []).map((row) => [row.ship_type_id, row]))
+
+// Doctrine ships sort by how often we fly them; a guide's own ship list keeps its order.
+const sorted = jobs ? [...ships] : [...ships].sort((a, b) =>
+    (by_usage.get(b.ship_type_id)?.fleets_per_month ?? 0) - (by_usage.get(a.ship_type_id)?.fleets_per_month ?? 0)
+    || b.fits.length - a.fits.length
+    || a.name.localeCompare(b.name))
+const shown = sorted.slice(0, SHOWN)
+const more = sorted.slice(SHOWN)
+const days = usage?.[0]?.days ?? 90
+---
+
+<div class:list={['[ role-ships ]', Astro.props.class]} {...attributes}>
+    {ships.length === 0 ? (
+        <EmptyState title={t('fleet_roles.ships_empty')} />
+    ) : (
+        <>
+            <XFadeScroll class="[ role-ships__scroll ]">
+                <ol class="[ role-ships__list ]">
+                    {shown.map((ship) => (
+                        <RoleShipCard ship={ship} usage={by_usage.get(ship.ship_type_id)} readiness={by_readiness.get(ship.ship_type_id)} job={jobs?.[ship.ship_type_id]} jobs_only={!!jobs} />
+                    ))}
+                </ol>
+            </XFadeScroll>
+            {more.length > 0 && (
+                <details class="[ role-ships__more ]">
+                    <summary>{t('fleet_roles.ships_more').replace('{n}', String(more.length))}</summary>
+                    <XFadeScroll class="[ role-ships__scroll ]">
+                        <ol class="[ role-ships__list ]">
+                            {more.map((ship) => (
+                                <RoleShipCard ship={ship} usage={by_usage.get(ship.ship_type_id)} readiness={by_readiness.get(ship.ship_type_id)} job={jobs?.[ship.ship_type_id]} jobs_only={!!jobs} />
+                            ))}
+                        </ol>
+                    </XFadeScroll>
+                </details>
+            )}
+        </>
+    )}
+    {!jobs && <p class="[ role-ships__note ]">
+        {usage
+            ? t('fleet_roles.ships_usage_note').replace('{days}', String(days))
+            : t('fleet_roles.ships_login_note')}
+        {readiness && readiness.length > 0 && (
+            <> <a href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</a></>
+        )}
+    </p>}
+</div>
+
+<style lang="scss">
+    .role-ships {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .role-ships__list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    // Phones: one swipeable row, the next card peeking in at the edge.
+    @media (max-width: 48rem) {
+        .role-ships__scroll {
+            scroll-snap-type: x mandatory;
+        }
+
+        .role-ships__list {
+            grid-template-columns: none;
+            grid-auto-flow: column;
+            grid-auto-columns: 85%;
+        }
+    }
+
+    .role-ships__more summary {
+        cursor: pointer;
+        margin-bottom: var(--space-s);
+        color: var(--highlight);
+    }
+
+    .role-ships__note {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        a {
+            color: var(--highlight);
+        }
+    }
+</style>

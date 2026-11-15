@@ -1,0 +1,111 @@
+---
+/**
+ * "Ammo our ships carry": one chart per weapon family in our doctrine damage
+ * fits, a row per charge the fits carry. Turret rows compare damage, range and
+ * tracking; missile rows compare damage, flight range and explosion. Numbers
+ * come from the SDE (ammo.json) and are the charge's own, before skills.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { AMMO, type RoleShip } from '@helpers/fleet_role_ships'
+import RoleAmmoChart from '@components/blocks/role-guide/RoleAmmoChart.astro'
+import DamageTypeIcon from '@components/blocks/role-guide/DamageTypeIcon.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+
+interface Props {
+    ships: RoleShip[]
+    notes?: Record<string, string>
+    [propName: string]: any
+}
+
+const { ships, notes = {}, ...attributes } = Astro.props
+delete attributes.class
+
+const TYPES = ['em', 'thermal', 'kinetic', 'explosive'] as const
+const MISSILE = (family: string) => /missile|rocket|torpedo/.test(family)
+
+// One chart per weapon and size (large lasers apart from XL ones), most ships first.
+const SIZE = ['', 'small', 'medium', 'large', 'xl']
+const keys = new Map<string, { family: string; size: number }>()
+for (const ship of ships)
+    for (const charge of ship.charges) {
+        const size = AMMO[charge].size ?? 0
+        keys.set(`${AMMO[charge].family}:${size}`, { family: AMMO[charge].family, size })
+    }
+const all_charts = [...keys.values()].map(({ family, size }) => {
+    const in_chart = (charge: string) => AMMO[charge].family === family && (AMMO[charge].size ?? 0) === size
+    const on = ships.filter((ship) => ship.charges.some(in_chart))
+    const charges = [...new Set(on.flatMap((ship) => ship.charges.filter(in_chart)))]
+    const missile = MISSILE(family)
+    charges.sort((a, b) => missile
+        ? (AMMO[a].range_km ?? 0) - (AMMO[b].range_km ?? 0)
+        : (AMMO[a].range_mult ?? 1) - (AMMO[b].range_mult ?? 1) || (AMMO[a].falloff_mult ?? 1) - (AMMO[b].falloff_mult ?? 1))
+    return { family, size: SIZE[size] ?? '', missile, ships: on.map((ship) => ship.name), charges }
+}).filter((chart) => chart.charges.length > 0).sort((a, b) => b.ships.length - a.ships.length)
+const OPEN = 2
+const charts = all_charts.slice(0, OPEN)
+const more = all_charts.slice(OPEN)
+---
+
+<div class:list={['[ role-ammo ]', Astro.props.class]} {...attributes}>
+    {all_charts.length === 0 ? (
+        <EmptyState title={t('fleet_roles.ammo_empty')} />
+    ) : (
+        <>
+            <p class="[ role-ammo__legend ]">
+                {TYPES.map((type) => <DamageTypeIcon type={type} labelled />)}
+            </p>
+            {charts.map((chart) => <RoleAmmoChart {...chart} note={notes[chart.family]} />)}
+            {more.length > 0 && (
+                <details class="[ role-ammo__more ]">
+                    <summary>{t('fleet_roles.ammo_more').replace('{n}', String(more.length))}</summary>
+                    {more.map((chart) => <RoleAmmoChart {...chart} note={notes[chart.family]} />)}
+                </details>
+            )}
+            <p class="[ role-ammo__note ]">{t('fleet_roles.ammo_note')}</p>
+        </>
+    )}
+</div>
+
+<style lang="scss">
+    .role-ammo {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .role-ammo__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-s);
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+
+
+
+
+
+    .role-ammo__more {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+
+        summary {
+            cursor: pointer;
+            color: var(--highlight);
+        }
+    }
+
+
+    .role-ammo__note {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+</style>

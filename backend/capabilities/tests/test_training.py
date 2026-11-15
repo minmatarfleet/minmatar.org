@@ -1,10 +1,15 @@
 """The Training tab: goals, plans, suggestions and account moves."""
 
 from django.contrib.auth.models import User
+from datetime import timedelta
+
+from django.core.cache import cache
 from django.test import Client
+from django.utils import timezone
 
 from app.test import TestCase
 from capabilities import services, training
+from capabilities.role_spotlight import role_spotlight
 from capabilities.models import (
     CapabilitySkill,
     CharacterAccount,
@@ -23,6 +28,8 @@ from capabilities.tests.test_services import give_skills
 from applications.l3arn import L3ARN_CORPORATION_NAME
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from learning.models import MentorProfile
 
 SDE = fixture_sde()
 GUARDIAN = 11987
@@ -411,3 +418,148 @@ class TrainingApiTest(TrainingTestCase):
 
     def test_needs_a_login(self):
         self.assertEqual(Client().get("/api/training/").status_code, 401)
+
+
+class HullReadinessTest(TrainingTestCase):
+    def test_the_best_character_on_each_hull(self):
+        [guardian, napoc] = training.hull_readiness(
+            self.user, [GUARDIAN, NAPOC]
+        )
+        self.assertEqual(guardian["ship_type_id"], GUARDIAN)
+        self.assertTrue(guardian["in_doctrine"])
+        self.assertTrue(guardian["ready"])
+        self.assertIsNone(guardian["days"])
+        self.assertEqual(guardian["character_name"], "Logi")
+        self.assertEqual(guardian["fitting_id"], self.guardian.pk)
+        self.assertEqual(guardian["fitting_name"], "Guardian")
+        # No doctrine fit on the hull: nothing to train for yet.
+        self.assertFalse(napoc["in_doctrine"])
+        self.assertIsNone(napoc["fitting_id"])
+        self.assertIsNone(napoc["character_id"])
+
+    def test_not_ready_says_how_long(self):
+        training.set_not_for_fleets(self.user, self.logi.character_id, True)
+        [guardian] = training.hull_readiness(self.user, [GUARDIAN])
+        self.assertEqual(guardian["character_name"], "Alt")
+        self.assertFalse(guardian["ready"])
+        self.assertGreater(guardian["days"], 0)
+
+    def test_endpoint_reads_a_comma_list(self):
+        response = self.client.get(
+            "/api/training/hulls?type_ids=11987,junk,17726",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row["ship_type_id"] for row in response.json()],
+            [GUARDIAN, NAPOC],
+        )
+
+
+class RoleSpotlightTest(TrainingTestCase):
+    def _fleet(self, members, **fields):
+        fleet = EveFleet.objects.create(
+            type="strategic",
+            start_time=timezone.now(),
+            objective="Hold the Amamake gate",
+            doctrine=self.doctrine,
+            **fields,
+        )
+        instance = EveFleetInstance.objects.create(
+            id=fleet.pk + 900000, eve_fleet=fleet, end_time=timezone.now()
+        )
+        for index, ship_type_id in enumerate(members):
+            EveFleetInstanceMember.objects.create(
+                eve_fleet_instance=instance,
+                character_id=5000 + index,
+                character_name=f"Pilot {index}",
+                role="squad_member",
+                role_name="Squad Member",
+                ship_type_id=ship_type_id,
+                ship_name="",
+                solar_system_id=1,
+                solar_system_name="Amamake",
+                squad_id=1,
+                wing_id=1,
+            )
+        return fleet
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    def test_pilots_who_flew_the_role_most(self):
+        self._fleet([GUARDIAN, NAPOC])
+        self._fleet([GUARDIAN])
+        self._fleet([GUARDIAN], invite_only=True)
+        pilots = role_spotlight(["Logistics"], [GUARDIAN])["pilots"]
+        self.assertEqual(
+            pilots[0], {"character_id": 5000, "name": "Pilot 0", "fleets": 2}
+        )
+        self.assertEqual(len(pilots), 1)
+
+    def test_recent_fleets_that_flew_the_role_skip_private_ones(self):
+        busy = self._fleet([GUARDIAN, GUARDIAN, NAPOC])
+        self._fleet([GUARDIAN], invite_only=True)
+        self._fleet([NAPOC])
+        fleets = role_spotlight(["Logistics"], [GUARDIAN])["fleets"]
+        self.assertEqual([f["fleet_id"] for f in fleets], [busy.pk])
+        self.assertEqual(fleets[0]["pilots_in_role"], 2)
+        self.assertEqual(fleets[0]["doctrine"], "Armor")
+        self.assertEqual(fleets[0]["objective"], "Hold the Amamake gate")
+
+    def test_endpoint(self):
+        response = self.client.get(
+            f"/api/training/roles?capabilities=Logistics&type_ids={GUARDIAN}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            set(response.json()),
+            {"mentors", "pilots", "fleets", "fleets_days", "hulls"},
+        )
+
+    def test_hull_usage_is_fleets_a_month(self):
+        self._fleet([GUARDIAN, GUARDIAN, NAPOC])
+        self._fleet([GUARDIAN])
+        self._fleet([GUARDIAN], invite_only=True)
+        old = self._fleet([NAPOC])
+        EveFleetInstance.objects.filter(eve_fleet=old).update(
+            start_time=timezone.now() - timedelta(days=120)
+        )
+        hulls = {
+            h["ship_type_id"]: h
+            for h in role_spotlight(["DPS"], [GUARDIAN, NAPOC])["hulls"]
+        }
+        self.assertEqual(hulls[GUARDIAN]["fleets"], 2)
+        self.assertEqual(hulls[GUARDIAN]["fleets_per_month"], 0.7)
+        self.assertEqual(hulls[GUARDIAN]["pilots"], 2)
+        self.assertEqual(hulls[NAPOC]["fleets"], 1)
+        self.assertEqual(hulls[NAPOC]["days"], 90)
+
+    def test_mentors_who_fly_the_role(self):
+        mentor = User.objects.create_user(username="mentor")
+        EveCharacter.objects.create(
+            character_id=5000, character_name="Pilot 0", user=mentor
+        )
+        MentorProfile.objects.create(user=mentor, status="approved")
+        self._fleet([GUARDIAN, GUARDIAN])
+        result = role_spotlight(["Logistics"], [GUARDIAN])
+        self.assertEqual(
+            result["mentors"],
+            [{"character_id": 5000, "name": "Pilot 0", "fleets": 1}],
+        )
+        MentorProfile.objects.filter(user=mentor).update(taking_requests=False)
+        cache.clear()
+        self.assertEqual(
+            role_spotlight(["Logistics"], [GUARDIAN])["mentors"], []
+        )
+
+    def test_a_quiet_role_widens_to_the_year(self):
+        fleet = self._fleet([GUARDIAN])
+        EveFleetInstance.objects.filter(eve_fleet=fleet).update(
+            start_time=timezone.now() - timedelta(days=200)
+        )
+        result = role_spotlight(["Logistics"], [GUARDIAN])
+        self.assertEqual(result["fleets_days"], 365)
+        self.assertEqual([f["fleet_id"] for f in result["fleets"]], [fleet.pk])

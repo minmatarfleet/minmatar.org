@@ -46,4 +46,12 @@ export async function get_learning_persona_recommendation(
     })
 }
 
+/** Mark one learning complete (a guide, or a Fleet Roles drill). */
+export async function complete_learning(access_token: string, slug: string): Promise<void> {
+    await api_request(`${API_ENDPOINT}/learnings/${encodeURIComponent(slug)}/complete`, {
+        method: 'POST',
+        token: access_token,
+    })
+}
+
 export type { LearningCertificateAward }

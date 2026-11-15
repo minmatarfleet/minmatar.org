@@ -1,0 +1,47 @@
+---
+/**
+ * Fleet snake: on the left, a fleet anchored well moves as a tight ball; on
+ * the right, anchoring delays and weaker skills string it out behind the
+ * anchor, and the tail falls out of logistics range and out of the fight.
+ * Illustrative, not to scale.
+ */
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+const W = 640
+const H = 250
+const BALL = { x: 150, y: 128 }
+const BALL_DOTS = [[-16, -12], [14, -14], [20, 8], [-4, 18], [-22, 6], [6, -24], [24, -4], [-12, -24], [10, 20]]
+// Snake: the anchor out front, followers trailing back along its path.
+const HEAD = { x: 590, y: 70 }
+const TRAIL = Array.from({ length: 10 }, (_, i) => {
+    const t = (i + 1) / 10
+    return { x: HEAD.x - t * 230, y: HEAD.y + t * 96 + Math.sin(t * Math.PI * 2) * 18 }
+})
+---
+
+<XFadeScroll class="rd-scroll">
+<svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Left: a well-anchored fleet moves as a tight ball around the anchor. Right: a fleet snake, strung out behind the anchor by anchoring delays and weaker skills; the pilots at the tail should heat or pulse their propulsion module to catch up.">
+    <text class="rd-strong" x="40" y="24" font-size="13">Anchored: one ball</text>
+    <circle class="rd-zone-green" cx={BALL.x} cy={BALL.y} r="64" />
+    <circle class="rd-green-stroke" cx={BALL.x} cy={BALL.y} r="64" stroke-width="1" stroke-dasharray="4 4" />
+    {BALL_DOTS.map(([dx, dy]) => <circle class="rd-blue" cx={BALL.x + dx} cy={BALL.y + dy} r="5" />)}
+    <circle class="rd-yellow" cx={BALL.x} cy={BALL.y} r="7" />
+    <path class="rd-yellow-stroke" d={`M${BALL.x + 70},${BALL.y} L${BALL.x + 110},${BALL.y}`} stroke-width="2" />
+    <path class="rd-yellow" d={`M${BALL.x + 110},${BALL.y - 5} L${BALL.x + 120},${BALL.y} L${BALL.x + 110},${BALL.y + 5} Z`} />
+    <text class="rd-muted" x={BALL.x} y={BALL.y + 84} font-size="10" text-anchor="middle">everyone inside logistics range</text>
+
+    <line class="rd-faint" x1="320" x2="320" y1="16" y2={H - 16} stroke-width="1" />
+
+    <text class="rd-strong" x="350" y="24" font-size="13">Fleet snake</text>
+    <path class="rd-faint" d={`M${HEAD.x},${HEAD.y} ${TRAIL.map((p) => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}`} stroke-width="1.5" stroke-dasharray="3 4" />
+    {TRAIL.map((p, i) => <circle class={i >= 7 ? 'rd-red' : 'rd-blue'} cx={p.x} cy={p.y} r="5" />)}
+    <circle class="rd-yellow" cx={HEAD.x} cy={HEAD.y} r="7" />
+    <text class="rd-text" x={HEAD.x} y={HEAD.y - 14} font-size="11" text-anchor="middle">anchor</text>
+    <text class="rd-red" x={TRAIL[9].x - 12} y={TRAIL[9].y + 24} font-size="11">the tail: heat or pulse</text>
+    <text class="rd-red" x={TRAIL[9].x - 12} y={TRAIL[9].y + 38} font-size="11">your prop mod to catch up</text>
+    <text class="rd-muted" x="350" y={H - 12} font-size="10">anchoring delays and weaker skills string the fleet out</text>
+</svg>
+</XFadeScroll>
+<figcaption>
+    <strong>Anchor fast and stay in the ball.</strong> Late anchoring and weaker skills turn the ball into a snake, and the tail falls out of reps and out of the fight.
+</figcaption>

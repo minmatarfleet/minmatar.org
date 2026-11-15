@@ -1,0 +1,244 @@
+---
+/**
+ * The Fleet Roles landing page: where to start, how each role guide works
+ * and the six roles grouped by what they do in a fight.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_site_origin } from '@helpers/seo'
+import { pageProgressFromSections } from '@helpers/pageProgress'
+import { guides } from '@/data/guides'
+import { getGuideCoverImage, getGuideSeoImage } from '@/data/guides/covers'
+import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
+import { guidePath } from '@/data/guides/urls'
+import { FLEET_ROLES_HUB_SLUG, get_fleet_role, type FleetRoleGuide, type FleetRoleSlug } from '@/data/fleet-roles'
+import CapitalGuidePage from '@components/blocks/capital-guide/CapitalGuidePage.astro'
+import Button from '@components/blocks/Button.astro'
+import RoleTile from '@components/blocks/role-guide/RoleTile.astro'
+
+const meta = guides.find((guide) => guide.slug === FLEET_ROLES_HUB_SLUG)!
+const site_origin = get_site_origin(Astro.url.origin)
+const seo = getGuidePageSeo({
+    guide: meta,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    translatePath,
+    t,
+    coverImage: getGuideSeoImage(meta),
+})
+const structured_data = buildGuideJsonLd({ guide: meta, siteName: t('index.page_title'), siteOrigin: site_origin, ...seo })
+const progress = pageProgressFromSections({
+    page_key: `guides/${FLEET_ROLES_HUB_SLUG}`,
+    page_title: meta.title,
+    sections: ['start', 'how', 'roles'],
+})
+
+/**
+ * The six roles as a pyramid, read top down: build the fleet (everyone
+ * starts with Damage), support it, then disrupt the enemy.
+ */
+const GROUPS: { id: string; roles: FleetRoleSlug[] }[] = [
+    { id: 'build', roles: ['damage'] },
+    { id: 'support', roles: ['remote-repair', 'fleet-support'] },
+    { id: 'disrupt', roles: ['capacitor-warfare', 'electronic-warfare', 'fleet-disruption'] },
+]
+const groups = GROUPS.map((group) => ({
+    ...group,
+    guides: group.roles.map((slug) => get_fleet_role(slug)).filter((guide): guide is FleetRoleGuide => !!guide),
+}))
+
+const STEPS = ['learn', 'practice', 'fly'] as const
+const damage = get_fleet_role('damage')!
+---
+
+<CapitalGuidePage
+    page_title={meta.title}
+    meta_title={seo.metaTitle}
+    meta_description={seo.metaDescription}
+    meta_image={seo.metaImage}
+    canonical_url={seo.canonicalUrl}
+    cover_image={getGuideCoverImage(meta)}
+    cover_alt=""
+    structured_data={structured_data}
+    progress={progress}
+    robots={meta.unlisted ? 'noindex, nofollow' : undefined}
+>
+    <div class="[ role-hub ]">
+        <section id="start" data-section-id="start" class="[ role-hub__start ]" aria-labelledby="role-hub-start">
+            <h2 id="role-hub-start" class="[ role-hub__headline ]">{t('fleet_roles.hub_headline')}</h2>
+            <p class="[ role-hub__lede ]">{t('fleet_roles.hub_lede')}</p>
+            <div class="[ role-hub__actions ]">
+                <Button href={translatePath(guidePath(damage.guide_slug))}>{t('fleet_roles.hub_start_damage')}</Button>
+                <Button color="transparent" href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</Button>
+            </div>
+            <p class="[ role-hub__muted ]">{t('fleet_roles.hub_start_note')}</p>
+        </section>
+
+        <section id="how" data-section-id="how" class="[ role-hub__section ]" aria-labelledby="role-hub-how">
+            <h2 id="role-hub-how" class="[ role-hub__title ]">{t('fleet_roles.hub_how_title')}</h2>
+            <ol class="[ role-hub__steps ]">
+                {STEPS.map((step, index) => (
+                    <li>
+                        <span class="[ role-hub__step-number ]" aria-hidden="true">{index + 1}</span>
+                        <strong>{t(t_key('fleet_roles.hub_step.', step))}</strong>
+                        <span>{t(t_key('fleet_roles.hub_step.', step, '_text'))}</span>
+                    </li>
+                ))}
+            </ol>
+        </section>
+
+        <section id="roles" data-section-id="roles" class="[ role-hub__section ]" aria-labelledby="role-hub-roles">
+            <h2 id="role-hub-roles" class="[ role-hub__title ]">{t('fleet_roles.hub_roles_title')}</h2>
+            {groups.map((group) => (
+                <div class="[ role-hub__group ]">
+                    <div class="[ role-hub__group-head ]">
+                        <h3>{t(t_key('fleet_roles.hub_group.', group.id))}</h3>
+                        <p class="[ role-hub__muted ]">{t(t_key('fleet_roles.hub_group.', group.id, '_lead'))}</p>
+                    </div>
+                    <ul class="[ role-hub__roles ]" style={`--tier-count: ${group.guides.length}`}>
+                        {group.guides.map((guide) => (
+                            <li>
+                                <RoleTile guide={guide} />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            ))}
+        </section>
+    </div>
+</CapitalGuidePage>
+
+<style lang="scss">
+    .role-hub {
+        container-type: inline-size;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+        padding-block: var(--space-l);
+    }
+
+    .role-hub__start {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-s);
+    }
+
+    .role-hub__headline {
+        margin: 0;
+        max-width: 24ch;
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1.05;
+        color: var(--highlight);
+    }
+
+    .role-hub__lede {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step-1);
+        color: var(--foreground);
+    }
+
+    .role-hub__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+
+    .role-hub__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .role-hub__title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        letter-spacing: 0.04em;
+        color: var(--fleet-yellow);
+    }
+
+    .role-hub__steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+        gap: var(--space-s);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-content: start;
+            column-gap: var(--space-s);
+            row-gap: var(--space-3xs);
+            padding: var(--space-s);
+            border-top: 2px solid var(--fleet-yellow);
+            background: var(--surface-sunken);
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        strong {
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .role-hub__step-number {
+        grid-row: span 2;
+        align-self: start;
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        color: var(--fleet-yellow);
+    }
+
+    .role-hub__group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .role-hub__group-head {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3xs);
+        text-align: center;
+
+        h3 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            letter-spacing: 0.03em;
+            color: var(--highlight);
+        }
+    }
+
+    /* Each tier is one tile wider than the one above: the pyramid. */
+    .role-hub__roles {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-s);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        @container (min-width: 48rem) {
+            grid-template-columns: repeat(var(--tier-count), minmax(0, 1fr));
+            width: min(100%, calc(var(--tier-count) * 25rem));
+        }
+    }
+
+    .role-hub__muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+</style>

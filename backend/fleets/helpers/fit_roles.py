@@ -9,6 +9,10 @@ Links come from command burst modules. EFT marks the ones the doctrine
 runs online; the rest are fitted ``/offline`` so a pilot can swap which
 bursts they run. Spares in cargo are not counted: swapping those in needs a
 depot. Calibrated against every production doctrine fit (Oct 2026).
+
+Interdiction, ECM and neuts are read the same way, from fitted modules
+(online or not): a bubble or a Micro Jump Field Generator, any ECM jammer or
+burst, and two or more energy neutralizers.
 """
 
 import re
@@ -40,6 +44,19 @@ _REMOTE_RE = re.compile(
 )
 # Covert and industrial variants included.
 _CYNO_RE = re.compile(r"\bCynosural Field Generator\b")
+# Bubbles (dictor launcher, HIC field) and the Command Destroyer boson.
+_INTERDICTION_RE = re.compile(
+    r"\b(Interdiction Sphere Launcher|Warp Disruption Field Generator|"
+    r"Micro Jump Field Generator)\b"
+)
+# Racial and multispectral jammers ("Morpheus Enduring Magnetometric ECM"),
+# ECM bursts ("Burst Jammer II") and the capital "ECM Jammer Burst
+# Projector". ECCM is a different module.
+_ECM_RE = re.compile(r"\bECM\b|\bBurst Jammer\b")
+# Any size or variant: "Heavy Gremlin Compact Energy Neutralizer".
+_NEUT_RE = re.compile(r"\bEnergy Neutralizer\b")
+# One neut is a utility high on a brawler; a neut ship runs two or more.
+NEUTS_MIN_MODULES = 2
 
 # A fit with one remote rep is a brawler buddy-repping (Pointrunner
 # Myrmidon), not logi. Logi hulls count even with one big module (Zarmazd).
@@ -64,6 +81,9 @@ class FitRoles:
     bursts_online: dict = field(default_factory=dict)  # kind -> count
     cyno: bool = False
     logi: bool = False
+    interdiction: bool = False
+    ecm: bool = False
+    neuts: bool = False
 
     @property
     def burst_slots(self) -> int:
@@ -111,7 +131,8 @@ def fit_roles(eft_format: str, ship_group: str = "") -> FitRoles:
     fitted: Counter = Counter()
     online: Counter = Counter()
     remote = 0
-    cyno = False
+    neuts = 0
+    cyno = interdiction = ecm = False
     for item in parse_eft_items(eft_format):
         if item.stacked:
             continue  # drones and cargo
@@ -124,10 +145,19 @@ def fit_roles(eft_format: str, ship_group: str = "") -> FitRoles:
             remote += 1
         elif _CYNO_RE.search(item.name):
             cyno = True
+        elif _INTERDICTION_RE.search(item.name):
+            interdiction = True
+        elif _ECM_RE.search(item.name):
+            ecm = True
+        elif _NEUT_RE.search(item.name):
+            neuts += 1
     return FitRoles(
         bursts_fitted=dict(fitted),
         bursts_online=dict(online),
         cyno=cyno,
         logi=remote >= LOGI_MIN_REMOTE_MODULES
         or (remote > 0 and ship_group in LOGI_HULL_GROUPS),
+        interdiction=interdiction,
+        ecm=ecm,
+        neuts=neuts >= NEUTS_MIN_MODULES,
     )

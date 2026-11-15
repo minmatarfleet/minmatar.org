@@ -4,6 +4,8 @@ import type {
     TrainingAccountOptions,
     TrainingCharacter,
     TrainingDoctrineCell,
+    TrainingHullReadiness,
+    TrainingRoleSpotlight,
     TrainingGoalPatch,
     TrainingOverview,
     TrainingPlan,
@@ -18,6 +20,23 @@ export async function get_training_overview(access_token:string) {
     return await api_request<TrainingOverview>(`${API_ENDPOINT}/`, {
         token: access_token,
         error: 'Error fetching training',
+    })
+}
+
+/** Fleet Roles ladders: your best character and doctrine fit on each hull. */
+export async function get_training_hulls(access_token:string, type_ids:number[]) {
+    return await api_request<TrainingHullReadiness[]>(`${API_ENDPOINT}/hulls?type_ids=${type_ids.join(',')}`, {
+        token: access_token,
+        error: 'Error fetching hull readiness',
+    })
+}
+
+/** Fleet Roles guides: the pilots who fly a role most, and recent fleets that flew it. */
+export async function get_training_roles(access_token:string, capabilities:string[], type_ids:number[]) {
+    const query = new URLSearchParams({ capabilities: capabilities.join(','), type_ids: type_ids.join(',') })
+    return await api_request<TrainingRoleSpotlight>(`${API_ENDPOINT}/roles?${query.toString()}`, {
+        token: access_token,
+        error: 'Error fetching role spotlight',
     })
 }
 

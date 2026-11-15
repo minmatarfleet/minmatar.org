@@ -698,6 +698,65 @@ def plan_view(user, character_id: int, fitting_id: int) -> dict:
     }
 
 
+# Fleet Roles guides: at most this many hulls per ladder request.
+HULLS_MAX = 12
+
+
+def hull_readiness(user, ship_type_ids: list[int]) -> list[dict]:
+    """
+    For each hull, the player's best doctrine fit on it: the character
+    closest to Ready (or ready), and how long to go. A hull with no doctrine
+    fit this player may see comes back with in_doctrine False.
+    """
+    player = _Player(user)
+    pilots = _pilots(player)
+    out = []
+    for type_id in list(dict.fromkeys(ship_type_ids))[:HULLS_MAX]:
+        fits = sorted(
+            fid
+            for fid, rs in player.sets.items()
+            if rs.fitting.ship_id == type_id
+        )
+        best_key: tuple | None = None
+        best: tuple[EveCharacter, int] | None = None
+        for character in pilots:
+            for fid in fits:
+                if (character.pk, fid) not in player.readiness:
+                    continue
+                key = (
+                    player.estimate(character.pk, fid),
+                    character.character_name,
+                    fid,
+                )
+                if best_key is None or key < best_key:
+                    best_key = key
+                    best = (character, fid)
+        row = {
+            "ship_type_id": type_id,
+            "in_doctrine": bool(fits),
+            "fitting_id": fits[0] if fits else None,
+            "fitting_name": None,
+            "character_id": None,
+            "character_name": None,
+            "ready": False,
+            "days": None,
+        }
+        if best is not None:
+            character, fid = best
+            status = player.status(character.pk, fid)
+            row.update(
+                fitting_id=fid,
+                character_id=character.character_id,
+                character_name=character.character_name,
+                ready=status["ready"],
+                days=None if status["ready"] else status["days"],
+            )
+        if row["fitting_id"] is not None:
+            row["fitting_name"] = player.ship(row["fitting_id"])["name"]
+        out.append(row)
+    return out
+
+
 def ship_options(user, character_id: int) -> list[dict]:
     """Doctrine fits to add, those in the most doctrines first."""
     player = _Player(user)

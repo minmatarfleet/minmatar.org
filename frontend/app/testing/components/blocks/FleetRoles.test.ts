@@ -7,7 +7,10 @@ import type { FleetCompositionEntry, FleetRoleCoverage, FleetRolePilot } from '@
 const fit = (key:string, ship_name:string, fit_roles:Partial<FleetCompositionEntry['fit_roles']>):FleetCompositionEntry => ({
     key, fitting_id: 1, fleet_fitting_id: null, name: ship_name, ship_id: 1, ship_name, ship_group: '',
     role: 'support', source: 'doctrine', eft_format: '', refits: [], module_slots: {},
-    fit_roles: { links: false, burst_slots: 0, bursts_online: {}, bursts_fitted: {}, cyno: false, logi: false, ...fit_roles },
+    fit_roles: {
+        links: false, burst_slots: 0, bursts_online: {}, bursts_fitted: {}, cyno: false, logi: false,
+        interdiction: false, ecm: false, neuts: false, ...fit_roles,
+    },
 })
 
 const COMPOSITION = [
@@ -31,6 +34,10 @@ const roles = (overrides:Partial<FleetRoleCoverage> = {}):FleetRoleCoverage => (
     ],
     cynos: [],
     logi: [],
+    interdiction: [],
+    ecm: [],
+    neuts: [],
+    wanted: { interdiction: 0, neuts: 0, ecm: 0 },
     ...overrides,
 })
 
@@ -82,4 +89,30 @@ test('a doctrine without cyno or logi ships hides those rows', async () => {
 
     expect(result).not.toContain('Cynos')
     expect(result).not.toContain('>Logi<')
+})
+
+test('interdiction, neut and ECM rows come from ships; strategic fleets set targets', async () => {
+    const composition = [
+        ...COMPOSITION,
+        fit('f:20', 'Sabre', { interdiction: true }),
+        fit('f:88', 'Curse', { neuts: true }),
+    ]
+    const sabre = pilot({ character_name: 'Bubble Pilot', ship_name: 'Sabre' })
+
+    const listed = await render({ composition, roles: roles({ interdiction: [sabre] }) })
+    expect(listed).toContain('Interdiction')
+    expect(listed).toContain('Bubble Pilot')
+    expect(listed).toContain('Volunteer a Curse')
+    expect(listed).toContain('id="neuts-role"')
+    expect(listed).not.toContain('id="ecm-role"')
+    // No targets outside strategic fleets.
+    expect(listed).toContain('2/5 roles filled')
+
+    const strategic = await render({
+        composition,
+        roles: roles({ interdiction: [sabre], wanted: { interdiction: 2, neuts: 2, ecm: 1 } }),
+    })
+    // Interdiction 1 of 2 and neuts 0 of 2 count, both short.
+    expect(strategic).toContain('2/7 roles filled')
+    expect(strategic).toContain('1 of 2')
 })

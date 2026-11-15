@@ -132,7 +132,13 @@ const has_my_ships = ship_volunteers.some(volunteer => my_character_ids.has(volu
 const invites_tab = show_invites ? [{ id: 'invites', label: t('fleets.tabs.invites') }] : []
 const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?fleet_id=${fleet.id}`
 
-const tally = roles ? role_tally(roles, composition, { logi_fc: t('fleets.after.logi_fc'), cynos: t('fleets.after.cyno') }) : null
+const tally = roles ? role_tally(roles, composition, {
+    logi_fc: t('fleets.after.logi_fc'),
+    cynos: t('fleets.after.cyno'),
+    interdiction: t('interdiction_label'),
+    neuts: t('neuts_label'),
+    ecm: t('ecm_label'),
+}) : null
 const show_in_fleet = is_fleet_commander
 
 const fleet_tabs = [

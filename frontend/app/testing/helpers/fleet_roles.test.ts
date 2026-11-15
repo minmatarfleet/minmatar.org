@@ -6,6 +6,8 @@ import {
     bursts_summary,
     counts_from_bursts,
     link_kinds,
+    role_tally,
+    ship_role_rows,
     ships_for_role,
 } from '@helpers/fleet_roles'
 
@@ -22,7 +24,10 @@ const entry = (overrides:Partial<FleetCompositionEntry>):FleetCompositionEntry =
     eft_format: '',
     refits: [],
     module_slots: {},
-    fit_roles: { links: false, burst_slots: 0, bursts_online: {}, bursts_fitted: {}, cyno: false, logi: false },
+    fit_roles: {
+        links: false, burst_slots: 0, bursts_online: {}, bursts_fitted: {},
+        cyno: false, logi: false, interdiction: false, ecm: false, neuts: false,
+    },
     ...overrides,
 })
 
@@ -37,6 +42,9 @@ const DAMNATION = entry({
         bursts_fitted: { armor: 3, skirmish: 2, information: 2 },
         cyno: false,
         logi: false,
+        interdiction: false,
+        ecm: false,
+        neuts: false,
     },
 })
 
@@ -45,6 +53,10 @@ const empty_roles = (kinds:FleetRoleCoverage['links'][number]['kind'][]):FleetRo
     links: kinds.map(kind => ({ kind, label: kind, pilots: [] })),
     cynos: [],
     logi: [],
+    interdiction: [],
+    ecm: [],
+    neuts: [],
+    wanted: { interdiction: 0, neuts: 0, ecm: 0 },
 })
 
 test('burst lists and counts round-trip in canonical order', () => {
@@ -75,4 +87,34 @@ test('a kind someone brings shows even if no doctrine fit runs it', () => {
 test('ships_for_role dedupes hulls', () => {
     const cyno = entry({ ship_name: 'Devoter', fit_roles: { ...DAMNATION.fit_roles, links: false, cyno: true } })
     expect(ships_for_role([cyno, { ...cyno, key: 'f:2' }], e => e.fit_roles.cyno)).toEqual(['Devoter'])
+})
+
+const SABRE = entry({ key: 'f:20', ship_name: 'Sabre', fit_roles: { ...DAMNATION.fit_roles, links: false, interdiction: true } })
+const GRIFFIN = entry({ key: 'f:87', ship_name: 'Griffin', fit_roles: { ...DAMNATION.fit_roles, links: false, ecm: true } })
+const LABELS = { logi_fc: 'Logi FC', cynos: 'Cynos', interdiction: 'Interdiction', neuts: 'Neuts', ecm: 'ECM' }
+
+test('interdiction, neut and ECM rows show only when the doctrine fills them', () => {
+    const rows = ship_role_rows(empty_roles([]), [SABRE, GRIFFIN])
+    expect(rows.map(row => row.kind)).toEqual(['interdiction', 'ecm'])
+    expect(rows[0].ship_names).toEqual(['Sabre'])
+    // Non-strategic: no target.
+    expect(rows.every(row => row.wanted === undefined)).toBe(true)
+    expect(role_tally(empty_roles([]), [SABRE, GRIFFIN], LABELS).total).toBe(1)
+})
+
+test('strategic fleets count interdiction and ECM towards roles filled', () => {
+    const roles = { ...empty_roles([]), wanted: { interdiction: 2, neuts: 2, ecm: 1 } }
+    roles.ecm = [{
+        character_id: 1, character_name: 'P', ship_id: 584, ship_name: 'Griffin', fitting_name: '',
+        source: 'volunteer', in_fleet: false, count: 0, ship_volunteer_id: 5,
+    }]
+    const tally = role_tally(roles, [SABRE, GRIFFIN], LABELS)
+    expect(tally.total).toBe(3)
+    expect(tally.filled).toBe(1)
+    expect(tally.open).toEqual(['Logi FC', 'Interdiction'])
+})
+
+test('an older backend without the new roles shows no extra rows', () => {
+    const { interdiction, ecm, neuts, wanted, ...old } = empty_roles([])
+    expect(ship_role_rows(old as FleetRoleCoverage, [DAMNATION])).toEqual([])
 })

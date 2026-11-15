@@ -1,4 +1,5 @@
-"""GET /{fleet_id}/roles — who fills links, cynos and logi, from ships."""
+"""GET /{fleet_id}/roles — who fills links, cynos, logi, interdiction, ECM
+and neuts, from ships."""
 
 from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
@@ -13,6 +14,7 @@ from fleets.endpoints.schemas import (
     EveFleetLinkCoverage,
     EveFleetRoleCoverageResponse,
     EveFleetRolePilot,
+    EveFleetRoleWanted,
 )
 from fleets.helpers.role_coverage import fleet_role_coverage
 from fleets.models import EveFleet, EveFleetRoleVolunteer
@@ -23,8 +25,11 @@ ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: EveFleetRoleCoverageResponse, 403: None, 404: None},
     "description": (
-        "Fleet roles worked out from ships: links by burst kind, cynos and "
-        "logi, from ship volunteers and pilots in the tracked fleet. Logi FC "
+        "Fleet roles worked out from ships: links by burst kind, cynos, "
+        "logi, interdiction, ECM and neuts, from ship volunteers and pilots "
+        "in the tracked fleet. `wanted` is how many interdiction, neut and "
+        "ECM ships the fleet asks for (strategic fleets; 0 elsewhere). "
+        "Logi FC "
         "is the one role still signed up for. A hidden roster limits "
         "everyone but a Strategic FC to their own characters; a cyno system "
         "is only returned to the FC and the pilot."
@@ -86,4 +91,10 @@ def get_fleet_roles(request, fleet_id: int):
         ],
         cynos=[_pilot_response(p, reveal) for p in coverage["cynos"]],
         logi=[_pilot_response(p, reveal) for p in coverage["logi"]],
+        interdiction=[
+            _pilot_response(p, reveal) for p in coverage["interdiction"]
+        ],
+        ecm=[_pilot_response(p, reveal) for p in coverage["ecm"]],
+        neuts=[_pilot_response(p, reveal) for p in coverage["neuts"]],
+        wanted=EveFleetRoleWanted(**coverage["wanted"]),
     )

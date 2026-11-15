@@ -1,0 +1,57 @@
+---
+// no-error-refetch: on an API failure the ladder renders without readiness, the same as the page before it loads.
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_fleet_role } from '@/data/fleet-roles'
+import { get_training_hulls, get_training_roles } from '@helpers/api.minmatar.org/training'
+import { doctrine_ships, type RoleShip } from '@helpers/fleet_role_ships'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import type { Doctrine, TrainingHullReadiness, TrainingRoleHullUsage } from '@dtypes/api.minmatar.org'
+
+const guide = get_fleet_role(Astro.url.searchParams.get('role') ?? '')
+if (!guide)
+    return HTTP_404_Not_Found()
+
+const { auth_token, user } = get_request_user(Astro)
+
+// Ladder guides show their hulls only for now; doctrine tags and readiness
+// come back once the ladders match our doctrines.
+let all_doctrines: Doctrine[] = []
+try {
+    all_doctrines = await get_doctrines()
+} catch (error) {
+    console.log(`Ladder doctrines unavailable: ${error.message}`)
+}
+// Guides built from doctrines list every hull that flies the role today.
+const ships: RoleShip[] = guide.ships_from_doctrines ? await doctrine_ships(all_doctrines, guide.ships_only, guide.ships_from_doctrines) : []
+const hull_ids = guide.ships_from_doctrines ? ships.map((ship) => ship.ship_type_id) : guide.ladder.map((rung) => rung.ship_type_id)
+
+// null = logged out; [] = the API failed, which shows the ships without states.
+let readiness: TrainingHullReadiness[] | null = null
+let usage: TrainingRoleHullUsage[] | null = null
+// Only the guides tied to our doctrines (Damage, Remote Repair) show readiness and fleets a month.
+if (user && auth_token && guide.ships_from_doctrines && !guide.ship_jobs && hull_ids.length > 0) {
+    try {
+        readiness = await get_training_hulls(auth_token, hull_ids)
+    } catch (error) {
+        console.log(`Ladder readiness unavailable: ${error.message}`)
+        readiness = []
+    }
+    if (guide.ships_from_doctrines) {
+        try {
+            usage = (await get_training_roles(auth_token, guide.capabilities, hull_ids)).hulls
+        } catch (error) {
+            console.log(`Ship usage unavailable: ${error.message}`)
+        }
+    }
+}
+
+import RoleLadder from '@components/blocks/role-guide/RoleLadder.astro'
+import RoleShips from '@components/blocks/role-guide/RoleShips.astro'
+---
+
+{guide.ships_from_doctrines ? (
+    <RoleShips ships={ships} readiness={readiness} usage={usage} jobs={guide.ship_jobs} />
+) : (
+    <RoleLadder guide={guide} />
+)}

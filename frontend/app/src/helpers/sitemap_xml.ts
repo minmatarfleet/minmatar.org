@@ -54,7 +54,7 @@ export function getPublicSitemapPagePaths(): string[] {
 
     // A coming-soon guide has a catalog card but no page yet (404).
     for (const guide of guides) {
-        if (guide.comingSoon) continue
+        if (guide.comingSoon || guide.unlisted) continue
         paths.add(getGuideCanonicalPath(guide))
     }
 

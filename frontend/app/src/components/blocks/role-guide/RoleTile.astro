@@ -1,0 +1,120 @@
+---
+/**
+ * One Fleet Roles guide as an image-led tile: the role's ship render behind
+ * its name and a few words. Used by the Fleet Roles landing page and the
+ * Learning Center.
+ */
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { FleetRoleGuide } from '@/data/fleet-roles'
+import { guidePath } from '@/data/guides/urls'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    guide: FleetRoleGuide
+    [propName: string]: any
+}
+
+const { guide, ...attributes } = Astro.props
+delete attributes.class
+---
+
+<a class:list={['[ role-tile ]', Astro.props.class]} href={translatePath(guidePath(guide.guide_slug))} {...attributes}>
+    <img src={get_item_icon(guide.hero_type_id, 512)} alt="" width="512" height="512" loading="lazy" />
+    <span class="[ role-tile__body ]">
+        <span class="[ role-tile__name ]">{guide.name}</span>
+        <span class="[ role-tile__line ]">{guide.tagline}</span>
+    </span>
+    <span class="[ role-tile__chevron ]" aria-hidden="true">→</span>
+</a>
+
+<style lang="scss">
+    .role-tile {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        height: 100%;
+        aspect-ratio: 2 / 1;
+        overflow: hidden;
+        border: 1px solid var(--hairline-medium);
+        background: var(--background);
+        color: var(--foreground);
+        text-decoration: none;
+
+        // Wider tiles once the page container has room for a row of them.
+        @container (min-width: 48rem) {
+            aspect-ratio: 16 / 10;
+        }
+
+        img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 40%;
+            transition: var(--slow-transition);
+        }
+
+        // Darken the bottom so the name always reads over the render.
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, color-mix(in srgb, var(--background) 92%, transparent) 0%, color-mix(in srgb, var(--background) 40%, transparent) 45%, transparent 75%);
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+
+                img {
+                    transform: scale(1.05);
+                }
+
+                .role-tile__chevron {
+                    color: var(--fleet-yellow);
+                    transform: translateX(var(--space-3xs));
+                }
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .role-tile__body {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-m);
+    }
+
+    .role-tile__name {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        letter-spacing: 0.03em;
+        color: var(--highlight);
+    }
+
+    .role-tile__line {
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+    }
+
+    .role-tile__chevron {
+        position: relative;
+        z-index: 1;
+        padding: var(--space-s) var(--space-m);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        transition: var(--fast-transition);
+    }
+</style>

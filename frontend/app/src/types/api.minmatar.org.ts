@@ -2326,15 +2326,7 @@ export interface LearningItem {
     order:                  number;
 }
 
-export interface LearningCertificate {
-    slug:                   string;
-    title:                  string;
-    summary:                string;
-    sort_order:             number;
-    personas:               LearningPersona[];
-    learnings:              LearningItem[];
-    learning_count:         number;
-}
+export type LearningCertificate = ApiResponse<'CertificateSchema'>
 
 export interface LearningCertificateAward {
     slug:                   string;
@@ -3205,6 +3197,11 @@ export type CorporationMemberStatus = ApiResponse<'CorporationMemberStatusRespon
 export type CorporationMemberStatusAction = ApiRequest<'CorporationMemberStatusRequest'>['action']
 export type TrainingBringDoctrine = ApiResponse<'BringDoctrineResponse'>
 export type TrainingDoctrineCell = ApiResponse<'DoctrineCellResponse'>
+// Fleet Roles guide ladders: the best character and fit on each hull.
+export type TrainingHullReadiness = ApiResponse<'HullReadinessResponse'>
+// Fleet Roles guides: who flies a role most, and recent fleets that flew it.
+export type TrainingRoleSpotlight = ApiResponse<'RoleSpotlightResponse'>
+export type TrainingRoleHullUsage = ApiResponse<'RoleHullUsageResponse'>
 export type TrainingGoalPatch = ApiRequest<'GoalPatchRequest'>
 export type TrainingAccountMove = ApiRequest<'AccountMoveRequest'>
 

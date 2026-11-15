@@ -1,0 +1,31 @@
+---
+// no-error-refetch: on an API failure the spotlight shows its empty state; the guide reads complete without it.
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_fleet_role } from '@/data/fleet-roles'
+import { get_training_roles } from '@helpers/api.minmatar.org/training'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import { role_ship_ids } from '@helpers/fleet_role_ships'
+import type { TrainingRoleSpotlight } from '@dtypes/api.minmatar.org'
+
+const guide = get_fleet_role(Astro.url.searchParams.get('role') ?? '')
+if (!guide)
+    return HTTP_404_Not_Found()
+
+const { auth_token, user } = get_request_user(Astro)
+
+let spotlight: TrainingRoleSpotlight | null = null
+if (user && auth_token) {
+    try {
+        const doctrines = guide.ships_from_doctrines ? await get_doctrines() : []
+        spotlight = await get_training_roles(auth_token, guide.capabilities, await role_ship_ids(guide, doctrines))
+    } catch (error) {
+        console.log(`Role spotlight unavailable: ${error.message}`)
+        spotlight = { mentors: [], pilots: [], fleets: [], fleets_days: 60, hulls: [] }
+    }
+}
+
+import RoleSpotlight from '@components/blocks/role-guide/RoleSpotlight.astro'
+---
+
+<RoleSpotlight spotlight={spotlight} />

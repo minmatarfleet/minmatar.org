@@ -58,7 +58,13 @@ const my_ids = new Set(pilots.map(pilot => pilot.character_id))
 const my_flying = new Set(ship_volunteers.filter(volunteer => my_ids.has(volunteer.character_id)).map(volunteer => volunteer.character_id)).size
 const signed_up = new Set(ship_volunteers.map(volunteer => volunteer.character_id)).size
 
-const tally = roles ? role_tally(roles, composition, { logi_fc: t('fleets.after.logi_fc'), cynos: t('fleets.after.cyno') }) : null
+const tally = roles ? role_tally(roles, composition, {
+    logi_fc: t('fleets.after.logi_fc'),
+    cynos: t('fleets.after.cyno'),
+    interdiction: t('interdiction_label'),
+    neuts: t('neuts_label'),
+    ecm: t('ecm_label'),
+}) : null
 
 const flying_text = my_flying === 1 ? t('fleets.before.flying_one') : t('fleets.before.flying').replace('{count}', my_flying.toString())
 const signed_text = signed_up === 0 ? t('fleets.before.nobody_yet') : signed_up === 1 ? t('fleets.signups.summary_one') : t('fleets.signups.summary').replace('{count}', signed_up.toString())

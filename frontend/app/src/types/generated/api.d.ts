@@ -4309,7 +4309,7 @@ export interface paths {
         };
         /**
          * Get Fleet Roles
-         * @description Fleet roles worked out from ships: links by burst kind, cynos and logi, from ship volunteers and pilots in the tracked fleet. Logi FC is the one role still signed up for. A hidden roster limits everyone but a Strategic FC to their own characters; a cyno system is only returned to the FC and the pilot.
+         * @description Fleet roles worked out from ships: links by burst kind, cynos, logi, interdiction, ECM and neuts, from ship volunteers and pilots in the tracked fleet. `wanted` is how many interdiction, neut and ECM ships the fleet asks for (strategic fleets; 0 elsewhere). Logi FC is the one role still signed up for. A hidden roster limits everyone but a Strategic FC to their own characters; a cyno system is only returned to the FC and the pilot.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_roles_get_fleet_roles"];
         put?: never;
@@ -9183,6 +9183,46 @@ export interface paths {
         };
         /** One doctrine's ships for one role, and who flies each */
         get: operations["capabilities_endpoints_get_doctrine_get_doctrine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/hulls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your best character and doctrine fit on each hull, for the Fleet Roles guide ladders
+         * @description type_ids: comma-separated ship type ids, at most twelve.
+         */
+        get: operations["capabilities_endpoints_get_hulls_get_hulls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/training/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who flies a role most this year, and recent fleets that flew it
+         * @description capabilities: comma-separated classes; type_ids: the ladder hulls.
+         */
+        get: operations["capabilities_endpoints_get_roles_get_roles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15486,8 +15526,11 @@ export interface components {
              *       "bursts_fitted": {},
              *       "bursts_online": {},
              *       "cyno": false,
+             *       "ecm": false,
+             *       "interdiction": false,
              *       "links": false,
-             *       "logi": false
+             *       "logi": false,
+             *       "neuts": false
              *     }
              */
             fit_roles?: components["schemas"]["EveFleetFitRolesResponse"];
@@ -15787,6 +15830,16 @@ export interface components {
              */
             cyno?: boolean;
             /**
+             * Ecm
+             * @default false
+             */
+            ecm?: boolean;
+            /**
+             * Interdiction
+             * @default false
+             */
+            interdiction?: boolean;
+            /**
              * Links
              * @default false
              */
@@ -15796,6 +15849,11 @@ export interface components {
              * @default false
              */
             logi?: boolean;
+            /**
+             * Neuts
+             * @default false
+             */
+            neuts?: boolean;
         };
         /**
          * EveFleetFittingAccessResponse
@@ -16074,12 +16132,35 @@ export interface components {
         EveFleetRoleCoverageResponse: {
             /** Cynos */
             cynos: components["schemas"]["EveFleetRolePilot"][];
+            /**
+             * Ecm
+             * @default []
+             */
+            ecm?: components["schemas"]["EveFleetRolePilot"][];
+            /**
+             * Interdiction
+             * @default []
+             */
+            interdiction?: components["schemas"]["EveFleetRolePilot"][];
             /** Links */
             links: components["schemas"]["EveFleetLinkCoverage"][];
             /** Logi */
             logi: components["schemas"]["EveFleetRolePilot"][];
             /** Logi Fc */
             logi_fc: components["schemas"]["EveFleetRoleVolunteerResponse"][];
+            /**
+             * Neuts
+             * @default []
+             */
+            neuts?: components["schemas"]["EveFleetRolePilot"][];
+            /**
+             * @default {
+             *       "ecm": 0,
+             *       "interdiction": 0,
+             *       "neuts": 0
+             *     }
+             */
+            wanted?: components["schemas"]["EveFleetRoleWanted"];
         };
         /**
          * EveFleetRolePilot
@@ -16136,6 +16217,27 @@ export interface components {
             solar_system_name?: string | null;
             /** Subtype */
             subtype?: string | null;
+        };
+        /**
+         * EveFleetRoleWanted
+         * @description Pilots a fleet wants per role; 0 is no target (list only).
+         */
+        EveFleetRoleWanted: {
+            /**
+             * Ecm
+             * @default 0
+             */
+            ecm?: number;
+            /**
+             * Interdiction
+             * @default 0
+             */
+            interdiction?: number;
+            /**
+             * Neuts
+             * @default 0
+             */
+            neuts?: number;
         };
         /** EveFleetShipVolunteerResponse */
         EveFleetShipVolunteerResponse: {
@@ -19538,6 +19640,25 @@ export interface components {
             short_name: string;
             /** Solar System Name */
             solar_system_name: string;
+        };
+        /** HullReadinessResponse */
+        HullReadinessResponse: {
+            /** Character Id */
+            character_id: number | null;
+            /** Character Name */
+            character_name: string | null;
+            /** Days */
+            days: number | null;
+            /** Fitting Id */
+            fitting_id: number | null;
+            /** Fitting Name */
+            fitting_name: string | null;
+            /** In Doctrine */
+            in_doctrine: boolean;
+            /** Ready */
+            ready: boolean;
+            /** Ship Type Id */
+            ship_type_id: number;
         };
         /** HygieneCounts */
         HygieneCounts: {
@@ -26023,6 +26144,46 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** RoleFleetResponse */
+        RoleFleetResponse: {
+            /** Doctrine */
+            doctrine: string | null;
+            /** Fleet Id */
+            fleet_id: number;
+            /** Objective */
+            objective: string;
+            /** Pilots In Role */
+            pilots_in_role: number;
+            /**
+             * Start Time
+             * Format: date-time
+             */
+            start_time: string;
+            /** Type */
+            type: string;
+        };
+        /** RoleHullUsageResponse */
+        RoleHullUsageResponse: {
+            /** Days */
+            days: number;
+            /** Fleets */
+            fleets: number;
+            /** Fleets Per Month */
+            fleets_per_month: number;
+            /** Pilots */
+            pilots: number;
+            /** Ship Type Id */
+            ship_type_id: number;
+        };
+        /** RolePilotResponse */
+        RolePilotResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Fleets */
+            fleets: number;
+            /** Name */
+            name: string;
+        };
         /** RoleResponse */
         RoleResponse: {
             /** Capability */
@@ -26031,6 +26192,22 @@ export interface components {
             fleets_365d: number;
             /** Ready */
             ready: components["schemas"]["ShipResponse"][];
+        };
+        /** RoleSpotlightResponse */
+        RoleSpotlightResponse: {
+            /** Fleets */
+            fleets: components["schemas"]["RoleFleetResponse"][];
+            /** Fleets Days */
+            fleets_days: number;
+            /**
+             * Hulls
+             * @default []
+             */
+            hulls?: components["schemas"]["RoleHullUsageResponse"][];
+            /** Mentors */
+            mentors: components["schemas"]["RolePilotResponse"][];
+            /** Pilots */
+            pilots: components["schemas"]["RolePilotResponse"][];
         };
         /** Roster */
         Roster: {
@@ -52142,6 +52319,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_hulls_get_hulls: {
+        parameters: {
+            query: {
+                type_ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HullReadinessResponse"][];
+                };
+            };
+        };
+    };
+    capabilities_endpoints_get_roles_get_roles: {
+        parameters: {
+            query: {
+                capabilities: string;
+                type_ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleSpotlightResponse"];
                 };
             };
         };

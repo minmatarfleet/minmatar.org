@@ -1,0 +1,68 @@
+---
+/**
+ * Booshing the enemy logistics away from their fleet, before and after: a
+ * Bifrost gets among their logi, its field takes them {mjfg_distance_km} km
+ * away, and their damage ships are left with no repairs. A scrammed ship
+ * inside the field stays behind. Illustrative, not to scale.
+ */
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import { sim_facts } from '@/data/fleet-roles'
+
+const RADIUS_KM = Number(sim_facts.mjfg_radius_km)
+const DISTANCE_KM = Number(sim_facts.mjfg_distance_km)
+
+const W = 720
+const H = 270
+const PANEL = 340
+// Their damage ships, and their logi beside them (offsets from the logi centre).
+const DPS = [[-120, -40], [-140, 0], [-110, 38], [-150, 60], [-95, -75], [-160, -50]]
+const LOGI = [[-22, -18], [16, -24], [-8, 20], [24, 10]]
+const SCRAMMED = [-30, 34]
+const BEFORE = { x: 220, y: 140 }
+// After: their damage ships, the empty field, and where the logi land.
+const AFTER = { dps: PANEL + 155, field: PANEL + 235, landed: W - 25, y: 140 }
+
+const cross = (x: number, y: number) => `M${x - 6},${y} L${x + 6},${y} M${x},${y - 6} L${x},${y + 6}`
+const ship = (x: number, y: number) => `M${x - 6},${y - 6} L${x + 10},${y} L${x - 6},${y + 6} Z`
+---
+
+<XFadeScroll class="rd-scroll">
+<svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Before: a Bifrost among the enemy logistics, inside its ${RADIUS_KM} km field, next to their damage ships. After: the logistics are ${DISTANCE_KM} km away and their damage ships have no repairs; a scrammed logistics ship stayed behind.`}>
+    <text class="rd-strong" x="0" y="20" font-size="13">Before: their logi repair their fleet</text>
+    {DPS.map(([dx, dy]) => <circle class="rd-red" cx={BEFORE.x + dx} cy={BEFORE.y + dy} r="6" />)}
+    <circle class="rd-zone" cx={BEFORE.x} cy={BEFORE.y} r="56" />
+    <circle class="rd-yellow-stroke" cx={BEFORE.x} cy={BEFORE.y} r="56" stroke-width="1" stroke-dasharray="4 4" />
+    {LOGI.map(([dx, dy]) => <path class="rd-red-stroke" d={cross(BEFORE.x + dx, BEFORE.y + dy)} stroke-width="3" />)}
+    <path class="rd-red-stroke" d={cross(BEFORE.x + SCRAMMED[0], BEFORE.y + SCRAMMED[1])} stroke-width="3" />
+    <path class="rd-yellow" d={ship(BEFORE.x + 30, BEFORE.y - 4)} />
+    <text class="rd-text" x={BEFORE.x} y={BEFORE.y - 66} font-size="10" text-anchor="middle">Bifrost among their logi, facing away</text>
+    <text class="rd-muted" x={BEFORE.x} y={BEFORE.y + 74} font-size="10" text-anchor="middle">{RADIUS_KM} km field</text>
+    <text class="rd-muted" x={BEFORE.x - 130} y={BEFORE.y + 92} font-size="10" text-anchor="middle">their damage ships</text>
+
+    <line class="rd-faint" x1={PANEL + 20} x2={PANEL + 20} y1="10" y2={H - 40} stroke-width="1" />
+
+    <text class="rd-strong" x={PANEL + 40} y="20" font-size="13">After: no repairs</text>
+    {DPS.map(([dx, dy]) => <circle class="rd-red" cx={AFTER.dps + dx * 0.55} cy={AFTER.y + dy} r="6" />)}
+    <circle class="rd-faint" cx={AFTER.field} cy={AFTER.y} r="40" stroke-width="1" stroke-dasharray="4 4" />
+    <path class="rd-red-stroke" d={cross(AFTER.field - 8, AFTER.y + 10)} stroke-width="3" />
+    <text class="rd-text" x={AFTER.field} y={AFTER.y + 58} font-size="10" text-anchor="middle">scrammed: stayed</text>
+    <path class="rd-yellow-stroke" d={`M${AFTER.field + 46},${AFTER.y} L${AFTER.landed - 34},${AFTER.y}`} stroke-width="2" stroke-dasharray="6 5" />
+    <path class="rd-yellow" d={`M${AFTER.landed - 36},${AFTER.y - 6} L${AFTER.landed - 24},${AFTER.y} L${AFTER.landed - 36},${AFTER.y + 6} Z`} />
+    <text class="rd-muted" x={(AFTER.field + AFTER.landed) / 2} y={AFTER.y - 10} font-size="10" text-anchor="middle">{DISTANCE_KM} km</text>
+    {LOGI.map(([dx, dy]) => <path class="rd-red-stroke" d={cross(AFTER.landed + dx * 0.6, AFTER.y + dy * 1.2)} stroke-width="3" />)}
+    <path class="rd-yellow" d={ship(AFTER.landed + 4, AFTER.y + 2)} />
+    <text class="rd-text" x={AFTER.landed} y={AFTER.y + 58} font-size="10" text-anchor="middle">their logi</text>
+
+    <g transform={`translate(0 ${H - 10})`}>
+        <circle class="rd-red" cx="6" cy="-4" r="6" />
+        <text class="rd-text" x="18" y="0" font-size="11">Their damage ship</text>
+        <path class="rd-red-stroke" d={cross(150, -4)} stroke-width="3" />
+        <text class="rd-text" x="162" y="0" font-size="11">Their logistics</text>
+        <path class="rd-yellow" d={ship(282, -4)} />
+        <text class="rd-text" x="300" y="0" font-size="11">Our Bifrost</text>
+    </g>
+</svg>
+</XFadeScroll>
+<figcaption>
+    <strong>Boosh their logi, not their fleet.</strong> Get among their logistics, face away from their damage ships, and jump. Everything in the field goes with you, friends too, and a scrammed ship stays behind.
+</figcaption>

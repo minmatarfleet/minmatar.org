@@ -49,6 +49,8 @@ FITTING_CAPABILITY_CHOICES = [
         "Logistics",
         "Links",
         "Support",
+        "Capacitor Warfare",
+        "Electronic Warfare",
         "Tackle",
         "Recon",
         "Dreads",
@@ -164,7 +166,7 @@ class EveFitting(MinmatarSoftDeleteModel):
     # Fleet job this fit does. Blank: the capability engine classifies it
     # from the EFT and doctrine roles (capabilities.engine.requirements).
     capability = models.CharField(
-        max_length=16,
+        max_length=32,
         choices=FITTING_CAPABILITY_CHOICES,
         blank=True,
         default="",
@@ -495,7 +497,7 @@ class EveFittingHistory(models.Model):
     minimum_pod = models.TextField(blank=True)
     recommended_pod = models.TextField(blank=True)
     tags = models.JSONField(default=list, blank=True)
-    capability = models.CharField(max_length=16, blank=True, default="")
+    capability = models.CharField(max_length=32, blank=True, default="")
     skill_overrides = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
