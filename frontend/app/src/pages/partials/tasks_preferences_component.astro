@@ -32,6 +32,20 @@ try {
         if (form.has('paused') && !field) patch.paused = value('paused')
         if (field === 'paused') patch.paused = value('paused')
         if (field === 'show_suggestions') patch.show_suggestions = value('show_suggestions')
+        if (field === 'weekly_dm') patch.weekly_dm = value('weekly_dm')
+        if (field === 'quiet_hours') {
+            const hour = (name:string) => {
+                const raw = parseInt(String(form.get(name) ?? ''))
+                return Number.isFinite(raw) && raw >= 0 && raw <= 23 ? raw : null
+            }
+            const start = hour('quiet_start')
+            const end = hour('quiet_end')
+            if (start === null || end === null) patch.clear_quiet_hours = true
+            else {
+                patch.quiet_start = start
+                patch.quiet_end = end
+            }
+        }
         prefs = await patch_task_preferences(auth_token, patch)
         Astro.response.headers.set('HX-Trigger', JSON.stringify({
             'tasks-changed': true,
@@ -49,6 +63,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import SettingRow from '@components/blocks/SettingRow.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import Select from '@components/blocks/Select.astro'
+
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
+const hour_label = (hour:number) => `${String(hour).padStart(2, '0')}:00`
 ---
 
 <div id="tasks-preferences">
@@ -72,8 +90,25 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                             <ManageSwitch name="paused" label={t('tasks.prefs.paused')} hide_label={true} checked={prefs.paused || prefs.on_leave} disabled={prefs.on_leave} />
                         </form>
                     </SettingRow>
+                    <SettingRow title={t('tasks.prefs.quiet_hours')} description={t('tasks.prefs.quiet_hours_hint')}>
+                        <form class="[ tasks-quiet ]" hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
+                            <input type="hidden" name="field" value="quiet_hours" />
+                            <label class="[ visually-hidden ]" for="tasks-quiet-start">{t('tasks.prefs.quiet_from')}</label>
+                            <Select id="tasks-quiet-start" name="quiet_start" size="sm">
+                                <option value="" selected={prefs.quiet_start === null}>{t('tasks.prefs.quiet_none')}</option>
+                                {HOURS.map((hour) => <option value={hour} selected={prefs!.quiet_start === hour}>{hour_label(hour)}</option>)}
+                            </Select>
+                            <span aria-hidden="true">–</span>
+                            <label class="[ visually-hidden ]" for="tasks-quiet-end">{t('tasks.prefs.quiet_to')}</label>
+                            <Select id="tasks-quiet-end" name="quiet_end" size="sm">
+                                <option value="" selected={prefs.quiet_end === null}>{t('tasks.prefs.quiet_none')}</option>
+                                {HOURS.map((hour) => <option value={hour} selected={prefs!.quiet_end === hour}>{hour_label(hour)}</option>)}
+                            </Select>
+                        </form>
+                    </SettingRow>
                     <SettingRow title={t('tasks.prefs.visibility')} description={t('tasks.prefs.visibility_hint')} />
                     <SettingRow title={t('tasks.prefs.consequence')} description={t('tasks.prefs.consequence_hint')} />
+                    <small class="[ manage-muted ]">{t('tasks.prefs.messages')}</small>
                 </Flexblock>
             </ComponentBlock>
         )
@@ -87,3 +122,11 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         )
     }
 </div>
+
+<style lang="scss">
+    .tasks-quiet {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+</style>

@@ -6,6 +6,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from taskboard.access import can_manage_settings
 from taskboard.models import Task, TaskRuleSetting
+from taskboard.reminders import DEFAULT_REMIND_AFTER_DAYS
 from taskboard.rules import RULES
 from taskboard.schemas import RuleSettingResponse
 
@@ -39,6 +40,14 @@ def rule_rows() -> list[dict]:
                     setting.claim_expires_days
                     if setting and setting.claim_expires_days
                     else rule.claim_expires_days
+                ),
+                "remind_after_days": (
+                    (
+                        (setting.remind_after_days if setting else None)
+                        or DEFAULT_REMIND_AFTER_DAYS
+                    )
+                    if rule.is_pilot_rule and rule.weight == "needs_you"
+                    else None
                 ),
                 "open_now": open_counts.get(rule.code, 0),
             }

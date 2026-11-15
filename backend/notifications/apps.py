@@ -13,5 +13,6 @@ class NotificationsConfig(AppConfig):
             corporations,
             fleets,
             industry,
+            tasks,
             tribes,
         )

@@ -20,7 +20,8 @@ const { rule, open = false, saved = false, error = null } = Astro.props
 const ROW_ID = `rule-${rule.rule}`
 const SAVE_URL = translatePath(`/partials/tasks_rule_component/?rule=${encodeURIComponent(rule.rule)}`)
 const is_suggestion = rule.weight === 'suggestion'
-const has_timers = is_suggestion || rule.audience !== 'pilot'
+const has_remind = rule.remind_after_days !== null
+const has_timers = is_suggestion || rule.audience !== 'pilot' || has_remind
 
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
@@ -70,6 +71,11 @@ import Button from '@components/blocks/Button.astro'
             {is_suggestion &&
                 <ManageField label={t('tasks.settings.stop_after')} for={`${ROW_ID}-stop`}>
                     <Input id={`${ROW_ID}-stop`} name="stop_after_days" type="number" min="1" max="365" size="sm" value={rule.stop_after_days ?? ''} />
+                </ManageField>
+            }
+            {has_remind &&
+                <ManageField label={t('tasks.settings.remind_after')} for={`${ROW_ID}-remind`}>
+                    <Input id={`${ROW_ID}-remind`} name="remind_after_days" type="number" min="1" max="365" size="sm" value={rule.remind_after_days ?? ''} />
                 </ManageField>
             }
             {rule.audience !== 'pilot' &&

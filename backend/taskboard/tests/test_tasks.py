@@ -503,5 +503,12 @@ class TasksApiTestCase(TestCase):
         )
         self.assertEqual(
             response.json(),
-            {"show_suggestions": True, "paused": True, "on_leave": False},
+            {
+                "show_suggestions": True,
+                "paused": True,
+                "on_leave": False,
+                "weekly_dm": False,
+                "quiet_start": None,
+                "quiet_end": None,
+            },
         )

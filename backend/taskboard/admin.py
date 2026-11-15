@@ -7,6 +7,8 @@ from taskboard.models import (
     ProjectUpdate,
     Task,
     TaskComment,
+    TaskDigestSettings,
+    TaskMessageHold,
     TaskPreferences,
     TaskRuleSetting,
     TemplateTask,
@@ -56,3 +58,5 @@ admin.site.register(ProjectUpdate)
 admin.site.register(TaskComment)
 admin.site.register(TaskRuleSetting)
 admin.site.register(TaskPreferences)
+admin.site.register(TaskDigestSettings)
+admin.site.register(TaskMessageHold)

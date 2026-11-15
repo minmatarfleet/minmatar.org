@@ -82,6 +82,8 @@ class MyTasksResponse(Schema):
     can_assign: bool
     # The Neocom count.
     needs_you: int
+    # Ask once: "Want one Discord DM a week?"
+    weekly_prompt: bool = False
     snoozed: int
     now: list[TaskResponse]
     this_week: list[TaskResponse]
@@ -180,6 +182,10 @@ class TeamRulePilotResponse(Schema):
     pilot: Optional[PersonResponse] = None
     detail: str
     opened_at: datetime
+    # A leader's one reminder, if sent.
+    reminded_at: Optional[datetime] = None
+    # It has waited long enough and nobody reminded them yet.
+    can_remind: bool = False
 
 
 class ProjectRowResponse(Schema):
@@ -281,6 +287,8 @@ class RuleSettingResponse(Schema):
     enabled: bool
     stop_after_days: Optional[int] = None
     claim_expires_days: Optional[int] = None
+    # A leader may remind once after this many days (pilot rules).
+    remind_after_days: Optional[int] = None
     open_now: int
 
 
@@ -288,6 +296,7 @@ class RuleSettingPatch(Schema):
     enabled: Optional[bool] = None
     stop_after_days: Optional[int] = None
     claim_expires_days: Optional[int] = None
+    remind_after_days: Optional[int] = None
 
 
 class TemplateTaskResponse(Schema):
@@ -309,8 +318,42 @@ class TaskPreferencesResponse(Schema):
     paused: bool
     # On Leave also pauses tasks; only reviewers change it.
     on_leave: bool
+    # The weekly list on Discord.
+    weekly_dm: bool = False
+    # Quiet hours in EVE (UTC) hours; both null means none.
+    quiet_start: Optional[int] = None
+    quiet_end: Optional[int] = None
 
 
 class TaskPreferencesPatch(Schema):
     show_suggestions: Optional[bool] = None
     paused: Optional[bool] = None
+    # Yes or no to the weekly list (answers the one-time prompt too).
+    weekly_dm: Optional[bool] = None
+    quiet_start: Optional[int] = None
+    quiet_end: Optional[int] = None
+    # Clear quiet hours.
+    clear_quiet_hours: bool = False
+
+
+class DigestSettingsResponse(Schema):
+    enabled: bool
+    # Monday is 0.
+    weekday: int
+    # EVE (UTC) hour.
+    hour: int
+    # Pilots who said yes to the weekly list.
+    opted_in: int
+    # At the last send: how many had something waiting (got one), and of
+    # those, delivered and not delivered (DMs closed).
+    had_waiting: int
+    delivered: int
+    not_delivered: int
+    last_sent_at: datetime
+    next_send_at: datetime
+
+
+class DigestSettingsPatch(Schema):
+    enabled: Optional[bool] = None
+    weekday: Optional[int] = None
+    hour: Optional[int] = None

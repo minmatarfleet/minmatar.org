@@ -1,0 +1,84 @@
+---
+/**
+ * The weekly list's settings and its last send: on/off, day and hour
+ * (EVE), who said yes, who had something waiting, delivered and not.
+ * Rendered by /tasks/settings/weekly/ and re-rendered by
+ * tasks_digest_component after a save.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { TaskDigest } from '@dtypes/api.minmatar.org'
+import { task_date } from '@helpers/tasks'
+
+interface Props {
+    digest:     TaskDigest;
+    saved?:     boolean;
+    error?:     string | null;
+}
+
+const { digest, saved = false, error = null } = Astro.props
+
+const SAVE_URL = translatePath('/partials/tasks_digest_component/')
+// 2024-01-01 was a Monday, the API's day 0.
+const day_name = (weekday:number) => new Intl.DateTimeFormat(lang, { weekday: 'long', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(2024, 0, 1 + weekday)))
+const hour_label = (hour:number) => `${String(hour).padStart(2, '0')}:00`
+const next = new Date(digest.next_send_at)
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+---
+
+<div id="tasks-digest" class="[ task-stack is-loose ]">
+    <ComponentBlock>
+        <form class="[ manage-form ]" hx-post={SAVE_URL} hx-target="#tasks-digest" hx-swap="outerHTML">
+            <h3 class="[ manage-eyebrow ]">{t('tasks.settings.weekly_when')}</h3>
+            <ManageSwitch name="enabled" label={t('tasks.settings.weekly_enabled')} checked={digest.enabled} />
+            <div class="[ manage-fields ]">
+                <ManageField label={t('tasks.settings.weekly_day')} for="digest-day">
+                    <Select id="digest-day" name="weekday" size="sm">
+                        {[0, 1, 2, 3, 4, 5, 6].map((day) => <option value={day} selected={day === digest.weekday}>{day_name(day)}</option>)}
+                    </Select>
+                </ManageField>
+                <ManageField label={t('tasks.settings.weekly_hour')} for="digest-hour">
+                    <Select id="digest-hour" name="hour" size="sm">
+                        {Array.from({ length: 24 }, (_, hour) => hour).map((hour) => <option value={hour} selected={hour === digest.hour}>{hour_label(hour)}</option>)}
+                    </Select>
+                </ManageField>
+            </div>
+            <p class="[ manage-muted ]">{t('tasks.settings.weekly_rules')}</p>
+            <div class="[ manage-actions ]">
+                <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.settings.save')}</Button>
+                {saved && <span class="[ manage-saved ]">{t('tasks.settings.saved')}</span>}
+                {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
+            </div>
+        </form>
+    </ComponentBlock>
+
+    <section class="[ task-stack ]" aria-labelledby="digest-last">
+        <h3 id="digest-last" class="[ manage-eyebrow ]">
+            {t('tasks.settings.weekly_last')} · {task_date(digest.last_sent_at, lang)}
+        </h3>
+        <div class="[ manage-stats ]">
+            <ManageStatCard label={t('tasks.settings.weekly_opted_in')} value={digest.opted_in} />
+            <ManageStatCard label={t('tasks.settings.weekly_had_waiting')} value={digest.had_waiting} detail={t('tasks.settings.weekly_had_waiting_hint')} />
+            <ManageStatCard label={t('tasks.settings.weekly_delivered')} value={digest.delivered} />
+            <ManageStatCard
+                label={t('tasks.settings.weekly_not_delivered')}
+                value={digest.not_delivered}
+                detail={t('tasks.settings.weekly_not_delivered_hint')}
+                tone={digest.not_delivered > 0 ? 'warn' : undefined}
+            />
+        </div>
+        {digest.enabled &&
+            <p class="[ manage-muted ]">
+                {t('tasks.settings.weekly_next').replace('~DATE', task_date(next, lang)).replace('~HOUR', hour_label(next.getUTCHours()))}
+            </p>
+        }
+    </section>
+</div>

@@ -100,6 +100,7 @@ class Screen:
 SCREENS: tuple[Screen, ...] = (
     Screen("task_rules", "tasks", gate="tasks.manage"),
     Screen("project_templates", "tasks", gate="tasks.manage"),
+    Screen("weekly_dm", "tasks", gate="tasks.manage"),
     Screen("campaigns", "fleets", gate="campaigns.manage"),
     Screen("payout_codes", "fleets", gate="campaigns.manage"),
     Screen("npsi_feeds", "fleets", gate="fleets.npsi_sources.manage"),

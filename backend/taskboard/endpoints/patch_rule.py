@@ -28,11 +28,20 @@ def patch_rule(request, rule: str, payload: RuleSettingPatch):
         return 403, ErrorResponse(detail="Only task admins change this.")
     if rule not in RULES:
         return 404, ErrorResponse(detail="No such automatic task.")
-    for days in (payload.stop_after_days, payload.claim_expires_days):
+    for days in (
+        payload.stop_after_days,
+        payload.claim_expires_days,
+        payload.remind_after_days,
+    ):
         if days is not None and not 1 <= days <= 365:
             return 400, ErrorResponse(detail="Days must be 1 to 365.")
     setting, _ = TaskRuleSetting.objects.get_or_create(rule=rule)
-    for name in ("enabled", "stop_after_days", "claim_expires_days"):
+    for name in (
+        "enabled",
+        "stop_after_days",
+        "claim_expires_days",
+        "remind_after_days",
+    ):
         value = getattr(payload, name)
         if value is not None:
             setattr(setting, name, value)

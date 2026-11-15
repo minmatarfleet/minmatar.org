@@ -11333,6 +11333,100 @@
         "title": "DiffLineResponse",
         "type": "object"
       },
+      "DigestSettingsPatch": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hour"
+          },
+          "weekday": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekday"
+          }
+        },
+        "title": "DigestSettingsPatch",
+        "type": "object"
+      },
+      "DigestSettingsResponse": {
+        "properties": {
+          "delivered": {
+            "title": "Delivered",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "had_waiting": {
+            "title": "Had Waiting",
+            "type": "integer"
+          },
+          "hour": {
+            "title": "Hour",
+            "type": "integer"
+          },
+          "last_sent_at": {
+            "format": "date-time",
+            "title": "Last Sent At",
+            "type": "string"
+          },
+          "next_send_at": {
+            "format": "date-time",
+            "title": "Next Send At",
+            "type": "string"
+          },
+          "not_delivered": {
+            "title": "Not Delivered",
+            "type": "integer"
+          },
+          "opted_in": {
+            "title": "Opted In",
+            "type": "integer"
+          },
+          "weekday": {
+            "title": "Weekday",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled",
+          "weekday",
+          "hour",
+          "opted_in",
+          "had_waiting",
+          "delivered",
+          "not_delivered",
+          "last_sent_at",
+          "next_send_at"
+        ],
+        "title": "DigestSettingsResponse",
+        "type": "object"
+      },
       "DiscordAckLoyaltyMarketOrderRequest": {
         "properties": {
           "action": {
@@ -32019,6 +32113,11 @@
             },
             "title": "Up For Grabs",
             "type": "array"
+          },
+          "weekly_prompt": {
+            "default": false,
+            "title": "Weekly Prompt",
+            "type": "boolean"
           }
         },
         "required": [
@@ -41441,6 +41540,17 @@
             ],
             "title": "Enabled"
           },
+          "remind_after_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remind After Days"
+          },
           "stop_after_days": {
             "anyOf": [
               {
@@ -41488,6 +41598,17 @@
           "open_now": {
             "title": "Open Now",
             "type": "integer"
+          },
+          "remind_after_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remind After Days"
           },
           "rule": {
             "title": "Rule",
@@ -44539,6 +44660,11 @@
       },
       "TaskPreferencesPatch": {
         "properties": {
+          "clear_quiet_hours": {
+            "default": false,
+            "title": "Clear Quiet Hours",
+            "type": "boolean"
+          },
           "paused": {
             "anyOf": [
               {
@@ -44550,6 +44676,28 @@
             ],
             "title": "Paused"
           },
+          "quiet_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet End"
+          },
+          "quiet_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet Start"
+          },
           "show_suggestions": {
             "anyOf": [
               {
@@ -44560,6 +44708,17 @@
               }
             ],
             "title": "Show Suggestions"
+          },
+          "weekly_dm": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Dm"
           }
         },
         "title": "TaskPreferencesPatch",
@@ -44575,8 +44734,35 @@
             "title": "Paused",
             "type": "boolean"
           },
+          "quiet_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet End"
+          },
+          "quiet_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quiet Start"
+          },
           "show_suggestions": {
             "title": "Show Suggestions",
+            "type": "boolean"
+          },
+          "weekly_dm": {
+            "default": false,
+            "title": "Weekly Dm",
             "type": "boolean"
           }
         },
@@ -44980,6 +45166,11 @@
       },
       "TeamRulePilotResponse": {
         "properties": {
+          "can_remind": {
+            "default": false,
+            "title": "Can Remind",
+            "type": "boolean"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -44998,6 +45189,18 @@
                 "type": "null"
               }
             ]
+          },
+          "reminded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reminded At"
           },
           "task_id": {
             "title": "Task Id",
@@ -82534,6 +82737,98 @@
         ]
       }
     },
+    "/api/tasks/digest": {
+      "get": {
+        "operationId": "taskboard_endpoints_get_digest_get_digest",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigestSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The weekly list: day, hour, and what the last send did",
+        "tags": [
+          "Tasks - Settings"
+        ]
+      },
+      "patch": {
+        "operationId": "taskboard_endpoints_patch_digest_patch_digest",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DigestSettingsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DigestSettingsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Change when the weekly list goes out",
+        "tags": [
+          "Tasks - Settings"
+        ]
+      }
+    },
     "/api/tasks/mine": {
       "get": {
         "operationId": "taskboard_endpoints_get_my_tasks_get_my_tasks",
@@ -82637,6 +82932,16 @@
               }
             },
             "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
           }
         },
         "security": [
@@ -83188,6 +83493,104 @@
           }
         ],
         "summary": "Which members have one kind of task waiting (never suggestions)",
+        "tags": [
+          "Tasks"
+        ]
+      }
+    },
+    "/api/tasks/teams/{kind}/{team_id}/rules/{rule}/remind/{task_id}": {
+      "post": {
+        "operationId": "taskboard_endpoints_post_team_rule_remind_post_team_rule_remind",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "title": "Team Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rule",
+            "required": true,
+            "schema": {
+              "title": "Rule",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TeamRulePilotResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remind a member about one task, once (a Discord DM)",
         "tags": [
           "Tasks"
         ]

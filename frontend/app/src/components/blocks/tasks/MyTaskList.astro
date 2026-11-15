@@ -40,6 +40,32 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
 >
     {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}
 
+    {board.weekly_prompt && !board.paused &&
+        <div class="[ task-notice ]">
+            <span>{t('tasks.weekly_prompt')}</span>
+            <span class="[ task-detail__actions ]">
+                <button
+                    type="button"
+                    class="[ task-quiet ]"
+                    hx-post={PREFS_URL}
+                    hx-vals='{"field": "weekly_dm", "weekly_dm": "on"}'
+                    hx-swap="none"
+                >
+                    {t('tasks.weekly_yes')}
+                </button>
+                <button
+                    type="button"
+                    class="[ task-quiet is-dim ]"
+                    hx-post={PREFS_URL}
+                    hx-vals='{"field": "weekly_dm", "weekly_dm": "off"}'
+                    hx-swap="none"
+                >
+                    {t('tasks.weekly_no')}
+                </button>
+            </span>
+        </div>
+    }
+
     {board.paused &&
         <div class="[ task-notice ]" role="status">
             <span>

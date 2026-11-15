@@ -153,6 +153,15 @@ class Task(models.Model):
         related_name="thanked_board_tasks",
     )
     thanked_at = models.DateTimeField(null=True, blank=True)
+    # A leader's one reminder (a Discord DM), at most once per task.
+    reminded_at = models.DateTimeField(null=True, blank=True)
+    reminded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reminded_board_tasks",
+    )
 
     class Meta:
         indexes = [
@@ -337,6 +346,9 @@ class TaskRuleSetting(models.Model):
     claim_expires_days = models.PositiveSmallIntegerField(
         null=True, blank=True
     )
+    # A leader may remind a pilot once, after this many days. None: the
+    # default (14).
+    remind_after_days = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def __str__(self):
         return str(self.rule)
@@ -350,6 +362,48 @@ class TaskPreferences(models.Model):
     # The pilot paused everything (time away). An On Leave community
     # status pauses tasks too.
     paused = models.BooleanField(default=False)
+    # Quiet hours, as EVE (UTC) hours 0-23. Messages that fall inside wait
+    # and go out together when they end. Both unset: no quiet hours.
+    quiet_start = models.PositiveSmallIntegerField(null=True, blank=True)
+    quiet_end = models.PositiveSmallIntegerField(null=True, blank=True)
+    # The pilot answered "Want one Discord DM a week?" (yes or no).
+    weekly_prompt_answered = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user} task preferences"
+
+
+class TaskDigestSettings(models.Model):
+    """When the weekly list goes out. One row (pk 1)."""
+
+    enabled = models.BooleanField(default=True)
+    # Monday is 0.
+    weekday = models.PositiveSmallIntegerField(default=6)
+    # EVE (UTC) hour.
+    hour = models.PositiveSmallIntegerField(default=17)
+
+    class Meta:
+        verbose_name_plural = "Task digest settings"
+
+    def __str__(self):
+        return "Weekly task list"
+
+    @classmethod
+    def load(cls) -> "TaskDigestSettings":
+        row, _ = cls.objects.get_or_create(pk=1)
+        return row
+
+
+class TaskMessageHold(models.Model):
+    """A task message held during the pilot's quiet hours."""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="held_task_messages"
+    )
+    type_key = models.CharField(max_length=64)
+    context = models.JSONField(default=dict)
+    idempotency_key = models.CharField(max_length=128, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
