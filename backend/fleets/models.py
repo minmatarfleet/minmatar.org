@@ -1440,6 +1440,19 @@ class EveFleetInvite(models.Model):
         max_length=16, choices=ANSWER_CHOICES, default=ANSWER_PENDING
     )
     answered_at = models.DateTimeField(null=True, blank=True)
+    CONFIDENCE_HIGH = "high"
+    CONFIDENCE_MEDIUM = "medium"
+    CONFIDENCE_LOW = "low"
+    CONFIDENCE_CHOICES = (
+        (CONFIDENCE_HIGH, "High"),
+        (CONFIDENCE_MEDIUM, "Medium: might be 10-15 minutes late"),
+        (CONFIDENCE_LOW, "Low: might not make it"),
+    )
+    # How sure an I'm available pilot is of making it on time. Low keeps
+    # their ships off the fleet's counts (docs/fleets/invite-rsvp.md).
+    confidence = models.CharField(
+        max_length=8, choices=CONFIDENCE_CHOICES, blank=True, default=""
+    )
     source_kind = models.CharField(max_length=16, blank=True, default="")
     # The group or corporation's name for those kinds, else blank.
     source_name = models.CharField(max_length=128, blank=True, default="")

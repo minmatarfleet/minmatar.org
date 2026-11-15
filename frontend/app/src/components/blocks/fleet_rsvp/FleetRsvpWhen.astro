@@ -1,0 +1,168 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { RsvpFleet } from '@dtypes/api.minmatar.org'
+import { countdown_text, eve_when_text } from '@helpers/fleet_rsvp'
+
+/**
+ * When the fleet is: EVE time first and largest, then the viewer's local
+ * time ("Fri 2:00 PM your time", worked out in the browser) and a
+ * countdown pill. `result` puts the fleet name above and form-up on the
+ * local line; the default slot adds rows under it (the ships list).
+ */
+interface Props {
+    fleet:      RsvpFleet;
+    variant?:   'form' | 'result';
+    [propName: string]: any;
+}
+
+const {
+    fleet,
+    variant = 'form',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const templates = {
+    days: t('fleets.rsvp.in_days'),
+    hours: t('fleets.rsvp.in_hours'),
+    minutes: t('fleets.rsvp.in_minutes'),
+    started: t('fleets.rsvp.started'),
+}
+const start_ms = new Date(fleet.start_time).getTime()
+const countdown = countdown_text(templates, start_ms - Date.now())
+const eve_when = eve_when_text(fleet.start_time, t('fleets.rsvp.eve_when'))
+const your_time = t('fleets.rsvp.your_time')
+const formup_line = fleet.formup ? t('fleets.rsvp.formup_line').replace('{formup}', fleet.formup) : ''
+const has_slot = Astro.slots.has('default')
+---
+
+<div
+    class:list={['[ rsvp-when ]', Astro.props.class]}
+    x-data={`{
+        start: ${start_ms},
+        templates: ${JSON.stringify(templates)},
+        your_time: ${JSON.stringify(your_time)},
+        local: '',
+        countdown: ${JSON.stringify(countdown)},
+        timer: null,
+        tick() {
+            const ms = this.start - Date.now()
+            const t = this.templates
+            if (!(ms > 0)) { this.countdown = t.started; return }
+            const total = Math.floor(ms / 60000)
+            const d = Math.floor(total / 1440), h = Math.floor((total % 1440) / 60), m = total % 60
+            this.countdown = d > 0 ? t.days.replace('{d}', d).replace('{h}', h)
+                : h > 0 ? t.hours.replace('{h}', h).replace('{m}', m)
+                : t.minutes.replace('{m}', m)
+        },
+        init() {
+            const local = new Date(this.start).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '')
+            this.local = this.your_time.replace('{time}', local)
+            this.tick()
+            this.timer = setInterval(() => this.tick(), 30000)
+        },
+        destroy() { clearInterval(this.timer) },
+    }`}
+    {...attributes}
+>
+    <div class="[ rsvp-when__top ]">
+        <div class="[ rsvp-when__times ]">
+            {variant === 'result' && <span class="[ fleet-rsvp__muted ]">{fleet.title}</span>}
+            <span class="[ rsvp-when__eve ]">{eve_when}</span>
+            <span class="[ fleet-rsvp__muted ]">
+                <span x-text="local">{t('calculating')}</span>{variant === 'result' && formup_line && <span> · {formup_line}</span>}
+            </span>
+        </div>
+        <span class="[ rsvp-when__pill ]" x-text="countdown">{countdown}</span>
+    </div>
+    {variant === 'form' &&
+        <dl class="[ rsvp-when__facts ]">
+            <div>
+                <dt class="[ fleet-rsvp__muted ]">{t('fleets.rsvp.formup')}</dt>
+                <dd>{fleet.formup || t('fleets.rsvp.not_set')}</dd>
+            </div>
+            <div>
+                <dt class="[ fleet-rsvp__muted ]">{t('fleets.rsvp.doctrine')}</dt>
+                <dd>{fleet.doctrine || t('fleets.rsvp.not_set')}</dd>
+            </div>
+        </dl>
+    }
+    {has_slot && <div class="[ rsvp-when__rows ]"><slot /></div>}
+</div>
+
+<style lang="scss" is:global>
+    /* Global: also rendered by the sign-up partial's result screen. */
+    .rsvp-when {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-medium);
+        border-radius: var(--space-3xs);
+    }
+
+    .rsvp-when__top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+    }
+
+    .rsvp-when__times {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .rsvp-when__eve {
+        white-space: nowrap;
+        font-size: var(--step-1);
+        font-weight: 700;
+        color: var(--highlight);
+    }
+
+    .rsvp-when__pill {
+        flex: none;
+        padding: var(--space-3xs) var(--space-xs);
+        border-radius: 999px;
+        background-color: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .rsvp-when__facts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0;
+        border-top: 1px solid var(--hairline-medium);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            padding: var(--space-xs) var(--space-s);
+            min-width: 0;
+        }
+
+        > div + div {
+            border-left: 1px solid var(--hairline-medium);
+        }
+
+        dd {
+            margin: 0;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .rsvp-when__rows > * {
+        border-top: 1px solid var(--hairline-medium);
+    }
+</style>

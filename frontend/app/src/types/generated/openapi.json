@@ -39898,6 +39898,400 @@
         "title": "RouteQuoteRequest",
         "type": "object"
       },
+      "RsvpCharacterResponse": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "fits": {
+            "items": {
+              "$ref": "#/components/schemas/RsvpFitResponse"
+            },
+            "title": "Fits",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "picked": {
+            "default": false,
+            "title": "Picked",
+            "type": "boolean"
+          },
+          "picked_key": {
+            "default": "",
+            "title": "Picked Key",
+            "type": "string"
+          },
+          "suggested_fleets": {
+            "default": 0,
+            "title": "Suggested Fleets",
+            "type": "integer"
+          },
+          "suggested_key": {
+            "default": "",
+            "title": "Suggested Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "fits"
+        ],
+        "title": "RsvpCharacterResponse",
+        "type": "object"
+      },
+      "RsvpFitResponse": {
+        "properties": {
+          "fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
+          },
+          "fleet_fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Fitting Id"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "ship_id": {
+            "title": "Ship Id",
+            "type": "integer"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "ship_id",
+          "ship_name",
+          "role"
+        ],
+        "title": "RsvpFitResponse",
+        "type": "object"
+      },
+      "RsvpFleetResponse": {
+        "properties": {
+          "doctrine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine"
+          },
+          "fc_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Character Id"
+          },
+          "fc_name": {
+            "title": "Fc Name",
+            "type": "string"
+          },
+          "formup": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formup"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "invite_only": {
+            "title": "Invite Only",
+            "type": "boolean"
+          },
+          "start_time": {
+            "format": "date-time",
+            "title": "Start Time",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "type_label": {
+            "title": "Type Label",
+            "type": "string"
+          },
+          "wanted": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Wanted",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "type_label",
+          "invite_only",
+          "start_time",
+          "fc_name"
+        ],
+        "title": "RsvpFleetResponse",
+        "type": "object"
+      },
+      "RsvpFormResponse": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "any_ship": {
+            "title": "Any Ship",
+            "type": "boolean"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/RsvpCharacterResponse"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "fleet": {
+            "$ref": "#/components/schemas/RsvpFleetResponse"
+          },
+          "hidden_count": {
+            "title": "Hidden Count",
+            "type": "integer"
+          },
+          "pilot_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pilot Character Id"
+          },
+          "pilot_name": {
+            "title": "Pilot Name",
+            "type": "string"
+          },
+          "submit_token": {
+            "title": "Submit Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet",
+          "pilot_name",
+          "characters",
+          "hidden_count",
+          "any_ship",
+          "answer",
+          "confidence",
+          "submit_token"
+        ],
+        "title": "RsvpFormResponse",
+        "type": "object"
+      },
+      "RsvpLinkResponse": {
+        "properties": {
+          "expires_minutes": {
+            "title": "Expires Minutes",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_minutes"
+        ],
+        "title": "RsvpLinkResponse",
+        "type": "object"
+      },
+      "RsvpPickRequest": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Id"
+          },
+          "fleet_fitting_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleet Fitting Id"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "RsvpPickRequest",
+        "type": "object"
+      },
+      "RsvpResultResponse": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "fleet": {
+            "$ref": "#/components/schemas/RsvpFleetResponse"
+          },
+          "ships": {
+            "items": {
+              "$ref": "#/components/schemas/RsvpShipResponse"
+            },
+            "title": "Ships",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fleet",
+          "answer",
+          "confidence",
+          "ships"
+        ],
+        "title": "RsvpResultResponse",
+        "type": "object"
+      },
+      "RsvpShipResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "ship_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Id"
+          },
+          "ship_name": {
+            "title": "Ship Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "ship_name"
+        ],
+        "title": "RsvpShipResponse",
+        "type": "object"
+      },
+      "RsvpSubmitRequest": {
+        "properties": {
+          "confidence": {
+            "default": "high",
+            "title": "Confidence",
+            "type": "string"
+          },
+          "picks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RsvpPickRequest"
+            },
+            "title": "Picks",
+            "type": "array"
+          }
+        },
+        "title": "RsvpSubmitRequest",
+        "type": "object"
+      },
       "ScheduleChange": {
         "properties": {
           "created_at": {
@@ -59020,6 +59414,94 @@
         ]
       }
     },
+    "/api/fleets/invites/{invite_id}/discord-available": {
+      "post": {
+        "description": "I'm available from the invite DM's button (bot): a sign-up link for the pilot who pressed it, valid for 10 minutes.",
+        "operationId": "fleets_endpoints_private_rsvp_post_invite_discord_available",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invite_id",
+            "required": true,
+            "schema": {
+              "title": "Invite Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordSitOutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RsvpLinkResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Invite Discord Available",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/invites/{invite_id}/discord-out": {
       "post": {
         "description": "Sitting out from the invite DM's button (bot).",
@@ -59949,6 +60431,203 @@
           }
         ],
         "summary": "Get Fleet Results",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/rsvp/{token}": {
+      "get": {
+        "description": "The sign-up form behind a one-time link: the fleet, the pilot's characters that can fly it with the fits each can fly, and a submit_token for sending the answer. No login; the token is the key.",
+        "operationId": "fleets_endpoints_private_rsvp_get_rsvp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RsvpFormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "Get Rsvp",
+        "tags": [
+          "Fleets"
+        ]
+      },
+      "post": {
+        "description": "Sign up through a one-time link (use submit_token): the ships each character brings, and how sure the pilot is (high, medium: might be 10-15 minutes late, low: might not make it and isn't counted). No picks signs up with no ship yet.",
+        "operationId": "fleets_endpoints_private_rsvp_post_rsvp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RsvpSubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RsvpResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "Post Rsvp",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/rsvp/{token}/not-available": {
+      "post": {
+        "description": "I'm not available, through a one-time link (use submit_token). Only skips this fleet.",
+        "operationId": "fleets_endpoints_private_rsvp_post_rsvp_not_available",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RsvpResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "Post Rsvp Not Available",
         "tags": [
           "Fleets"
         ]

@@ -854,7 +854,7 @@ def sync_answer_from_ships(fleet: EveFleet, user_id: int) -> str | None:
     invite.answer = answer
     invite.answered_at = timezone.now()
     invite.save(update_fields=["answer", "answered_at"])
-    _queue_answer_followups(invite)
+    queue_answer_followups(invite)
     return answer
 
 
@@ -871,7 +871,7 @@ def say_in(invite: EveFleetInvite) -> EveFleetInvite:
     invite.answer = EveFleetInvite.ANSWER_IN
     invite.answered_at = timezone.now()
     invite.save(update_fields=["answer", "answered_at"])
-    _queue_answer_followups(invite)
+    queue_answer_followups(invite)
     return invite
 
 
@@ -889,11 +889,11 @@ def sit_out(invite: EveFleetInvite) -> EveFleetInvite:
         invite.answer = EveFleetInvite.ANSWER_OUT
         invite.answered_at = timezone.now()
         invite.save(update_fields=["answer", "answered_at"])
-        _queue_answer_followups(invite)
+        queue_answer_followups(invite)
     return invite
 
 
-def _queue_answer_followups(invite: EveFleetInvite) -> None:
+def queue_answer_followups(invite: EveFleetInvite) -> None:
     """Edit the DM, add to or remove from the thread, refresh the summary."""
     # pylint: disable=import-outside-toplevel
     from discord.outbox import on_commit_enqueue
@@ -927,12 +927,22 @@ def _line_matches(target: EveFleetShipTarget, type_id, group_id) -> bool:
 
 
 def volunteer_hulls(fleet: EveFleet) -> list[tuple[int, int]]:
-    """(character_id, hull type id) for every ship signed up."""
-    rows = EveFleetShipVolunteer.objects.filter(eve_fleet=fleet).values_list(
-        "character_id",
-        "ship_type_id",
-        "fitting__ship_id",
-        "fleet_fitting__ship_id",
+    """(character_id, hull type id) for every ship signed up. Pilots who
+    said they might not make it (Low) don't count yet."""
+    unsure = EveCharacter.objects.filter(
+        user_id__in=EveFleetInvite.objects.filter(
+            eve_fleet=fleet, confidence=EveFleetInvite.CONFIDENCE_LOW
+        ).values("user_id")
+    ).values("character_id")
+    rows = (
+        EveFleetShipVolunteer.objects.filter(eve_fleet=fleet)
+        .exclude(character_id__in=unsure)
+        .values_list(
+            "character_id",
+            "ship_type_id",
+            "fitting__ship_id",
+            "fleet_fitting__ship_id",
+        )
     )
     return [
         (character_id, hull or fit_ship or fleet_fit_ship)

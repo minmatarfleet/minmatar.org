@@ -25,7 +25,8 @@ export function get_site_origin(fallbackOrigin?: string): string {
     return (fallbackOrigin ?? get_prod_url()).replace(/\/$/, '')
 }
 
-export const NOINDEX_PATH_PREFIXES = ['/partials/', '/redirects/', '/go/'] as const
+// /fleets/rsvp/: one-time sign-up links from the fleet invite DM (the token is the key).
+export const NOINDEX_PATH_PREFIXES = ['/partials/', '/redirects/', '/go/', '/fleets/rsvp/'] as const
 
 export function is_noindex_path(pathname: string): boolean {
     return NOINDEX_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))

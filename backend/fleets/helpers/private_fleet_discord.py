@@ -10,7 +10,8 @@ DISCORD_PRIVATE_FLEET_CHANNEL_ID when set. The bot adds the FC, every
 Strategic FC and each pilot who says I'm in; the start ping posts there with
 @everyone, which in a thread reaches only its members.
 
-The Sitting out and Stop fleet invites buttons are handled by the bot;
+The I'm available, I'm not available and Stop fleet invites buttons are
+handled by the bot;
 their prefixes must match bot/app/custom_ids.py
 (backend/discord/test_bot_custom_ids.py checks them).
 """
@@ -29,17 +30,38 @@ from fleets.helpers.private_fleets import OPSEC_LINE, target_progress
 
 logger = logging.getLogger(__name__)
 
+AVAILABLE = "I'm available"
+NOT_AVAILABLE = "I'm not available"
+ONLY_THIS_FLEET = (
+    "Saying you're not available only skips this fleet. You'll still get "
+    "invites to future ones."
+)
+CONFIDENCE_LINES = {
+    "medium": "You said you might be 10–15 minutes late.",
+    "low": "You said you might not make it, so you aren't counted yet.",
+}
+WEEKLY_CAP_LINE = (
+    "Pilots get at most one of these invites a week, so a quiet week "
+    "doesn't mean you were dropped."
+)
+
+AVAILABLE_CUSTOM_ID_PREFIX = "fleet_invite:in:"
 SIT_OUT_CUSTOM_ID_PREFIX = "fleet_invite:out:"
 STOP_INVITES_CUSTOM_ID_PREFIX = "fleet_invite:stop:"
 
 _ACTION_ROW = 1
 _BUTTON = 2
+_STYLE_SUCCESS = 3
 _STYLE_SECONDARY = 2
 _STYLE_LINK = 5
 # The fleet ping red.
 _COLOR = 0xB53620
 _COLOR_IN = 0x23A55A
 _COLOR_DONE = 0x4E5058
+
+
+def available_custom_id(invite_id: int) -> str:
+    return f"{AVAILABLE_CUSTOM_ID_PREFIX}{int(invite_id)}"
 
 
 def sit_out_custom_id(invite_id: int) -> str:
@@ -62,11 +84,22 @@ def _link(label: str, url: str) -> dict:
     return {"type": _BUTTON, "style": _STYLE_LINK, "label": label, "url": url}
 
 
+def _available_button(invite_id: int, label: str = AVAILABLE) -> dict:
+    """Opens a 10-minute sign-up link only the invited pilot can see
+    (docs/fleets/invite-rsvp.md)."""
+    return {
+        "type": _BUTTON,
+        "style": _STYLE_SUCCESS,
+        "label": label,
+        "custom_id": available_custom_id(invite_id),
+    }
+
+
 def _sit_out_button(invite_id: int) -> dict:
     return {
         "type": _BUTTON,
         "style": _STYLE_SECONDARY,
-        "label": "Sitting out",
+        "label": NOT_AVAILABLE,
         "custom_id": sit_out_custom_id(invite_id),
     }
 
@@ -85,6 +118,20 @@ def _stop_invites_button(invite) -> dict | None:
         "label": "Stop fleet invites",
         "custom_id": stop_invites_custom_id(invite.id),
     }
+
+
+def _not_available_note(fleet) -> str:
+    """Saying no only skips this fleet. The weekly cap applies to standard
+    fleets only, so only they say so."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.private_fleets import is_capped_fleet
+
+    note = (
+        "This only skips this fleet. You'll still get invites to future ones."
+    )
+    if is_capped_fleet(fleet):
+        note += f"\n-# {WEEKLY_CAP_LINE}"
+    return note
 
 
 def _row(*buttons) -> list[dict]:
@@ -120,18 +167,6 @@ def thread_url(fleet) -> str | None:
     )
 
 
-def _character_names(user_id: int) -> str:
-    # pylint: disable=import-outside-toplevel
-    from eveonline.models import EveCharacter
-
-    names = list(
-        EveCharacter.objects.filter(user_id=user_id)
-        .order_by("character_name")
-        .values_list("character_name", flat=True)[:6]
-    )
-    return ", ".join(names)
-
-
 def _wanted(fleet) -> str:
     return " · ".join(
         f"{row['target']} {row['name']}" for row in target_progress(fleet)
@@ -147,7 +182,9 @@ def reminder_embed(invite) -> dict:
         "title": f"Still coming? {fleet_title(fleet)}",
         "url": fleet_url(fleet.id),
         "description": "You haven't answered yet. **Not this time?** Hit "
-        f"**Sitting out** so {_fc_name(fleet)} isn't waiting on you.",
+        f"**{NOT_AVAILABLE}** so {_fc_name(fleet)} isn't waiting on you. "
+        "It only skips this fleet. Running late? Hit "
+        f"**{AVAILABLE}** and join when you can.",
         "color": _COLOR,
     }
 
@@ -177,11 +214,6 @@ def invite_embed(invite, *, reminder: bool = False) -> dict:
         fields.append(
             {"name": "Doctrine", "value": fleet.doctrine.name, "inline": True}
         )
-    names = _character_names(invite.user_id)
-    if names:
-        fields.append(
-            {"name": "Your characters", "value": names, "inline": True}
-        )
     wanted = _wanted(fleet)
     if wanted:
         fields.append({"name": "Wanted", "value": wanted, "inline": False})
@@ -204,6 +236,11 @@ def invite_embed(invite, *, reminder: bool = False) -> dict:
         description = f"**{_fc_name(fleet)}** would like you on this fleet."
     if note:
         description += f"\n> {note}"
+    description += (
+        f"\n\nTap **{AVAILABLE}** or **{NOT_AVAILABLE}** so "
+        f"{_fc_name(fleet)} can plan. Either answer is fine.\n"
+        f"Running late? Still hit **{AVAILABLE}** and join when you can."
+    )
     description += _opsec(fleet)
     return {
         "author": _author(fleet),
@@ -211,6 +248,7 @@ def invite_embed(invite, *, reminder: bool = False) -> dict:
         "url": fleet_url(fleet.id),
         "description": description,
         "fields": fields,
+        "footer": {"text": ONLY_THIS_FLEET},
         "color": _COLOR,
     }
 
@@ -219,7 +257,7 @@ def invite_payload(invite, *, reminder: bool = False) -> dict:
     payload = {
         "embeds": [invite_embed(invite, reminder=reminder)],
         "components": _row(
-            _link("I'm in: pick ships", fleet_url(invite.eve_fleet_id)),
+            _available_button(invite.id),
             _sit_out_button(invite.id),
             _stop_invites_button(invite),
         ),
@@ -281,15 +319,17 @@ def answered_payload(invite) -> dict:
         if ships:
             description += "\nYou're bringing:\n" + ships
         elif not fleet.invite_only:
-            description += " No ship yet: pick one on the fleet page, or ask "
-            description += "on comms."
+            description += " No ship yet: pick one, or ask on comms."
+        confidence_line = CONFIDENCE_LINES.get(invite.confidence)
+        if confidence_line:
+            description += f"\n{confidence_line}"
         description += _opsec(fleet)
         url = thread_url(fleet)
         return {
             "embeds": [
                 {
                     "author": _author(fleet),
-                    "title": f"You're in: {title}",
+                    "title": f"You're signed up: {title}",
                     "url": page,
                     "description": description,
                     "color": _COLOR_IN,
@@ -297,7 +337,7 @@ def answered_payload(invite) -> dict:
             ],
             "components": _row(
                 _link("Open coordination thread", url) if url else None,
-                _link("Change ships", page),
+                _available_button(invite.id, "Change ships"),
                 _sit_out_button(invite.id),
             ),
         }
@@ -306,14 +346,16 @@ def answered_payload(invite) -> dict:
             "embeds": [
                 {
                     "author": _author(fleet),
-                    "title": "You're sitting this one out",
+                    "title": "You're not available for this one",
                     "description": f"{title}, {_eve_time(fleet.start_time)}. "
-                    "Changed your mind? I'm in still works until the fleet "
-                    f"starts.{_opsec(fleet)}",
+                    f"Changed your mind? {AVAILABLE} still works until the "
+                    "fleet starts.\n\n"
+                    + _not_available_note(fleet)
+                    + _opsec(fleet),
                     "color": _COLOR_DONE,
                 }
             ],
-            "components": _row(_link("I'm in: pick ships", page)),
+            "components": _row(_available_button(invite.id)),
         }
     return invite_payload(invite)
 

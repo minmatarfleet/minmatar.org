@@ -1,0 +1,182 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { rsvp_portrait } from '@helpers/fleet_rsvp'
+
+/**
+ * The frame of the fleet sign-up link page: a slim brand bar (no site nav:
+ * the link works without a login) with the invited pilot, and the screen
+ * below. The partial swaps the whole shell (`#fleet-rsvp`) after an answer.
+ */
+interface Props {
+    pilot_name?:            string | null;
+    pilot_character_id?:    number | null;
+    /** Two columns on wide screens (the picker). */
+    wide?:                  boolean;
+    [propName: string]: any;
+}
+
+const {
+    pilot_name = null,
+    pilot_character_id = null,
+    wide = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div
+    id="fleet-rsvp"
+    class:list={['[ fleet-rsvp ]', { 'fleet-rsvp--wide': wide }, Astro.props.class]}
+    {...attributes}
+>
+    <header class="[ fleet-rsvp__bar ]">
+        <span class="[ fleet-rsvp__brand ]">{t('fleets.rsvp.brand')}</span>
+        {pilot_name &&
+            <span class="[ fleet-rsvp__pilot ]">
+                <img src={rsvp_portrait(pilot_character_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                {pilot_name}
+            </span>
+        }
+    </header>
+    <slot />
+</div>
+
+<style lang="scss" is:global>
+    /* Global: every screen of the sign-up page (form, signed up, expired) is swapped in by the partial. */
+    .fleet-rsvp {
+        --fleet-rsvp-column: 32rem;
+
+        display: flex;
+        flex-direction: column;
+        min-block-size: 100dvh;
+        background-color: var(--background);
+        color: var(--highlight);
+
+        &.fleet-rsvp--wide {
+            --fleet-rsvp-column: var(--max-col-width);
+        }
+    }
+
+    .fleet-rsvp__bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-xs) var(--space-s);
+        border-bottom: 1px solid var(--hairline-medium);
+    }
+
+    .fleet-rsvp__brand {
+        font-family: var(--heading-font);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .fleet-rsvp__pilot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        img {
+            inline-size: var(--space-l);
+            block-size: var(--space-l);
+            border-radius: 50%;
+        }
+    }
+
+    /* A screen: content column, then the action bar pinned to the bottom on phones. */
+    .fleet-rsvp__screen {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .fleet-rsvp__main {
+        flex: 1 1 auto;
+        inline-size: 100%;
+        max-inline-size: var(--fleet-rsvp-column);
+        margin-inline: auto;
+        padding: var(--space-l) var(--space-s);
+    }
+
+    .fleet-rsvp__actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
+        border-top: 1px solid var(--hairline-medium);
+        background-color: var(--background);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            inline-size: 100%;
+            max-inline-size: var(--fleet-rsvp-column);
+            margin-inline: auto;
+            padding: var(--space-xs) var(--space-s) var(--space-s);
+        }
+
+        .button {
+            box-sizing: border-box;
+            inline-size: 100%;
+        }
+    }
+
+    /* Quiet text button under the primary action ("Nevermind", "Change ships"). */
+    .fleet-rsvp__text-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-block-size: var(--space-xl);
+        border: 0;
+        background: transparent;
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .fleet-rsvp__muted {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    .fleet-rsvp__label {
+        margin: 0;
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .fleet-rsvp__portrait {
+        flex: none;
+        inline-size: var(--space-xl);
+        block-size: var(--space-xl);
+        border-radius: 50%;
+    }
+
+    .fleet-rsvp__ship-icon {
+        flex: none;
+        inline-size: var(--space-xl);
+        block-size: var(--space-xl);
+        border-radius: var(--space-3xs);
+        background-color: var(--background);
+    }
+</style>

@@ -30,6 +30,10 @@ interface Props {
 	title: 					string;
 	meta_image?: 			string;
 	meta_description?: 		string;
+	/** e.g. `noindex, nofollow` for private links. */
+	robots?:				string;
+	/** False leaves out PostHog and Google Analytics, for pages whose URL is a secret (sign-up links). */
+	analytics?:				boolean;
 	components?:			ViewportComponents;
 }
 
@@ -37,6 +41,8 @@ const {
 	title,
 	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
 	meta_description = t('generic.meta_description'),
+	robots,
+	analytics = true,
 	components = {},
 } = Astro.props
 
@@ -60,6 +66,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 	<head>
 		<meta charset="UTF-8" />
 		{meta_description && <meta name="description" content={meta_description} />}
+		{robots && <meta name="robots" content={robots} />}
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/images/fleet-logo.png" />
 		<meta name="generator" content={Astro.generator} />
@@ -81,8 +88,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<link rel="manifest" href="/site.webmanifest">
 
 		{/* Analytics only from production builds, so dev traffic stays out of the properties. */}
-		<Posthog />
-		{is_prod_mode() && <>
+		{analytics && <Posthog />}
+		{analytics && is_prod_mode() && <>
 			<!-- Google tag (gtag.js) -->
 			<script async src="https://www.googletagmanager.com/gtag/js?id=G-H2HFG2XB2N"></script>
 			<script is:inline>

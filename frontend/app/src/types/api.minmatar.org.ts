@@ -3320,3 +3320,13 @@ export type MentorAdminClass = ApiResponse<'AdminMentorClassSchema'>
 export type MentorAdminMentor = ApiResponse<'AdminMentorSchema'>
 export type MentorsMetrics = ApiResponse<'MentorsMetricsResponse'>
 export type MentorAction = ApiResponse<'MentorActionResponse'>
+
+// Fleet invite sign-up from the one-time I'm available link (/api/fleets/rsvp/{token})
+export type RsvpForm = ApiResponse<'RsvpFormResponse'>
+export type RsvpFleet = ApiResponse<'RsvpFleetResponse'>
+export type RsvpCharacter = ApiResponse<'RsvpCharacterResponse'>
+export type RsvpFit = ApiResponse<'RsvpFitResponse'>
+export type RsvpResult = ApiResponse<'RsvpResultResponse'>
+export type RsvpShip = ApiResponse<'RsvpShipResponse'>
+export type RsvpPick = ApiRequest<'RsvpPickRequest'>
+export type RsvpSubmit = ApiRequest<'RsvpSubmitRequest'>
