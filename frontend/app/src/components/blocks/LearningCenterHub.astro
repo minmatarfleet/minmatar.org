@@ -17,6 +17,9 @@ import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
 import GuidesCatalog from '@components/blocks/GuidesCatalog.astro'
 import LearningSkillsets from '@components/blocks/LearningSkillsets.astro'
 import CertificateCard from '@components/blocks/CertificateCard.astro'
+import RoleTile from '@components/blocks/role-guide/RoleTile.astro'
+import { fleet_role_guides } from '@/data/fleet-roles'
+import { guidePath } from '@/data/guides/urls'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 import { LEARNING_HUB_PATH } from '@/data/guides/urls'
 import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
@@ -25,6 +28,9 @@ const CERTIFICATE_COVERS: Record<string, string> = {
     'faction-warfare': '/images/combatlog-tile-background.webp',
     'isk-generation': '/images/orders-tile-background.webp',
 }
+
+/** Certificates are hidden while Fleet roles takes their place; the code stays for now. */
+const SHOW_CERTIFICATES = false
 
 const DEFAULT_CERTIFICATE_COVER = '/images/doctrines-tile-background.webp'
 
@@ -203,49 +209,66 @@ const progress_label = t('learning_center.certificate.progress')
                 <PilotReadinessBanner main_character_id={readiness_character_id} />
             }
 
-            <FlexInline justification="space-between" class="[ w-full !items-center ]" gap="var(--space-s)">
-                <h2>{t('learning_center.certificates_heading')}</h2>
-                {certificates_admin_href &&
-                    <Button
-                        href={certificates_admin_href}
-                        size="sm"
-                        color="transparent"
-                        narrow={true}
-                        new_tab={true}
-                        aria-label={t('learning_center.certificates_edit_admin')}
-                        title={t('learning_center.certificates_edit_admin')}
-                    >
-                        <CogIcon slot="icon" />
+            <Flexblock gap="var(--space-s)" class="[ w-full ]">
+                <FlexInline justification="space-between" class="[ w-full !items-center ]" gap="var(--space-s)">
+                    <h2>{t('learning_center.fleet_roles_heading')}</h2>
+                    <Button size="sm" color="transparent" href={translatePath(guidePath('fleet-roles'))}>
+                        {t('learning_center.fleet_roles_all')}
                     </Button>
-                }
-            </FlexInline>
-
-            {certificates_error ? (
-                <Flexblock gap="var(--space-2xs)">
-                    <p>{t('learning_center.certificates_error')}</p>
-                    <Button size="sm" href={translatePath(catalog_path)}>
-                        {t('learning_center.certificates_retry')}
-                    </Button>
-                </Flexblock>
-            ) : certificates.length === 0 ? (
-                <p>{t('learning_center.empty_certificates')}</p>
-            ) : (
-                <Grid
-                    class="[ w-full grid-fill ]"
-                    row_gap="var(--space-2xs)"
-                    column_gap="var(--space-2xs)"
-                    min_item_width="280px"
-                >
-                    {certificates.map((cert) => (
-                        <CertificateCard
-                            certificate={cert}
-                            completed_slugs={completed_slugs}
-                            cover={CERTIFICATE_COVERS[cert.slug] ?? DEFAULT_CERTIFICATE_COVER}
-                            progress_label={progress_label}
-                        />
+                </FlexInline>
+                <p class="[ learning-hub__muted ]">{t('learning_center.fleet_roles_lead')}</p>
+                <ul class="[ learning-hub__roles ]">
+                    {fleet_role_guides.map((guide) => (
+                        <li><RoleTile guide={guide} /></li>
                     ))}
-                </Grid>
-            )}
+                </ul>
+            </Flexblock>
+
+            {SHOW_CERTIFICATES && <Fragment>
+                <FlexInline justification="space-between" class="[ w-full !items-center ]" gap="var(--space-s)">
+                    <h2>{t('learning_center.certificates_heading')}</h2>
+                    {certificates_admin_href &&
+                        <Button
+                            href={certificates_admin_href}
+                            size="sm"
+                            color="transparent"
+                            narrow={true}
+                            new_tab={true}
+                            aria-label={t('learning_center.certificates_edit_admin')}
+                            title={t('learning_center.certificates_edit_admin')}
+                        >
+                            <CogIcon slot="icon" />
+                        </Button>
+                    }
+                </FlexInline>
+
+                {certificates_error ? (
+                    <Flexblock gap="var(--space-2xs)">
+                        <p>{t('learning_center.certificates_error')}</p>
+                        <Button size="sm" href={translatePath(catalog_path)}>
+                            {t('learning_center.certificates_retry')}
+                        </Button>
+                    </Flexblock>
+                ) : certificates.length === 0 ? (
+                    <p>{t('learning_center.empty_certificates')}</p>
+                ) : (
+                    <Grid
+                        class="[ w-full grid-fill ]"
+                        row_gap="var(--space-2xs)"
+                        column_gap="var(--space-2xs)"
+                        min_item_width="280px"
+                    >
+                        {certificates.map((cert) => (
+                            <CertificateCard
+                                certificate={cert}
+                                completed_slugs={completed_slugs}
+                                cover={CERTIFICATE_COVERS[cert.slug] ?? DEFAULT_CERTIFICATE_COVER}
+                                progress_label={progress_label}
+                            />
+                        ))}
+                    </Grid>
+                )}
+            </Fragment>}
 
             {show_skillsets && <LearningSkillsets
                 heading={t('learning_center.skillsets_heading')}
@@ -314,6 +337,22 @@ const progress_label = t('learning_center.certificate.progress')
         color: var(--highlight);
         text-transform: uppercase;
         letter-spacing: 0.04em;
+    }
+
+    .learning-hub__muted {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .learning-hub__roles {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+        gap: var(--space-2xs);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
     }
 
     .recommendation {

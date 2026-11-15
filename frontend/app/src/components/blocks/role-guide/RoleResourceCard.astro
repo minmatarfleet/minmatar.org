@@ -1,0 +1,195 @@
+---
+/**
+ * One card in a Fleet Roles guide's "Go deeper" list. Videos show their
+ * YouTube thumbnail with a play mark, our own guides their cover image, and
+ * outside wikis, simulators and tools a drawn icon for their kind.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { RoleResource } from '@/data/fleet-roles'
+import { guides } from '@/data/guides'
+import { getGuideCoverImage } from '@/data/guides/covers'
+
+interface Props {
+    resource: RoleResource
+    [propName: string]: any
+}
+
+const { resource, ...attributes } = Astro.props
+delete attributes.class
+
+const internal = resource.kind === 'guide'
+const youtube_id = resource.kind === 'video' ? resource.url.match(/[?&]v=([\w-]{11})/)?.[1] : undefined
+const guide_slug = internal ? resource.url.match(/^\/learning\/guides\/([^/]+)\//)?.[1] : undefined
+const guide_meta = guide_slug ? guides.find((guide) => guide.slug === guide_slug) : undefined
+const picture = youtube_id
+    ? `https://i.ytimg.com/vi/${youtube_id}/mqdefault.jpg`
+    : internal
+        ? (guide_meta ? getGuideCoverImage(guide_meta) : '/images/doctrines-cover.jpg')
+        : null
+---
+
+<a
+    class:list={['[ role-resource ]', `role-resource--${resource.kind}`, Astro.props.class]}
+    href={internal ? translatePath(resource.url) : resource.url}
+    target={internal ? undefined : '_blank'}
+    rel={internal ? undefined : 'noopener noreferrer'}
+    {...attributes}
+>
+    <span class="[ role-resource__media ]" aria-hidden="true">
+        {picture ? (
+            <img src={picture} alt="" loading="lazy" width="480" height="270" />
+        ) : (
+            <svg viewBox="0 0 48 48" class="[ role-resource__icon ]">
+                {resource.kind === 'wiki' && (
+                    <path d="M8 10h13a5 5 0 0 1 3 1 5 5 0 0 1 3-1h13v28H27a3 3 0 0 0-3 2 3 3 0 0 0-3-2H8z M24 11v29" />
+                )}
+                {resource.kind === 'sim' && (
+                    <>
+                        <circle cx="24" cy="24" r="15" />
+                        <circle cx="24" cy="24" r="7" />
+                        <path d="M24 4v8 M24 36v8 M4 24h8 M36 24h8" />
+                    </>
+                )}
+                {resource.kind === 'ccp' && (
+                    <>
+                        <circle cx="24" cy="24" r="16" />
+                        <path d="M20 17l11 7-11 7z" />
+                    </>
+                )}
+                {resource.kind === 'tool' && (
+                    <path d="M8 38V26 M18 38V16 M28 38V22 M38 38V10 M5 38h38" />
+                )}
+                {resource.kind === 'video' && <path d="M18 14l16 10-16 10z" />}
+            </svg>
+        )}
+        {youtube_id && (
+            <svg viewBox="0 0 48 48" class="[ role-resource__play ]"><path d="M18 14l16 10-16 10z" /></svg>
+        )}
+    </span>
+    <span class="[ role-resource__body ]">
+        <span class:list={['[ role-resource__kind ]', `role-resource__kind--${resource.kind}`]}>
+            {t(t_key('fleet_roles.kind.', resource.kind))}
+        </span>
+        <span class="[ role-resource__title ]">{resource.title}</span>
+        <span class="[ role-resource__source ]">{resource.source}</span>
+        <span>{resource.why}</span>
+    </span>
+</a>
+
+<style lang="scss">
+    .role-resource {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+        color: var(--foreground);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--hairline-strong);
+
+                img {
+                    opacity: 1;
+                }
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 1px;
+        }
+    }
+
+    .role-resource__media {
+        position: relative;
+        display: grid;
+        place-items: center;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-bottom: 1px solid var(--hairline);
+        background: color-mix(in srgb, var(--fleet-yellow) 6%, var(--background));
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.85;
+            transition: opacity var(--fast-transition);
+        }
+    }
+
+    .role-resource--wiki .role-resource__media {
+        background: color-mix(in srgb, var(--alliance-blue) 10%, var(--background));
+    }
+
+    .role-resource__icon {
+        width: var(--space-2xl);
+        height: auto;
+        fill: none;
+        stroke: var(--fleet-yellow);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .role-resource--wiki .role-resource__icon {
+        stroke: color-mix(in srgb, var(--alliance-blue) 40%, var(--highlight));
+    }
+
+    .role-resource__play {
+        position: absolute;
+        width: var(--space-xl);
+        height: auto;
+        padding: var(--space-2xs);
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--background) 70%, transparent);
+        fill: var(--highlight);
+    }
+
+    .role-resource__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-s);
+        font-size: var(--step--1);
+    }
+
+    .role-resource__kind {
+        align-self: flex-start;
+        margin-bottom: var(--space-3xs);
+        padding: var(--space-3xs) var(--space-2xs);
+        background: var(--hairline);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .role-resource__kind--video {
+        color: color-mix(in srgb, var(--alliance-blue) 40%, var(--highlight));
+    }
+
+    .role-resource__kind--guide {
+        color: var(--fleet-yellow);
+        background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+    }
+
+    .role-resource__kind--sim {
+        color: var(--fleet-yellow);
+    }
+
+    .role-resource__title {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .role-resource__source {
+        color: var(--text-muted);
+    }
+</style>

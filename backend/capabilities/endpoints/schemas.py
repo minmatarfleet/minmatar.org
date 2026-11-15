@@ -223,6 +223,15 @@ class RoleFleetResponse(Schema):
     pilots_in_role: int
 
 
+class RoleHullUsageResponse(Schema):
+    ship_type_id: int
+    # Finished fleets in the last `days` days that brought the hull.
+    fleets: int
+    fleets_per_month: float
+    pilots: int
+    days: int
+
+
 class RoleSpotlightResponse(Schema):
     # Approved mentors taking requests who fly the role.
     mentors: list[RolePilotResponse]
@@ -230,3 +239,4 @@ class RoleSpotlightResponse(Schema):
     fleets: list[RoleFleetResponse]
     # 60, or 365 when no fleet in the last 60 days flew the role.
     fleets_days: int
+    hulls: list[RoleHullUsageResponse] = []

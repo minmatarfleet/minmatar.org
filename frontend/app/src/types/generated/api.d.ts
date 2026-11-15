@@ -12450,13 +12450,6 @@ export interface components {
             learnings: components["schemas"]["LearningSchema"][];
             /** Personas */
             personas: string[];
-            /**
-             * Required Certificates
-             * @default []
-             */
-            required_certificates?: components["schemas"]["RequiredCertificateSchema"][];
-            /** Required Count */
-            required_count?: number | null;
             /** Slug */
             slug: string;
             /** Sort Order */
@@ -25664,13 +25657,6 @@ export interface components {
             /** Total */
             total: number;
         };
-        /** RequiredCertificateSchema */
-        RequiredCertificateSchema: {
-            /** Slug */
-            slug: string;
-            /** Title */
-            title: string;
-        };
         /** RequirementCapabilityOption */
         RequirementCapabilityOption: {
             /** Key */
@@ -26112,6 +26098,19 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** RoleHullUsageResponse */
+        RoleHullUsageResponse: {
+            /** Days */
+            days: number;
+            /** Fleets */
+            fleets: number;
+            /** Fleets Per Month */
+            fleets_per_month: number;
+            /** Pilots */
+            pilots: number;
+            /** Ship Type Id */
+            ship_type_id: number;
+        };
         /** RolePilotResponse */
         RolePilotResponse: {
             /** Character Id */
@@ -26136,6 +26135,11 @@ export interface components {
             fleets: components["schemas"]["RoleFleetResponse"][];
             /** Fleets Days */
             fleets_days: number;
+            /**
+             * Hulls
+             * @default []
+             */
+            hulls?: components["schemas"]["RoleHullUsageResponse"][];
             /** Mentors */
             mentors: components["schemas"]["RolePilotResponse"][];
             /** Pilots */

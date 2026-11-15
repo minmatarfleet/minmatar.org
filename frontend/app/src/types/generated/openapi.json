@@ -5452,25 +5452,6 @@
             "title": "Personas",
             "type": "array"
           },
-          "required_certificates": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/RequiredCertificateSchema"
-            },
-            "title": "Required Certificates",
-            "type": "array"
-          },
-          "required_count": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Required Count"
-          },
           "slug": {
             "title": "Slug",
             "type": "string"
@@ -38639,24 +38620,6 @@
         "title": "RequestsBreakdown",
         "type": "object"
       },
-      "RequiredCertificateSchema": {
-        "properties": {
-          "slug": {
-            "title": "Slug",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "slug",
-          "title"
-        ],
-        "title": "RequiredCertificateSchema",
-        "type": "object"
-      },
       "RequirementCapabilityOption": {
         "properties": {
           "key": {
@@ -39546,6 +39509,39 @@
         "title": "RoleFleetResponse",
         "type": "object"
       },
+      "RoleHullUsageResponse": {
+        "properties": {
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "integer"
+          },
+          "fleets_per_month": {
+            "title": "Fleets Per Month",
+            "type": "number"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "fleets",
+          "fleets_per_month",
+          "pilots",
+          "days"
+        ],
+        "title": "RoleHullUsageResponse",
+        "type": "object"
+      },
       "RolePilotResponse": {
         "properties": {
           "character_id": {
@@ -39607,6 +39603,14 @@
           "fleets_days": {
             "title": "Fleets Days",
             "type": "integer"
+          },
+          "hulls": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RoleHullUsageResponse"
+            },
+            "title": "Hulls",
+            "type": "array"
           },
           "mentors": {
             "items": {

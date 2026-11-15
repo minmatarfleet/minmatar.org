@@ -516,8 +516,26 @@ class RoleSpotlightTest(TrainingTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             set(response.json()),
-            {"mentors", "pilots", "fleets", "fleets_days"},
+            {"mentors", "pilots", "fleets", "fleets_days", "hulls"},
         )
+
+    def test_hull_usage_is_fleets_a_month(self):
+        self._fleet([GUARDIAN, GUARDIAN, NAPOC])
+        self._fleet([GUARDIAN])
+        self._fleet([GUARDIAN], invite_only=True)
+        old = self._fleet([NAPOC])
+        EveFleetInstance.objects.filter(eve_fleet=old).update(
+            start_time=timezone.now() - timedelta(days=120)
+        )
+        hulls = {
+            h["ship_type_id"]: h
+            for h in role_spotlight(["DPS"], [GUARDIAN, NAPOC])["hulls"]
+        }
+        self.assertEqual(hulls[GUARDIAN]["fleets"], 2)
+        self.assertEqual(hulls[GUARDIAN]["fleets_per_month"], 0.7)
+        self.assertEqual(hulls[GUARDIAN]["pilots"], 2)
+        self.assertEqual(hulls[NAPOC]["fleets"], 1)
+        self.assertEqual(hulls[NAPOC]["days"], 90)
 
     def test_mentors_who_fly_the_role(self):
         mentor = User.objects.create_user(username="mentor")

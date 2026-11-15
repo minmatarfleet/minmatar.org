@@ -1,31 +1,33 @@
-import type { FleetRoleGuide, FleetRoleSlug, RoleSimId } from './types'
+import type { FleetRoleGuide, FleetRoleSlug } from './types'
 import { damage } from './damage'
 import { remote_repair } from './remote-repair'
 import { capacitor_warfare } from './capacitor-warfare'
 import { electronic_warfare } from './electronic-warfare'
-import { positioning_warfare } from './positioning-warfare'
+import { fleet_support } from './fleet-support'
+import { fleet_disruption } from './fleet-disruption'
 import { fill_facts } from './facts'
 
 export type * from './types'
 export { fill_facts, sim_facts } from './facts'
 
 /** Hub order: Damage first (everyone starts there), then the support roles. */
+/** In the order the landing page reads them: build, support, disrupt. */
 export const fleet_role_guides: FleetRoleGuide[] = [
     damage,
     remote_repair,
+    fleet_support,
     capacitor_warfare,
     electronic_warfare,
-    positioning_warfare,
+    fleet_disruption,
 ]
 
 export const FLEET_ROLES_HUB_SLUG = 'fleet-roles'
 
 /**
- * While false the guides open only by direct link: nothing else on the site
- * links to them (the Training tab included), and data/guides marks them
- * unlisted. Flip both when the guides launch.
+ * The guides are live: the Learning Center and the Training tab link them.
+ * Set false (and mark them unlisted in data/guides) to hide them again.
  */
-export const FLEET_ROLES_LISTED = false
+export const FLEET_ROLES_LISTED = true
 
 export function get_fleet_role(slug: string): FleetRoleGuide | undefined {
     return fleet_role_guides.find((guide) => guide.slug === slug)
@@ -45,15 +47,6 @@ export function fleet_role_for_capability(capability: string): FleetRoleGuide | 
     return fleet_role_guides.find((guide) => guide.capabilities.includes(capability))
 }
 
-/** Every simulator a guide uses, featured first, without repeats. */
-export function guide_sims(guide: FleetRoleGuide): RoleSimId[] {
-    const ids: RoleSimId[] = [guide.featured_sim]
-    for (const lesson of guide.lessons) {
-        if (lesson.sim && !ids.includes(lesson.sim)) ids.push(lesson.sim)
-    }
-    return ids
-}
-
 /** The guide with every {token} in its prose filled from the SDE constants. */
 export function resolved_guide(guide: FleetRoleGuide): FleetRoleGuide {
     return {
@@ -64,6 +57,9 @@ export function resolved_guide(guide: FleetRoleGuide): FleetRoleGuide {
             ...lesson,
             summary: fill_facts(lesson.summary),
             body: lesson.body.map(fill_facts),
+            steps: lesson.steps?.map(fill_facts),
+            donts: lesson.donts?.map(fill_facts),
+            lists: lesson.lists?.map((list) => ({ ...list, items: list.items.map(fill_facts) })),
         })),
         mistakes: guide.mistakes.map((mistake) => ({ ...mistake, fix: fill_facts(mistake.fix) })),
     }

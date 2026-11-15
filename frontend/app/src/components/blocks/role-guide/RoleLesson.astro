@@ -1,23 +1,25 @@
 ---
 /** One lesson in a Fleet Roles guide's Mechanics section. */
 import { i18n, t_key } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import type { RoleLesson as Lesson, RoleSimId } from '@/data/fleet-roles'
-import RoleSimSlot from '@components/blocks/role-guide/RoleSimSlot.astro'
+import type { RoleLesson as Lesson } from '@/data/fleet-roles'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import RoleDiagram from '@components/blocks/role-diagrams/RoleDiagram.astro'
+import RoleModulePanel from '@components/blocks/role-guide/RoleModulePanel.astro'
 import YTVideoWidget from '@components/blocks/YTVideoWidget.astro'
+import { get_item_icon } from '@helpers/eve_image_server'
 
 interface Props {
     lesson: Lesson
     index: number
-    /** The section's featured simulator, already shown above the lessons. */
-    featured_sim: RoleSimId
     id_prefix: string
+    /** The guide's role slug, for lessons that load live data (ammo). */
+    role: string
 }
 
-const { lesson, index, featured_sim, id_prefix } = Astro.props
+const { lesson, index, id_prefix, role } = Astro.props
 const heading_id = `${id_prefix}-lesson-${lesson.id}`
-const show_sim = lesson.sim && lesson.sim !== featured_sim
 ---
 
 <article class="[ role-lesson ]" id={`lesson-${lesson.id}`} aria-labelledby={heading_id}>
@@ -30,7 +32,6 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
     </header>
     <div class="[ role-lesson__body ]">
         {lesson.body.map((paragraph) => <p set:html={paragraph} />)}
-        {lesson.sim === featured_sim && <p class="[ role-lesson__note ]">{t('fleet_roles.simulator_above')}</p>}
     </div>
     {lesson.image && (
         <figure class="[ role-lesson__image ]">
@@ -38,7 +39,73 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
             <figcaption set:html={lesson.image.caption} />
         </figure>
     )}
-    {show_sim && lesson.sim && <RoleSimSlot sim={lesson.sim} />}
+    {lesson.modules && lesson.modules.length > 0 && <RoleModulePanel modules={lesson.modules} id_prefix={`${id_prefix}-${lesson.id}`} />}
+    {lesson.diagrams?.map((diagram) => <RoleDiagram diagram={diagram} />)}
+    {lesson.clips && lesson.clips.length > 0 && (
+        <div class="[ role-lesson__clips ]">
+            {lesson.clips.map((clip) => (
+                <figure class="[ role-lesson__clip ]">
+                    <video src={clip.src} controls preload="metadata" playsinline aria-label={clip.title}></video>
+                    <figcaption>{clip.title} · <a href={clip.url} target="_blank" rel="noopener noreferrer">{clip.source}</a></figcaption>
+                </figure>
+            ))}
+        </div>
+    )}
+    {lesson.steps && lesson.steps.length > 0 && (
+        <div class="[ role-lesson__steps ]">
+            <h4>{t('fleet_roles.steps_title')}</h4>
+            <ol>
+                {lesson.steps.map((step) => <li set:html={step} />)}
+            </ol>
+        </div>
+    )}
+    {lesson.lists?.map((list) => (
+        <div class="[ role-lesson__steps ]">
+            {list.type_id ? (
+                <h4 class="[ role-lesson__list-head ]">
+                    <img src={get_item_icon(list.type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                    {list.title}
+                </h4>
+            ) : (
+                <h4>{list.title}</h4>
+            )}
+            <ul>
+                {list.items.map((item) => <li set:html={item} />)}
+            </ul>
+        </div>
+    ))}
+    {lesson.donts && lesson.donts.length > 0 && (
+        <div class="[ role-lesson__donts ]">
+            <h4>{t('fleet_roles.donts_title')}</h4>
+            <ul>
+                {lesson.donts.map((dont) => <li set:html={dont} />)}
+            </ul>
+        </div>
+    )}
+    {lesson.practice && (
+        <a class="[ role-lesson__practice ]" href={lesson.practice.url} target="_blank" rel="noopener noreferrer">
+            <span class="[ role-lesson__practice-kicker ]">{t('fleet_roles.practice_in').replace('{source}', lesson.practice.source)}</span>
+            <span class="[ role-lesson__practice-title ]">{lesson.practice.title}</span>
+            <span>{lesson.practice.why}</span>
+            <span class="[ role-lesson__practice-open ]">{t('fleet_roles.opens_new_tab')} <span aria-hidden="true">↗</span></span>
+        </a>
+    )}
+    {lesson.format === 'ammo' && (
+        <LazyPartial url={translatePath(`/partials/role_ammo_component/?role=${role}`)} trigger="reveal" />
+    )}
+    {lesson.links && lesson.links.length > 0 && (
+        <ul class="[ role-lesson__links ]">
+            {lesson.links.map((link) => (
+                <li>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">
+                        <span class="[ role-lesson__link-title ]">{link.title}</span>
+                        <span class="[ role-lesson__link-source ]">{link.source}</span>
+                        <span>{link.why}</span>
+                    </a>
+                </li>
+            ))}
+        </ul>
+    )}
     {lesson.video && (
         <figure class="[ role-lesson__video ]">
             <YTVideoWidget videoid={lesson.video.youtube_id} videotitle={lesson.video.title} />
@@ -48,6 +115,182 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
 </article>
 
 <style lang="scss">
+    .role-lesson__steps {
+        padding: var(--space-s) var(--space-m);
+        border-left: 2px solid var(--fleet-yellow);
+        background: var(--surface-sunken);
+
+        h4 {
+            margin: 0 0 var(--space-2xs);
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            letter-spacing: 0.04em;
+            color: var(--fleet-yellow);
+        }
+
+        .role-lesson__list-head {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+
+            img {
+                flex: none;
+                width: var(--space-l);
+                height: auto;
+            }
+        }
+
+        ol, ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding-left: var(--space-m);
+            max-width: var(--max-text-width);
+        }
+
+        :global(strong) {
+            color: var(--highlight);
+        }
+    }
+
+    .role-lesson__clips {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .role-lesson__clip {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+
+        video {
+            width: 100%;
+            max-width: 48rem;
+            border: 1px solid var(--hairline-medium);
+            background: var(--background);
+        }
+
+        figcaption {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+
+            a {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .role-lesson__donts {
+        padding: var(--space-s) var(--space-m);
+        border-left: 2px solid var(--fleet-red);
+        background: color-mix(in srgb, var(--fleet-red) 6%, var(--surface-sunken));
+
+        h4 {
+            margin: 0 0 var(--space-2xs);
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            letter-spacing: 0.04em;
+            color: var(--fleet-red);
+        }
+
+        ul {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding-left: var(--space-m);
+            max-width: var(--max-text-width);
+        }
+
+        :global(strong) {
+            color: var(--highlight);
+        }
+    }
+
+
+    .role-lesson__practice {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-m) var(--space-l);
+        border: 1px solid var(--fleet-yellow);
+        background: color-mix(in srgb, var(--fleet-yellow) 8%, var(--surface-sunken));
+        color: var(--foreground);
+        text-decoration: none;
+
+        @media (hover: hover) {
+            &:hover {
+                background: color-mix(in srgb, var(--fleet-yellow) 14%, var(--surface-sunken));
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .role-lesson__practice-kicker {
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .role-lesson__practice-title {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        color: var(--highlight);
+    }
+
+    .role-lesson__practice-open {
+        margin-top: var(--space-2xs);
+        font-weight: 600;
+        color: var(--fleet-yellow);
+    }
+
+    .role-lesson__links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+        gap: var(--space-xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        a {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            height: 100%;
+            box-sizing: border-box;
+            padding: var(--space-s);
+            border: 1px solid var(--hairline-medium);
+            background: var(--surface-sunken);
+            color: var(--foreground);
+            font-size: var(--step--1);
+            text-decoration: none;
+
+            @media (hover: hover) {
+                &:hover {
+                    border-color: var(--fleet-yellow);
+                }
+            }
+        }
+    }
+
+    .role-lesson__link-title {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .role-lesson__link-source {
+        color: var(--text-muted);
+    }
+
     .role-lesson {
         display: flex;
         flex-direction: column;
@@ -86,10 +329,6 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
         text-transform: uppercase;
     }
 
-    .role-lesson__format--sim {
-        color: var(--fleet-yellow);
-    }
-
     .role-lesson__body {
         max-width: var(--max-text-width);
 
@@ -101,11 +340,6 @@ const show_sim = lesson.sim && lesson.sim !== featured_sim
         :global(strong) {
             color: var(--highlight);
         }
-    }
-
-    .role-lesson__note {
-        font-size: var(--step--1);
-        color: var(--text-muted);
     }
 
     .role-lesson__image {

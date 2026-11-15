@@ -1,0 +1,23 @@
+---
+// no-error-refetch: the doctrines API is public; when it fails the charts show their empty state and the lesson text still reads.
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_fleet_role } from '@/data/fleet-roles'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import { doctrine_ships, type RoleShip } from '@helpers/fleet_role_ships'
+
+const guide = get_fleet_role(Astro.url.searchParams.get('role') ?? '')
+if (!guide || guide.ships_from_doctrines !== 'damage')
+    return HTTP_404_Not_Found()
+
+let ships: RoleShip[] = []
+try {
+    ships = await doctrine_ships(await get_doctrines(), guide.ships_only)
+} catch (error) {
+    console.log(`Ammo charts unavailable: ${error.message}`)
+}
+const notes = guide.lessons.find((lesson) => lesson.format === 'ammo')?.ammo_notes
+
+import RoleAmmo from '@components/blocks/role-guide/RoleAmmo.astro'
+---
+
+<RoleAmmo ships={ships} notes={notes} />

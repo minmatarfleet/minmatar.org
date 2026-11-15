@@ -15,8 +15,6 @@ interface Props {
     completed_slugs: string[]
     auth_token: string
     percent: number
-    /** Certificates the reader holds, for a certificate earned through others. */
-    held_slugs?: string[]
 }
 
 const {
@@ -24,12 +22,7 @@ const {
     completed_slugs,
     auth_token,
     percent,
-    held_slugs = [],
 } = Astro.props
-
-import { certificatePath } from '@/data/guides/urls'
-const required_certificates = certificate.required_certificates ?? []
-const required_count = certificate.required_count ?? required_certificates.length
 
 const progress_label = t('learning_center.certificate.progress')
 
@@ -65,23 +58,6 @@ const config_json = JSON.stringify({
                 <div class="[ progress-bar__fill ]" x-bind:style="'width: ' + percent + '%'"></div>
             </div>
         </Flexblock>
-
-        {required_certificates.length > 0 && (
-            <Flexblock gap="var(--space-xs)">
-                <h2 class="[ learning-certificate-detail__any ]">
-                    {t('learning_center.certificate.any_of').replace('{n}', String(required_count))}
-                </h2>
-                <ul class="[ learning-certificate-detail__required ]">
-                    {required_certificates.map((required) => (
-                        <li data-held={held_slugs.includes(required.slug) ? 'true' : 'false'}>
-                            <span aria-hidden="true">{held_slugs.includes(required.slug) ? '✓' : ''}</span>
-                            <a href={translatePath(certificatePath(required.slug))}>{required.title}</a>
-                            {held_slugs.includes(required.slug) && <span class="visually-hidden">{t('learning_center.certificate.complete')}</span>}
-                        </li>
-                    ))}
-                </ul>
-            </Flexblock>
-        )}
 
         <Flexblock gap="var(--space-xs)">
             {certificate.learnings.map((learning) => {
@@ -162,45 +138,6 @@ const config_json = JSON.stringify({
 </div>
 
 <style lang="scss">
-    .learning-certificate-detail__any {
-        margin: 0;
-        font-size: var(--step-0);
-    }
-
-    .learning-certificate-detail__required {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        margin: 0;
-        padding: 0;
-        list-style: none;
-
-        li {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-        }
-
-        li > span[aria-hidden] {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.25em;
-            height: 1.25em;
-            border: 1px solid var(--hairline-strong);
-            font-weight: 700;
-        }
-
-        li[data-held='true'] > span[aria-hidden] {
-            border-color: var(--green);
-            background: var(--green);
-        }
-
-        a {
-            color: var(--highlight);
-        }
-    }
-
     [x-cloak] {
         display: none !important;
     }

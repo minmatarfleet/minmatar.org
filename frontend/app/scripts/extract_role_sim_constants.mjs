@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Dogma constants for the fleet-role simulators (components/blocks/role-sims).
+ * Dogma constants the fleet-role guides quote in their text (data/fleet-roles/facts.ts).
  *
  * Reads the local SDE snapshot (resolved through src/helpers/sde_path.mjs, or
  * SDE_PATH) and writes src/data/fleet-roles/sim_constants.json. The JSON is

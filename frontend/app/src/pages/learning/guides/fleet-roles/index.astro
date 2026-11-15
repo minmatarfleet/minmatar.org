@@ -1,17 +1,21 @@
 ---
-import { i18n } from '@helpers/i18n'
+/**
+ * The Fleet Roles landing page: where to start, how each role guide works
+ * and the six roles grouped by what they do in a fight.
+ */
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_site_origin } from '@helpers/seo'
 import { pageProgressFromSections } from '@helpers/pageProgress'
-import { get_item_icon } from '@helpers/eve_image_server'
 import { guides } from '@/data/guides'
 import { getGuideCoverImage, getGuideSeoImage } from '@/data/guides/covers'
 import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
-import { certificatePath, guidePath } from '@/data/guides/urls'
-import { FLEET_ROLES_HUB_SLUG, fleet_role_guides, guide_sims } from '@/data/fleet-roles'
+import { guidePath } from '@/data/guides/urls'
+import { FLEET_ROLES_HUB_SLUG, get_fleet_role, type FleetRoleGuide, type FleetRoleSlug } from '@/data/fleet-roles'
 import CapitalGuidePage from '@components/blocks/capital-guide/CapitalGuidePage.astro'
-import GuideShell from '@components/blocks/GuideShell.astro'
+import Button from '@components/blocks/Button.astro'
+import RoleTile from '@components/blocks/role-guide/RoleTile.astro'
 
 const meta = guides.find((guide) => guide.slug === FLEET_ROLES_HUB_SLUG)!
 const site_origin = get_site_origin(Astro.url.origin)
@@ -27,22 +31,25 @@ const structured_data = buildGuideJsonLd({ guide: meta, siteName: t('index.page_
 const progress = pageProgressFromSections({
     page_key: `guides/${FLEET_ROLES_HUB_SLUG}`,
     page_title: meta.title,
-    sections: ['roles', 'practise'],
+    sections: ['start', 'how', 'roles'],
 })
 
-// Every simulator, with the guide and lesson it belongs to.
-const practice = fleet_role_guides.flatMap((guide) =>
-    guide_sims(guide).map((sim) => {
-        const lesson = guide.lessons.find((l) => l.sim === sim)
-        const anchor = sim === guide.featured_sim ? 'mechanics' : `lesson-${lesson?.id}`
-        return {
-            role: guide.name,
-            title: lesson?.title ?? sim,
-            summary: lesson?.summary ?? '',
-            href: `${guidePath(guide.guide_slug)}#${anchor}`,
-        }
-    }),
-)
+/**
+ * The six roles as a pyramid, read top down: build the fleet (everyone
+ * starts with Damage), support it, then disrupt the enemy.
+ */
+const GROUPS: { id: string; roles: FleetRoleSlug[] }[] = [
+    { id: 'build', roles: ['damage'] },
+    { id: 'support', roles: ['remote-repair', 'fleet-support'] },
+    { id: 'disrupt', roles: ['capacitor-warfare', 'electronic-warfare', 'fleet-disruption'] },
+]
+const groups = GROUPS.map((group) => ({
+    ...group,
+    guides: group.roles.map((slug) => get_fleet_role(slug)).filter((guide): guide is FleetRoleGuide => !!guide),
+}))
+
+const STEPS = ['learn', 'practice', 'fly'] as const
+const damage = get_fleet_role('damage')!
 ---
 
 <CapitalGuidePage
@@ -57,48 +64,49 @@ const practice = fleet_role_guides.flatMap((guide) =>
     progress={progress}
     robots={meta.unlisted ? 'noindex, nofollow' : undefined}
 >
-    <GuideShell title={t('fleet_roles.hub_title')} subtitle={t('fleet_roles.hub_subtitle')}>
-        <div class="[ role-hub ]">
+    <div class="[ role-hub ]">
+        <section id="start" data-section-id="start" class="[ role-hub__start ]" aria-labelledby="role-hub-start">
+            <h2 id="role-hub-start" class="[ role-hub__headline ]">{t('fleet_roles.hub_headline')}</h2>
             <p class="[ role-hub__lede ]">{t('fleet_roles.hub_lede')}</p>
-            <section id="roles" data-section-id="roles" class="[ role-hub__section ]" aria-labelledby="role-hub-roles">
-                <h2 id="role-hub-roles" class="[ role-hub__title ]">{t('fleet_roles.pick_role')}</h2>
-                <ul class="[ role-hub__roles ]">
-                    {fleet_role_guides.map((guide) => (
-                        <li>
-                            <a class="[ role-hub__role ]" href={translatePath(guidePath(guide.guide_slug))}>
-                                <img src={get_item_icon(guide.hero_type_id, 256)} alt="" width="256" height="256" loading="lazy" />
-                                <span class="[ role-hub__role-body ]">
-                                    <span class="[ role-hub__role-name ]">{guide.name}</span>
-                                    <span>{guide.lede}</span>
-                                    <span class="[ role-hub__muted ]">{guide.ladder[0].name} → {guide.ladder[guide.ladder.length - 1].name}</span>
-                                </span>
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-                <p class="[ role-hub__muted ]">
-                    {t('fleet_roles.hub_certificate')}
-                    <a href={translatePath(certificatePath('fleet-roles'))}>{t('fleet_roles.hub_certificate_link')}</a>
-                    · <a href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</a>
-                </p>
-            </section>
+            <div class="[ role-hub__actions ]">
+                <Button href={translatePath(guidePath(damage.guide_slug))}>{t('fleet_roles.hub_start_damage')}</Button>
+                <Button color="transparent" href={translatePath('/account/#training')}>{t('fleet_roles.open_training')}</Button>
+            </div>
+            <p class="[ role-hub__muted ]">{t('fleet_roles.hub_start_note')}</p>
+        </section>
 
-            <section id="practise" data-section-id="practise" class="[ role-hub__section ]" aria-labelledby="role-hub-practise">
-                <h2 id="role-hub-practise" class="[ role-hub__title ]">{t('fleet_roles.practise')}</h2>
-                <p class="[ role-hub__muted ]">{t('fleet_roles.practise_lead')}</p>
-                <ul class="[ role-hub__sims ]">
-                    {practice.map((sim) => (
-                        <li>
-                            <a class="[ role-hub__sim ]" href={translatePath(sim.href)}>
-                                <span class="[ role-hub__role-name ]">{sim.title}</span>
-                                <span class="[ role-hub__muted ]">{sim.role} · {sim.summary}</span>
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            </section>
-        </div>
-    </GuideShell>
+        <section id="how" data-section-id="how" class="[ role-hub__section ]" aria-labelledby="role-hub-how">
+            <h2 id="role-hub-how" class="[ role-hub__title ]">{t('fleet_roles.hub_how_title')}</h2>
+            <ol class="[ role-hub__steps ]">
+                {STEPS.map((step, index) => (
+                    <li>
+                        <span class="[ role-hub__step-number ]" aria-hidden="true">{index + 1}</span>
+                        <strong>{t(t_key('fleet_roles.hub_step.', step))}</strong>
+                        <span>{t(t_key('fleet_roles.hub_step.', step, '_text'))}</span>
+                    </li>
+                ))}
+            </ol>
+        </section>
+
+        <section id="roles" data-section-id="roles" class="[ role-hub__section ]" aria-labelledby="role-hub-roles">
+            <h2 id="role-hub-roles" class="[ role-hub__title ]">{t('fleet_roles.hub_roles_title')}</h2>
+            {groups.map((group) => (
+                <div class="[ role-hub__group ]">
+                    <div class="[ role-hub__group-head ]">
+                        <h3>{t(t_key('fleet_roles.hub_group.', group.id))}</h3>
+                        <p class="[ role-hub__muted ]">{t(t_key('fleet_roles.hub_group.', group.id, '_lead'))}</p>
+                    </div>
+                    <ul class="[ role-hub__roles ]" style={`--tier-count: ${group.guides.length}`}>
+                        {group.guides.map((guide) => (
+                            <li>
+                                <RoleTile guide={guide} />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            ))}
+        </section>
+    </div>
 </CapitalGuidePage>
 
 <style lang="scss">
@@ -106,13 +114,43 @@ const practice = fleet_role_guides.flatMap((guide) =>
         container-type: inline-size;
         display: flex;
         flex-direction: column;
-        gap: var(--space-l);
+        gap: var(--space-xl);
+        padding-block: var(--space-l);
+    }
+
+    .role-hub__start {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-s);
+    }
+
+    .role-hub__headline {
+        margin: 0;
+        max-width: 24ch;
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1.05;
+        color: var(--highlight);
+    }
+
+    .role-hub__lede {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step-1);
+        color: var(--foreground);
+    }
+
+    .role-hub__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
     }
 
     .role-hub__section {
         display: flex;
         flex-direction: column;
-        gap: var(--space-s);
+        gap: var(--space-m);
     }
 
     .role-hub__title {
@@ -123,95 +161,84 @@ const practice = fleet_role_guides.flatMap((guide) =>
         color: var(--fleet-yellow);
     }
 
-    .role-hub__roles,
-    .role-hub__sims {
+    .role-hub__steps {
         display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
         gap: var(--space-s);
         margin: 0;
         padding: 0;
         list-style: none;
-    }
 
-    .role-hub__roles {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+        li {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-content: start;
+            column-gap: var(--space-s);
+            row-gap: var(--space-3xs);
+            padding: var(--space-s);
+            border-top: 2px solid var(--fleet-yellow);
+            background: var(--surface-sunken);
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
 
-        @container (min-width: 50rem) {
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+        strong {
+            font-size: var(--step-0);
+            color: var(--highlight);
         }
     }
 
-    .role-hub__lede {
-        margin: 0;
-        max-width: var(--max-text-width);
-        font-size: var(--step-1);
-        color: var(--highlight);
-    }
-
-    .role-hub__sims {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
-    }
-
-    .role-hub__role,
-    .role-hub__sim {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        box-sizing: border-box;
-        border: 1px solid var(--hairline-medium);
-        background: var(--surface-sunken);
-        color: var(--foreground);
-        text-decoration: none;
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--hairline-strong);
-            }
-        }
-    }
-
-    .role-hub__role img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1;
-        object-fit: cover;
-        background: var(--background);
-    }
-
-    .role-hub__role-body {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        padding: var(--space-s);
-        font-size: var(--step--1);
-    }
-
-    .role-hub__sim {
-        gap: var(--space-3xs);
-        padding: var(--space-s);
-    }
-
-    .role-hub__role-name {
+    .role-hub__step-number {
+        grid-row: span 2;
+        align-self: start;
         font-family: var(--heading-font);
-        font-size: var(--step-1);
-        letter-spacing: 0.03em;
+        font-size: var(--step-2);
+        line-height: 1;
         color: var(--fleet-yellow);
     }
 
-    .role-hub__sim .role-hub__role-name {
-        font-family: inherit;
-        font-size: var(--step-0);
-        font-weight: 600;
-        color: var(--highlight);
+    .role-hub__group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .role-hub__group-head {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3xs);
+        text-align: center;
+
+        h3 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            letter-spacing: 0.03em;
+            color: var(--highlight);
+        }
+    }
+
+    /* Each tier is one tile wider than the one above: the pyramid. */
+    .role-hub__roles {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-s);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        @container (min-width: 48rem) {
+            grid-template-columns: repeat(var(--tier-count), minmax(0, 1fr));
+            width: min(100%, calc(var(--tier-count) * 25rem));
+        }
     }
 
     .role-hub__muted {
         margin: 0;
         font-size: var(--step--1);
         color: var(--text-muted);
-
-        a {
-            color: var(--highlight);
-        }
     }
 </style>

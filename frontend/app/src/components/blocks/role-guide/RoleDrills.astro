@@ -2,10 +2,7 @@
 /**
  * A Fleet Roles guide's drills. The page renders it without progress; the
  * role_drills_component partial renders it with the reader's completed
- * learnings and wires each drill to complete itself:
- * - a simulator drill posts when that simulator dispatches
- *   `fleet-role-sim:beaten` on window (components/blocks/role-sims);
- * - any other drill has a Mark done button.
+ * learnings, and each drill has a Mark done button.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -42,17 +39,7 @@ const done = new Set(completed ?? [])
                         <span class="[ role-drills__how ]">{drill.how}</span>
                     </span>
                     <span class="[ role-drills__kind ]">{t(t_key('fleet_roles.drill.', drill.kind))}</span>
-                    {tracking && counts && !is_done && drill.sim && (
-                        <span
-                            hidden
-                            hx-post={partial_url}
-                            hx-vals={JSON.stringify({ learning: slug })}
-                            hx-trigger={`fleet-role-sim:beaten[detail.id=='${drill.sim}'] from:window`}
-                            hx-target="closest .role-drills"
-                            hx-swap="outerHTML"
-                        ></span>
-                    )}
-                    {tracking && counts && !is_done && !drill.sim && (
+                    {tracking && counts && !is_done && (
                         <button
                             type="button"
                             class="[ role-drills__button ]"
@@ -118,9 +105,11 @@ const done = new Set(completed ?? [])
         color: var(--highlight);
     }
 
+    // A real basis, so on a phone the tag and button wrap under the text
+    // instead of squeezing it to one word a line.
     .role-drills__text {
         display: flex;
-        flex: 1 1 0;
+        flex: 1 1 14rem;
         flex-direction: column;
         min-width: 0;
     }
@@ -140,6 +129,7 @@ const done = new Set(completed ?? [])
     @media (max-width: 30rem) {
         .role-drills__item {
             flex-wrap: wrap;
+            padding-inline-start: var(--space-xs);
         }
     }
 

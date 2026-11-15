@@ -1,135 +1,151 @@
 import type { FleetRoleGuide } from './types'
 
+const ACADEMY = 'https://www.eveonline.com/eve-academy/ships/combat-mechanics'
+const ECM_SIM = 'https://eve-cs.com/scenarios/basics/ecm'
+
 export const electronic_warfare: FleetRoleGuide = {
     slug: 'electronic-warfare',
     guide_slug: 'electronic-warfare-guide',
-    certificate_slug: 'fleet-role-electronic-warfare',
     name: 'Electronic Warfare',
     short_name: 'EWAR',
-    lede: 'Stop the enemy locking what they want to lock. Mostly ECM: jam their logistics and the repairs stop.',
+    lede: 'Stop the enemy doing their job. Jam their logistics and slow their locks.',
+    tagline: 'Jam their locks.',
     capabilities: ['Electronic Warfare', 'Support'],
-    hero_type_id: 11194,
-    read_minutes: 20,
+    hero_type_id: 640,
+    read_minutes: 12,
     why: [
-        'A ship that cannot lock cannot shoot, repair, point or transfer capacitor. ECM takes that away for twenty seconds at a time, and every cycle is a fresh roll.',
-        'Pointed at the enemy logistics wing, a few cheap Griffins stop repairs that would otherwise outheal your whole fleet. Pointed at their tackle, they let your fleet leave. Pointed at the ships shooting your anchor, they buy the logi time.',
-        'It is oppressive enough that the enemy will try to kill you first. Knowing your range and when to burn out is half the role.',
-    ],
-    in_our_fleets: [
-        'ECM rides in the Academy and support slots of our battleship doctrines, and Griffins come on kitchen-sink fleets and battlefields. The tags on the ladder show which doctrines carry each hull today.',
-        'Before a fight, paste a d-scan of the enemy into our <a href="/dscan/">d-scan tool</a> to see their hulls, then load jammers for their race.',
+        'A ship that can’t lock can’t shoot, repair or point. ECM takes that away for twenty seconds at a time.',
+        'Jam their logistics and the repairs stop. Jam their tackle and our fleet can leave. Damps never fail a roll: they slow locks and cut lock range.',
+        'The enemy will try to kill you first. Knowing your range and when to move is half the role.',
     ],
     why_video: { youtube_id: 'mJJffgoSOQg', title: 'What the pod is... ECM?! Complete guide to ECM modules', source: 'Gildii Auscent · 2024' },
-    ladder: [
-        { rung: 1, ship_type_id: 584, name: 'Griffin', hull_class: 'Frigate', job: 'Cheap jams. Learn range and kiting here.' },
-        { rung: 2, ship_type_id: 640, name: 'Scorpion', hull_class: 'Battleship', job: 'Strong jams on a battleship tank, flown with the battleship doctrines.' },
-        { rung: 3, ship_type_id: 11194, name: 'Kitsune', hull_class: 'Electronic Attack Ship', job: 'Small, fast and much stronger jams.' },
-        { rung: 4, ship_type_id: 29984, name: 'Tengu', hull_class: 'Strategic Cruiser', job: 'An ECM subsystem on a strategic cruiser.' },
-    ],
-    featured_sim: 'ecm-spread',
+    ladder: [],
+    ships_from_doctrines: 'listed',
+    // Griffin, Kitsune, Scorpion, Tengu.
+    ships_only: [584, 11194, 640, 29984],
+    ship_jobs: {
+        584: 'Cheap jams, easy to replace',
+        11194: 'Fast and much stronger jams',
+        640: 'Jams on a battleship tank',
+        29984: 'ECM on a strategic cruiser',
+    },
     lessons: [
         {
-            id: 'what-a-jam-does',
-            title: 'What a jam does',
-            summary: 'The jammed ship drops every lock except you, for twenty seconds.',
+            id: 'ecm',
+            title: 'ECM',
+            summary: 'What a jam does, and how to make it land.',
+            format: 'video',
+            clips: [
+                { src: 'https://videos.ctfassets.net/7lhcm73ukv5p/HDZzm1MWu4kp9PN99ZOmU/aa02693017b145bfb24b5c9276d8930b/0083_08_Ecm_Edit_02-01-8.webm', title: 'ECM', source: 'EVE Academy · CCP Games', url: `${ACADEMY}#ecm` },
+            ],
+            practice: { kind: 'sim', title: 'ECM', source: 'EVE Combat Sim', why: 'Fly it in your browser: jam the enemy and watch their locks drop.', url: ECM_SIM },
+            body: [
+                'A jam drops every lock the target has, and it can’t lock anything new for twenty seconds. It can still lock you.',
+                'Each cycle is a dice roll: your jammer’s strength against their sensor strength. A racial jammer is strongest against one race’s sensors. A multispectral jammer works on every race, but weaker.',
+            ],
+            steps: [
+                'Before the fight, paste a d-scan into our <a href="/dscan/">d-scan tool</a> and load jammers for the enemy’s race.',
+                'Jam the target the FC gives you, and say which ship you have.',
+                'Spread out. One jammer on each logi stops more repairs than three on one.',
+            ],
+        },
+        {
+            id: 'ewar-modules',
+            title: 'Your EWAR modules',
+            summary: 'ECM, burst jammers and damps: what each does in a fight.',
             format: 'read',
             body: [
-                'When a jam lands, the target loses every lock it has except on the ship jamming it, and it cannot lock anything else until the jam ends. A jam lasts twenty seconds, the same as the jammer’s cycle.',
-                'Since September 2018 the jammed ship can always lock and shoot the ship jamming it. You are not invisible; you are the one thing it can still hit.',
+                'Pick a module below to see what it does.',
+            ],
+            modules: [
+                {
+                    type_id: 2575, name: 'ECM', short: 'ECM', example: 'Radar ECM II',
+                    impacts: [
+                        { title: 'Break every lock', detail: 'A successful jam drops all of its locks for twenty seconds.' },
+                        { title: 'Stop their repairs', detail: 'A jammed logistics ship can’t lock anyone, so it can’t repair anyone.' },
+                        { title: 'Match their race', detail: 'Racial jammers are strongest against one sensor type. Check the enemy doctrine first.' },
+                    ],
+                    learn: { title: 'Watch on EVE Academy', url: `${ACADEMY}#ecm` },
+                    practice: { title: 'Practice in EVE Combat Sim', url: ECM_SIM },
+                },
+                {
+                    type_id: 2117, name: 'Burst jammer', short: 'Burst', example: 'Burst Jammer II',
+                    impacts: [
+                        { title: 'Breaks locks around you', detail: 'Every ship close to you, friend or enemy, loses its current locks.' },
+                        { title: 'They lock again at once', detail: 'It buys a few seconds, not twenty. Time it to free a tackled ship.' },
+                        { title: 'Not for logi', detail: 'Use your jammers on their logi. The burst is for tackle up close.' },
+                    ],
+                },
+                {
+                    type_id: 1969, name: 'Sensor dampener', short: 'Damp', example: 'Remote Sensor Dampener II',
+                    impacts: [
+                        { title: 'Snipers lose their locks', detail: 'With the range script, it can’t lock anything as far away as we are.' },
+                        { title: 'Slow their locks', detail: 'With the resolution script, every lock takes longer, so they switch targets late.' },
+                        { title: 'Slow their logistics', detail: 'A damped logistics ship locks slowly, so its repairs land late.' },
+                    ],
+                    learn: { title: 'Watch on EVE Academy', url: `${ACADEMY}#sensor-dampening` },
+                },
             ],
         },
         {
-            id: 'jam-chance',
-            title: 'Jam chance',
-            summary: 'Your jammer strength against their sensor strength, rolled every cycle.',
-            format: 'sim',
-            sim: 'jam-chance',
-            body: [
-                'Each cycle, the chance a jammer lands is its strength divided by the target’s sensor strength, up to 100%. Each jammer rolls on its own.',
-                'Racial jammers are strong against one sensor type and weak against the rest. Amarr ships use radar, Caldari gravimetric, Gallente magnetometric, and Minmatar ladar. A multispectral jammer works on every type at a lower strength and costs more capacitor. Check the enemy doctrine in the MOTD, or paste a d-scan into our <a href="/dscan/">d-scan tool</a>, and load the jammer that matches it.',
-                'Bigger ships have stronger sensors, so a jam on a battleship is a long shot and a jam on a logistics cruiser is not.',
-            ],
-        },
-        {
-            id: 'ecm-spreading',
-            title: 'ECM spreading',
-            summary: 'One jammer per logi beats three on one.',
-            format: 'sim',
-            sim: 'ecm-spread',
-            body: [
-                'Three jammers on one Guardian give a very high chance of stopping that Guardian and no chance of stopping the other two. One jammer on each of three Guardians stops fewer cycles on each, but more repairs in total, because the repairs that matter are the ones that still land.',
-                'The FC or the EWAR lead assigns targets. If you are left to choose, spread across the logistics wing and say which ship you have.',
-            ],
-        },
-        {
-            id: 'burst-jammers',
-            title: 'Burst jammers',
-            summary: 'Breaks every lock around you. They can lock again at once.',
+            id: 'who-to-ewar',
+            title: 'Who to target',
+            summary: 'The ships that hurt most when they can’t do their job.',
             format: 'read',
             body: [
-                'An ECM burst hits every ship within its short range, friend or enemy, and breaks the locks they already have. It does not stop them locking again, so it buys seconds, not twenty-second windows.',
-                'It is useful to drop the locks of tackle on a ship that needs to leave, or to reset a primary call at the right moment. It is never a substitute for jammers on the logi.',
+                'The FC picks EWAR targets. These are the usual ones.',
+            ],
+            lists: [
+                {
+                    title: 'Target first',
+                    items: [
+                        '<strong>Logistics.</strong> Jam or damp them and their repairs stop or land late.',
+                        '<strong>Tackle,</strong> when the fleet needs to leave. A jammed ship can’t hold its point.',
+                        '<strong>Snipers,</strong> with damps, so they can’t lock us from range.',
+                    ],
+                },
+                {
+                    title: 'Common problems',
+                    items: [
+                        '<strong>Everyone on one target:</strong> spread jammers across their logi.',
+                        '<strong>The wrong racial jammer:</strong> it lands far less often. Check the enemy doctrine first.',
+                        '<strong>Too far away:</strong> past optimal range, your modules get weaker fast.',
+                    ],
+                },
             ],
         },
         {
             id: 'staying-alive',
             title: 'Staying alive',
-            summary: 'Range, falloff and why the Griffin kites.',
+            summary: 'Range, speed, and why the enemy shoots EWAR first.',
             format: 'video',
             video: { youtube_id: 'UdHsobtlGvw', title: 'Newbie PVP EWAR 101', source: 'Nater Ormand · The Brave Dojo · 2023' },
             body: [
-                'Jammers work at full strength inside their optimal range and weaken through falloff. A little past optimal costs very little; well past it, the jams stop landing.',
-                'Every ship you jam can still lock you, so sit near the edge of your optimal and keep moving. A Griffin that sits still at zero is a killmail.',
+                'EWAR hurts the enemy, so they will try to kill you first. A jammed ship can always lock the ship jamming it.',
+            ],
+            steps: [
+                'Sit near the edge of your optimal range, not on top of the target.',
+                'Keep moving. A ship sitting still at zero is a killmail.',
+                'If the enemy calls you primary, broadcast for reps and stay on the anchor.',
             ],
         },
-        {
-            id: 'other-ewar',
-            title: 'The other electronic warfare',
-            summary: 'Damps, tracking disruptors, painters: when the FC asks for them.',
-            format: 'video',
-            video: { youtube_id: 'sYEImuVSPjs', title: 'Make yourself impossible to hit using EWAR', source: 'Gildii Auscent · 2026' },
-            body: [
-                'Sensor dampeners shorten a target’s lock range or slow its lock time: good against long-range snipers and logistics that need to lock fast. Tracking and guidance disruptors cut a target’s ability to apply damage. Target painters make targets bigger, so your missiles and big guns apply better.',
-                'These do not stop a ship outright the way a jam does, but they never fail a roll. The FC will say which the fleet needs.',
-            ],
-        },
-        {
-            id: 'counterplay',
-            title: 'Counterplay',
-            summary: 'Sensor strength, ECCM, and locking the jammer.',
-            format: 'read',
-            body: [
-                'Sensor boosters with ECCM scripts, signal amplifiers and remote sensor boosters all raise sensor strength and lower your jam chance. Expect enemy logistics to carry some of it.',
-                'And expect them to shoot you. Since a jammed ship can always lock its jammer, the enemy fleet will call EWAR primary when it hurts. Align out early if you are the call.',
-            ],
-        },
-    ],
-    phases: [
-        { name: 'Form-up', fc: 'ECM in squad four. Check the enemy doctrine.', you: 'Load the racial jammers that match the doctrine in the MOTD, multispectral if it is mixed.' },
-        { name: 'Warp-in', fc: 'EWAR, land at range.', you: 'Warp at range to the anchor, never at zero.' },
-        { name: 'First contact', fc: 'Jam their logi, one each.', you: 'Lock your assigned logi and cycle. Say which logi you have.' },
-        { name: 'The brawl', fc: 'They are locking the Griffins. Burn out.', you: 'Keep range and speed. A jammed ship can still lock you.' },
-        { name: 'Disengage', fc: 'EWAR, align first.', you: 'You are fragile. Align and warp ahead of the fleet.' },
     ],
     mistakes: [
-        { title: 'Three jammers on one Guardian', fix: 'One jammer each on three logi stops more repairs than three on one.' },
+        { title: 'Everyone on one Guardian', fix: 'One jammer each on three logi stops more repairs than three on one.' },
+        { title: 'The wrong racial jammer', fix: 'It lands far less often. Check the enemy doctrine first.' },
         { title: 'Sitting still at zero', fix: 'Every ship you jam can still lock you. Keep range, keep moving.' },
-        { title: 'The wrong racial jammer', fix: 'A jammer for the wrong sensor type is far weaker. Check the enemy doctrine first.' },
+        { title: 'Using the burst on logi', fix: 'They lock again at once. Use your jammers on logi, the burst on tackle.' },
     ],
     drills: [
-        { id: 'jam-chance-sim', title: 'Beat the jam chance simulator', how: 'Pick the right jammer for three hulls.', kind: 'sim', sim: 'jam-chance' },
-        { id: 'spread-sim', title: 'Beat the ECM spread simulator', how: 'Keep two of three logi jammed on average.', kind: 'sim', sim: 'ecm-spread' },
-        { id: 'fleet-griffin', title: 'Fly ECM on a fleet', how: 'Fly a Griffin on a battlefield, an Academy or a kitchen-sink fleet and jam the logi.', kind: 'fleet' },
-        { id: 'singularity', title: 'Practise on Singularity', how: 'Optional. Jam a friend and watch which locks drop.', kind: 'optional' },
+        { id: 'ecm-sim', title: 'Fly ECM', how: 'In EVE Combat Sim: jam the enemy and watch their locks drop.', kind: 'setup' },
+        { id: 'fleet-ewar', title: 'Fly EWAR on a fleet', how: 'Fly a ship from Ships for this role and work the targets the FC calls.', kind: 'fleet' },
     ],
     resources: [
         { kind: 'guide', title: 'D-scan tool', source: 'Minmatar Fleet', why: 'See the enemy hulls, and so their sensor types, before you load jammers.', url: '/dscan/' },
-        { kind: 'guide', title: 'Doctrines', source: 'Minmatar Fleet', why: 'Which doctrines carry ECM ships, and the fits.', url: '/ships/doctrines/list/' },
         { kind: 'video', title: 'What the pod is... ECM?! Complete guide to ECM modules', source: 'Gildii Auscent · 2024', why: 'Every ECM module and how jam chance works.', url: 'https://www.youtube.com/watch?v=mJJffgoSOQg' },
-        { kind: 'video', title: 'Newbie PVP EWAR 101', source: 'Nater Ormand · The Brave Dojo · 2023', why: 'All electronic warfare types, for a first fleet.', url: 'https://www.youtube.com/watch?v=UdHsobtlGvw' },
+        { kind: 'video', title: 'Newbie PVP EWAR 101', source: 'Nater Ormand · The Brave Dojo · 2023', why: 'Every kind of electronic warfare, for a first fleet.', url: 'https://www.youtube.com/watch?v=UdHsobtlGvw' },
+        { kind: 'ccp', title: 'Combat mechanics', source: 'EVE Academy · CCP Games', why: 'CCP’s short clips on ECM and sensor dampening.', url: `${ACADEMY}#ecm` },
         { kind: 'wiki', title: 'Electronic Countermeasures', source: 'EVE University wiki', why: 'The jam formula, bursts, and locking the jammer.', url: 'https://wiki.eveuniversity.org/Electronic_Countermeasures' },
-        { kind: 'wiki', title: 'ECM guide', source: 'EVE University wiki', why: 'Fitting and flying ECM ships.', url: 'https://wiki.eveuniversity.org/ECM_Guide' },
-        { kind: 'wiki', title: 'Electronic warfare', source: 'EVE University wiki', why: 'Every electronic warfare type on one page.', url: 'https://wiki.eveuniversity.org/Electronic_warfare' },
-        { kind: 'ccp', title: 'October Balance Pass', source: 'CCP dev blog · September 2018', why: 'The change that lets a jammed ship lock its jammer.', url: 'https://www.eveonline.com/news/view/october-balance-pass' },
+        { kind: 'sim', title: 'ECM', source: 'EVE Combat Sim', why: 'Jam a target in your browser.', url: ECM_SIM },
     ],
 }

@@ -8,20 +8,25 @@ import './GuideShell.scss'
 interface Props {
     title: string
     subtitle: string
+    /** False hides the masthead, for guides whose page heading already names them. */
+    masthead?: boolean
     class?: string
 }
 
 const {
     title,
     subtitle,
+    masthead = true,
     class: className,
 } = Astro.props
 ---
 
 <div class:list={['guide-shell', 'card', 'component', 'light-transparency', 'border', className]}>
-    <header class="guide-shell__masthead">
-        <p class="guide-shell__title">{title}</p>
-        <p class="guide-shell__subtitle">{subtitle}</p>
-    </header>
+    {masthead && (
+        <header class="guide-shell__masthead">
+            <p class="guide-shell__title">{title}</p>
+            <p class="guide-shell__subtitle">{subtitle}</p>
+        </header>
+    )}
     <slot />
 </div>

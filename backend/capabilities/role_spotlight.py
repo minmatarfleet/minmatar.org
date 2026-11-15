@@ -4,7 +4,8 @@ Fleet Roles guides: who flies a role, and recent fleets that flew it.
 Both come from data the site already keeps, so the guides name real pilots
 and real fights without anyone writing them: fleet members carry the ship
 they flew, so the pilots are those who flew the role's ladder hulls on the
-most fleets this year, and the fleets are recent ones that brought the most. Only fleets anyone in the alliance may see are
+most fleets in the last 90 days, the fleets are recent ones that brought the most,
+and each hull carries how many fleets a month brought it. Only fleets anyone in the alliance may see are
 used (no private or members-only group fleets). Cached for an hour.
 """
 
@@ -22,15 +23,19 @@ from fleets.models import EveFleet, EveFleetInstanceMember
 from learning.models import MentorProfile
 
 RECENT_DAYS = 60
-PILOT_DAYS = 365
+USAGE_DAYS = 90
+# The pilots who fly a role most: the last 90 days, like fleets a month.
+PILOT_DAYS = 90
+# A quiet role widens its fleets list to the year.
+FLEETS_FALLBACK_DAYS = 365
 LIMIT = 5
 CACHE_SECONDS = 60 * 60
-CACHE_VERSION = 4
+CACHE_VERSION = 6
 
 
 def role_spotlight(capabilities: list[str], ship_type_ids: list[int]) -> dict:
     capabilities = sorted(set(capabilities))[:4]
-    ship_type_ids = sorted(set(ship_type_ids))[:12]
+    ship_type_ids = sorted(set(ship_type_ids))[:24]
     key = (
         f"role_spotlight:v{CACHE_VERSION}:"
         f"{','.join(capabilities)}:{','.join(map(str, ship_type_ids))}"
@@ -41,19 +46,23 @@ def role_spotlight(capabilities: list[str], ship_type_ids: list[int]) -> dict:
     fleets, days = _fleets(ship_type_ids, RECENT_DAYS), RECENT_DAYS
     if not fleets:
         # A quiet role still shows real fights: widen to the year.
-        fleets, days = _fleets(ship_type_ids, PILOT_DAYS), PILOT_DAYS
+        fleets, days = (
+            _fleets(ship_type_ids, FLEETS_FALLBACK_DAYS),
+            FLEETS_FALLBACK_DAYS,
+        )
     result = {
         "mentors": _mentors(ship_type_ids),
         "pilots": _pilots(ship_type_ids),
         "fleets": fleets,
         "fleets_days": days,
+        "hulls": _hull_usage(ship_type_ids),
     }
     cache_set(key, result, CACHE_SECONDS)
     return result
 
 
 def _pilots(ship_type_ids: list[int]) -> list[dict]:
-    """The characters who flew these hulls on the most fleets this year."""
+    """The characters who flew these hulls on the most fleets lately."""
     if not ship_type_ids:
         return []
     since = timezone.now() - timedelta(days=PILOT_DAYS)
@@ -178,3 +187,40 @@ def _fleets(ship_type_ids: list[int], days: int) -> list[dict]:
     ]
     out.sort(key=lambda f: (-f["pilots_in_role"], -f["fleet_id"]))
     return out
+
+
+def _hull_usage(ship_type_ids: list[int]) -> list[dict]:
+    """
+    How often we fly each hull: finished fleets in the last USAGE_DAYS that
+    brought it, as fleets a month, and how many pilots flew it.
+    """
+    if not ship_type_ids:
+        return []
+    since = timezone.now() - timedelta(days=USAGE_DAYS)
+    rows = (
+        EveFleetInstanceMember.objects.filter(
+            ship_type_id__in=ship_type_ids,
+            eve_fleet_instance__end_time__isnull=False,
+            eve_fleet_instance__start_time__gte=since,
+            eve_fleet_instance__eve_fleet__in=_visible_fleets(),
+        )
+        .values("ship_type_id")
+        .annotate(
+            fleets=Count("eve_fleet_instance__eve_fleet", distinct=True),
+            pilots=Count("character_id", distinct=True),
+        )
+    )
+    by_type = {row["ship_type_id"]: row for row in rows}
+    months = USAGE_DAYS / 30
+    return [
+        {
+            "ship_type_id": type_id,
+            "fleets": by_type.get(type_id, {}).get("fleets", 0),
+            "fleets_per_month": round(
+                by_type.get(type_id, {}).get("fleets", 0) / months, 1
+            ),
+            "pilots": by_type.get(type_id, {}).get("pilots", 0),
+            "days": USAGE_DAYS,
+        }
+        for type_id in ship_type_ids
+    ]

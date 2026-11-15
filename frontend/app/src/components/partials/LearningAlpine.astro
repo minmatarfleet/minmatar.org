@@ -238,13 +238,10 @@
             localApi() {
                 return window.__learningLocal || null
             },
-            // A certificate earned through other certificates has no
-            // learnings of its own; keep the server's award-based percent.
-            awardPercent: 0,
             recalcPercent() {
                 const total = this.learningSlugs.length
                 if (total <= 0) {
-                    this.percent = this.awardPercent
+                    this.percent = 0
                     return
                 }
                 let done = 0
@@ -301,7 +298,6 @@
                 this.apiBase = apiUrl + '/api/learning'
                 this.learningSlugs = cfg.learningSlugs || []
                 this.percent = cfg.percent || 0
-                this.awardPercent = cfg.percent || 0
                 this.openedDialogTitle = cfg.openedDialogTitle || ''
                 this.openedDialogBody = cfg.openedDialogBody || ''
                 this.markCompleteErrorTitle = cfg.markCompleteErrorTitle || ''

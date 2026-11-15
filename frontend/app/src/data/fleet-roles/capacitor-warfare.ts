@@ -1,23 +1,23 @@
 import type { FleetRoleGuide } from './types'
 
+const NEUTS_SIM = 'https://eve-cs.com/scenarios/basics/neuts'
+const NOS_SIM = 'https://eve-cs.com/scenarios/basics/nosferatu-nos'
+const ACADEMY_NEUTS = 'https://www.eveonline.com/eve-academy/ships/combat-mechanics#energy-neutralisers'
+
 export const capacitor_warfare: FleetRoleGuide = {
     slug: 'capacitor-warfare',
     guide_slug: 'capacitor-warfare-guide',
-    certificate_slug: 'fleet-role-capacitor-warfare',
     name: 'Capacitor Warfare',
     short_name: 'Capacitor',
-    lede: 'Make an enemy ship useless by draining it. Remote repairs, points, propulsion and command bursts all run on capacitor, and you can take it away.',
+    lede: 'Drain the ships that matter. Repairs, hardeners, points and most guns stop when the capacitor runs out.',
+    tagline: 'Drain the ships that matter.',
     capabilities: ['Capacitor Warfare', 'Support'],
     hero_type_id: 17920,
-    read_minutes: 20,
+    read_minutes: 12,
     why: [
-        'Almost everything a ship does in a fight costs capacitor. Remote repairers, points, microwarpdrives, command bursts and most weapons stop when it runs out. A Guardian with no capacitor is a cruiser that cannot repair anyone.',
-        'That makes neuts the fastest way to switch off the ships that matter most. Damage has to chew through a buffer and the repairs on top of it. Capacitor warfare goes around both: empty the logistics wing and the enemy fleet’s buffer is all it has left.',
-        'It is one of the most oppressive things in the game when it is done well, and it is done well by pilots who know the capacitor curve, their range, and which ship to drain first.',
-    ],
-    in_our_fleets: [
-        'Neuts ride in the support and Academy slots of our battleship doctrines rather than as their own fleet. The tags on the ladder show which doctrines carry each neut hull today.',
-        'On kitchen-sink fleets any neut ship is welcome: tell the FC what you brought and take the logi they assign.',
+        'Almost everything a ship does in a fight uses capacitor. Drain it and their logistics stop repairing, their hardeners switch off, and their lasers stop firing.',
+        'Damage has to get through a ship’s tank and the repairs on top of it. Neuts skip both: empty the logi and the enemy fleet only has its buffer left.',
+        'You can start in a cheap Armageddon and work up to the Bhaalgorn, the ship enemy logi fear most.',
     ],
     why_video: { youtube_id: 'vYiUIvjVqrM', title: 'Newbee Tuesday: capacitor warfare', source: 'Imperium News · 2015' },
     ladder: [
@@ -27,112 +27,138 @@ export const capacitor_warfare: FleetRoleGuide = {
         { rung: 2, ship_type_id: 29986, name: 'Legion', hull_class: 'Strategic Cruiser', job: 'Neuts on a heavy tank, with the right subsystem.' },
         { rung: 3, ship_type_id: 17920, name: 'Bhaalgorn', hull_class: 'Battleship', job: 'The heaviest drain in the doctrine.' },
     ],
-    featured_sim: 'capacitor-curve',
     lessons: [
         {
-            id: 'capacitor-curve',
-            title: 'The capacitor curve',
-            summary: 'Recharge is fastest near a quarter full and collapses near empty.',
-            format: 'sim',
-            sim: 'capacitor-curve',
+            id: 'neuts-and-nos',
+            title: 'Neuts and nos',
+            summary: 'What each one does, and why low capacitor falls fast.',
+            format: 'video',
+            clips: [
+                { src: 'https://videos.ctfassets.net/7lhcm73ukv5p/272zt5MZZl8zVdI7JcdJf5/2c54b3070ceb8d5a1e0a82e28297d69f/Energy_Neutralisers_Updated-1.webm', title: 'Energy neutralisers', source: 'EVE Academy · CCP Games', url: ACADEMY_NEUTS },
+            ],
+            practice: { kind: 'sim', title: 'Energy Neutralizers', source: 'EVE Combat Sim', why: 'Fly it in your browser: empty a dual-rep Brutix’s capacitor before it kills your drones.', url: NEUTS_SIM },
             body: [
-                'Capacitor does not refill at a steady rate. It recharges fastest at about 25% and slows down towards both full and empty. A ship at 30% is close to its best recharge; a ship at 5% is barely recharging at all.',
-                'So the hard part of draining a ship is the first half. Once you push it under a quarter, every neut cycle takes away more than it can get back, and it falls the rest of the way fast. Find the peak in the simulator, then hold a target under it.',
+                'A <strong>neutralizer</strong> drains the target’s capacitor and costs you some of yours. A <strong>nosferatu</strong> takes capacitor from the target and gives it to you, but only while you have less than they do. Blood Raider ships, the Ashimmu and the Bhaalgorn, drain with nos whatever your capacitor.',
+                'Capacitor recharges fastest at about a quarter full. Getting a ship there is the hard part. Below that, every cycle takes more than it gets back, and it empties fast.',
+            ],
+            steps: [
+                'Neut the primary and secondary, unless the FC gives you a neut target.',
+                'Start your neuts as soon as the target is in range, and keep them on until it is dry.',
+                'Run your nos all the time. It keeps your own neuts going.',
+            ],
+            links: [
+                { kind: 'sim', title: 'Nosferatu (Nos)', source: 'EVE Combat Sim', why: 'See when a nos drains and when it does nothing.', url: NOS_SIM },
             ],
         },
         {
-            id: 'neut-versus-nos',
-            title: 'Neut versus nos',
-            summary: 'What each takes, what each gives you, and what each costs.',
+            id: 'who-to-neut',
+            title: 'Who to neut',
+            summary: 'The ships that stop working when their capacitor runs out.',
             format: 'read',
             body: [
-                'An energy neutralizer removes capacitor from the target and costs you capacitor to cycle. It always works, if the target is in range.',
-                'A nosferatu takes capacitor from the target and gives it to you, for free. It only transfers when you have less capacitor, in GJ, than the target. The Blood Raider hulls, the Ashimmu and the Bhaalgorn, drain with nos whatever your capacitor.',
-                'In practice: neuts empty the enemy, nos keeps you running while you do it.',
+                'The FC picks neut targets by what each ship needs capacitor for. These are the usual ones.',
+            ],
+            lists: [
+                {
+                    title: 'Neut first',
+                    items: [
+                        '<strong>Logistics.</strong> Every repair costs capacitor. Drain one Guardian and its chain partner starts to starve too.',
+                        '<strong>Key ships:</strong> smartbombing Nestors, webbing Vindicators, and enemy neut ships like Bhaalgorns.',
+                        '<strong>Ships with active hardeners.</strong> Empty capacitor turns the hardeners off, and their resists drop for the whole fleet.',
+                        '<strong>Laser and hybrid ships.</strong> Their guns use capacitor to fire.',
+                    ],
+                },
+                {
+                    title: 'Common problems',
+                    items: [
+                        '<strong>Everyone on one target:</strong> once a ship is dry, extra neuts on it are wasted. Move to the next one.',
+                        '<strong>Target too far:</strong> two falloffs out, a neut drains almost nothing. Close in, or leave it to a longer-range ship.',
+                    ],
+                },
             ],
         },
         {
-            id: 'neut-pressure',
-            title: 'Neut pressure',
-            summary: 'How many neuts it takes to stop a Guardian that has a partner.',
-            format: 'sim',
-            sim: 'neut-pressure',
-            body: [
-                'A target refills from its own recharge, from cap boosters, and, for Guardians, from a partner’s capacitor transmitter. One neut on a chained Guardian mostly annoys it. Enough neuts to outpace all of that at once empties it.',
-                'That is why the FC assigns neuts in groups. Stack until the target stops, then move the rest on. Past what it takes, extra neuts on one ship are wasted.',
-            ],
-        },
-        {
-            id: 'range-and-falloff',
-            title: 'Range and falloff',
-            summary: 'Neuts have had falloff since December 2015.',
+            id: 'neut-fit',
+            title: 'Your neut fit',
+            summary: 'The modules on our neut fits and what each one does in a fight.',
             format: 'read',
             body: [
-                'Neuts and nos have an optimal range and a falloff, like turrets. Inside optimal they drain their full amount. At optimal plus one falloff they drain about half, at two falloffs about 6%, and past three falloffs nothing.',
-                'A Heavy Energy Neutralizer II reaches {heavy_neut_optimal_km} km with {heavy_neut_falloff_km} km of falloff before ship bonuses. Hull bonuses add a lot: the Curse’s range bonus is what lets it neut from outside the enemy’s guns.',
+                'Our neut fits use the same few modules. Pick one below to see what it does.',
             ],
-        },
-        {
-            id: 'target-priority',
-            title: 'Target priority',
-            summary: 'Links, then logi, then the anchor. Why that order.',
-            format: 'read',
-            body: [
-                'Command bursts need capacitor. Drain the boosher and the enemy fleet loses its bonuses to tank, speed or range all at once.',
-                'Logistics need capacitor for every repair cycle and, on a chain, for the transfer to their partner. Drain one Guardian and its partner starts to starve too.',
-                'The anchor needs capacitor for its propulsion and its point. Drained, it cannot keep the fleet together or run.',
-            ],
-        },
-        {
-            id: 'ladder-in-practice',
-            title: 'The ladder in practice',
-            summary: 'From the Armageddon to the Bhaalgorn.',
-            format: 'read',
-            body: [
-                'The Armageddon gets neut range and falloff per Amarr Battleship level: it is the cheap, sturdy start. The Ashimmu is a fast cruiser with a drain bonus whose nos works at any capacitor level. The Curse gets large bonuses to range, falloff and drain, so it neuts from far out. The Legion drains with the Energy Parasitic Complex subsystem on a strategic cruiser tank.',
-                'The Bhaalgorn has the biggest drain bonus and Blood Raider nos. It is where the role ends up, and the ship enemy logistics fear most.',
+            modules: [
+                {
+                    type_id: 12271, name: 'Energy neutralizer', short: 'Neut', example: 'Heavy Energy Neutralizer II',
+                    impacts: [
+                        { title: 'Drains their capacitor', detail: 'Repairs, hardeners, points and capacitor-hungry guns stop when it runs out.' },
+                        { title: 'Optimal range and falloff', detail: 'Past optimal it drains less. At two falloffs it drains almost nothing.' },
+                        { title: 'Costs your capacitor', detail: 'Every cycle uses some of yours. Keep an eye on your own capacitor.' },
+                    ],
+                    learn: { title: 'Watch on EVE Academy', url: ACADEMY_NEUTS },
+                    practice: { title: 'Practice in EVE Combat Sim', url: NEUTS_SIM },
+                },
+                {
+                    type_id: 12263, name: 'Nosferatu', short: 'Nos', example: 'Heavy Energy Nosferatu II',
+                    impacts: [
+                        { title: 'Free capacitor for you', detail: 'It moves capacitor from the target to you, and costs nothing to run.' },
+                        { title: 'Only when you are lower', detail: 'It does nothing if you have more capacitor than the target, except on Blood Raider ships.' },
+                        { title: 'Keeps your neuts running', detail: 'Leave it on all fight so you never run dry.' },
+                    ],
+                    practice: { title: 'Practice in EVE Combat Sim', url: NOS_SIM },
+                },
+                {
+                    type_id: 41218, name: 'Cap battery', short: 'Battery', example: 'Republic Fleet Large Cap Battery',
+                    impacts: [
+                        { title: 'More capacitor', detail: 'A bigger pool lasts longer while your neuts cycle.' },
+                        { title: 'Resists enemy neuts', detail: 'It cuts how much enemy neuts and nos take from you.' },
+                        { title: 'Expect to be neuted back', detail: 'Enemy neut ships aim at ours. The battery is what keeps you running.' },
+                    ],
+                },
+                {
+                    type_id: 527, name: 'Stasis webifier', short: 'Web', example: 'Stasis Webifier II',
+                    impacts: [
+                        { title: 'Holds targets in range', detail: 'A slowed target can’t burn out of your neut range.' },
+                        { title: 'Pins tackle', detail: 'A webbed frigate can’t orbit fast or get away.' },
+                        { title: 'Helps the fleet hit', detail: 'Slow targets take more damage from guns and missiles.' },
+                    ],
+                    practice: { title: 'Practice in EVE Combat Sim', url: 'https://eve-cs.com/scenarios/basics/webs' },
+                },
             ],
         },
         {
             id: 'counterplay',
-            title: 'Counterplay',
-            summary: 'Cap boosters, chains and transfers, and what they cost the enemy.',
-            format: 'video',
-            video: { youtube_id: '6L1HfB_lp-o', title: 'Using energy neutralizers effectively', source: 'EVE Pro Guides · 2012. Tactics hold up; ranges predate the 2015 falloff change.' },
+            title: 'When they fight back',
+            summary: 'Cap boosters, chains and enemy neuts.',
+            format: 'read',
             body: [
-                'Cap boosters inject capacitor instantly from charges in the cargo hold, so a boosted ship survives neuts until it runs out of charges or has to reload. Count the reloads.',
-                'Guardians pair up and transfer capacitor to each other. Breaking one breaks both. Expect the enemy to neut you back: keep your own capacitor off the floor with nos and boosters, because a neut ship with no capacitor is just a target.',
+                'Targets refill from their own recharge, from cap boosters and, for Guardians, from a chain partner. One neut on a chained Guardian mostly annoys it. Enough neuts at once empties it.',
+            ],
+            steps: [
+                'Stack neuts on a target until it stops, then move the rest on.',
+                'A cap booster refills instantly. Keep neuting: each charge used is one less, and reloading takes time.',
+                'Watch your own capacitor. A neut ship with no capacitor is just a target.',
             ],
         },
     ],
-    phases: [
-        { name: 'Form-up', fc: 'Neuts in squad two, cap charges loaded.', you: 'Load cap charges, check your neut range against how close the fleet will fight.' },
-        { name: 'Warp-in', fc: 'Neuts, land on the logi side.', you: 'Warp to the ping on the logi side, not to the anchor.' },
-        { name: 'First contact', fc: 'Neut their logi, two per Guardian.', you: 'Take your assigned logi. Do not all stack on one.' },
-        { name: 'The brawl', fc: 'Logi is dry, move to the anchor.', you: 'Move neuts on the call. Keep your own capacitor off the floor.' },
-        { name: 'Disengage', fc: 'Neuts off, align.', you: 'Stop cycling, align with the fleet, warp on the call.' },
-    ],
     mistakes: [
-        { title: 'Neuting yourself dry', fix: 'Neuts cost your capacitor too. Run your booster and nos before you need them.' },
-        { title: 'Everyone on one Guardian', fix: 'Past what it takes, extra neuts on one ship are wasted. Spread to the next logi.' },
-        { title: 'Neuting from too far', fix: 'Two falloffs out you drain about 6%. Close in, or leave the long targets to the Curse.' },
+        { title: 'Neuting yourself dry', fix: 'Neuts cost your capacitor too. Run your nos before you need it.' },
+        { title: 'Everyone on one target', fix: 'Once a ship is dry, extra neuts are wasted. Move to the next one.' },
+        { title: 'Neuting from too far', fix: 'Two falloffs out you drain almost nothing. Close in, or leave it to a longer-range ship.' },
+        { title: 'Stopping too early', fix: 'Low capacitor falls fast. Keep neuting until the target is dry.' },
     ],
     drills: [
-        { id: 'curve-sim', title: 'Beat the capacitor curve simulator', how: 'Find the peak and hold a target under it.', kind: 'sim', sim: 'capacitor-curve' },
-        { id: 'pressure-sim', title: 'Beat the neut pressure simulator', how: 'Empty one Guardian of a chained pair.', kind: 'sim', sim: 'neut-pressure' },
-        { id: 'fleet-neut', title: 'Neut the logi on a fleet', how: 'Fly a neut ship on any fleet and drain the logi the FC calls.', kind: 'fleet' },
-        { id: 'singularity', title: 'Practise on Singularity', how: 'Optional. Neut a friend’s Guardian pair and watch the chain break.', kind: 'optional' },
+        { id: 'neuts-sim', title: 'Fly Energy Neutralizers', how: 'In EVE Combat Sim: empty the Brutix’s capacitor before it kills your drones.', kind: 'setup' },
+        { id: 'nos-sim', title: 'Fly Nosferatu (Nos)', how: 'In EVE Combat Sim: keep your own capacitor up with nos.', kind: 'setup' },
+        { id: 'fleet-neut', title: 'Neut on a fleet', how: 'Fly a neut ship on any fleet and drain the targets the FC calls.', kind: 'fleet' },
     ],
     resources: [
-        { kind: 'guide', title: 'Doctrines', source: 'Minmatar Fleet', why: 'Which doctrines carry neut ships, and the fits.', url: '/ships/doctrines/list/' },
-        { kind: 'guide', title: 'Training tab', source: 'Minmatar Fleet', why: 'Which neut hulls your characters can fly, and how long until the rest.', url: '/account/#training' },
-        { kind: 'guide', title: 'Skill plans', source: 'Minmatar Fleet', why: 'The alliance skill plans for doctrine hulls.', url: '/learning/skillplans/' },
+        { kind: 'guide', title: 'Skill plans', source: 'Minmatar Fleet', why: 'The alliance skill plans for doctrine hulls, neut ships included.', url: '/learning/skillplans/' },
         { kind: 'video', title: 'Newbee Tuesday: capacitor warfare', source: 'Imperium News · 2015', why: 'Neuts and nos explained. Older, still right on the basics.', url: 'https://www.youtube.com/watch?v=vYiUIvjVqrM' },
+        { kind: 'video', title: 'Using energy neutralizers effectively', source: 'EVE Pro Guides · 2012', why: 'Tactics that still hold up. Ranges are from before the 2015 falloff change.', url: 'https://www.youtube.com/watch?v=6L1HfB_lp-o' },
+        { kind: 'ccp', title: 'Energy neutralisers', source: 'EVE Academy · CCP Games', why: 'CCP’s short explainer, with the clip from this guide.', url: ACADEMY_NEUTS },
         { kind: 'wiki', title: 'Capacitor warfare', source: 'EVE University wiki', why: 'Neut versus nos and every hull on this ladder.', url: 'https://wiki.eveuniversity.org/Capacitor_warfare' },
-        { kind: 'wiki', title: 'Capacitor', source: 'EVE University wiki', why: 'The recharge curve and why low capacitor is hard to recover.', url: 'https://wiki.eveuniversity.org/Capacitor' },
-        { kind: 'wiki', title: 'Nosferatu', source: 'EVE University wiki', why: 'When a nos helps and when it does nothing.', url: 'https://wiki.eveuniversity.org/Nosferatu' },
-        { kind: 'ccp', title: 'Patch notes for the December release', source: 'CCP · December 2015', why: 'Where neuts and remote repairs got falloff.', url: 'https://www.eveonline.com/news/view/patch-notes-for-december-release' },
+        { kind: 'wiki', title: 'Capacitor', source: 'EVE University wiki', why: 'The recharge curve, and why low capacitor is hard to recover.', url: 'https://wiki.eveuniversity.org/Capacitor' },
+        { kind: 'sim', title: 'Energy Neutralizers', source: 'EVE Combat Sim', why: 'Drain a dual-rep Brutix in your browser.', url: NEUTS_SIM },
+        { kind: 'sim', title: 'Nosferatu (Nos)', source: 'EVE Combat Sim', why: 'When a nos drains, and when it does nothing.', url: NOS_SIM },
         { kind: 'tool', title: 'Pyfa', source: 'pyfa-org on GitHub', why: 'Graph your own capacitor under neut pressure.', url: 'https://github.com/pyfa-org/Pyfa' },
-        { kind: 'sim', title: 'EVE Combat Sim', source: 'eve-cs.com · scenarios and duels', why: 'Try neuting a live target once the curve makes sense.', url: 'https://eve-cs.com/' },
     ],
 }

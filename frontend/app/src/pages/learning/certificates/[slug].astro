@@ -56,16 +56,10 @@ if (auth_token) {
 }
 
 const completed_slugs = me?.completed_learning_slugs ?? []
-// A certificate earned through other certificates counts the ones you hold.
-const required = certificate.required_certificates ?? []
-const held_slugs = (me?.awards ?? []).map((award) => award.slug)
-const needed = certificate.required_count ?? required.length
-const percent = required.length > 0
-    ? Math.min(100, Math.round((required.filter((c) => held_slugs.includes(c.slug)).length / Math.max(1, needed)) * 100))
-    : certificateProgressPercent(
-        certificate.learnings.map((l) => l.slug),
-        completed_slugs,
-    )
+const percent = certificateProgressPercent(
+    certificate.learnings.map((l) => l.slug),
+    completed_slugs,
+)
 
 const page_title = certificate.title
 const breadcrumbs = [
@@ -101,7 +95,6 @@ const breadcrumbs = [
             completed_slugs={completed_slugs}
             auth_token={auth_token}
             percent={percent}
-            held_slugs={held_slugs}
         />
     </PageDefault>
 </Viewport>

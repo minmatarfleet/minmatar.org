@@ -3,34 +3,33 @@ import { expect, test } from 'vitest'
 import RoleSpotlight from '@components/blocks/role-guide/RoleSpotlight.astro'
 
 const spotlight = {
-    mentors: [{ character_id: 1, name: 'Mentor Pilot', fleets: 9 }],
-    pilots: [{ character_id: 2, name: 'Busy Logi', fleets: 12 }],
-    fleets: [{ fleet_id: 7, start_time: '2026-09-19T19:00:00Z', type: 'Strategic Operation', objective: 'Enemy Fortizar Timer', doctrine: 'TFIs', pilots_in_role: 17 }],
+    mentors: [],
+    pilots: [
+        { character_id: 2, name: 'Busy Logi', fleets: 12 },
+        { character_id: 3, name: 'Second Logi', fleets: 7 },
+    ],
+    fleets: [],
     fleets_days: 60,
+    hulls: [],
 }
 
-test('Ask names the mentors who fly the role, then the busiest pilots', async () => {
+test('Lists the pilots who fly the role most, busiest first, over 90 days', async () => {
     const container = await AstroContainer.create()
-    const html = await container.renderToString(RoleSpotlight, { props: { part: 'pilots', spotlight } })
-    expect(html).toContain('Mentors who fly it')
-    expect(html).toContain('Mentor Pilot')
-    expect(html).toContain('Mentor · 9 fleets in the role this year')
-    expect(html.indexOf('Mentor Pilot')).toBeLessThan(html.indexOf('Busy Logi'))
-    expect(html).toContain('12 fleets this year')
-})
-
-test('No mentors: the section starts with the busiest pilots', async () => {
-    const container = await AstroContainer.create()
-    const html = await container.renderToString(RoleSpotlight, { props: { part: 'pilots', spotlight: { ...spotlight, mentors: [] } } })
-    expect(html).not.toContain('Mentors who fly it')
+    const html = await container.renderToString(RoleSpotlight, { props: { spotlight } })
     expect(html).toContain('Pilots who fly it most')
+    expect(html).toContain('last 90 days')
+    expect(html.indexOf('Busy Logi')).toBeLessThan(html.indexOf('Second Logi'))
+    expect(html).toContain('12 fleets')
 })
 
-test('Fleets link their fleet page, and a quiet role says this year', async () => {
+test('Nobody in the window: says so', async () => {
     const container = await AstroContainer.create()
-    const html = await container.renderToString(RoleSpotlight, { props: { part: 'fleets', spotlight: { ...spotlight, fleets_days: 365 } } })
-    expect(html).toContain('/fleets/history/7')
-    expect(html).toContain('Enemy Fortizar Timer')
-    expect(html).toContain('17 in the role')
-    expect(html).toContain('Fleets that flew it this year')
+    const html = await container.renderToString(RoleSpotlight, { props: { spotlight: { ...spotlight, pilots: [] } } })
+    expect(html).toContain('Nobody has flown these ships on a tracked fleet in the last 90 days.')
+})
+
+test('Logged out: asks to log in', async () => {
+    const container = await AstroContainer.create()
+    const html = await container.renderToString(RoleSpotlight, { props: { spotlight: null } })
+    expect(html).toContain('Log in to see who flies it.')
 })

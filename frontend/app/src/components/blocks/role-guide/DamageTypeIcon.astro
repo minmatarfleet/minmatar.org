@@ -1,0 +1,48 @@
+---
+/** One damage type as a small coloured glyph, labelled for screen readers. */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { DAMAGE_GLYPHS, type DamageType } from '@helpers/damage_types'
+
+interface Props {
+    type: DamageType
+    /** Show the type's name next to the glyph. */
+    labelled?: boolean
+    [propName: string]: any
+}
+
+const { type, labelled = false, ...attributes } = Astro.props
+delete attributes.class
+const name = t(t_key('fleet_roles.damage_type.', type))
+---
+
+<span class:list={['[ damage-type ]', `damage-type--${type}`, Astro.props.class]} {...attributes}>
+    <svg viewBox="0 0 16 16" aria-hidden={labelled ? 'true' : undefined} role={labelled ? undefined : 'img'} aria-label={labelled ? undefined : name}>
+        <path d={DAMAGE_GLYPHS[type]} />
+    </svg>
+    {labelled && <span>{name}</span>}
+</span>
+
+<style lang="scss" is:global>
+    .damage-type {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        vertical-align: middle;
+
+        svg {
+            width: 1.1em;
+            height: 1.1em;
+            fill: var(--damage-colour);
+            stroke: var(--damage-colour);
+            stroke-width: 0.6;
+            stroke-linejoin: round;
+        }
+    }
+
+    .damage-type--em { --damage-colour: var(--alliance-blue); }
+    .damage-type--thermal { --damage-colour: var(--fleet-red); }
+    .damage-type--kinetic { --damage-colour: var(--text-muted); }
+    .damage-type--explosive { --damage-colour: var(--fleet-yellow); }
+</style>

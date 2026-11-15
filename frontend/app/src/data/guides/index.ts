@@ -306,7 +306,6 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "fleet-roles",
-        unlisted: true,
         title: "Fleet Roles",
         excerpt: "Five jobs that decide fights: Damage, Remote Repair, Capacitor Warfare, Electronic Warfare and Positioning. Guides, simulators and certificates.",
         category: "Fleet Roles",
@@ -319,7 +318,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "damage-guide",
-        unlisted: true,
+        hiddenFromIndex: true,
         title: "Damage",
         excerpt: "Kill what the FC calls, fast: applied damage, target calling, ammo, overheating, and a simulator for what really lands.",
         category: "Fleet Roles",
@@ -332,7 +331,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "remote-repair-guide",
-        unlisted: true,
+        hiddenFromIndex: true,
         title: "Remote Repair",
         excerpt: "Keep the fleet alive: the rep race, broadcasts, capacitor chains, logi anchoring and the Zarmazd.",
         category: "Fleet Roles",
@@ -345,7 +344,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "capacitor-warfare-guide",
-        unlisted: true,
+        hiddenFromIndex: true,
         title: "Capacitor Warfare",
         excerpt: "Drain the enemy until nothing works: the capacitor curve, neuts versus nos, range and target priority.",
         category: "Fleet Roles",
@@ -358,7 +357,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "electronic-warfare-guide",
-        unlisted: true,
+        hiddenFromIndex: true,
         title: "Electronic Warfare",
         excerpt: "Stop the enemy locking what they want: jam chance, spreading ECM across their logi, bursts and staying alive.",
         category: "Fleet Roles",
@@ -370,10 +369,23 @@ export const guides: GuideMeta[] = [
         }],
     },
     {
-        slug: "positioning-warfare-guide",
-        unlisted: true,
-        title: "Positioning Warfare",
-        excerpt: "Decide where the enemy fleet is and whether it can leave: points, booshes, bumps, heavy tackle, and bubbles where they work.",
+        slug: "fleet-support-guide",
+        hiddenFromIndex: true,
+        title: "Fleet Support",
+        excerpt: "Hold the enemy in place and make every shot count: points, scrams, webs, painters and heavy tackle.",
+        category: "Fleet Roles",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+    },
+    {
+        slug: "fleet-disruption-guide",
+        hiddenFromIndex: true,
+        title: "Fleet Disruption",
+        excerpt: "Break up the enemy fleet: anchor tackle, booshing, bubbles and firewalls.",
         category: "Fleet Roles",
         author: "Minmatar Fleet",
         authors: [{

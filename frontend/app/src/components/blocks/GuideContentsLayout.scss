@@ -1,23 +1,30 @@
 .guide-contents {
     --guide-contents-display-font: 'Orbitron', var(--heading-font);
-    --guide-contents-nav-width: 15.5rem;
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: var(--space-l);
-    align-items: start;
     width: 100%;
     min-width: 0;
 }
 
+/* One slim bar that sticks to the top of the viewport while reading. */
 .guide-contents__nav {
+    position: sticky;
+    top: var(--space-2xs);
+    z-index: var(--sticky-z-index);
     min-width: 0;
-    padding: var(--space-s);
-    background: color-mix(in srgb, var(--component-background) 78%, transparent);
+    background: color-mix(in srgb, var(--component-background) 92%, transparent);
+    backdrop-filter: blur(8px);
     border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
     border-left: 3px solid color-mix(in srgb, var(--fleet-red) 75%, transparent);
 }
 
-.guide-contents__chrome {
-    margin-bottom: var(--space-2xs);
+.guide-contents__bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+    min-width: 0;
+    padding: var(--space-3xs) var(--space-s) var(--space-3xs) var(--space-3xs);
 }
 
 .guide-contents__label {
@@ -29,112 +36,152 @@
     color: var(--fleet-red);
 }
 
-.guide-contents__label--desktop {
-    display: none;
-    padding: var(--space-2xs) var(--space-xs);
-}
-
 .guide-contents__toggle {
     display: flex;
+    flex: none;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-s);
-    width: 100%;
+    gap: var(--space-xs);
     margin: 0;
-    padding: var(--space-xs) var(--space-s);
-    border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
-    background: color-mix(in srgb, var(--component-background) 88%, transparent);
+    padding: var(--space-2xs) var(--space-s);
+    border: 1px solid transparent;
+    background: transparent;
     color: inherit;
     cursor: pointer;
-    text-align: left;
 
     &:hover,
     &:focus-visible {
         border-color: color-mix(in srgb, var(--fleet-yellow) 55%, var(--border-color));
-        outline: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--fleet-yellow);
+        outline-offset: 1px;
     }
 
     &[aria-expanded='true'] .guide-contents__chevron {
-        transform: rotate(180deg);
+        transform: rotate(-135deg) translate(-0.1rem, -0.1rem);
     }
 }
 
-.guide-contents__toggle-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    min-width: 0;
+.guide-contents__chevron {
+    flex: 0 0 auto;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 2px solid var(--fleet-red);
+    border-bottom: 2px solid var(--fleet-red);
+    transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+    transition: transform var(--fast-transition);
 }
 
 .guide-contents__toggle-current {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-left: var(--space-s);
+    border-left: 1px solid var(--hairline-medium);
     font-size: var(--step--1);
-    letter-spacing: 0.01em;
-    text-transform: none;
-    color: var(--text-color-secondary, var(--faded));
+    font-weight: 600;
+    color: var(--fleet-yellow);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.guide-contents__chevron {
-    flex: 0 0 auto;
-    width: 0.55rem;
-    height: 0.55rem;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg);
-    opacity: 0.8;
-    transition: transform 0.18s ease;
+.guide-contents__count {
+    flex: none;
+    font-family: var(--guide-contents-display-font);
+    font-size: var(--step--2);
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
 }
 
+.guide-contents__progress {
+    height: 2px;
+    background: var(--hairline);
+    overflow: hidden;
+}
+
+.guide-contents__progress-fill {
+    display: block;
+    height: 100%;
+    background: var(--fleet-yellow);
+    transform: scaleX(0);
+    transform-origin: left;
+}
+
+/* The full list drops down under the bar. */
 .guide-contents__list {
     display: none;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    gap: 0.15rem;
+    position: absolute;
+    top: 100%;
+    left: -3px;
+    right: -1px;
+    max-height: min(70vh, 34rem);
+    overflow: auto;
+    overscroll-behavior: contain;
     margin: 0;
-    padding: 0;
+    padding: var(--space-s);
     list-style: none;
+    background: var(--component-background);
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--fleet-red) 75%, transparent);
+    border-top: 0;
+    columns: 16rem 3;
+    column-gap: var(--space-l);
 }
 
 .guide-contents__nav.is-open .guide-contents__list {
-    display: flex;
+    display: block;
+}
+
+.guide-contents__item {
+    break-inside: avoid;
 }
 
 .guide-contents__item--grouped {
+    break-before: auto;
     margin-top: var(--space-s);
-    padding-top: var(--space-2xs);
+
+    &:first-child {
+        margin-top: 0;
+    }
 }
 
 .guide-contents__group {
-    margin: 0 0 0.2rem;
-    padding: 0.15rem var(--space-xs);
+    margin: 0 0 var(--space-3xs);
+    padding: var(--space-3xs) var(--space-xs);
     font-family: var(--guide-contents-display-font);
     font-size: var(--step--2);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 52%, transparent);
+    color: var(--text-muted);
 }
 
 .guide-contents__link {
-    display: block;
-    padding: 0.4rem var(--space-xs);
+    display: flex;
+    gap: var(--space-xs);
+    align-items: baseline;
+    padding: var(--space-2xs) var(--space-xs);
     border-left: 2px solid transparent;
     color: color-mix(in srgb, var(--foreground) 82%, transparent);
     font-size: var(--step--1);
     line-height: 1.35;
     text-decoration: none;
     transition:
-        border-color 0.15s ease,
-        color 0.15s ease,
-        background-color 0.15s ease;
+        border-color var(--fast-transition),
+        color var(--fast-transition),
+        background-color var(--fast-transition);
 
     &:hover,
     &:focus-visible {
         border-left-color: var(--fleet-yellow);
         color: var(--highlight);
-        outline: none;
-        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        background: var(--surface-sunken);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--fleet-yellow);
+        outline-offset: -2px;
     }
 
     &.is-active {
@@ -145,6 +192,14 @@
     }
 }
 
+.guide-contents__index {
+    flex: none;
+    font-family: var(--guide-contents-display-font);
+    font-size: var(--step--2);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
 .guide-contents__body {
     display: flex;
     flex-direction: column;
@@ -152,48 +207,105 @@
     min-width: 0;
 }
 
-/* Mobile: compact disclosure; current section shown on the toggle */
-@media (max-width: 55.99rem) {
+.guide-contents__rail-label {
+    display: none;
+}
+
+/* Wide screens: the margin is spare, so the list lives there, unboxed. */
+@media (min-width: 100rem) {
+    .guide-contents {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 13rem;
+        gap: var(--space-xl);
+        align-items: start;
+    }
+
+    .guide-contents__body {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .guide-contents__nav {
+        grid-column: 2;
+        grid-row: 1;
+        top: var(--space-l);
+        max-height: calc(100vh - 2 * var(--space-l));
+        overflow: auto;
+        overscroll-behavior: contain;
+        background: none;
+        backdrop-filter: none;
+        border: 0;
+    }
+
+    .guide-contents__rail-label {
+        display: block;
+        margin: 0 0 var(--space-2xs);
+        padding-left: var(--space-xs);
+        font-family: var(--guide-contents-display-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .guide-contents__bar {
+        display: none;
+    }
+
+    .guide-contents__progress {
+        margin: 0 0 var(--space-xs) var(--space-xs);
+    }
+
+    .guide-contents__list,
+    .guide-contents__nav.is-open .guide-contents__list {
+        display: block;
+        position: static;
+        max-height: none;
+        overflow: visible;
+        padding: 0;
+        background: none;
+        border: 0;
+        columns: auto;
+    }
+
+    .guide-contents__index {
+        display: none;
+    }
+
+    .guide-contents__link {
+        padding-block: var(--space-3xs);
+        color: var(--text-muted);
+
+        &.is-active {
+            background: none;
+        }
+    }
+}
+
+@media (max-width: 48rem) {
     .guide-contents__nav {
         border-left-width: 1px;
     }
 
-    .guide-contents__nav.is-open .guide-contents__list {
-        max-height: min(50vh, 22rem);
-        overflow: auto;
-        overscroll-behavior: contain;
-        padding-top: var(--space-s);
-        border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
-        margin-top: var(--space-s);
-    }
-}
-
-/* Desktop: sticky sidebar, always expanded */
-@media (min-width: 56rem) {
-    .guide-contents {
-        grid-template-columns: var(--guide-contents-nav-width) minmax(0, 1fr);
-        gap: var(--space-xl);
-    }
-
-    .guide-contents__nav {
-        position: sticky;
-        top: calc(var(--header-height, 4rem) + var(--space-m));
-        max-height: calc(100vh - var(--header-height, 4rem) - var(--space-xl));
-        overflow: auto;
-        overscroll-behavior: contain;
-        scrollbar-gutter: stable;
-        padding: var(--space-s);
+    .guide-contents__bar {
+        gap: var(--space-2xs);
     }
 
     .guide-contents__toggle {
+        padding-inline: var(--space-2xs);
+    }
+
+    .guide-contents__toggle-current {
+        padding-left: var(--space-xs);
+    }
+
+    .guide-contents__count {
         display: none;
     }
 
-    .guide-contents__label--desktop {
-        display: block;
-    }
-
     .guide-contents__list {
-        display: flex;
+        left: -1px;
+        border-left-width: 1px;
+        max-height: min(60vh, 26rem);
     }
 }

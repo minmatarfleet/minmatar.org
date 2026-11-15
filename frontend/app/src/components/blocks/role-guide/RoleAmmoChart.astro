@@ -1,0 +1,339 @@
+---
+/**
+ * One weapon's ammo, as columns from shortest reach to longest: the taller
+ * the column, the harder the charge hits, coloured by damage type. The exact
+ * numbers fold out underneath. Used by RoleAmmo.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { AMMO, AMMO_TARGETS } from '@helpers/fleet_role_ships'
+import { get_item_icon } from '@helpers/eve_image_server'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DamageTypeIcon from '@components/blocks/role-guide/DamageTypeIcon.astro'
+import { DAMAGE_GLYPHS } from '@helpers/damage_types'
+
+interface Props {
+    family: string
+    size: string
+    missile: boolean
+    ships: string[]
+    /** Charge names, shortest reach first. */
+    charges: string[]
+    note?: string
+}
+
+const { family, size, missile, ships, charges, note } = Astro.props
+
+const TYPES = ['em', 'thermal', 'kinetic', 'explosive'] as const
+const total = (name: string) => TYPES.reduce((sum, type) => sum + AMMO[name][type], 0)
+const times = (value: number | undefined) => `×${Number((value ?? 1).toFixed(2))}`
+const reach = (name: string) => {
+    const c = AMMO[name]
+    if (missile) return `${Number((c.range_km ?? 0).toFixed(1))} km`
+    const fall = c.falloff_mult !== undefined && c.falloff_mult !== 1 ? `, falloff ${times(c.falloff_mult)}` : ''
+    return `optimal ${times(c.range_mult)}${fall}`
+}
+const short_name = (name: string) => name
+    .replace(/^(Imperial|Caldari|Federation) Navy /, 'Navy ')
+    .replace(/^Republic Fleet /, 'Fleet ')
+    .replace(/ (Cruise Missile|Heavy Missile|Torpedo)$/, '')
+
+// What lands: on paper, or on one of our known hulls after its base armor
+// resists (and, for missiles, its signature and speed).
+type View = { key: string; label: string; type_id?: number; note?: string; landed: (name: string) => Record<string, number> }
+const paper = (name: string) => Object.fromEntries(TYPES.map((type) => [type, AMMO[name][type]]))
+const applied = (name: string, sig: number, speed: number) => {
+    const c = AMMO[name]
+    if (!missile || !c.explosion_radius_m) return 1
+    const e = c.explosion_radius_m
+    return Math.min(1, sig / e, Math.pow((sig / e) * ((c.explosion_velocity_ms ?? 1) / speed), c.drf ?? 1))
+}
+const views: View[] = [
+    { key: 'paper', label: t('fleet_roles.ammo_on_paper'), landed: paper },
+    ...Object.entries(AMMO_TARGETS).map(([hull, target]) => ({
+        key: String(target.type_id),
+        label: hull,
+        type_id: target.type_id,
+        note: t('fleet_roles.ammo_against').replace('{ship}', hull)
+            + ' ' + TYPES.map((type) => `${t(t_key('fleet_roles.damage_type.', type))} ${Math.round(target.armor_resists[type] * 100)}%`).join(', ')
+            + (missile ? ` · ${t('fleet_roles.ammo_sig_speed').replace('{sig}', String(target.signature_m)).replace('{speed}', String(target.velocity_ms))}` : ''),
+        landed: (name: string) => {
+            const app = applied(name, target.signature_m, target.velocity_ms)
+            return Object.fromEntries(TYPES.map((type) => [type, AMMO[name][type] * (1 - target.armor_resists[type]) * app]))
+        },
+    })),
+]
+const sum_of = (values: Record<string, number>) => TYPES.reduce((acc, type) => acc + values[type], 0)
+const max = Math.max(...charges.map(total), 1)
+const COL = 64
+const GAP = 18
+const L = 16
+const TOP = 58
+const PLOT = 150
+// Every chart is drawn at the width of eight columns, so a chart with fewer
+// charges keeps the same text size and centres its bars instead of scaling up.
+const W = L * 2 + Math.max(8, charges.length) * (COL + GAP)
+const X0 = (W - charges.length * (COL + GAP)) / 2
+const H = TOP + PLOT + 76
+/** A long charge name on two lines, split at the space nearest the middle. */
+function name_lines(name: string): string[] {
+    if (name.length <= 12 || !name.includes(' ')) return [name]
+    const spaces = [...name.matchAll(/ /g)].map((match) => match.index ?? 0)
+    const cut = spaces.reduce((best, at) => Math.abs(at - name.length / 2) < Math.abs(best - name.length / 2) ? at : best)
+    return [name.slice(0, cut), name.slice(cut + 1)]
+}
+const heading = `${size ? `${t(t_key('fleet_roles.size.', size))} ` : ''}${t(t_key('fleet_roles.family.', family))}`
+const uid = `${family}-${size}`.replace(/[^a-z0-9-]/gi, '')
+const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', explosive: 'rd-yellow' }
+---
+
+<section class="[ role-ammo-chart ]">
+    <header>
+        <h4>{heading}</h4>
+        <p>{t('fleet_roles.ammo_flown_on').replace('{ships}', ships.join(', '))}</p>
+    </header>
+    {note && <p class="[ role-ammo-chart__note ]">{note}</p>}
+    <div x-data="{ view: 'paper' }" class="[ role-ammo-chart__views ]">
+    {views.map((view) => {
+        const rows = charges.map((name) => ({ name, values: view.landed(name) }))
+        const best = Math.max(...rows.map((row) => sum_of(row.values)))
+        return (
+            <div x-show={`view === '${view.key}'`} style={view.key === 'paper' ? undefined : 'display: none'} role="tabpanel" id={`ammo-${uid}-${view.key}`}>
+                {view.note && <p class="[ role-ammo-chart__against ]">{view.note}</p>}
+                <XFadeScroll>
+                    <svg viewBox={`0 0 ${W} ${H}`} style={`min-width: ${(W * 0.62 / 16).toFixed(1)}rem`} role="img" aria-label={`${heading}, ${view.label}: ${rows.map((row) => `${row.name} ${Math.round(sum_of(row.values))}`).join('; ')}`}>
+                        <text class="rd-muted" x={L} y="14" font-size="11">{view.key === 'paper' ? t('fleet_roles.ammo_axis_damage') : t('fleet_roles.ammo_axis_landed')}</text>
+                        <text class="rd-muted" x={W - L} y="14" font-size="11" text-anchor="end">{t('fleet_roles.ammo_axis_reach')}</text>
+                        <line class="rd-grid" x1={L} x2={W - L} y1={TOP + PLOT} y2={TOP + PLOT} stroke-width="1" />
+                        {rows.map((row, i) => {
+                            const sum = sum_of(row.values)
+                            const height = (sum / max) * PLOT
+                            const x = X0 + i * (COL + GAP) + GAP / 2
+                            const lines = name_lines(short_name(row.name))
+                            let y = TOP + PLOT
+                            const present = TYPES.filter((type) => AMMO[row.name][type] > 0)
+                            return (
+                                <g>
+                                    {present.map((type) => {
+                                        const h = sum > 0 ? (row.values[type] / sum) * height : 0
+                                        y -= h
+                                        return <rect class={TYPE_CLASS[type]} x={x} y={y} width={COL} height={h} />
+                                    })}
+                                    <text class={view.key !== 'paper' && sum === best ? 'rd-best' : 'rd-strong'} x={x + COL / 2} y={TOP + PLOT - height - 6} font-size="12" text-anchor="middle">{Math.round(sum)}{view.key !== 'paper' && sum === best ? ' ★' : ''}</text>
+                                    {present.map((type, k, list) => (
+                                        <path class={TYPE_CLASS[type]} d={DAMAGE_GLYPHS[type]}
+                                            transform={`translate(${x + COL / 2 - (list.length * 15) / 2 + k * 15}, ${TOP + PLOT - height - 34}) scale(0.8)`} />
+                                    ))}
+                                    <text class="rd-text" x={x + COL / 2} y={TOP + PLOT + 16} font-size="11" text-anchor="middle">
+                                        {lines.map((line, k) => <tspan x={x + COL / 2} dy={k === 0 ? 0 : 13}>{line}</tspan>)}
+                                    </text>
+                                    <text class="rd-muted" x={x + COL / 2} y={TOP + PLOT + 30 + (lines.length - 1) * 13} font-size="9.5" text-anchor="middle">
+                                        {missile ? reach(row.name) : times(AMMO[row.name].range_mult)}
+                                    </text>
+                                </g>
+                            )
+                        })}
+                        <path class="rd-grid" d={`M${L},${H - 12} L${W - L},${H - 12} M${W - L - 8},${H - 17} L${W - L},${H - 12} L${W - L - 8},${H - 7}`} stroke-width="1.2" />
+                        <text class="rd-muted" x={L} y={H - 18} font-size="10">{missile ? t('fleet_roles.ammo_flight_range') : t('fleet_roles.ammo_optimal_mult')}</text>
+                    </svg>
+                </XFadeScroll>
+            </div>
+        )
+    })}
+        <div class="[ role-ammo-chart__tabs ]" role="tablist" aria-label={t('fleet_roles.ammo_show_against')}>
+            {views.map((view, i) => (
+                <button type="button" role="tab" aria-controls={`ammo-${uid}-${view.key}`}
+                    aria-selected={i === 0 ? 'true' : 'false'}
+                    x-bind:aria-selected={`view === '${view.key}' ? 'true' : 'false'`}
+                    x-on:click={`view = '${view.key}'`}
+                    class="[ role-ammo-chart__tab ]">
+                    {view.type_id ? <img src={get_item_icon(view.type_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span class="[ role-ammo-chart__paper ]" aria-hidden="true">≡</span>}
+                    <span>{view.label}</span>
+                </button>
+            ))}
+        </div>
+    </div>
+    <details class="[ role-ammo-chart__numbers ]">
+        <summary>{t('fleet_roles.ammo_numbers')}</summary>
+        <XFadeScroll>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">{t('fleet_roles.ammo_charge')}</th>
+                        <th scope="col">{t('fleet_roles.ammo_damage')}</th>
+                        <th scope="col">{t('fleet_roles.ammo_range')}</th>
+                        <th scope="col">{missile ? t('fleet_roles.ammo_explosion') : t('fleet_roles.ammo_tracking')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {charges.map((name) => {
+                        const charge = AMMO[name]
+                        return (
+                            <tr>
+                                <th scope="row">{name}</th>
+                                <td class="[ role-ammo-chart__types ]">{TYPES.filter((type) => charge[type] > 0).map((type) => (
+                                    <span><DamageTypeIcon type={type} /> {Math.round(charge[type])}</span>
+                                ))}</td>
+                                <td>{reach(name)}</td>
+                                <td>{missile
+                                    ? `${Math.round(charge.explosion_radius_m ?? 0)} m / ${Math.round(charge.explosion_velocity_ms ?? 0)} m/s`
+                                    : times(charge.tracking_mult)}</td>
+                            </tr>
+                        )
+                    })}
+                </tbody>
+            </table>
+        </XFadeScroll>
+    </details>
+</section>
+
+<style lang="scss">
+    .role-ammo-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        border: 1px solid var(--hairline-medium);
+        background: var(--surface-sunken);
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: var(--space-3xs) var(--space-s);
+        }
+
+        h4 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            letter-spacing: 0.04em;
+            color: var(--fleet-yellow);
+        }
+
+        header p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            font-family: var(--default-font);
+        }
+
+        .rd-text { fill: var(--foreground); }
+        .rd-strong { fill: var(--highlight); font-weight: 600; }
+        .rd-muted { fill: var(--text-muted); }
+        .rd-grid { stroke: var(--hairline-strong); fill: none; }
+        .rd-blue { fill: var(--alliance-blue); }
+        .rd-red { fill: var(--fleet-red); }
+        .rd-yellow { fill: var(--fleet-yellow); }
+        .rd-kinetic { fill: var(--text-muted); }
+        .rd-best { fill: var(--green); font-weight: 600; }
+    }
+
+    .role-ammo-chart__types {
+        display: flex;
+        gap: var(--space-s);
+    }
+
+    .role-ammo-chart__views {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .role-ammo-chart__against {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .role-ammo-chart__tabs {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: var(--space-2xs);
+        padding-top: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+    }
+
+    .role-ammo-chart__tab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2xs);
+        padding: var(--space-2xs);
+        border: 1px solid var(--hairline);
+        background: var(--background);
+        color: var(--text-muted);
+        font: inherit;
+        font-size: var(--step--1);
+        cursor: pointer;
+
+        img {
+            width: var(--space-l);
+            height: auto;
+        }
+
+        &[aria-selected='true'] {
+            border-color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+            color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 1px;
+        }
+    }
+
+    .role-ammo-chart__paper {
+        font-size: var(--step-1);
+        line-height: 1;
+    }
+
+    .role-ammo-chart__note {
+        margin: 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step--1);
+    }
+
+    .role-ammo-chart__numbers {
+        summary {
+            cursor: pointer;
+            font-size: var(--step--1);
+            color: var(--highlight);
+        }
+
+        table {
+            width: 100%;
+            min-width: 32rem;
+            margin-top: var(--space-xs);
+            border-collapse: collapse;
+            font-size: var(--step--1);
+        }
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-xs);
+            border-bottom: 1px solid var(--hairline);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        thead th {
+            font-size: var(--step--2);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        tbody th {
+            color: var(--highlight);
+        }
+    }
+</style>
