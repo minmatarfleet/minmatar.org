@@ -46,6 +46,19 @@ def _key(task_or_item) -> tuple:
     return (task_or_item.source_key, task_or_item.user_id)
 
 
+def _follow_oldest(task: Task, item: Item) -> list[str]:
+    """Wait from the oldest thing still waiting: once the old requests are
+    handled, newer ones don't inherit their age."""
+    if (
+        item.since
+        and task.status == Task.STATUS_OPEN
+        and task.opened_at != item.since
+    ):
+        task.opened_at = item.since
+        return ["opened_at"]
+    return []
+
+
 def sync_rule(
     rule: Rule,
     user_ids: Optional[set[int]] = None,
@@ -112,6 +125,7 @@ def sync_rule(
             ]
             for name in changed:
                 setattr(task, name, getattr(item, name))
+            changed += _follow_oldest(task, item)
             if task.status in (Task.STATUS_DONE, Task.STATUS_CANCELLED):
                 # The thing came back (a token broke again).
                 task.status = Task.STATUS_OPEN
@@ -162,6 +176,15 @@ def sync_all(now=None) -> dict:
             # One broken source must not stop the others.
             logger.exception("Task rule %s failed", code)
     return totals
+
+
+def sync_rule_code(code: str, now=None) -> dict:
+    """Re-run one rule now (when something it watches changed)."""
+    rule = RULES.get(code)
+    if rule is None:
+        return {}
+    setting = TaskRuleSetting.objects.filter(rule=code).first()
+    return sync_rule(rule, setting=setting, now=now)
 
 
 def sync_user(user, now=None) -> None:

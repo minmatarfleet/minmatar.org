@@ -37,6 +37,7 @@ from tribes.models import (
     TribeGroupMembership,
 )
 from users.helpers import offboard_user
+from taskboard.signals import other_callbacks
 
 
 def setUpModule():
@@ -267,7 +268,7 @@ class ExternalGuildSeatTestCase(TestCase):
                 tribe_group=self.tribe_group,
                 status=TribeGroupMembership.STATUS_ACTIVE,
             )
-        self.assertEqual([], callbacks)
+        self.assertEqual([], other_callbacks(callbacks))
         client_for_binding.assert_not_called()
 
     def _present_seat(self) -> TribeExternalGuildSeat:
