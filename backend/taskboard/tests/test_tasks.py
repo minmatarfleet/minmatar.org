@@ -7,7 +7,12 @@ from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import auth_headers
-from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EvePlayer,
+)
 from groups.helpers.feature_access import clear_feature_cache
 from groups.models import UserCommunityStatus
 from taskboard import services, sync
@@ -474,6 +479,28 @@ class TasksApiTestCase(TestCase):
         )
         self.assertEqual(
             self.get("/teams", self.pilot).json()["corporations"], []
+        )
+
+    def test_admins_see_only_the_corporations_they_direct(self):
+        alliance = EveAlliance.objects.create(
+            alliance_id=99011978, name="Minmatar Fleet Alliance"
+        )
+        led = EveCorporation.objects.create(
+            corporation_id=98726134, name="Rattini Tribe", alliance=alliance
+        )
+        EveCorporation.objects.create(
+            corporation_id=98000002, name="Other Corp", alliance=alliance
+        )
+        director = EveCharacter.objects.create(
+            character_id=9300, character_name="Root", user=self.root
+        )
+        led.directors.add(director)
+        corporations = self.get("/teams", self.root).json()["corporations"]
+        self.assertEqual(
+            [row["name"] for row in corporations], ["Rattini Tribe"]
+        )
+        self.assertEqual(
+            404, self.get("/teams/corporation/98000002", self.root).status_code
         )
 
     def test_suggestions_are_never_listed_by_name(self):
