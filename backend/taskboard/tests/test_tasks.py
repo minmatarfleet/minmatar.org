@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import auth_headers
+from applications.models import EveCorporationApplication
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -124,6 +125,21 @@ class AutomaticTaskTestCase(TestCase):
         # ...until they bring it back.
         services.bring_back(self.pilot, task)
         self.assertEqual(task.status, Task.STATUS_OPEN)
+
+    def test_applications_from_accounts_without_characters_are_skipped(self):
+        ghost = User.objects.create(username="m4hx")
+        EveCorporationApplication.objects.create(
+            corporation_id=98726134, user=ghost, description="Old"
+        )
+        sync.sync_rule(RULES["review_applications"])
+        self.assertFalse(Task.objects.filter(rule="review_applications"))
+
+        EveCorporationApplication.objects.create(
+            corporation_id=98726134, user=self.pilot, description="Hi"
+        )
+        sync.sync_rule(RULES["review_applications"])
+        task = Task.objects.get(rule="review_applications")
+        self.assertEqual(task.title, "Review 1 application to 98726134")
 
     def test_sync_user_only_touches_that_pilot(self):
         other = make_pilot("Other", 9002)
