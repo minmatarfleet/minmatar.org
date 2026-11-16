@@ -61,6 +61,10 @@ class Membership:
         return False
 
     def _corporation(self, corporation_id: Optional[int], role: str) -> bool:
+        if self.user.is_superuser:
+            # Admins pass every check below; their tasks are the
+            # corporations they lead, like anyone else's.
+            return corporation_id in self.led_corporation_ids
 
         corporation = EveCorporation.objects.filter(
             corporation_id=corporation_id

@@ -18,6 +18,7 @@ from django.db.models import Count, Min, Q
 from django.utils import timezone
 
 from applications.models import EveCorporationApplication
+from eveonline.helpers.characters.identity import owned_by_q
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from fittings.models import EveDoctrineChangeRequest, EveFittingChangeRequest
 from fleets.models import EveFleetInvite
@@ -217,11 +218,29 @@ def collect_set_timezone(user_ids: Optional[set[int]]) -> list[Item]:
 # --- Team rules ----------------------------------------------------------
 
 
+def _users_with_characters(user_ids: set[int]) -> set[int]:
+    """The users among these who own at least one character."""
+    found = set()
+    for row in EveCharacter.objects.filter(owned_by_q(user_ids)).values(
+        "user_id", "token__user_id"
+    ):
+        found.add(row["user_id"] or row["token__user_id"])
+    return found
+
+
 def collect_review_applications(user_ids=None) -> list[Item]:
     del user_ids  # a team rule collects for everyone
 
+    # An account with no characters can't join a corporation: its
+    # application is left-over data, not work for a recruiter.
+    pending_users = set(
+        EveCorporationApplication.objects.filter(status="pending").values_list(
+            "user_id", flat=True
+        )
+    )
     rows = list(
         EveCorporationApplication.objects.filter(status="pending")
+        .filter(user_id__in=_users_with_characters(pending_users))
         .order_by()
         .values("corporation_id")
         .annotate(n=Count("id"), first=Min("created_at"))

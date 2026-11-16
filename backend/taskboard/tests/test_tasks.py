@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import auth_headers
+from applications.models import EveCorporationApplication
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -27,6 +28,7 @@ from taskboard.models import (
 )
 from taskboard.queries import my_tasks, needs_you_count
 from taskboard.rules import RULES
+from taskboard.teams import Membership
 
 
 def make_pilot(name: str, character_id: int, corporation_id=None) -> User:
@@ -124,6 +126,21 @@ class AutomaticTaskTestCase(TestCase):
         # ...until they bring it back.
         services.bring_back(self.pilot, task)
         self.assertEqual(task.status, Task.STATUS_OPEN)
+
+    def test_applications_from_accounts_without_characters_are_skipped(self):
+        ghost = User.objects.create(username="m4hx")
+        EveCorporationApplication.objects.create(
+            corporation_id=98726134, user=ghost, description="Old"
+        )
+        sync.sync_rule(RULES["review_applications"])
+        self.assertFalse(Task.objects.filter(rule="review_applications"))
+
+        EveCorporationApplication.objects.create(
+            corporation_id=98726134, user=self.pilot, description="Hi"
+        )
+        sync.sync_rule(RULES["review_applications"])
+        task = Task.objects.get(rule="review_applications")
+        self.assertEqual(task.title, "Review 1 application to 98726134")
 
     def test_sync_user_only_touches_that_pilot(self):
         other = make_pilot("Other", 9002)
@@ -501,6 +518,12 @@ class TasksApiTestCase(TestCase):
         )
         self.assertEqual(
             404, self.get("/teams/corporation/98000002", self.root).status_code
+        )
+
+    def test_admins_get_application_tasks_only_where_they_lead(self):
+        membership = Membership(self.root)
+        self.assertFalse(
+            membership.can_act("corporation", 98726134, "recruiters")
         )
 
     def test_suggestions_are_never_listed_by_name(self):
