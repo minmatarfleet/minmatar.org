@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Optional
 
-from eveonline.helpers.alliances import member_corporations
 from eveonline.helpers.corporations.applications import can_review_applications
 from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.models import EveCorporation
@@ -83,16 +82,11 @@ class Membership:
 
     @cached_property
     def corporations(self) -> list[TeamRef]:
-        """Corporations whose Team view this user sees."""
-        if self.user.is_superuser:
-            rows = member_corporations().values_list("corporation_id", "name")
-            return sorted(
-                (
-                    TeamRef(TeamKind.CORPORATION, cid, name)
-                    for cid, name in rows
-                ),
-                key=lambda team: team.label.lower(),
-            )
+        """Corporations this user is CEO or a director of.
+
+        Superusers too: an admin's Team tab lists the corporations they
+        lead, not every corporation in the alliance.
+        """
         rows = led_corporations(self.user.id)
         names = dict(
             EveCorporation.objects.filter(
