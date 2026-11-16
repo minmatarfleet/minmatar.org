@@ -1,6 +1,8 @@
 import type {
     MyTasks,
     TaskAssignees,
+    TaskDigest,
+    TaskDigestPatch,
     TaskCount,
     TaskCreate,
     TaskDetail,
@@ -183,4 +185,29 @@ export async function patch_task_preferences(access_token:string, patch:TaskPref
         body: patch,
         error: 'Error saving your task settings',
     }) as TaskPreferences
+}
+
+/** A leader's one reminder about a member's task (a Discord DM). */
+export async function remind_task_pilot(access_token:string, kind:string, team_id:number, rule:string, task_id:number) {
+    return await api_request<TaskTeamRulePilot[]>(`${API_ENDPOINT}/teams/${encodeURIComponent(kind)}/${team_id}/rules/${encodeURIComponent(rule)}/remind/${task_id}`, {
+        method: 'POST',
+        token: access_token,
+        error: 'Error sending the reminder',
+    }) ?? []
+}
+
+export async function get_task_digest(access_token:string) {
+    return await api_request<TaskDigest>(`${API_ENDPOINT}/digest`, {
+        token: access_token,
+        error: 'Error fetching the weekly list settings',
+    }) as TaskDigest
+}
+
+export async function patch_task_digest(access_token:string, patch:TaskDigestPatch) {
+    return await api_request<TaskDigest>(`${API_ENDPOINT}/digest`, {
+        method: 'PATCH',
+        token: access_token,
+        body: patch,
+        error: 'Error saving the weekly list settings',
+    }) as TaskDigest
 }

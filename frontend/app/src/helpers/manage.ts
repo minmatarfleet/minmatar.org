@@ -11,7 +11,7 @@ import { can, feature_allows, legacy_superuser, type GateContext, type GateKey }
 
 export type ManageGroupKey = 'tasks' | 'fleets' | 'market' | 'content' | 'learning' | 'ships' | 'people'
 export type ManageScreenKey =
-    | 'task_rules' | 'project_templates'
+    | 'task_rules' | 'project_templates' | 'weekly_dm'
     | 'campaigns' | 'payout_codes' | 'npsi_feeds' | 'structure_timers'
     | 'market_hubs' | 'buyback' | 'freight_routes' | 'lp_desk'
     | 'help_tickets' | 'post_tags' | 'reddit' | 'creators'

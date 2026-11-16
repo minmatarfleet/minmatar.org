@@ -390,6 +390,14 @@
     li:last-child {
         border-bottom: 0;
     }
+
+    &.is-remind li {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto 10rem;
+
+        > :last-child {
+            text-align: end;
+        }
+    }
 }
 
 @media (max-width: 48rem) {

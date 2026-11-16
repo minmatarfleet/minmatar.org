@@ -28,7 +28,11 @@ try {
     }
     const patch:TaskRuleSettingPatch = toggle
         ? { enabled: form.get('enabled') === 'on' }
-        : { stop_after_days: days('stop_after_days'), claim_expires_days: days('claim_expires_days') }
+        : {
+            stop_after_days: days('stop_after_days'),
+            claim_expires_days: days('claim_expires_days'),
+            remind_after_days: days('remind_after_days'),
+        }
     rule = await patch_task_rule(auth_token, code, patch)
 } catch (failure) {
     error = (failure as Error).message

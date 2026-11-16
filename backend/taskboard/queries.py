@@ -28,6 +28,7 @@ from taskboard.models import (
     TeamKind,
     Weight,
 )
+from taskboard.reminders import can_remind, wants_reminders
 from taskboard.rules import RULES
 from taskboard.services import can_edit_project, is_paused
 from taskboard.teams import Membership, can_assign
@@ -318,7 +319,7 @@ def _member_ids_by_group(group_ids: Iterable[int]) -> dict:
     return result
 
 
-def _paused_ids(user_ids: set[int]) -> set[int]:
+def paused_ids(user_ids: set[int]) -> set[int]:
 
     paused = set(
         TaskPreferences.objects.filter(
@@ -364,7 +365,7 @@ def team_overview(user) -> dict:
     corporation_rows = []
     for team in corps:
         members = by_corp.get(team.id, set())
-        members -= _paused_ids(members)
+        members -= paused_ids(members)
         open_count, closed = _counts(_corp_q(team.id), members, since)
         corporation_rows.append(
             {
@@ -382,7 +383,7 @@ def team_overview(user) -> dict:
         members = set()
         for gid in team.group_ids:
             members |= by_group.get(gid, set())
-        members -= _paused_ids(members)
+        members -= paused_ids(members)
         open_count, closed = _counts(_groups_q(team.group_ids), members, since)
         count = len(team.group_ids)
         tribe_rows.append(
@@ -482,7 +483,7 @@ def team_detail(user, kind: str, team_id: int) -> Optional[dict]:
         return None
     name, leader_q, members, groups = scope
     since = timezone.now() - WEEK
-    paused = _paused_ids(members)
+    paused = paused_ids(members)
     active = members - paused
     leader_tasks = list(
         _related(Task.objects.filter(leader_q, status=Task.STATUS_OPEN))
@@ -530,7 +531,7 @@ def team_rule_pilots(user, kind: str, team_id: int, rule_code: str):
     if scope is None:
         return None
     members = scope[2]
-    active = members - _paused_ids(members)
+    active = members - paused_ids(members)
     tasks = list(
         Task.objects.filter(
             kind=Task.KIND_AUTOMATIC,
@@ -540,12 +541,17 @@ def team_rule_pilots(user, kind: str, team_id: int, rule_code: str):
         ).order_by("opened_at")
     )
     who = people(task.user_id for task in tasks)
+    now = timezone.now()
     return [
         {
             "task_id": task.pk,
             "pilot": who.get(task.user_id),
             "detail": task.title,
             "opened_at": task.opened_at,
+            "reminded_at": task.reminded_at,
+            "can_remind": can_remind(task, now)
+            and wants_reminders(task.user_id),
+            "reminders_off": not wants_reminders(task.user_id),
         }
         for task in tasks
     ]

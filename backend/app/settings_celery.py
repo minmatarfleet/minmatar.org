@@ -367,6 +367,20 @@ CELERYBEAT_TASKS = [
             "schedule": crontab(minute=40),
         },
     ),
+    (
+        "[Tasks] Send the weekly list (on its day and hour)",
+        {
+            "task": "taskboard.tasks.send_weekly_task_lists",
+            "schedule": crontab(minute=0),
+        },
+    ),
+    (
+        "[Tasks] Send messages held during quiet hours",
+        {
+            "task": "taskboard.tasks.flush_task_message_holds",
+            "schedule": crontab(minute=1),
+        },
+    ),
 ]
 
 # Learning Center mentors (docs/learning/mentors.md)

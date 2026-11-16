@@ -1,7 +1,7 @@
 """Scheduled upkeep for automatic tasks."""
 
 from app.celery import app
-from taskboard import sync
+from taskboard import messages, sync
 
 
 @app.task(expires=15 * 60)
@@ -14,3 +14,15 @@ def sync_automatic_tasks():
 def sweep_tasks():
     """Stop asking, return quiet claims, ask "still needed?"."""
     return sync.sweep()
+
+
+@app.task(expires=60 * 60)
+def send_weekly_task_lists():
+    """The weekly list, on the set day and hour (a no-op otherwise)."""
+    return messages.send_weekly_lists()
+
+
+@app.task(expires=60 * 60)
+def flush_task_message_holds():
+    """Send messages held during pilots' quiet hours once they end."""
+    return messages.flush_holds()

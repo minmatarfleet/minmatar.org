@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from taskboard.access import visible_project
+from taskboard.messages import task_assigned
 from taskboard.models import ProjectStage
 from taskboard.queries import serialize_tasks
 from taskboard.schemas import TaskCreateRequest, TaskResponse
@@ -60,4 +61,5 @@ def post_task(request, payload: TaskCreateRequest):
         )
     except TaskError as error:
         return error.status_code, ErrorResponse(detail=str(error))
+    task_assigned(task, user)
     return 201, serialize_tasks([task], user)[0]

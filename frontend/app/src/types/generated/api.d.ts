@@ -8760,6 +8760,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tasks/digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The weekly list: day, hour, and what the last send did */
+        get: operations["taskboard_endpoints_get_digest_get_digest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change when the weekly list goes out */
+        patch: operations["taskboard_endpoints_patch_digest_patch_digest"];
+        trace?: never;
+    };
     "/api/tasks/mine": {
         parameters: {
             query?: never;
@@ -8960,6 +8978,23 @@ export interface paths {
         get: operations["taskboard_endpoints_get_team_rule_get_team_rule"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tasks/teams/{kind}/{team_id}/rules/{rule}/remind/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remind a member about one task, once (a Discord DM) */
+        post: operations["taskboard_endpoints_post_team_rule_remind_post_team_rule_remind"];
         delete?: never;
         options?: never;
         head?: never;
@@ -15191,6 +15226,42 @@ export interface components {
             kind: string;
             /** Text */
             text: string;
+        };
+        /** DigestSettingsPatch */
+        DigestSettingsPatch: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Hour */
+            hour?: number | null;
+            /** Weekday */
+            weekday?: number | null;
+        };
+        /** DigestSettingsResponse */
+        DigestSettingsResponse: {
+            /** Delivered */
+            delivered: number;
+            /** Enabled */
+            enabled: boolean;
+            /** Had Waiting */
+            had_waiting: number;
+            /** Hour */
+            hour: number;
+            /**
+             * Last Sent At
+             * Format: date-time
+             */
+            last_sent_at: string;
+            /**
+             * Next Send At
+             * Format: date-time
+             */
+            next_send_at: string;
+            /** Not Delivered */
+            not_delivered: number;
+            /** Opted In */
+            opted_in: number;
+            /** Weekday */
+            weekday: number;
         };
         /** DiscordAckLoyaltyMarketOrderRequest */
         DiscordAckLoyaltyMarketOrderRequest: {
@@ -27223,6 +27294,8 @@ export interface components {
             claim_expires_days?: number | null;
             /** Enabled */
             enabled?: boolean | null;
+            /** Remind After Days */
+            remind_after_days?: number | null;
             /** Stop After Days */
             stop_after_days?: number | null;
         };
@@ -27240,6 +27313,8 @@ export interface components {
             label: string;
             /** Open Now */
             open_now: number;
+            /** Remind After Days */
+            remind_after_days?: number | null;
             /** Rule */
             rule: string;
             /** Stop After Days */
@@ -28465,17 +28540,51 @@ export interface components {
         };
         /** TaskPreferencesPatch */
         TaskPreferencesPatch: {
+            /**
+             * Clear Quiet Hours
+             * @default false
+             */
+            clear_quiet_hours?: boolean;
+            /** Dm Assigned */
+            dm_assigned?: boolean | null;
+            /** Dm Reminders */
+            dm_reminders?: boolean | null;
+            /** Dm Weekly */
+            dm_weekly?: boolean | null;
             /** Paused */
             paused?: boolean | null;
+            /** Quiet End */
+            quiet_end?: number | null;
+            /** Quiet Start */
+            quiet_start?: number | null;
             /** Show Suggestions */
             show_suggestions?: boolean | null;
         };
         /** TaskPreferencesResponse */
         TaskPreferencesResponse: {
+            /**
+             * Dm Assigned
+             * @default false
+             */
+            dm_assigned?: boolean;
+            /**
+             * Dm Reminders
+             * @default false
+             */
+            dm_reminders?: boolean;
+            /**
+             * Dm Weekly
+             * @default false
+             */
+            dm_weekly?: boolean;
             /** On Leave */
             on_leave: boolean;
             /** Paused */
             paused: boolean;
+            /** Quiet End */
+            quiet_end?: number | null;
+            /** Quiet Start */
+            quiet_start?: number | null;
             /** Show Suggestions */
             show_suggestions: boolean;
         };
@@ -28602,6 +28711,11 @@ export interface components {
         };
         /** TeamRulePilotResponse */
         TeamRulePilotResponse: {
+            /**
+             * Can Remind
+             * @default false
+             */
+            can_remind?: boolean;
             /** Detail */
             detail: string;
             /**
@@ -28610,6 +28724,13 @@ export interface components {
              */
             opened_at: string;
             pilot?: components["schemas"]["PersonResponse"] | null;
+            /** Reminded At */
+            reminded_at?: string | null;
+            /**
+             * Reminders Off
+             * @default false
+             */
+            reminders_off?: boolean;
             /** Task Id */
             task_id: number;
         };
@@ -52335,6 +52456,77 @@ export interface operations {
             };
         };
     };
+    taskboard_endpoints_get_digest_get_digest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigestSettingsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_patch_digest_patch_digest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DigestSettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigestSettingsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     taskboard_endpoints_get_my_tasks_get_my_tasks: {
         parameters: {
             query?: never;
@@ -52415,6 +52607,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaskPreferencesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -52772,6 +52973,58 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    taskboard_endpoints_post_team_rule_remind_post_team_rule_remind: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+                team_id: number;
+                rule: string;
+                task_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamRulePilotResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

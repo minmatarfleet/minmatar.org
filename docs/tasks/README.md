@@ -45,6 +45,16 @@ The Tasks Settings tab is the old Manage hub (`/manage/` redirects there), plus 
 - **Automatic tasks** (`/tasks/settings/rules/`): turn a rule on or off and set its timers. Turning a rule off cancels its open tasks.
 - **Project templates** (`/tasks/settings/templates/`): read-only; edit them in the Django admin.
 
+## Discord messages
+
+Every task DM is **opt-in**. Discord and Eve mail start off for all three, and a pilot turns each on in **Tasks › Settings** (every pilot has the tab; managers also see the Manage screens below their own settings). The same switches show on Account › Notifications. `taskboard/messages.py` sends them through the notifications app (`notifications/types/tasks.py`):
+
+- **Weekly list.** An hourly job sends it on the set day and hour (Settings › Weekly DM, Sunday 17:00 EVE by default). It goes only to pilots who turned it on and have needs-you tasks that have waited 3 days or are due within a week. It never includes suggestions or snoozed tasks, and never goes to paused or On Leave pilots. One per week (idempotency key); deliveries are paced.
+- **A leader reminds me.** "Remind once" on a team's pilot list, shown only for pilots who turned reminders on (others show "Reminders off"). Only for a needs-you task that has waited `remind_after_days` (default 14, set per rule), once per task, and only by the pilot's own leaders.
+- **Someone gives me a task.** Sent when a leader assigns one, if the pilot turned it on.
+
+Messages that fall in a pilot's quiet hours (Tasks › Settings, EVE hours) wait in `TaskMessageHold` and go out when the quiet hours end. A pilot with closed DMs shows as "not delivered" on Settings › Weekly DM and still has the Neocom count.
+
 ## Not in this version
 
-Discord messages: the weekly list, "remind once", assignment DMs and quiet hours. Assigned tasks that close when a linked thing changes (for example, when a doctrine is published).
+Assigned tasks that close when a linked thing changes (for example, when a doctrine is published).

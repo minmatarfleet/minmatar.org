@@ -5,7 +5,7 @@
  * (show_suggestions or paused, "on"/"off" or a checkbox) and re-renders.
  * The My tasks "I'm back" button posts here too (from=mine).
  */
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { TaskPreferences, TaskPreferencesPatch } from '@dtypes/api.minmatar.org'
@@ -17,6 +17,7 @@ const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
 
 const SELF_URL = translatePath('/partials/tasks_preferences_component/')
+const DM_SWITCHES = ['dm_weekly', 'dm_reminders', 'dm_assigned'] as const
 
 let prefs: TaskPreferences | null = null
 let error: Error | null = null
@@ -32,6 +33,22 @@ try {
         if (form.has('paused') && !field) patch.paused = value('paused')
         if (field === 'paused') patch.paused = value('paused')
         if (field === 'show_suggestions') patch.show_suggestions = value('show_suggestions')
+        if (field === 'dm_weekly') patch.dm_weekly = value('dm_weekly')
+        if (field === 'dm_reminders') patch.dm_reminders = value('dm_reminders')
+        if (field === 'dm_assigned') patch.dm_assigned = value('dm_assigned')
+        if (field === 'quiet_hours') {
+            const hour = (name:string) => {
+                const raw = parseInt(String(form.get(name) ?? ''))
+                return Number.isFinite(raw) && raw >= 0 && raw <= 23 ? raw : null
+            }
+            const start = hour('quiet_start')
+            const end = hour('quiet_end')
+            if (start === null || end === null) patch.clear_quiet_hours = true
+            else {
+                patch.quiet_start = start
+                patch.quiet_end = end
+            }
+        }
         prefs = await patch_task_preferences(auth_token, patch)
         Astro.response.headers.set('HX-Trigger', JSON.stringify({
             'tasks-changed': true,
@@ -49,6 +66,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import SettingRow from '@components/blocks/SettingRow.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import Select from '@components/blocks/Select.astro'
+
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
+const hour_label = (hour:number) => `${String(hour).padStart(2, '0')}:00`
 ---
 
 <div id="tasks-preferences">
@@ -56,7 +77,17 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         ? (
             <ComponentBlock>
                 <Flexblock gap="0">
-                    <h2 class="[ account-page__heading ]">{t('tasks.prefs.title')}</h2>
+                    <h3 class="[ manage-eyebrow ][ tasks-prefs__head ]">{t('tasks.prefs.discord')}</h3>
+                    <small class="[ manage-muted ]">{t('tasks.prefs.discord_hint')}</small>
+                    {DM_SWITCHES.map((name) => (
+                        <SettingRow title={t(t_key('tasks.prefs.', name))} description={t(t_key('tasks.prefs.', name, '_hint'))}>
+                            <form hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
+                                <input type="hidden" name="field" value={name} />
+                                <ManageSwitch name={name} label={t(t_key('tasks.prefs.', name))} hide_label={true} checked={prefs![name]} />
+                            </form>
+                        </SettingRow>
+                    ))}
+                    <h3 class="[ manage-eyebrow ][ tasks-prefs__head tasks-prefs__group ]">{t('tasks.prefs.list')}</h3>
                     <SettingRow title={t('tasks.prefs.show_suggestions')} description={t('tasks.prefs.show_suggestions_hint')}>
                         <form hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
                             <input type="hidden" name="field" value="show_suggestions" />
@@ -70,6 +101,22 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                         <form hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
                             <input type="hidden" name="field" value="paused" />
                             <ManageSwitch name="paused" label={t('tasks.prefs.paused')} hide_label={true} checked={prefs.paused || prefs.on_leave} disabled={prefs.on_leave} />
+                        </form>
+                    </SettingRow>
+                    <SettingRow title={t('tasks.prefs.quiet_hours')} description={t('tasks.prefs.quiet_hours_hint')}>
+                        <form class="[ tasks-quiet ]" hx-post={SELF_URL} hx-trigger="change" hx-target="#tasks-preferences" hx-swap="outerHTML">
+                            <input type="hidden" name="field" value="quiet_hours" />
+                            <label class="[ visually-hidden ]" for="tasks-quiet-start">{t('tasks.prefs.quiet_from')}</label>
+                            <Select id="tasks-quiet-start" name="quiet_start" size="sm">
+                                <option value="" selected={prefs.quiet_start === null}>{t('tasks.prefs.quiet_none')}</option>
+                                {HOURS.map((hour) => <option value={hour} selected={prefs!.quiet_start === hour}>{hour_label(hour)}</option>)}
+                            </Select>
+                            <span aria-hidden="true">–</span>
+                            <label class="[ visually-hidden ]" for="tasks-quiet-end">{t('tasks.prefs.quiet_to')}</label>
+                            <Select id="tasks-quiet-end" name="quiet_end" size="sm">
+                                <option value="" selected={prefs.quiet_end === null}>{t('tasks.prefs.quiet_none')}</option>
+                                {HOURS.map((hour) => <option value={hour} selected={prefs!.quiet_end === hour}>{hour_label(hour)}</option>)}
+                            </Select>
                         </form>
                     </SettingRow>
                     <SettingRow title={t('tasks.prefs.visibility')} description={t('tasks.prefs.visibility_hint')} />
@@ -87,3 +134,19 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         )
     }
 </div>
+
+<style lang="scss">
+    .tasks-prefs__head {
+        font-size: var(--step--1);
+    }
+
+    .tasks-prefs__group {
+        margin-block-start: var(--space-l);
+    }
+
+    .tasks-quiet {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+</style>

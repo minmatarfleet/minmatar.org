@@ -3356,3 +3356,5 @@ export type TaskRuleSettingPatch = ApiRequest<'RuleSettingPatch'>
 export type TaskProjectTemplate = ApiResponse<'ProjectTemplateResponse'>
 export type TaskPreferences = ApiResponse<'TaskPreferencesResponse'>
 export type TaskPreferencesPatch = ApiRequest<'TaskPreferencesPatch'>
+export type TaskDigest = ApiResponse<'DigestSettingsResponse'>
+export type TaskDigestPatch = ApiRequest<'DigestSettingsPatch'>
