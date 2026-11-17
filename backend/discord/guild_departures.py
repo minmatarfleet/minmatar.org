@@ -2,9 +2,19 @@
 
 Role sync (discord.guild_roles) only adds and removes the mapped roles, so
 roles a director handed out by hand stay on someone who left. With
-``strip_roles_on_leave`` on, a pass lists the server's members and, for each
-linked account whose site user has no character in the corporation and none
-in an alliance member corporation, removes every role the bot can remove.
+``strip_roles_on_leave`` on, a pass lists the server's members and flags each
+linked account whose site user
+
+- has a character that was in the corporation at some point (its stored
+  ESI corporation history), and
+- has no character in the corporation now and none in an alliance member
+  corporation.
+
+Applicants and guests who were never in the corporation are left alone.
+A flagged person who still qualifies after ``member_grace_hours`` (so a new
+recruit's corporation can catch up) loses every role the bot can remove, in
+one request, and the row keeps which roles were removed so a director can
+give them back. Someone who comes back before then is dropped from the list.
 
 - They stay on the server. Kicking is the member policy's job
   (discord.guild_access).
@@ -17,42 +27,52 @@ in an alliance member corporation, removes every role the bot can remove.
 
 A pass that would strip more than ``BRAKE_SHARE`` of the server's people
 strips nobody and waits for a director to approve it, as the member policy
-does. An approval covers the next pass.
+does. An approval covers the people flagged before it, no more than the
+held count, for ``APPROVAL_TTL``; a pass that doesn't finish keeps it.
 
 The alliance Discord, Fishermen servers and tribe servers are never touched.
 """
 
 import logging
+from datetime import timedelta
 
 import requests
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from ratelimit import RateLimitException
 
-from discord.client import DiscordClient
+from discord.client import DiscordClient, discord_error_code
 from discord.guild_access import (
-    STAFF_PERMISSIONS,
+    LOST_AFTER,
+    ServerPeople,
     _brake_limit,
-    _Exemptions,
-    _top_position,
+    read_server,
 )
 from discord.guild_roles import (
-    _apply,
+    ADMINISTRATOR,
+    MANAGE_ROLES,
+    MISSING_PERMISSIONS,
+    STOP_CODES,
+    UNKNOWN_MEMBER,
     _held_permissions,
     _mark_cannot_manage,
-    _members,
     _owner,
-    _permission_lost,
     _protected,
-    _read_roles,
     _role_id,
     _role_ids,
-    _StopGuild,
     qualifying_user_ids,
 )
-from discord.models import DiscordGuild, DiscordRoleMapping, DiscordUser
+from discord.models import DiscordGuild, DiscordRoleMapping, DiscordRoleStrip
+from eveonline.models import EveCharacterCorporationHistory
 
 logger = logging.getLogger(__name__)
+
+# An approval nobody used by then no longer counts.
+APPROVAL_TTL = timedelta(hours=6)
+# How long the record of removed roles is kept.
+RECORD_DAYS = 90
+AUDIT_REASON = "minmatar.org: left the corporation"
 
 
 class StripError(ValueError):
@@ -85,6 +105,9 @@ def set_strip_on_leave(guild: DiscordGuild, enabled: bool) -> None:
     _save(guild, strip_roles_on_leave=enabled, **_clear_hold())
     if enabled:
         transaction.on_commit(lambda: queue_strip(guild.pk))
+    else:
+        # The record of what was removed stays; nobody is waiting any more.
+        guild.role_strips.filter(stripped_at__isnull=True).delete()
 
 
 def approve_strip_hold(guild: DiscordGuild) -> None:
@@ -104,62 +127,19 @@ def queue_strip(guild_pk: int) -> None:
     strip_departed_guild_roles.delay(guild_pk)
 
 
-def _read_server(guild: DiscordGuild, client):
-    """(bot member, roles, owner id, members), or None when Discord can't
-    be read. A lost permission is recorded."""
-    loaded = _read_roles(client)
-    if isinstance(loaded, BaseException) or loaded is None:
-        if isinstance(loaded, BaseException) and _permission_lost(loaded):
-            _mark_cannot_manage(guild)
-        return None
-    bot_member, roles = loaded
-    try:
-        owner_id = int(client.get_guild().get("owner_id") or 0) or None
-        members = _members(client)
-    except (requests.RequestException, RateLimitException) as error:
-        if _permission_lost(error):
-            _mark_cannot_manage(guild)
-        else:
-            logger.warning(
-                "Discord role strip for guild %s failed: %s",
-                guild.guild_id,
-                error,
-            )
-        return None
-    if not members:
-        # An empty list is a failed read, not an empty server.
-        return None
-    return bot_member, roles, owner_id, members
-
-
 def _role_table(guild: DiscordGuild, roles: list):
-    """(role id -> position, ids of roles the bot may ever remove)."""
-    positions = {}
+    """(role id -> name, ids of roles the bot may ever remove)."""
+    names = {}
     removable = set()
     for role in roles:
         role_id = _role_id(role)
         if role_id is None:
             continue
-        positions[role_id] = int(role.get("position") or 0)
+        names[role_id] = str(role.get("name") or "")
         everyone = role_id == guild.guild_id or role.get("name") == "@everyone"
         if not everyone and not role.get("managed"):
             removable.add(role_id)
-    return positions, removable
-
-
-def _people(members: list) -> list[tuple[int, dict, dict]]:
-    """(discord id, user, member) for people, not bots."""
-    people = []
-    for member in members:
-        user = member.get("user") or {}
-        if user.get("bot"):
-            continue
-        try:
-            discord_id = int(user["id"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        people.append((discord_id, user, member))
-    return people
+    return names, removable
 
 
 def _allowed_user_ids(corporation) -> set[int]:
@@ -174,6 +154,26 @@ def _allowed_user_ids(corporation) -> set[int]:
     return set().union(*qualifying.values())
 
 
+def former_member_user_ids(corporation, user_ids) -> set[int]:
+    """The site users among user_ids with a character that was ever in the
+    corporation, from the stored ESI corporation history."""
+    user_ids = list(user_ids)
+    if not user_ids:
+        return set()
+    rows = EveCharacterCorporationHistory.objects.filter(
+        Q(character__user_id__in=user_ids)
+        | Q(character__token__user_id__in=user_ids),
+        corporation_id=corporation.corporation_id,
+    ).values_list("character__user_id", "character__token__user_id")
+    wanted = set(user_ids)
+    return {
+        user_id
+        for pair in rows
+        for user_id in pair
+        if user_id is not None and user_id in wanted
+    }
+
+
 def find_departed(
     guild: DiscordGuild,
     corporation,
@@ -181,65 +181,152 @@ def find_departed(
     roles: list,
     bot_member: dict,
     owner_id: int | None,
-) -> tuple[list[tuple[int, list[int]]], int]:
-    """([(discord id, role ids to remove)], how many people are on the
-    server). No Discord calls."""
-    positions, removable = _role_table(guild, roles)
-    bot_top = _top_position(
-        {"roles": bot_member.get("roles") or []}, positions
-    )
+) -> tuple[list[dict], int]:
+    """(people who left, how many people are on the server). No Discord
+    calls. Each row has discord_id, username, display_name, held (their
+    role ids) and strip (the ones to remove)."""
+    server = ServerPeople(guild, members, roles, bot_member, owner_id)
+    _, removable = _role_table(guild, roles)
     allowed = _allowed_user_ids(corporation)
-    exemptions = _Exemptions(guild)
-    people = _people(members)
-    linked = dict(
-        DiscordUser.objects.filter(
-            id__in=[discord_id for discord_id, _, _ in people]
-        ).values_list("id", "user_id")
-    )
 
-    def kept(discord_id, user, member) -> bool:
-        user_id = linked.get(discord_id)
-        if user_id is None or user_id in allowed or discord_id == owner_id:
-            return True
-        username = str(user.get("username") or "").lower()
-        if exemptions.match(discord_id, username):
-            return True
-        if _held_permissions(guild, roles, member) & STAFF_PERMISSIONS:
-            return True
-        return _top_position(member, positions) >= bot_top
-
-    departed = []
-    for discord_id, user, member in people:
+    candidates = []
+    for discord_id, user, member in server.people:
+        user_id = server.linked.get(discord_id)
+        if user_id is None or user_id in allowed:
+            continue
         held = _role_ids(member.get("roles"))
         strip = sorted(
             role_id
             for role_id in held
-            if role_id in removable and positions.get(role_id, 0) < bot_top
+            if role_id in removable
+            and server.positions.get(role_id, 0) < server.bot_top
         )
-        if strip and not kept(discord_id, user, member):
-            departed.append((discord_id, strip))
-    return departed, len(people)
+        if not strip:
+            continue
+        username = str(user.get("username") or "").lower()
+        if server.untouchable(discord_id, username, member):
+            continue
+        candidates.append((user_id, discord_id, user, member, held, strip))
+
+    former = former_member_user_ids(
+        corporation, {row[0] for row in candidates}
+    )
+    departed = [
+        {
+            "discord_id": discord_id,
+            "username": str(user.get("username") or "").lower()[:32],
+            "display_name": str(
+                member.get("nick") or user.get("global_name") or ""
+            )[:100],
+            "held": held,
+            "strip": strip,
+        }
+        for user_id, discord_id, user, member, held, strip in candidates
+        if user_id in former
+    ]
+    return departed, len(server.people)
 
 
-def _strip(client, departed) -> int:
-    """Remove the roles. Returns how many people lost at least one."""
+def _sync_pending(guild: DiscordGuild, departed: list[dict], now) -> list:
+    """Make the pending list match this pass. Returns its rows."""
+    wanted = {row["discord_id"]: row for row in departed}
+    pending = guild.role_strips.filter(stripped_at__isnull=True)
+    pending.exclude(discord_id__in=wanted).delete()
+    existing = {row.discord_id: row for row in pending}
+    for discord_id, row in wanted.items():
+        current = existing.get(discord_id)
+        if current is None:
+            existing[discord_id] = DiscordRoleStrip.objects.create(
+                guild=guild,
+                discord_id=discord_id,
+                username=row["username"],
+                display_name=row["display_name"],
+                flagged_at=now,
+            )
+            continue
+        changed = [
+            field
+            for field in ("username", "display_name")
+            if getattr(current, field) != row[field]
+        ]
+        for field in changed:
+            setattr(current, field, row[field])
+        if changed:
+            current.save(update_fields=changed)
+    return sorted(existing.values(), key=lambda row: row.flagged_at)
+
+
+def _approved(guild: DiscordGuild, due: list, now) -> bool:
+    """The director's approval covers exactly what they saw: people flagged
+    before it, no more of them than the held count, and not too long ago."""
+    approved_at = guild.roles_strip_approved_at
+    if approved_at is None or now - approved_at > APPROVAL_TTL:
+        return False
+    if len(due) > guild.roles_strip_held_count:
+        return False
+    return all(row.flagged_at <= approved_at for row in due)
+
+
+def _strip(client, guild, due: list, departed: dict, names: dict, now):
+    """Remove the roles, one request per person.
+
+    Returns (how many were stripped, whether every due person was dealt
+    with, whether the bot lost Manage Roles).
+    """
     stripped = 0
-    for discord_id, role_ids in departed:
-        removed_any = False
-        for role_id in role_ids:
-            try:
-                problem = _apply(client, discord_id, role_id, add=False)
-            except (requests.RequestException, RateLimitException) as error:
-                logger.warning(
-                    "Discord role strip on guild %s for %s failed: %s",
-                    client.guild_id,
-                    discord_id,
-                    error,
-                )
+    refused = 0
+    complete = True
+    for row in due:
+        info = departed[row.discord_id]
+        keep = sorted(info["held"] - set(info["strip"]))
+        try:
+            client.set_member_roles(row.discord_id, keep, reason=AUDIT_REASON)
+        except requests.HTTPError as error:
+            code = discord_error_code(error)
+            if code == UNKNOWN_MEMBER:
+                # They left the server since the member list was read.
+                row.delete()
                 continue
-            removed_any = removed_any or not problem
-        stripped += int(removed_any)
-    return stripped
+            if code == MISSING_PERMISSIONS:
+                # They outrank the bot now; the next pass tries again. On
+                # LOST_AFTER in a row the bot has lost Manage Roles.
+                complete = False
+                refused += 1
+                if refused >= LOST_AFTER:
+                    return stripped, False, True
+                continue
+            if code in STOP_CODES:
+                return stripped, False, True
+            logger.warning(
+                "Discord role strip on guild %s stopped at %s: %s",
+                guild.guild_id,
+                row.discord_id,
+                error,
+            )
+            return stripped, False, False
+        except (requests.RequestException, RateLimitException) as error:
+            logger.warning(
+                "Discord role strip on guild %s stopped at %s: %s",
+                guild.guild_id,
+                row.discord_id,
+                error,
+            )
+            return stripped, False, False
+        refused = 0
+        row.stripped_at = now
+        row.roles = [
+            {"id": str(role_id), "name": names.get(role_id, "")}
+            for role_id in info["strip"]
+        ]
+        row.save(update_fields=["stripped_at", "roles"])
+        logger.info(
+            "Discord guild %s: removed roles %s from %s, who left",
+            guild.guild_id,
+            info["strip"],
+            row.discord_id,
+        )
+        stripped += 1
+    return stripped, complete, False
 
 
 def strip_guild(guild: DiscordGuild) -> int | None:
@@ -258,43 +345,59 @@ def strip_guild(guild: DiscordGuild) -> int | None:
     corporation = owned[1]
 
     client = DiscordClient.for_guild(guild.guild_id)
-    server = _read_server(guild, client)
+    server = read_server(guild, client, _mark_cannot_manage, "role strip")
     if server is None:
         return None
     bot_member, roles, owner_id, members = server
+    if not _held_permissions(guild, roles, bot_member) & (
+        ADMINISTRATOR | MANAGE_ROLES
+    ):
+        # Someone took Manage Roles away; Settings asks to add the bot again.
+        _mark_cannot_manage(guild)
+        return None
 
     now = timezone.now()
+    guild.role_strips.filter(
+        stripped_at__lt=now - timedelta(days=RECORD_DAYS)
+    ).delete()
     departed, people = find_departed(
         guild, corporation, members, roles, bot_member, owner_id
     )
-    approved = guild.roles_strip_approved_at is not None
-    if len(departed) > _brake_limit(people) and not approved:
+    pending = _sync_pending(guild, departed, now)
+    grace = timedelta(hours=guild.member_grace_hours)
+    due = [row for row in pending if row.flagged_at + grace <= now]
+
+    if len(due) > _brake_limit(people) and not _approved(guild, due, now):
         if guild.roles_strip_held_at is None:
             logger.warning(
                 "Discord guild %s role strip held: %s of %s would lose roles",
                 guild.guild_id,
-                len(departed),
+                len(due),
                 people,
             )
         _save(
             guild,
             roles_strip_held_at=guild.roles_strip_held_at or now,
-            roles_strip_held_count=len(departed),
+            roles_strip_held_count=len(due),
+            # A new count needs a new approval.
+            roles_strip_approved_at=None,
             roles_strip_checked_at=now,
             roles_strip_last_count=0,
         )
         return 0
 
-    try:
-        stripped = _strip(client, departed)
-    except _StopGuild:
+    names, _ = _role_table(guild, roles)
+    by_id = {row["discord_id"]: row for row in departed}
+    stripped, complete, lost = _strip(client, guild, due, by_id, names, now)
+    if lost:
         _mark_cannot_manage(guild)
-        return None
+    # A pass that didn't finish keeps the hold and the approval, so the
+    # rest go on the next pass without a second approval.
     _save(
         guild,
         roles_strip_checked_at=now,
         roles_strip_last_count=stripped,
-        **_clear_hold(),
+        **(_clear_hold() if complete else {}),
     )
     if stripped:
         logger.info(
@@ -302,7 +405,7 @@ def strip_guild(guild: DiscordGuild) -> int | None:
             guild.guild_id,
             stripped,
         )
-    return stripped
+    return None if lost else stripped
 
 
 def strip_departed_roles(guild_pk: int | None = None) -> None:

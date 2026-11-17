@@ -155,14 +155,21 @@ added again to pick up Kick Members.
 
 A corporation can also turn on "Remove all roles from pilots who leave"
 (`discord/guild_departures.py`, off by default). Every 15 minutes
-(`discord.tasks.strip_departed_guild_roles`) the bot takes every role it can
-remove off linked pilots who are no longer in the corporation and have no
-character in an alliance member corporation, not only the mapped roles. They
-stay on the server; kicking is still the member policy's job. Unlinked
-accounts, bots, the server owner, exempted usernames and staff are left
-alone, and @everyone, managed roles and roles at or above the bot's are never
-removed. The same brake applies: a pass that would strip more than a quarter
-of the server (and more than 10 people) waits for a director to approve it.
+(`discord.tasks.strip_departed_guild_roles`) the bot flags linked pilots who
+were in the corporation (a character's stored ESI corporation history) and
+are no longer in it or in an alliance member corporation. Applicants and
+guests who were never members are left alone. After the member policy's
+grace period (`member_grace_hours`) a flagged pilot loses every role the bot
+can remove, not only the mapped roles, in one `PATCH` per person, and a
+`DiscordRoleStrip` row records which roles were removed (kept 90 days, listed
+in Settings). They stay on the server; kicking is still the member policy's
+job. Unlinked accounts, bots, the server owner, exempted usernames and staff
+are left alone, and @everyone, managed roles and roles at or above the bot's
+are never removed. The same brake applies: a pass that would strip more than
+a quarter of the server (and more than 10 people) waits for a director. The
+approval covers only people flagged before it, no more than the held count,
+for six hours, and a pass that stops early keeps it. If the bot loses Manage
+Roles, the pass stops and Settings asks for the bot to be added again.
 
 - Set `DISCORD_CORP_BOT_REDIRECT_URL` and `DISCORD_TRIBE_BOT_REDIRECT_URL` to
   the callbacks above (and list both under OAuth2 > Redirects). Without the

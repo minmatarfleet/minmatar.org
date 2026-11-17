@@ -1,20 +1,23 @@
 """Corporation servers: take every role off people who left."""
 
+from datetime import timedelta
 from unittest.mock import patch
 
+import requests
 from django.contrib.auth.models import User
 from django.test import Client
 from django.utils import timezone
 
 from app.testing import make_token
 from discord.guild_departures import (
+    APPROVAL_TTL,
     StripError,
     approve_strip_hold,
     set_strip_on_leave,
     strip_guild,
 )
-from discord.guild_roles import clear_role_mappings
-from discord.models import DiscordGuildExemption, DiscordUser
+from discord.guild_roles import MANAGE_ROLES, clear_role_mappings
+from discord.models import DiscordGuildExemption, DiscordRoleStrip, DiscordUser
 from discord.test_guild_access import (
     BOT_ROLE,
     HIGH_ROLE,
@@ -24,7 +27,7 @@ from discord.test_guild_access import (
     http_error,
     person,
 )
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCharacterCorporationHistory
 
 CLIENT = "discord.guild_departures.DiscordClient"
 MANUAL_ROLE = 7004
@@ -40,41 +43,90 @@ class DepartureFixture(GuildAccessFixture):
         self.guild.member_action = ""
         self.guild.strip_roles_on_leave = True
         self.guild.save()
+        for role in self.roles:
+            if role["id"] == str(BOT_ROLE):
+                role["permissions"] = str(MANAGE_ROLES)
         self.roles += [
-            {"id": str(MANUAL_ROLE), "position": 2, "permissions": "0"},
+            {
+                "id": str(MANUAL_ROLE),
+                "name": "Manual",
+                "position": 2,
+                "permissions": "0",
+            },
             {
                 "id": str(MANAGED_ROLE),
+                "name": "Booster",
                 "position": 3,
                 "permissions": "0",
                 "managed": True,
             },
-            {"id": str(OTHER_ROLE), "position": 4, "permissions": "0"},
+            {
+                "id": str(OTHER_ROLE),
+                "name": "Other",
+                "position": 4,
+                "permissions": "0",
+            },
         ]
         self.leaver = self.linked(400, "leaver")
 
-    def linked(self, discord_id, name, corporation_id=555, alliance_id=None):
-        """A site user, linked on Discord, flying outside the alliance."""
+    def linked(self, discord_id, name, was_member=True, corporation_id=555):
+        """A site user, linked on Discord, flying outside the alliance.
+        was_member gives them a past stint in the server's corporation."""
         user = User.objects.create(username=name)
-        EveCharacter.objects.create(
+        character = EveCharacter.objects.create(
             character_id=10000 + discord_id,
             character_name=name.title(),
             user=user,
             corporation_id=corporation_id,
-            alliance_id=alliance_id,
         )
+        if was_member:
+            EveCharacterCorporationHistory.objects.create(
+                character=character,
+                record_id=1,
+                corporation_id=self.corporation.corporation_id,
+                start_date=timezone.now() - timedelta(days=200),
+            )
+            EveCharacterCorporationHistory.objects.create(
+                character=character,
+                record_id=2,
+                corporation_id=corporation_id,
+                start_date=timezone.now() - timedelta(days=20),
+            )
         DiscordUser.objects.create(id=discord_id, discord_tag=name, user=user)
         return user
 
-    def stripped(self, client):
-        removed = {}
-        for call in client.remove_user_role.call_args_list:
-            removed.setdefault(int(call.args[0]), set()).add(int(call.args[1]))
-        return removed
+    def kept(self, client):
+        """discord id -> the roles the bot left them with."""
+        return {
+            int(call.args[0]): {int(role_id) for role_id in call.args[1]}
+            for call in client.set_member_roles.call_args_list
+        }
+
+    def age_strips(self, hours=25):
+        DiscordRoleStrip.objects.filter(stripped_at__isnull=True).update(
+            flagged_at=timezone.now() - timedelta(hours=hours)
+        )
+
+    def pending_ids(self):
+        return set(
+            DiscordRoleStrip.objects.filter(
+                stripped_at__isnull=True
+            ).values_list("discord_id", flat=True)
+        )
+
+    def many_leavers(self, count):
+        for i in range(count):
+            self.linked(1000 + i, f"user{i}")
+        return [
+            person(1000 + i, f"user{i}", [MANUAL_ROLE]) for i in range(count)
+        ]
 
 
 class StripTestCase(DepartureFixture):
     @patch(CLIENT)
-    def test_only_people_who_left_lose_their_roles(self, client_cls):
+    def test_people_who_left_lose_their_roles_after_the_grace(
+        self, client_cls
+    ):
         everyone = self.guild.guild_id
         client = self.discord(
             client_cls,
@@ -93,21 +145,64 @@ class StripTestCase(DepartureFixture):
                 ),
             ],
         )
+        # Flagged, not stripped: their corporation may not have caught up.
+        self.assertEqual(0, strip_guild(self.guild))
+        client.set_member_roles.assert_not_called()
+        self.assertEqual({400}, self.pending_ids())
+
+        self.age_strips()
         self.assertEqual(1, strip_guild(self.guild))
-        # Never @everyone or a managed role.
-        self.assertEqual(
-            {400: {MANUAL_ROLE, OTHER_ROLE}}, self.stripped(client)
-        )
+        # One request; @everyone and the managed role stay.
+        self.assertEqual({400: {everyone, MANAGED_ROLE}}, self.kept(client))
+        client.remove_user_role.assert_not_called()
         client.kick_guild_member.assert_not_called()
+        row = DiscordRoleStrip.objects.get(discord_id=400)
+        self.assertIsNotNone(row.stripped_at)
+        self.assertEqual(
+            [
+                {"id": str(MANUAL_ROLE), "name": "Manual"},
+                {"id": str(OTHER_ROLE), "name": "Other"},
+            ],
+            row.roles,
+        )
         self.guild.refresh_from_db()
         self.assertEqual(1, self.guild.roles_strip_last_count)
         self.assertIsNotNone(self.guild.roles_strip_checked_at)
 
     @patch(CLIENT)
+    def test_people_who_were_never_members_keep_their_roles(self, client_cls):
+        # Signed in to apply: linked, but never in the corporation.
+        self.linked(410, "applicant", was_member=False)
+        client = self.discord(
+            client_cls, [person(410, "applicant", [MANUAL_ROLE])]
+        )
+        self.assertEqual(0, strip_guild(self.guild))
+        self.age_strips()
+        self.assertEqual(0, strip_guild(self.guild))
+        client.set_member_roles.assert_not_called()
+        self.assertFalse(DiscordRoleStrip.objects.exists())
+
+    @patch(CLIENT)
+    def test_coming_back_in_the_grace_drops_them(self, client_cls):
+        client = self.discord(
+            client_cls, [person(400, "leaver", [MANUAL_ROLE])]
+        )
+        strip_guild(self.guild)
+        self.assertEqual({400}, self.pending_ids())
+        EveCharacter.objects.filter(user=self.leaver).update(
+            corporation_id=self.corporation.corporation_id
+        )
+        self.age_strips()
+        self.assertEqual(0, strip_guild(self.guild))
+        client.set_member_roles.assert_not_called()
+        self.assertEqual(set(), self.pending_ids())
+
+    @patch(CLIENT)
     def test_someone_without_roles_is_left_alone(self, client_cls):
         client = self.discord(client_cls, [person(400, "leaver")])
         self.assertEqual(0, strip_guild(self.guild))
-        client.remove_user_role.assert_not_called()
+        client.set_member_roles.assert_not_called()
+        self.assertFalse(DiscordRoleStrip.objects.exists())
 
     @patch(CLIENT)
     def test_owner_staff_exempt_and_higher_roles_keep_their_roles(
@@ -125,30 +220,23 @@ class StripTestCase(DepartureFixture):
                 person(301, "mod", [STAFF_ROLE, MANUAL_ROLE]),
                 person(302, "boss", [HIGH_ROLE, MANUAL_ROLE]),
                 person(304, "pal", [MANUAL_ROLE]),
+                # BOT_ROLE is the bot's top role: level with it.
+                person(400, "leaver", [BOT_ROLE, MANUAL_ROLE]),
             ],
         )
         self.assertEqual(0, strip_guild(self.guild))
-        client.remove_user_role.assert_not_called()
-
-    @patch(CLIENT)
-    def test_roles_at_or_above_the_bot_stay(self, client_cls):
-        client = self.discord(
-            client_cls, [person(400, "leaver", [BOT_ROLE, MANUAL_ROLE])]
-        )
-        # BOT_ROLE is the bot's top role, so the leaver is level with it.
-        self.assertEqual(0, strip_guild(self.guild))
-        client.remove_user_role.assert_not_called()
+        client.set_member_roles.assert_not_called()
+        self.assertFalse(DiscordRoleStrip.objects.exists())
 
     @patch(CLIENT)
     def test_a_mass_strip_waits_for_approval(self, client_cls):
-        leavers = [self.linked(1000 + i, f"user{i}") for i in range(12)]
-        self.assertEqual(12, len(leavers))
-        members = [
-            person(1000 + i, f"user{i}", [MANUAL_ROLE]) for i in range(12)
-        ]
-        client = self.discord(client_cls, [person(100, "ceo"), *members])
+        client = self.discord(
+            client_cls, [person(100, "ceo"), *self.many_leavers(12)]
+        )
+        strip_guild(self.guild)
+        self.age_strips()
         self.assertEqual(0, strip_guild(self.guild))
-        client.remove_user_role.assert_not_called()
+        client.set_member_roles.assert_not_called()
         self.guild.refresh_from_db()
         self.assertIsNotNone(self.guild.roles_strip_held_at)
         self.assertEqual(12, self.guild.roles_strip_held_count)
@@ -160,36 +248,164 @@ class StripTestCase(DepartureFixture):
         self.assertIsNone(self.guild.roles_strip_held_at)
         self.assertIsNone(self.guild.roles_strip_approved_at)
 
+    @patch(CLIENT)
+    def test_an_approval_covers_only_the_count_the_director_saw(
+        self, client_cls
+    ):
+        members = self.many_leavers(15)
+        client = self.discord(client_cls, [person(100, "ceo"), *members[:12]])
+        strip_guild(self.guild)
+        self.age_strips()
+        strip_guild(self.guild)
+        with self.captureOnCommitCallbacks(execute=False):
+            approve_strip_hold(self.guild)
+
+        # Three more turn up, flagged before the approval (a data problem).
+        self.discord(client_cls, [person(100, "ceo"), *members])
+        DiscordRoleStrip.objects.bulk_create(
+            [
+                DiscordRoleStrip(
+                    guild=self.guild,
+                    discord_id=1000 + i,
+                    flagged_at=timezone.now() - timedelta(days=2),
+                )
+                for i in range(12, 15)
+            ]
+        )
+        self.assertEqual(0, strip_guild(self.guild))
+        client.set_member_roles.assert_not_called()
+        self.guild.refresh_from_db()
+        self.assertEqual(15, self.guild.roles_strip_held_count)
+        self.assertIsNone(self.guild.roles_strip_approved_at)
+
+    @patch(CLIENT)
+    def test_an_unused_approval_expires(self, client_cls):
+        client = self.discord(
+            client_cls, [person(100, "ceo"), *self.many_leavers(12)]
+        )
+        strip_guild(self.guild)
+        self.age_strips()
+        strip_guild(self.guild)
+        with self.captureOnCommitCallbacks(execute=False):
+            approve_strip_hold(self.guild)
+        self.guild.roles_strip_approved_at = (
+            timezone.now() - APPROVAL_TTL - timedelta(minutes=1)
+        )
+        self.guild.save()
+        self.assertEqual(0, strip_guild(self.guild))
+        client.set_member_roles.assert_not_called()
+
+    @patch(CLIENT)
+    def test_a_pass_that_stops_early_keeps_the_approval(self, client_cls):
+        client = self.discord(
+            client_cls, [person(100, "ceo"), *self.many_leavers(12)]
+        )
+        strip_guild(self.guild)
+        self.age_strips()
+        strip_guild(self.guild)
+        with self.captureOnCommitCallbacks(execute=False):
+            approve_strip_hold(self.guild)
+        client.set_member_roles.side_effect = [
+            None,
+            None,
+            requests.Timeout("slow"),
+        ]
+        self.assertEqual(2, strip_guild(self.guild))
+        self.guild.refresh_from_db()
+        self.assertIsNotNone(self.guild.roles_strip_held_at)
+        self.assertIsNotNone(self.guild.roles_strip_approved_at)
+        self.assertEqual(10, len(self.pending_ids()))
+
+        client.set_member_roles.side_effect = None
+        self.assertEqual(10, strip_guild(self.guild))
+        self.guild.refresh_from_db()
+        self.assertIsNone(self.guild.roles_strip_approved_at)
+
     def test_approving_needs_a_hold(self):
         with self.assertRaises(StripError) as raised:
             approve_strip_hold(self.guild)
         self.assertEqual("not_held", raised.exception.code)
 
     @patch(CLIENT)
-    def test_losing_access_marks_the_server(self, client_cls):
+    def test_without_manage_roles_nothing_is_tried(self, client_cls):
+        for role in self.roles:
+            if role["id"] == str(BOT_ROLE):
+                role["permissions"] = "0"
         client = self.discord(
             client_cls, [person(400, "leaver", [MANUAL_ROLE])]
         )
-        client.remove_user_role.side_effect = http_error(50001)
         self.assertIsNone(strip_guild(self.guild))
+        client.set_member_roles.assert_not_called()
         self.guild.refresh_from_db()
         self.assertFalse(self.guild.can_manage_roles)
 
     @patch(CLIENT)
-    def test_a_role_the_bot_cannot_touch_is_skipped(self, client_cls):
+    def test_refusals_in_a_row_mean_the_permission_is_gone(self, client_cls):
         client = self.discord(
-            client_cls, [person(400, "leaver", [MANUAL_ROLE, OTHER_ROLE])]
+            client_cls, [person(100, "ceo"), *self.many_leavers(4)]
         )
-        client.remove_user_role.side_effect = [http_error(50013), None]
+        strip_guild(self.guild)
+        self.age_strips()
+        client.set_member_roles.side_effect = http_error(50013)
+        self.assertIsNone(strip_guild(self.guild))
+        self.assertEqual(3, client.set_member_roles.call_count)
+        self.guild.refresh_from_db()
+        self.assertFalse(self.guild.can_manage_roles)
+
+    @patch(CLIENT)
+    def test_one_refusal_is_skipped_and_retried(self, client_cls):
+        client = self.discord(
+            client_cls, [person(100, "ceo"), *self.many_leavers(2)]
+        )
+        strip_guild(self.guild)
+        self.age_strips()
+        client.set_member_roles.side_effect = [http_error(50013), None]
         self.assertEqual(1, strip_guild(self.guild))
-        self.assertEqual(2, client.remove_user_role.call_count)
+        self.assertEqual(1, len(self.pending_ids()))
+        self.guild.refresh_from_db()
+        self.assertTrue(self.guild.can_manage_roles)
+
+    @patch(CLIENT)
+    def test_someone_who_left_the_server_is_dropped(self, client_cls):
+        client = self.discord(
+            client_cls, [person(400, "leaver", [MANUAL_ROLE])]
+        )
+        strip_guild(self.guild)
+        self.age_strips()
+        client.set_member_roles.side_effect = http_error(10007)
+        self.assertEqual(0, strip_guild(self.guild))
+        self.assertFalse(DiscordRoleStrip.objects.exists())
+
+    @patch(CLIENT)
+    def test_losing_access_marks_the_server(self, client_cls):
+        client = self.discord(
+            client_cls, [person(400, "leaver", [MANUAL_ROLE])]
+        )
+        strip_guild(self.guild)
+        self.age_strips()
+        client.set_member_roles.side_effect = http_error(50001)
+        self.assertIsNone(strip_guild(self.guild))
+        self.guild.refresh_from_db()
+        self.assertFalse(self.guild.can_manage_roles)
 
     @patch(CLIENT)
     def test_an_empty_member_list_is_not_an_empty_server(self, client_cls):
         client = self.discord(client_cls, [])
         client.get_members.return_value = []
         self.assertIsNone(strip_guild(self.guild))
-        client.remove_user_role.assert_not_called()
+        client.set_member_roles.assert_not_called()
+
+    @patch(CLIENT)
+    def test_old_records_are_pruned(self, client_cls):
+        self.discord(client_cls, [person(100, "ceo")])
+        old = DiscordRoleStrip.objects.create(
+            guild=self.guild,
+            discord_id=999,
+            flagged_at=timezone.now() - timedelta(days=100),
+            stripped_at=timezone.now() - timedelta(days=95),
+        )
+        strip_guild(self.guild)
+        self.assertFalse(DiscordRoleStrip.objects.filter(pk=old.pk).exists())
 
     @patch(CLIENT)
     def test_off_protected_and_unmanaged_servers_are_left_alone(
@@ -271,15 +487,56 @@ class StripSettingTestCase(DepartureFixture):
         self.assertEqual(403, denied.status_code)
         self.assertTrue(queue_reconcile.called)
 
-    def test_turning_it_off_clears_a_hold(self):
+    def test_turning_it_off_clears_the_hold_and_who_is_waiting(self):
         self.guild.strip_roles_on_leave = True
         self.guild.roles_strip_held_at = timezone.now()
         self.guild.roles_strip_held_count = 20
         self.guild.save()
+        DiscordRoleStrip.objects.create(
+            guild=self.guild, discord_id=400, flagged_at=timezone.now()
+        )
+        done = DiscordRoleStrip.objects.create(
+            guild=self.guild,
+            discord_id=401,
+            flagged_at=timezone.now(),
+            stripped_at=timezone.now(),
+        )
         set_strip_on_leave(self.guild, False)
         self.guild.refresh_from_db()
         self.assertIsNone(self.guild.roles_strip_held_at)
         self.assertEqual(0, self.guild.roles_strip_held_count)
+        self.assertEqual(
+            [done.pk],
+            list(DiscordRoleStrip.objects.values_list("pk", flat=True)),
+        )
+
+    def test_settings_list_who_waits_and_what_was_removed(self):
+        now = timezone.now()
+        DiscordRoleStrip.objects.create(
+            guild=self.guild,
+            discord_id=400,
+            username="leaver",
+            flagged_at=now,
+        )
+        DiscordRoleStrip.objects.create(
+            guild=self.guild,
+            discord_id=401,
+            username="gone",
+            flagged_at=now - timedelta(days=2),
+            stripped_at=now - timedelta(days=1),
+            roles=[{"id": str(MANUAL_ROLE), "name": "Manual"}],
+        )
+        response = self.client.get(
+            self.base.removesuffix("/roles"), **self.auth
+        )
+        self.assertEqual(200, response.status_code)
+        role_sync = response.json()["role_sync"]
+        self.assertEqual(1, role_sync["strip_pending_total"])
+        self.assertEqual("400", role_sync["strip_pending"][0]["discord_id"])
+        self.assertEqual(
+            [{"id": str(MANUAL_ROLE), "name": "Manual"}],
+            role_sync["strip_recent"][0]["roles"],
+        )
 
     @patch("discord.guild_departures.queue_strip")
     def test_approve_endpoint(self, queue_strip):
@@ -303,8 +560,12 @@ class StripSettingTestCase(DepartureFixture):
     def test_releasing_the_server_turns_it_off(self):
         self.guild.strip_roles_on_leave = True
         self.guild.save()
+        DiscordRoleStrip.objects.create(
+            guild=self.guild, discord_id=400, flagged_at=timezone.now()
+        )
         self.corporation.discord_guild = None
         self.corporation.save()
         clear_role_mappings(self.guild)
         self.guild.refresh_from_db()
         self.assertFalse(self.guild.strip_roles_on_leave)
+        self.assertFalse(DiscordRoleStrip.objects.exists())

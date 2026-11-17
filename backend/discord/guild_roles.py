@@ -9,6 +9,7 @@ it on.
 """
 
 import logging
+from datetime import timedelta
 
 import requests
 from django.conf import settings
@@ -160,6 +161,7 @@ def clear_role_mappings(guild: DiscordGuild | None) -> None:
     guild.roles_strip_held_at = None
     guild.roles_strip_held_count = 0
     guild.roles_strip_approved_at = None
+    guild.role_strips.all().delete()
     guild.save(
         update_fields=[
             "member_policy",
@@ -492,6 +494,9 @@ def role_sync_payload(guild: DiscordGuild | None) -> dict:
             "strip_held": None,
             "strip_checked_at": None,
             "strip_last_count": 0,
+            "strip_pending": [],
+            "strip_pending_total": 0,
+            "strip_recent": [],
         }
     mapped = {
         mapping.role_id: mapping for mapping in guild.role_mappings.all()
@@ -531,6 +536,48 @@ def role_sync_payload(guild: DiscordGuild | None) -> dict:
         ),
         "strip_checked_at": guild.roles_strip_checked_at,
         "strip_last_count": guild.roles_strip_last_count,
+        **_strip_lists(guild),
+    }
+
+
+# The Settings tab lists this many people waiting and recently stripped.
+STRIP_LIST_LIMIT = 50
+
+
+def _strip_lists(guild: DiscordGuild) -> dict:
+    """Who is waiting to lose their roles, and whose roles were removed
+    (discord.guild_departures), for the Settings tab."""
+    grace = timedelta(hours=guild.member_grace_hours)
+    pending = guild.role_strips.filter(stripped_at__isnull=True)
+    recent = guild.role_strips.filter(stripped_at__isnull=False).order_by(
+        "-stripped_at"
+    )
+    return {
+        "strip_pending_total": pending.count(),
+        "strip_pending": [
+            {
+                "discord_id": str(row.discord_id),
+                "username": row.username or None,
+                "display_name": row.display_name or None,
+                "flagged_at": row.flagged_at,
+                "strip_after": row.flagged_at + grace,
+            }
+            for row in pending[:STRIP_LIST_LIMIT]
+        ],
+        "strip_recent": [
+            {
+                "discord_id": str(row.discord_id),
+                "username": row.username or None,
+                "display_name": row.display_name or None,
+                "stripped_at": row.stripped_at,
+                "roles": [
+                    {"id": str(role.get("id")), "name": role.get("name") or ""}
+                    for role in row.roles or []
+                    if isinstance(role, dict)
+                ],
+            }
+            for row in recent[:STRIP_LIST_LIMIT]
+        ],
     }
 
 
