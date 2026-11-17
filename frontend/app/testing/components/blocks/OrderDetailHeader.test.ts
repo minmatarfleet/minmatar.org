@@ -27,6 +27,8 @@ test("a provisional order tells pilots to claim until it starts", async () => {
   });
 
   expect(html).toContain("Claim quantities until");
+  expect(html).toContain("hours).");
+  expect(html).not.toContain("{hours}");
   expect(html).toContain("Build at Amamake.");
   expect(html).not.toContain("Claiming has ended");
 });

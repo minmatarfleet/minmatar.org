@@ -80,24 +80,35 @@ const claiming_when = starts_at
 const open_unfulfilled = unfulfilled_items.filter((row) => row.imported_order_id == null && row.quantity > 0)
 const show_started = Boolean(starts_at && started_at && !provisional && !fulfilled)
 const where = location_name || t('industry.orders.manage.no_location')
+const hours_placeholder = '{' + 'hours}'
+const when_placeholder = '{' + 'when}'
+const location_placeholder = '{' + 'location}'
+const claiming_banner = !claiming
+    ? ''
+    : claiming_hours <= 0
+        ? t('industry.orders.claiming_banner_under_hour').replace(when_placeholder, claiming_when)
+        : t('industry.orders.claiming_banner')
+            .replace(hours_placeholder, String(claiming_hours))
+            .replace(when_placeholder, claiming_when)
+const started_banner = show_started
+    ? t('industry.orders.started_banner').replace(location_placeholder, where)
+    : ''
+const claiming_at = location_name && claiming
+    ? t('industry.orders.claiming_at').replace(location_placeholder, location_name)
+    : ''
 ---
 
 <Flexblock gap="var(--space-s)" class="[ w-full ]">
 {(claiming || show_started) &&
     <div class="[ order-claiming-banner ]">
-        {claiming &&
-            <p>
-                {(claiming_hours <= 0
-                    ? t('industry.orders.claiming_banner_under_hour')
-                    : t('industry.orders.claiming_banner').replace('{hours}', String(claiming_hours))
-                ).replace('{when}', claiming_when)}
-            </p>
+        {claiming_banner &&
+            <p>{claiming_banner}</p>
         }
-        {show_started &&
-            <p>{t('industry.orders.started_banner').replace('{location}', where)}</p>
+        {started_banner &&
+            <p>{started_banner}</p>
         }
-        {location_name && claiming &&
-            <p>{t('industry.orders.claiming_at').replace('{location}', location_name)}</p>
+        {claiming_at &&
+            <p>{claiming_at}</p>
         }
     </div>
 }
