@@ -2,8 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { CampaignListItem, Location, OrderLpStockpile } from '@dtypes/api.minmatar.org'
-import { format_date_short } from '@helpers/date'
+import type { CampaignListItem, IndustrySingleOrder, Location, OrderLpStockpile } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import { eve_clock, eve_day_short, format_date_short, hours_diff } from '@helpers/date'
 import { query_string } from '@helpers/string'
 
 interface Props {
@@ -12,6 +12,12 @@ interface Props {
     character_name: string
     location_name?: string | null
     needed_by?: Date | string | null
+    provisional?: boolean
+    starts_at?: string | null
+    started_at?: string | null
+    fulfilled?: boolean
+    unfulfilled_items?: IndustrySingleOrder['unfulfilled_items']
+    can_import?: boolean
     /**
      * LP stockpiles for the stockpiles dialog. Empty until the header partial
      * loads; coordinators load their own content inside the modal.
@@ -34,6 +40,12 @@ const {
     character_name,
     location_name = null,
     needed_by = null,
+    provisional = false,
+    starts_at = null,
+    started_at = null,
+    fulfilled = false,
+    unfulfilled_items = [],
+    can_import = false,
     lp_stockpiles = null,
     manage = null,
 } = Astro.props
@@ -60,8 +72,52 @@ const MANAGE_PARTIAL = translatePath(
 )
 const manage_form_id = `order-manage-form-${order_id}`
 const needed_by_value = needed_by ? String(needed_by).slice(0, 10) : ''
+const claiming = Boolean(provisional && starts_at)
+const claiming_hours = claiming && starts_at ? hours_diff(new Date(), starts_at) : 0
+const claiming_when = starts_at
+    ? `${eve_day_short(lang, starts_at, { weekday: true })} ${eve_clock(starts_at)} UTC`
+    : ''
+const open_unfulfilled = unfulfilled_items.filter((row) => row.imported_order_id == null && row.quantity > 0)
+const show_started = Boolean(starts_at && started_at && !provisional && !fulfilled)
+const where = location_name || t('industry.orders.manage.no_location')
 ---
 
+<Flexblock gap="var(--space-s)" class="[ w-full ]">
+{(claiming || show_started) &&
+    <div class="[ order-claiming-banner ]">
+        {claiming &&
+            <p>
+                {(claiming_hours <= 0
+                    ? t('industry.orders.claiming_banner_under_hour')
+                    : t('industry.orders.claiming_banner').replace('{hours}', String(claiming_hours))
+                ).replace('{when}', claiming_when)}
+            </p>
+        }
+        {show_started &&
+            <p>{t('industry.orders.started_banner').replace('{location}', where)}</p>
+        }
+        {location_name && claiming &&
+            <p>{t('industry.orders.claiming_at').replace('{location}', location_name)}</p>
+        }
+    </div>
+}
+{can_import && open_unfulfilled.length > 0 &&
+    <div class="[ order-unfulfilled ]">
+        <p><strong>{t('industry.orders.unfulfilled_title')}</strong></p>
+        <p>{t('industry.orders.unfulfilled_hint')}</p>
+        <ul>
+            {open_unfulfilled.map((row) =>
+                <li>{row.quantity}× {row.eve_type_name}</li>
+            )}
+        </ul>
+        <Button
+            href={translatePath(`/industry/orders/create/?import_unfulfilled=${order_id}`)}
+            size="sm"
+        >
+            {t('industry.orders.unfulfilled_import')}
+        </Button>
+    </div>
+}
 <FlexInline
     id="order-detail-header"
     justification="space-between"
@@ -275,9 +331,33 @@ const needed_by_value = needed_by ? String(needed_by).slice(0, 10) : ''
         }
     </Flexblock>
 </FlexInline>
+</Flexblock>
 
 <style lang="scss">
     @use '../../../styles/mixins/skeleton';
+
+    .order-claiming-banner,
+    .order-unfulfilled {
+        padding: var(--space-s);
+        border: 1px solid var(--border-color);
+        background: var(--surface-sunken);
+    }
+
+    .order-claiming-banner p,
+    .order-unfulfilled p,
+    .order-unfulfilled ul {
+        margin: 0;
+    }
+
+    .order-unfulfilled {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .order-unfulfilled ul {
+        padding-inline-start: var(--space-m);
+    }
 
     .order-coordinators-skel__status {
         margin: 0;

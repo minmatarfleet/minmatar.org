@@ -14,6 +14,11 @@ from industry.helpers.producers import (
     PRODUCTION_ACTIVITIES,
     blueprint_activity_pairs_for_product_type,
 )
+from industry.helpers.provisional import (
+    claiming_hours,
+    format_eve_datetime,
+    order_is_provisional,
+)
 from industry.models import (
     IndustryOrder,
     IndustryOrderBlueprintCoordinator,
@@ -27,6 +32,7 @@ from notifications.types.industry import (
     ORDER_ASSIGNMENT,
     ORDER_CREATED,
     ORDER_JOB,
+    ORDER_SELECTED,
 )
 from tribes.models import TribeGroupMembership
 
@@ -202,7 +208,9 @@ def match_industry_job_to_assignment(
     candidates: list[IndustryOrderItemAssignment] = []
     for assignment in assignments:
         order = assignment.order_item.order
-        period_start = order.created_at
+        if order_is_provisional(order):
+            continue
+        period_start = order.started_at or order.created_at
         period_end = order.order_period_end()
         if job.end_date < period_start or job.start_date > period_end:
             continue
@@ -230,13 +238,18 @@ def emit_order_created(order: IndustryOrder, *, creator_user_id: int | None):
             order.location_id
         )
 
+    provisional = order_is_provisional(order)
     ctx = {
         "order_id": order.pk,
         "public_short_code": order.public_short_code,
         "needed_by": order.needed_by.isoformat() if order.needed_by else "",
         "items": item_lines,
         "location_name": location_name,
+        "provisional": provisional,
     }
+    if provisional:
+        ctx["starts_at"] = format_eve_datetime(order.starts_at)
+        ctx["provisional_hours"] = claiming_hours(order.starts_at)
     if creator_user_id is None and order.character_id:
         creator_user_id = getattr(order.character, "user_id", None)
 
@@ -255,6 +268,7 @@ def emit_order_created(order: IndustryOrder, *, creator_user_id: int | None):
 def emit_order_assignment(assignment: IndustryOrderItemAssignment, user):
     item = assignment.order_item
     order = item.order
+    provisional = order_is_provisional(order)
     ctx = {
         "order_id": order.pk,
         "public_short_code": order.public_short_code,
@@ -263,7 +277,10 @@ def emit_order_assignment(assignment: IndustryOrderItemAssignment, user):
         "item_name": item.eve_type.name,
         "quantity": assignment.quantity,
         "coordinators": coordinators_for_order_item(order, item),
+        "provisional": provisional,
     }
+    if provisional and order.starts_at is not None:
+        ctx["starts_at"] = format_eve_datetime(order.starts_at)
     notify_user(
         user,
         ORDER_ASSIGNMENT.key,
@@ -271,6 +288,67 @@ def emit_order_assignment(assignment: IndustryOrderItemAssignment, user):
         idempotency_key=(
             f"industry.order.assignment:{assignment.pk}:{assignment.quantity}"
         ),
+    )
+
+
+def _dedupe_coordinators(coordinators: list[dict]) -> list[dict]:
+    seen = set()
+    out = []
+    for row in coordinators:
+        key = (row.get("role"), row.get("character_id"))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out
+
+
+def emit_order_selected(order: IndustryOrder):
+    """Tell each claimant they were selected and should start immediately."""
+    location_name = ""
+    if order.location_id:
+        location_name = getattr(order.location, "location_name", "") or str(
+            order.location_id
+        )
+    buckets: dict[int, dict] = {}
+    items = order.items.select_related("eve_type").prefetch_related(
+        "assignments__character"
+    )
+    for item in items:
+        coordinators = coordinators_for_order_item(order, item)
+        for assignment in item.assignments.all():
+            user = assignment.character.user
+            if user is None:
+                continue
+            bucket = buckets.setdefault(
+                user.id,
+                {"user": user, "lines": [], "coordinators": []},
+            )
+            bucket["lines"].append(
+                f"{assignment.quantity}× {item.eve_type.name}"
+            )
+            bucket["coordinators"].extend(coordinators)
+    if not buckets:
+        return []
+    user_contexts = {
+        user_id: {
+            "items": bucket["lines"],
+            "coordinators": _dedupe_coordinators(bucket["coordinators"]),
+        }
+        for user_id, bucket in buckets.items()
+    }
+    users = [bucket["user"] for bucket in buckets.values()]
+    return notify_users(
+        users,
+        ORDER_SELECTED.key,
+        {
+            "order_id": order.pk,
+            "public_short_code": order.public_short_code,
+            "location_name": location_name,
+            "items": [],
+        },
+        idempotency_key=f"industry.order.selected:{order.pk}",
+        user_contexts=user_contexts,
     )
 
 

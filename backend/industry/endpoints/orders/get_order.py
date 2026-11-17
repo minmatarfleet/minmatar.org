@@ -1,17 +1,18 @@
 """GET /{order_id} - fetch one order with items and who committed to it (public)."""
 
 from app.errors import ErrorResponse
-
 from industry.endpoints.orders.schemas import (
     OrderDetailResponse,
     OrderLocationResponse,
 )
 from industry.endpoints.orders.serialization import (
     order_blueprint_coordinators_response,
+    order_claiming_fields,
     order_item_to_response,
     order_lp_stockpiles_response,
     order_mineral_coordinators_response,
     order_pi_coordinators_response,
+    unfulfilled_item_to_response,
 )
 from industry.helpers.order_profit_breakdown import (
     can_refresh_order_profit_breakdown,
@@ -38,6 +39,7 @@ def get_order(request, order_id: int):
             .prefetch_related(
                 "items__eve_type",
                 "items__assignments__character",
+                "unfulfilled_items__eve_type",
                 "blueprint_coordinators__character",
                 "blueprint_coordinators__eve_types",
                 "mineral_coordinators__character",
@@ -75,6 +77,11 @@ def get_order(request, order_id: int):
             if order.location_id
             else None
         ),
+        **order_claiming_fields(order),
+        unfulfilled_items=[
+            unfulfilled_item_to_response(row)
+            for row in order.unfulfilled_items.all()
+        ],
         items=[
             order_item_to_response(order, item, profit_by_type)
             for item in order.items.all()

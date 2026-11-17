@@ -4,6 +4,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from industry.helpers.provisional import order_is_provisional
+
 SELF_ASSIGN_WINDOW = timedelta(hours=48)
 
 
@@ -55,7 +57,10 @@ def apply_assignment_delivery(
 
 def self_assign_window_ends_at(order):
     """UTC-aware datetime when the early per-character cap no longer applies."""
-    return order.created_at + SELF_ASSIGN_WINDOW
+    if order_is_provisional(order) and order.starts_at is not None:
+        return order.starts_at
+    anchor = order.started_at or order.created_at
+    return anchor + SELF_ASSIGN_WINDOW
 
 
 def within_self_assign_window(order) -> bool:
@@ -81,11 +86,17 @@ def validate_assignment_quantity(
     if add_quantity > remaining:
         return f"Only {remaining} unit(s) remain unassigned on this line."
 
-    if within_self_assign_window(order) and self_assign_maximum is not None:
+    if self_assign_maximum is not None and within_self_assign_window(order):
         cap = self_assign_maximum
         if quantity_for_character + add_quantity > cap:
+            if order_is_provisional(order):
+                return (
+                    "Until this order starts, each character may claim at most "
+                    f"{cap} unit(s) on this line "
+                    f"(you already have {quantity_for_character})."
+                )
             return (
-                f"During the first 48 hours after the order was created, each character "
+                "During the first 48 hours after the order was created, each character "
                 f"may assign at most {cap} unit(s) on this line "
                 f"(you already have {quantity_for_character})."
             )

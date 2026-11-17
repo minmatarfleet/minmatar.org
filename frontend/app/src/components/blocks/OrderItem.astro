@@ -26,6 +26,7 @@ const {
 import {
     format_date_short,
     get_date_progress_percent,
+    hours_diff,
     humanize_date_diff_single,
     from_to_text
 } from '@helpers/date'
@@ -43,6 +44,14 @@ else
 
 if (order.fulfilled_at)
     completion_text = t('completed_percent').replace('{date}', format_date_short(lang, order.fulfilled_at))
+
+const claiming = Boolean(order.provisional && order.starts_at)
+if (claiming && !order.fulfilled_at) {
+    const claiming_hours = hours_diff(new Date(), order.starts_at as string)
+    completion_text = claiming_hours <= 0
+        ? t('industry.orders.claiming_status_under_hour')
+        : t('industry.orders.claiming_status').replace('{hours}', String(claiming_hours))
+}
 
 const order_detail_href = translatePath(`/industry/orders/${order.id}/`)
 
@@ -129,7 +138,7 @@ import TippyOrderItem from './TippyOrderItem.astro';
                             data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
                             class:list={[
                                 'w-fit',
-                                { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
+                                { 'text-red': !claiming && !order.fulfilled_at && time_to_deadline > 90 }
                             ]}
                         >
                             {completion_text}

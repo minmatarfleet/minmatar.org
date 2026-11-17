@@ -1,18 +1,21 @@
 """POST "" - create a new industry order."""
 
 import logging
+from datetime import timezone as dt_timezone
 
-from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter
+from django.utils import timezone
 from eveuniverse.models import EveType
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from campaigns.helpers import resolve_attachable_campaign
+from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCharacter
 from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
 )
+from industry.helpers import order_pricing
 from industry.helpers.order_submit import (
     ORDER_SUBMIT_FEATURE,
     resolve_staging_location,
@@ -22,7 +25,11 @@ from industry.helpers.order_submit import (
     validate_owned_delivery_entity,
     validate_produced_catalog_items,
 )
-from industry.helpers import order_pricing
+from industry.helpers.provisional import (
+    mark_imported_unfulfilled,
+    user_can_import_unfulfilled,
+    validate_starts_at,
+)
 from industry.helpers.public_short_code import (
     pick_unique_public_short_code_among_actives,
 )
@@ -139,6 +146,7 @@ def _create_order(
         location=location,
         contract_to=contract_to,
         campaign=campaign,
+        starts_at=payload.starts_at,
         public_short_code=pick_unique_public_short_code_among_actives(),
     )
     return order, None
@@ -173,6 +181,33 @@ def _resolve_create_context(request, payload: CreateOrderRequest):
     needed_by_err = validate_needed_by(payload.needed_by)
     if needed_by_err:
         return None, (400, ErrorResponse(detail=needed_by_err))
+    if payload.starts_at is not None and timezone.is_naive(payload.starts_at):
+        payload.starts_at = timezone.make_aware(
+            payload.starts_at, dt_timezone.utc
+        )
+    starts_at_err = validate_starts_at(payload.starts_at, payload.needed_by)
+    if starts_at_err:
+        return None, (400, ErrorResponse(detail=starts_at_err))
+    if payload.import_unfulfilled_from_order_id is not None:
+        if not user_can_import_unfulfilled(request.user):
+            return None, (
+                403,
+                ErrorResponse(
+                    detail="Only order managers can import unfulfilled lines."
+                ),
+            )
+        if not IndustryOrder.objects.filter(
+            pk=payload.import_unfulfilled_from_order_id
+        ).exists():
+            return None, (
+                404,
+                ErrorResponse(
+                    detail=(
+                        "Order "
+                        f"{payload.import_unfulfilled_from_order_id} not found."
+                    )
+                ),
+            )
     location, err = _resolve_order_location(payload)
     if err:
         return None, err
@@ -252,6 +287,12 @@ def post_order(request, payload: CreateOrderRequest):
             quantity=item.quantity,
             self_assign_maximum=item.self_assign_maximum,
             target_unit_price=_line_target_unit_price(item),
+        )
+    if payload.import_unfulfilled_from_order_id is not None:
+        mark_imported_unfulfilled(
+            payload.import_unfulfilled_from_order_id,
+            order,
+            [item.eve_type_id for item in payload.items],
         )
     _enqueue_post_create_tasks(order.pk, request.user.id)
     return 201, CreateOrderResponse(

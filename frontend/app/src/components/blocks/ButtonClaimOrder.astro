@@ -19,6 +19,8 @@ interface Props {
     render?:        'order_item' | 'breakdown';
     /** Plain trigger, for a host inside ActionMenu. */
     styless?:       boolean;
+    /** Order is still in its claiming window. */
+    claiming?:      boolean;
 }
 
 const {
@@ -34,6 +36,7 @@ const {
     id,
     render = 'order_item',
     styless = false,
+    claiming = false,
 } = Astro.props
 
 import { hours_diff } from '@helpers/date'
@@ -127,7 +130,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
             <Flexblock gap="var(--space-s)">
                 <h3>{reclaim ? t('my_claim') : t('claim_order')}</h3>
                     
-                <p>{reclaim ? t('define_add_assignment_quantity') : t('define_produce_quantity')}</p>
+                <p>{claiming ? t('industry.orders.claim_now_not_selected') : reclaim ? t('define_add_assignment_quantity') : t('define_produce_quantity')}</p>
                 
                 <Flexblock>
                     <Flexblock gap='var(--space-xs)'>

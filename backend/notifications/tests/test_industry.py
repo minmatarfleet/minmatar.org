@@ -178,6 +178,34 @@ class JobMatchTestCase(TestCase):
         "industry.helpers.notifications.blueprint_activity_pairs_for_product_type",
         return_value={(999, 1)},
     )
+    def test_no_match_while_order_is_provisional(self, mock_pairs):
+        del mock_pairs
+        self.order.starts_at = timezone.now() + timedelta(hours=12)
+        self.order.save(update_fields=["starts_at"])
+        now = timezone.now()
+        job = EveCharacterIndustryJob.objects.create(
+            job_id=555005,
+            character=self.char,
+            activity_id=1,
+            blueprint_id=1,
+            blueprint_type_id=999,
+            blueprint_location_id=1,
+            facility_id=1,
+            location_id=1,
+            output_location_id=1,
+            status="active",
+            installer_id=self.char.character_id,
+            start_date=now,
+            end_date=now + timedelta(hours=2),
+            duration=7200,
+            runs=1,
+        )
+        self.assertIsNone(match_industry_job_to_assignment(job))
+
+    @patch(
+        "industry.helpers.notifications.blueprint_activity_pairs_for_product_type",
+        return_value={(999, 1)},
+    )
     def test_no_match_wrong_blueprint(self, mock_pairs):
         del mock_pairs
         now = timezone.now()

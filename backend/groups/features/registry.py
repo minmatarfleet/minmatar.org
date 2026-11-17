@@ -245,7 +245,8 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         scope=FeatureScope.TRIBE_CHIEF,
         description=(
             "Edit any industry order's deadline, location, contract "
-            "recipient, campaign and fulfilled state on the order page."
+            "recipient, campaign and fulfilled state, and import unclaimed "
+            "provisional lines into a new order."
         ),
         legacy_permission="industry.change_industryorder",
         default_tribe_group_codes=_tribe_codes(*_INDUSTRY_TRIBE_CODES),

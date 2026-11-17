@@ -43,6 +43,9 @@ class OrderListItemResponse(BaseModel):
     character_id: int | None = None
     character_name: str = ""
     location: OrderLocationResponse | None
+    starts_at: datetime | None = None
+    started_at: datetime | None = None
+    provisional: bool = False
     items: List[OrderItemQuantityResponse]
     assigned_to: List[OrderAssigneeResponse]
 
@@ -70,6 +73,8 @@ class OrderItemResponse(BaseModel):
     unassigned_quantity: int
     self_assign_maximum: int | None = None
     self_assign_window_ends_at: datetime
+    provisional: bool = False
+    starts_at: datetime | None = None
     target_unit_price: Decimal | None = None
     estimated_profit_per_unit: int | None = None
     assignments: List[AssignmentResponse]
@@ -119,6 +124,16 @@ PiCoordinatorResponse = BlueprintCoordinatorResponse
 CoordinatorEveTypeResponse = BlueprintCoordinatorEveTypeResponse
 
 
+class OrderUnfulfilledItemResponse(BaseModel):
+    """Quantity removed when a provisional order started, still available to import."""
+
+    id: int
+    eve_type_id: int
+    eve_type_name: str
+    quantity: int
+    imported_order_id: int | None = None
+
+
 class OrderDetailResponse(BaseModel):
     """Full order with items and who committed to each item."""
 
@@ -133,6 +148,10 @@ class OrderDetailResponse(BaseModel):
     campaign_slug: str | None = None
     campaign_id: int | None = None
     location: OrderLocationResponse | None
+    starts_at: datetime | None = None
+    started_at: datetime | None = None
+    provisional: bool = False
+    unfulfilled_items: List[OrderUnfulfilledItemResponse] = []
     items: List[OrderItemResponse]
     lp_stockpiles: List[OrderLpStockpileResponse] = []
     blueprint_coordinators: List[BlueprintCoordinatorResponse] = []
@@ -167,6 +186,10 @@ class CreateOrderRequest(BaseModel):
     location_id: int | None = None
     contract_to: str = ""
     campaign_id: int | None = None
+    # When set, the order stays provisional until this time. Pilots claim
+    # quantities; unclaimed amounts fall off when the order starts.
+    starts_at: datetime | None = None
+    import_unfulfilled_from_order_id: int | None = None
     items: List[OrderItemInput]
 
 

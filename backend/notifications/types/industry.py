@@ -70,12 +70,50 @@ def _body_item_phrase(lines: list[str]) -> str:
     return ", ".join(capped)
 
 
+def _provisional_claim_sentence(ctx: dict) -> str:
+    starts = (ctx.get("starts_at") or "").strip()
+    hours = ctx.get("provisional_hours")
+    location = (ctx.get("location_name") or "").strip()
+    when = f" before {starts}" if starts else ""
+    hour_bit = f" ({hours} hours)" if hours else ""
+    where = f" Build at {location}." if location else ""
+    return (
+        f"Claim the quantities you can build{when}{hour_bit}.{where} "
+        "You'll be told if you're selected when the order starts."
+    )
+
+
 def render_order_created(ctx: dict) -> dict:
     order_id = ctx["order_id"]
     short = ctx.get("public_short_code") or str(order_id)
     url = _order_url(order_id)
     lines = _item_lines(ctx)
     bullets = _bullet_block(lines)
+
+    if ctx.get("provisional"):
+        title = f"Claim builds on order {short}"
+        body = _provisional_claim_sentence(ctx)
+        discord = (
+            f"## Claim builds on order `{short}`\n"
+            f"{bullets}\n\n"
+            f"{body}\n\n"
+            f"[Claim here]({url})"
+        )
+        eve_body = (
+            f"Claim builds on order {short}\n\n"
+            f"{bullets}\n\n"
+            f"{body}\n\n"
+            f"{url}\n\n"
+            f"— Bear"
+        )
+        return {
+            "title": title,
+            "body": body,
+            "url": url,
+            "discord_message": discord,
+            "subject": title,
+            "eve_mail_body": eve_body,
+        }
 
     title = f"New Build Order {short}"
     phrase = _body_item_phrase(lines)
@@ -112,6 +150,27 @@ def render_order_assignment(ctx: dict) -> dict:
     quantity = ctx.get("quantity") or ""
     assignment_id = ctx["assignment_id"]
     item_id = ctx["item_id"]
+    if ctx.get("provisional"):
+        url = _order_url(order_id)
+        qty_bit = f"{quantity}× " if quantity != "" else ""
+        phrase = f"{qty_bit}{item_name}".strip()
+        starts = (ctx.get("starts_at") or "").strip()
+        when = f" at {starts}" if starts else ""
+        title = "You've claimed a build"
+        body = (
+            f"{phrase}. We'll tell you if you're selected when the order "
+            f"starts{when}."
+        )
+        discord = f"{title}\n\n- {phrase}\n\n{body}\n\n[Order]({url})"
+        eve_body = f"{title}\n\n- {phrase}\n\n{body}\n\n{url}\n\n— Bear"
+        return {
+            "title": title,
+            "body": body,
+            "url": url,
+            "discord_message": discord,
+            "subject": title,
+            "eve_mail_body": eve_body,
+        }
     delivery_url = _contract_url(order_id, item_id, assignment_id)
 
     items = ctx.get("items")
@@ -152,6 +211,51 @@ def render_order_assignment(ctx: dict) -> dict:
         "title": title,
         "body": body,
         "url": delivery_url,
+        "discord_message": discord,
+        "subject": title,
+        "eve_mail_body": eve_body,
+    }
+
+
+def render_order_selected(ctx: dict) -> dict:
+    order_id = ctx["order_id"]
+    url = _order_url(order_id)
+    lines = _item_lines(ctx)
+    bullets = _bullet_block(lines, empty="- (see order)")
+    phrase = _body_item_phrase(lines)
+    location = (ctx.get("location_name") or "").strip()
+    where = f" at {location}" if location else ""
+    title = "You're selected — start now"
+    body = (
+        f"{phrase}. Start immediately{where}."
+        if phrase
+        else f"Start immediately{where}."
+    )
+    help_lines = _help_lines(ctx.get("coordinators") or [])
+    help_block = (
+        "\n".join(help_lines) if help_lines else "- (nobody listed yet)"
+    )
+    place = location or "see the order"
+    discord = (
+        f"{title}\n\n"
+        f"{bullets}\n\n"
+        f"**Where**\n- {place}\n\n"
+        f"**Who can help**\n"
+        f"{help_block}\n\n"
+        f"Start immediately. [Open the order]({url})"
+    )
+    eve_body = (
+        f"{title}\n\n"
+        f"{bullets}\n\n"
+        f"Where\n- {place}\n\n"
+        f"Who can help\n{help_block}\n\n"
+        f"Start immediately.\n{url}\n\n"
+        f"— Bear"
+    )
+    return {
+        "title": title,
+        "body": body,
+        "url": url,
         "discord_message": discord,
         "subject": title,
         "eve_mail_body": eve_body,
@@ -227,6 +331,30 @@ ORDER_ASSIGNMENT = register(
             NotificationChannel.EVE_MAIL: False,
         },
         render=render_order_assignment,
+        supports_topic_subscription=False,
+    )
+)
+
+ORDER_SELECTED = register(
+    NotificationType(
+        key="industry.order.selected",
+        feature="industry",
+        label="When I'm selected to build",
+        description=(
+            "Tell me to start immediately when a claiming period ends and "
+            "my claim is on the order."
+        ),
+        channels=(
+            NotificationChannel.WEB,
+            NotificationChannel.DISCORD,
+            NotificationChannel.EVE_MAIL,
+        ),
+        defaults={
+            NotificationChannel.WEB: True,
+            NotificationChannel.DISCORD: True,
+            NotificationChannel.EVE_MAIL: False,
+        },
+        render=render_order_selected,
         supports_topic_subscription=False,
     )
 )

@@ -9,12 +9,14 @@ from industry.endpoints.orders.schemas import (
     OrderItemResponse,
     OrderLpStockpileContactResponse,
     OrderLpStockpileResponse,
+    OrderUnfulfilledItemResponse,
 )
 from industry.helpers.order_assignments import self_assign_window_ends_at
 from industry.helpers.order_lp_stockpiles import (
     OrderLpStockpile,
     resolve_order_lp_stockpiles,
 )
+from industry.helpers.provisional import order_is_provisional
 
 
 def order_line_target_unit_price(item) -> Decimal | None:
@@ -63,12 +65,32 @@ def order_item_to_response(
         unassigned_quantity=unassigned,
         self_assign_maximum=item.self_assign_maximum,
         self_assign_window_ends_at=self_assign_window_ends_at(order),
+        provisional=order_is_provisional(order),
+        starts_at=order.starts_at,
         target_unit_price=item.target_unit_price,
         estimated_profit_per_unit=order_line_profit_per_unit(
             item, profit_by_type
         ),
         assignments=[assignment_to_response(a) for a in assignments],
     )
+
+
+def unfulfilled_item_to_response(row) -> OrderUnfulfilledItemResponse:
+    return OrderUnfulfilledItemResponse(
+        id=row.pk,
+        eve_type_id=row.eve_type_id,
+        eve_type_name=row.eve_type.name,
+        quantity=row.quantity,
+        imported_order_id=row.imported_into_id,
+    )
+
+
+def order_claiming_fields(order) -> dict:
+    return {
+        "starts_at": order.starts_at,
+        "started_at": order.started_at,
+        "provisional": order_is_provisional(order),
+    }
 
 
 def lp_stockpile_to_response(
