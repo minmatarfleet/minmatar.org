@@ -23,6 +23,7 @@ from industry.helpers.facility_profiles import (
     AUNER_SYSTEM_ID,
     BASGERIN_SYSTEM_ID,
     GUKARLA_SYSTEM_ID,
+    HUOLA_SYSTEM_ID,
     RESBROKO_SYSTEM_ID,
 )
 from industry.helpers.reprocessing_skills import (
@@ -50,7 +51,7 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
         keys = {row["key"] for row in response.json()}
         self.assertEqual(
             keys,
-            {"amamake", "auner", "basgerin", "gukarla", "resbroko"},
+            {"amamake", "auner", "basgerin", "gukarla", "huola", "resbroko"},
         )
 
     def test_facilities_list_contains_amamake_and_basgerin(self):
@@ -60,7 +61,7 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
         keys = {row["key"] for row in data}
         self.assertEqual(
             keys,
-            {"amamake", "auner", "basgerin", "gukarla", "resbroko"},
+            {"amamake", "auner", "basgerin", "gukarla", "huola", "resbroko"},
         )
         amamake = next(r for r in data if r["key"] == "amamake")
         self.assertEqual(amamake["system_id"], AMAMAKE_SYSTEM_ID)
@@ -110,6 +111,36 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
         )
         self.assertAlmostEqual(auner["reprocessing"]["facility_tax"], 0.03)
         self.assertIn("Guru Forge", auner["structures"][0]["name"])
+        huola = next(r for r in data if r["key"] == "huola")
+        self.assertEqual(huola["system_id"], HUOLA_SYSTEM_ID)
+        self.assertEqual(huola["system_name"], "Huola")
+        self.assertEqual(
+            huola["system_cost_bonus"], amamake["system_cost_bonus"]
+        )
+        self.assertEqual(huola["facility_tax"], amamake["facility_tax"])
+        self.assertEqual(
+            huola["reprocessing"]["refine_rate"],
+            amamake["reprocessing"]["refine_rate"],
+        )
+        self.assertEqual(
+            huola["reprocessing"]["facility_tax"],
+            amamake["reprocessing"]["facility_tax"],
+        )
+        self.assertEqual(
+            [s["kind"] for s in huola["structures"]],
+            [s["kind"] for s in amamake["structures"]],
+        )
+        for huola_structure, amamake_structure in zip(
+            huola["structures"], amamake["structures"]
+        ):
+            self.assertEqual(
+                huola_structure["type_id"], amamake_structure["type_id"]
+            )
+            self.assertEqual(
+                [rig["type_id"] for rig in huola_structure["rigs"]],
+                [rig["type_id"] for rig in amamake_structure["rigs"]],
+            )
+        self.assertIn("Industry Park", huola["structures"][0]["name"])
 
     def test_hydra_freeports_gukarla_and_resbroko(self):
         response = self.client.get(f"{BASE}/facilities", **self.auth)

@@ -13,6 +13,7 @@ from industry.helpers.facility_profiles import (
     AUNER_SYSTEM_NAME,
     BASGERIN_SYSTEM_NAME,
     GUKARLA_SYSTEM_NAME,
+    HUOLA_SYSTEM_NAME,
     RESBROKO_SYSTEM_NAME,
     FACILITY_PROFILES,
     FACILITY_SYSTEM_IDS,
@@ -30,6 +31,7 @@ FACILITY_SYSTEM_NAMES: Dict[str, str] = {
     "auner": AUNER_SYSTEM_NAME,
     "basgerin": BASGERIN_SYSTEM_NAME,
     "gukarla": GUKARLA_SYSTEM_NAME,
+    "huola": HUOLA_SYSTEM_NAME,
     "resbroko": RESBROKO_SYSTEM_NAME,
 }
 
