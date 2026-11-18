@@ -14,15 +14,23 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Callable, Iterable, Optional
 
+from django.db import models
+
 from django.db.models import Count, Min, Q
 from django.utils import timezone
 
 from applications.models import EveCorporationApplication
 from eveonline.helpers.characters.identity import owned_by_q
-from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EvePlayer,
+    FwPayoutEventCode,
+)
 from fittings.models import EveDoctrineChangeRequest, EveFittingChangeRequest
-from fleets.models import EveFleetInvite
+from fleets.models import EveFleetInvite, NpsiEventSource
 from manage_hub.summary import npsi_feeds, payout_codes, reddit_posts
+from reddit.models import RedditPostChangeRequest, RedditPostTemplate
 from taskboard.models import TeamKind, Weight
 from tribes.models import (
     TribeGroup,
@@ -71,6 +79,10 @@ class Rule:
     collect: Callable[[Optional[set[int]]], list[Item]]
     stop_after_days: Optional[int] = None
     claim_expires_days: Optional[int] = None
+    # Saving or deleting a row of these models re-runs a team rule straight
+    # away (taskboard.signals), so its task closes when the work is done
+    # instead of at the next 15-minute sync.
+    watch: tuple[type[models.Model], ...] = ()
 
     @property
     def is_pilot_rule(self) -> bool:
@@ -468,6 +480,7 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_review_join_requests,
             claim_expires_days=14,
+            watch=(TribeGroupMembership,),
         ),
         Rule(
             "review_applications",
@@ -477,6 +490,7 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_review_applications,
             claim_expires_days=14,
+            watch=(EveCorporationApplication,),
         ),
         Rule(
             "review_doctrine_changes",
@@ -486,6 +500,7 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_doctrine_changes,
             claim_expires_days=14,
+            watch=(EveDoctrineChangeRequest, EveFittingChangeRequest),
         ),
         Rule(
             "approve_reddit_posts",
@@ -495,6 +510,7 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_reddit_posts,
             claim_expires_days=14,
+            watch=(RedditPostChangeRequest, RedditPostTemplate),
         ),
         Rule(
             "map_payout_codes",
@@ -504,6 +520,7 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_payout_codes,
             claim_expires_days=14,
+            watch=(FwPayoutEventCode,),
         ),
         Rule(
             "fix_calendar_feeds",
@@ -513,6 +530,7 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_npsi_feeds,
             claim_expires_days=14,
+            watch=(NpsiEventSource,),
         ),
     )
 }

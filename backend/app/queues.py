@@ -132,6 +132,9 @@ FAST_TASKS = frozenset(
         "fleets.tasks.nudge_missing_signups",
         # A pilot joined a tribe and is waiting for the Discord role
         "tribes.tasks.sync_external_guild_for_membership",
+        # A chief just handled the work a task points at and the task list
+        # should drop it (a few count queries for one rule, no fan-out)
+        "taskboard.tasks.sync_task_rule",
         # Measures every queue, so it must not wait behind any of them
         "app.tasks.monitor_queue_health",
     }

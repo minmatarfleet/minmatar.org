@@ -33,6 +33,7 @@ from applications.tasks import (
     sync_application_thread_task,
 )
 from discord.models import DiscordUser
+from taskboard.signals import other_callbacks
 from timezones.tasks import assess_user_timezone
 from eveonline.models import (
     EveCharacter,
@@ -647,6 +648,7 @@ class EveCorporationApplicationSignalTest(TestCase):
 
             self.assertEqual([], self.discord_mock.mock_calls)
             task_mock.delay.assert_not_called()
+            callbacks = other_callbacks(callbacks)
             self.assertEqual(1, len(callbacks))
 
             callbacks[0]()
@@ -680,7 +682,7 @@ class EveCorporationApplicationSignalTest(TestCase):
             application.description = "edited"
             application.save()
 
-        self.assertEqual([], callbacks)
+        self.assertEqual([], other_callbacks(callbacks))
         self.assertEqual([], self.discord_mock.mock_calls)
 
     def test_reject_posts_notice_after_commit(self):

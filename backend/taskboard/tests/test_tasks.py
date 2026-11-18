@@ -29,6 +29,7 @@ from taskboard.models import (
 from taskboard.queries import my_tasks, needs_you_count
 from taskboard.rules import RULES
 from taskboard.teams import Membership
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 
 def make_pilot(name: str, character_id: int, corporation_id=None) -> User:
@@ -564,3 +565,68 @@ class TasksApiTestCase(TestCase):
                 "quiet_end": None,
             },
         )
+
+
+class WatchedRuleRefreshTestCase(TestCase):
+    """A team task follows the rows it is about without waiting for beat."""
+
+    def setUp(self):
+        super().setUp()
+        self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
+        self.group = TribeGroup.objects.create(tribe=self.tribe, name="Dreads")
+        self.pilot = make_pilot("Jaru", 9101)
+
+    def ask_to_join(self, user, when=None):
+        membership = TribeGroupMembership.objects.create(
+            tribe_group=self.group, user=user, status="pending"
+        )
+        if when:
+            TribeGroupMembership.objects.filter(pk=membership.pk).update(
+                created_at=when
+            )
+        return membership
+
+    def test_handling_the_last_request_closes_the_task_on_commit(self):
+        membership = self.ask_to_join(self.pilot)
+        sync.sync_rule(RULES["review_join_requests"])
+        task = Task.objects.get(rule="review_join_requests")
+        self.assertEqual(task.title, "Review 1 request to join Dreads")
+
+        with self.captureOnCommitCallbacks(execute=True):
+            membership.status = "inactive"
+            membership.save()
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, Task.STATUS_DONE)
+        self.assertEqual(task.close_note, "Closed by itself")
+
+    def test_a_new_request_opens_the_task_on_commit(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            self.ask_to_join(self.pilot)
+        self.assertTrue(
+            Task.objects.filter(
+                rule="review_join_requests", status=Task.STATUS_OPEN
+            ).exists()
+        )
+
+    def test_unwatched_saves_queue_nothing(self):
+        with self.captureOnCommitCallbacks() as callbacks:
+            EveCharacter.objects.filter(character_id=9101).first().save()
+        self.assertEqual(callbacks, [])
+
+    def test_waiting_follows_the_oldest_request_still_waiting(self):
+        now = timezone.now()
+        old = self.ask_to_join(self.pilot, when=now - timedelta(days=120))
+        sync.sync_rule(RULES["review_join_requests"], now=now)
+        task = Task.objects.get(rule="review_join_requests")
+        self.assertEqual((now - task.opened_at).days, 120)
+
+        newer = make_pilot("Revolution", 9102)
+        self.ask_to_join(newer, when=now - timedelta(days=2))
+        old.status = "active"
+        old.save()
+        sync.sync_rule(RULES["review_join_requests"], now=now)
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, Task.STATUS_OPEN)
+        self.assertEqual((now - task.opened_at).days, 2)
