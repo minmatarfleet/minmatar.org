@@ -142,13 +142,15 @@
     }
 }
 
-// Accepted items: the category chips, then the add picker on the right.
-.market-items-bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-s);
+// Accepted items: adding sits in its own panel above the list, so its search
+// (every item in EVE) never reads as the list's filter below it.
+.market-items-add-panel {
+    display: grid;
+    gap: var(--space-xs);
+    padding: var(--space-s);
+    border: solid 1px var(--hairline-strong);
+    border-inline-start: solid 2px color-mix(in srgb, var(--fleet-red) 70%, var(--fleet-yellow));
+    background-color: var(--surface-sunken);
 }
 
 .market-items-add {
@@ -156,11 +158,10 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
     align-items: start;
     gap: var(--space-xs);
-    flex: 0 1 34rem;
+    max-width: 40rem;
     min-width: 0;
 
     @media (max-width: 48rem) {
-        flex-basis: 100%;
         grid-template-columns: minmax(0, 1fr);
     }
 }
