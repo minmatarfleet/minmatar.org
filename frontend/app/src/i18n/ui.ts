@@ -9354,8 +9354,10 @@ export const ui = {
         'manage.buyback.view_all': 'All',
         'manage.buyback.none_in_view': 'No items in this category.',
         'manage.buyback.not_found': 'Nothing to show.',
-        'manage.buyback.add_label': 'Accept an item',
-        'manage.buyback.add_placeholder': 'Search items by name',
+        'manage.buyback.add_heading': 'Add an item to buyback',
+        'manage.buyback.add_hint': 'Searches every item in EVE. Picking one adds it to the list straight away.',
+        'manage.buyback.add_label': 'Item to add',
+        'manage.buyback.add_placeholder': 'Type an item name to add it…',
         'manage.buyback.add_category': 'Category',
         'manage.buyback.category_auto': 'From the item',
         'manage.buyback.category_ore': 'Ore',
@@ -9378,7 +9380,8 @@ export const ui = {
         'manage.buyback.remove_title': 'Remove ~NAME?',
         'manage.buyback.remove_consequence': '~NAME leaves the accepted list: 1 item stops being bought, and appraisals reject it until it is added again. To pause it instead, switch Accepting off.',
         'manage.buyback.removed': 'Removed',
-        'manage.buyback.search': 'Find an accepted item',
+        'manage.buyback.search': 'Filter accepted items',
+        'manage.buyback.search_placeholder': 'Filter accepted items…',
         // end admin-redesign:market
     },
 } as const;

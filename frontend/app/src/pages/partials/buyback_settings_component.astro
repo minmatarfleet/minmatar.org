@@ -7,7 +7,7 @@
  * part=active              the "Buyback open" switch (POST): the summary only
  * part=rates               the rates form (GET) / its save (POST)
  * part=location            where contracts go (GET) / its save (POST)
- * part=items               category chips, the add picker and the items table (GET);
+ * part=items               the add panel, then category chips, the filter and the items table (GET);
  *                          POST action=add_item accepts a type
  * part=item&type_id=       the Accepting switch, or action=remove (POST): the row
  */
@@ -206,25 +206,10 @@ const columns = [
     : part === 'items'
         ? (
             <div id="bb-items-body" class="[ manage-section__body manage-form ]">
-                <div class="[ market-items-bar ]">
-                    <ViewChips
-                        id="bb-items-filters"
-                        url={partial_url({ part: 'items' })}
-                        target="bb-items-list"
-                        selected={selected_view}
-                        search_id="bb-items-search"
-                        legend={t('manage.buyback.views')}
-                        views={[
-                            { value: 'all', label: t('manage.buyback.view_all'), count: searched.length },
-                            ...categories
-                                .filter((category) => items.some((candidate) => candidate.category === category))
-                                .map((category) => ({ value: category, label: category_label(category), count: searched.filter((candidate) => candidate.category === category).length })),
-                        ]}
-                    >
-                        <div class="[ manage-toolbar ]">
-                            <ManageSearch id="bb-items-search" value={params.get('q') ?? ''} label={t('manage.buyback.search')} placeholder={t('manage.buyback.search')} />
-                        </div>
-                    </ViewChips>
+                <section class="[ market-items-add-panel ]" aria-labelledby="bb-add-heading">
+                    <h3 id="bb-add-heading" class="[ manage-eyebrow is-red ]">
+                        <span aria-hidden="true">+</span> {t('manage.buyback.add_heading')}
+                    </h3>
                     <form
                         class="[ market-items-add ]"
                         hx-post={partial_url({ part: 'items' })}
@@ -241,6 +226,7 @@ const columns = [
                             name="type_id"
                             label={t('manage.buyback.add_label')}
                             placeholder={t('manage.buyback.add_placeholder')}
+                            hint={t('manage.buyback.add_hint')}
                         />
                         <ManageField label={t('manage.buyback.add_category')} for="bb-add-category">
                             <Select id="bb-add-category" name="category" size="sm">
@@ -249,9 +235,27 @@ const columns = [
                             </Select>
                         </ManageField>
                     </form>
-                </div>
-                {saved && <span class="[ manage-saved ]" role="status">{t('manage.buyback.added')}</span>}
-                {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+                    {saved && <span class="[ manage-saved ]" role="status">{t('manage.buyback.added')}</span>}
+                    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+                </section>
+                <ViewChips
+                    id="bb-items-filters"
+                    url={partial_url({ part: 'items' })}
+                    target="bb-items-list"
+                    selected={selected_view}
+                    search_id="bb-items-search"
+                    legend={t('manage.buyback.views')}
+                    views={[
+                        { value: 'all', label: t('manage.buyback.view_all'), count: searched.length },
+                        ...categories
+                            .filter((category) => items.some((candidate) => candidate.category === category))
+                            .map((category) => ({ value: category, label: category_label(category), count: searched.filter((candidate) => candidate.category === category).length })),
+                    ]}
+                >
+                    <div class="[ manage-toolbar ]">
+                        <ManageSearch id="bb-items-search" value={params.get('q') ?? ''} label={t('manage.buyback.search')} placeholder={t('manage.buyback.search_placeholder')} />
+                    </div>
+                </ViewChips>
                 <div id="bb-items-list" class="[ manage-list ]" aria-live="polite">
                     {rows.length === 0
                         ? <EmptyState title={items.length === 0 ? t('buyback.settings.no_items') : t('manage.buyback.none_in_view')} />
