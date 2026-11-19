@@ -1,42 +1,67 @@
 # Character sync: a refresh interval per data type, paced by one scheduler
 
-Status: plan, November 2026. Follows the #3110 deploy, where the `eveonline` queue was 1,608 deep and the notification poller starved behind it (fixed separately in #3111).
+Status: plan, November 2026, checked against `main` at `ed22fbc5c`. Follows the #3110 deploy, where the `eveonline` queue was 1,608 deep and the notification poller starved behind it (fixed separately in #3111).
+
+## What exists today
+
+Several jobs already pull character data, each with its own cadence, audience and pacing.
+
+| Job | Schedule | Audience | What it fetches | Pacing |
+| --- | --- | --- | --- | --- |
+| `update_alliance_characters` → `update_character` | :37 every 4 h | Every character of every user with a character in a tracked alliance, with a token, not `esi_deleted` | Public data, assets, skills (+ readiness re-rate), killmails, contracts (+ industry reconcile), industry jobs (+ job notifications), mining, planets, blueprints, clones+implants | `rate_limit="5/m"` per worker container |
+| `update_character_urgent` (`eveonline/signals.py`) | When an `EveCharacter` is created with a token | That character | Same as above | None (calls the function inline) |
+| `tech` router | Admin action | One user's characters | Same as above | None |
+| `tribes…post_membership_characters_available_refresh` | Pilot button | One character | Assets and skills | 1 h cooldown per character (cache key) |
+| `update_all_character_public_data` | :20 every 8 h | Every character not `esi_deleted` | Public data | One long task, inline loop |
+| `queue_stale_character_corporation_history` → `sync_character_corporation_history_task` | :05 and :35 | 50 characters per run with stale `corporation_history_synced_at` (24 h TTL) | Corporation history | Stamp + stale batch, `rate_limit="10/m"` |
+| `update_character_affilliations` | :00 and :30 | Every `EveCharacter` | Affiliations, bulk, 1,000 per call | One task; per-result `.get()`; queues `groups.update_affiliation` per changed user |
+| `groups.update_affiliations` / `applications.accept_applications_of_members_task` | :15 and :45 | Every user / pending applicants | Nothing from ESI; full reconcile sweeps | — |
+| `industry.sync_industry_jobs_for_order_assignees` → `sync_industry_jobs_for_character` | :05 every 4 h | Every character ever assigned to an order item, plus their user's other characters | Industry jobs (+ job notifications) | `cooldown` 1 h |
+| `industry.reconcile_industry_contract_associations_task` | :35 every 2 h | — | Nothing from ESI; matches stored contracts to orders | — |
+| `campaigns.poll_campaign_recent_killmails` | 30 min | Enlisted campaign characters | Recent killmails missing from `FeedKillmail`, into the feed | `esi_budget` `char-killmail` bucket |
+| `market.fetch_attributed_market_orders` | 30 min | Market-scoped characters of eligible tribe members | Character market orders | Per-character tasks |
+| `fleets.poll_active_fleet_implants` | 10 min | Members of qualifying live fleets (`members_to_poll`) | Implant snapshots | Spread with countdowns |
+| `eveonline.tasks.notifications` | Every minute, a tenth of the roster | Characters with the notification scope | Notifications | Minute buckets (`character_id % 10`), `esi_budget` |
+
+Facts that shape the design:
+- **Two stamps already exist:** `EveCharacter.clones_synced_at`, written only by the clones helper, and `corporation_history_synced_at`. The corporation-history job already works the way this plan proposes (stamp, then sync a stale batch on a schedule), at small scale.
+- **The section helpers don't use `esi_budget`.** In particular, `update_character`'s killmail fetch spends the same `char-killmail` ESI bucket as the campaigns poll, but that spend isn't tracked, so the two can starve each other.
+- **ETags are off** for character endpoints (`eveonline/client.py`; django-esi raises on 304), so every sync is a full fetch.
+- **Two tasks on `eveonline` use `rate_limit`:** `update_character` and `sync_character_corporation_history_task`. `docs/architecture/celery-queues.md` already says to throttle ESI with `esi_budget` instead.
+- **Industry jobs are already fetched twice** for most assignees: once by the industry job, once by the member sync. The industry audience is every character ever assigned, not just characters on open orders.
 
 ## Problem
 
-`update_alliance_characters` runs at :37 every 4 hours and queues `update_character` for every character of every user who has a character in a tracked alliance. `update_character` refreshes every section (public data, assets, skills, killmails, contracts, industry jobs, mining, planets, blueprints, clones) every time, and is `rate_limit="5/m"`.
-
-- **One interval for everything.** 4 hours was picked to fit most cases broadly. Skills, blueprints and mining don't need it; assets, contracts and industry jobs, which other features depend on, do. Affiliations are a separate task every 30 minutes, which is too slow for membership changes.
-- **The pace depends on replica count.** Celery applies `rate_limit` per worker container. With 4 `celery-eveonline` replicas that's about 20 characters a minute, and scaling the service changes it silently.
-- **The limit doesn't protect anything ESI enforces.** ESI limits a token bucket per route group per character, plus an app-wide budget of 100 error responses a minute (`eveonline/esi_budget.py`). A global calls-per-minute cap protects neither, and a few dead tokens can still burn the error budget.
-- **The queue is backed up most of the time.** The 20:37 run on 2026-11-19 queued roughly 2,800 characters, an estimate from 1,608 still waiting after about an hour at about 20 a minute. That takes about 140 minutes to drain out of each 240-minute cycle. Past roughly 4,800 characters it never drains.
-- **Everything else on `eveonline` waits behind it**: corporation syncs, structures, token work, a new character's first fetch, and until #3111 the notification poller.
-- **The queue-health warning is noise.** The 30-minute Sentry warning fires every 4 hours during normal running, so a real backlog looks routine.
-- **Downtime makes it worse.** During ESI downtime `update_character` re-queues itself with a countdown, so the whole pile shifts to 11:15 instead of being dropped.
-- **Public data is fetched twice.** `update_character` calls `refresh_character_public_data`, which `update_all_character_public_data` already runs for every character every 8 hours.
-- **Nothing records freshness**, so we can't tell how stale any character or section is.
+- **One interval for everything.** 4 hours was picked to fit most cases broadly. Skills, blueprints and mining don't need it; assets, contracts and industry jobs, which other features depend on, do.
+- **The pace depends on replica count.** `rate_limit` is per worker container: 4 `celery-eveonline` replicas means about 20 characters a minute.
+- **The queue is backed up most of the time.** The 20:37 run on 2026-11-19 queued roughly 2,800 characters, an estimate from 1,608 still waiting after about an hour. That takes about 140 minutes to drain out of each 240-minute cycle. Past roughly 4,800 characters it never drains.
+- **Everything else on `eveonline` waits behind it**, including a new character's first fetch (applicants included) and corporation syncs.
+- **The queue-health warning is noise.** It fires every 4 hours during normal running.
+- **Downtime makes it worse.** `update_character` re-queues itself with a countdown during ESI downtime, so the pile moves to 11:15.
+- **Overlapping jobs** (industry jobs, public data, killmails) fetch the same data on separate schedules, and nothing records how fresh any section is.
 
 ## Goals: up to date, within reason
 
-### Refresh interval per data type (members)
+### Refresh interval per section (members)
 
-"Members" means today's scope: every character with a token belonging to a user who has a character in a tracked alliance. The "ESI cache" column is how long ESI serves the same answer; fetching more often than that returns nothing new.
+"Members" keeps today's scope. ESI cache is how long ESI serves the same answer; fetching more often than that returns nothing new.
 
 | Section | What reads it | ESI cache | Today | Proposed |
 | --- | --- | --- | --- | --- |
-| Affiliations (bulk, every character) | Alliance scope itself, groups and Discord roles, application auto-accept | verify in Phase 0 | 30 min | **15 min** |
+| Affiliations (bulk, every character) | Alliance scope, groups and Discord roles, application auto-accept | verify in Phase 0 | 30 min | **15 min** |
 | Assets | Fleet ship pickers and hangars, industry, tribes (hull checks), tech | 1 h | 4 h | **4 h** |
-| Contracts, plus industry contract reconcile | Industry order delivery, market | 5 min | 4 h | **4 h** |
-| Industry jobs, plus "job detected" notifications | Industry orders | 5 min | 4 h | **4 h** |
-| Skills, plus readiness re-rate | Capabilities and fleet readiness, Training tab, tribes, applications | 2 min | 4 h | **24 h** |
-| Clones and implants | Industry, character pages | 2 min | 4 h | **24 h** |
-| Killmails | Activity, timezones, tribes, applications, reports. Fleet fights read the zKill feed instead (see §6) | 5 min | 4 h | **24 h**, plus after a fleet (§6) |
-| Mining ledger | Mining stats (alliance, tribes, industry); ESI keeps 30 days | 10 min | 4 h | **24 h**, plus after a fleet (§6) |
+| Contracts | Industry order delivery (reconciled every 2 h), market | 5 min | 4 h | **4 h**; **1 h** for characters on an open industry order |
+| Industry jobs, plus "job detected" notifications | Industry orders | 5 min | 4 h, twice | **4 h**; **1 h** for characters on an open industry order. Replaces `sync_industry_jobs_for_order_assignees` |
+| Skills, plus readiness re-rate | Capabilities and fleet readiness, Training tab, tribes, applications | 2 min | 4 h | **24 h**, plus the pilot refresh button |
+| Clones and implants | Industry, character pages (fleets poll implants live separately) | 2 min | 4 h | **24 h** |
+| Killmails | Activity, timezones, tribes, applications, reports. Fleet fights use the zKill feed; campaigns poll enlisted characters every 30 min | 5 min | 4 h | **24 h** |
+| Mining ledger | Mining stats (alliance, tribes, industry); ESI keeps 30 days | 10 min | 4 h | **24 h** |
 | Planets | Industry and PI | 10 min | 4 h | **24 h** |
 | Blueprints | Industry | 1 h | 4 h | **24 h** |
-| Public data (sec status, corp history) | Already refreshed by `update_all_character_public_data` | — | 4 h plus 8 h | **8 h**, separate task only |
+| Corporation history | Corp pages, applications | — | 24 h TTL (own job) | **24 h**, moved into the registry |
+| Public data | Sec status and similar | — | 4 h plus 8 h | **8 h**, own task only |
 
-The "What reads it" column comes from where each model is imported (`EveCharacterAsset`, `EveCharacterSkill`, ...). Confirm it per section before the flip.
+The "What reads it" column comes from where each model is imported. Confirm it per section before the flip.
 
 Alert when more than 5% of a section's in-scope characters are older than twice its interval.
 
@@ -44,141 +69,141 @@ Alert when more than 5% of a section's in-scope characters are older than twice 
 
 | Who | Target | Alert when |
 | --- | --- | --- |
-| A newly added character, including applicants | Every section once, within a minute of adding it (`update_character_urgent`) | Not synced 10 min after it was added |
-| Applicants after that first fetch, and everyone else outside member scope | Not synced. Applicants join the member intervals when the affiliation sync puts them in a tracked alliance. | — |
+| A newly added character, applicants included | Every section once, within a minute (`update_character_urgent`) | Not synced 10 min after it was added |
+| Applicants after that, and everyone else outside member scope | Not synced. Applicants join the member intervals when the affiliation sync puts them in a tracked alliance. | — |
 
-Characters that are `esi_deleted` or `esi_suspended` stay skipped. `tech` manual refreshes still run every section on demand.
+`esi_deleted` and `esi_suspended` characters stay skipped. `tech` and the tribes refresh button keep working on demand.
 
 ### ESI load
-- **Today:** about 2,800 characters × 6 syncs a day × 10 sections, roughly 168,000 section fetches a day.
-- **Proposed:** 3 sections every 4 h and 6 sections daily is 24 fetches per character a day, roughly 67,000 a day, about 60% fewer.
-- **Affiliations at 15 min:** about 3 bulk calls per run (1,000 characters each), so negligible.
+- **Today:** about 2,800 characters × 6 syncs a day × 10 sections, plus the industry job's duplicate fetches. Roughly 170,000 section fetches a day.
+- **Proposed:** 3 sections every 4 h and 6 daily is 24 a day per character, roughly 67,000. The 1 h tier for open industry orders adds 2 × 18 extra fetches a day per character on an open order (a few hundred characters at most; measure in Phase 0).
 
 ## Design
 
 ### 1. Record freshness per section
 New model `EveCharacterSyncState`:
-- **Fields:** `character` (FK), `section`, `attempted_at`, `synced_at`, `last_error`.
+- **Fields:** `character` FK, `section`, `attempted_at`, `synced_at`, `last_error`.
 - **Constraints:** unique on (`character`, `section`), index on (`section`, `attempted_at`).
-- **Why a table:** a row per section keeps `EveCharacter` free of 18 timestamp fields, and adding a section later needs no migration.
+
+Existing stamps:
+- **`corporation_history_synced_at`** stays, because `queue_stale_character_corporation_history` reads it until that job moves into the registry in Phase 4.
+- **`clones_synced_at`** stays as is; nothing else reads it.
 
 ### 2. A section registry
-`eveonline/character_sync.py` lists every section with:
-- its name;
-- the token scope(s) it needs (the same checks `update_character` does with `Token.get_token` today);
-- its refresh function, including the follow-ups it triggers today (contract reconcile, job notifications, readiness re-rate);
-- its interval, from the table above.
+`eveonline/character_sync.py` lists each section with:
+- its name and required token scopes (the `SCOPE_*` constants from `eveonline/tasks/characters.py`);
+- its refresh function, including today's follow-ups (contract reconcile, job notifications, readiness re-rate);
+- its ESI budget group, where one exists;
+- a function that returns its interval for a character. Most are fixed. Contracts and industry jobs return 1 h when the character's user has an open industry order assignment.
 
-These are the only place intervals are set. Changing one is a one-line PR.
+`update_character`, `update_character_urgent`, `tech` and the tribes refresh button all go through the registry, so everything stamps the same rows.
 
 ### 3. One scheduler sets the pace
-`eveonline.tasks.characters.queue_due_character_syncs` runs every 5 minutes.
+`queue_due_character_syncs` runs every 5 minutes.
 
 Each tick:
-1. For each section, finds in-scope characters that have the scope and whose `attempted_at` is older than the section's interval, or that have no row yet.
-2. Groups them by character, so one task covers all of a character's due sections.
-3. Orders by most overdue relative to the interval, with never-synced first.
+1. For each section, finds in-scope characters with the scope whose `attempted_at` is older than the interval, or with no row yet.
+2. Groups them by character.
+3. Orders by most overdue relative to the interval, never-synced first.
 4. Takes characters until it reaches `CHARACTER_SYNC_SECTIONS_PER_TICK` section fetches (default 300; the steady state is about 235).
 5. Queues `sync_character_sections(character_id, sections)` with countdowns spread across the 5 minutes.
 
-Properties:
-- **A missed tick costs nothing.** Tracking is by timestamp, so the next tick picks up the same characters.
-- **No 4-hourly spike.** On first rollout, everything is due at once, but the budget spreads the backlog, and from then on it stays spread.
+Why timestamps instead of the notifications poller's minute buckets: buckets spread a single fixed interval with no stored state, but sections here have different intervals, need catch-up after downtime, and need a visible "how stale" number.
 
-### 4. A sync task without a Celery rate limit
-`sync_character_sections(character_id, sections)` runs the registry functions for the given sections, in today's order, and stamps each section.
+### 4. The sync task
+`sync_character_sections(character_id, sections)` runs the registry functions in today's order and stamps each section.
 
-- **ESI downtime:** it returns without re-queuing, and the next tick after 11:15 picks the character up.
-- **Error budget:** before each section it checks `esi_budget.error_budget()`. Below the floor it stops without stamping the remaining sections, so they stay due.
-- **Error-limit abort:** an `ESIErrorLimitException` stamps the attempt for that section only, so a broken token waits a full interval instead of being retried every tick.
-
-`update_character` keeps its `rate_limit` until cleanup, so rolling back to the old fan-out stays safe.
+- **No Celery rate limit.** Pace comes from the scheduler.
+- **ESI downtime:** returns without re-queuing; the next tick after 11:15 picks the character up.
+- **Error budget:** before each section it checks `esi_budget.error_budget()`. Below the floor it stops, and the remaining sections stay due.
+- **Bucketed groups:** the killmail section spends through `esi_budget` (`char-killmail`), so it and the campaigns poll share one ledger.
+- **Error-limit abort:** an `ESIErrorLimitException` stamps the attempt for that section only, so a broken token waits a full interval.
 
 ### 5. Affiliations every 15 minutes
-- Change the beat entry from `minute="0,30"` to every 15 minutes, with `expire_seconds` set to 15 minutes.
-- Load characters in bulk instead of doing a `.get()` per result, so the run stays short as the character count grows.
-- If Phase 0 shows ESI caches affiliations for an hour, 15 minutes only helps for ESI's cache boundary. Raise that with you before switching.
+- **Schedule:** change the beat entry from `minute="0,30"` to every 15 minutes, with `expire_seconds` set to 15 minutes.
+- **Bulk loading:** load characters in bulk instead of one `.get()` per result. The task covers every `EveCharacter`, not just members.
+- **What 15 min buys:** a changed user is already queued for `groups.update_affiliation` immediately, so membership changes reach groups and Discord within about 15 minutes. The :15/:45 sweeps (`groups.update_affiliations`, application accept) stay as safety nets.
+- **ESI cache check:** if Phase 0 shows ESI caches affiliations for an hour, 15-minute polling mostly re-reads the cache. Decide with that number in hand.
 
-### 6. Fleet activity sync
-Killmails and mining matter right after a fleet, not on a daily cycle, so they get a fleet-driven job instead of a shorter interval for everyone.
+### 6. Pilot refresh button
+The tribes endpoint already lets a pilot refresh assets and skills once an hour per character. Move it onto the registry: same 1 h cooldown, queued as `sync_character_sections` instead of inline helper calls. This is the escape hatch for daily skills.
 
-- **Fleet fights are already covered.** They don't read character killmails: the fight timeline uses the live zKill feed, `sweep_fight_killmails` fills gaps from zKill, and `settle_fight_timeline` closes it. Nothing about fight reports changes.
-- **The new job:** `sync_fleet_participant_activity(fleet_id)` queues `sync_character_sections(character_id, ["killmails", "mining"])` for the characters that flew. It skips characters whose sections synced in the last 30 minutes.
-- **When it runs:** queued from `settle_fight_timeline`, so it runs once per fleet, after the fight is over.
-- **Mining fleets:** run it a second time about 1 hour after the fleet ends, because the mining ledger lags and ESI caches it for 10 minutes. Nothing reads mining per fleet today, so this only matters for activity stats or a future mining-fleet view.
-- **Fleet tracking isn't affected.** It uses its own `fleet` ESI group and the `fleets` queue. The participant syncs run on `eveonline` and count against the same per-tick budget, so a big fleet can't flood ESI.
+### 7. Fleet activity: not built yet
+Nothing reads character killmails or mining per fleet today:
+- Fight reports use the zKill feed.
+- Activity, timezones and tribe reports are fine with daily data.
 
-### 7. New characters stay immediate
-`update_character_urgent` keeps running every section when a token is added, applicants included, and stamps every section. With `eveonline` drained every tick, it runs within about a minute instead of waiting behind the fan-out.
+Build it when a consumer needs it. It would be a ~20-line job queued from `settle_fight_timeline` that calls `sync_character_sections(c, ["killmails", "mining"])` for the fleet's `EveFleetInstanceMember` characters, using the same member lookup as `fleets.helpers.active_clones`.
 
-### 8. Visibility
-- **Status command:** `manage.py character_sync_status` prints, per section, the in-scope count, overdue count, p95 age and oldest age. It also lists characters added in the last day with no synced sections.
-- **Sentry check:** a check beside `monitor_queue_health` warns on the alert thresholds above.
-- **Cron monitor:** the scheduler gets a Sentry cron monitor (`CRON_MONITORED_SCHEDULES`). The old fan-out's entry goes at cleanup.
-- **Queue limit:** `eveonline`'s 30-minute warning stays. With the queue drained every tick, a warning now means a real problem.
+### 8. New characters stay immediate
+`update_character_urgent` keeps running every section when a token is added, and stamps them. With `eveonline` drained every tick it runs within about a minute.
+
+### 9. Visibility
+- **Status command:** `manage.py character_sync_status` prints, per section, the in-scope count, overdue count, p95 age and oldest age. It also lists characters added in the last day with nothing synced.
+- **Sentry:** a check beside `monitor_queue_health` warns on the alert thresholds above.
+- **Cron monitor:** the scheduler gets a Sentry cron monitor (`CRON_MONITORED_SCHEDULES`), replacing the old fan-out's entry at cleanup.
+- **Queue limit:** `eveonline`'s 30-minute warning stays and means something again.
 
 ## What counts as a regression
 
-Each item below is checked with `character_sync_status` and Sentry before the next phase:
+Checked with `character_sync_status` and Sentry before each phase:
 
-1. A section's p99 age goes above 1.5 × its interval. For the 4 h sections that's 6 h, which is still better than today's worst case of about 6.5 h.
+1. A section's p99 age goes above 1.5 × its interval.
 2. Total ESI calls per hour rise.
 3. ESI error-budget dips (`esi_budget.snapshot()`) or 420s become more frequent.
 4. A section stops being refreshed for an in-scope character that has the scope.
 5. Any in-scope character drops out, or any out-of-scope character is added.
 6. A newly added character takes longer to get its first fetch than it does today.
 7. Affiliation runs overlap or take longer than 5 minutes.
-8. A settled fleet's participants still have killmail or mining data older than the fleet's end 2 hours after it settles.
+8. An assignee on an open industry order goes more than 1.5 h without a jobs or contracts fetch.
 
 Intended changes, for sign-off:
 - Skills, clones, killmails, mining, planets and blueprints go from 4 h to 24 h.
+- Contracts and jobs go to 1 h for open-order assignees.
 - Affiliations go from 30 min to 15 min.
-- `update_character` stops re-fetching public data (still every 8 h).
+- Characters only ever assigned to closed orders stop getting the extra industry job fetch.
+- `update_character` stops re-fetching public data.
 
 ## Phases
 
 **Phase 0: measure (no code).**
-- On the `production_readonly` alias: in-scope characters per section scope, and the suspended count.
+- On `production_readonly`: in-scope characters per section scope, suspended count, and characters on open industry orders.
 - `update_character` duration p50/p95, and which sections take the time.
-- The ESI cache time (`Expires`) on `/characters/affiliation/`.
-
-These confirm the budget and the affiliation interval.
+- `Expires` on `/characters/affiliation/`.
 
 **Phase 1: record only (no behavior change).**
 - Add the model and the registry.
-- `update_character` and `update_character_urgent` call the registry functions in today's order and stamp each section.
+- `update_character`, `update_character_urgent`, `tech` and the tribes button call the registry in today's order and stamp each section.
 - Add `character_sync_status`.
-- The fan-out and intervals are unchanged. After a day the status command shows today's real staleness per section, which is the baseline for checks 1 and 6.
-- Rollback: revert; the table is unused.
+- After a day this is the baseline for checks 1, 6 and 8.
+- Rollback: revert.
 
 **Phase 2: shadow scheduler, plus affiliations.**
-- Add a `CHARACTER_SYNC_MODE` setting (`fanout` | `shadow` | `scheduled`), set from `app/settings_env.py` the same way as `FRONTEND_GATE_SOURCE`, defaulting to `fanout`.
-- In `shadow` mode the scheduler logs each tick's batch (characters, sections, fetches, oldest age) but queues nothing. Run it for 2 days.
-- Ship the 15-minute affiliation change on its own here; it doesn't depend on the scheduler. Rollback: revert the beat entry, plus a beat restart.
+- Add the `CHARACTER_SYNC_MODE` setting (`fanout` | `shadow` | `scheduled`) in `app/settings_env.py`, the same way as `FRONTEND_GATE_SOURCE`, defaulting to `fanout`.
+- In shadow mode, log each tick's batch for 2 days.
+- Ship the 15-minute affiliation change and the bulk load on their own; they don't depend on the scheduler.
 
 **Phase 3: flip.**
-- Set `CHARACTER_SYNC_MODE=scheduled`. The scheduler queues `sync_character_sections`, and `update_alliance_characters` returns early.
-- Turn on the fleet activity sync (§6) from `settle_fight_timeline`.
-- Watch checks 1–6 and 8 for one week.
+- Set `scheduled`. `update_alliance_characters` and `sync_industry_jobs_for_order_assignees` return early.
+- Watch checks 1–8 for one week.
 - Rollback: set the mode to `fanout` and restart workers and beat.
 
 **Phase 4: cleanup (two weeks after the flip).**
-- Remove `fanout` mode, `update_alliance_characters` and its beat entry, with a migration that deletes its stale `PeriodicTask` row.
-- Remove the old cron monitor entry.
-- Drop `rate_limit` and the public-data call from `update_character`, or make it call the new task for every section.
-- Remove the self-requeue during downtime.
+- Remove `fanout` mode, `update_alliance_characters`, `sync_industry_jobs_for_order_assignees` and their beat entries, with a migration deleting their `PeriodicTask` rows.
+- Move corporation history into the registry and delete `queue_stale_character_corporation_history` and its beat row the same way.
+- Drop `rate_limit` from both tasks, and the public-data call and downtime self-requeue from `update_character`.
+- Replace the cron monitor entry.
 
 ## Out of scope
-- **ETags for character endpoints.** `eveonline/client.py` disables them because django-esi raises on 304. Fixing that would make 4 h sections almost free when nothing changed. Separate change.
-- **More event-driven refreshes**, such as refreshing assets when an industry order is delivered. §6 is the first one; the registry makes others an urgent sync for the sections involved.
-- **Moving the bulk sync to its own queue.** Not needed once the scheduler keeps `eveonline` drained. Revisit if Phase 3 shows contention.
+- **ETags for character endpoints.** Fixing django-esi's 304 handling would make unchanged sections nearly free. Separate change.
+- **Market orders, fleet implants and notifications.** They have their own audiences and pacing, and each already works.
+- **Moving the bulk sync to its own queue.** Not needed once the scheduler keeps `eveonline` drained.
 
-## Decided
-- Applicants are fetched once, when they add their characters, and not again until they're in the alliance (2026-11-19).
-- Refresh intervals are set per section, not one interval for everything. Assets and other sections that features depend on stay at 4 h, skills and similar go to 24 h, and affiliations go to about 15 min (2026-11-19).
-- Killmails and mining stay daily, plus a fleet activity sync for the characters that flew (2026-11-19).
+## Decided (2026-11-19)
+- Applicants are fetched once, when they add their characters, and not again until they're in the alliance.
+- Refresh intervals are set per section. Assets and sections that features depend on stay at 4 h, skills and similar go to 24 h, and affiliations go to about 15 min.
+- Killmails and mining stay daily. A fleet activity job waits until something reads that data per fleet.
 
 ## Open decisions
-1. Contracts and industry jobs: 4 h, or faster? ESI caches them for 5 min, and industry delivery and "job detected" notifications depend on them. 1 h for both would add about 100,800 fetches a day (2,800 characters × 18 extra × 2 sections), back to roughly today's total.
-2. Skills at 24 h: is daily enough for fleet readiness? If a pilot finishes a skill and wants it to count before tonight's fleet, the only refresh today is an admin `tech` refresh. Should pilots get a "refresh my characters" button, limited to once an hour?
-3. Does "members" need to include anyone outside today's scope, for example users on leave?
+1. The 1 h tier for open-order assignees: is "user has an open industry order assignment" the right audience?
+2. Does "members" need to include anyone outside today's scope, for example users on leave?
