@@ -65,7 +65,7 @@ _CAPITALS_CODES = (
 )
 
 # Nothing stored to measure yet; the group page shows these as coming soon.
-_MANUAL_PULSE_CODES = ("pulse.tournaments",)
+_MANUAL_PULSE_CODES = ("pulse.tournaments", "pulse.fanfest")
 
 
 def _activity_binding(

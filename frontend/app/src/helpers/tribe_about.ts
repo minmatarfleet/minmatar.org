@@ -229,6 +229,7 @@ export const PULSE_ORDER = [
     'pulse.thinkspeak',
     'pulse.fishermen',
     'pulse.tournaments',
+    'pulse.fanfest',
 ]
 
 /** Groups in ``order`` first, then any the list doesn't know, by name. */
