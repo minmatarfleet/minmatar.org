@@ -165,9 +165,9 @@ class ActivityTestCase(TestCase):
 
 
 class RegistryTestCase(TestCase):
-    def test_only_tournaments_stays_manual(self):
+    def test_manual_groups_have_nothing_stored_to_measure(self):
         manual = {c for c, b in REPORT_BINDINGS.items() if b.manual}
-        self.assertEqual(manual, {"pulse.tournaments"})
+        self.assertEqual(manual, {"pulse.tournaments", "pulse.fanfest"})
 
     def test_highlight_keys_resolve(self):
         for code, binding in REPORT_BINDINGS.items():
