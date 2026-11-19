@@ -837,11 +837,6 @@ class CampaignEnlistmentCharacter(models.Model):
     )
     included_from = models.DateTimeField(default=timezone.now)
     included_until = models.DateTimeField(null=True, blank=True)
-    payouts_polled_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="Drives the payout polling rotation so every character is read.",
-    )
     killmails_polled_at = models.DateTimeField(
         null=True,
         blank=True,

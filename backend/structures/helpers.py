@@ -6,7 +6,6 @@ from typing import Tuple
 from pydantic import BaseModel
 
 from eveonline.client import EsiClient
-from eveonline.models import EveCharacter
 from eveuniverse.models import EvePlanet, EveSolarSystem, EveType
 
 from structures.models import EveStructure, EveStructurePing
@@ -89,24 +88,6 @@ def get_structure_details(selected_item_window: str):
         location=system_name,
         timer=datetime.strptime(timer_match.group(1), "%Y.%m.%d %H:%M:%S"),
     )
-
-
-NOTIFICATION_SCOPE = "esi-characters.read_notifications.v1"
-
-
-def get_characters_with_notification_scope_for_structure_corps():
-    """
-    Characters in corporations that have structures and whose token has
-    esi-characters.read_notifications.v1 (used for structure notification polling).
-    """
-    # EVE corporation IDs (not Django PKs) for corps that have at least one structure
-    corp_ids = EveStructure.objects.values_list(
-        "corporation__corporation_id", flat=True
-    ).distinct()
-    return EveCharacter.objects.filter(
-        corporation_id__in=corp_ids,
-        token__scopes__name=NOTIFICATION_SCOPE,
-    ).distinct()
 
 
 def parse_esi_time(time) -> datetime:

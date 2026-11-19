@@ -17,8 +17,8 @@ from campaigns.models import CampaignKillmail, CampaignParticipantDay
 from campaigns.services import esi_gate, sites, snapshots, stats
 from campaigns.services.attribution import attribute_feed_killmail
 from campaigns.tasks import (
-    poll_campaign_payouts,
     poll_campaign_recent_killmails,
+    process_campaign_payouts,
 )
 from campaigns.tests.helpers import (
     KAMELA,
@@ -26,7 +26,11 @@ from campaigns.tests.helpers import (
     make_campaign,
     make_feed_killmail,
 )
-from eveonline.models import EveCharacterFwLpPayout
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterFwLpPayout,
+    EveCharacterNotification,
+)
 from feed.helpers.monitored_systems import invalidate_monitored_systems_cache
 from feed.models import FeedKillmail
 
@@ -172,86 +176,59 @@ class MalformedKillmailTests(TestCase):
         self.assertEqual(mail.participants.count(), 1)
 
 
-class EsiFailureTests(TestCase):
-    """ESI answers 500, 420 and nonsense, and sometimes just hangs up."""
+class PayoutProcessingTests(TestCase):
+    """Payouts come from stored notifications, never from ESI directly."""
 
     def setUp(self):
         cache.clear()
         self.campaign = make_campaign()
         self.user, self.character = enlist(self.campaign, "pilot", 9201)
 
-    def _poll(self):
-        return poll_campaign_payouts()
+    def _stored(self, character, notification_id, kind, text=""):
+        return EveCharacterNotification.objects.create(
+            character=character,
+            notification_id=notification_id,
+            type=kind,
+            timestamp=timezone.now(),
+            text=text,
+        )
 
-    def test_a_failing_esi_call_does_not_lose_the_batch(self):
-        failure = mock.Mock()
-        failure.success.return_value = False
-        failure.error_text.return_value = "ESI is having a moment"
-
-        with mock.patch(
-            "eveonline.client.EsiClient.get_character_notifications",
-            return_value=failure,
-        ):
-            result = self._poll()
-
-        self.assertEqual(result["stored"], 0)
-        self.assertLess(esi_gate.error_budget(), 100)
-
-    def test_an_exception_from_esi_does_not_abort_the_batch(self):
-        with mock.patch(
-            "eveonline.client.EsiClient.get_character_notifications",
-            side_effect=ConnectionError("socket hung up"),
-        ):
-            result = self._poll()
-
-        self.assertEqual(result["polled"], 0)
-        self.assertEqual(result["stored"], 0)
-
-    def test_a_not_modified_notification_is_not_stored(self):
-        response = mock.Mock()
-        response.success.return_value = True
-        response.response_code = 304
-        response.response = None
-        response.results.side_effect = AssertionError("304 has no body")
+    def test_payouts_are_parsed_from_stored_notifications(self):
+        self._stored(
+            self.character,
+            1,
+            "FacWarLPPayoutEvent",
+            f"amount: 10000\nevent: 17\nlocationID: {KAMELA}\n",
+        )
+        self._stored(self.character, 2, "StructureLostArmor")
 
         with mock.patch(
-            "eveonline.client.EsiClient.get_character_notifications",
-            return_value=response,
-        ):
-            result = self._poll()
-
-        self.assertEqual(result["polled"], 1)
-        self.assertEqual(result["stored"], 0)
-
-    def test_downtime_skips_the_payout_poll(self):
-        with mock.patch(
-            "campaigns.tasks.get_esi_downtime_countdown", return_value=90
-        ), mock.patch(
             "eveonline.client.EsiClient.get_character_notifications"
         ) as notifications:
-            result = self._poll()
+            result = process_campaign_payouts()
 
         notifications.assert_not_called()
-        self.assertEqual(result["deferred"], 90)
+        self.assertEqual(result["stored"], 1)
+        payout = EveCharacterFwLpPayout.objects.get()
+        self.assertEqual(payout.notification_id, 1)
+        self.assertEqual(payout.amount_lp, 10000)
 
-    def test_nonsense_from_esi_is_not_stored(self):
-        response = mock.Mock()
-        response.success.return_value = True
-        response.results.return_value = [
-            {},
-            {"type": "Nope"},
-            {"notification_id": None},
-            None,
-        ]
+        # Already parsed: the next run has nothing to store.
+        self.assertEqual(process_campaign_payouts()["stored"], 0)
 
-        with mock.patch(
-            "eveonline.client.EsiClient.get_character_notifications",
-            return_value=response,
-        ):
-            result = self._poll()
+    def test_pilots_outside_campaigns_are_kept(self):
+        outsider = EveCharacter.objects.create(
+            character_id=9301, character_name="Outsider"
+        )
+        self._stored(outsider, 3, "FacWarLPPayoutKill", "amount: 50\n")
 
-        self.assertEqual(result["stored"], 0)
+        self.assertEqual(process_campaign_payouts()["stored"], 1)
+        self.assertTrue(
+            EveCharacterFwLpPayout.objects.filter(character=outsider).exists()
+        )
 
+
+class SnapshotFailureTests(TestCase):
     def test_the_snapshot_poll_survives_a_dead_endpoint(self):
         with mock.patch(
             "eveonline.esi_http.requests.request",

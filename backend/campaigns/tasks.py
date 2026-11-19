@@ -2,7 +2,7 @@
 
 Nothing here is the only path to a fact. The stream attributes kills as they
 land, the sweep re-attributes the last two days, the recent-killmails poll
-recovers a mail the stream missed, the payout poll finds site completions
+recovers a mail the stream missed, the payout pass finds site completions
 and the cross-check confirms we did not miss a kill.
 """
 
@@ -36,7 +36,7 @@ from campaigns.services import (
     stats,
 )
 from eveonline.client import EsiClient
-from eveonline.models import EveCharacterFwLpPayout
+from eveonline.models import EveCharacterFwLpPayout, EveCharacterNotification
 from eveonline.utils import get_esi_downtime_countdown
 from feed.helpers.ingest import upsert_feed_killmail_from_raw
 from feed.models import FeedKillmail
@@ -116,79 +116,40 @@ def poll_frontlines_advantage() -> dict:
     return result
 
 
-@app.task()
-def poll_campaign_payouts(limit: int | None = None) -> dict:
-    """Read FW LP payout notifications for every included character.
+# How far back each run looks for stored payout notifications it has not
+# parsed. Generous, so a stalled worker catches up.
+PAYOUT_LOOKBACK = timedelta(hours=6)
 
-    Character notifications sit in a 15-token bucket per character per 15
-    minutes. The shared gate is the stop: a paused character is skipped and
-    the rest of the roster is still read. ``limit`` is an operator cap.
+
+@app.task(exclusive=30 * 60)
+def process_campaign_payouts() -> dict:
+    """Parse stored FW LP payout notifications, then attribute them.
+
+    ``eveonline.tasks.notifications`` fetches every character's
+    notifications, so payouts are kept for every pilot with the scope, not
+    only those enlisted in a campaign. Attribution decides which count.
     """
-    deferred = _defer_for_downtime("payout")
-    if deferred is not None:
-        return deferred
-
-    polled = 0
-    stored = 0
-    skipped = 0
-    seen: set[int] = set()
-
-    for row in _included_character_rows("payouts_polled_at").iterator():
-        character = row.character
-        # A pilot can have the same character in two campaigns; ESI does not
-        # care, and neither should our budget.
-        if character.character_id in seen:
-            continue
-        if limit is not None and polled >= limit:
-            break
-        if character.esi_suspended or character.esi_deleted:
-            skipped += 1
-            continue
-        if not esi_gate.can_spend("char-notification", character.character_id):
-            skipped += 1
-            continue
-
-        seen.add(character.character_id)
-        CampaignEnlistmentCharacter.objects.filter(character=character).update(
-            payouts_polled_at=timezone.now()
+    since = timezone.now() - PAYOUT_LOOKBACK
+    rows = (
+        EveCharacterNotification.objects.filter(
+            type__startswith="FacWarLPPayout", created_at__gte=since
         )
-
-        try:
-            response = EsiClient(character).get_character_notifications()
-        except Exception:  # pragma: no cover - one bad row, not the batch
-            logger.exception(
-                "Notification poll raised for %s", character.character_name
+        .exclude(
+            notification_id__in=EveCharacterFwLpPayout.objects.values(
+                "notification_id"
             )
-            esi_gate.record_error()
-            continue
-
-        esi_gate.note_response(
-            "char-notification", character.character_id, response
         )
-        polled += 1
+        .select_related("character")
+    )
 
-        if response.response_code == 304 or not response.success():
-            if not response.success():
-                logger.info(
-                    "Notification poll failed for %s: %s",
-                    character.character_name,
-                    response.error_text(),
-                )
-            continue
-
-        for notification in response.results() or []:
-            payout = sites.store_payout(character, notification)
-            if payout:
-                stored += 1
+    stored = 0
+    for row in rows.iterator():
+        if sites.store_payout(row.character, row.as_esi()):
+            stored += 1
 
     _apply_seeded_event_codes()
     attributed = attribute_new_payouts()
-    return {
-        "polled": polled,
-        "stored": stored,
-        "skipped": skipped,
-        **attributed,
-    }
+    return {"stored": stored, **attributed}
 
 
 @app.task()

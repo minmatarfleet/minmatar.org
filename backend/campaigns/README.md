@@ -51,7 +51,7 @@ in admin (or via the timer API) creates the recon row and grows the theater.
 | Structure find-and-report week target | `plan.propose_week` · metric `structures_reported` | Strategic campaigns on ops systems (`is_fw_objective=False`) only; progress = structures created in that system this campaign week. |
 | Ops areas (constellation / region) | `CampaignArea` | Guidance only; never FW objectives; never pull kill attribution. |
 | Structure / capital flags | `services.attribution` + `STRUCTURE_TYPE_IDS` / `is_capital_ship_type` | Structure mails often have no victim character; enlisted attackers still count. |
-| Complexes, advantage sites, supply caches | ESI character notifications → `services.sites` | FW only. Polled every 20 minutes per included character. |
+| Complexes, advantage sites, supply caches | `EveCharacterNotification` (stored by `eveonline.tasks.notifications`) → `services.sites` | FW only. Every character with the notifications scope is fetched every 10 minutes; `process_campaign_payouts` parses new payouts every 10 minutes, for every pilot, and attribution keeps the enlisted ones. |
 | Contested percent, victory points | public ESI FW systems feed → `services.snapshots` | FW systems; strategic campaigns skip when they have no systems. |
 | Advantage | `services.advantage` | Exact from payouts; crowd-read absolute value. |
 | Fleets | `services.fleets` | A fleet counts once someone sets `campaign` on it. |
@@ -149,8 +149,8 @@ opening one in game.
 Also outstanding: notifications (ticket 14) and the whole Phase 1b community
 layer, whose columns (`supply_isk_delivered`, `project_isk_earned`) exist but
 are written by nothing yet. `services.esi_gate` keeps one ledger, shared
-by the campaign polls, the structure notification poller
-(`structures/tasks.py`) and intel's Local lookups (`intel/services/local.py`),
+by the campaign polls, the character notification poller
+(`eveonline/tasks/notifications.py`) and intel's Local lookups (`intel/services/local.py`),
 and reads ESI's headers where it can see them. A platform-wide limiter for
 the rest of the backend is still a separate job.
 

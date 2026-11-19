@@ -1,17 +1,21 @@
 import factory
+from datetime import timedelta
 from unittest.mock import patch, MagicMock
 
 from django.db.models import signals
+from django.utils import timezone
 
 from app.test import TestCase
 
 from eveonline.client import EsiResponse
-from eveonline.models import EveAlliance, EveCorporation, EveCharacter
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCharacterNotification,
+    EveCorporation,
+)
 
 from structures.tasks import (
-    _campaign_esi_gate,
-    fetch_structure_notifications,
-    fetch_structure_notifications_for_character,
     process_structure_notifications,
     update_corporation_structures,
     update_structures,
@@ -26,43 +30,14 @@ from structures.tests.test_helpers import make_character
 class StructureTaskTests(TestCase):
     """Task tests for structures and timers"""
 
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("structures.tasks.get_esi_downtime_countdown", return_value=0)
-    @patch("structures.tasks.discord")
-    @patch("structures.tasks.EsiClient")
-    @patch(
-        "structures.tasks.fetch_structure_notifications_for_character.apply_async"
-    )
-    def test_process_structure_notifications(
-        self, apply_async_mock, esi_mock, discord_mock, get_downtime_mock
-    ):
-        def run_task_inline(args, countdown=0, **kwargs):
-            if countdown == 0:
-                fetch_structure_notifications_for_character(args[0])
-
-        apply_async_mock.side_effect = run_task_inline
-
-        esi = esi_mock.return_value
-        esi.get_character_notifications.return_value = EsiResponse(
-            response_code=200,
-            data=[
-                {
-                    "notification_id": 1234567890,
-                    "timestamp": "2025-05-24 03:16:00+00:00",
-                    "type": "StructureLostArmor",
-                    "text": """
-                        structureID: &id001 1049253339308
-                        """,
-                }
+    def _structure_corp(self, corporation_id=1001):
+        corp = EveCorporation.objects.create(
+            corporation_id=corporation_id,
+            name=f"Corp {corporation_id}",
+            alliance=EveAlliance.objects.get_or_create(alliance_id=99011978)[
+                0
             ],
         )
-
-        corp = EveCorporation.objects.create(
-            corporation_id=1001,
-            name="MegaCorp",
-            alliance=EveAlliance.objects.create(alliance_id=99011978),
-        )
-        # Corp must have a structure so it's included in notification polling
         EveStructure.objects.create(
             id=1049253339308,
             corporation=corp,
@@ -73,54 +48,53 @@ class StructureTaskTests(TestCase):
             name="Test Structure",
             reinforce_hour=12,
         )
-        # Character 2005: character_id % 10 == 5, so they're in the bucket for minute 5
-        make_character(
-            2005,
-            corp,
-            ["esi-characters.read_notifications.v1"],
+        return corp
+
+    def _stored(self, character, notification_id, kind="StructureLostArmor"):
+        return EveCharacterNotification.objects.create(
+            character=character,
+            notification_id=notification_id,
+            type=kind,
+            timestamp=timezone.now() - timedelta(minutes=4),
+            text="structureID: &id001 1049253339308\n",
         )
 
-        total_scheduled, _ = process_structure_notifications(5)
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.discord")
+    def test_process_structure_notifications(self, discord_mock):
+        corp = self._structure_corp()
+        character = make_character(2005, corp, [])
+        self._stored(character, 1234567890)
+        self._stored(character, 1234567891, kind="CorpAppNewMsg")
 
-        self.assertEqual(1, total_scheduled)
-        apply_async_mock.assert_called_once_with(
-            args=[2005],
-            countdown=0,
-        )
+        found, new = process_structure_notifications()
 
-        self.assertEqual(1, EveStructurePing.objects.count())
-        ping = EveStructurePing.objects.first()
+        self.assertEqual((1, 1), (found, new))
+        discord_mock.create_message.assert_called_once()
+        ping = EveStructurePing.objects.get()
         self.assertEqual(1049253339308, ping.structure_id)
         self.assertEqual("Pilot 2005", ping.reported_by.character_name)
         self.assertEqual("StructureLostArmor", ping.notification_type)
-        self.assertEqual(16, ping.event_time.minute)
+
+        # A second run finds nothing left to do.
+        self.assertEqual((0, 0), process_structure_notifications())
+        discord_mock.create_message.assert_called_once()
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch(
-        "structures.tasks.fetch_structure_notifications_for_character.apply_async"
-    )
-    @patch("structures.tasks.EsiClient")
-    def test_fetch_structure_notifications_waits_for_next_poll_on_rate_limit(
-        self, esi_mock, apply_async_mock
+    @patch("structures.tasks.discord")
+    def test_characters_outside_structure_corps_are_ignored(
+        self, discord_mock
     ):
-        mock_response = MagicMock()
-        mock_response.headers = {"Retry-After": "90"}
-        esi_mock.return_value.get_character_notifications.return_value = (
-            EsiResponse(response_code=429, response=mock_response)
+        self._structure_corp()
+        elsewhere = EveCorporation.objects.create(
+            corporation_id=2002, name="Someone Else"
         )
-        character = EveCharacter.objects.create(
-            character_id=3001,
-            character_name="Notifier",
-        )
+        character = make_character(2006, elsewhere, [])
+        self._stored(character, 1234567892)
 
-        found, new = fetch_structure_notifications(character)
-
-        self.assertEqual((0, 0), (found, new))
-        # No retry is queued: the gate pauses this character and the next
-        # 10-minute poll tries again. Queued retries piled up in production.
-        apply_async_mock.assert_not_called()
-        gate = _campaign_esi_gate()
-        self.assertFalse(gate.can_spend("char-notification", 3001))
+        self.assertEqual((0, 0), process_structure_notifications())
+        self.assertFalse(EveStructurePing.objects.exists())
+        discord_mock.create_message.assert_not_called()
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("structures.tasks.get_esi_downtime_countdown", return_value=0)
@@ -273,17 +247,9 @@ class StructureFanOutTests(TestCase):
         delay_mock.assert_called_once_with(3001)
 
     @patch("structures.tasks.get_esi_downtime_countdown", return_value=300)
-    @patch(
-        "structures.tasks.fetch_structure_notifications_for_character.apply_async"
-    )
     @patch("structures.tasks.update_corporation_structures.apply_async")
     def test_downtime_skips_instead_of_queueing_a_retry(
-        self, structures_mock, notifications_mock, downtime_mock
+        self, structures_mock, downtime_mock
     ):
-        self.assertEqual((0, 0), process_structure_notifications(5))
-        self.assertEqual(
-            (0, 0), fetch_structure_notifications_for_character(3001)
-        )
         self.assertIsNone(update_corporation_structures(2001))
         structures_mock.assert_not_called()
-        notifications_mock.assert_not_called()
