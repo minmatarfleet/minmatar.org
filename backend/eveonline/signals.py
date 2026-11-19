@@ -11,6 +11,7 @@ from eveonline.client import EsiClient, live_esi_allowed
 from eveonline.helpers.characters.public_data import (
     update_character_public_data,
 )
+from eveonline.utils import get_esi_downtime_countdown
 from .models import (
     EveAlliance,
     EveCharacter,
@@ -48,10 +49,12 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
         if not instance.token:
             return
 
-        # populate character data (assets, skills, killmails)
+        # populate character data (assets, skills, killmails). During ESI
+        # downtime, wait it out instead of letting the task skip the fetch.
         logger.debug("Fetching data for %s", instance.character_name)
         update_character_urgent.apply_async(
-            args=[instance.character_id], countdown=30
+            args=[instance.character_id],
+            countdown=30 + get_esi_downtime_countdown(),
         )
 
         instance.save()

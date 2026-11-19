@@ -13,9 +13,11 @@ task_config = {
 }
 
 
-@app.task
+@app.task(expires=15 * 60, exclusive=15 * 60)
 def update_character_affilliations() -> int:
-    character_ids = EveCharacter.objects.values_list("character_id", flat=True)
+    character_ids = list(
+        EveCharacter.objects.values_list("character_id", flat=True)
+    )
     logger.info(
         "Update character affiliations, %d characters found",
         len(character_ids),
@@ -45,13 +47,21 @@ def update_character_affilliations() -> int:
             len(character_ids_batch),
             len(results),
         )
+        characters = {
+            character.character_id: character
+            for character in EveCharacter.objects.filter(
+                character_id__in=[r["character_id"] for r in results]
+            ).only("pk", "character_id", "user_id")
+        }
         for result in results:
             character_id = result["character_id"]
             corporation_id = result.get("corporation_id")
             alliance_id = result.get("alliance_id")
             faction_id = result.get("faction_id")
 
-            character = EveCharacter.objects.get(character_id=character_id)
+            character = characters.get(character_id)
+            if character is None:
+                continue
 
             updated = update_character_with_affiliations(
                 character_id=character_id,
@@ -67,13 +77,13 @@ def update_character_affilliations() -> int:
                     character.user_id,
                 )
                 update_count += 1
-                if character.user:
+                if character.user_id:
                     if task_config["async_apply_affiliations"]:
                         update_affiliation.apply_async(
-                            args=[character.user.id]
+                            args=[character.user_id]
                         )
                     else:
-                        update_affiliation(character.user.id)
+                        update_affiliation(character.user_id)
 
     logger.info(
         "Update character affiliations complete with %d changes",

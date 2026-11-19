@@ -26,6 +26,7 @@ from eveonline.helpers.corporations.discord_invite import (
     recheck_discord_invite,
 )
 from eveonline.models import EveCharacter, EveCorporation
+from eveonline.utils import get_esi_downtime_countdown
 
 logger = logging.getLogger(__name__)
 
@@ -210,3 +211,19 @@ def refresh_corporation_profile_stats(corporation_id=None):
                 corporation.corporation_id,
             )
     return refreshed
+
+
+@app.task(expires=10 * 60, exclusive=10 * 60)
+def sync_freight_contracts() -> int:
+    """Refresh the freight corporation's contracts every 10 minutes.
+
+    Freight reads EveCorporationContract for this one corporation; the
+    hourly update_corporation fan-out is too slow for pilots waiting on a
+    courier. ESI caches corporation contracts for 5 minutes.
+    """
+    # pylint: disable=import-outside-toplevel
+    from freight.models import FREIGHT_CORPORATION_ID
+
+    if get_esi_downtime_countdown() > 0:
+        return 0
+    return refresh_corporation_contracts(FREIGHT_CORPORATION_ID) or 0

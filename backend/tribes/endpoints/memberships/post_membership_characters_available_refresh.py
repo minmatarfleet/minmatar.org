@@ -4,10 +4,7 @@ from django.core.cache import cache
 
 from authentication import AuthBearer
 from esi.models import Token
-from eveonline.helpers.characters.update import (
-    update_character_assets,
-    update_character_skills,
-)
+from eveonline import character_sync
 from eveonline.models import EveCharacter
 from tribes.endpoints.memberships.get_membership_characters_available import (
     _build_available_character_schema,
@@ -75,10 +72,22 @@ def post_membership_characters_available_refresh(
             "detail": "Character has no token with assets or skills scope. Re-add the character with the correct scopes."
         }
 
-    if has_assets:
-        update_character_assets(payload.character_id)
-    if has_skills:
-        update_character_skills(payload.character_id)
+    # Inline, not queued: the response is built from the fresh data. Going
+    # through the character sync stamps both sections, so the scheduler
+    # doesn't fetch them again straight after.
+    character_sync.run_character_sync(
+        character,
+        sections=[
+            name
+            for name, wanted in (
+                (character_sync.ASSETS, has_assets),
+                (character_sync.SKILLS, has_skills),
+            )
+            if wanted
+        ],
+        force=True,
+        lock=False,
+    )
 
     cache.set(cache_key, 1, timeout=REFRESH_COOLDOWN_SECONDS)
 

@@ -410,8 +410,8 @@ class EveOnlineTaskTests(TestCase):
         self.assertEqual(0, EveCharacterKillmail.objects.count())
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.tasks.characters.refresh_character_clones")
-    @patch("eveonline.tasks.characters.Token.get_token")
+    @patch("eveonline.character_sync.refresh_character_clones")
+    @patch("eveonline.character_sync.Token.get_token")
     def test_update_character_calls_clone_sync_when_scopes_present(
         self, token_mock, clones_mock
     ):

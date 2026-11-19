@@ -7,6 +7,7 @@ class EveonlineConfig(AppConfig):
 
     def ready(self):
         import eveonline.signals  # pylint: disable=unused-import, import-outside-toplevel
+        import eveonline.character_sync_signals  # pylint: disable=unused-import, import-outside-toplevel
         from eveonline.esi_view_patches import (  # pylint: disable=import-outside-toplevel
             patch_esi_receive_callback,
         )
