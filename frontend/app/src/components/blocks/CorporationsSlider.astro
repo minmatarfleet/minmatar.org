@@ -24,6 +24,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Every Little Helps.',
     'Banshee Squadron',
     'Solaris Expeditionary Corps',
+    'Wizards And Warlocks',
     'Minmatar Extraction Company',
 ]
 
@@ -74,6 +75,7 @@ import BansheeSquadronSlide from '@components/blocks/BansheeSquadronSlide.astro'
 import SolarisExpeditionaryCorps from '@components/blocks/SolarisExpeditionaryCorps.astro';
 import MinmatarExtractionCompany from '@components/blocks/MinmatarExtractionCompany.astro';
 import EveryLittleHelpSlide from '@components/blocks/EveryLittleHelpSlide.astro';
+import WizardsAndWarlocksSlide from '@components/blocks/WizardsAndWarlocksSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -137,6 +139,12 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'Solaris Expeditionary Corps' &&
                         <SolarisExpeditionaryCorps
+                            corporation={corporation}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Wizards And Warlocks' &&
+                        <WizardsAndWarlocksSlide
                             corporation={corporation}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
