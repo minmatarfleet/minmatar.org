@@ -77,6 +77,20 @@ class QueueRoutingTestCase(SimpleTestCase):
         )
         self.assertEqual(route["queue"].name, FAST_LANE)
 
+    def test_character_notifications_skip_the_eveonline_backlog(self):
+        # The minute poll expires after 60s; behind the bulk character sync
+        # on eveonline it never ran (deploy of #3110).
+        for name in (
+            "eveonline.tasks.notifications.poll_character_notifications",
+            "eveonline.tasks.notifications.fetch_character_notifications",
+            "structures.tasks.process_structure_notifications",
+        ):
+            self.assertEqual(queue_for_task(name), "notifications_esi", name)
+        self.assertEqual(
+            queue_for_task("eveonline.tasks.characters.update_character"),
+            "eveonline",
+        )
+
     def test_no_task_picks_its_own_queue(self):
         pinned = sorted(
             name

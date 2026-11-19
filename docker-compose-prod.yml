@@ -115,9 +115,6 @@ services:
     celery-campaigns:
         <<: *celery-worker
         command: celery -A app worker -l info -Q campaigns
-        deploy:
-            mode: replicated
-            replicas: 2
 
     celery-eveonline:
         <<: *celery-worker
@@ -125,6 +122,13 @@ services:
         deploy:
             mode: replicated
             replicas: 4
+
+    celery-notifications-esi:
+        # Character notifications (eveonline.tasks.notifications, structure
+        # pings). One replica taken from campaigns, whose payout fetches
+        # moved here.
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q notifications_esi
 
     celery-market:
         <<: *celery-worker

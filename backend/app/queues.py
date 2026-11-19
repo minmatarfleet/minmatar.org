@@ -77,6 +77,14 @@ QUEUES: dict[str, QueueSpec] = {
             dedupe_ttl_seconds=60 * 60,
         ),
         QueueSpec(
+            "notifications_esi",
+            "Character notifications: the minute poll, per-character fetches "
+            "and structure pings. Kept off eveonline so the bulk character "
+            "sync can't hold them past their 60-second and 10-minute expiry",
+            max_wait_seconds=5 * 60,
+            dedupe_ttl_seconds=10 * 60,
+        ),
+        QueueSpec(
             "market",
             "Market orders, contracts, prices, history, moon revenue",
             max_wait_seconds=30 * 60,
@@ -148,6 +156,8 @@ ROUTES: dict[str, str] = {
     "campaigns.": "campaigns",
     "eveonline.": "eveonline",
     "structures.": "eveonline",
+    "eveonline.tasks.notifications.": "notifications_esi",
+    "structures.tasks.process_structure_notifications": "notifications_esi",
     "esi.": "eveonline",
     "eveuniverse.": "eveonline",
     "eveuniverse.tasks.update_market_prices": "market",

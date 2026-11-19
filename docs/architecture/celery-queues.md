@@ -10,8 +10,9 @@ How background work is split across queues and workers, the rules every task fol
 | `feed` | zKillboard feed: live poll, rollups, clusters, affiliations | `celery-feed` | 1 (4 processes) | 2 min |
 | `intel` | Intel affiliation database: sightings, zKill investigations | `celery-intel` | 1 | 30 min |
 | `fleets` | Fleet tracking, implants, NPSI calendars, fleet reports | `celery-fleets` | 1 | 2 min |
-| `campaigns` | FW campaigns: sweeps, polls, stats, lifecycle | `celery-campaigns` | 2 | 15 min |
+| `campaigns` | FW campaigns: sweeps, polls, stats, lifecycle | `celery-campaigns` | 1 | 15 min |
 | `eveonline` | ESI sync for characters, corporations, structures, tokens, SDE | `celery-eveonline` | 4 | 30 min |
+| `notifications_esi` | Character notifications: minute poll, per-character fetches, structure pings | `celery-notifications-esi` | 1 | 5 min |
 | `market` | Market orders, contracts, prices, history, moon revenue | `celery-market` | 2 | 30 min |
 | `industry` | Industry orders and jobs, LP store, LP and item buyback | `celery-industry` | 1 | 30 min |
 | `community` | Discord, groups, tribes, applications, content, upkeep | `celery-community` | 1 | 30 min |
