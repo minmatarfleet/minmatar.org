@@ -325,6 +325,65 @@ class _Exemptions:
         return True
 
 
+def _positions(roles: list) -> dict[int, int]:
+    """role id -> position."""
+    positions = {}
+    for role in roles:
+        role_id = _role_id(role)
+        if role_id is not None:
+            positions[role_id] = int(role.get("position") or 0)
+    return positions
+
+
+def _people(members: list) -> list[tuple[int, dict, dict]]:
+    """(discord id, user, member) for people, not bots."""
+    people = []
+    for member in members:
+        user = member.get("user") or {}
+        if user.get("bot"):
+            continue
+        try:
+            discord_id = int(user["id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        people.append((discord_id, user, member))
+    return people
+
+
+class ServerPeople:
+    """A server's people and who on it the bot must never act on, shared
+    by the member policy and discord.guild_departures. No Discord calls."""
+
+    def __init__(self, guild, members, roles, bot_member, owner_id):
+        self.guild = guild
+        self.roles = roles
+        self.owner_id = owner_id
+        self.positions = _positions(roles)
+        self.bot_top = _top_position(
+            {"roles": bot_member.get("roles") or []}, self.positions
+        )
+        self.exemptions = _Exemptions(guild)
+        self.people = _people(members)
+        self.linked = dict(
+            DiscordUser.objects.filter(
+                id__in=[discord_id for discord_id, _, _ in self.people]
+            ).values_list("id", "user_id")
+        )
+
+    def untouchable(self, discord_id: int, username: str, member) -> bool:
+        """The owner, an exempt name, staff, or anyone level with the bot."""
+        if discord_id == self.owner_id:
+            return True
+        if self.exemptions.match(discord_id, username):
+            return True
+        if (
+            _held_permissions(self.guild, self.roles, member)
+            & STAFF_PERMISSIONS
+        ):
+            return True
+        return _top_position(member, self.positions) >= self.bot_top
+
+
 def find_unwelcome(
     guild: DiscordGuild,
     corporation,
@@ -337,45 +396,15 @@ def find_unwelcome(
 
     Pure apart from reading the site's accounts; no Discord calls.
     """
-    by_id = {_role_id(role): role for role in roles}
-    positions = {
-        role_id: int(role.get("position") or 0)
-        for role_id, role in by_id.items()
-        if role_id is not None
-    }
-    bot_top = _top_position(
-        {"roles": bot_member.get("roles") or []}, positions
-    )
+    server = ServerPeople(guild, members, roles, bot_member, owner_id)
     allowed = _allowed_user_ids(guild, corporation)
-    exemptions = _Exemptions(guild)
-
-    people = []
-    for member in members:
-        user = member.get("user") or {}
-        if user.get("bot"):
-            continue
-        try:
-            discord_id = int(user["id"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        people.append((discord_id, user, member))
-    linked = dict(
-        DiscordUser.objects.filter(
-            id__in=[discord_id for discord_id, _, _ in people]
-        ).values_list("id", "user_id")
-    )
 
     unwelcome = []
-    for discord_id, user, member in people:
+    for discord_id, user, member in server.people:
         username = str(user.get("username") or "").lower()
-        if discord_id == owner_id:
+        if server.untouchable(discord_id, username, member):
             continue
-        if exemptions.match(discord_id, username):
-            continue
-        staff = _held_permissions(guild, roles, member) & STAFF_PERMISSIONS
-        if staff or _top_position(member, positions) >= bot_top:
-            continue
-        user_id = linked.get(discord_id)
+        user_id = server.linked.get(discord_id)
         if user_id is not None and user_id in allowed:
             continue
         if user_id is None:
@@ -394,7 +423,7 @@ def find_unwelcome(
                 "reason": reason,
             }
         )
-    return unwelcome, len(people)
+    return unwelcome, len(server.people)
 
 
 def _sync_pending(guild: DiscordGuild, unwelcome: list[dict], now) -> list:
@@ -479,13 +508,14 @@ def _save_pass(guild: DiscordGuild, **fields) -> None:
     guild.save(update_fields=[*fields, "updated_at"])
 
 
-def _read_server(guild: DiscordGuild, client):
+def read_server(guild: DiscordGuild, client, on_lost, label: str):
     """(bot member, roles, owner id, members), or None when Discord can't
-    be read. A lost permission is recorded."""
+    be read. A lost permission calls on_lost(guild); other failures are
+    logged under label."""
     loaded = _read_roles(client)
     if isinstance(loaded, BaseException) or loaded is None:
         if isinstance(loaded, BaseException) and _permission_lost(loaded):
-            _save_pass(guild, can_kick_members=False)
+            on_lost(guild)
         return None
     bot_member, roles = loaded
     try:
@@ -493,10 +523,11 @@ def _read_server(guild: DiscordGuild, client):
         members = _members(client)
     except (requests.RequestException, RateLimitException) as error:
         if _permission_lost(error):
-            _save_pass(guild, can_kick_members=False)
+            on_lost(guild)
         else:
             logger.warning(
-                "Discord member policy for guild %s failed: %s",
+                "Discord %s for guild %s failed: %s",
+                label,
                 guild.guild_id,
                 error,
             )
@@ -524,7 +555,12 @@ def enforce_guild(guild: DiscordGuild) -> int | None:
         return None
 
     client = DiscordClient.for_guild(guild.guild_id)
-    server = _read_server(guild, client)
+    server = read_server(
+        guild,
+        client,
+        lambda lost: _save_pass(lost, can_kick_members=False),
+        "member policy",
+    )
     if server is None:
         return None
     bot_member, roles, owner_id, members = server

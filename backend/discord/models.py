@@ -172,6 +172,24 @@ class DiscordGuild(models.Model):
     members_held_at = models.DateTimeField(null=True, blank=True)
     members_held_count = models.PositiveIntegerField(default=0, db_default=0)
     members_approved_at = models.DateTimeField(null=True, blank=True)
+    # Off by default. When on, a linked account that was in the corporation
+    # and is no longer in it or an alliance member loses every role the bot
+    # can remove, not only the mapped ones, after member_grace_hours
+    # (discord.guild_departures). They stay on the server; the member
+    # policy decides about kicking.
+    strip_roles_on_leave = models.BooleanField(default=False, db_default=False)
+    # The same safety brake as the member policy: a pass that would strip
+    # too many people waits for a director. An approval covers the people
+    # flagged before it, up to the held count.
+    roles_strip_held_at = models.DateTimeField(null=True, blank=True)
+    roles_strip_held_count = models.PositiveIntegerField(
+        default=0, db_default=0
+    )
+    roles_strip_approved_at = models.DateTimeField(null=True, blank=True)
+    roles_strip_checked_at = models.DateTimeField(null=True, blank=True)
+    roles_strip_last_count = models.PositiveIntegerField(
+        default=0, db_default=0
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -302,6 +320,43 @@ class DiscordGuildRemoval(models.Model):
             models.UniqueConstraint(
                 fields=["guild", "discord_id"],
                 name="discord_guild_removal_member",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.guild_id} {self.username or self.discord_id}"
+
+
+class DiscordRoleStrip(models.Model):
+    """Someone who left a corporation and still holds roles on its server.
+
+    Pending while stripped_at is empty: their roles are removed once
+    flagged_at is member_grace_hours old, and the row is dropped if they
+    come back first. After that it is the record of which roles were
+    removed, so a director can give them back. A person has at most one
+    pending row per server (kept in code: MySQL has no partial unique
+    index).
+    """
+
+    guild = models.ForeignKey(
+        DiscordGuild,
+        on_delete=models.CASCADE,
+        related_name="role_strips",
+    )
+    discord_id = models.BigIntegerField()
+    username = models.CharField(max_length=32, blank=True, default="")
+    display_name = models.CharField(max_length=100, blank=True, default="")
+    flagged_at = models.DateTimeField()
+    stripped_at = models.DateTimeField(null=True, blank=True)
+    # [{"id": "<role id>", "name": "<role name>"}] removed at stripped_at.
+    roles = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ["flagged_at", "discord_id"]
+        indexes = [
+            models.Index(
+                fields=["guild", "stripped_at"],
+                name="discord_role_strip_state",
             ),
         ]
 

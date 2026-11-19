@@ -16,6 +16,7 @@ import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 /**
@@ -70,6 +71,12 @@ const grace_choices = access.grace_choices.length ? access.grace_choices : [acce
 const exemptions = access.exemptions.map((row) => row.username)
 const hidden = access.pending_total - access.pending.length
 const held = Boolean(access.held && !access.held.approved)
+const strip_on_leave = Boolean(role_sync.strip_on_leave)
+const strip_held = Boolean(role_sync.strip_held && !role_sync.strip_held.approved)
+const strip_hidden = role_sync.strip_pending_total - role_sync.strip_pending.length
+// The allowed names and the grace apply to the strip too, so panel 3 shows
+// them when either is on.
+const cleanup_on = Boolean(policy) || strip_on_leave
 
 const roles = discord_access_roles(role_sync.mappings)
 const mappings = new Map(role_sync.mappings.map((mapping) => [mapping.state, mapping]))
@@ -90,6 +97,7 @@ const role_rows = roles.all.map((state, index) => {
 const alpine = `{
     policy: ${JSON.stringify(policy)},
     action: ${JSON.stringify(action)},
+    strip: ${JSON.stringify(strip_on_leave)},
     added: ${JSON.stringify(roles.added)},
     names: ${JSON.stringify(exemptions)},
     draft: '',
@@ -237,12 +245,101 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                             ))}
                         </ActionMenu>
                     </div>
+                    <div class="[ server-access__strip ]">
+                        {/* An unticked box posts nothing; the marker says the page has the option. */}
+                        <input type="hidden" name="role_strip_present" value="1" />
+                        <Switch name="role_strip_on_leave" value="1" checked={strip_on_leave} x-model="strip">
+                            <span class="[ server-access__option-title ]">{t('corporations.discord.roles_strip_title')}</span>
+                            <span class="[ server-access__option-sub ]">{t('corporations.discord.roles_strip_sub')}</span>
+                        </Switch>
+                        {strip_held && role_sync.strip_held &&
+                            <div class="[ server-access__paused ]" role="status">
+                                <div class="[ server-access__grow ]">
+                                    <p class="[ server-access__paused-title ]">{t('corporations.discord.roles_strip_held').replace('{count}', String(role_sync.strip_held.count))}</p>
+                                    <p class="[ server-access__sub ]">{t('corporations.discord.roles_strip_held_help')}</p>
+                                </div>
+                                <Button type="submit" name="action" value="approve_role_strip" formnovalidate color="fleet-red" size="sm" off_disable={true}>
+                                    {t('corporations.discord.roles_strip_approve').replace('{count}', String(role_sync.strip_held.count))}
+                                </Button>
+                            </div>
+                        }
+                        {role_sync.strip_held?.approved &&
+                            <p class="[ server-access__sub ]" role="status">{t('corporations.discord.roles_strip_approved')}</p>
+                        }
+                        {strip_on_leave && role_sync.strip_checked_at && !strip_held &&
+                            <small class="[ server-access__sub ]">
+                                {t('corporations.discord.roles_strip_checked')
+                                    .replace('{time}', eve_time(role_sync.strip_checked_at))
+                                    .replace('{count}', String(role_sync.strip_last_count))}
+                            </small>
+                        }
+                        {role_sync.strip_pending.length > 0 &&
+                            <div class="[ server-access__strip-list ]">
+                                <h5 class="[ server-access__option-title ]">
+                                    {t('corporations.discord.roles_strip_pending')}
+                                    <span class="[ server-access__count ]"> · {role_sync.strip_pending_total}</span>
+                                </h5>
+                                <XFadeScroll>
+                                    <div class="[ server-access__table server-access__strips ]" role="table">
+                                        <div class="[ server-access__thead ]" role="row">
+                                            <span role="columnheader">{t('corporations.discord.members_pilot')}</span>
+                                            <span role="columnheader">{t('corporations.discord.roles_strip_when')}</span>
+                                        </div>
+                                        {role_sync.strip_pending.map((row) => {
+                                            const eta = discord_removal_eta(row.strip_after)
+                                            return (
+                                                <div class="[ server-access__row ]" role="row">
+                                                    <span class="[ server-access__who ]" role="cell">
+                                                        {row.display_name ?? row.username ?? row.discord_id}
+                                                        {row.username && <small>@{row.username}</small>}
+                                                    </span>
+                                                    <span class="[ server-access__status is-waiting ]" role="cell">
+                                                        {eta ? t('corporations.discord.members_in').replace('{time}', eta) : t('corporations.discord.members_due')}
+                                                    </span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </XFadeScroll>
+                                {strip_hidden > 0 &&
+                                    <small class="[ server-access__sub ]">
+                                        {t('corporations.discord.members_pending_more').replace('{count}', String(strip_hidden))}
+                                    </small>
+                                }
+                            </div>
+                        }
+                        {role_sync.strip_recent.length > 0 &&
+                            <div class="[ server-access__strip-list ]">
+                                <h5 class="[ server-access__option-title ]">{t('corporations.discord.roles_strip_recent')}</h5>
+                                <p class="[ server-access__sub ]">{t('corporations.discord.roles_strip_recent_help')}</p>
+                                <XFadeScroll>
+                                    <div class="[ server-access__table server-access__strips ]" role="table">
+                                        <div class="[ server-access__thead ]" role="row">
+                                            <span role="columnheader">{t('corporations.discord.members_pilot')}</span>
+                                            <span role="columnheader">{t('corporations.discord.roles_strip_removed')}</span>
+                                        </div>
+                                        {role_sync.strip_recent.map((row) => (
+                                            <div class="[ server-access__row ]" role="row">
+                                                <span class="[ server-access__who ]" role="cell">
+                                                    {row.display_name ?? row.username ?? row.discord_id}
+                                                    <small>{row.username && `@${row.username} · `}{eve_time(row.stripped_at)}</small>
+                                                </span>
+                                                <span class="[ server-access__muted ]" role="cell">
+                                                    {row.roles.map((role) => role.name || role.id).join(', ')}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </XFadeScroll>
+                            </div>
+                        }
+                    </div>
                 </>
             }
         </div>
     </section>
 
-    <section class="[ server-access__panel ]" x-bind:class="{ 'is-off': policy === '' }" class:list={[{ 'is-off': !policy }]}>
+    <section class="[ server-access__panel ]" x-bind:class="{ 'is-off': policy === '' && !strip }" class:list={[{ 'is-off': !cleanup_on }]}>
         <header class="[ server-access__head ]">
             <span class="[ server-access__step ]" aria-hidden="true">3</span>
             <div>
@@ -258,8 +355,8 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                 <p class="[ server-access__sub ]" x-show="policy === ''" x-cloak={policy ? true : undefined}>{t('corporations.discord.cleanup_sub_anyone')}</p>
             </div>
         </header>
-        <div class="[ server-access__body ]" x-show="policy !== ''" x-cloak={!policy ? true : undefined}>
-            <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-cleanup">
+        <div class="[ server-access__body ]" x-show="policy !== '' || strip" x-cloak={!cleanup_on ? true : undefined}>
+            <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-cleanup" x-show="policy !== ''" x-cloak={!policy ? true : undefined}>
                 {ACTIONS.map((option) => (
                     <label class="[ server-access__option ]">
                         <input type="radio" name="member_cleanup" value={option.value} checked={action === option.value} x-model="action" />
@@ -276,13 +373,13 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
             </div>
 
             {!can_kick &&
-                <div class="[ server-access__notice ]" x-show="action === 'remove'" x-cloak={action !== 'remove' ? true : undefined}>
+                <div class="[ server-access__notice ]" x-show="policy !== '' && action === 'remove'" x-cloak={!policy || action !== 'remove' ? true : undefined}>
                     <p>{t('corporations.discord.members_needs_kick')}</p>
                     <Button href={connect_url} color="transparent" size="sm">{t('corporations.discord.bot_add_again')}</Button>
                 </div>
             }
 
-            <div class="[ server-access__field ]" x-show="action !== ''" x-cloak={!action ? true : undefined}>
+            <div class="[ server-access__field ]" x-show="(policy !== '' && action !== '') || strip" x-cloak={!((policy && action) || strip_on_leave) ? true : undefined}>
                 <label class="[ server-access__label ]" for="member-access-grace">{t('corporations.discord.members_grace')}</label>
                 <div>
                     <div class="[ server-access__narrow ]">
@@ -293,8 +390,9 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                         </Select>
                     </div>
                     <p class="[ server-access__help ]">
-                        <span x-show="action === 'notify'" x-cloak={!notifies ? true : undefined}>{t('corporations.discord.members_grace_notify_help')}</span>
-                        <span x-show="action === 'remove'" x-cloak={action !== 'remove' ? true : undefined}>{t('corporations.discord.members_grace_remove_help')}</span>
+                        <span x-show="policy !== '' && action === 'notify'" x-cloak={!policy || !notifies ? true : undefined}>{t('corporations.discord.members_grace_notify_help')}</span>
+                        <span x-show="policy !== '' && action === 'remove'" x-cloak={!policy || action !== 'remove' ? true : undefined}>{t('corporations.discord.members_grace_remove_help')}</span>
+                        <span x-show="strip" x-cloak={!strip_on_leave ? true : undefined}>{t('corporations.discord.members_grace_strip_help')}</span>
                     </p>
                 </div>
             </div>
@@ -408,7 +506,8 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
 <style lang="scss">
     p,
-    h4 {
+    h4,
+    h5 {
         margin: 0;
     }
 
@@ -498,6 +597,19 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         flex-direction: column;
         gap: var(--space-s);
         padding: var(--space-s) var(--space-m);
+    }
+
+    .server-access__strip {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-top: var(--space-s);
+        border-top: solid 1px var(--hairline);
+
+        .server-access__option-title,
+        .server-access__option-sub {
+            display: block;
+        }
     }
 
     .server-access__options {
@@ -641,6 +753,22 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
     .server-access__list {
         min-width: 40rem;
+    }
+
+    .server-access__strip-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding-top: var(--space-2xs);
+    }
+
+    .server-access__strips {
+        min-width: 28rem;
+    }
+
+    .server-access__strips .server-access__thead,
+    .server-access__strips .server-access__row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
     .server-access__list .server-access__thead,

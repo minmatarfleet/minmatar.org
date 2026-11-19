@@ -58,6 +58,23 @@ def enforce_guild_member_policy(guild_pk: int | None = None):
 
 
 @app.task()
+def strip_departed_guild_roles(guild_pk: int | None = None):
+    """Take every role off people who left a corporation's server's
+    corporation, where the corporation turned that on.
+
+    The beat calls this with no argument. Turning the option on, or
+    approving a held pass, queues the same task for one guild.
+    guild_departures queues this task, so the import stays inside the
+    function.
+    """
+    from discord.guild_departures import (  # pylint: disable=import-outside-toplevel
+        strip_departed_roles,
+    )
+
+    strip_departed_roles(guild_pk)
+
+
+@app.task()
 def snapshot_guild_roles_task(guild_pk: int):
     """Read one server's roles after a connect or a manual refresh.
 

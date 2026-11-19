@@ -3,9 +3,9 @@ import type { ui } from '@i18n/ui'
 
 export type UiKey = keyof typeof ui['en']
 
-export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles' | 'save_members' | 'save_access' | 'approve_members'
+export type DiscordSettingsAction = 'check' | 'save' | 'remove' | 'replace' | 'cancel' | 'disconnect_bot' | 'retry_bot' | 'save_roles' | 'refresh_roles' | 'save_members' | 'save_access' | 'approve_members' | 'approve_role_strip'
 
-const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles', 'save_members', 'save_access', 'approve_members']
+const ACTIONS: DiscordSettingsAction[] = ['check', 'save', 'remove', 'replace', 'cancel', 'disconnect_bot', 'retry_bot', 'save_roles', 'refresh_roles', 'save_members', 'save_access', 'approve_members', 'approve_role_strip']
 
 // Roles a corporation server can hand out, in the order Settings lists them.
 export const DISCORD_CORPORATION_ROLE_STATES = [

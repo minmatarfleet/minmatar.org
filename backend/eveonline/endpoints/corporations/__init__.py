@@ -12,6 +12,7 @@ from eveonline.endpoints.corporations import (
     post_corporation_discord_members_approve,
     post_corporation_discord_members_exempt,
     post_corporation_discord_roles_refresh,
+    post_corporation_discord_roles_strip_approve,
     put_corporation_discord,
     put_corporation_discord_members,
     put_corporation_discord_roles,
@@ -89,6 +90,7 @@ for endpoint in (
     put_corporation_discord_members,
     post_corporation_discord_members_exempt,
     post_corporation_discord_members_approve,
+    post_corporation_discord_roles_strip_approve,
 ):
     view = getattr(endpoint, endpoint.__name__.rsplit(".", 1)[-1])
     getattr(discord_router, endpoint.METHOD)(

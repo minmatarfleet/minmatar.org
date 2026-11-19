@@ -16,6 +16,12 @@ from .core import DISCORD_NICKNAME_MAX_LENGTH
 
 logger = logging.getLogger(__name__)
 
+
+def _quote_all(value) -> str:
+    """URL-encode every reserved character, "/" included."""
+    return quote(value, safe="")
+
+
 GUILD_ID = settings.DISCORD_GUILD_ID
 BASE_URL = "https://discord.com/api/v9"
 
@@ -138,10 +144,14 @@ class DiscordBaseClient:
         _assert_discord_http_allowed()
         self.check_ratelimit()
         logger.info("PATCH %s", args)
+        headers = {
+            **(kwargs.pop("headers", None) or {}),
+            "Authorization": f"Bot {self.access_token}",
+        }
         response = self.session.patch(
             *args,
             **kwargs,
-            headers={"Authorization": f"Bot {self.access_token}"},
+            headers=headers,
             timeout=10,
         )
         if response.status_code == 429:
@@ -204,11 +214,11 @@ def discord_authorize_url(
     url = (
         "https://discord.com/api/oauth2/authorize"
         f"?client_id={client_id}"
-        f"&redirect_uri={quote(redirect_uri, safe='')}"
+        f"&redirect_uri={_quote_all(redirect_uri)}"
         f"&response_type=code&scope={DISCORD_OAUTH_SCOPES_URL}"
     )
     if state:
-        url = f"{url}&state={quote(state, safe='')}"
+        url = f"{url}&state={_quote_all(state)}"
     return url
 
 
@@ -306,7 +316,7 @@ class DiscordClient(DiscordBaseClient):
     def get_invite(self, code: str) -> dict:
         """An invite and its server. 404 when it expired or was deleted."""
         return self.get(
-            f"{BASE_URL}/invites/{quote(code, safe='')}?with_expiration=true"
+            f"{BASE_URL}/invites/{_quote_all(code)}?with_expiration=true"
         )
 
     def get_channel(self, channel_id):
@@ -537,6 +547,19 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}/roles/{role_id}",
         )
 
+    def set_member_roles(self, user_id, role_ids, reason: str = ""):
+        """Replace a member's roles in one call: all or nothing.
+
+        Discord only checks the roles that change, so the list may hold
+        managed roles and roles above the bot as long as they are kept.
+        """
+        headers = {"X-Audit-Log-Reason": quote(reason[:512])} if reason else {}
+        return self.patch(
+            f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
+            json={"roles": [str(role_id) for role_id in role_ids]},
+            headers=headers,
+        )
+
     def get_guild_channels(self, guild_id=None):
         """Get all channels from a guild."""
         type_map = {
@@ -655,7 +678,7 @@ class DiscordClient(DiscordBaseClient):
 
     def delete_invite(self, code: str):
         """Revoke an invite; a missing one is already gone."""
-        return self.delete(f"{BASE_URL}/invites/{quote(code, safe='')}")
+        return self.delete(f"{BASE_URL}/invites/{_quote_all(code)}")
 
     def leave_guild(self, guild_id):
         """The bot leaves a server."""

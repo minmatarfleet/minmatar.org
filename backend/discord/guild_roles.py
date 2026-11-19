@@ -3,10 +3,13 @@
 The alliance Discord and a Fishermen server are not mapped here. This module
 adds and removes mapped roles for linked accounts, and sets their nickname
 to `[TICKER] Main`, as the alliance Discord does. It does not kick anyone,
-and it does not create, rename, or delete roles.
+and it does not create, rename, or delete roles. Removing unmapped roles
+from people who left is discord.guild_departures, when a corporation turns
+it on.
 """
 
 import logging
+from datetime import timedelta
 
 import requests
 from django.conf import settings
@@ -154,6 +157,11 @@ def clear_role_mappings(guild: DiscordGuild | None) -> None:
     guild.members_held_at = None
     guild.members_held_count = 0
     guild.members_approved_at = None
+    guild.strip_roles_on_leave = False
+    guild.roles_strip_held_at = None
+    guild.roles_strip_held_count = 0
+    guild.roles_strip_approved_at = None
+    guild.role_strips.all().delete()
     guild.save(
         update_fields=[
             "member_policy",
@@ -161,6 +169,10 @@ def clear_role_mappings(guild: DiscordGuild | None) -> None:
             "members_held_at",
             "members_held_count",
             "members_approved_at",
+            "strip_roles_on_leave",
+            "roles_strip_held_at",
+            "roles_strip_held_count",
+            "roles_strip_approved_at",
             "updated_at",
         ]
     )
@@ -478,6 +490,13 @@ def role_sync_payload(guild: DiscordGuild | None) -> dict:
             "checked_at": None,
             "roles": [],
             "mappings": [],
+            "strip_on_leave": False,
+            "strip_held": None,
+            "strip_checked_at": None,
+            "strip_last_count": 0,
+            "strip_pending": [],
+            "strip_pending_total": 0,
+            "strip_recent": [],
         }
     mapped = {
         mapping.role_id: mapping for mapping in guild.role_mappings.all()
@@ -504,6 +523,60 @@ def role_sync_payload(guild: DiscordGuild | None) -> dict:
                 "problem": mapping.problem or None,
             }
             for mapping in mapped.values()
+        ],
+        "strip_on_leave": bool(guild.strip_roles_on_leave),
+        "strip_held": (
+            {
+                "since": guild.roles_strip_held_at,
+                "count": guild.roles_strip_held_count,
+                "approved": guild.roles_strip_approved_at is not None,
+            }
+            if guild.roles_strip_held_at is not None
+            else None
+        ),
+        "strip_checked_at": guild.roles_strip_checked_at,
+        "strip_last_count": guild.roles_strip_last_count,
+        **_strip_lists(guild),
+    }
+
+
+# The Settings tab lists this many people waiting and recently stripped.
+STRIP_LIST_LIMIT = 50
+
+
+def _strip_lists(guild: DiscordGuild) -> dict:
+    """Who is waiting to lose their roles, and whose roles were removed
+    (discord.guild_departures), for the Settings tab."""
+    grace = timedelta(hours=guild.member_grace_hours)
+    pending = guild.role_strips.filter(stripped_at__isnull=True)
+    recent = guild.role_strips.filter(stripped_at__isnull=False).order_by(
+        "-stripped_at"
+    )
+    return {
+        "strip_pending_total": pending.count(),
+        "strip_pending": [
+            {
+                "discord_id": str(row.discord_id),
+                "username": row.username or None,
+                "display_name": row.display_name or None,
+                "flagged_at": row.flagged_at,
+                "strip_after": row.flagged_at + grace,
+            }
+            for row in pending[:STRIP_LIST_LIMIT]
+        ],
+        "strip_recent": [
+            {
+                "discord_id": str(row.discord_id),
+                "username": row.username or None,
+                "display_name": row.display_name or None,
+                "stripped_at": row.stripped_at,
+                "roles": [
+                    {"id": str(role.get("id")), "name": role.get("name") or ""}
+                    for role in row.roles or []
+                    if isinstance(role, dict)
+                ],
+            }
+            for row in recent[:STRIP_LIST_LIMIT]
         ],
     }
 
@@ -673,7 +746,7 @@ def _expected_nicknames(user_ids) -> dict[int, str]:
     )
     return {
         user_id: format_discord_nickname(
-            f"[{tickers.get(main.corporation_id) or '?'}] ",
+            "[" + (tickers.get(main.corporation_id) or "?") + "] ",
             main.character_name,
         )
         for user_id, main in mains.items()

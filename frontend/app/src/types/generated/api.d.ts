@@ -2560,6 +2560,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/roles/strip/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a held pass that would remove all roles from many people at once (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_discord_roles_strip_approve_post_corporation_discord_roles_strip_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/info": {
         parameters: {
             query?: never;
@@ -13683,7 +13700,14 @@ export interface components {
              *       "checked": false,
              *       "checked_at": null,
              *       "mappings": [],
-             *       "roles": []
+             *       "roles": [],
+             *       "strip_checked_at": null,
+             *       "strip_held": null,
+             *       "strip_last_count": 0,
+             *       "strip_on_leave": false,
+             *       "strip_pending": [],
+             *       "strip_pending_total": 0,
+             *       "strip_recent": []
              *     }
              */
             role_sync?: components["schemas"]["DiscordRoleSync"];
@@ -15465,6 +15489,46 @@ export interface components {
         DiscordRoleMappingUpdate: {
             /** Mappings */
             mappings: components["schemas"]["DiscordRoleMappingRow"][];
+            /** Strip On Leave */
+            strip_on_leave?: boolean | null;
+        };
+        /** DiscordRoleStripDone */
+        DiscordRoleStripDone: {
+            /** Discord Id */
+            discord_id: string;
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Roles
+             * @default []
+             */
+            roles?: components["schemas"]["DiscordStrippedRole"][];
+            /**
+             * Stripped At
+             * Format: date-time
+             */
+            stripped_at: string;
+            /** Username */
+            username?: string | null;
+        };
+        /** DiscordRoleStripPending */
+        DiscordRoleStripPending: {
+            /** Discord Id */
+            discord_id: string;
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Flagged At
+             * Format: date-time
+             */
+            flagged_at: string;
+            /**
+             * Strip After
+             * Format: date-time
+             */
+            strip_after: string;
+            /** Username */
+            username?: string | null;
         };
         /** DiscordRoleSync */
         DiscordRoleSync: {
@@ -15490,11 +15554,49 @@ export interface components {
              * @default []
              */
             roles?: components["schemas"]["DiscordRoleChoice"][];
+            /** Strip Checked At */
+            strip_checked_at?: string | null;
+            strip_held?: components["schemas"]["DiscordMemberHold"] | null;
+            /**
+             * Strip Last Count
+             * @default 0
+             */
+            strip_last_count?: number;
+            /**
+             * Strip On Leave
+             * @default false
+             */
+            strip_on_leave?: boolean;
+            /**
+             * Strip Pending
+             * @default []
+             */
+            strip_pending?: components["schemas"]["DiscordRoleStripPending"][];
+            /**
+             * Strip Pending Total
+             * @default 0
+             */
+            strip_pending_total?: number;
+            /**
+             * Strip Recent
+             * @default []
+             */
+            strip_recent?: components["schemas"]["DiscordRoleStripDone"][];
         };
         /** DiscordSitOutRequest */
         DiscordSitOutRequest: {
             /** Discord User Id */
             discord_user_id: number;
+        };
+        /** DiscordStrippedRole */
+        DiscordStrippedRole: {
+            /** Id */
+            id: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
         };
         /** DiscordSubmitRequest */
         DiscordSubmitRequest: {
@@ -37155,6 +37257,55 @@ export interface operations {
         };
     };
     eveonline_endpoints_corporations_post_corporation_discord_roles_refresh_post_corporation_discord_roles_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_discord_roles_strip_approve_post_corporation_discord_roles_strip_approve: {
         parameters: {
             query?: never;
             header?: never;

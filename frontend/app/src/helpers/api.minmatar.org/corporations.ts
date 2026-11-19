@@ -201,10 +201,13 @@ export async function save_corporation_discord_roles(
     access_token: string,
     corporation_id: number,
     mappings: DiscordRoleMappingUpdate['mappings'],
+    // Left out, the server keeps the current setting.
+    strip_on_leave?: boolean,
 ) {
+    const body: DiscordRoleMappingUpdate = strip_on_leave === undefined ? { mappings } : { mappings, strip_on_leave }
     const response = await api_response(
         `${API_ENDPOINT}/corporations/${corporation_id}/discord/roles`,
-        { method: 'PUT', token: access_token, body: { mappings }, allow: [400] },
+        { method: 'PUT', token: access_token, body, allow: [400] },
     )
     if (response.status === 400) {
         const body = await response.json().catch(() => ({}))
@@ -251,6 +254,11 @@ export async function keep_corporation_discord_member(access_token: string, corp
 /** Let a paused pass (many removals at once) go ahead. */
 export async function approve_corporation_discord_members(access_token: string, corporation_id: number) {
     return await discord_member_request(access_token, `${corporation_id}/discord/members/approve`, 'POST')
+}
+
+/** Let a paused pass (many pilots losing all their roles at once) go ahead. */
+export async function approve_corporation_discord_role_strip(access_token: string, corporation_id: number) {
+    return await discord_member_request(access_token, `${corporation_id}/discord/roles/strip/approve`, 'POST')
 }
 
 /** Browser URL that starts adding the bot (Discord's install page, then back to Settings). */
