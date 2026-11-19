@@ -45,6 +45,8 @@ export async function fetch_orders_by_locations(history:boolean = false) {
                     fulfilled_at: order.fulfilled_at,
                     location: order.location,
                     needed_by: order.needed_by,
+                    provisional: order.provisional,
+                    starts_at: order.starts_at,
                     items: order.items,
                     assigned_to: order.assigned_to.map(character => {
                         return {
@@ -104,6 +106,8 @@ export async function fetch_order_by_id(order_id: number) {
         fulfilled_at: order.fulfilled_at,
         location: order.location,
         needed_by: order.needed_by,
+        provisional: order.provisional,
+        starts_at: order.starts_at,
         items: order.items,
         assigned_to: assigned_to,
     } as IndustryOrderUI

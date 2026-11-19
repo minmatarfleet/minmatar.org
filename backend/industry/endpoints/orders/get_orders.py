@@ -9,6 +9,7 @@ from industry.endpoints.orders.schemas import (
     OrderLocationResponse,
 )
 from industry.endpoints.orders.serialization import (
+    order_claiming_fields,
     order_line_profit_per_unit,
     order_line_target_unit_price,
 )
@@ -86,6 +87,7 @@ def get_orders(request):
                     if order.location_id
                     else None
                 ),
+                **order_claiming_fields(order),
                 items=items_flat,
                 assigned_to=assigned_to_flat,
             )

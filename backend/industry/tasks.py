@@ -231,6 +231,15 @@ def sweep_lp_buyback_orders_task() -> dict:
     return sweep_lp_buyback_orders()
 
 
+@app.task(exclusive=90, expires=50)
+def start_provisional_orders_task() -> int:
+    """Close claiming periods that have reached their start time."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.provisional import start_due_provisional_orders
+
+    return start_due_provisional_orders()
+
+
 @app.task()
 def compute_order_profit_breakdown_task(order_id: int) -> bool:
     """

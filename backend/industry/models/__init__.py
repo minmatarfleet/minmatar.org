@@ -24,6 +24,7 @@ from industry.models.order import (
     IndustryOrderItemAssignment,
     IndustryOrderMineralCoordinator,
     IndustryOrderPiCoordinator,
+    IndustryOrderUnfulfilledItem,
 )
 from industry.models.product import (
     IndustryProduct,
@@ -48,6 +49,7 @@ __all__ = [
     "IndustryOrderItemAssignment",
     "IndustryOrderMineralCoordinator",
     "IndustryOrderPiCoordinator",
+    "IndustryOrderUnfulfilledItem",
     "IndustryProduct",
     "IndustrySystemCostIndex",
     "InventionDecryptor",

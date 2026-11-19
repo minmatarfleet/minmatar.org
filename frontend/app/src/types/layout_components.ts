@@ -921,6 +921,8 @@ export interface IndustryOrderUI {
     location:           BaseLocation | null;
     items:              RootItem[];
     assigned_to:        Producer[];
+    provisional:        boolean;
+    starts_at:          string | null;
 }
 
 export interface OrderLocation extends BaseLocation {

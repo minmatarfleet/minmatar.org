@@ -206,6 +206,14 @@ CELERYBEAT_BUYBACK = [
 # Industry (order assignees' jobs from ESI + cost-index cache)
 CELERYBEAT_INDUSTRY = [
     (
+        "[Industry] Start provisional orders",
+        {
+            "task": "industry.tasks.start_provisional_orders_task",
+            "schedule": crontab(minute="*"),
+            "options": {"expire_seconds": 50},
+        },
+    ),
+    (
         "[Industry] Sync Jobs for Order Assignees",
         {
             "task": "industry.tasks.sync_industry_jobs_for_order_assignees",

@@ -10495,6 +10495,17 @@
             "title": "Contract To",
             "type": "string"
           },
+          "import_unfulfilled_from_order_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Import Unfulfilled From Order Id"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/OrderItemInput"
@@ -10517,6 +10528,18 @@
             "format": "date",
             "title": "Needed By",
             "type": "string"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
           }
         },
         "required": [
@@ -33176,9 +33199,46 @@
             ],
             "title": "Profit Breakdown Computed At"
           },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
           "public_short_code": {
             "title": "Public Short Code",
             "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "unfulfilled_items": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OrderUnfulfilledItemResponse"
+            },
+            "title": "Unfulfilled Items",
+            "type": "array"
           }
         },
         "required": [
@@ -33349,6 +33409,11 @@
             "title": "Id",
             "type": "integer"
           },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
           "quantity": {
             "title": "Quantity",
             "type": "integer"
@@ -33368,6 +33433,18 @@
             "format": "date-time",
             "title": "Self Assign Window Ends At",
             "type": "string"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
           },
           "target_unit_price": {
             "anyOf": [
@@ -33548,9 +33625,38 @@
             "title": "Needed By",
             "type": "string"
           },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
           "public_short_code": {
             "title": "Public Short Code",
             "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
           }
         },
         "required": [
@@ -33802,6 +33908,46 @@
           "compressed"
         ],
         "title": "OrderProfitBreakdownResponse",
+        "type": "object"
+      },
+      "OrderUnfulfilledItemResponse": {
+        "description": "Quantity removed when a provisional order started, still available to import.",
+        "properties": {
+          "eve_type_id": {
+            "title": "Eve Type Id",
+            "type": "integer"
+          },
+          "eve_type_name": {
+            "title": "Eve Type Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "imported_order_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Order Id"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "eve_type_id",
+          "eve_type_name",
+          "quantity"
+        ],
+        "title": "OrderUnfulfilledItemResponse",
         "type": "object"
       },
       "OrdersProfitSummaryResponse": {

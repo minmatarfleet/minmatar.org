@@ -68,6 +68,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             character_name={order.character_name}
             location_name={order.location?.location_name}
             needed_by={order.needed_by}
+            provisional={order.provisional}
+            starts_at={order.starts_at}
+            started_at={order.started_at}
+            fulfilled={order.fulfilled_at !== null}
+            unfulfilled_items={order.unfulfilled_items}
+            can_import={can_manage}
             lp_stockpiles={order.lp_stockpiles ?? []}
             manage={can_manage ? {
                 location_id: order.location?.location_id ?? null,

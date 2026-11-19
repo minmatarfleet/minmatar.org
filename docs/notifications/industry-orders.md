@@ -8,9 +8,10 @@ Copy tone: short, plain English, one next step. Written for busy pilots — no j
 
 | Key | Mechanism | Who | When | Example title |
 |-----|-----------|-----|------|---------------|
-| `industry.order.created` | Broadcast | Last-30-day participants ∪ topic subscribers ∪ active tribe-group members (excludes creator) | Order created / tribe groups assigned | "New Build Order BTC" |
-| `industry.order.assignment` | Action-ack | Assigning user | Self-assign | "You're on the order!" |
-| `industry.order.job` | External-event | Assignee | Matched active manufacturing/reaction job | "We've detected an order blueprint cooking!" |
+| `industry.order.created` | Broadcast | Last-30-day participants ∪ topic subscribers ∪ active tribe-group members (excludes creator) | Order created / tribe groups assigned | "New Build Order BTC" or, for a provisional order, "Claim builds on order BTC" |
+| `industry.order.assignment` | Action-ack | Assigning user | Self-assign | "You're on the order!" or, during a claiming period, "You've claimed a build" |
+| `industry.order.selected` | Action-ack | Pilots with a claim | Provisional claiming period ends | "You're selected — start now" |
+| `industry.order.job` | External-event | Assignee | Matched active manufacturing/reaction job on an order that has started | "We've detected an order blueprint cooking!" |
 
 ## Audience: new orders
 
@@ -30,6 +31,12 @@ Helpers: `users_participated_in_orders_since`, `users_active_in_tribe_groups`, `
 Emit is async (`emit_order_created_notification` Celery task) from order create and again when tribe groups are added (admin M2M). Idempotency key `industry.order.created:{order_id}` prevents duplicate pings when groups are assigned after create.
 
 Discord and Eve mail deliveries are **staggered** under `NOTIFICATIONS_*_RATE_PER_SECOND` (with headroom) so large tribe fans do not slam the rate buckets.
+
+## Provisional orders
+
+A provisional order has `starts_at` and has not yet started. The created notice tells pilots to claim quantities before that time, names the location, and says how many hours the claiming period lasts. Claiming does not mean they should start building.
+
+When `starts_at` passes, a beat task drops every unclaimed quantity (recorded as an unfulfilled line the order manager can import into a new order), keeps the claims, and sends `industry.order.selected` so those pilots start immediately at the order location. Jobs are not matched to claims until the order has started.
 
 ## Assignment payload
 

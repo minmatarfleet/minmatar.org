@@ -49,6 +49,25 @@ class IndustryOrder(models.Model):
         related_name="industry_orders",
         help_text="Optional live campaign this supply order supports.",
     )
+    starts_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "When a provisional order stops taking claims and selected "
+            "builders are told to start. Empty means the order is open "
+            "immediately."
+        ),
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the provisional claiming period was closed.",
+    )
+    selection_notified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When selected builders were told to start immediately.",
+    )
     tribe_groups = models.ManyToManyField(
         "tribes.TribeGroup",
         blank=True,
@@ -71,6 +90,12 @@ class IndustryOrder(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["starts_at"],
+                name="industry_order_starts_at_idx",
+            ),
+        ]
 
     def __str__(self):
         return f"Order #{self.pk} ({self.character.character_name}, needed by {self.needed_by})"
@@ -96,7 +121,7 @@ class IndustryOrder(models.Model):
                 character_ids.add(assignment.character_id)
         if not character_ids:
             return EveCharacterIndustryJob.objects.none()
-        period_start = self.created_at
+        period_start = self.started_at or self.created_at
         period_end = self.order_period_end()
         return (
             EveCharacterIndustryJob.objects.filter(
@@ -189,6 +214,39 @@ class IndustryOrderItemAssignment(models.Model):
 
     def __str__(self):
         return f"{self.order_item} → {self.character.character_name} x{self.quantity}"
+
+
+class IndustryOrderUnfulfilledItem(models.Model):
+    """Quantity that fell off a provisional order because nobody claimed it."""
+
+    order = models.ForeignKey(
+        IndustryOrder,
+        on_delete=models.CASCADE,
+        related_name="unfulfilled_items",
+    )
+    eve_type = models.ForeignKey(
+        "eveuniverse.EveType",
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    quantity = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    imported_into = models.ForeignKey(
+        IndustryOrder,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="imported_unfulfilled_items",
+        help_text="Later order this remainder was imported into.",
+    )
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return (
+            f"{self.order}: unfulfilled {self.eve_type.name} x{self.quantity}"
+        )
 
 
 class IndustryOrderBlueprintCoordinator(models.Model):

@@ -103,6 +103,15 @@ test("a delivered claim reverts through a two-step confirm item", async () => {
   expect(result).not.toMatch(/<button[^>]*x-show="!confirming"[^>]*hx-patch/);
 });
 
+test("a provisional claim says the pilot is not selected yet", async () => {
+  const result = await render_breakdown({
+    order_breakdown: [item({ provisional: true, starts_at: "2026-11-20T18:00:00Z" })],
+  });
+
+  expect(result).toContain("You are not selected yet");
+  expect(result).not.toContain("Define the quantity to produce.");
+});
+
 test("a blocked claim is a disabled item with the reason as its tooltip", async () => {
   const result = await render_breakdown({
     order_breakdown: [item()],

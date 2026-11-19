@@ -14873,6 +14873,8 @@ export interface components {
              * @default
              */
             contract_to?: string;
+            /** Import Unfulfilled From Order Id */
+            import_unfulfilled_from_order_id?: number | null;
             /** Items */
             items: components["schemas"]["OrderItemInput"][];
             /** Location Id */
@@ -14882,6 +14884,8 @@ export interface components {
              * Format: date
              */
             needed_by: string;
+            /** Starts At */
+            starts_at?: string | null;
         };
         /**
          * CreateOrderResponse
@@ -23759,8 +23763,22 @@ export interface components {
             pi_options?: components["schemas"]["BlueprintCoordinatorEveTypeResponse"][];
             /** Profit Breakdown Computed At */
             profit_breakdown_computed_at?: string | null;
+            /**
+             * Provisional
+             * @default false
+             */
+            provisional?: boolean;
             /** Public Short Code */
             public_short_code: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /**
+             * Unfulfilled Items
+             * @default []
+             */
+            unfulfilled_items?: components["schemas"]["OrderUnfulfilledItemResponse"][];
         };
         /**
          * OrderItemAssignmentsBreakdownResponse
@@ -23817,6 +23835,11 @@ export interface components {
             eve_type_name: string;
             /** Id */
             id: number;
+            /**
+             * Provisional
+             * @default false
+             */
+            provisional?: boolean;
             /** Quantity */
             quantity: number;
             /** Self Assign Maximum */
@@ -23826,6 +23849,8 @@ export interface components {
              * Format: date-time
              */
             self_assign_window_ends_at: string;
+            /** Starts At */
+            starts_at?: string | null;
             /** Target Unit Price */
             target_unit_price?: string | null;
             /** Unassigned Quantity */
@@ -23886,8 +23911,17 @@ export interface components {
              * Format: date
              */
             needed_by: string;
+            /**
+             * Provisional
+             * @default false
+             */
+            provisional?: boolean;
             /** Public Short Code */
             public_short_code: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
         };
         /**
          * OrderLocationResponse
@@ -23995,6 +24029,22 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["ProfitSummaryRowResponse"][];
             totals: components["schemas"]["ProfitSummaryTotalsResponse"];
+        };
+        /**
+         * OrderUnfulfilledItemResponse
+         * @description Quantity removed when a provisional order started, still available to import.
+         */
+        OrderUnfulfilledItemResponse: {
+            /** Eve Type Id */
+            eve_type_id: number;
+            /** Eve Type Name */
+            eve_type_name: string;
+            /** Id */
+            id: number;
+            /** Imported Order Id */
+            imported_order_id?: number | null;
+            /** Quantity */
+            quantity: number;
         };
         /**
          * OrdersProfitSummaryResponse

@@ -14,9 +14,11 @@ if (!user || !auth_token) {
 
 import {
     create_order,
+    get_order_by_id,
     get_order_capabilities,
     get_products,
 } from '@helpers/api.minmatar.org/industry'
+import { can, get_gates } from '@helpers/gates'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
 import { get_locations } from '@helpers/api.minmatar.org/locations'
 import { fetch_campaign_options } from '@helpers/fetching/campaigns'
@@ -41,6 +43,8 @@ try {
 
 if (!can_submit)
     return HTTP_403_Forbidden()
+
+const can_manage = can(await get_gates(Astro), 'industry.order.manage')
 
 let products: Product[] = []
 let locations: Location[] = []
@@ -99,6 +103,33 @@ let submitted_campaign_id = campaign_prefill ? String(campaign_prefill) : ''
 let submitted_items: CreateOrderItemInput[] = type_id_prefill
     ? [{ eve_type_id: type_id_prefill, quantity: 1 }]
     : []
+let submitted_provisional = false
+let submitted_starts_at = ''
+let import_order_id: number | null = null
+let import_order_code = ''
+
+const import_query_id = Number(Astro.url.searchParams.get('import_unfulfilled') || 0) || 0
+if (Astro.request.method !== 'POST' && can_manage && import_query_id && submitted_items.length === 0) {
+    try {
+        const source = await get_order_by_id(import_query_id)
+        const remainders = source.unfulfilled_items.filter(
+            (row) => row.imported_order_id == null && row.quantity > 0,
+        )
+        if (remainders.length > 0) {
+            submitted_items = remainders.map((row) => ({
+                eve_type_id: row.eve_type_id,
+                quantity: row.quantity,
+            }))
+            const source_location = source.location?.location_id
+            if (source_location && locations.some((location) => location.location_id === source_location))
+                submitted_location_id = String(source_location)
+            import_order_id = source.id
+            import_order_code = source.public_short_code
+        }
+    } catch {
+        import_order_id = null
+    }
+}
 
 const min_needed_by_date = (() => {
     const date = new Date()
@@ -119,6 +150,10 @@ if (Astro.request.method === 'POST') {
         submitted_location_id = String(form.get('location_id') ?? '')
         submitted_character_id = String(form.get('character_id') ?? '')
         submitted_campaign_id = String(form.get('campaign_id') ?? '')
+        submitted_provisional = form.get('provisional') === 'on'
+        submitted_starts_at = String(form.get('starts_at') ?? '').trim()
+        const import_field = String(form.get('import_unfulfilled_from_order_id') ?? '').trim()
+        import_order_id = can_manage && import_field ? Number(import_field) || null : null
 
         const raw_items = String(form.get('items_json') ?? '[]')
         const parsed = JSON.parse(raw_items) as CreateOrderItemInput[]
@@ -151,6 +186,20 @@ if (Astro.request.method === 'POST') {
         if (submitted_items.length === 0)
             throw new Error(t('industry.orders.create.empty_items'))
 
+        let starts_at: string | null = null
+        if (submitted_provisional) {
+            const start = new Date(submitted_starts_at)
+            if (!submitted_starts_at || Number.isNaN(start.getTime()))
+                throw new Error(t('industry.orders.create.start_required'))
+            if (start.getTime() <= Date.now())
+                throw new Error(t('industry.orders.create.start_past'))
+            const needed_end = new Date(`${submitted_needed_by}T23:59:59.999Z`)
+            if (start.getTime() > needed_end.getTime())
+                throw new Error(t('industry.orders.create.start_after_needed_by'))
+            starts_at = start.toISOString()
+            submitted_starts_at = starts_at
+        }
+
         const location_id = Number(submitted_location_id)
         const character_id = submitted_character_id
             ? Number(submitted_character_id)
@@ -166,6 +215,8 @@ if (Astro.request.method === 'POST') {
             contract_to: submitted_contract_to,
             items: submitted_items,
             campaign_id: campaign_id || null,
+            starts_at,
+            import_unfulfilled_from_order_id: import_order_id,
         })
 
         return Astro.redirect(
@@ -175,6 +226,8 @@ if (Astro.request.method === 'POST') {
         form_error = (error as Error).message || t('industry.orders.create.error')
     }
 }
+
+const import_label = import_order_code || (import_order_id ? String(import_order_id) : '')
 
 const products_json = JSON.stringify(
     products.map((product) => ({
@@ -212,6 +265,7 @@ import TextBox from '@components/layout/TextBox.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
@@ -259,6 +313,9 @@ const breadcrumbs = [
                 {produced_only &&
                     <p>{t('industry.orders.create.produced_only_note')}</p>
                 }
+                {import_label &&
+                    <p>{t('industry.orders.create.import_note').replace('{code}', import_label)}</p>
+                }
             </TextBox>
 
             {form_error &&
@@ -277,9 +334,16 @@ const breadcrumbs = [
                     <form
                         method="POST"
                         class="[ create-order-form ]"
+                        x-init="sync_start(); setInterval(() => sync_start(), 60000)"
                         x-data={`{
                             products: ${products_json},
                             lines: ${items_seed_json},
+                            provisional: ${submitted_provisional ? 'true' : 'false'},
+                            starts_iso: ${JSON.stringify(submitted_starts_at)},
+                            starts_local: '',
+                            hours_text: '',
+                            hours_template: ${JSON.stringify(t('industry.orders.create.provisional_hours'))},
+                            under_hour_text: ${JSON.stringify(t('industry.orders.create.provisional_under_hour'))},
                             search: '',
                             product_label: ${JSON.stringify(product_label)},
                             quantity_label: ${JSON.stringify(quantity_label)},
@@ -324,6 +388,36 @@ const breadcrumbs = [
                                 const line = this.lines[index]
                                 if (!line) return
                                 line.quantity = Math.max(1, parseInt(value, 10) || 1)
+                            },
+                            pad(value) {
+                                return String(value).padStart(2, '0')
+                            },
+                            local_start_value(iso) {
+                                const start = new Date(iso)
+                                if (Number.isNaN(start.getTime())) return ''
+                                return start.getFullYear() + '-' + this.pad(start.getMonth() + 1) + '-' + this.pad(start.getDate()) + 'T' + this.pad(start.getHours()) + ':' + this.pad(start.getMinutes())
+                            },
+                            sync_start() {
+                                if (!this.provisional) {
+                                    this.hours_text = ''
+                                    return
+                                }
+                                if (!this.starts_local && this.starts_iso)
+                                    this.starts_local = this.local_start_value(this.starts_iso)
+                                const start = new Date(this.starts_local)
+                                if (!this.starts_local || Number.isNaN(start.getTime())) {
+                                    this.starts_iso = ''
+                                    this.hours_text = ''
+                                    return
+                                }
+                                this.starts_iso = start.toISOString()
+                                const hours = (start.getTime() - Date.now()) / 3600000
+                                if (hours <= 0)
+                                    this.hours_text = this.under_hour_text
+                                else if (hours < 10)
+                                    this.hours_text = this.hours_template.replace('{hours}', (Math.round(hours * 10) / 10).toString())
+                                else
+                                    this.hours_text = this.hours_template.replace('{hours}', String(Math.round(hours)))
                             },
                             items_json() {
                                 return JSON.stringify(this.lines.map(line => ({
@@ -371,6 +465,7 @@ const breadcrumbs = [
 
                             <Flexblock gap="var(--space-2xs)">
                                 <label for="location_id">{t('industry.orders.create.location')}</label>
+                                <small x-show="provisional" x-cloak>{t('industry.orders.create.location_provisional_hint')}</small>
                                 <Select
                                     id="location_id"
                                     name="location_id"
@@ -389,6 +484,29 @@ const breadcrumbs = [
                                         </option>
                                     )}
                                 </Select>
+                            </Flexblock>
+
+                            <Flexblock gap="var(--space-2xs)">
+                                <RadioCheckInput
+                                    type="checkbox"
+                                    name="provisional"
+                                    x-model="provisional"
+                                    x-on:change="$nextTick(() => sync_start())"
+                                    label={t('industry.orders.create.provisional')}
+                                />
+                                <small>{t('industry.orders.create.provisional_help')}</small>
+                                <Flexblock gap="var(--space-2xs)" x-show="provisional" x-cloak>
+                                    <label for="starts_local">{t('industry.orders.create.starts_at')}</label>
+                                    <Input
+                                        id="starts_local"
+                                        type="datetime-local"
+                                        size="sm"
+                                        x-model="starts_local"
+                                        x-on:input="$nextTick(() => sync_start())"
+                                        x-bind:required="provisional"
+                                    />
+                                    <small x-show="hours_text" x-text="hours_text"></small>
+                                </Flexblock>
                             </Flexblock>
 
                             {campaigns.length > 0 &&
@@ -566,6 +684,10 @@ const breadcrumbs = [
                             </Flexblock>
 
                             <input type="hidden" name="items_json" x-bind:value="items_json()" />
+                            <input type="hidden" name="starts_at" x-bind:value="provisional ? starts_iso : ''" />
+                            {import_order_id &&
+                                <input type="hidden" name="import_unfulfilled_from_order_id" value={import_order_id} />
+                            }
 
                             <div
                                 class="[ create-order-form__totals ]"

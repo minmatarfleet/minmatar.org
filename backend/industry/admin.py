@@ -1,8 +1,7 @@
 import logging
 
-from django.contrib import admin
-from django.contrib import messages
 from django import forms
+from django.contrib import admin, messages
 from django.db.models import Q, Sum
 from django.http import HttpResponseRedirect
 from django.middleware.csrf import get_token
@@ -10,15 +9,14 @@ from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-
 from eveuniverse.models import EveGroup
 
+from industry import admin_lp_market_order  # pylint: disable=unused-import
 from industry.admin_views import (
     industry_loyalty_home_view,
     industry_order_hub_view,
     industry_orders_home_view,
 )
-from industry import admin_lp_market_order  # pylint: disable=unused-import
 from industry.forms import (
     IndustryLoyaltyPointAccountAdminForm,
     IndustryLoyaltyPointLedgerEntryAdminForm,
@@ -28,21 +26,18 @@ from industry.helpers.admin_permissions import (
     industry_orders_index_link_perms,
     loyalty_index_link_perms,
 )
-from industry.helpers.order_profit_breakdown import (
-    ProfitBreakdownRefreshNotAllowed,
-    can_refresh_order_profit_breakdown,
-    refresh_order_profit_breakdown,
-)
-from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.helpers.lp_ledger import (
     account_balance,
     remaining_lots,
     resolve_offer_isk_per_lp,
     weighted_average_cost_isk_per_lp,
 )
-from industry.tasks import (
-    compute_order_profit_breakdown_task,
+from industry.helpers.order_profit_breakdown import (
+    ProfitBreakdownRefreshNotAllowed,
+    can_refresh_order_profit_breakdown,
+    refresh_order_profit_breakdown,
 )
+from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
     IndustryContractAssociation,
     IndustryLoyaltyPoint,
@@ -56,7 +51,11 @@ from industry.models import (
     IndustryOrderItemAssignment,
     IndustryOrderMineralCoordinator,
     IndustryOrderPiCoordinator,
+    IndustryOrderUnfulfilledItem,
     IndustryProduct,
+)
+from industry.tasks import (
+    compute_order_profit_breakdown_task,
 )
 from tribes.models import TribeGroup
 
@@ -774,6 +773,23 @@ class IndustryOrderPiCoordinatorInline(admin.TabularInline):
     readonly_fields = ("created_at",)
 
 
+class IndustryOrderUnfulfilledItemInline(admin.TabularInline):
+    model = IndustryOrderUnfulfilledItem
+    fk_name = "order"
+    extra = 0
+    can_delete = False
+    readonly_fields = (  # pragma: allowlist secret
+        "eve_type",
+        "quantity",
+        "created_at",
+        "imported_into",
+    )
+    fields = readonly_fields  # pragma: allowlist secret
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(IndustryOrder)
 class IndustryOrderAdmin(admin.ModelAdmin):
     """Industry orders: manage order items and their assignments from one place."""
@@ -784,6 +800,8 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         "public_short_code",
         "created_at",
         "needed_by",
+        "starts_at",
+        "started_at",
         "fulfilled_at",
         "character",
         "location",
@@ -795,12 +813,15 @@ class IndustryOrderAdmin(admin.ModelAdmin):
     autocomplete_fields = ("character", "location", "tribe_groups")
     inlines = [
         IndustryOrderItemInline,
+        IndustryOrderUnfulfilledItemInline,
         IndustryOrderBlueprintCoordinatorInline,
         IndustryOrderMineralCoordinatorInline,
         IndustryOrderPiCoordinatorInline,
     ]
     readonly_fields = (
         "created_at",
+        "started_at",
+        "selection_notified_at",
         "fulfilled_at",
         "mark_fulfilled_button",
         "profit_breakdown_computed_at",
@@ -821,6 +842,9 @@ class IndustryOrderAdmin(admin.ModelAdmin):
                     "location",
                     "tribe_groups",
                     "needed_by",
+                    "starts_at",
+                    "started_at",
+                    "selection_notified_at",
                     "created_at",
                     "public_short_code",
                     "contract_to",
