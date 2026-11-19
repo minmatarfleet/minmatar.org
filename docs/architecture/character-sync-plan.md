@@ -73,6 +73,15 @@ Facts that shape the design:
 - **Confirm before the flip:** the "What reads it" column comes from where each model is imported.
 - **Alert** when more than 5% of a section's in-scope characters have `synced_at` older than twice the interval.
 
+### Members on leave
+Characters of users whose community status is On Leave (`groups.UserCommunityStatus`) refresh every section at **72 h**:
+- **Longer intervals stay.** A section that is already longer, like planets at weekly, keeps its own interval.
+- **Faster audiences still win.** If someone on leave shows up on a fleet or owns an open industry order, the fleet and industry intervals apply, because they're clearly active.
+- **Affiliations aren't affected.** That sync is bulk and covers everyone every 15 minutes.
+- **Coming back.** When the status changes off On Leave, every section for that user's characters becomes due right away.
+
+Which interval applies, from highest priority: active fleet, then industry, then on leave, then the normal member interval.
+
 ### Other characters (unchanged)
 
 | Who | Target | Alert when |
@@ -198,6 +207,7 @@ Checked with `character_sync_status` and Sentry before each phase. Ages are meas
 10. A pilot on an active fleet goes more than 30 minutes without a killmail or mining fetch.
 
 Intended changes, for sign-off:
+- Members on leave go to 72 h for every section.
 - Skills, clones, killmails, mining and blueprints go from 4 h to 24 h. Planets go to 72 h for the PI group and weekly for everyone else.
 - Killmails and mining go to 15 minutes for pilots on an active fleet.
 - Freight and buyback corp contracts go from hourly to every 10 minutes.
@@ -262,7 +272,8 @@ The cadence and audience stay the same: every member every 4 h. Check that ESI c
 - Killmails and mining are daily, and every 15 minutes while the pilot is on an active fleet.
 - Planets are 72 h for the PI tribe group and weekly for everyone else.
 - Freight and buyback corporation contracts refresh every 10–15 minutes. Buyback corp assets stay hourly, the ESI cache floor.
+- Members on leave (`UserCommunityStatus` = On Leave) refresh every 72 h instead of their usual interval.
+- The 1 h industry-jobs tier covers the assignee's other characters too, because a pilot can start the job on any of them.
 
 ## Open decisions
-1. Does "members" need to include anyone outside today's scope, for example users on leave?
-2. Can the 1 h jobs tier for assignees' other characters be dropped? Jobs run on whichever character the pilot builds with, so probably not.
+None. Phase 0's numbers may still move the budget, the cost weights and the affiliation interval.
