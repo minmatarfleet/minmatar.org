@@ -25,6 +25,7 @@ from eveonline.models.factional_warfare import (
     EveCharacterFwLpPayout,
     FwPayoutEventCode,
 )
+from eveonline.models.notifications import EveCharacterNotification
 from eveonline.models.corporations import (
     EveCorporation,
     EveCorporationAllianceHistory,
@@ -53,6 +54,7 @@ __all__ = [
     "EveCharacterKillmail",
     "EveCharacterKillmailAttacker",
     "EveCharacterLog",
+    "EveCharacterNotification",
     "EveCharacterMiningEntry",
     "EveCharacterPlanet",
     "EveCharacterPlanetOutput",

@@ -153,6 +153,14 @@ CELERYBEAT_CORPORATIONS = [
         },
     ),
     (
+        "[Characters] Poll notifications",
+        {
+            "task": "eveonline.tasks.notifications.poll_character_notifications",
+            "schedule": crontab(minute="*"),
+            "options": {"expire_seconds": 60},
+        },
+    ),
+    (
         "[Corporations] Structure Notifications",
         {
             "task": "structures.tasks.process_structure_notifications",
@@ -738,10 +746,11 @@ CELERYBEAT_CAMPAIGNS = [
         },
     ),
     (
-        "[Campaigns] Poll LP payouts",
+        "[Campaigns] Process LP payouts",
         {
-            "task": "campaigns.tasks.poll_campaign_payouts",
-            "schedule": schedule(timedelta(minutes=20)),
+            "task": "campaigns.tasks.process_campaign_payouts",
+            "schedule": schedule(timedelta(minutes=10)),
+            "options": {"expire_seconds": 10 * 60},
         },
     ),
     (

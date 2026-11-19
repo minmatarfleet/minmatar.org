@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.utils import timezone
 from django.conf import settings
@@ -9,9 +9,13 @@ from app.celery import app
 from app.models import get_or_create_active
 
 from discord.client import DiscordClient
-from eveonline.client import EsiClient, esi_for
+from eveonline.client import esi_for
 from eveonline.helpers.corporations import get_director_with_scope
-from eveonline.models import EveAlliance, EveCharacter, EveCorporation
+from eveonline.models import (
+    EveAlliance,
+    EveCharacterNotification,
+    EveCorporation,
+)
 from eveonline.utils import get_esi_downtime_countdown
 
 from .models import EveStructure, EveStructurePing
@@ -19,8 +23,6 @@ from structures.helpers import (
     parse_structure_notification,
     is_new_event,
     discord_message_for_ping,
-    parse_esi_time,
-    get_characters_with_notification_scope_for_structure_corps,
 )
 
 discord = DiscordClient()
@@ -140,159 +142,91 @@ def update_corporation_structures(corporation_id: int):
         )
 
 
-def _notification_characters_for_minute(current_minute: int):
-    """Characters with read_notifications in corps that have structures, in this minute's bucket (0–9)."""
-    mod = current_minute % 10
-    chars = get_characters_with_notification_scope_for_structure_corps()
-    return [c for c in chars if c.character_id % 10 == mod]
+STRUCTURE_COMBAT_TYPES = [
+    "StructureDestroyed",
+    "StructureLostArmor",
+    "StructureLostShields",
+    "StructureUnderAttack",
+    "OrbitalAttacked",
+    "OrbitalReinforced",
+]
+
+# How far back each run looks for stored notifications it has not turned
+# into pings. Generous, so a stalled worker catches up; is_new_event keeps
+# old events out of Discord.
+STRUCTURE_NOTIFICATION_LOOKBACK = timedelta(hours=2)
 
 
 @app.task(expires=60, cooldown=50)
-def process_structure_notifications(
-    current_minute: datetime | None = None,
-):
-    """Schedule notification fetch for each director (with read_notifications) in corps that have structures."""
-    if get_esi_downtime_countdown() > 0:
-        # Each minute polls its own bucket; nothing to catch up on later.
-        return 0, 0
+def process_structure_notifications():
+    """Turn stored structure-combat notifications into pings.
 
-    if current_minute is None:
-        current_minute = timezone.now().minute
-
-    characters = list(_notification_characters_for_minute(current_minute))
-    for i, character in enumerate(characters):
-        delay = i % 600  # spread over 10 min
-        fetch_structure_notifications_for_character.apply_async(
-            args=[character.character_id],
-            countdown=delay,
-        )
-    if characters:
-        logger.info(
-            "Scheduled notification fetch for %d character(s) with read_notifications",
-            len(characters),
-        )
-    return len(characters), 0
-
-
-# Each character is polled every 10 minutes (one bucket per minute). A
-# skipped or failed poll waits for the next one instead of queueing a retry:
-# retries stacked up behind each other and ran the same poll many times.
-@app.task(expires=10 * 60, cooldown=5 * 60)
-def fetch_structure_notifications_for_character(character_id: int):
-    """Fetch notifications for one character with read_notifications in a corp that has structures."""
-    if get_esi_downtime_countdown() > 0:
-        return 0, 0
-
-    try:
-        character = EveCharacter.objects.get(character_id=character_id)
-    except EveCharacter.DoesNotExist:
-        logger.warning("Character %s not found", character_id)
-        return 0, 0
-
-    if not character.corporation_id:
-        logger.warning("Character %s has no corporation", character_id)
-        return 0, 0
-
-    # Only poll if this character is still in a corp that has structures and has the scope
-    if (
-        not get_characters_with_notification_scope_for_structure_corps()
-        .filter(character_id=character_id)
-        .exists()
-    ):
-        logger.debug(
-            "Character %s no longer in a structure corp with read_notifications, skipping",
-            character_id,
-        )
-        return 0, 0
-
-    return fetch_structure_notifications(character)
-
-
-def _campaign_esi_gate():
-    """The shared ESI ledger. Imported lazily so structures does not load
-    campaigns at import time.
+    ``eveonline.tasks.notifications`` fetches every character's
+    notifications; this only reads the ones from characters in a corporation
+    that owns one of our structures.
     """
-    # pylint: disable=import-outside-toplevel
-    from eveonline import esi_budget as esi_gate
+    since = timezone.now() - STRUCTURE_NOTIFICATION_LOOKBACK
+    corporation_ids = list(
+        EveStructure.objects.values_list(
+            "corporation__corporation_id", flat=True
+        ).distinct()
+    )
+    if not corporation_ids:
+        return 0, 0
 
-    return esi_gate
-
-
-def fetch_structure_notifications(character):
-    gate = _campaign_esi_gate()
-    character_id = character.character_id
-    if not gate.can_spend("char-notification", character_id):
-        logger.debug(
-            "Notification poll for %s paused for %ss",
-            character_id,
-            gate.pause_remaining("char-notification", character_id),
+    rows = (
+        EveCharacterNotification.objects.filter(
+            type__in=STRUCTURE_COMBAT_TYPES,
+            created_at__gte=since,
+            character__corporation_id__in=corporation_ids,
         )
-        return 0, 0
-
-    response = EsiClient(character).get_character_notifications()
-    gate.note_response("char-notification", character_id, response)
-    if response.response_code == 304:
-        return 0, 0
-    if response.response_code == 429:
-        # note_response paused this character; the gate skips its polls
-        # until the pause ends.
-        logger.warning(
-            "Rate limited fetching notifications for %s",
-            character.character_name,
+        .exclude(
+            notification_id__in=EveStructurePing.objects.values(
+                "notification_id"
+            )
         )
-        return 0, 0
-    if not response.success():
-        logger.warning(
-            "Error %d fetching notifications for %s : %s",
-            response.response_code,
-            character.character_name,
-            response.response,
-        )
-        return 0, 0
-
-    combat_types = [
-        "StructureDestroyed",
-        "StructureLostArmor",
-        "StructureLostShields",
-        "StructureUnderAttack",
-        "OrbitalAttacked",
-        "OrbitalReinforced",
-    ]
+        .select_related("character")
+        .order_by("timestamp")
+    )
 
     total_found = 0
     total_new = 0
+    for row in rows:
+        total_found += 1
+        if store_structure_ping(row):
+            total_new += 1
+    return total_found, total_new
 
-    for notification in response.results():
-        if notification["type"] in combat_types:
-            data = parse_structure_notification(notification["text"])
-            event, created = EveStructurePing.objects.get_or_create(
-                notification_id=notification["notification_id"],
-                defaults={
-                    "notification_type": notification["type"],
-                    "summary": data["data"],
-                    "structure_id": data["structure_id"],
-                    "reported_by": character,
-                    "text": notification["text"],
-                    "event_time": parse_esi_time(notification["timestamp"]),
-                },
-            )
-            if created:
-                logger.info(
-                    "Found new notification %d (%s) %s - would ping? %s",
-                    event.notification_id,
-                    notification["timestamp"],
-                    event.notification_type,
-                    is_new_event(event),
-                )
-                if is_new_event(event):
-                    send_discord_structure_notification(
-                        event, settings.DISCORD_STRUCTURE_PINGS_CHANNEL_ID
-                    )
-                    total_new += 1
 
-            total_found += 1
-
-    return (total_found, total_new)
+def store_structure_ping(row: EveCharacterNotification) -> bool:
+    """Store one structure notification as a ping. True when it was posted."""
+    data = parse_structure_notification(row.text)
+    event, created = EveStructurePing.objects.get_or_create(
+        notification_id=row.notification_id,
+        defaults={
+            "notification_type": row.type,
+            "summary": data["data"],
+            "structure_id": data["structure_id"],
+            "reported_by": row.character,
+            "text": row.text,
+            "event_time": row.timestamp,
+        },
+    )
+    if not created:
+        return False
+    logger.info(
+        "Found new notification %d (%s) %s - would ping? %s",
+        event.notification_id,
+        row.timestamp,
+        event.notification_type,
+        is_new_event(event),
+    )
+    if not is_new_event(event):
+        return False
+    send_discord_structure_notification(
+        event, settings.DISCORD_STRUCTURE_PINGS_CHANNEL_ID
+    )
+    return True
 
 
 def send_discord_structure_notification(ping: EveStructurePing, channel: int):

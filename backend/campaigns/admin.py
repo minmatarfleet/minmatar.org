@@ -1145,7 +1145,6 @@ class CampaignEnlistmentCharacterAdmin(admin.ModelAdmin):
         "enlistment",
         "included_from",
         "included_until",
-        "payouts_polled_at",
         "killmails_polled_at",
     )
     list_filter = ("enlistment__campaign",)

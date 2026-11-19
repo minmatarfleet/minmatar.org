@@ -10,6 +10,7 @@ from eveonline.tasks import (
     affiliations,
     characters,
     corporations,
+    notifications,
     players,
 )
 
