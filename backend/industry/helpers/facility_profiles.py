@@ -12,6 +12,11 @@ Amamake (scanned):
   - FW infrastructure (level 5): -50% facility pricing
   - Facility tax 0.75%; reprocessing tax 2.5%
 
+Huola (same park as Amamake: fittings, taxes, and FW level-5 pricing):
+  - Industry Park (Sotiyo) + reactions Tatara
+  - FW infrastructure (level 5): -50% facility pricing
+  - Facility tax 0.75%; reprocessing tax 2.5%
+
 Basgerin (assumed same Sotiyo/Tatara fittings as Amamake; no FW bonus):
   - The Forgery (Sotiyo) + reactions Tatara
   - Facility tax 0.75%; reprocessing tax 2.5%
@@ -171,7 +176,7 @@ TATARA_TYPE_ID = 35836
 AZBEL_TYPE_ID = 35826
 ATHANOR_TYPE_ID = 35835
 
-# Sotiyo + Tatara stack (Amamake / Auner / Basgerin).
+# Sotiyo + Tatara stack (Amamake / Huola / Auner / Basgerin).
 RIG_XL_SHIP_MFG = RigFit(
     "Standup XL-Set Ship Manufacturing Efficiency I",
     37180,
@@ -323,6 +328,13 @@ AMAMAKE_SYSTEM_NAME = "Amamake"
 # FW infrastructure hub level 5: -50% facility pricing (applies system-wide).
 AMAMAKE_FW_SYSTEM_COST_BONUS = -0.50
 
+# Huola industry park: same Sotiyo/Tatara fittings, corp taxes, and FW
+# level-5 facility pricing as Amamake.
+HUOLA_SYSTEM_ID = 30003067
+HUOLA_SYSTEM_NAME = "Huola"
+HUOLA_SOTIYO_NAME = "Huola – Industry Park (Sotiyo)"
+HUOLA_TATARA_NAME = "Huola – Reactions & Reprocessing (Tatara)"
+
 BASGERIN_SYSTEM_ID = 30002666
 BASGERIN_SYSTEM_NAME = "Basgerin"
 
@@ -390,7 +402,7 @@ def _lowsec_freeport_bonuses(
     system_cost_bonus: float = 0.0,
     facility_tax: float = _FREEPORT_FACILITY_TAX,
 ) -> Dict[JobClass, FacilityBonuses]:
-    """Shared Sotiyo + Tatara fitting stack (Amamake / Basgerin / Auner)."""
+    """Shared Sotiyo + Tatara fitting stack."""
     ship_rig_me = _SHIP_RIG_ME_BASE * _LOWSEC_ENGINEERING_MULT
     ship_rig_te = _SHIP_RIG_TE_BASE * _LOWSEC_ENGINEERING_MULT
     thukker_me = _THUKKER_RIG_ME_BASE * _LOWSEC_ENGINEERING_MULT
@@ -566,6 +578,15 @@ def _amamake_bonuses() -> Dict[JobClass, FacilityBonuses]:
     )
 
 
+def _huola_bonuses() -> Dict[JobClass, FacilityBonuses]:
+    # Same fittings, taxes, and FW facility-pricing bonus as Amamake.
+    return _lowsec_freeport_bonuses(
+        sotiyo_name=HUOLA_SOTIYO_NAME,
+        tatara_name=HUOLA_TATARA_NAME,
+        system_cost_bonus=AMAMAKE_FW_SYSTEM_COST_BONUS,
+    )
+
+
 def _basgerin_bonuses() -> Dict[JobClass, FacilityBonuses]:
     # Same fittings as Amamake; no faction warfare facility-pricing bonus.
     return _lowsec_freeport_bonuses(
@@ -615,6 +636,7 @@ FACILITY_PROFILES: Dict[str, Dict[JobClass, FacilityBonuses]] = {
     "auner": _auner_bonuses(),
     "basgerin": _basgerin_bonuses(),
     "gukarla": _gukarla_bonuses(),
+    "huola": _huola_bonuses(),
     "resbroko": _resbroko_bonuses(),
 }
 
@@ -630,6 +652,7 @@ FACILITY_REPROCESSING: Dict[str, ReprocessingProfile] = {
         "Basgerin – Reactions & Reprocessing (Tatara)"
     ),
     "gukarla": _athanor_grading_reprocessing(GUKARLA_REPROCESSING_NAME),
+    "huola": _lowsec_tatara_reprocessing(HUOLA_TATARA_NAME),
     "resbroko": _athanor_grading_reprocessing(RESBROKO_REPROCESSING_NAME),
 }
 
@@ -639,6 +662,7 @@ FACILITY_SYSTEM_IDS: Dict[str, int] = {
     "auner": AUNER_SYSTEM_ID,
     "basgerin": BASGERIN_SYSTEM_ID,
     "gukarla": GUKARLA_SYSTEM_ID,
+    "huola": HUOLA_SYSTEM_ID,
     "resbroko": RESBROKO_SYSTEM_ID,
 }
 
@@ -646,7 +670,7 @@ FACILITY_SYSTEM_IDS: Dict[str, int] = {
 def _sotiyo_tatara_structures(
     sotiyo_name: str, tatara_name: str
 ) -> List[StructureFit]:
-    """Display fit for the Amamake / Auner / Basgerin stack."""
+    """Display fit for the Amamake / Huola / Auner / Basgerin stack."""
     return [
         StructureFit(
             role="ship",
@@ -723,6 +747,7 @@ FACILITY_STRUCTURES: Dict[str, List[StructureFit]] = {
     "gukarla": _hydra_structures(
         GUKARLA_AZBEL_NAME, GUKARLA_REACTIONS_NAME, GUKARLA_REPROCESSING_NAME
     ),
+    "huola": _sotiyo_tatara_structures(HUOLA_SOTIYO_NAME, HUOLA_TATARA_NAME),
     "resbroko": _hydra_structures(
         RESBROKO_AZBEL_NAME,
         RESBROKO_REACTIONS_NAME,

@@ -23,6 +23,7 @@ from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_ID,
     AUNER_SYSTEM_ID,
     BASGERIN_SYSTEM_ID,
+    HUOLA_SYSTEM_ID,
     JobClass,
     get_facility_profile,
     get_facility_refine_rate,
@@ -287,11 +288,53 @@ class FacilityProfilesTestCase(TestCase):
         )
         self.assertIn("Guru Foundry", auner[JobClass.REACTION].structure_name)
 
+    def test_huola_same_park_as_amamake(self):
+        amamake = get_facility_profile("amamake")
+        huola = get_facility_profile("huola")
+        for job_class in JobClass:
+            a = amamake[job_class]
+            h = huola[job_class]
+            self.assertEqual(a.role_me, h.role_me)
+            self.assertEqual(a.role_te, h.role_te)
+            self.assertEqual(a.rig_me, h.rig_me)
+            self.assertEqual(a.rig_te, h.rig_te)
+            self.assertEqual(a.structure_isk_bonus, h.structure_isk_bonus)
+            self.assertEqual(a.facility_tax, h.facility_tax)
+            self.assertEqual(a.scc_surcharge, h.scc_surcharge)
+            self.assertEqual(a.system_cost_bonus, -0.50)
+            self.assertEqual(h.system_cost_bonus, -0.50)
+            self.assertEqual(a.structure_type_id, h.structure_type_id)
+            self.assertEqual(a.rig_type_id, h.rig_type_id)
+            self.assertNotEqual(a.structure_name, h.structure_name)
+        self.assertEqual(get_facility_system_id("huola"), HUOLA_SYSTEM_ID)
+        self.assertIn(
+            "Industry Park",
+            huola[JobClass.SHIP_MANUFACTURING].structure_name,
+        )
+        amamake_reprocess = get_facility_reprocessing("amamake")
+        huola_reprocess = get_facility_reprocessing("huola")
+        self.assertEqual(
+            amamake_reprocess.facility_tax, huola_reprocess.facility_tax
+        )
+        self.assertEqual(
+            amamake_reprocess.rig_type_id, huola_reprocess.rig_type_id
+        )
+        self.assertEqual(
+            amamake_reprocess.structure_type_id,
+            huola_reprocess.structure_type_id,
+        )
+        self.assertAlmostEqual(
+            amamake_reprocess.refine_rate(),
+            huola_reprocess.refine_rate(),
+            places=10,
+        )
+
     def test_tatara_reprocessing_monitor_ii_lowsec_yield(self):
         # Tatara + T2 Monitor in lowsec: (50+3)*1.06*1.055 / 100
         expected_base = (53.0 * 1.06 * 1.055) / 100.0
         for key, tax in (
             ("amamake", 0.025),
+            ("huola", 0.025),
             ("basgerin", 0.025),
             ("auner", 0.03),
         ):
