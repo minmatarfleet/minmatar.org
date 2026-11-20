@@ -1,5 +1,4 @@
 import logging
-
 from datetime import datetime
 from typing import List, Optional
 
@@ -10,6 +9,10 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from eveonline.helpers.corporations.applications import (
+    can_review_applications,
+    user_holds_application_review_permission,
+)
 from eveonline.models import EveCharacter, EveCorporation
 
 from .l3arn import (
@@ -27,7 +30,6 @@ from .prime_time import apply_application_prime_time
 from .requirements.services import apply_blockers, blocked_detail
 from .requirements_router import router as requirements_router
 from .tasks import notify_application_transferred_task
-from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
 router.add_router("", requirements_router)
@@ -87,6 +89,17 @@ def get_my_open_corporation_application(request):
     }
 
 
+def _may_review(user, corporation_id: int) -> bool:
+    corporation = EveCorporation.objects.filter(
+        corporation_id=corporation_id
+    ).first()
+    if corporation is None:
+        # A staff permission still decides an application whose corporation
+        # row has not been synced. Alliance membership does not.
+        return user_holds_application_review_permission(user)
+    return can_review_applications(user, corporation)
+
+
 @router.get(
     "/corporations/{corporation_id}/applications",
     summary="Get corporation applications",
@@ -96,9 +109,16 @@ def get_my_open_corporation_application(request):
 def get_corporation_applications(request, corporation_id: int):
     # One query: reading application.user.id per row cost a query per
     # application, and the corporation page waits on this list.
+    # The corporation page also uses this list to find the caller's own
+    # application, so a non-reviewer still receives their rows.
     applications = EveCorporationApplication.objects.filter(
         corporation_id=corporation_id
-    ).values_list("id", "status", "user_id", "corporation_id")
+    )
+    if not _may_review(request.user, corporation_id):
+        applications = applications.filter(user_id=request.user.id)
+    applications = applications.values_list(
+        "id", "status", "user_id", "corporation_id"
+    )
     return [
         {
             "status": status,
@@ -194,8 +214,7 @@ def get_corporation_application_by_id(
     if not application:
         return 404, ErrorResponse(detail="Application not found.")
     is_applicant = application.user_id == request.user.id
-    has_view_perm = can_use_feature(request.user, "applications.view")
-    if not is_applicant and not has_view_perm:
+    if not is_applicant and not _may_review(request.user, corporation_id):
         return 403, ErrorResponse(
             detail="You do not have permission to view this application."
         )
@@ -233,7 +252,7 @@ def get_corporation_application_by_id(
 def accept_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not can_use_feature(request.user, "applications.manage"):
+    if not _may_review(request.user, corporation_id):
         return 403, {
             "detail": "You do not have permission to accept applications."
         }
@@ -275,7 +294,7 @@ def accept_corporation_application(
 def reject_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not can_use_feature(request.user, "applications.manage"):
+    if not _may_review(request.user, corporation_id):
         return 403, {
             "detail": "You do not have permission to accept applications."
         }
@@ -321,7 +340,7 @@ def transfer_corporation_application(
     application_id: int,
     payload: TransferCorporationApplicationRequest,
 ):
-    if not can_use_feature(request.user, "applications.manage"):
+    if not _may_review(request.user, corporation_id):
         return 403, {
             "detail": "You do not have permission to transfer applications."
         }

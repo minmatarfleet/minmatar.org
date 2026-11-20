@@ -8677,6 +8677,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/structures/locations/{location_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire
+         * @description Retire a location: it leaves the site, but fleets, orders and history keep it. Approving the same structure again adds it back.
+         */
+        post: operations["structures_location_router_retire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/structures/pings": {
         parameters: {
             query?: never;
@@ -21805,6 +21825,21 @@ export interface components {
             solar_system_name: string;
             /** Staging Active */
             staging_active: boolean;
+        };
+        /** LocationRetire */
+        LocationRetire: {
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+        };
+        /** LocationRetired */
+        LocationRetired: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
         };
         /** LocationSubmissionRequest */
         LocationSubmissionRequest: {
@@ -53029,6 +53064,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocationDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_retire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationRetire"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationRetired"];
                 };
             };
             /** @description Bad Request */

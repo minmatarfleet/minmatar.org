@@ -3,7 +3,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.apps import apps
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import Group, Permission, User
 from django.db import connection
 from django.db.models import signals
 from django.test import Client, override_settings
@@ -14,7 +14,6 @@ from esi.models import Token
 
 from app.test import TestCase
 from applications.discord import notify_application_transferred
-from applications.tasks import notify_application_transferred_task
 from applications.joined import accept_applications_of_members
 from applications.l3arn import (
     L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH,
@@ -30,22 +29,27 @@ from applications.prime_time import (
 from applications.signals import eve_corporation_application_post_save
 from applications.tasks import (
     accept_applications_of_members_task,
+    notify_application_transferred_task,
     sync_application_thread_task,
 )
 from discord.models import DiscordUser
-from taskboard.signals import other_callbacks
-from timezones.tasks import assess_user_timezone
+from discord.testing import without_discord_group_sync
+from eveonline.helpers.characters import set_primary_character, user_player
 from eveonline.models import (
     EveCharacter,
     EveCharacterCorporationHistory,
     EveCorporation,
     EvePlayer,
 )
-from eveonline.helpers.characters import set_primary_character, user_player
+from taskboard.signals import other_callbacks
+from timezones.tasks import assess_user_timezone
 
 restore_deleted_applications = importlib.import_module(
     "applications.migrations.0005_restore_deleted_corporation_applications"
 ).restore_deleted_applications
+remove_alliance_application_permissions = importlib.import_module(
+    "applications.migrations.0007_remove_alliance_application_permissions"
+).remove_alliance_application_permissions
 
 BASE_URL = "/api/applications/"
 
@@ -111,6 +115,9 @@ class EveCorporationApplicationTestCase(TestCase):
         url = (
             f"{BASE_URL}corporations/{corporation.corporation_id}/applications"
         )
+        self.user.user_permissions.add(
+            Permission.objects.get(codename="view_evecorporationapplication")
+        )
 
         def query_count():
             with CaptureQueriesContext(connection) as queries:
@@ -137,6 +144,112 @@ class EveCorporationApplicationTestCase(TestCase):
 
         self.assertEqual((one_rows, many_rows), (1, 6))
         self.assertEqual(many_query_count, one_query_count)
+
+    def _application_permissions(self):
+        return Permission.objects.filter(
+            content_type__app_label="applications",
+            codename__in=[
+                "add_evecorporationapplication",
+                "change_evecorporationapplication",
+                "delete_evecorporationapplication",
+                "view_evecorporationapplication",
+            ],
+        )
+
+    def test_alliance_group_cannot_see_or_decide_other_applications(self):
+        with without_discord_group_sync():
+            self._alliance_group_cannot_see_or_decide_other_applications()
+
+    def _alliance_group_cannot_see_or_decide_other_applications(self):
+        alliance = Group.objects.create(name="Alliance")
+        alliance.permissions.set(self._application_permissions())
+        self.user.groups.add(alliance)
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        other = User.objects.create(username="applicant")
+        theirs = EveCorporationApplication.objects.create(
+            user=other,
+            corporation_id=corporation.corporation_id,
+            description="Please let me in",
+        )
+        mine = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=corporation.corporation_id,
+            description="Mine",
+            status="rejected",
+        )
+
+        listed = self.client.get(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(
+            [row["application_id"] for row in listed.json()],
+            [mine.id],
+        )
+        detail = self.client.get(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications/{theirs.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(detail.status_code, 403)
+        accept = self.client.post(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications/{theirs.id}/accept",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(accept.status_code, 403)
+        theirs.refresh_from_db()
+        self.assertEqual(theirs.status, "pending")
+
+    def test_recruiter_group_still_sees_the_application_queue(self):
+        with without_discord_group_sync():
+            self._recruiter_group_still_sees_the_application_queue()
+
+    def _recruiter_group_still_sees_the_application_queue(self):
+        alliance = Group.objects.create(name="Alliance")
+        recruiter = Group.objects.create(name="Corp L3ARN Recruiter")
+        permissions = self._application_permissions()
+        alliance.permissions.set(permissions)
+        recruiter.permissions.set(permissions)
+        self.user.groups.add(alliance, recruiter)
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        other = User.objects.create(username="applicant")
+        theirs = EveCorporationApplication.objects.create(
+            user=other,
+            corporation_id=corporation.corporation_id,
+            description="Please let me in",
+        )
+
+        listed = self.client.get(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(
+            [row["application_id"] for row in listed.json()],
+            [theirs.id],
+        )
+
+    def test_remove_alliance_application_permissions_migration(self):
+        with without_discord_group_sync():
+            self._remove_alliance_application_permissions_migration()
+
+    def _remove_alliance_application_permissions_migration(self):
+        alliance = Group.objects.create(name="Alliance")
+        recruiter = Group.objects.create(name="Corp L3ARN Recruiter")
+        permissions = list(self._application_permissions())
+        alliance.permissions.set(permissions)
+        recruiter.permissions.set(permissions)
+
+        remove_alliance_application_permissions(apps, None)
+
+        self.assertFalse(alliance.permissions.exists())
+        self.assertEqual(recruiter.permissions.count(), len(permissions))
 
     def test_create_corporation_application_blocked_while_one_is_open(self):
         first_corporation = EveCorporation.objects.create(

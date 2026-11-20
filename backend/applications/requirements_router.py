@@ -8,7 +8,6 @@ from ninja import Router, Schema
 from alliance.helpers.trial_peers import corp_trial_length
 from alliance.helpers.trial_report import latest_payload
 from app.errors import ErrorResponse
-from authentication import AuthBearer
 from applications.models import (
     CorporationRequirement,
     EveCorporationApplication,
@@ -16,11 +15,14 @@ from applications.models import (
 from applications.requirements import rules as R
 from applications.requirements import services as S
 from applications.requirements.evaluate import account_counts
+from authentication import AuthBearer
+from eveonline.helpers.corporations.applications import (
+    can_review_applications,
+)
 from eveonline.helpers.corporations.permissions import (
     can_edit_corporation_settings,
 )
 from eveonline.models import EveCorporation
-from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
 
@@ -337,8 +339,8 @@ def get_application_requirements(
     if application is None or corporation is None:
         return 404, ErrorResponse(detail="Application not found.")
     is_applicant = application.user_id == request.user.id
-    if not is_applicant and not can_use_feature(
-        request.user, "applications.view"
+    if not is_applicant and not can_review_applications(
+        request.user, corporation
     ):
         return 403, ErrorResponse(
             detail="You do not have permission to view this application."

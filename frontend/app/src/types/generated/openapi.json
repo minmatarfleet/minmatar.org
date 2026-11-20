@@ -27625,6 +27625,35 @@
         "title": "LocationResponse",
         "type": "object"
       },
+      "LocationRetire": {
+        "properties": {
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "LocationRetire",
+        "type": "object"
+      },
+      "LocationRetired": {
+        "properties": {
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "name"
+        ],
+        "title": "LocationRetired",
+        "type": "object"
+      },
       "LocationSubmissionRequest": {
         "properties": {
           "audience": {
@@ -84123,6 +84152,85 @@
           }
         ],
         "summary": "Post Fitting",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/{location_id}/retire": {
+      "post": {
+        "description": "Retire a location: it leaves the site, but fleets, orders and history keep it. Approving the same structure again adds it back.",
+        "operationId": "structures_location_router_retire",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationRetire"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationRetired"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Retire",
         "tags": [
           "Structures",
           "Structure browser"
