@@ -428,6 +428,9 @@ def docked_locations(user) -> List[dict]:
         try:
             response = EsiClient(character).get_character_location()
         except Exception:  # pylint: disable=broad-except
+            logger.info(
+                "Location lookup failed for %s", character.character_id
+            )
             continue
         if not response.success() or not isinstance(response.data, dict):
             continue

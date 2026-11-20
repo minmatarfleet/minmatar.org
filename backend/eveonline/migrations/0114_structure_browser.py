@@ -41,12 +41,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="evelocation",
             name="description",
-            field=models.TextField(blank=True, default=""),
+            field=models.TextField(db_default="", blank=True, default=""),
         ),
         migrations.AddField(
             model_name="evelocation",
             name="fitting",
             field=models.JSONField(
+                db_default=[],
                 blank=True,
                 default=list,
                 help_text="Parsed modules from fitting_text: name, type_id, slot.",
@@ -61,6 +62,7 @@ class Migration(migrations.Migration):
             model_name="evelocation",
             name="fitting_text",
             field=models.TextField(
+                db_default="",
                 blank=True,
                 default="",
                 help_text="The last ship scan pasted for this structure.",
@@ -70,6 +72,7 @@ class Migration(migrations.Migration):
             model_name="evelocation",
             name="good_for",
             field=models.JSONField(
+                db_default=[],
                 blank=True,
                 default=list,
                 help_text="Hand-picked uses: industry, clones, logistics.",

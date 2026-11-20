@@ -69,14 +69,16 @@ class EveLocation(MinmatarSoftDeleteModel):
         blank=True,
         help_text="EVE type of the structure or station (Fortizar, Sotiyo, ...).",
     )
-    description = models.TextField(blank=True, default="")
+    description = models.TextField(blank=True, default="", db_default="")
     fitting_text = models.TextField(
         blank=True,
         default="",
+        db_default="",
         help_text="The last ship scan pasted for this structure.",
     )
     fitting = models.JSONField(
         default=list,
+        db_default=[],
         blank=True,
         help_text="Parsed modules from fitting_text: name, type_id, slot.",
     )
@@ -102,6 +104,7 @@ class EveLocation(MinmatarSoftDeleteModel):
     )
     good_for = models.JSONField(
         default=list,
+        db_default=[],
         blank=True,
         help_text="Hand-picked uses: industry, clones, logistics.",
     )
