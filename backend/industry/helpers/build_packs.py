@@ -85,9 +85,9 @@ def match_build_packs_for_item(order_item) -> list[BuildPack]:
         if contract.start_location_id
     }
     location_names = dict(
-        EveLocation.objects.filter(location_id__in=location_ids).values_list(
-            "location_id", "location_name"
-        )
+        EveLocation.all_objects.filter(
+            location_id__in=location_ids
+        ).values_list("location_id", "location_name")
     )
 
     counts: dict[tuple, int] = {}

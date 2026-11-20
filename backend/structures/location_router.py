@@ -166,6 +166,15 @@ class LocationDecline(Schema):
     reason: str = ""
 
 
+class LocationRetire(Schema):
+    reason: str = ""
+
+
+class LocationRetired(Schema):
+    location_id: int
+    name: str
+
+
 class LocationAttention(Schema):
     kind: str
     title: str
@@ -766,6 +775,33 @@ def patch_location(request, location_id: int, payload: LocationPatch):
     _patch_audience(location, request.user, sent)
     location.save()
     return get_location(request, location_id)
+
+
+@router.post(
+    "/{location_id}/retire",
+    auth=AuthBearer(),
+    response={
+        200: LocationRetired,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+    description=(
+        "Retire a location: it leaves the site, but fleets, orders and "
+        "history keep it. Approving the same structure again adds it back."
+    ),
+)
+def retire(request, location_id: int, payload: LocationRetire):
+    if not svc.can_manage(request.user):
+        return _forbidden()
+    location = EveLocation.objects.filter(location_id=location_id).first()
+    if location is None:
+        return 404, {"detail": "Location not found."}
+    try:
+        svc.retire_location(location, request.user, payload.reason)
+    except svc.RetireError as error:
+        return 400, {"detail": str(error)}
+    return {"location_id": location_id, "name": location.location_name}
 
 
 @router.post(

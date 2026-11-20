@@ -88,7 +88,7 @@ def _fitting_name_map(fitting_ids: list[int]) -> dict[int, str]:
 def _location_name_map(location_ids: list[int]) -> dict[int, str]:
     if not location_ids:
         return {}
-    rows = EveLocation.objects.filter(pk__in=location_ids).values_list(
+    rows = EveLocation.all_objects.filter(pk__in=location_ids).values_list(
         "pk", "short_name", "location_name"
     )
     return {

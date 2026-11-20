@@ -3381,3 +3381,4 @@ export type StructureLocationDocked = ApiResponse<'LocationDocked'>
 export type StructureLocationSubmissionRequest = ApiRequest<'LocationSubmissionRequest'>
 export type StructureLocationSubmission = ApiResponse<'LocationSubmissionRow'>
 export type StructureLocationManage = ApiResponse<'LocationManage'>
+export type StructureLocationRetired = ApiResponse<'LocationRetired'>

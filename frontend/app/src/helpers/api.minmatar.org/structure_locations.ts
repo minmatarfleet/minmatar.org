@@ -7,6 +7,7 @@ import type {
     StructureLocationSubmissionRequest,
     StructureLocationSubmission,
     StructureLocationManage,
+    StructureLocationRetired,
 } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
 
@@ -80,6 +81,14 @@ export async function approve_structure(access_token:string, submission_id:numbe
 
 export async function decline_structure(access_token:string, submission_id:number, reason:string = '') {
     return await api_request<StructureLocationSubmission>(`${API_ENDPOINT}/submissions/${submission_id}/decline`, {
+        method: 'POST',
+        token: access_token,
+        body: { reason },
+    })
+}
+
+export async function retire_structure(access_token:string, location_id:number, reason:string = '') {
+    return await api_request<StructureLocationRetired>(`${API_ENDPOINT}/${location_id}/retire`, {
         method: 'POST',
         token: access_token,
         body: { reason },
