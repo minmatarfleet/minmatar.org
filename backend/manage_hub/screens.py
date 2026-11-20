@@ -83,6 +83,7 @@ GATES: dict[str, HubGate] = {
     "surveys.manage": HubGate(
         "surveys.manage", ("surveys.change_surveycampaign",)
     ),
+    "esi_health.manage": HubGate("esi_health.manage"),
 }
 
 
@@ -121,6 +122,7 @@ SCREENS: tuple[Screen, ...] = (
     Screen("srp_amounts", "ships", gate="srp.programs.manage"),
     Screen("alliance_health", "people", check="alliance_health"),
     Screen("surveys", "people", gate="surveys.manage"),
+    Screen("esi_health", "people", gate="esi_health.manage"),
 )
 
 # Pages that ask the API instead of a site gate, by the check they ask.

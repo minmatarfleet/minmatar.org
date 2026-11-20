@@ -141,6 +141,10 @@ const page_title = t('fleets.upcoming.page_title');
 
         <FleetsHubTabs active="upcoming" />
 
+        {user &&
+            <LazyPartial url={translatePath('/partials/main_esi_banner_component/')} swap="outerHTML" indicator={false} />
+        }
+
         {can_see_feedback &&
             <LazyPartial url={FEEDBACK_LINK_PARTIAL} swap="outerHTML" indicator={false} />
         }

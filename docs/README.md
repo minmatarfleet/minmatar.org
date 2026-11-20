@@ -41,6 +41,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [tribes/tribe-invitations.md](tribes/tribe-invitations.md) | current | Chiefs inviting pilots to a tribe group: Discord DM, join without review, API |
 | [tribes/interim-chiefs.md](tribes/interim-chiefs.md) | current | Chiefless tribes and groups: interim chief fallback, Help wanted, volunteers the executor appoints |
 | [tasks/README.md](tasks/README.md) | current | Tasks: what waits on each pilot, team work up for grabs, projects and templates, and the rules that keep it light |
+| [esi_health.md](esi_health.md) | current | ESI health: characters to re-add, director tokens, scope changes and the Discord message superusers send |
 | [timezones.md](timezones.md) | current | Pilot timezones (declared and inferred from activity) and the USTZ/EUTZ/AUTZ Discord roles |
 | [page-progress/architecture.md](page-progress/architecture.md) | current | Page progress tracking: data model and API |
 | [page-progress/frontend.md](page-progress/frontend.md) | current | Wiring page progress into a page |

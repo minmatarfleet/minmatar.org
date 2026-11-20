@@ -7651,6 +7651,89 @@
         "title": "CorporationForumPostUpdate",
         "type": "object"
       },
+      "CorporationHealthResponse": {
+        "properties": {
+          "active_user_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Active User Ids",
+            "type": "array"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "director_complete": {
+            "title": "Director Complete",
+            "type": "integer"
+          },
+          "director_holders": {
+            "title": "Director Holders",
+            "type": "integer"
+          },
+          "director_state": {
+            "title": "Director State",
+            "type": "string"
+          },
+          "last_messaged": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Messaged"
+          },
+          "members": {
+            "title": "Members",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "needs_readd": {
+            "title": "Needs Readd",
+            "type": "integer"
+          },
+          "pilots_active": {
+            "title": "Pilots Active",
+            "type": "integer"
+          },
+          "pilots_on_leave": {
+            "title": "Pilots On Leave",
+            "type": "integer"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "unlinked": {
+            "title": "Unlinked",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "name",
+          "ticker",
+          "members",
+          "needs_readd",
+          "pilots_active",
+          "pilots_on_leave",
+          "active_user_ids",
+          "unlinked",
+          "director_state",
+          "director_complete",
+          "director_holders"
+        ],
+        "title": "CorporationHealthResponse",
+        "type": "object"
+      },
       "CorporationHealthRow": {
         "properties": {
           "active_90d": {
@@ -8303,6 +8386,11 @@
               }
             ],
             "title": "Last Fleet At"
+          },
+          "needs_readd": {
+            "default": false,
+            "title": "Needs Readd",
+            "type": "boolean"
           },
           "person_fleets_90d": {
             "anyOf": [
@@ -11471,6 +11559,71 @@
           "next_send_at"
         ],
         "title": "DigestSettingsResponse",
+        "type": "object"
+      },
+      "DirectorHolderResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "is_you": {
+            "default": false,
+            "title": "Is You",
+            "type": "boolean"
+          },
+          "missing": {
+            "title": "Missing",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "missing"
+        ],
+        "title": "DirectorHolderResponse",
+        "type": "object"
+      },
+      "DirectorTokenResponse": {
+        "properties": {
+          "holders": {
+            "items": {
+              "$ref": "#/components/schemas/DirectorHolderResponse"
+            },
+            "title": "Holders",
+            "type": "array"
+          },
+          "missing_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Labels",
+            "type": "array"
+          },
+          "missing_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Scopes",
+            "type": "array"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "holders",
+          "missing_scopes",
+          "missing_labels"
+        ],
+        "title": "DirectorTokenResponse",
         "type": "object"
       },
       "DiscordAckLoyaltyMarketOrderRequest": {
@@ -31169,6 +31322,53 @@
         "title": "MentorsMetricsResponse",
         "type": "object"
       },
+      "MessageRequest": {
+        "properties": {
+          "user_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "title": "MessageRequest",
+        "type": "object"
+      },
+      "MessageResponse": {
+        "properties": {
+          "no_discord": {
+            "title": "No Discord",
+            "type": "integer"
+          },
+          "nothing_to_fix": {
+            "title": "Nothing To Fix",
+            "type": "integer"
+          },
+          "on_leave": {
+            "title": "On Leave",
+            "type": "integer"
+          },
+          "recently_messaged": {
+            "title": "Recently Messaged",
+            "type": "integer"
+          },
+          "sent": {
+            "title": "Sent",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sent",
+          "on_leave",
+          "recently_messaged",
+          "nothing_to_fix",
+          "no_discord"
+        ],
+        "title": "MessageResponse",
+        "type": "object"
+      },
       "MetricsImpactSchema": {
         "properties": {
           "measures": {
@@ -34893,6 +35093,117 @@
           "in_timezone"
         ],
         "title": "PickCount",
+        "type": "object"
+      },
+      "PilotHealthResponse": {
+        "properties": {
+          "characters": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "community_status": {
+            "title": "Community Status",
+            "type": "string"
+          },
+          "corporation_ticker": {
+            "title": "Corporation Ticker",
+            "type": "string"
+          },
+          "discord_linked": {
+            "title": "Discord Linked",
+            "type": "boolean"
+          },
+          "last_messaged": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Messaged"
+          },
+          "main_character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Character Id"
+          },
+          "main_character_name": {
+            "title": "Main Character Name",
+            "type": "string"
+          },
+          "main_needs_readd": {
+            "title": "Main Needs Readd",
+            "type": "boolean"
+          },
+          "next_message_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Message At"
+          },
+          "on_leave": {
+            "title": "On Leave",
+            "type": "boolean"
+          },
+          "scope_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scope Groups",
+            "type": "array"
+          },
+          "task_opened_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Opened At"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "username",
+          "main_character_name",
+          "corporation_ticker",
+          "characters",
+          "main_needs_readd",
+          "scope_groups",
+          "community_status",
+          "on_leave",
+          "discord_linked"
+        ],
+        "title": "PilotHealthResponse",
         "type": "object"
       },
       "PlanCharacterResponse": {
@@ -42018,6 +42329,78 @@
           "reason"
         ],
         "title": "ScheduleChange",
+        "type": "object"
+      },
+      "ScopeRolloutPatch": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "none",
+              "suggest",
+              "require"
+            ],
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "ScopeRolloutPatch",
+        "type": "object"
+      },
+      "ScopeRolloutResponse": {
+        "properties": {
+          "added_on": {
+            "format": "date",
+            "title": "Added On",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "scope_group": {
+            "title": "Scope Group",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "scope_group",
+          "label",
+          "added_on",
+          "mode",
+          "updated",
+          "total",
+          "unit"
+        ],
+        "title": "ScopeRolloutResponse",
         "type": "object"
       },
       "ScoutClickRequest": {
@@ -58435,6 +58818,310 @@
         "summary": "Post Doctrine Change Request",
         "tags": [
           "Ships"
+        ]
+      }
+    },
+    "/api/esi-health/corporations": {
+      "get": {
+        "operationId": "esi_health_router_get_corporations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporationHealthResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Every alliance corporation's ESI problems",
+        "tags": [
+          "ESI health"
+        ]
+      }
+    },
+    "/api/esi-health/corporations/{corporation_id}/director-token": {
+      "get": {
+        "operationId": "esi_health_router_get_director_token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorTokenResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Whether a corporation's director token reads everything",
+        "tags": [
+          "ESI health"
+        ]
+      }
+    },
+    "/api/esi-health/messages": {
+      "post": {
+        "operationId": "esi_health_router_post_messages",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Message pilots on Discord to re-add their characters",
+        "tags": [
+          "ESI health"
+        ]
+      }
+    },
+    "/api/esi-health/pilots": {
+      "get": {
+        "operationId": "esi_health_router_get_pilots",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PilotHealthResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pilots with characters to re-add",
+        "tags": [
+          "ESI health"
+        ]
+      }
+    },
+    "/api/esi-health/scopes": {
+      "get": {
+        "operationId": "esi_health_router_get_scopes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScopeRolloutResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Scopes added to a group, and how hard we ask for them",
+        "tags": [
+          "ESI health"
+        ]
+      }
+    },
+    "/api/esi-health/scopes/{rollout_id}": {
+      "patch": {
+        "operationId": "esi_health_router_patch_scope",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rollout_id",
+            "required": true,
+            "schema": {
+              "title": "Rollout Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScopeRolloutPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeRolloutResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Change how hard we ask for a scope change",
+        "tags": [
+          "ESI health"
         ]
       }
     },

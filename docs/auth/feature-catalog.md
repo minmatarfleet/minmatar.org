@@ -122,6 +122,7 @@ Added to move frontend gating off Django permission strings ([frontend-feature-g
 | `creators.moderate` | `tribe_membership` | `creators.change_creatoraccount` | Thinkspeak (`pulse.thinkspeak`) |
 | `content.manage` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`), no `on_leave` deny |
 | `surveys.results.view` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
+| `esi_health.manage` | `auth_group` | — | — (superusers only; no `on_leave` deny; Manage › ESI health) |
 | `site.debug_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
 | `site.all_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny; page finder and breadcrumbs list every page) |
 | `characters.lookup` | `auth_group` | — | — (superusers only; no `on_leave` deny) |

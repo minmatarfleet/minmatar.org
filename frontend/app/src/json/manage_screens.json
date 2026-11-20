@@ -24,7 +24,8 @@
         { "key": "doctrines", "group": "ships", "path": "/ships/doctrines/review/", "gate": "fittings.doctrine.edit" },
         { "key": "srp_amounts", "group": "ships", "path": "/ships/srp/programs/", "gate": "srp.programs.manage" },
         { "key": "alliance_health", "group": "people", "path": "/alliance/health/", "check": "alliance_health" },
-        { "key": "surveys", "group": "people", "path": "/surveys/", "gate": "surveys.manage" }
+        { "key": "surveys", "group": "people", "path": "/surveys/", "gate": "surveys.manage" },
+        { "key": "esi_health", "group": "people", "path": "/manage/esi-health/", "gate": "esi_health.manage" }
     ],
     "queues": [
         { "key": "doctrine_changes", "screen": "doctrines" },

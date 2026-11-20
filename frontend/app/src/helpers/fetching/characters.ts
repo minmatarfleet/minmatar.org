@@ -243,6 +243,8 @@ export function get_character_error_ui(characters:SummaryCharacter[]) {
 
         if (character.flags.length > 0) {
             character.flags.forEach(flag => {
+                // An out-of-date token works; the list offers Update instead.
+                if (flag === 'SCOPES_OUTDATED') return
                 character_errors.push({
                     character: character,
                     // The backend's flag codes (eveonline character summary).

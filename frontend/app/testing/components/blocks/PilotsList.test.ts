@@ -31,7 +31,7 @@ test("PilotsList shows scope groups as tags and names each row's actions menu", 
     },
   });
 
-  expect(result).toContain("Token suspended");
+  expect(result).toContain("Re-add");
   expect(result).toContain("Faction Warfare");
   expect(result).toContain("No roles yet");
   expect(result).toContain('aria-label="Actions for Alt One"');

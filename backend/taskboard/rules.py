@@ -20,6 +20,17 @@ from django.db.models import Count, Min, Q
 from django.utils import timezone
 
 from applications.models import EveCorporationApplication
+from esi_health.models import ScopeRollout
+from esi_health.services import (
+    DIRECTOR_MISSING,
+    DIRECTOR_OK,
+    asked_rollouts,
+    director_statuses,
+    missing_rollouts,
+    needs_readd_q,
+    token_scopes,
+)
+from eveonline.helpers.alliances import alliance_corporations
 from eveonline.helpers.characters.identity import owned_by_q
 from eveonline.models import (
     EveCharacter,
@@ -98,24 +109,140 @@ def _limit(queryset, field: str, user_ids: Optional[set[int]]):
 # --- Pilot rules -------------------------------------------------------
 
 
-def collect_reauth_character(user_ids: Optional[set[int]]) -> list[Item]:
+def _names(names: list[str], shown: int = 3) -> str:
+    if len(names) <= shown:
+        return ", ".join(names)
+    return f"{', '.join(names[:shown])} and {len(names) - shown} more"
 
-    rows = _limit(
-        EveCharacter.objects.filter(esi_suspended=True, user__isnull=False),
-        "user_id",
-        user_ids,
-    ).values_list("user_id", "character_id", "character_name")
-    return [
-        Item(
-            source_key=f"character:{character_id}",
-            user_id=user_id,
-            title=f"Re-add {name or character_id}",
-            detail="Its ESI token stopped working",
-            link_url="/account/",
-            link_label="Re-add character",
+
+def collect_reauth_character(user_ids: Optional[set[int]]) -> list[Item]:
+    """One task for a broken main, one for all the broken alts.
+
+    A pilot with nine broken characters gets two tasks, not nine. The main's
+    task keeps the old per-character key, so it carries over.
+    """
+    rows = (
+        _limit(
+            EveCharacter.objects.filter(needs_readd_q()), "user_id", user_ids
         )
-        for user_id, character_id, name in rows
-    ]
+        .order_by("character_name")
+        .values_list("user_id", "character_id", "character_name")
+    )
+    by_user: dict[int, list[tuple[int, str]]] = {}
+    for user_id, character_id, name in rows:
+        by_user.setdefault(user_id, []).append(
+            (character_id, name or str(character_id))
+        )
+    mains = dict(
+        EvePlayer.objects.filter(
+            user_id__in=list(by_user), primary_character__isnull=False
+        ).values_list("user_id", "primary_character__character_id")
+    )
+    items = []
+    for user_id, characters in by_user.items():
+        main_id = mains.get(user_id)
+        alts = [
+            name
+            for character_id, name in characters
+            if character_id != main_id
+        ]
+        main = next(
+            (
+                name
+                for character_id, name in characters
+                if character_id == main_id
+            ),
+            None,
+        )
+        if main:
+            items.append(
+                Item(
+                    source_key=f"character:{main_id}",
+                    user_id=user_id,
+                    title=f"Re-add {main}",
+                    detail="Your main · EVE stopped letting us read it",
+                    link_url=f"/account/?readd={main_id}",
+                    link_label="Re-add",
+                )
+            )
+        if alts:
+            count = len(alts)
+            items.append(
+                Item(
+                    source_key="alts",
+                    user_id=user_id,
+                    title=(
+                        f"Re-add {alts[0]}"
+                        if count == 1
+                        else f"Re-add {count} {'alts' if main_id else 'characters'}"
+                    ),
+                    detail=(
+                        "EVE stopped letting us read it"
+                        if count == 1
+                        else _names(alts)
+                    ),
+                    link_url="/account/?readd=alts",
+                    link_label="Re-add",
+                )
+            )
+    return items
+
+
+def collect_update_scopes(user_ids: Optional[set[int]]) -> list[Item]:
+    """Working tokens missing a scope a superuser asks for (ESI health)."""
+    rollouts = asked_rollouts()
+    if not rollouts:
+        return []
+    characters = list(
+        _limit(
+            EveCharacter.objects.filter(
+                user__isnull=False, token__isnull=False, esi_suspended=False
+            ),
+            "user_id",
+            user_ids,
+        ).only(
+            "user_id",
+            "character_name",
+            "token_id",
+            "esi_suspended",
+            "esi_scope_groups",
+            "esi_token_level",
+        )
+    )
+    scopes = token_scopes(c.token_id for c in characters)
+    by_user: dict[int, list[str]] = {}
+    labels: dict[int, set[str]] = {}
+    for character in characters:
+        missing = missing_rollouts(
+            character, scopes.get(character.token_id, set()), rollouts
+        )
+        if not missing:
+            continue
+        by_user.setdefault(character.user_id, []).append(
+            character.character_name
+        )
+        labels.setdefault(character.user_id, set()).update(
+            rollout.label for rollout in missing
+        )
+    items = []
+    for user_id, names in by_user.items():
+        count = len(names)
+        adds = " and ".join(sorted(labels[user_id]))
+        items.append(
+            Item(
+                source_key="scopes",
+                user_id=user_id,
+                title=(
+                    f"Update ESI on {names[0]}"
+                    if count == 1
+                    else f"Update ESI on {count} characters"
+                ),
+                detail=f"A newer login adds {adds}",
+                link_url="/account/",
+                link_label="Update",
+            )
+        )
+    return items
 
 
 def collect_pick_main(user_ids: Optional[set[int]]) -> list[Item]:
@@ -286,6 +413,113 @@ def collect_review_applications(user_ids=None) -> list[Item]:
     return items
 
 
+def _corporation_item(corporation, **fields) -> Item:
+    return Item(
+        source_key=f"corporation:{corporation['corporation_id']}",
+        team_kind=TeamKind.CORPORATION,
+        team_id=corporation["corporation_id"],
+        team_role="leaders",
+        team_label=corporation["name"],
+        **fields,
+    )
+
+
+def collect_corp_director_token(user_ids=None) -> list[Item]:
+    """A corporation whose best director token is missing or out of date.
+
+    Out of date means it lacks a Director scope we read, less scopes added
+    later that ESI health doesn't require yet.
+    """
+    del user_ids  # a team rule collects for everyone
+
+    corporations = list(
+        alliance_corporations().values("corporation_id", "name")
+    )
+    statuses = director_statuses(
+        [row["corporation_id"] for row in corporations]
+    )
+    labels = dict(ScopeRollout.objects.values_list("scope", "label"))
+    items = []
+    for corporation in corporations:
+        status = statuses[corporation["corporation_id"]]
+        if status.state == DIRECTOR_OK:
+            continue
+        members_url = (
+            f"/alliance/corporations/{corporation['corporation_id']}/#members"
+        )
+        if status.state == DIRECTOR_MISSING:
+            items.append(
+                _corporation_item(
+                    corporation,
+                    title="Add a director token",
+                    detail="The member list stops updating without one",
+                    link_url=members_url,
+                    link_label="Add",
+                )
+            )
+            continue
+        uses = sorted(
+            {labels[s] for s in status.missing_scopes if s in labels}
+        )
+        items.append(
+            _corporation_item(
+                corporation,
+                title="Update the director token",
+                detail=(
+                    f"{' and '.join(uses).capitalize()} can't be read"
+                    if uses
+                    else "It's missing permissions we read"
+                ),
+                link_url=members_url,
+                link_label="Update",
+            )
+        )
+    return items
+
+
+def collect_corp_unlinked(user_ids=None) -> list[Item]:
+    """Characters in a corporation that nobody added to the site.
+
+    They have no account, so only the corporation's leaders can reach them.
+    """
+    del user_ids  # a team rule collects for everyone
+
+    corporations = {
+        row["corporation_id"]: row
+        for row in alliance_corporations().values("corporation_id", "name")
+    }
+    rows = (
+        EveCharacter.objects.filter(
+            corporation_id__in=list(corporations),
+            user__isnull=True,
+            token__isnull=True,
+        )
+        .order_by()
+        .values("corporation_id")
+        .annotate(n=Count("id"))
+    )
+    items = []
+    for row in rows:
+        corporation = corporations[row["corporation_id"]]
+        count = row["n"]
+        items.append(
+            _corporation_item(
+                corporation,
+                title=(
+                    f"Mail {count} character{'s' if count != 1 else ''} "
+                    "with no account here"
+                ),
+                detail="Only leaders can reach them",
+                link_url=(
+                    "/alliance/corporations/"
+                    f"{corporation['corporation_id']}/#members"
+                ),
+                link_label="See names",
+            )
+        )
+    return items
+
+
 def collect_review_join_requests(user_ids=None) -> list[Item]:
     del user_ids  # a team rule collects for everyone
 
@@ -434,10 +668,20 @@ RULES: dict[str, Rule] = {
         Rule(
             "reauth_character",
             "Re-add a character",
-            "Opens when a character's ESI token stops working",
+            "Opens when a character's ESI token stops working or is gone: "
+            "one task for the main, one for the alts",
             AUDIENCE_PILOT,
             Weight.NEEDS_YOU,
             collect_reauth_character,
+        ),
+        Rule(
+            "update_scopes",
+            "Update ESI",
+            "Opens when a working token lacks a scope ESI health asks for",
+            AUDIENCE_PILOT,
+            Weight.SUGGESTION,
+            collect_update_scopes,
+            stop_after_days=30,
         ),
         Rule(
             "pick_main",
@@ -491,6 +735,25 @@ RULES: dict[str, Rule] = {
             collect_review_applications,
             claim_expires_days=14,
             watch=(EveCorporationApplication,),
+        ),
+        Rule(
+            "corp_director_token",
+            "Fix the director token",
+            "Opens when a corporation has no director token, or its best one "
+            "lacks a permission we read",
+            AUDIENCE_CEO,
+            Weight.NEEDS_YOU,
+            collect_corp_director_token,
+            claim_expires_days=14,
+        ),
+        Rule(
+            "corp_unlinked",
+            "Reach characters with no account",
+            "Opens when characters in a corporation have no account here",
+            AUDIENCE_CEO,
+            Weight.SUGGESTION,
+            collect_corp_unlinked,
+            claim_expires_days=14,
         ),
         Rule(
             "review_doctrine_changes",

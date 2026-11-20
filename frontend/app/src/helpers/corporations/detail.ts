@@ -45,6 +45,8 @@ export interface CorporationMemberPortrait {
 export interface CorporationMemberAlt extends CorporationMemberPortrait {
     exempt: boolean
     esi_suspended: boolean
+    // The owner has to log in again (the token stopped working or is gone).
+    needs_readd?: boolean
     registered?: boolean
     token_level?: string
 }
@@ -55,6 +57,10 @@ export interface CorporationMemberRow {
     user_name: string | null
     exempt: boolean
     esi_suspended: boolean
+    // The main (this row's character) needs re-adding.
+    needs_readd: boolean
+    // Characters of this person to re-add, the main included.
+    readd_count: number
     alts: CorporationMemberAlt[]
     primary: CorporationMemberPortrait | null
     registered: boolean
@@ -166,6 +172,7 @@ function collapse_group(group: CorporationMemberDetails[]): CorporationMemberRow
             character_name: member.character_name,
             exempt: member.exempt,
             esi_suspended: member.esi_suspended,
+            needs_readd: member_needs_readd(member),
             registered: member.registered,
             token_level: member.token_level,
         }))
@@ -182,6 +189,8 @@ function collapse_group(group: CorporationMemberDetails[]): CorporationMemberRow
         user_name: group.find((member) => member.user_name)?.user_name ?? null,
         exempt: main.exempt,
         esi_suspended: main.esi_suspended,
+        needs_readd: member_needs_readd(main),
+        readd_count: group.filter(member_needs_readd).length,
         alts,
         primary,
         registered: group.some((member) => member.registered),
@@ -225,6 +234,11 @@ function person_fleets(group: CorporationMemberDetails[]): number | null {
     return values.length > 0 ? Math.max(...values) : null
 }
 
+// An older API sends no needs_readd; a suspended token was all it knew.
+function member_needs_readd(member: CorporationMemberDetails): boolean {
+    return member.needs_readd ?? member.esi_suspended
+}
+
 // A linked person with a character the site holds no ESI token for.
 export function corporation_member_token_missing(row: CorporationMemberRow): boolean {
     if (!row.linked || row.hidden_character_count > 0)
@@ -234,7 +248,7 @@ export function corporation_member_token_missing(row: CorporationMemberRow): boo
 
 // The one thing to flag on a row, most urgent first.
 export function corporation_member_attention(row: CorporationMemberRow): MemberAttention | null {
-    if (row.esi_suspended || row.alts.some((alt) => alt.esi_suspended))
+    if (row.readd_count > 0 || row.esi_suspended || row.alts.some((alt) => alt.esi_suspended))
         return 'esi_suspended'
     if (!row.linked)
         return 'no_account'
@@ -266,8 +280,7 @@ export function corporation_member_in_view(
         case 'unlinked':
             return !row.linked
         case 'esi':
-            return row.esi_suspended || row.alts.some((alt) => alt.esi_suspended)
-                || corporation_member_token_missing(row)
+            return row.readd_count > 0 || row.esi_suspended || row.alts.some((alt) => alt.esi_suspended)
         default: {
             const unexpected: never = view
             return unexpected
@@ -302,6 +315,7 @@ export function corporation_member_characters(row: CorporationMemberRow): Corpor
             character_name: row.character_name,
             exempt: row.exempt,
             esi_suspended: row.esi_suspended,
+            needs_readd: row.needs_readd,
         })
     }
     for (const alt of row.alts) {
@@ -495,12 +509,20 @@ export function build_member_roster(
     const picked = params.ids.length > 0
         ? filtered.filter((row) => params.ids.includes(row.character_id))
         : filtered
-    return sort_corporation_member_rows(picked, params.sort, params.direction)
+    const sorted = sort_corporation_member_rows(picked, params.sort, params.direction)
+    // Re-add: the pilots a leader can chase first. On Leave pilots' tasks
+    // are paused, so they wait at the bottom.
+    if (params.view === 'esi')
+        return [
+            ...sorted.filter((row) => row.community_status !== 'on_leave'),
+            ...sorted.filter((row) => row.community_status === 'on_leave'),
+        ]
+    return sorted
 }
 
 // Spreadsheet readers get words, not codes.
 const ATTENTION_CSV_LABELS: Record<string, string> = {
-    esi_suspended: 'ESI suspended',
+    esi_suspended: 'Re-add',
     no_account: 'No site account',
     token_missing: 'No ESI token',
     trial_ready: 'Trial bar met',
