@@ -91,6 +91,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'intel.affiliations': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('intel.change_intelaffiliation'),
     'intel.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('intel.view_intelreport'),
     'intel.report': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('intel.add_intelreport'),
+    'structures.locations.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.change_evelocation'),
     'applications.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('applications.change_evecorporationapplication'),
     'characters.view_staff': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('eveonline.view_evecharacter')),
     'corporations.members.view_all': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.view_evecorporation'),

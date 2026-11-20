@@ -34,6 +34,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | Code | Scope | Legacy permission | Default wiring |
 |------|-------|-------------------|----------------|
 | `structures.view` | `affiliation` | `structures.view_evestructure` | Alliance, Associate |
+| `structures.locations.manage` | `staff` | `eveonline.change_evelocation` | staff permission |
 | `structures.timers.view` | `affiliation` | `structures.view_evestructuretimer` | Alliance, Associate |
 | `structures.timers.manage` | `affiliation` | `structures.add_evestructuretimer` | Alliance |
 | `structures.timers.correct` | `tribe_membership` | `structures.change_evestructuretimer` | Fleet Commanders (`pulse.fleet-commanders`) |

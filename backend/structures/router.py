@@ -472,3 +472,11 @@ def get_structure_pings(
         }
         for ping in pings[: max(1, min(limit, 500))]
     ]
+
+
+# Structure browser: alliance locations, submissions and their history.
+from .location_router import (  # noqa: E402 pylint: disable=wrong-import-position
+    router as location_router,
+)
+
+router.add_router("locations", location_router)

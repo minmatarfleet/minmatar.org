@@ -1,0 +1,40 @@
+---
+/** Approves or declines a structure submission; answers with the row's outcome. */
+// no-error-refetch: a button action; the row says what went wrong.
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { approve_structure, decline_structure } from '@helpers/api.minmatar.org/structure_locations'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const form = await Astro.request.formData()
+const id = parseInt(String(form.get('id') ?? '0'))
+const action = String(form.get('action') ?? '')
+
+let message = ''
+let link: string | null = null
+let error: string | null = null
+try {
+    if (action === 'approve') {
+        const location = await approve_structure(auth_token, id)
+        message = t('structures.approved').replace('~NAME', location.short_name)
+        link = translatePath(`/structures/${location.location_id}/`)
+    } else {
+        const row = await decline_structure(auth_token, id)
+        message = t('structures.declined').replace('~NAME', row.name)
+    }
+} catch (failure) {
+    error = (failure as Error).message
+}
+---
+
+<li id={`structure-submission-${id}`}>
+    {error
+        ? <p class="[ manage-field__error ]" role="alert">{error}</p>
+        : <p class="[ manage-saved ]">{message} {link && <a href={link}>{t('structures.open')}</a>}</p>
+    }
+</li>

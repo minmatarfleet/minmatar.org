@@ -1,0 +1,41 @@
+---
+/** Saves a structure's Settings tab. Answers with a line for the result slot. */
+// no-error-refetch: a form submit; its result line says what went wrong.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { patch_structure_location } from '@helpers/api.minmatar.org/structure_locations'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const location_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
+let error: string | null = null
+try {
+    const form = await Astro.request.formData()
+    const hour = String(form.get('reinforce_hour') ?? '')
+    const audience = String(form.get('audience') ?? 'alliance')
+    await patch_structure_location(auth_token, location_id, {
+        short_name: String(form.get('short_name') ?? ''),
+        description: String(form.get('description') ?? ''),
+        reinforce_hour: hour === '' ? null : parseInt(hour),
+        clear_reinforce_hour: hour === '',
+        audience,
+        audience_tribe_group_ids: audience === 'groups' ? form.getAll('audience_tribe_group_ids').map((value) => parseInt(String(value))).filter(Number.isFinite) : [],
+        good_for: form.getAll('good_for').map(String),
+        freight_active: form.get('freight_active') === 'on',
+        fleets_active: form.get('fleets_active') === 'on',
+        market_active: form.get('market_active') === 'on',
+        prices_active: form.get('prices_active') === 'on',
+    })
+} catch (failure) {
+    error = (failure as Error).message
+}
+---
+
+{error
+    ? <p class="[ manage-field__error ]" role="alert">{error}</p>
+    : <p class="[ manage-saved ]">{t('structures.settings.saved')}</p>
+}

@@ -1,0 +1,81 @@
+---
+/**
+ * What a structure is fitted with: rigs as green tags with their size
+ * (XL Ship ME), services as quiet tags. Shows "Not scanned" without a scan.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { StructureLocationModule } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    rigs:           StructureLocationModule[];
+    services:       string[];
+    is_structure:   boolean;
+    scanned:        boolean;
+    extra?:         string[];
+    [propName: string]: any;
+}
+
+const { rigs, services, is_structure, scanned, extra = [], ...attributes } = Astro.props
+delete attributes.class
+---
+
+<ul class:list={['[ structure-fit ]', Astro.props.class]} {...attributes}>
+    {rigs.map((rig) => (
+        <li class="[ structure-rig ]"><b>{rig.size}</b><span>{rig.label}</span></li>
+    ))}
+    {services.map((service) => <li class="[ structure-svc ]">{service}</li>)}
+    {extra.map((label) => <li class="[ structure-svc ]">{label}</li>)}
+    {is_structure && !scanned && <li class="[ structure-svc none ]">{t('structures.fit.not_scanned')}</li>}
+</ul>
+
+<style lang="scss" is:global>
+    .structure-fit {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .structure-rig {
+        display: inline-flex;
+        align-items: stretch;
+        font-size: var(--step--2);
+        font-weight: 600;
+        white-space: nowrap;
+        color: var(--highlight);
+        background-color: color-mix(in srgb, var(--green) 22%, transparent);
+        border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+
+        b {
+            padding: 0.2em 0.45em;
+            color: var(--background);
+            background-color: color-mix(in srgb, var(--green) 70%, var(--highlight));
+        }
+
+        span {
+            padding: 0.2em 0.6em;
+        }
+    }
+
+    .structure-svc {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2em 0.6em;
+        font-size: var(--step--2);
+        font-weight: 600;
+        white-space: nowrap;
+        color: var(--highlight);
+        background-color: color-mix(in srgb, var(--highlight) 8%, transparent);
+        border: 1px solid var(--hairline-strong);
+
+        &.none {
+            color: var(--text-muted);
+            background: none;
+            border-style: dashed;
+        }
+    }
+</style>

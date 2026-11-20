@@ -3358,3 +3358,16 @@ export type TaskPreferences = ApiResponse<'TaskPreferencesResponse'>
 export type TaskPreferencesPatch = ApiRequest<'TaskPreferencesPatch'>
 export type TaskDigest = ApiResponse<'DigestSettingsResponse'>
 export type TaskDigestPatch = ApiRequest<'DigestSettingsPatch'>
+
+// Structure browser (/api/structures/locations)
+export type StructureLocationCard = ApiResponse<'LocationCard'>
+export type StructureLocationList = ApiResponse<'LocationList'>
+export type StructureLocationDetail = ApiResponse<'LocationDetail'>
+export type StructureLocationModule = ApiResponse<'LocationModule'>
+export type StructureLocationChange = ApiResponse<'LocationChangeEntry'>
+export type StructureLocationPatch = ApiRequest<'LocationPatch'>
+export type StructureLocationParse = ApiResponse<'LocationParseResult'>
+export type StructureLocationDocked = ApiResponse<'LocationDocked'>
+export type StructureLocationSubmissionRequest = ApiRequest<'LocationSubmissionRequest'>
+export type StructureLocationSubmission = ApiResponse<'LocationSubmissionRow'>
+export type StructureLocationManage = ApiResponse<'LocationManage'>

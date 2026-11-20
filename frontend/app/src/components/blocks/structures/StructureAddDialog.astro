@@ -1,0 +1,32 @@
+---
+/**
+ * The Add a structure button and its stepped dialog. The paste box on the
+ * browse page sends its text here with a "structure-add-paste" window
+ * event, which opens the dialog straight on the Match step.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+const URL = translatePath('/partials/structures_add_component/')
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import StructureAddSteps from '@components/blocks/structures/StructureAddSteps.astro'
+---
+
+<DialogButton size="sm" color="fleet-red" max_width="52rem" id="structure-add-button">
+    {t('structures.add.title')}
+
+    <form
+        slot="dialog"
+        id="structure-add"
+        hx-post={URL}
+        hx-trigger="structure-paste"
+        hx-vals='{"go": "match"}'
+        hx-target="this"
+        hx-swap="innerHTML"
+        x-on:submit.prevent=""
+        x-on:structure-add-paste.window="open_dialog(); $el.querySelector('[name=text_input]') && ($el.querySelector('[name=text_input]').value = $event.detail); $nextTick(() => htmx.trigger($el, 'structure-paste'))"
+    >
+        <StructureAddSteps step="paste" />
+    </form>
+</DialogButton>

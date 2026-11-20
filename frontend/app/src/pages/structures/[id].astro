@@ -1,0 +1,400 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { StructureLocationDetail, StructureLocationModule } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_structure_location } from '@helpers/api.minmatar.org/structure_locations'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { structure_flags, security_colour, security_label } from '@helpers/structure_locations'
+
+const { auth_token } = get_request_user(Astro)
+const location_id = parseInt(Astro.params.id ?? '0')
+
+let detail: StructureLocationDetail | null = null
+try {
+    detail = await get_structure_location(auth_token, location_id)
+} catch {
+    detail = null
+}
+if (!detail) return HTTP_404_Not_Found()
+
+const rigs = detail.fitting.filter((m) => m.slot === 'rig')
+const services = detail.fitting.filter((m) => m.slot === 'service')
+const defenses = detail.fitting.filter((m) => m.slot === 'defense')
+const groups: [string, StructureLocationModule[]][] = [['rigs', rigs], ['services', services], ['defenses', defenses]]
+const art = detail.type_id ? get_item_icon(detail.type_id, 512) : null
+const reinforce = detail.reinforce_hour !== null ? `${String(detail.reinforce_hour).padStart(2, '0')}:00 EVE` : null
+const has_fitting = detail.is_structure
+
+const tabs = [
+    { id: 'overview', label: t('structures.tab.overview') },
+    ...(has_fitting ? [{ id: 'fitting', label: t('structures.tab.fitting') }] : []),
+    { id: 'history', label: t('structures.tab.history'), meta: String(detail.changes.length) },
+    ...(detail.can_manage ? [{ id: 'settings', label: t('structures.tab.settings'), icon: 'cog' as const }] : []),
+]
+
+const page_title = detail.short_name
+const breadcrumbs = [
+    { page_title: t('structures.page_title'), accumulated_path: translatePath('/structures/') },
+    { page_title, accumulated_path: translatePath(`/structures/${detail.location_id}/`) },
+]
+const day = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
+import StructureFit from '@components/blocks/structures/StructureFit.astro'
+import StructureSettingsForm from '@components/blocks/structures/StructureSettingsForm.astro'
+---
+
+<Viewport title={page_title} meta_description={t('structures.description')}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-l)">
+        <PageBreadcrumbs links_only={true} breadcrumbs={breadcrumbs} />
+
+        <header class="[ structure-hero ]">
+            {art && <img class="[ structure-hero__art ]" src={art} alt="" width="512" height="512" />}
+            <div class="[ structure-hero__kind ]">
+                <span>{detail.type_name}</span>
+                <StructureFlags flags={structure_flags(detail)} />
+            </div>
+            <h1>{detail.short_name}</h1>
+            <p class="[ structure-hero__sys ]">
+                {detail.security !== null && <b style={`color: ${security_colour(detail.security)}`}>{security_label(detail.security)}</b>}
+                <span>{detail.solar_system_name}</span>
+                {detail.name !== detail.short_name && <span class="[ structure-hero__full ]">{detail.name}</span>}
+            </p>
+            <StructureFit rigs={rigs} services={services.map((s) => s.label)} is_structure={detail.is_structure} scanned={detail.fitting_scanned_at !== null} />
+        </header>
+
+        <SectionTabs aria_label={t('structures.tabs_label')} id_prefix="structure" tabs={tabs}>
+            <SectionTabPanel id="overview" id_prefix="structure" is_default={true}>
+                <Flexblock gap="var(--space-l)">
+                    <div class="[ structure-stats ]">
+                        <ManageStatCard label={t('structures.stat.reinforces')} value={reinforce ?? t('structures.card.not_set')} />
+                        <ManageStatCard label={t('structures.stat.rigs')} value={rigs.length} detail={rigs.map((r) => `${r.size} ${r.label}`).join(', ') || undefined} />
+                        <ManageStatCard label={t('structures.stat.routes')} value={detail.route_count} />
+                        <ManageStatCard label={t('structures.stat.orders')} value={detail.industry_orders} />
+                    </div>
+
+                    <section class="[ structure-section ]" aria-labelledby="structure-about">
+                        <h2 id="structure-about">{t('structures.about')}</h2>
+                        {detail.description
+                            ? <p class="[ structure-about ]">{detail.description}</p>
+                            : <EmptyState title={t('structures.no_about')} />
+                        }
+                    </section>
+
+                    <section class="[ structure-section ]" aria-labelledby="structure-use">
+                        <h2 id="structure-use">{t('structures.use_it')}</h2>
+                        <div class="[ structure-tools ]">
+                            {detail.planner_facility &&
+                                <a class="[ structure-tool ]" href={translatePath(`/industry/orders/planner/?facility=${detail.planner_facility}`)}>
+                                    <h3>{t('structures.tool.plan')}</h3><p>{t('structures.tool.plan_body')}</p>
+                                </a>
+                            }
+                            {detail.freight && detail.route_count > 0 &&
+                                <a class="[ structure-tool ]" href={translatePath('/market/freight/')}>
+                                    <h3>{t('structures.tool.freight')}</h3><p>{t('structures.tool.freight_body').replace('~COUNT', String(detail.route_count))}</p>
+                                </a>
+                            }
+                            {detail.industry_orders > 0 &&
+                                <a class="[ structure-tool ]" href={translatePath('/industry/orders/')}>
+                                    <h3>{t('structures.tool.orders')}</h3><p>{t('structures.tool.orders_body').replace('~COUNT', String(detail.industry_orders))}</p>
+                                </a>
+                            }
+                            <a class="[ structure-tool ]" href={translatePath('/intel/')}>
+                                <h3>{t('structures.tool.timers')}</h3><p>{t('structures.tool.timers_body')}</p>
+                            </a>
+                        </div>
+                    </section>
+
+                    {auth_token &&
+                        <section class="[ structure-section ]" aria-labelledby="structure-yours">
+                            <h2 id="structure-yours">{t('structures.yours')}</h2>
+                            <p>{detail.you.clones || detail.you.items
+                                ? t('structures.yours_some').replace('~CLONES', String(detail.you.clones)).replace('~ITEMS', String(detail.you.items))
+                                : t('structures.yours_none')}</p>
+                        </section>
+                    }
+                </Flexblock>
+            </SectionTabPanel>
+
+            {has_fitting &&
+                <SectionTabPanel id="fitting" id_prefix="structure">
+                    <Flexblock gap="var(--space-l)">
+                        {detail.fitting.length === 0 && <EmptyState title={t('structures.fit.empty')} hint={t('structures.fit.empty_hint')} />}
+                        {groups.filter(([, list]) => list.length > 0).map(([group, list]) => (
+                            <section class="[ structure-slot ]" aria-label={t(t_key('structures.add.group_', group))}>
+                                <header><h3>{t(t_key('structures.add.group_', group))}</h3><span>{list.length}</span></header>
+                                <ul>
+                                    {list.map((module) => (
+                                        <li><span>{module.name}</span>{module.slot === 'rig' && <span class="[ structure-slot__fx ]">{module.size} {module.label}</span>}</li>
+                                    ))}
+                                </ul>
+                            </section>
+                        ))}
+                        {auth_token &&
+                            <form class="[ structure-scan ]" hx-post={translatePath(`/partials/structure_fitting_component/?id=${detail.location_id}`)} hx-target="#structure-scan-result" hx-swap="innerHTML">
+                                <ManageField label={t('structures.fit.paste_new')} for="structure-scan-text" hint={t('structures.fit.paste_hint')}>
+                                    <Textarea id="structure-scan-text" name="text" rows="5" required />
+                                </ManageField>
+                                <div class="[ manage-actions ]">
+                                    <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('structures.fit.save_scan')}</Button>
+                                    <span id="structure-scan-result" aria-live="polite"></span>
+                                </div>
+                            </form>
+                        }
+                    </Flexblock>
+                </SectionTabPanel>
+            }
+
+            <SectionTabPanel id="history" id_prefix="structure">
+                {detail.changes.length === 0
+                    ? <EmptyState title={t('structures.history.empty')} />
+                    : (
+                        <ol class="[ structure-history ]">
+                            {detail.changes.map((change) => (
+                                <li>
+                                    {change.character_id
+                                        ? <img src={get_player_icon(change.character_id, 64)} alt="" width="44" height="44" loading="lazy" />
+                                        : <span class="[ structure-history__glyph ]" aria-hidden="true"></span>}
+                                    <div>
+                                        <p><b>{change.user_name}</b> <span>{change.summary}</span></p>
+                                        {change.kind === 'fitting' && Array.isArray(change.details.added) &&
+                                            <ul class="[ structure-history__diff ]">
+                                                {(change.details.added as string[]).map((name) => <li class="[ add ]">+ {name}</li>)}
+                                                {(change.details.removed as string[] ?? []).map((name) => <li class="[ del ]">− {name}</li>)}
+                                            </ul>
+                                        }
+                                        {change.kind === 'audience' && change.details.from &&
+                                            <small>{String(change.details.from)} → {String(change.details.to)}</small>
+                                        }
+                                    </div>
+                                    <time datetime={change.created_at}>{day(change.created_at)}</time>
+                                </li>
+                            ))}
+                        </ol>
+                    )
+                }
+            </SectionTabPanel>
+
+            {detail.can_manage &&
+                <SectionTabPanel id="settings" id_prefix="structure">
+                    <StructureSettingsForm detail={detail} />
+                </SectionTabPanel>
+            }
+        </SectionTabs>
+    </Flexblock>
+</PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .structure-hero {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: var(--space-s);
+        min-height: 24rem;
+        padding: var(--space-l) 0 var(--space-m);
+        overflow: hidden;
+
+        h1 {
+            max-width: 22ch;
+            font-size: var(--step-3);
+        }
+    }
+
+    .structure-hero__art {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: -1;
+        width: 62%;
+        height: 100%;
+        object-fit: cover;
+        mask-image: linear-gradient(90deg, transparent 0%, black 45%), linear-gradient(0deg, transparent 0%, black 30%);
+        mask-composite: intersect;
+    }
+
+    .structure-hero__kind {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        > span {
+            padding: 0.3em 0.6em;
+            font-family: var(--heading-font);
+            font-size: var(--step--1);
+            letter-spacing: 0.08em;
+            line-height: 1;
+            text-transform: uppercase;
+            color: var(--highlight);
+            background-color: var(--hairline-strong);
+        }
+    }
+
+    .structure-hero__full {
+        color: var(--text-muted);
+    }
+
+    .structure-hero__sys {
+        display: flex;
+        gap: var(--space-2xs);
+        font-size: var(--step-0);
+    }
+
+    .structure-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .structure-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .structure-about {
+        max-width: 62ch;
+        white-space: pre-line;
+    }
+
+    .structure-tools {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .structure-tool {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-m);
+        text-decoration: none;
+        background-color: var(--component-background);
+        border: 1px solid transparent;
+        transition: border-color var(--fast-transition);
+
+        p {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        &:focus-visible,
+        &:hover {
+            border-color: var(--hairline-strong);
+        }
+    }
+
+    .structure-slot {
+        background-color: var(--component-background);
+
+        header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding: var(--space-s) var(--space-m) var(--space-2xs);
+
+            span {
+                color: var(--text-muted);
+            }
+        }
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-s);
+            padding: var(--space-xs) var(--space-m);
+            color: var(--highlight);
+            border-top: 1px solid var(--hairline-medium);
+        }
+    }
+
+    .structure-slot__fx {
+        color: var(--green);
+        white-space: nowrap;
+    }
+
+    .structure-scan {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        max-width: 44rem;
+    }
+
+    .structure-history {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        background-color: var(--component-background);
+
+        > li {
+            display: grid;
+            grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-s);
+            padding: var(--space-xs) var(--space-m);
+            border-bottom: 1px solid var(--hairline-medium);
+        }
+
+        p {
+            margin: 0;
+
+            b {
+                color: var(--highlight);
+            }
+        }
+
+        time {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+    }
+
+    .structure-history__glyph {
+        width: 2.75rem;
+        height: 2.75rem;
+        background-color: var(--surface-sunken);
+    }
+
+    .structure-history__diff {
+        margin: var(--space-3xs) 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--1);
+
+        .add {
+            color: var(--green);
+        }
+
+        .del {
+            color: var(--attention);
+            text-decoration: line-through;
+        }
+    }
+</style>

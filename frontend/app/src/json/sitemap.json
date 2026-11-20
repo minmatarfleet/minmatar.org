@@ -646,6 +646,22 @@
         }
     },
     {
+        "slug": "structures",
+        "path": "/structures/",
+        "publish": true,
+        "description": "page_finder.structures.description",
+        "keywords": ["structures", "stations", "locations", "staging", "clones", "rigs", "freight"]
+    },
+    {
+        "slug": "structures.manage",
+        "path": "/structures/manage/",
+        "publish": true,
+        "description": "page_finder.structures.manage.description",
+        "permissions": {
+            "gate": "structures.locations.manage"
+        }
+    },
+    {
         "slug": "intel.timers.manage",
         "path": "/intel/timers/manage/",
         "publish": true,

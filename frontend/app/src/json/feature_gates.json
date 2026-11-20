@@ -138,6 +138,10 @@
             "legacy": { "perms": ["intel.add_intelreport"], "superuser": true },
             "note": "Paste a d-scan or Local on /dscan/."
         },
+        "structures.locations.manage": {
+            "feature": "structures.locations.manage",
+            "legacy": { "perms": ["eveonline.change_evelocation"], "superuser": true }
+        },
         "applications.manage": {
             "feature": "applications.manage",
             "legacy": { "perms": ["applications.change_evecorporationapplication"], "superuser": true }

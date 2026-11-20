@@ -26296,6 +26296,541 @@
         "title": "LiveSellOrderSupplyResponse",
         "type": "object"
       },
+      "LocationAttention": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "detail",
+          "location_id"
+        ],
+        "title": "LocationAttention",
+        "type": "object"
+      },
+      "LocationCard": {
+        "properties": {
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
+          "audience_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Audience Groups",
+            "type": "array"
+          },
+          "fitting_scanned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Scanned At"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "boolean"
+          },
+          "freight": {
+            "title": "Freight",
+            "type": "boolean"
+          },
+          "freighter_dock": {
+            "title": "Freighter Dock",
+            "type": "boolean"
+          },
+          "good_for": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Good For",
+            "type": "array"
+          },
+          "industry_orders": {
+            "title": "Industry Orders",
+            "type": "integer"
+          },
+          "is_structure": {
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "market": {
+            "title": "Market",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planner_facility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planner Facility"
+          },
+          "prices": {
+            "title": "Prices",
+            "type": "boolean"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "rigs": {
+            "items": {
+              "$ref": "#/components/schemas/LocationModule"
+            },
+            "title": "Rigs",
+            "type": "array"
+          },
+          "route_count": {
+            "title": "Route Count",
+            "type": "integer"
+          },
+          "security": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Security"
+          },
+          "services": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Services",
+            "type": "array"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_id": {
+            "title": "Solar System Id",
+            "type": "integer"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "staging": {
+            "title": "Staging",
+            "type": "boolean"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          },
+          "you": {
+            "$ref": "#/components/schemas/LocationHolding"
+          }
+        },
+        "required": [
+          "location_id",
+          "name",
+          "short_name",
+          "solar_system_id",
+          "solar_system_name",
+          "security",
+          "is_structure",
+          "type_id",
+          "type_name",
+          "staging",
+          "fleets",
+          "freight",
+          "market",
+          "prices",
+          "industry_orders",
+          "audience",
+          "audience_groups",
+          "good_for",
+          "rigs",
+          "services",
+          "fitting_scanned_at",
+          "reinforce_hour",
+          "route_count",
+          "planner_facility",
+          "freighter_dock",
+          "you"
+        ],
+        "title": "LocationCard",
+        "type": "object"
+      },
+      "LocationChangeEntry": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "user_name": {
+            "title": "User Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "summary",
+          "details",
+          "created_at",
+          "user_name",
+          "character_id"
+        ],
+        "title": "LocationChangeEntry",
+        "type": "object"
+      },
+      "LocationDecline": {
+        "properties": {
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "LocationDecline",
+        "type": "object"
+      },
+      "LocationDetail": {
+        "properties": {
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
+          "audience_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Audience Groups",
+            "type": "array"
+          },
+          "audience_tribe_group_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Audience Tribe Group Ids",
+            "type": "array"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/LocationChangeEntry"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "fitting": {
+            "items": {
+              "$ref": "#/components/schemas/LocationModule"
+            },
+            "title": "Fitting",
+            "type": "array"
+          },
+          "fitting_scanned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting Scanned At"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "boolean"
+          },
+          "freight": {
+            "title": "Freight",
+            "type": "boolean"
+          },
+          "freighter_dock": {
+            "title": "Freighter Dock",
+            "type": "boolean"
+          },
+          "good_for": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Good For",
+            "type": "array"
+          },
+          "industry_orders": {
+            "title": "Industry Orders",
+            "type": "integer"
+          },
+          "is_structure": {
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "market": {
+            "title": "Market",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "planner_facility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planner Facility"
+          },
+          "prices": {
+            "title": "Prices",
+            "type": "boolean"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "rigs": {
+            "items": {
+              "$ref": "#/components/schemas/LocationModule"
+            },
+            "title": "Rigs",
+            "type": "array"
+          },
+          "route_count": {
+            "title": "Route Count",
+            "type": "integer"
+          },
+          "security": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Security"
+          },
+          "services": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Services",
+            "type": "array"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_id": {
+            "title": "Solar System Id",
+            "type": "integer"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "staging": {
+            "title": "Staging",
+            "type": "boolean"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          },
+          "you": {
+            "$ref": "#/components/schemas/LocationHolding"
+          }
+        },
+        "required": [
+          "location_id",
+          "name",
+          "short_name",
+          "solar_system_id",
+          "solar_system_name",
+          "security",
+          "is_structure",
+          "type_id",
+          "type_name",
+          "staging",
+          "fleets",
+          "freight",
+          "market",
+          "prices",
+          "industry_orders",
+          "audience",
+          "audience_groups",
+          "good_for",
+          "rigs",
+          "services",
+          "fitting_scanned_at",
+          "reinforce_hour",
+          "route_count",
+          "planner_facility",
+          "freighter_dock",
+          "you",
+          "description",
+          "fitting",
+          "audience_tribe_group_ids",
+          "changes",
+          "can_manage"
+        ],
+        "title": "LocationDetail",
+        "type": "object"
+      },
+      "LocationDocked": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "listed": {
+            "title": "Listed",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "location_id",
+          "name",
+          "listed"
+        ],
+        "title": "LocationDocked",
+        "type": "object"
+      },
       "LocationExpectationsResponse": {
         "properties": {
           "expectations": {
@@ -26360,6 +26895,278 @@
         "title": "LocationFittingExpectationResponse",
         "type": "object"
       },
+      "LocationFittingPaste": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "LocationFittingPaste",
+        "type": "object"
+      },
+      "LocationHolding": {
+        "properties": {
+          "clones": {
+            "title": "Clones",
+            "type": "integer"
+          },
+          "items": {
+            "title": "Items",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clones",
+          "items"
+        ],
+        "title": "LocationHolding",
+        "type": "object"
+      },
+      "LocationList": {
+        "properties": {
+          "can_add": {
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "can_manage": {
+            "title": "Can Manage",
+            "type": "boolean"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationCard"
+            },
+            "title": "Locations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "locations",
+          "can_manage",
+          "can_add"
+        ],
+        "title": "LocationList",
+        "type": "object"
+      },
+      "LocationManage": {
+        "properties": {
+          "attention": {
+            "items": {
+              "$ref": "#/components/schemas/LocationAttention"
+            },
+            "title": "Attention",
+            "type": "array"
+          },
+          "locations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationManageRow"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "submissions": {
+            "items": {
+              "$ref": "#/components/schemas/LocationSubmissionRow"
+            },
+            "title": "Submissions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "submissions",
+          "attention",
+          "locations"
+        ],
+        "title": "LocationManage",
+        "type": "object"
+      },
+      "LocationManageRow": {
+        "properties": {
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
+          "audience_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Audience Groups",
+            "type": "array"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "boolean"
+          },
+          "freight": {
+            "title": "Freight",
+            "type": "boolean"
+          },
+          "is_structure": {
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "market": {
+            "title": "Market",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price_baseline": {
+            "title": "Price Baseline",
+            "type": "boolean"
+          },
+          "prices": {
+            "title": "Prices",
+            "type": "boolean"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "staging": {
+            "title": "Staging",
+            "type": "boolean"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "name",
+          "short_name",
+          "solar_system_name",
+          "type_id",
+          "type_name",
+          "is_structure",
+          "freight",
+          "fleets",
+          "market",
+          "prices",
+          "staging",
+          "price_baseline",
+          "audience",
+          "audience_groups"
+        ],
+        "title": "LocationManageRow",
+        "type": "object"
+      },
+      "LocationMatch": {
+        "properties": {
+          "found_with": {
+            "title": "Found With",
+            "type": "string"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "location_id",
+          "source",
+          "name",
+          "solar_system_name",
+          "type_id",
+          "type_name",
+          "found_with"
+        ],
+        "title": "LocationMatch",
+        "type": "object"
+      },
+      "LocationModule": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "string"
+          },
+          "slot": {
+            "title": "Slot",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "slot",
+          "size",
+          "label"
+        ],
+        "title": "LocationModule",
+        "type": "object"
+      },
       "LocationOption": {
         "properties": {
           "location_id": {
@@ -26376,6 +27183,208 @@
           "name"
         ],
         "title": "LocationOption",
+        "type": "object"
+      },
+      "LocationParseResult": {
+        "properties": {
+          "match": {
+            "$ref": "#/components/schemas/LocationMatch"
+          },
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/LocationModule"
+            },
+            "title": "Modules",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          }
+        },
+        "required": [
+          "name",
+          "solar_system_name",
+          "type_id",
+          "reinforce_hour",
+          "parts",
+          "modules",
+          "match"
+        ],
+        "title": "LocationParseResult",
+        "type": "object"
+      },
+      "LocationPaste": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "LocationPaste",
+        "type": "object"
+      },
+      "LocationPatch": {
+        "properties": {
+          "audience": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "audience_tribe_group_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience Tribe Group Ids"
+          },
+          "clear_reinforce_hour": {
+            "default": false,
+            "title": "Clear Reinforce Hour",
+            "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "fleets_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Active"
+          },
+          "freight_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight Active"
+          },
+          "good_for": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Good For"
+          },
+          "market_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Active"
+          },
+          "prices_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices Active"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "short_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name"
+          }
+        },
+        "title": "LocationPatch",
         "type": "object"
       },
       "LocationResponse": {
@@ -26445,6 +27454,179 @@
           "staging_active"
         ],
         "title": "LocationResponse",
+        "type": "object"
+      },
+      "LocationSubmissionRequest": {
+        "properties": {
+          "audience": {
+            "default": "alliance",
+            "title": "Audience",
+            "type": "string"
+          },
+          "audience_tribe_group_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Audience Tribe Group Ids",
+            "type": "array"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "good_for": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Good For",
+            "type": "array"
+          },
+          "id_source": {
+            "default": "",
+            "title": "Id Source",
+            "type": "string"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "paste_text": {
+            "default": "",
+            "title": "Paste Text",
+            "type": "string"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "short_name": {
+            "default": "",
+            "title": "Short Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "LocationSubmissionRequest",
+        "type": "object"
+      },
+      "LocationSubmissionRow": {
+        "properties": {
+          "audience": {
+            "title": "Audience",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "good_for": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Good For",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "rig_count": {
+            "title": "Rig Count",
+            "type": "integer"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_by": {
+            "title": "Submitted By",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "location_id",
+          "solar_system_name",
+          "type_id",
+          "type_name",
+          "audience",
+          "good_for",
+          "rig_count",
+          "status",
+          "submitted_by",
+          "created_at"
+        ],
+        "title": "LocationSubmissionRow",
         "type": "object"
       },
       "LogAnalysis": {
@@ -81597,6 +82779,574 @@
         "summary": "Get Structures",
         "tags": [
           "Structures"
+        ]
+      }
+    },
+    "/api/structures/locations": {
+      "get": {
+        "description": "Locations on the structure browser that this user may see.",
+        "operationId": "structures_location_router_list_locations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationList"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "List Locations",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/docked/characters": {
+      "get": {
+        "description": "Where the user's characters are docked right now.",
+        "operationId": "structures_location_router_get_docked",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationDocked"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Docked",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/manage/overview": {
+      "get": {
+        "description": "Approval queue, things to fix and every location.",
+        "operationId": "structures_location_router_get_manage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationManage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Manage",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/parse": {
+      "post": {
+        "description": "Read a paste from the EVE client and look for the structure's ID.",
+        "operationId": "structures_location_router_post_parse",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationPaste"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationParseResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Parse",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/submissions": {
+      "post": {
+        "description": "Send a structure for approval.",
+        "operationId": "structures_location_router_post_submission",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationSubmissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationSubmissionRow"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Submission",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/submissions/{submission_id}/approve": {
+      "post": {
+        "operationId": "structures_location_router_approve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "title": "Submission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/submissions/{submission_id}/decline": {
+      "post": {
+        "operationId": "structures_location_router_decline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "submission_id",
+            "required": true,
+            "schema": {
+              "title": "Submission Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationDecline"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationSubmissionRow"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Decline",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/{location_id}": {
+      "get": {
+        "operationId": "structures_location_router_get_location",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Location",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      },
+      "patch": {
+        "operationId": "structures_location_router_patch_location",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Patch Location",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/{location_id}/fitting": {
+      "post": {
+        "description": "Paste a new ship scan for a location.",
+        "operationId": "structures_location_router_post_fitting",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationFittingPaste"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Post Fitting",
+        "tags": [
+          "Structures",
+          "Structure browser"
         ]
       }
     },

@@ -125,6 +125,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="structures.view_evestructure",
         default_affiliation_names=_aff("Alliance", "Associate"),
     ),
+    "structures.locations.manage": FeatureDefinition(
+        code="structures.locations.manage",
+        label="Manage alliance locations",
+        scope=FeatureScope.STAFF,
+        description=(
+            "Approve structures pilots add to the structure browser and "
+            "edit a location's audience, tags and site settings."
+        ),
+        legacy_permission="eveonline.change_evelocation",
+        staff_permission="eveonline.change_evelocation",
+    ),
     "structures.timers.view": FeatureDefinition(
         code="structures.timers.view",
         label="View structure timers",

@@ -8403,6 +8403,178 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/structures/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Locations
+         * @description Locations on the structure browser that this user may see.
+         */
+        get: operations["structures_location_router_list_locations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/docked/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Docked
+         * @description Where the user's characters are docked right now.
+         */
+        get: operations["structures_location_router_get_docked"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/manage/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Manage
+         * @description Approval queue, things to fix and every location.
+         */
+        get: operations["structures_location_router_get_manage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Parse
+         * @description Read a paste from the EVE client and look for the structure's ID.
+         */
+        post: operations["structures_location_router_post_parse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Submission
+         * @description Send a structure for approval.
+         */
+        post: operations["structures_location_router_post_submission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/submissions/{submission_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve */
+        post: operations["structures_location_router_approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/submissions/{submission_id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline */
+        post: operations["structures_location_router_decline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/{location_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Location */
+        get: operations["structures_location_router_get_location"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Location */
+        patch: operations["structures_location_router_patch_location"];
+        trace?: never;
+    };
+    "/api/structures/locations/{location_id}/fitting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Fitting
+         * @description Paste a new ship scan for a location.
+         */
+        post: operations["structures_location_router_post_fitting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/structures/pings": {
         parameters: {
             query?: never;
@@ -21096,6 +21268,178 @@ export interface components {
              */
             viable_fulfilled?: number;
         };
+        /** LocationAttention */
+        LocationAttention: {
+            /** Detail */
+            detail: string;
+            /** Kind */
+            kind: string;
+            /** Location Id */
+            location_id: number | null;
+            /** Title */
+            title: string;
+        };
+        /** LocationCard */
+        LocationCard: {
+            /** Audience */
+            audience: string;
+            /** Audience Groups */
+            audience_groups: string[];
+            /** Fitting Scanned At */
+            fitting_scanned_at: string | null;
+            /** Fleets */
+            fleets: boolean;
+            /** Freight */
+            freight: boolean;
+            /** Freighter Dock */
+            freighter_dock: boolean;
+            /** Good For */
+            good_for: string[];
+            /** Industry Orders */
+            industry_orders: number;
+            /** Is Structure */
+            is_structure: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Market */
+            market: boolean;
+            /** Name */
+            name: string;
+            /** Planner Facility */
+            planner_facility: string | null;
+            /** Prices */
+            prices: boolean;
+            /** Reinforce Hour */
+            reinforce_hour: number | null;
+            /** Rigs */
+            rigs: components["schemas"]["LocationModule"][];
+            /** Route Count */
+            route_count: number;
+            /** Security */
+            security: number | null;
+            /** Services */
+            services: string[];
+            /** Short Name */
+            short_name: string;
+            /** Solar System Id */
+            solar_system_id: number;
+            /** Solar System Name */
+            solar_system_name: string;
+            /** Staging */
+            staging: boolean;
+            /** Type Id */
+            type_id: number | null;
+            /** Type Name */
+            type_name: string;
+            you: components["schemas"]["LocationHolding"];
+        };
+        /** LocationChangeEntry */
+        LocationChangeEntry: {
+            /** Character Id */
+            character_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Summary */
+            summary: string;
+            /** User Name */
+            user_name: string;
+        };
+        /** LocationDecline */
+        LocationDecline: {
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+        };
+        /** LocationDetail */
+        LocationDetail: {
+            /** Audience */
+            audience: string;
+            /** Audience Groups */
+            audience_groups: string[];
+            /** Audience Tribe Group Ids */
+            audience_tribe_group_ids: number[];
+            /** Can Manage */
+            can_manage: boolean;
+            /** Changes */
+            changes: components["schemas"]["LocationChangeEntry"][];
+            /** Description */
+            description: string;
+            /** Fitting */
+            fitting: components["schemas"]["LocationModule"][];
+            /** Fitting Scanned At */
+            fitting_scanned_at: string | null;
+            /** Fleets */
+            fleets: boolean;
+            /** Freight */
+            freight: boolean;
+            /** Freighter Dock */
+            freighter_dock: boolean;
+            /** Good For */
+            good_for: string[];
+            /** Industry Orders */
+            industry_orders: number;
+            /** Is Structure */
+            is_structure: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Market */
+            market: boolean;
+            /** Name */
+            name: string;
+            /** Planner Facility */
+            planner_facility: string | null;
+            /** Prices */
+            prices: boolean;
+            /** Reinforce Hour */
+            reinforce_hour: number | null;
+            /** Rigs */
+            rigs: components["schemas"]["LocationModule"][];
+            /** Route Count */
+            route_count: number;
+            /** Security */
+            security: number | null;
+            /** Services */
+            services: string[];
+            /** Short Name */
+            short_name: string;
+            /** Solar System Id */
+            solar_system_id: number;
+            /** Solar System Name */
+            solar_system_name: string;
+            /** Staging */
+            staging: boolean;
+            /** Type Id */
+            type_id: number | null;
+            /** Type Name */
+            type_name: string;
+            you: components["schemas"]["LocationHolding"];
+        };
+        /** LocationDocked */
+        LocationDocked: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Listed */
+            listed: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
+        };
         /** LocationExpectationsResponse */
         LocationExpectationsResponse: {
             /** Expectations */
@@ -21120,12 +21464,154 @@ export interface components {
             /** Quantity */
             quantity: number;
         };
+        /** LocationFittingPaste */
+        LocationFittingPaste: {
+            /** Text */
+            text: string;
+        };
+        /** LocationHolding */
+        LocationHolding: {
+            /** Clones */
+            clones: number;
+            /** Items */
+            items: number;
+        };
+        /** LocationList */
+        LocationList: {
+            /** Can Add */
+            can_add: boolean;
+            /** Can Manage */
+            can_manage: boolean;
+            /** Locations */
+            locations: components["schemas"]["LocationCard"][];
+        };
+        /** LocationManage */
+        LocationManage: {
+            /** Attention */
+            attention: components["schemas"]["LocationAttention"][];
+            /** Locations */
+            locations: components["schemas"]["LocationManageRow"][];
+            /** Submissions */
+            submissions: components["schemas"]["LocationSubmissionRow"][];
+        };
+        /** LocationManageRow */
+        LocationManageRow: {
+            /** Audience */
+            audience: string;
+            /** Audience Groups */
+            audience_groups: string[];
+            /** Fleets */
+            fleets: boolean;
+            /** Freight */
+            freight: boolean;
+            /** Is Structure */
+            is_structure: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Market */
+            market: boolean;
+            /** Name */
+            name: string;
+            /** Price Baseline */
+            price_baseline: boolean;
+            /** Prices */
+            prices: boolean;
+            /** Short Name */
+            short_name: string;
+            /** Solar System Name */
+            solar_system_name: string;
+            /** Staging */
+            staging: boolean;
+            /** Type Id */
+            type_id: number | null;
+            /** Type Name */
+            type_name: string;
+        };
+        /** LocationMatch */
+        LocationMatch: {
+            /** Found With */
+            found_with: string;
+            /** Location Id */
+            location_id: number | null;
+            /** Name */
+            name: string;
+            /** Solar System Name */
+            solar_system_name: string;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Type Id */
+            type_id: number | null;
+            /** Type Name */
+            type_name: string;
+        };
+        /** LocationModule */
+        LocationModule: {
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: string;
+            /** Slot */
+            slot: string;
+        };
         /** LocationOption */
         LocationOption: {
             /** Location Id */
             location_id: number;
             /** Name */
             name: string;
+        };
+        /** LocationParseResult */
+        LocationParseResult: {
+            match: components["schemas"]["LocationMatch"];
+            /** Modules */
+            modules: components["schemas"]["LocationModule"][];
+            /** Name */
+            name: string;
+            /** Parts */
+            parts: string[];
+            /** Reinforce Hour */
+            reinforce_hour: number | null;
+            /** Solar System Name */
+            solar_system_name: string;
+            /** Type Id */
+            type_id: number | null;
+        };
+        /** LocationPaste */
+        LocationPaste: {
+            /** Text */
+            text: string;
+        };
+        /** LocationPatch */
+        LocationPatch: {
+            /** Audience */
+            audience?: string | null;
+            /** Audience Tribe Group Ids */
+            audience_tribe_group_ids?: number[] | null;
+            /**
+             * Clear Reinforce Hour
+             * @default false
+             */
+            clear_reinforce_hour?: boolean;
+            /** Description */
+            description?: string | null;
+            /** Fleets Active */
+            fleets_active?: boolean | null;
+            /** Freight Active */
+            freight_active?: boolean | null;
+            /** Good For */
+            good_for?: string[] | null;
+            /** Market Active */
+            market_active?: boolean | null;
+            /** Prices Active */
+            prices_active?: boolean | null;
+            /** Reinforce Hour */
+            reinforce_hour?: number | null;
+            /** Short Name */
+            short_name?: string | null;
         };
         /** LocationResponse */
         LocationResponse: {
@@ -21151,6 +21637,82 @@ export interface components {
             solar_system_name: string;
             /** Staging Active */
             staging_active: boolean;
+        };
+        /** LocationSubmissionRequest */
+        LocationSubmissionRequest: {
+            /**
+             * Audience
+             * @default alliance
+             */
+            audience?: string;
+            /**
+             * Audience Tribe Group Ids
+             * @default []
+             */
+            audience_tribe_group_ids?: number[];
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /**
+             * Good For
+             * @default []
+             */
+            good_for?: string[];
+            /**
+             * Id Source
+             * @default
+             */
+            id_source?: string;
+            /** Location Id */
+            location_id?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Paste Text
+             * @default
+             */
+            paste_text?: string;
+            /** Reinforce Hour */
+            reinforce_hour?: number | null;
+            /**
+             * Short Name
+             * @default
+             */
+            short_name?: string;
+            /** Type Id */
+            type_id?: number | null;
+        };
+        /** LocationSubmissionRow */
+        LocationSubmissionRow: {
+            /** Audience */
+            audience: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Good For */
+            good_for: string[];
+            /** Id */
+            id: number;
+            /** Location Id */
+            location_id: number | null;
+            /** Name */
+            name: string;
+            /** Rig Count */
+            rig_count: number;
+            /** Solar System Name */
+            solar_system_name: string;
+            /** Status */
+            status: string;
+            /** Submitted By */
+            submitted_by: string;
+            /** Type Id */
+            type_id: number | null;
+            /** Type Name */
+            type_name: string;
         };
         /**
          * LogAnalysis
@@ -51606,6 +52168,398 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    structures_location_router_list_locations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationList"];
+                };
+            };
+        };
+    };
+    structures_location_router_get_docked: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDocked"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_get_manage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationManage"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_post_parse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationPaste"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationParseResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_post_submission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationSubmissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationSubmissionRow"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_decline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationDecline"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationSubmissionRow"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_get_location: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetail"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_patch_location: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_post_fitting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationFittingPaste"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

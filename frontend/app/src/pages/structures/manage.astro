@@ -1,0 +1,163 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { StructureLocationManage } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { login_redirect, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { get_structure_manage } from '@helpers/api.minmatar.org/structure_locations'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return login_redirect(Astro)
+const gates = await get_gates(Astro)
+if (!can(gates, 'structures.locations.manage')) return HTTP_404_Not_Found()
+
+let overview: StructureLocationManage | null = null
+let overview_error: Error | null = null
+try {
+    overview = await get_structure_manage(auth_token)
+} catch (failure) {
+    overview_error = failure as Error
+}
+
+const page_title = t('structures.manage')
+const breadcrumbs = [
+    { page_title: t('structures.page_title'), accumulated_path: translatePath('/structures/') },
+    { page_title, accumulated_path: translatePath('/structures/manage/') },
+]
+const REVIEW = translatePath('/partials/structures_review_component/')
+const tick = (on: boolean) => on ? t('structures.on') : '—'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Button from '@components/blocks/Button.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+---
+
+<Viewport title={page_title} meta_description={t('structures.description')}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} fact={overview ? t('structures.manage_fact').replace('~COUNT', String(overview.submissions.length)) : undefined} />
+        </Flexblock>
+
+        {overview_error && <EmptyState title={t('structures.load_error')} hint={overview_error.message} />}
+
+        {overview &&
+            <>
+                <section class="[ structures-manage__section ]" aria-labelledby="structures-waiting">
+                    <h2 id="structures-waiting">{t('structures.waiting')}</h2>
+                    {overview.submissions.length === 0
+                        ? <EmptyState title={t('structures.waiting_empty')} />
+                        : (
+                            <ul class="[ structures-manage__list ]">
+                                {overview.submissions.map((row) => (
+                                    <li id={`structure-submission-${row.id}`}>
+                                        <div>
+                                            <b>{row.name}</b>
+                                            {!row.location_id && <span class="[ structures-manage__warn ]">{t('structures.no_id_yet')}</span>}
+                                            <small>{[row.type_name, row.location_id ? `ID ${row.location_id}` : '', t('structures.rig_count').replace('~COUNT', String(row.rig_count)), t(t_key('structures.audience.', row.audience)), row.submitted_by].filter(Boolean).join(' · ')}</small>
+                                        </div>
+                                        <div class="[ manage-actions ]">
+                                            <Button type="button" size="sm" color="green" hx-post={REVIEW} hx-vals={JSON.stringify({ id: row.id, action: 'approve' })} hx-target={`#structure-submission-${row.id}`} hx-swap="outerHTML" disabled={!row.location_id}>{t('structures.approve')}</Button>
+                                            <Button type="button" size="sm" color="transparent" hx-post={REVIEW} hx-vals={JSON.stringify({ id: row.id, action: 'decline' })} hx-target={`#structure-submission-${row.id}`} hx-swap="outerHTML">{t('structures.decline')}</Button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )
+                    }
+                </section>
+
+                {overview.attention.length > 0 &&
+                    <section class="[ structures-manage__section ]" aria-labelledby="structures-attention">
+                        <h2 id="structures-attention">{t('structures.attention')}</h2>
+                        <ul class="[ structures-manage__list ]">
+                            {overview.attention.map((item) => (
+                                <li>
+                                    <div><b>{item.title}</b><small>{item.detail}</small></div>
+                                    {item.location_id && <a href={translatePath(`/structures/${item.location_id}/#settings`)}>{t('structures.fix_it')}</a>}
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                }
+
+                <section class="[ structures-manage__section ]" aria-labelledby="structures-all">
+                    <h2 id="structures-all">{t('structures.all_locations')}</h2>
+                    <ManageTable
+                        caption={t('structures.all_locations')}
+                        columns={[
+                            { label: t('structures.col.location') },
+                            { label: t('structures.settings.flag_freight_active'), align: 'num' },
+                            { label: t('structures.settings.flag_fleets_active'), align: 'num' },
+                            { label: t('structures.settings.flag_market_active'), align: 'num' },
+                            { label: t('structures.settings.flag_prices_active'), align: 'num' },
+                            { label: t('structures.flag.staging'), align: 'num' },
+                            { label: t('structures.col.audience') },
+                        ]}
+                    >
+                        {overview.locations.map((row) => (
+                            <tr>
+                                <td><a href={translatePath(`/structures/${row.location_id}/`)}>{row.short_name}</a><small class="[ manage-muted ]"> {row.type_name}{row.price_baseline ? ` · ${t('structures.price_baseline')}` : ''}</small></td>
+                                <td class="num">{tick(row.freight)}</td>
+                                <td class="num">{tick(row.fleets)}</td>
+                                <td class="num">{tick(row.market)}</td>
+                                <td class="num">{tick(row.prices)}</td>
+                                <td class="num">{tick(row.staging)}</td>
+                                <td>{row.audience === 'groups' ? row.audience_groups.join(', ') : t(t_key('structures.audience.', row.audience))}</td>
+                            </tr>
+                        ))}
+                    </ManageTable>
+                </section>
+            </>
+        }
+    </Flexblock>
+</PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .structures-manage__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .structures-manage__list {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        background-color: var(--component-background);
+
+        :global(> li) {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-s);
+            padding: var(--space-xs) var(--space-m);
+            border-bottom: 1px solid var(--hairline-medium);
+        }
+
+        :global(b) {
+            color: var(--highlight);
+        }
+
+        :global(small) {
+            display: block;
+            color: var(--text-muted);
+        }
+    }
+
+    .structures-manage__warn {
+        margin-left: var(--space-2xs);
+        color: var(--attention);
+    }
+</style>

@@ -153,8 +153,10 @@ const page_title = product
 const viewport_title = product
     ? `${page_title} · ${t('industry.orders.planner.page_title')}`
     : t('industry.orders.planner.page_title')
-const default_facility = facilities[0]?.key ?? 'amamake'
-const default_refine = facilities[0]?.reprocessing?.refine_rate ?? 0
+// The structure browser's "Plan here" opens the planner on that structure.
+const facility_param = Astro.url.searchParams.get('facility') ?? ''
+const default_facility = facilities.find((facility) => facility.key === facility_param)?.key ?? facilities[0]?.key ?? 'amamake'
+const default_refine = (facilities.find((facility) => facility.key === default_facility) ?? facilities[0])?.reprocessing?.refine_rate ?? 0
 
 const order_code = order?.public_short_code ?? (order_id > 0 ? String(order_id) : null)
 const breadcrumbs = [
