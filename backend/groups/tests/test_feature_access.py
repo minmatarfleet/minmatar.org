@@ -102,6 +102,88 @@ class FeatureAccessTestCase(TestCase):
             "campaigns.view_campaign", get_user_permissions(user.id)
         )
 
+    def _freighters(self, *, chief=None, tribe_chief=None):
+        tribe = Tribe.objects.create(
+            name="Supply", slug="supply-freight", chief=tribe_chief
+        )
+        group = TribeGroup.objects.create(
+            tribe=tribe,
+            name="Freighters",
+            code="supply.freighters",
+            chief=chief,
+        )
+        feature = PilotFeature.objects.get(code="freight.manage")
+        feature.tribe_groups.set([group])
+        clear_feature_cache()
+        return group
+
+    def test_profile_lists_freight_manage_for_group_chief(self):
+        # The routes page still gates on this permission in legacy mode.
+        chief = User.objects.create_user(username="freighter_chief")
+        self._freighters(chief=chief)
+
+        self.assertFalse(chief.has_perm("freight.change_evefreightroute"))
+        self.assertIn(
+            "freight.change_evefreightroute", get_user_permissions(chief.id)
+        )
+        self.assertTrue(can_use_feature(chief, "freight.manage"))
+
+    def test_profile_lists_freight_manage_for_tribe_chief(self):
+        chief = User.objects.create_user(username="supply_chief")
+        self._freighters(tribe_chief=chief)
+
+        self.assertIn(
+            "freight.change_evefreightroute", get_user_permissions(chief.id)
+        )
+        self.assertTrue(can_use_feature(chief, "freight.manage"))
+
+    def test_profile_hides_freight_manage_from_members(self):
+        chief = User.objects.create_user(username="freighter_seat")
+        member = User.objects.create_user(username="freighter_member")
+        group = self._freighters(chief=chief)
+        TribeGroupMembership.objects.create(
+            user=member,
+            tribe_group=group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+
+        self.assertNotIn(
+            "freight.change_evefreightroute", get_user_permissions(member.id)
+        )
+        self.assertFalse(can_use_feature(member, "freight.manage"))
+
+    def test_profile_hides_freight_manage_when_chief_on_leave(self):
+        chief = User.objects.create_user(username="freighter_leave")
+        self._freighters(chief=chief)
+        UserCommunityStatus.objects.create(
+            user=chief, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+
+        self.assertNotIn(
+            "freight.change_evefreightroute", get_user_permissions(chief.id)
+        )
+        self.assertFalse(can_use_feature(chief, "freight.manage"))
+
+    def test_profile_does_not_bridge_other_tribe_membership_screens(self):
+        user = User.objects.create_user(username="miner_member")
+        tribe = Tribe.objects.create(name="Supply Mining", slug="supply-m")
+        group = TribeGroup.objects.create(
+            tribe=tribe, name="Mining", code="supply.mining"
+        )
+        feature = PilotFeature.objects.get(code="buyback.manage")
+        feature.tribe_groups.set([group])
+        clear_feature_cache()
+        TribeGroupMembership.objects.create(
+            user=user,
+            tribe_group=group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+
+        self.assertNotIn(
+            "buyback.change_evebuybacksettings",
+            get_user_permissions(user.id),
+        )
+
     def test_denied_without_scope_or_legacy(self):
         user = User.objects.create_user(username="denied_user")
         feature = PilotFeature.objects.get(code="fleets.create")
