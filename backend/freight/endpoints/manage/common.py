@@ -1,7 +1,8 @@
 """Shared schemas and checks for the freight route editor.
 
-Access is the ``freight.manage`` feature (legacy permission
-``freight.change_evefreightroute``).
+Access is the ``freight.manage`` feature: chief of the Freighters
+group or of its tribe. The legacy permission
+``freight.change_evefreightroute`` still grants it.
 """
 
 from typing import Optional

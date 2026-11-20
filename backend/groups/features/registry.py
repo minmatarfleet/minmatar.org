@@ -312,8 +312,11 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
     "freight.manage": FeatureDefinition(
         code="freight.manage",
         label="Manage freight routes",
-        scope=FeatureScope.TRIBE_MEMBERSHIP,
-        description="Add, edit and retire freight routes and their pricing.",
+        scope=FeatureScope.TRIBE_CHIEF,
+        description=(
+            "Add, edit and retire freight routes and their pricing. "
+            "Held by the Freighters chief and that tribe's chief."
+        ),
         legacy_permission="freight.change_evefreightroute",
         default_tribe_group_codes=_tribe_codes("supply.freighters"),
     ),

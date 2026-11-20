@@ -513,6 +513,39 @@ def get_user_feature_codes(user) -> list[str]:
         _batch_memo.reset(token)
 
 
+# Site pages for these tribe-chief features still read the legacy
+# permission list. A chief of a wired group, or of its tribe, may already
+# use the API; listing the permission opens the page while
+# FRONTEND_GATE_SOURCE is legacy.
+_PROFILE_BRIDGE_CODES = frozenset({"freight.manage"})
+
+
+def _status_blocks(feature: _FeatureSnapshot, status: str | None) -> bool:
+    return bool(status and status in feature.deny_community_statuses)
+
+
+def _chief_bridged_permissions(user, status, features) -> set[str]:
+    """Legacy permissions for tribe-chief features this user leads."""
+    bridged = []
+    for code in _PROFILE_BRIDGE_CODES:
+        feature = features.get(code)
+        if feature is None or not feature.legacy_permission:
+            continue
+        if feature.scope != FeatureScope.TRIBE_CHIEF:
+            continue
+        if _status_blocks(feature, status):
+            continue
+        bridged.append(feature)
+    if not bridged:
+        return set()
+    chief_ids = _chief_tribe_group_ids(user)
+    return {
+        feature.legacy_permission
+        for feature in bridged
+        if chief_ids & feature.tribe_group_ids
+    }
+
+
 def legacy_permissions_for_profile(user) -> set[str]:
     """Permission strings the site profile should list for feature wiring.
 
@@ -521,7 +554,8 @@ def legacy_permissions_for_profile(user) -> set[str]:
     ``campaigns.view`` do not assign those permissions on auth groups, so a
     wired member 403s on the page even though ``can_use_feature`` would
     allow the API. Return the feature's ``legacy_permission`` when
-    affiliation scope passes.
+    affiliation scope passes, and for ``_PROFILE_BRIDGE_CODES`` when the
+    user leads a wired tribe group.
     """
     if (
         user is None
@@ -531,21 +565,21 @@ def legacy_permissions_for_profile(user) -> set[str]:
     ):
         return set()
 
-    affiliation = user_affiliation(user)
-    if affiliation is None:
-        return set()
     status = user_community_status(user)
+    features = _load_feature_cache()
     granted: set[str] = set()
-    for feature in _load_feature_cache().values():
-        if (
-            feature.scope != FeatureScope.AFFILIATION
-            or not feature.legacy_permission
-        ):
-            continue
-        if status and status in feature.deny_community_statuses:
-            continue
-        if affiliation.pk in feature.affiliation_ids:
-            granted.add(feature.legacy_permission)
+    affiliation = user_affiliation(user)
+    if affiliation is not None:
+        for feature in features.values():
+            if (
+                feature.scope != FeatureScope.AFFILIATION
+                or not feature.legacy_permission
+                or _status_blocks(feature, status)
+            ):
+                continue
+            if affiliation.pk in feature.affiliation_ids:
+                granted.add(feature.legacy_permission)
+    granted.update(_chief_bridged_permissions(user, status, features))
     return granted
 
 
