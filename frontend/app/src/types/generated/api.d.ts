@@ -2092,6 +2092,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/esi-health/corporations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every alliance corporation's ESI problems */
+        get: operations["esi_health_router_get_corporations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/esi-health/corporations/{corporation_id}/director-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether a corporation's director token reads everything */
+        get: operations["esi_health_router_get_director_token"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/esi-health/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Message pilots on Discord to re-add their characters */
+        post: operations["esi_health_router_post_messages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/esi-health/pilots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pilots with characters to re-add */
+        get: operations["esi_health_router_get_pilots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/esi-health/scopes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scopes added to a group, and how hard we ask for them */
+        get: operations["esi_health_router_get_scopes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/esi-health/scopes/{rollout_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change how hard we ask for a scope change */
+        patch: operations["esi_health_router_patch_scope"];
+        trace?: never;
+    };
     "/api/eveonline/assets/ships": {
         parameters: {
             query?: never;
@@ -13777,6 +13879,35 @@ export interface components {
              */
             url?: string;
         };
+        /** CorporationHealthResponse */
+        CorporationHealthResponse: {
+            /** Active User Ids */
+            active_user_ids: number[];
+            /** Corporation Id */
+            corporation_id: number;
+            /** Director Complete */
+            director_complete: number;
+            /** Director Holders */
+            director_holders: number;
+            /** Director State */
+            director_state: string;
+            /** Last Messaged */
+            last_messaged?: string | null;
+            /** Members */
+            members: number;
+            /** Name */
+            name: string;
+            /** Needs Readd */
+            needs_readd: number;
+            /** Pilots Active */
+            pilots_active: number;
+            /** Pilots On Leave */
+            pilots_on_leave: number;
+            /** Ticker */
+            ticker: string;
+            /** Unlinked */
+            unlinked: number;
+        };
         /** CorporationHealthRow */
         CorporationHealthRow: {
             /** Active 90D */
@@ -14030,6 +14161,11 @@ export interface components {
             kills_90d?: number;
             /** Last Fleet At */
             last_fleet_at?: string | null;
+            /**
+             * Needs Readd
+             * @default false
+             */
+            needs_readd?: boolean;
             /** Person Fleets 90D */
             person_fleets_90d?: number | null;
             /** Primary Character Id */
@@ -15297,6 +15433,31 @@ export interface components {
             opted_in: number;
             /** Weekday */
             weekday: number;
+        };
+        /** DirectorHolderResponse */
+        DirectorHolderResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Is You
+             * @default false
+             */
+            is_you?: boolean;
+            /** Missing */
+            missing: number;
+        };
+        /** DirectorTokenResponse */
+        DirectorTokenResponse: {
+            /** Holders */
+            holders: components["schemas"]["DirectorHolderResponse"][];
+            /** Missing Labels */
+            missing_labels: string[];
+            /** Missing Scopes */
+            missing_scopes: string[];
+            /** State */
+            state: string;
         };
         /** DiscordAckLoyaltyMarketOrderRequest */
         DiscordAckLoyaltyMarketOrderRequest: {
@@ -22948,6 +23109,27 @@ export interface components {
             /** Zones */
             zones: components["schemas"]["MetricsZoneSchema"][];
         };
+        /** MessageRequest */
+        MessageRequest: {
+            /**
+             * User Ids
+             * @default []
+             */
+            user_ids?: number[];
+        };
+        /** MessageResponse */
+        MessageResponse: {
+            /** No Discord */
+            no_discord: number;
+            /** Nothing To Fix */
+            nothing_to_fix: number;
+            /** On Leave */
+            on_leave: number;
+            /** Recently Messaged */
+            recently_messaged: number;
+            /** Sent */
+            sent: number;
+        };
         /** MetricsImpactSchema */
         MetricsImpactSchema: {
             /** Measures */
@@ -24378,6 +24560,37 @@ export interface components {
             kind: string;
             /** Total */
             total: number;
+        };
+        /** PilotHealthResponse */
+        PilotHealthResponse: {
+            /** Characters */
+            characters: string[];
+            /** Community Status */
+            community_status: string;
+            /** Corporation Ticker */
+            corporation_ticker: string;
+            /** Discord Linked */
+            discord_linked: boolean;
+            /** Last Messaged */
+            last_messaged?: string | null;
+            /** Main Character Id */
+            main_character_id?: number | null;
+            /** Main Character Name */
+            main_character_name: string;
+            /** Main Needs Readd */
+            main_needs_readd: boolean;
+            /** Next Message At */
+            next_message_at?: string | null;
+            /** On Leave */
+            on_leave: boolean;
+            /** Scope Groups */
+            scope_groups: string[];
+            /** Task Opened At */
+            task_opened_at?: string | null;
+            /** User Id */
+            user_id: number;
+            /** Username */
+            username: string;
         };
         /** PlanCharacterResponse */
         PlanCharacterResponse: {
@@ -27502,6 +27715,38 @@ export interface components {
              * Format: date
              */
             slot_date: string;
+        };
+        /** ScopeRolloutPatch */
+        ScopeRolloutPatch: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "none" | "suggest" | "require";
+        };
+        /** ScopeRolloutResponse */
+        ScopeRolloutResponse: {
+            /**
+             * Added On
+             * Format: date
+             */
+            added_on: string;
+            /** Id */
+            id: number;
+            /** Label */
+            label: string;
+            /** Mode */
+            mode: string;
+            /** Scope */
+            scope: string;
+            /** Scope Group */
+            scope_group: string;
+            /** Total */
+            total: number;
+            /** Unit */
+            unit: string;
+            /** Updated */
+            updated: number;
         };
         /** ScoutClickRequest */
         ScoutClickRequest: {
@@ -36022,6 +36267,219 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    esi_health_router_get_corporations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationHealthResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    esi_health_router_get_director_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorTokenResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    esi_health_router_post_messages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    esi_health_router_get_pilots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotHealthResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    esi_health_router_get_scopes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeRolloutResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    esi_health_router_patch_scope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rollout_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScopeRolloutPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeRolloutResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

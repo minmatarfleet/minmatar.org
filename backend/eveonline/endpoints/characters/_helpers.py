@@ -105,6 +105,22 @@ def can_manage_tags(user: User, character: EveCharacter) -> bool:
     return False
 
 
+def outdated_rollouts(char: EveCharacter) -> list:
+    """Scope changes ESI health asks for that this working token lacks."""
+    # pylint: disable=import-outside-toplevel
+    from esi_health.services import (
+        asked_rollouts,
+        missing_rollouts,
+        token_scopes,
+    )
+
+    rollouts = asked_rollouts()
+    if not rollouts or not char.token_id:
+        return []
+    scopes = token_scopes([char.token_id]).get(char.token_id, set())
+    return missing_rollouts(char, scopes, rollouts)
+
+
 def is_primary(char: EveCharacter, primary: EveCharacter | None) -> bool:
     return bool(primary and char == primary)
 
@@ -158,11 +174,15 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
             item.flags.append("NO_TOKEN_LEVEL")
         if level:
             item.esi_token = token_type_str(level)
-            if char.esi_suspended:
+            # A token deleted outside the refresh path leaves no flag;
+            # either way the pilot has to log in again.
+            if char.esi_suspended or char.token_id is None:
                 item.token_status = "SUSPENDED"
                 item.flags.append("ESI_SUSPENDED")
             else:
                 item.token_status = "ACTIVE"
+                if outdated_rollouts(char):
+                    item.flags.append("SCOPES_OUTDATED")
     except Exception as e:
         logger.error(
             "Error enriching character %s, %s", char.character_name, e

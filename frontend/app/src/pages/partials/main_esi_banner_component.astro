@@ -1,0 +1,105 @@
+---
+// no-error-refetch: an optional banner; a failed fetch renders nothing.
+/**
+ * The fleet pages' banner when we can't read the pilot's main from EVE:
+ * fleet sign-ups, SRP and doctrine checks use it. One click goes to EVE's
+ * login for the main, asking for the access it had. Hiding it lasts a week
+ * in this browser. Renders nothing when the main is fine.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { get_account_characters } from '@helpers/fetching/characters'
+import { get_public_api_url, get_app_url } from '@helpers/env'
+import { account_user_id_query } from '@helpers/account_user_query'
+import { get_player_icon } from '@helpers/eve_image_server'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+const { auth_token } = get_request_user(Astro)
+let main: SummaryCharacter | null = null
+if (auth_token) {
+    try {
+        const summary = await get_account_characters(auth_token)
+        main = (summary.characters ?? []).find((pilot) => pilot.is_primary && pilot.token_status === 'SUSPENDED') ?? null
+    } catch {
+        main = null
+    }
+}
+const readd_url = main
+    ? `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/fleets/upcoming/')}${account_user_id_query(auth_token)}&character_id=${main.character_id}`
+    : ''
+
+import Button from '@components/blocks/Button.astro'
+---
+
+{main
+    ? (
+        <section
+            id="main-esi-banner"
+            class="[ main-esi ]"
+            role="note"
+            x-data="{ hidden_until: $persist(0).as('main_esi_banner_hidden_until') }"
+            x-show="Date.now() > hidden_until"
+        >
+            <img src={get_player_icon(main.character_id, 64)} alt="" width="44" height="44" />
+            <div class="[ main-esi__text ]">
+                <b>{t('main_esi_banner.title').replace('~NAME', main.character_name)}</b>
+                <span>{t('main_esi_banner.body')}</span>
+            </div>
+            <div class="[ main-esi__actions ]">
+                <Button size="sm" href={readd_url}>{t('account.readd_one').replace('~NAME', main.character_name)}</Button>
+                <button
+                    type="button"
+                    class="[ main-esi__hide ]"
+                    aria-label={t('main_esi_banner.hide')}
+                    x-on:click="hidden_until = Date.now() + 7 * 86400000"
+                >×</button>
+            </div>
+        </section>
+    )
+    : <div id="main-esi-banner"></div>
+}
+
+<style lang="scss">
+    .main-esi {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        background-color: color-mix(in srgb, var(--security-status-point-4) 10%, transparent);
+        border: 1px solid color-mix(in srgb, var(--security-status-point-4) 55%, transparent);
+    }
+
+    .main-esi__text {
+        display: flex;
+        flex: 1 1 20rem;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .main-esi__actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .main-esi__hide {
+        min-width: 44px;
+        min-height: 44px;
+        border: 0;
+        background: none;
+        color: var(--text-muted);
+        font-size: var(--step-1);
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+        }
+    }
+</style>

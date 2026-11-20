@@ -1,0 +1,169 @@
+---
+/**
+ * Account › Characters: the characters EVE stopped letting us read, as one
+ * block above the list. The main gets its own row and button; the alts
+ * share one row, re-added one EVE login after another.
+ *
+ * Each button goes straight to EVE's login for that character. The API asks
+ * for the access the character had before (the add endpoint reads it from
+ * the character), so there is nothing to pick.
+ *
+ * `readd=alts` (set on the way back from EVE, and by the Re-add alts task)
+ * walks the alts: the block offers the next one until none are left.
+ */
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    pilots:     SummaryCharacter[];
+    /** `readd` from the page URL: a character id, or "alts". */
+    readd?:     string | null;
+}
+
+const {
+    pilots,
+    readd = null,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_public_api_url, get_app_url } from '@helpers/env'
+import { account_user_id_query } from '@helpers/account_user_query'
+import { get_request_user } from '@helpers/request_user'
+import { get_player_icon } from '@helpers/eve_image_server'
+
+const broken = pilots.filter((pilot) => pilot.token_status === 'SUSPENDED')
+const main = broken.find((pilot) => pilot.is_primary) ?? null
+const alts = broken.filter((pilot) => !pilot.is_primary)
+const walking = readd === 'alts' && alts.length > 0
+const next_alt = alts[0] ?? null
+
+const account_user_query = account_user_id_query(get_request_user(Astro).auth_token)
+const readd_url = (character_id: number, back: string) =>
+    `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath(back)}${account_user_query}&character_id=${character_id}`
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+{broken.length > 0 &&
+    <ComponentBlock class="[ esi-readd ]" id="esi-readd">
+        <div class="[ esi-readd__head ]">
+            <h2>
+                {broken.length === 1
+                    ? t('account.readd_title_one')
+                    : t('account.readd_title').replace('~COUNT', String(broken.length))}
+            </h2>
+            <small>{t('account.readd_hint')}</small>
+        </div>
+
+        {main &&
+            <div class="[ esi-readd__row ]">
+                <img src={get_player_icon(main.character_id, 64)} alt="" width="48" height="48" />
+                <div class="[ esi-readd__text ]">
+                    <b>{main.character_name} <span class="[ esi-readd__main ]">{t('account.main_tag')}</span></b>
+                    <small>{t('account.readd_main_hint')}</small>
+                </div>
+                <Button size="sm" href={readd_url(main.character_id, '/account/')}>
+                    {t('account.readd_one').replace('~NAME', main.character_name)}
+                </Button>
+            </div>
+        }
+
+        {next_alt &&
+            <div class="[ esi-readd__row ]">
+                {alts.length === 1
+                    ? <img src={get_player_icon(next_alt.character_id, 64)} alt="" width="48" height="48" />
+                    : (
+                        <div class="[ esi-readd__stack ]" aria-hidden="true">
+                            {alts.slice(0, 4).map((alt) => <img src={get_player_icon(alt.character_id, 32)} alt="" width="23" height="23" />)}
+                        </div>
+                    )
+                }
+                <div class="[ esi-readd__text ]">
+                    <b>
+                        {alts.length === 1
+                            ? next_alt.character_name
+                            : (walking
+                                ? t('account.readd_alts_left').replace('~COUNT', String(alts.length))
+                                : t('account.readd_alts').replace('~COUNT', String(alts.length)))}
+                    </b>
+                    <small>
+                        {alts.length === 1
+                            ? t('account.readd_alt_hint')
+                            : alts.map((alt) => alt.character_name).join(', ')}
+                    </small>
+                </div>
+                <Button
+                    size="sm"
+                    color={main ? 'transparent' : 'fleet-red'}
+                    href={readd_url(next_alt.character_id, alts.length > 1 ? '/account/?readd=alts' : '/account/')}
+                >
+                    {alts.length === 1
+                        ? t('account.readd_one').replace('~NAME', next_alt.character_name)
+                        : (walking
+                            ? t('account.readd_next').replace('~NAME', next_alt.character_name)
+                            : t('account.readd_all').replace('~COUNT', String(alts.length)))}
+                </Button>
+            </div>
+        }
+    </ComponentBlock>
+}
+
+<style lang="scss">
+    .esi-readd {
+        border-color: color-mix(in srgb, var(--security-status-point-4) 55%, transparent);
+    }
+
+    .esi-readd__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-xs);
+        margin-block-end: var(--space-xs);
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .esi-readd__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-xs);
+        border-block-start: 1px solid var(--hairline-medium);
+    }
+
+    .esi-readd__text {
+        display: flex;
+        flex: 1 1 16rem;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .esi-readd__main {
+        margin-inline-start: var(--space-2xs);
+        padding: 0 var(--space-3xs);
+        border: 1px solid var(--fleet-yellow);
+        color: var(--fleet-yellow);
+        font-size: var(--step--2);
+        font-weight: normal;
+    }
+
+    .esi-readd__stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        width: 48px;
+    }
+</style>

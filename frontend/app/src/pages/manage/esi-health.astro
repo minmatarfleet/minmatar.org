@@ -1,0 +1,108 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { get_esi_health_pilots } from '@helpers/api.minmatar.org/esi_health'
+import type { EsiHealthPilot } from '@dtypes/api.minmatar.org'
+import { message_ready, message_preview } from '@helpers/esi_health'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return login_redirect(Astro)
+if (!can(await get_gates(Astro), 'esi_health.manage')) return HTTP_403_Forbidden()
+
+const page_title = t('esi_health.page_title')
+
+// The header's Message pilots states who it reaches, in numbers.
+let pilots: EsiHealthPilot[] = []
+try {
+    pilots = await get_esi_health_pilots(auth_token)
+} catch {
+    pilots = []
+}
+const ready = pilots.filter((pilot) => message_ready(pilot))
+// On Leave, no Discord, or messaged this week.
+const skipped = pilots.length - ready.length
+const preview = ready[0] ? message_preview(t, user.username, ready[0]) : null
+
+// Tabs follow SectionTabs: /manage/esi-health/#pilots opens that tab.
+const panels = [
+    { id: 'corporations', partial: '/partials/esi_health_component/?part=corporations' },
+    { id: 'pilots', partial: '/partials/esi_health_component/?part=pilots' },
+    { id: 'scopes', partial: '/partials/esi_health_component/?part=scopes' },
+]
+const tabs = panels.map((panel) => ({ id: panel.id, label: t(t_key('esi_health.tab_', panel.id)) }))
+
+const breadcrumbs = [
+    { page_title: t('manage.page_title'), accumulated_path: translatePath('/manage/') },
+    { page_title: page_title, accumulated_path: translatePath('/manage/esi-health/') },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import Button from '@components/blocks/Button.astro'
+import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+import EsiMessagePreview from '@components/blocks/esi_health/EsiMessagePreview.astro'
+---
+
+<Viewport title={page_title} meta_description={t('esi_health.description')}>
+<PageLanding wide={true} lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-m)">
+            <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
+            <ManageHero title={page_title} role={t('esi_health.role')} fact={t('esi_health.fact')}>
+                <Fragment slot="actions">
+                    <Button color="transparent" href={translatePath('/manage/')}>{t('esi_health.back')}</Button>
+                    {ready.length > 0 &&
+                        <ConfirmAction
+                            label={t('esi_health.message_pilots')}
+                            title={t('esi_health.message_title').replace('~COUNT', String(ready.length))}
+                            consequence=""
+                            confirm_label={t('esi_health.message_confirm').replace('~COUNT', String(ready.length))}
+                            url={translatePath('/partials/esi_health_component/?part=message')}
+                            target="#esi-health-message-result"
+                            swap="innerHTML"
+                            color="fleet-red"
+                            size="lg"
+                        >
+                            <Fragment slot="consequence">
+                                {t('esi_health.message_consequence').replace('~COUNT', String(ready.length))}
+                                {skipped > 0 && ` ${t('esi_health.message_consequence_skipped').replace('~COUNT', String(skipped))}`}
+                                {preview && <EsiMessagePreview preview={preview} />}
+                                <small class="[ esi-note ]">{t('esi_health.message_limits')}</small>
+                            </Fragment>
+                        </ConfirmAction>
+                    }
+                </Fragment>
+            </ManageHero>
+            <div id="esi-health-message-result" aria-live="polite"></div>
+        </Flexblock>
+
+        <SectionTabs aria_label={t('esi_health.tabs_label')} id_prefix="esi-health" tabs={tabs}>
+            {panels.map((panel, index) =>
+                <SectionTabPanel id={panel.id} id_prefix="esi-health" is_default={index === 0}>
+                    <LazyPartial url={translatePath(panel.partial)} trigger="reveal" swap="outerHTML">
+                        <p class="[ loading ]">{t('loading')}</p>
+                    </LazyPartial>
+                </SectionTabPanel>
+            )}
+        </SectionTabs>
+    </Flexblock>
+</PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .esi-note {
+        display: block;
+        margin-block-start: var(--space-s);
+        color: var(--text-muted);
+    }
+</style>

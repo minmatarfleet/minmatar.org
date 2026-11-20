@@ -662,6 +662,8 @@ export interface CorporationMemberDetails {
     registered:             boolean;
     exempt:                 boolean;
     esi_suspended:          boolean;
+    // The owner has to log in again; absent from older APIs.
+    needs_readd?:           boolean;
     token_count:            number;
     token_level:            string;
     fleets_90d:             number;
@@ -3358,3 +3360,11 @@ export type TaskPreferences = ApiResponse<'TaskPreferencesResponse'>
 export type TaskPreferencesPatch = ApiRequest<'TaskPreferencesPatch'>
 export type TaskDigest = ApiResponse<'DigestSettingsResponse'>
 export type TaskDigestPatch = ApiRequest<'DigestSettingsPatch'>
+
+// ESI health (Manage › ESI health, and a corporation's director token)
+export type EsiHealthCorporation = ApiResponse<'CorporationHealthResponse'>
+export type EsiHealthPilot = ApiResponse<'PilotHealthResponse'>
+export type EsiScopeRollout = ApiResponse<'ScopeRolloutResponse'>
+export type EsiScopeRolloutPatch = ApiRequest<'ScopeRolloutPatch'>
+export type EsiMessageResult = ApiResponse<'MessageResponse'>
+export type DirectorToken = ApiResponse<'DirectorTokenResponse'>

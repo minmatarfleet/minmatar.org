@@ -1,0 +1,39 @@
+---
+/**
+ * The Discord message a superuser is about to send, as one pilot will see
+ * it. Shown in the Message pilots confirm and an open Pilots row.
+ */
+import type { EsiMessagePreviewText } from '@helpers/esi_health'
+
+interface Props {
+    preview:    EsiMessagePreviewText;
+}
+
+const { preview } = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+---
+
+<span class="[ esi-preview ]">
+    <small class="[ manage-eyebrow ]">{preview.who}</small>
+    <b>{preview.title}</b>
+    <span>{preview.body}</span>
+    <a href={translatePath('/tasks/')}>{t('esi_health.preview_link')}</a>
+</span>
+
+<style lang="scss">
+    .esi-preview {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin-block-start: var(--space-s);
+        padding: var(--space-s) var(--space-m);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline-strong);
+
+        b {
+            color: var(--highlight);
+        }
+    }
+</style>

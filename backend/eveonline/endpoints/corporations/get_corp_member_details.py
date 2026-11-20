@@ -8,6 +8,7 @@ from ninja import Router
 from alliance.models import AllianceHealthSnapshot
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from esi_health.services import needs_readd
 from eveonline.endpoints.corporations.schemas import (
     CorporationMemberAccess,
     CorporationMemberDetails,
@@ -153,6 +154,7 @@ def member_details(
             esi_suspended=character.esi_suspended,
             exempt=character.exempt,
             registered=bool(character.token_id),
+            needs_readd=needs_readd(character),
             token_count=character.token_count,
             token_level=character.esi_token_level or "",
             fleets_90d=metrics.get("fleets_90d", 0),
@@ -270,6 +272,7 @@ def _person_row(group: list[CorporationMemberDetails]):
         registered=any(row.registered for row in group),
         exempt=identity.exempt if identity else False,
         esi_suspended=identity.esi_suspended if identity else False,
+        needs_readd=any(row.needs_readd for row in group),
         token_count=sum(row.token_count for row in group),
         token_level=identity.token_level if identity else "",
         # A fleet two alts sat in counts once for the person.

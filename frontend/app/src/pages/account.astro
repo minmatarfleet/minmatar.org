@@ -75,6 +75,8 @@ try {
 }
 
 const main_character = pilots.find((pilot) => pilot.is_primary) ?? null
+// Characters to re-add have their own block (EsiReaddBlock).
+const other_character_errors = character_errors.filter((character_error) => character_error.error !== 'ESI_SUSPENDED')
 const has_notifications = can_use_push_notifications || notification_features.length > 0
 
 // Tabs follow SectionTabs: /account/#notifications opens that tab.
@@ -134,6 +136,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CharacterErrors from '@components/blocks/CharacterErrors.astro'
+import EsiReaddBlock from '@components/blocks/EsiReaddBlock.astro'
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -198,8 +201,9 @@ const page_title = t('account.page_title');
             >
                 <SectionTabPanel id="characters" id_prefix="account" is_default={true}>
                     <Context gap='var(--space-l)'>
-                        {character_errors.length > 0 &&
-                            <CharacterErrors character_errors={character_errors} />
+                        <EsiReaddBlock pilots={pilots} readd={Astro.url.searchParams.get('readd')} />
+                        {other_character_errors.length > 0 &&
+                            <CharacterErrors character_errors={other_character_errors} />
                         }
 
                         <ComponentBlock

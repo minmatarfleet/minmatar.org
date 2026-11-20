@@ -119,6 +119,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'industry.loyalty.settings': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('industry.change_industryloyaltypoint'),
     'buyback.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('buyback.change_evebuybacksettings'),
     'freight.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('freight.change_evefreightroute'),
+    'esi_health.manage': (is_superuser) => is_superuser,
     'site.debug_pages': (is_superuser) => is_superuser,
     'characters.lookup': (is_superuser) => is_superuser,
     // PageFinder / PageBreadcrumbs: `if (user && user?.is_superuser)` showed every page.
