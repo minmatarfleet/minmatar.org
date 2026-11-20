@@ -262,6 +262,7 @@ Still open the PR.
   `pipenv run python manage.py test … --settings=app.settings_test` from
   `backend/`. Frontend: `npm run check` / `npm run test` when UI changes.
 - Always include the §4 skill/learnings edits in the same PR.
+- Edit `.claude/skills/help-ticket-investigation/`, then run `python3 scripts/sync_agent_config.py`. `.cursor/skills/` is generated. A hand edit there fails `test_cursor_config_is_generated_from_claude`.
 - Open the PR (summary + test plan). Skill-only is fine for 1 and 3.
 - Do not end the run without a PR URL.
 
@@ -310,8 +311,8 @@ rots, delete it.
 ### 4d. Commit and open the PR
 
 Same branch as the product fix (or skill-only if there was no fix).
-Include `SKILL.md` and `learnings.md`. Then open the PR. The run is not
-done until that PR exists.
+Include the `.claude/skills/` edits and the synced `.cursor/skills/`
+copies. Then open the PR. The run is not done until that PR exists.
 
 ---
 

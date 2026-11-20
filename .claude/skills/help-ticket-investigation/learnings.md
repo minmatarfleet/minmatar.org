@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-20 — Academy recruitment page shows no ship/doctrine check
+
+**Category:** pulse.technology
+**Verdict:** clarify, plus needs-decision on the written question
+**Discord:** no reply (test-guild bot 403s the production help thread)
+**PR:** skill-only
+**Symptom vs cause:** The academy recruitment page does not show which doctrine ships an applicant can fly, and other corps do. The automatic check is `CorporationRequirement` rows. The academy has none, so the Apply tab is interview topics only. Corps with `ships` rules show the check. Directors add rules under Settings. The written doctrine-ships question on the shared application form was left off the academy form on purpose.
+**Durable rule:** Compare `CorporationRequirement` rows before calling the skill check disabled. The written question is a separate, intentional academy-form gap.
+**Skill update:** added the L3ARN recruitment skill-check row, and the note to edit `.claude/skills/` then sync.
+
 ## 2026-11-14 — Open technology threads (batch, Discord MCP on production)
 
 **Category:** pulse.technology
