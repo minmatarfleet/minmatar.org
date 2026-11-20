@@ -122,7 +122,7 @@ def _location_details(location_ids):
         return {}
     return {
         loc.location_id: loc
-        for loc in EveLocation.objects.filter(location_id__in=location_ids)
+        for loc in EveLocation.all_objects.filter(location_id__in=location_ids)
     }
 
 

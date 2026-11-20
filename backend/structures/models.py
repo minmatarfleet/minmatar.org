@@ -253,6 +253,8 @@ class LocationChange(models.Model):
         ("details", "Details"),
         ("audience", "Audience"),
         ("flags", "Site settings"),
+        ("retired", "Retired"),
+        ("restored", "Added back"),
     )
 
     location = models.ForeignKey(

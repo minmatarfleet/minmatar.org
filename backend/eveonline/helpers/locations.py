@@ -20,7 +20,7 @@ def resolve_location_name(
     if not location_id:
         return ""
 
-    location = EveLocation.objects.filter(location_id=location_id).first()
+    location = EveLocation.all_objects.filter(location_id=location_id).first()
     if location:
         return location.location_name
 

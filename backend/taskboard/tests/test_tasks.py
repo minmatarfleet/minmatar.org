@@ -1,13 +1,14 @@
 import json
 from datetime import timedelta
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission, User
 from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import auth_headers
 from applications.models import EveCorporationApplication
+from discord.testing import without_discord_group_sync
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -520,6 +521,41 @@ class TasksApiTestCase(TestCase):
         self.assertEqual(
             404, self.get("/teams/corporation/98000002", self.root).status_code
         )
+
+    def test_alliance_members_do_not_see_application_review_tasks(self):
+        with without_discord_group_sync():
+            self._alliance_members_do_not_see_application_review_tasks()
+
+    def _alliance_members_do_not_see_application_review_tasks(self):
+        alliance = Group.objects.create(name="Alliance")
+        alliance.permissions.set(
+            Permission.objects.filter(
+                content_type__app_label="applications",
+                codename__in=[
+                    "view_evecorporationapplication",
+                    "change_evecorporationapplication",
+                ],
+            )
+        )
+        member = make_pilot("Member", 9102)
+        member.groups.add(alliance)
+        EveCorporation.objects.create(
+            corporation_id=98726134, name="Rattini Tribe"
+        )
+        EveCorporationApplication.objects.create(
+            corporation_id=98726134, user=self.pilot, description="Hi"
+        )
+        sync.sync_rule(RULES["review_applications"])
+        title = "Review 1 application to Rattini Tribe"
+        grabbed = [row["title"] for row in my_tasks(member)["up_for_grabs"]]
+        self.assertNotIn(title, grabbed)
+
+        recruiter_group = Group.objects.create(name="Corp L3ARN Recruiter")
+        recruiter_group.permissions.set(alliance.permissions.all())
+        recruiter = make_pilot("Recruiter", 9103)
+        recruiter.groups.add(alliance, recruiter_group)
+        grabbed = [row["title"] for row in my_tasks(recruiter)["up_for_grabs"]]
+        self.assertIn(title, grabbed)
 
     def test_admins_get_application_tasks_only_where_they_lead(self):
         membership = Membership(self.root)

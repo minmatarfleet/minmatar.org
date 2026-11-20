@@ -14,7 +14,9 @@ def resolve_location_names(location_ids):
         return {}
 
     names = {}
-    for location in EveLocation.objects.filter(location_id__in=location_ids):
+    for location in EveLocation.all_objects.filter(
+        location_id__in=location_ids
+    ):
         if location.short_name:
             names[location.location_id] = location.short_name
 
