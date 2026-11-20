@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-20 — Mentor class rejects a tribe member (group name vs code)
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** no reply (test-guild bot 403s the production help thread)
+**PR:** fix+skill
+**Symptom vs cause:** A published mentor class required a tribe group, and an active member still saw the class locked. The stored value was the group's display name. The check queried `tribe_group.code` only, so the name never matched. Membership is one row per user, including when the character on the roster is an alt. Pending membership still does not qualify.
+**Durable rule:** Dump `MentorClass.requirements` before the membership. A `tribe_group` token is a code or a unique group name. Active `TribeGroupMembership` on the account is what counts.
+**Skill update:** added the mentor-class tribe requirement row.
+
 ## 2026-11-14 — Open technology threads (batch, Discord MCP on production)
 
 **Category:** pulse.technology

@@ -1,9 +1,11 @@
 """Mentor classes: matching, requests, hand-offs, reminders and close-out."""
 
+import importlib
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from unittest import mock
 
+from django.apps import apps
 from django.contrib.auth.models import Permission, User
 from django.test import Client, TestCase
 from django.utils import timezone
@@ -21,6 +23,11 @@ from learning.models import (
     MentorProfile,
     MentorRequest,
     UserLearningProgress,
+)
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+
+_tribe_requirement_migration = importlib.import_module(
+    "learning.migrations.0007_tribe_group_requirement_codes"
 )
 
 BASE = "/api/learning/mentors"
@@ -96,6 +103,70 @@ class RequirementsTestCase(TestCase):
         checks = reqs.check(self.pilot, [{"kind": "accounts", "value": "2"}])
         self.assertFalse(checks[0].met)
         self.assertEqual("You have 1", checks[0].detail)
+
+    def _freighters(self, status):
+        tribe = Tribe.objects.create(name="Supply", slug="supply")
+        group = TribeGroup.objects.create(
+            tribe=tribe, name="Freighters", code="supply.freighters"
+        )
+        TribeGroupMembership.objects.create(
+            user=self.pilot, tribe_group=group, status=status
+        )
+        return group
+
+    def test_tribe_group_name_counts_for_an_active_member(self):
+        self._freighters(TribeGroupMembership.STATUS_ACTIVE)
+        rows = [{"kind": "tribe_group", "value": "Freighters"}]
+        check = reqs.check(self.pilot, rows)[0]
+        self.assertTrue(check.met)
+        self.assertEqual("Member", check.detail)
+        self.assertEqual("Member of Freighters", check.label)
+        self.assertEqual(
+            [{"kind": "tribe_group", "value": "supply.freighters"}],
+            reqs.clean(rows),
+        )
+
+    def test_tribe_group_code_counts_and_pending_does_not(self):
+        self._freighters(TribeGroupMembership.STATUS_PENDING)
+        rows = [{"kind": "tribe_group", "value": "supply.freighters"}]
+        self.assertFalse(reqs.check(self.pilot, rows)[0].met)
+        self.assertEqual(
+            [{"kind": "tribe_group", "value": "supply.freighters"}],
+            reqs.clean(rows),
+        )
+
+    def test_tribe_group_clean_rejects_an_unknown_or_shared_name(self):
+        with self.assertRaises(reqs.RequirementError):
+            reqs.clean([{"kind": "tribe_group", "value": "Freighters"}])
+        supply = Tribe.objects.create(name="Supply", slug="supply")
+        other = Tribe.objects.create(name="Other", slug="other")
+        TribeGroup.objects.create(
+            tribe=supply, name="Pilots", code="supply.pilots"
+        )
+        TribeGroup.objects.create(
+            tribe=other, name="Pilots", code="other.pilots"
+        )
+        with self.assertRaises(reqs.RequirementError):
+            reqs.clean([{"kind": "tribe_group", "value": "Pilots"}])
+
+    def test_migration_rewrites_a_unique_group_name_to_its_code(self):
+        tribe = Tribe.objects.create(name="Supply", slug="supply")
+        TribeGroup.objects.create(
+            tribe=tribe, name="Freighters", code="supply.freighters"
+        )
+        mentor_class = MentorClass.objects.create(
+            slug="jump-freighting",
+            title="Jump Freighting",
+            requirements=[{"kind": "tribe_group", "value": "Freighters"}],
+        )
+        _tribe_requirement_migration.rewrite_tribe_group_requirement_names(
+            apps, None
+        )
+        mentor_class.refresh_from_db()
+        self.assertEqual(
+            [{"kind": "tribe_group", "value": "supply.freighters"}],
+            mentor_class.requirements,
+        )
 
 
 @mock.patch("learning.mentors.service.queue_dm")

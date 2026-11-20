@@ -33,7 +33,7 @@ KIND_LABELS = {
     KIND_ACCOUNTS: "Accounts linked (at least)",
     KIND_READY_FIT: "A doctrine fit ready on any character",
     KIND_CERTIFICATE: "Certificate earned (slug)",
-    KIND_TRIBE_GROUP: "Member of a tribe group (code)",
+    KIND_TRIBE_GROUP: "Member of a tribe group (code or name)",
     KIND_CORPORATION: "In a corporation (ticker)",
 }
 KINDS = tuple(KIND_LABELS)
@@ -78,6 +78,10 @@ def clean(rows) -> list[dict]:
             value = str(_number(value))
         elif kind == KIND_READY_FIT:
             value = ""
+        elif kind == KIND_TRIBE_GROUP:
+            if not _list(value):
+                raise RequirementError(f"{KIND_LABELS[kind]} needs a value.")
+            value = _normalize_tribe_value(value)
         elif not _list(value):
             raise RequirementError(f"{KIND_LABELS[kind]} needs a value.")
         cleaned.append({"kind": kind, "value": value})
@@ -99,7 +103,9 @@ def describe(row: dict) -> str:
     if kind == KIND_CERTIFICATE:
         return "Certificate: " + " or ".join(_list(value))
     if kind == KIND_TRIBE_GROUP:
-        return "Member of " + " or ".join(_group_names(_list(value)))
+        codes = tribe_group_codes(value)
+        names = _group_names(codes) if codes else _list(value)
+        return "Member of " + " or ".join(names)
     if kind == KIND_CORPORATION:
         return "In " + " or ".join(_list(value))
     return kind
@@ -119,6 +125,51 @@ def _group_names(codes: list[str]) -> list[str]:
         TribeGroup.objects.filter(code__in=codes).values_list("code", "name")
     )
     return [names.get(code, code) for code in codes]
+
+
+def _codes_for_token(token: str) -> list[str]:
+    """Group codes a requirement token names.
+
+    A code wins. Otherwise every group with that name (usually one).
+    """
+
+    if TribeGroup.objects.filter(code=token).exists():
+        return [token]
+    return list(
+        TribeGroup.objects.filter(name__iexact=token).values_list(
+            "code", flat=True
+        )
+    )
+
+
+def tribe_group_codes(value: str) -> list[str]:
+    """Codes a tribe-group requirement refers to, once each, in token order."""
+
+    codes: list[str] = []
+    seen: set[str] = set()
+    for token in _list(value):
+        for code in _codes_for_token(token):
+            if code not in seen:
+                seen.add(code)
+                codes.append(code)
+    return codes
+
+
+def _normalize_tribe_value(value: str) -> str:
+    """Store group codes. A unique group name is accepted and rewritten."""
+
+    codes = []
+    seen: set[str] = set()
+    for token in _list(value):
+        matched = _codes_for_token(token)
+        if len(matched) != 1:
+            raise RequirementError(
+                f"No single tribe group matches {token}. Use the group code."
+            )
+        if matched[0] not in seen:
+            seen.add(matched[0])
+            codes.append(matched[0])
+    return ", ".join(codes)
 
 
 def alliance_days(user) -> int:
@@ -195,7 +246,7 @@ def check(user, rows) -> list[Check]:
         elif kind == KIND_TRIBE_GROUP:
             met = TribeGroupMembership.objects.filter(
                 user=user,
-                tribe_group__code__in=_list(value),
+                tribe_group__code__in=tribe_group_codes(value),
                 status=TribeGroupMembership.STATUS_ACTIVE,
             ).exists()
             detail = "Member" if met else "Not a member"
