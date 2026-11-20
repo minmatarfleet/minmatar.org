@@ -49,7 +49,7 @@ FIXTURE_FILES = (
 
 SANITIZE_FIELDS: dict[str, set[str]] = {
     "tribes.tribe": {"discord_channel_id", "chief", "group"},
-    "tribes.tribegroup": {"discord_channel_id", "chief", "group"},
+    "tribes.tribegroup": {"discord_channel_id", "group"},
     "fleets.evefleetaudience": {
         "discord_channel_id",
         "discord_channel_name",
@@ -105,7 +105,7 @@ def collect_reference_data(
     )
     tribe_groups = list(
         TribeGroup.objects.using(source_db)
-        .select_related("tribe", "group", "chief")
+        .select_related("tribe", "group")
         .order_by("pk")
     )
     affiliation_types = list(

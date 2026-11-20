@@ -13,6 +13,7 @@ from tribes.helpers.offboarding import (
     offboard_tribe_memberships_without_feature,
 )
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeGroup,
     TribeGroupMembership,
@@ -139,8 +140,9 @@ class TribeGroupAffiliationGateTestCase(TestCase):
         self.assertFalse(response.json()["can_manage"])
 
     def test_group_schema_can_manage_for_group_chief(self):
-        self.alliance_only.chief = self.user
-        self.alliance_only.save(update_fields=["chief"])
+        TribeGroupChief.objects.create(
+            tribe_group=self.alliance_only, region="US", user=self.user
+        )
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.alliance_only.pk}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",

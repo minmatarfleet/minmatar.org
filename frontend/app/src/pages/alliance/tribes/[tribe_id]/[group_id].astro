@@ -9,7 +9,7 @@ const is_auth = Boolean(user)
 
 import { get_user_profile } from '@helpers/permissions'
 import { login_url } from '@helpers/http_responses'
-import { help_wanted_props } from '@helpers/tribe_chiefs'
+import { help_wanted_props, needs_chief } from '@helpers/tribe_chiefs'
 import { get_gates, can } from '@helpers/gates'
 import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { query_string, strip_markdown } from '@helpers/string'
@@ -201,6 +201,13 @@ const about_markdown = (tribe_group?.content || tribe_group?.description || '').
 const chief = tribe_group?.acting_chief ?? null
 const chief_is_interim = Boolean(tribe_group?.chief_is_interim)
 const chief_label = chief_is_interim ? t('tribes.chief.interim') : t('group_chief')
+// One chief per timezone seat (USTZ, EUTZ, AUTZ). A backend without seats
+// sends none, and the single chief shows as before.
+const chief_seats = tribe_group?.chiefs ?? []
+const show_seats = !chief_is_interim && chief_seats.length > 0
+const can_set_chief = Boolean(tribe_group?.can_set_chief)
+// Superusers fill empty seats from the header.
+const settable_open_seats = can_set_chief ? chief_seats.filter((seat) => seat.is_open) : []
 const chief_volunteers_url = translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
     tribe_id,
     group_id,
@@ -340,27 +347,58 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                 <Flexblock gap="var(--space-s)">
                     <PageBreadcrumbs is_landing_page={true} breadcrumbs={breadcrumbs} />
                     <FlexInline gap="var(--space-xs)" class="[ tribe-group-title-row ]">
-                        {chief ?
+                        {show_seats ?
+                            chief_seats.map((seat) => seat.chief &&
+                                <Flexblock gap="var(--space-3xs)" class="[ tribe-group-chief ]">
+                                    <TribeChiefSwap
+                                        tribe_id={tribe_group!.tribe_id}
+                                        group_id={tribe_group!.id}
+                                        region={seat.region}
+                                        seat_name={`${tribe_group!.name} (${seat.label})`}
+                                        can_set={can_set_chief}
+                                    >
+                                        <div class="[ tribe-group-chief-portrait ]">
+                                            <CharacterPicture
+                                                character_id={seat.chief.character_id}
+                                                character_name={seat.chief.character_name}
+                                                size={128}
+                                                icon_quality={256}
+                                                inert={can_set_chief}
+                                                tooltip={`${seat.chief.character_name} · ${t('tribes.chief.seat_chief').replace('{tz}', seat.label)}`}
+                                            />
+                                        </div>
+                                    </TribeChiefSwap>
+                                    <small class="[ tribe-chief-seat-label ]">{seat.label}</small>
+                                </Flexblock>
+                            )
+                            : chief &&
                             <Flexblock gap="var(--space-3xs)" class="[ tribe-group-chief ]">
-                                <TribeChiefSwap tribe_id={tribe_group!.tribe_id} group_id={tribe_group!.id} seat_name={tribe_group!.name} can_set={Boolean(tribe_group?.can_set_chief)}>
-                                    <div class:list={['[ tribe-group-chief-portrait ]', { 'is-interim': chief_is_interim }]}>
-                                        <CharacterPicture
-                                            character_id={chief.character_id}
-                                            character_name={chief.character_name}
-                                            size={128}
-                                            icon_quality={256}
-                                            inert={Boolean(tribe_group?.can_set_chief)}
-                                            tooltip={`${chief.character_name} · ${chief_label}`}
-                                        />
-                                    </div>
-                                </TribeChiefSwap>
+                                <div class:list={['[ tribe-group-chief-portrait ]', { 'is-interim': chief_is_interim }]}>
+                                    <CharacterPicture
+                                        character_id={chief.character_id}
+                                        character_name={chief.character_name}
+                                        size={128}
+                                        icon_quality={256}
+                                        tooltip={`${chief.character_name} · ${chief_label}`}
+                                    />
+                                </div>
                                 {chief_is_interim &&
                                     <small class="[ tribe-chief-interim-label ]">{chief_label}</small>
                                 }
                             </Flexblock>
-                            : tribe_group?.can_set_chief &&
-                            <TribeChiefSwap tribe_id={tribe_group.tribe_id} group_id={tribe_group.id} seat_name={tribe_group.name} can_set={true} empty={true} />
                         }
+                        {settable_open_seats.map((seat) =>
+                            <TribeChiefSwap
+                                tribe_id={tribe_group!.tribe_id}
+                                group_id={tribe_group!.id}
+                                region={seat.region}
+                                seat_name={`${tribe_group!.name} (${seat.label})`}
+                                can_set={true}
+                                empty={true}
+                            >
+                                <span slot="empty">{t('tribes.chief.seat_open').replace('{tz}', seat.label)}</span>
+                            </TribeChiefSwap>
+                        )}
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
                     </FlexInline>
                 </Flexblock>
@@ -410,7 +448,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                 available_characters={available_characters}
                             />
                         }
-                        {tribe && tribe_group.chief_is_interim &&
+                        {tribe && needs_chief(tribe_group) && (tribe_group.chief_is_interim || !can_manage || tribe_group.can_appoint_chief) &&
                             <div class="[ mb-[var(--space-l)] ]">
                                 <TribeChiefHelpWanted
                                     {...help_wanted_props(tribe, tribe_group)}
@@ -653,6 +691,12 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
     .tribe-group-chief {
         flex: 0 0 auto;
         align-items: center;
+    }
+
+    .tribe-chief-seat-label {
+        color: var(--text-muted);
+        text-align: center;
+        font-size: var(--step--1);
     }
 
     .tribe-chief-interim-label {

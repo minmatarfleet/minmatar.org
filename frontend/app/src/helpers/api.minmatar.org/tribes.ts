@@ -459,12 +459,13 @@ export async function decline_invitation(access_token:string, invitation_id:numb
     })
 }
 
-// Chief volunteers: an open seat is the tribe (group_id null) or a group in it.
-export async function volunteer_for_chief(access_token:string, tribe_id:number, group_id:number | null, note:string = '') {
+// Chief volunteers: an open seat is the tribe (group_id null) or one of a
+// group's timezone seats (region US, EU or AU; null lets the API pick).
+export async function volunteer_for_chief(access_token:string, tribe_id:number, group_id:number | null, note:string = '', region:string | null = null) {
     return await api_request<TribeChiefVolunteer>(`${API_ENDPOINT}/${tribe_id}/chief-volunteers`, {
         method: 'POST',
         token: access_token,
-        body: { tribe_group_id: group_id, note },
+        body: { tribe_group_id: group_id, note, ...(region ? { region } : {}) },
         error: 'Error sending your offer',
     })
 }
@@ -485,7 +486,8 @@ export async function answer_chief_volunteer(access_token:string, volunteer_id:n
     })
 }
 
-// Superusers swap a chief: a seat is the tribe (group_id null) or a group in it.
+// Superusers swap a chief: a seat is the tribe (group_id null) or one of a
+// group's timezone seats (region).
 export async function get_chief_candidates(access_token:string, q:string) {
     return await api_request<TribeChiefCandidate[]>(`${API_ENDPOINT}/chief-candidates?${query_string({ q })}`, {
         token: access_token,
@@ -493,12 +495,12 @@ export async function get_chief_candidates(access_token:string, q:string) {
     })
 }
 
-export async function set_chief(access_token:string, tribe_id:number, group_id:number | null, user_id:number | null) {
+export async function set_chief(access_token:string, tribe_id:number, group_id:number | null, user_id:number | null, region:string | null = null) {
     const path = group_id ? `${tribe_id}/groups/${group_id}/chief` : `${tribe_id}/chief`
     return await api_request<TribeChiefSeat>(`${API_ENDPOINT}/${path}`, {
         method: 'PUT',
         token: access_token,
-        body: { user_id },
+        body: { user_id, ...(region ? { region } : {}) },
         error: 'Error changing the chief',
     })
 }

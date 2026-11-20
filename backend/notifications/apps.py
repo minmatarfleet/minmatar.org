@@ -11,6 +11,7 @@ class NotificationsConfig(AppConfig):
         # pylint: disable=import-outside-toplevel,unused-import
         from notifications.types import (  # noqa: F401
             corporations,
+            esi,
             fleets,
             industry,
             tasks,

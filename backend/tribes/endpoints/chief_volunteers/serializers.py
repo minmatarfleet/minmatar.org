@@ -11,6 +11,7 @@ def serialize_volunteer(offer: TribeChiefVolunteer) -> ChiefVolunteerSchema:
         tribe_id=offer.tribe_id,
         tribe_name=offer.tribe.name,
         tribe_group_id=offer.tribe_group_id,
+        region=offer.region or "",
         seat_name=seat_name(offer),
         user_id=offer.user_id,
         character_id=primary.character_id if primary else None,

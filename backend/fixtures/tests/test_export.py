@@ -47,7 +47,6 @@ class ExportSanitizationTestCase(TestCase):
             name="Dreads",
             discord_channel_id=987654321098765432,
             group=group,
-            chief=self.user,
         )
 
         bundle = collect_reference_data("default")
@@ -68,7 +67,7 @@ class ExportSanitizationTestCase(TestCase):
 
         tg_fields = group_rows[0]["fields"]
         self.assertIsNone(tg_fields["discord_channel_id"])
-        self.assertIsNone(tg_fields["chief"])
+        self.assertNotIn("chief", tg_fields)
         self.assertIsNone(tg_fields["group"])
 
     def test_affiliation_type_keeps_group_fk(self):

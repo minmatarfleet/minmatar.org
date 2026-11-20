@@ -8,6 +8,7 @@ from tribes.models import (
     TribeExternalGuild,
     TribeExternalGuildSeat,
     TribeGroup,
+    TribeGroupChief,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipHistory,
@@ -126,13 +127,23 @@ class TribeGroupRequirementInline(admin.TabularInline):
     fields = ()
 
 
+class TribeGroupChiefInline(admin.TabularInline):
+    """One chief per timezone region (US, EU, AU)."""
+
+    model = TribeGroupChief
+    extra = 0
+    max_num = len(TribeGroupChief.REGIONS)
+    fields = ("region", "user")
+    raw_id_fields = ("user",)
+
+
 @admin.register(TribeGroup)
 class TribeGroupAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "code",
         "tribe",
-        "chief",
+        "chief_names",
         "required_token_type",
         "require_off_trial",
         "roster_hidden",
@@ -148,13 +159,26 @@ class TribeGroupAdmin(admin.ModelAdmin):
         "allowed_affiliations",
     )
     search_fields = ("name", "code", "tribe__name")
-    raw_id_fields = ("tribe", "chief", "group")
+    raw_id_fields = ("tribe", "group")
     filter_horizontal = ("allowed_affiliations",)
     inlines = [
+        TribeGroupChiefInline,
         TribeGroupRankInline,
         TribeGroupRequirementInline,
         TribeExternalGuildInline,
     ]
+
+    @admin.display(description="Chiefs")
+    def chief_names(self, obj):
+        seats = [
+            f"{seat.region} {seat.user}" for seat in obj.chief_seats.all()
+        ]
+        return ", ".join(seats) or "—"
+
+    def get_queryset(self, request):
+        return (
+            super().get_queryset(request).prefetch_related("chief_seats__user")
+        )
 
     @admin.display(description="Allowed affiliations")
     def allowed_affiliation_names(self, obj):

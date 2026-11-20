@@ -40,6 +40,7 @@ from onboarding.models import (
     UserOnboardingAcknowledgment,
 )
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import TribeGroupChief
 
 
 def _acknowledge_orders_onboarding(user):
@@ -1033,7 +1034,9 @@ class MarketOrderSubmitApiTests(OrdersEndpointTestCase):
             tribe=tribe,
             name="Subcap",
             code="supply.subcapital-production-test",
-            chief=self.user,
+        )
+        TribeGroupChief.objects.create(
+            tribe_group=chief_group, region="US", user=self.user
         )
         feature = PilotFeature.objects.get(code="industry.order.submit")
         feature.tribe_groups.add(chief_group)
@@ -1055,7 +1058,9 @@ class MarketOrderSubmitApiTests(OrdersEndpointTestCase):
             tribe=tribe,
             name="Subcap 2",
             code="supply.subcapital-production-test-2",
-            chief=self.user,
+        )
+        TribeGroupChief.objects.create(
+            tribe_group=chief_group, region="US", user=self.user
         )
         feature = PilotFeature.objects.get(code="industry.order.submit")
         feature.tribe_groups.add(chief_group)

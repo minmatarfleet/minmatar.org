@@ -66,7 +66,10 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                                 size={32}
                                 centered={true}
                             >
-                                <small class="[ text-muted ]">{eve_day_short(lang, volunteer.created_at)}</small>
+                                <small class="[ text-muted ]">
+                                    {eve_day_short(lang, volunteer.created_at)}
+                                    {volunteer.region && ` · ${t('tribes.chief.seat_chief').replace('{tz}', `${volunteer.region}TZ`)}`}
+                                </small>
                             </PilotBadge>
                             :
                             <span>{volunteer.character_name}</span>
@@ -90,7 +93,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                                 <Button
                                     size="sm"
                                     color="green"
-                                    title={t('tribes.chief.appoint_confirm').replace('{name}', volunteer.character_name).replace('{seat}', seat_name)}
+                                    title={t('tribes.chief.appoint_confirm').replace('{name}', volunteer.character_name).replace('{seat}', volunteer.seat_name || seat_name)}
                                     hx-post={partial_url(volunteer.id, 'appoint')}
                                     hx-target={`#${LIST_ID}`}
                                     hx-indicator=".loader"

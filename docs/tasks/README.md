@@ -11,13 +11,16 @@ The design aims to be useful without being overbearing. The rules below come fro
 
 | Rule | Who | Weight |
 |---|---|---|
-| `reauth_character` | the pilot | needs you |
+| `reauth_character` | the pilot | needs you: one task for a broken main, one for all broken alts ([ESI health](../esi_health.md)) |
+| `update_scopes` | the pilot | suggestion: a working token lacks a scope ESI health asks for |
 | `pick_main` | the pilot | needs you |
 | `fleet_invite` | the pilot | needs you |
 | `tribe_invitation` | the pilot | needs you |
 | `set_timezone` | the pilot | suggestion (stops asking after 30 days) |
 | `review_join_requests` | the group's chiefs | needs you, up for grabs |
 | `review_applications` | the corporation's CEO and recruiters | needs you, up for grabs |
+| `corp_director_token` | the corporation's CEO and directors | needs you, up for grabs: no director token, or the best one lacks a required scope |
+| `corp_unlinked` | the corporation's CEO and directors | suggestion, up for grabs: characters in the corporation with no account here |
 | `review_doctrine_changes`, `approve_reddit_posts`, `map_payout_codes`, `fix_calendar_feeds` | whoever reaches that manage screen | needs you, up for grabs |
 
 To add a rule, write a `collect_*` function that returns `Item`s and add a `Rule` to `RULES`. The beat entry `[Tasks] Open and close automatic tasks` runs every rule every 15 minutes.
@@ -52,6 +55,8 @@ Every task DM is **opt-in**. Discord and Eve mail start off for all three, and a
 - **Weekly list.** An hourly job sends it on the set day and hour (Settings › Weekly DM, Sunday 17:00 EVE by default). It goes only to pilots who turned it on and have needs-you tasks that have waited 3 days or are due within a week. It never includes suggestions or snoozed tasks, and never goes to paused or On Leave pilots. One per week (idempotency key); deliveries are paced.
 - **A leader reminds me.** "Remind once" on a team's pilot list, shown only for pilots who turned reminders on (others show "Reminders off"). Only for a needs-you task that has waited `remind_after_days` (default 14, set per rule), once per task, and only by the pilot's own leaders.
 - **Someone gives me a task.** Sent when a leader assigns one, if the pilot turned it on.
+
+One exception to opt-in: a superuser can message pilots who need to re-add characters from Manage › ESI health (`tasks.esi_message`, Discord on by default). The site never sends it by itself, and a pilot gets it at most once a week. See [ESI health](../esi_health.md).
 
 Messages that fall in a pilot's quiet hours (Tasks › Settings, EVE hours) wait in `TaskMessageHold` and go out when the quiet hours end. A pilot with closed DMs shows as "not delivered" on Settings › Weekly DM and still has the Neocom count.
 

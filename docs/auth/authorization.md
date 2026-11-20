@@ -74,7 +74,7 @@ The `scope` on a feature selects the evaluation strategy (`backend/groups/featur
 |-------|--------------------|------------------|
 | `affiliation` | User's `UserAffiliation` is one of the feature's wired `AffiliationType` rows | `fleets.create`, `srp.view`, `structures.view` |
 | `tribe_group_target` | User's affiliation is allowed for the target group: prefer `TribeGroup.allowed_affiliations` when set, otherwise the feature's wired affiliations | `tribes.apply` |
-| `tribe_chief` | User is a tribe or group chief (of the target `tribe_group=`/`tribe=` if passed, otherwise of any wired tribe group); the feature's staff/legacy permission also grants | `tribes.manage_memberships`, `industry.order.submit` |
+| `tribe_chief` | User is a tribe chief or one of a group's timezone chiefs (of the target `tribe_group=`/`tribe=` if passed, otherwise of any wired tribe group); the feature's staff/legacy permission also grants | `tribes.manage_memberships`, `industry.order.submit` |
 | `tribe_membership` | User has an active `TribeGroupMembership` in a wired tribe group | (available for wiring) |
 | `resource_match` | User's auth groups overlap the resource's audience groups (e.g. `fleet.audience.groups`), or affiliation matches | `fleets.view`, `srp.submit` |
 | `auth_group` | User is in one of the wired `auth.Group` rows | `tech.ops` (Technology Team) |

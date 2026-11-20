@@ -11,6 +11,8 @@ interface Props {
     chief_membership:       TribeMembership | null;
     /** The chief shown only stands in: the seat is open (Help wanted). */
     chief_is_interim?:      boolean;
+    /** One chief per timezone seat; replaces `chief` when set. */
+    seats?:                 { chief: TribeCharacterRef; label: string }[];
 }
 
 const {
@@ -20,7 +22,12 @@ const {
     tribe_group,
     chief_membership,
     chief_is_interim = false,
+    seats = [],
 } = Astro.props
+
+const leaders = seats.length > 0 && !chief_is_interim
+    ? seats.map((seat) => ({ chief: seat.chief, label: t('tribes.chief.seat_chief').replace('{tz}', seat.label) }))
+    : chief ? [{ chief, label: chief_is_interim ? t('tribes.chief.interim') : t('group_chief') }] : []
 
 const membership_character_ids = chief_membership ? chief_membership.characters.map(character => character.character_id) : []
 const available_characters = membership_character_ids.length > 0 ?
@@ -35,7 +42,7 @@ import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.
 import Tag from '@components/blocks/Tag.astro';
 ---
 
-{chief &&
+{leaders.length > 0 &&
     <Flexblock gap='var(--space-l)'>
         <FlexInline justification="space-between">
             <h4 class="[ group-title ]">{t('group_leadership')}</h4>
@@ -45,19 +52,17 @@ import Tag from '@components/blocks/Tag.astro';
         </FlexInline>
 
         <FlexInline>
-            <PilotBadge
-                class="[ pr-(--space-l) ]"
-                character_id={chief?.character_id}
-                character_name={chief?.character_name}
-                size={32}
-                centered={true}
-            >
-                {chief_is_interim ?
-                    <small class="[ group-leadership__interim ]">{t('tribes.chief.interim')}</small>
-                    :
-                    <small>{t('group_chief')}</small>
-                }
-            </PilotBadge>
+            {leaders.map((leader) =>
+                <PilotBadge
+                    class="[ pr-(--space-l) ]"
+                    character_id={leader.chief.character_id}
+                    character_name={leader.chief.character_name}
+                    size={32}
+                    centered={true}
+                >
+                    <small class:list={[{ 'group-leadership__interim': chief_is_interim }]}>{leader.label}</small>
+                </PilotBadge>
+            )}
             {!chief_is_interim && available_characters.length > 0 &&
                 <ButtonAddTribeCharacter
                     id='leader-add-character'

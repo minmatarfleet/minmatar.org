@@ -16,6 +16,7 @@ from eveonline.models.corporations import EveCorporation
 from tribes.models import (
     Tribe,
     TribeGroup,
+    TribeGroupChief,
     TribeGroupMembership,
     TribeGroupMembershipHistory,
     TribeGroupRank,
@@ -147,9 +148,11 @@ class TribeGroupRosterTestCase(TestCase):
 
     def test_hidden_roster_visible_to_group_chief(self):
         chief = User.objects.create_user(username="chief")
-        self.group.chief = chief
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=chief
+        )
         self.group.roster_hidden = True
-        self.group.save(update_fields=["chief", "roster_hidden"])
+        self.group.save(update_fields=["roster_hidden"])
         token = make_token(chief)
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}/roster",
@@ -161,9 +164,11 @@ class TribeGroupRosterTestCase(TestCase):
         )
 
     def test_hidden_roster_strips_chief_from_public_group(self):
-        self.group.chief = self.member
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.member
+        )
         self.group.roster_hidden = True
-        self.group.save(update_fields=["chief", "roster_hidden"])
+        self.group.save(update_fields=["roster_hidden"])
         response = self.client.get(
             f"{BASE_URL}/{self.tribe.pk}/groups/{self.group.pk}"
         )

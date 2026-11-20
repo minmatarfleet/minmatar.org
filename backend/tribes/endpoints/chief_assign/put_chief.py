@@ -9,8 +9,9 @@ from tribes.endpoints.chief_assign.schemas import (
     ChiefSeatSchema,
     SetChiefRequest,
 )
+from tribes.helpers.chief_regions import clean_region
 from tribes.helpers.chiefs import ChiefVolunteerError, set_chief
-from tribes.models import Tribe, TribeGroup
+from tribes.models import Tribe, TribeGroup, TribeGroupChief
 
 TRIBE_PATH = "/{tribe_id}/chief"
 GROUP_PATH = "/{tribe_id}/groups/{group_id}/chief"
@@ -24,6 +25,21 @@ ROUTE_SPEC = {
 router = Router(tags=["Tribes - Chiefs"])
 
 
+def _seat_region(tribe_group, user, asked):
+    """The group seat that changed: the asked one, else the pilot's seat."""
+    if tribe_group is None:
+        return None
+    if asked:
+        return clean_region(asked)
+    if user is None:
+        return None
+    return (
+        TribeGroupChief.objects.filter(tribe_group=tribe_group, user=user)
+        .values_list("region", flat=True)
+        .first()
+    )
+
+
 def _apply(request, tribe, tribe_group, payload: SetChiefRequest):
     user = None
     if payload.user_id is not None:
@@ -31,7 +47,9 @@ def _apply(request, tribe, tribe_group, payload: SetChiefRequest):
         if user is None:
             return 404, {"detail": "Pilot not found."}
     try:
-        set_chief(request.user, tribe, tribe_group, user)
+        set_chief(
+            request.user, tribe, tribe_group, user, region=payload.region
+        )
     except ChiefVolunteerError as exc:
         return exc.status_code, {"detail": str(exc)}
     except DiscordRoleAssignmentError:
@@ -46,6 +64,7 @@ def _apply(request, tribe, tribe_group, payload: SetChiefRequest):
     return 200, {
         "tribe_id": tribe.pk,
         "tribe_group_id": tribe_group.pk if tribe_group else None,
+        "region": _seat_region(tribe_group, user, payload.region),
         "user_id": user.pk if user else None,
         "character_id": ref.character_id if ref else None,
         "character_name": ref.character_name if ref else "",

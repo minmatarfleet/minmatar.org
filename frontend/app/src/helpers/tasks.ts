@@ -88,6 +88,9 @@ const GLYPHS:Record<string, string> = {
     approve_reddit_posts: 'M5 4h14v17H5zM9 9h6M9 13h6M9 17h3',
     map_payout_codes: 'M9 4 7 20M17 4l-2 16M4 9h16M3 15h16',
     fix_calendar_feeds: 'M4 5h16v15H4zM4 10h16M8 3v4M16 3v4',
+    update_scopes: 'M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4',
+    corp_director_token: 'M8 19a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 12l9-9M16 7l3 3',
+    corp_unlinked: 'M4 6h16v12H4zM4 7l8 6 8-6',
 }
 
 const ASSIGNED_GLYPH = 'M5 12l5 5 9-10'

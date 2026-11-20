@@ -10,7 +10,7 @@ from groups.models import (
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
-from tribes.models import Tribe, TribeGroup
+from tribes.models import Tribe, TribeGroupChief
 from users.helpers import offboard_group
 
 logger = logging.getLogger(__name__)
@@ -328,11 +328,10 @@ def sync_tribe_chief_group_membership() -> None:
     tribe_chief_ids = Tribe.objects.filter(
         is_active=True, chief_id__isnull=False
     ).values_list("chief_id", flat=True)
-    tribe_group_chief_ids = TribeGroup.objects.filter(
-        is_active=True,
-        tribe__is_active=True,
-        chief_id__isnull=False,
-    ).values_list("chief_id", flat=True)
+    tribe_group_chief_ids = TribeGroupChief.objects.filter(
+        tribe_group__is_active=True,
+        tribe_group__tribe__is_active=True,
+    ).values_list("user_id", flat=True)
     desired_ids = set(tribe_chief_ids) | set(tribe_group_chief_ids)
     # The executor stands in as chief of any active tribe without one.
     # pylint: disable-next=import-outside-toplevel

@@ -158,7 +158,9 @@ class TeamGroupResponse(Schema):
     id: int
     tribe_id: int
     name: str
+    # The first timezone chief (US, EU, AU); ``chiefs`` lists all of them.
     chief: Optional[PersonResponse] = None
+    chiefs: list[PersonResponse] = []
     open: int
     closed_this_week: int
 

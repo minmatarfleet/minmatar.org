@@ -17,7 +17,7 @@ export type ManageScreenKey =
     | 'help_tickets' | 'post_tags' | 'reddit' | 'creators'
     | 'guides' | 'certificates' | 'onboarding' | 'skillsets'
     | 'doctrines' | 'srp_amounts'
-    | 'alliance_health' | 'surveys'
+    | 'alliance_health' | 'surveys' | 'esi_health'
 export type ManageQueueKey = 'doctrine_changes' | 'reddit_posts' | 'payout_codes' | 'npsi_feeds'
 
 export interface ManageScreenDefinition {

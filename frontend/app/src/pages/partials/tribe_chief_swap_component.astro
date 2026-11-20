@@ -13,6 +13,8 @@ const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '')
 const group_param = Astro.url.searchParams.get('group_id')
 const group_id = group_param ? parseInt(group_param) : null
 const seat_name = Astro.url.searchParams.get('seat_name') ?? ''
+// A group's timezone seat: US, EU or AU.
+const region = Astro.url.searchParams.get('region') || null
 const q = (Astro.url.searchParams.get('q') ?? '').trim()
 
 if (isNaN(tribe_id) || (group_id !== null && isNaN(group_id)))
@@ -32,7 +34,7 @@ if (Astro.request.method === 'POST') {
     if (!clear && (user_id === null || isNaN(user_id)))
         return HTTP_400_Bad_Request()
     try {
-        await set_chief(auth_token, tribe_id, group_id, clear ? null : user_id)
+        await set_chief(auth_token, tribe_id, group_id, clear ? null : user_id, region)
         // The header, banner and tabs all change with the chief: reload.
         return new Response(null, { status: 200, headers: { 'HX-Refresh': 'true' } })
     } catch (error) {
@@ -57,6 +59,7 @@ if (q.length >= 2) {
 const SWAP_PARTIAL_URL = translatePath(`/partials/tribe_chief_swap_component?${query_string({
     tribe_id,
     ...(group_id !== null ? { group_id } : {}),
+    ...(region ? { region } : {}),
     seat_name,
     q,
 })}`)

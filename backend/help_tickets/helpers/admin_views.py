@@ -13,9 +13,7 @@ from help_tickets.models import HelpRequestCategory
 
 def get_category_or_redirect(request, category_id):
     category = (
-        HelpRequestCategory.objects.select_related(
-            "tribe_group__tribe", "tribe_group__chief"
-        )
+        HelpRequestCategory.objects.select_related("tribe_group__tribe")
         .filter(pk=category_id)
         .first()
     )

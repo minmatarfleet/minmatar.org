@@ -118,9 +118,9 @@ class Membership:
 
         teams = []
         groups = list(
-            TribeGroup.objects.select_related("tribe").order_by(
-                "tribe__name", "name"
-            )
+            TribeGroup.objects.select_related("tribe")
+            .prefetch_related("chief_seats")
+            .order_by("tribe__name", "name")
         )
         by_tribe: dict[int, list] = {}
         for group in groups:

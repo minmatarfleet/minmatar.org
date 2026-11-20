@@ -5,14 +5,19 @@ export function tribe_group_is_leader(args: {
     membership: TribeMembership | null
     user_characters?: Pick<SummaryCharacter, 'character_id'>[]
 }): boolean {
-    // An interim chief (the tribe chief, else the executor) leads a chiefless group.
-    const chief_id = args.group?.chief?.character_id
+    // Every timezone seat's chief leads; an interim chief (the tribe chief,
+    // else the executor) leads a chiefless group.
+    const chief_ids = new Set<number>(
+        (args.group?.chiefs ?? []).flatMap((seat) => seat.chief ? [seat.chief.character_id] : []),
+    )
+    const first = args.group?.chief?.character_id
         ?? (args.group?.chief_is_interim ? args.group?.acting_chief?.character_id : undefined)
-    if (!chief_id) return false
-    if (args.membership?.primary_character_id === chief_id) return true
-    if (args.membership?.characters?.some((character) => character.character_id === chief_id))
+    if (first) chief_ids.add(first)
+    if (chief_ids.size === 0) return false
+    if (args.membership?.primary_character_id && chief_ids.has(args.membership.primary_character_id)) return true
+    if (args.membership?.characters?.some((character) => chief_ids.has(character.character_id)))
         return true
-    return Boolean(args.user_characters?.some((character) => character.character_id === chief_id))
+    return Boolean(args.user_characters?.some((character) => chief_ids.has(character.character_id)))
 }
 
 /** can_manage comes from the API, which already grants it to superusers. */

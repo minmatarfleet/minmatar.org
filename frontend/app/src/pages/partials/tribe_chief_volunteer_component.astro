@@ -21,7 +21,7 @@ if (isNaN(tribe_id) || (group_id !== null && isNaN(group_id)))
 import type { Tribe, TribeGroup } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
 import { get_tribe, get_tribe_group, volunteer_for_chief } from '@helpers/api.minmatar.org/tribes'
-import { help_wanted_props } from '@helpers/tribe_chiefs'
+import { help_wanted_props, needs_chief } from '@helpers/tribe_chiefs'
 
 let alert: Alert | false = false
 
@@ -29,7 +29,8 @@ if (Astro.request.method === 'POST') {
     try {
         const data = await Astro.request.formData()
         const note = ((data.get('note') as string | null) ?? '').trim()
-        await volunteer_for_chief(auth_token, tribe_id, group_id, note)
+        const region = ((data.get('region') as string | null) ?? '').trim() || null
+        await volunteer_for_chief(auth_token, tribe_id, group_id, note, region)
         alert = { title: t('tribes.chief.volunteer'), content: t('tribes.chief.sent_alert') }
     } catch (error) {
         alert = { title: t('tribes.chief.sending'), content: error.message }
@@ -56,7 +57,7 @@ import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
 
 {alert && <ShowAlert alert={alert} />}
 
-{tribe && seat?.chief_is_interim ?
+{tribe && needs_chief(group, tribe) ?
     <TribeChiefHelpWanted
         {...help_wanted_props(tribe, group)}
         is_auth={true}

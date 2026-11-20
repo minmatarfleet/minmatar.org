@@ -66,7 +66,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `industry.loyalty.settings` | `tribe_membership` | `industry.change_industryloyaltypoint` | LP buyback tribe group (`supply.loyalty-points`): LP corps, pricing, accounts, contacts |
 | `market.manage` | `tribe_membership` | `eveonline.change_evelocation` | Market tribe group (`supply.market`): hubs and stocking expectations |
 | `buyback.manage` | `tribe_membership` | `buyback.change_evebuybacksettings` | Mining tribe group (`supply.mining`): buyback rates, location, accepted items |
-| `freight.manage` | `tribe_chief` | `freight.change_evefreightroute` | Freighters tribe group (`supply.freighters`): the group chief and that tribe's chief manage routes and pricing |
+| `freight.manage` | `tribe_chief` | `freight.change_evefreightroute` | Freighters tribe group (`supply.freighters`): every timezone chief of the group and that tribe's chief manage routes and pricing |
 
 ## Campaigns
 
@@ -123,6 +123,7 @@ Added to move frontend gating off Django permission strings ([frontend-feature-g
 | `creators.moderate` | `tribe_membership` | `creators.change_creatoraccount` | Thinkspeak (`pulse.thinkspeak`) |
 | `content.manage` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`), no `on_leave` deny |
 | `surveys.results.view` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
+| `esi_health.manage` | `auth_group` | — | — (superusers only; no `on_leave` deny; Manage › ESI health) |
 | `site.debug_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny) |
 | `site.all_pages` | `auth_group` | — | — (superusers only; no `on_leave` deny; page finder and breadcrumbs list every page) |
 | `characters.lookup` | `auth_group` | — | — (superusers only; no `on_leave` deny) |

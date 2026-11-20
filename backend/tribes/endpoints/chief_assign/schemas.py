@@ -15,11 +15,15 @@ class ChiefCandidateSchema(BaseModel):
 class SetChiefRequest(BaseModel):
     # None empties the seat.
     user_id: Optional[int] = None
+    # A group's timezone seat (US, EU, AU). Filling one without it uses the
+    # pilot's own timezone; emptying one needs it.
+    region: Optional[str] = None
 
 
 class ChiefSeatSchema(BaseModel):
     tribe_id: int
     tribe_group_id: Optional[int] = None
+    region: Optional[str] = None
     user_id: Optional[int] = None
     character_id: Optional[int] = None
     character_name: str = ""

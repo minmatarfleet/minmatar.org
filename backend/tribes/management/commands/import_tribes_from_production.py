@@ -22,7 +22,7 @@ from contextlib import contextmanager
 
 from django.contrib.auth.models import Group, Permission, User
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.db.models import signals
 
 from discord.signals import (
@@ -44,6 +44,7 @@ from posts.models import EvePost
 from tribes.models import (
     Tribe,
     TribeGroup,
+    TribeGroupChief,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
@@ -185,9 +186,10 @@ class Command(BaseCommand):
         groups = list(
             TribeGroup.objects.using(source)
             .defer("content")
-            .select_related("tribe", "chief", "group")
+            .select_related("tribe", "group")
             .order_by("pk")
         )
+        chief_seats = self._load_chief_seats(source)
         ranks = list(
             TribeGroupRank.objects.using(source)
             .select_related("group")
@@ -253,7 +255,7 @@ class Command(BaseCommand):
         }
         chief_user_ids = {
             *(t.chief_id for t in tribes if t.chief_id),
-            *(g.chief_id for g in groups if g.chief_id),
+            *(seat.user_id for seat in chief_seats),
         }
         member_user_ids = {m.user_id for m in memberships}
         member_user_ids.update(
@@ -314,6 +316,7 @@ class Command(BaseCommand):
                 self._ensure_locations(source, local, location_ids)
                 self._import_tribes(tribes, local, auth_map, user_map)
                 self._import_groups(groups, local, auth_map, user_map)
+                self._import_chief_seats(chief_seats, local, user_map)
                 self._import_ranks(ranks, local, auth_map)
                 self._import_requirements(
                     requirements, req_skills, req_assets, local
@@ -663,12 +666,37 @@ class Command(BaseCommand):
                     "group_id": (
                         auth_map.get(prod.group_id) if prod.group_id else None
                     ),
-                    "chief_id": (
-                        user_map.get(prod.chief_id) if prod.chief_id else None
-                    ),
                 },
             )
         self.stdout.write(f"  TribeGroups: upserted={len(groups)}")
+
+    def _load_chief_seats(self, source) -> list:
+        """Group chief seats; empty when prod predates them."""
+        try:
+            return list(TribeGroupChief.objects.using(source).order_by("pk"))
+        except DatabaseError:
+            self.stdout.write(
+                self.style.WARNING("  Prod has no group chief seats yet.")
+            )
+            return []
+
+    def _import_chief_seats(self, seats, local, user_map) -> None:
+        group_ids = {seat.tribe_group_id for seat in seats}
+        TribeGroupChief.objects.using(local).filter(
+            tribe_group_id__in=group_ids
+        ).delete()
+        created = 0
+        for prod in seats:
+            user_id = user_map.get(prod.user_id)
+            if user_id is None:
+                continue
+            TribeGroupChief.objects.using(local).create(
+                tribe_group_id=prod.tribe_group_id,
+                region=prod.region,
+                user_id=user_id,
+            )
+            created += 1
+        self.stdout.write(f"  Group chief seats: {created}")
 
     def _import_ranks(self, ranks, local, auth_map) -> None:
         for prod in ranks:
@@ -870,7 +898,8 @@ class Command(BaseCommand):
         )
         groups = list(
             TribeGroup.objects.using(local)
-            .select_related("tribe", "chief")
+            .select_related("tribe")
+            .prefetch_related("chief_seats__user")
             .order_by("tribe_id", "pk")
         )
         self.stdout.write(
@@ -883,10 +912,13 @@ class Command(BaseCommand):
                 f"chief={chief!r}"
             )
         for group in groups:
-            chief = group.chief.username if group.chief_id else None
+            chiefs = [
+                f"{seat.region}:{seat.user.username}"
+                for seat in group.chief_seats.all()
+            ]
             self.stdout.write(
                 f"    Group {group.pk} {group.code} active={group.is_active} "
-                f"chief={chief!r}"
+                f"chiefs={chiefs!r}"
             )
         self.stdout.write(
             self.style.SUCCESS(

@@ -97,6 +97,8 @@ INSTALLED_APPS = [
     "manage_hub.apps.ManageHubConfig",
     # Tasks: what waits on each pilot, team work and projects
     "taskboard.apps.TaskboardConfig",
+    # ESI health: scope changes and the messages superusers send
+    "esi_health.apps.EsiHealthConfig",
 ]
 
 # Discord Login

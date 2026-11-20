@@ -5,7 +5,8 @@ class TribeChiefVolunteer(models.Model):
     """
     A pilot offering to lead a tribe, or a group in it, that has no chief.
 
-    ``tribe_group`` empty means the tribe chief seat. The alliance executor
+    ``tribe_group`` empty means the tribe chief seat; a group seat also
+    names its timezone ``region``. The alliance executor
     decides: appointing makes the pilot chief and closes every other open
     offer for that seat. A pilot has at most one pending offer per seat.
     """
@@ -36,6 +37,13 @@ class TribeChiefVolunteer(models.Model):
         related_name="chief_volunteers",
         help_text="Empty for the tribe chief seat.",
     )
+    region = models.CharField(
+        max_length=2,
+        blank=True,
+        default="",
+        help_text="A group seat's timezone region (US, EU, AU). Empty for "
+        "the tribe chief seat.",
+    )
     user = models.ForeignKey(
         "auth.User",
         on_delete=models.CASCADE,
@@ -57,7 +65,8 @@ class TribeChiefVolunteer(models.Model):
 
     def __str__(self):
         seat = self.tribe_group or self.tribe
-        return f"{self.user} for {seat} ({self.status})"
+        region = f" {self.region}" if self.region else ""
+        return f"{self.user} for {seat}{region} ({self.status})"
 
     class Meta:
         ordering = ["-created_at"]

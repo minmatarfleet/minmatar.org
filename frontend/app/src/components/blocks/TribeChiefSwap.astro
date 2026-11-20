@@ -12,6 +12,8 @@ interface Props {
     /** Null for the tribe chief seat. */
     group_id:               number | null;
     seat_name:              string;
+    /** A group's timezone seat (US, EU, AU); null for the tribe seat. */
+    region?:                string | null;
     /** The API's `can_set_chief`: only superusers. */
     can_set:                boolean;
     /** True when there is no portrait to click. */
@@ -23,6 +25,7 @@ const {
     tribe_id,
     group_id,
     seat_name,
+    region = null,
     can_set,
     empty = false,
     ...attributes
@@ -35,9 +38,12 @@ import { query_string } from '@helpers/string'
 const SWAP_PARTIAL_URL = translatePath(`/partials/tribe_chief_swap_component?${query_string({
     tribe_id,
     ...(group_id !== null ? { group_id } : {}),
+    ...(region ? { region } : {}),
     seat_name,
 })}`)
-const seat_key = group_id !== null ? `group-${group_id}` : `tribe-${tribe_id}`
+const seat_key = group_id !== null
+    ? `group-${group_id}${region ? `-${region}` : ''}`
+    : `tribe-${tribe_id}`
 const results_id = `chief-swap-results-${seat_key}`
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -62,7 +68,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         aria-label={t('tribes.chief.swap')}
         {...attributes}
     >
-        {empty ? t('tribes.chief.swap_set') : <slot />}
+        {empty ? <slot name="empty">{t('tribes.chief.swap_set')}</slot> : <slot />}
 
         <div slot="dialog">
             <Flexblock gap="var(--space-l)">

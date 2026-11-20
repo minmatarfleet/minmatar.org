@@ -238,6 +238,10 @@
             "feature": "freight.manage",
             "legacy": { "perms": ["freight.change_evefreightroute"], "superuser": true }
         },
+        "esi_health.manage": {
+            "feature": "esi_health.manage",
+            "legacy": { "perms": [], "superuser": true }
+        },
         "site.debug_pages": {
             "feature": "site.debug_pages",
             "legacy": { "perms": [], "superuser": true }

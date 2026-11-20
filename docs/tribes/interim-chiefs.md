@@ -5,10 +5,29 @@ page then says **Help wanted**, and pilots can volunteer. The alliance
 executor gets a Discord DM and appoints someone, or says not now.
 Wireframes: https://claude.ai/artifact/4KNNTmH9Q8LS3hMWwxKF7z
 
+## Timezone seats
+
+A tribe has one chief. A **tribe group** has up to three, one per timezone
+seat: **USTZ**, **EUTZ** and **AUTZ** (`tribes.TribeGroupChief`, region `US`,
+`EU`, `AU`; one pilot per seat, one seat per pilot). It works like a
+corporation's directors spread across timezones: every seated chief leads
+the group.
+
+- Every seated chief manages the group (`user_can_manage_group`) and uses the
+  tribe-chief features wired to it, such as `freight.manage` for the
+  Freighters group.
+- Every seated chief is pinged: new applications, the pending-application
+  reminder, help tickets, and external-guild alerts.
+- Every seated chief is in the `Tribe - Chief` auth group.
+- `chief` on the API is the first seated chief (US, EU, AU order);
+  `chiefs` lists all three seats, filled or open.
+- Migration `0052` seated each group's old single chief in their
+  `PilotTimezone` home (else first bracket, else US).
+
 ## Who shows as chief
 
-1. **Group:** the group chief. Else the tribe chief, as **Interim chief**.
-   Else the alliance executor, as **Interim chief**.
+1. **Group:** its seated chiefs. With no seat filled, the tribe chief, as
+   **Interim chief**. Else the alliance executor, as **Interim chief**.
 2. **Tribe:** the tribe chief. Else the alliance executor, as
    **Interim chief**.
 
@@ -41,21 +60,29 @@ are, by `ensure_tribe_chiefs_have_group_memberships`).
 
 - Any logged-in pilot can volunteer for an open seat, once, with an optional
   note (500 characters). A filled seat refuses offers.
+- A group offer is for one timezone seat (`region`). Without one, the pilot's
+  own timezone is used when that seat is open, else the first open seat. A
+  group with some seats filled shows a quieter "open chief seats" banner
+  instead of Help wanted, to pilots who don't already manage it.
 - The offer DMs the executor (`tribes.chief_volunteered`), with **Appoint as
   chief** and **Not now** bot buttons (`tribe_chief:appoint:<id>`,
   `tribe_chief:decline:<id>`) and an **All volunteers** link to the seat's
   page.
 - **Appoint** makes the pilot chief. For a group it also makes them an active
   member; for a tribe, `ensure_tribe_chiefs_have_group_memberships` adds them
-  to every group. The seat's other open offers become `closed`.
+  to every group. The seat's other open offers become `closed`; offers for
+  the group's other timezone seats stay open.
 - **Not now** leaves the seat open.
 - The DM is edited once answered (`update_chief_volunteer_dm`): what happened,
   no buttons.
 
 ## Data model
 
+`tribes.TribeGroupChief`: `tribe_group`, `region` (`US`, `EU`, `AU`),
+`user`.
+
 `tribes.TribeChiefVolunteer`: `tribe`, `tribe_group` (empty for the tribe
-seat), `user`, `note`, `status` (`pending`, `appointed`, `declined`,
+seat), `region` (a group seat's timezone), `user`, `note`, `status` (`pending`, `appointed`, `declined`,
 `closed`), `decided_by`, `decided_at`.
 
 ## API
@@ -65,6 +92,7 @@ meaning: the real chief, or null.
 
 | Field | Meaning |
 |---|---|
+| `chiefs` (groups) | The three timezone seats: `region`, `label` (USTZ...), `chief` (null if open or hidden), `is_open`, `has_volunteered` |
 | `acting_chief` | Who the page shows as chief. Null if nobody, or if a hidden roster hides the group's own chief (a stand-in is always named) |
 | `chief_is_interim` | The seat is open: show Help wanted |
 | `can_appoint_chief` | The viewer is the executor |
@@ -72,8 +100,9 @@ meaning: the real chief, or null.
 
 | Route | Who |
 |---|---|
-| `POST /api/tribes/{tribe_id}/chief-volunteers` `{tribe_group_id?, note}` | Any pilot |
-| `GET /api/tribes/{tribe_id}/chief-volunteers?tribe_group_id=` | Executor |
+| `POST /api/tribes/{tribe_id}/chief-volunteers` `{tribe_group_id?, region?, note}` | Any pilot |
+| `GET /api/tribes/{tribe_id}/chief-volunteers?tribe_group_id=&region=` | Executor |
+| `PUT /api/tribes/{tribe_id}/groups/{group_id}/chief` `{user_id, region}` | Superusers: fill, move or empty one seat |
 | `POST /api/tribes/chief-volunteers/{id}/appoint` and `/decline` | Executor |
 | `POST /api/tribes/chief-volunteers/{id}/discord-appoint` and `/discord-decline` `{discord_user_id}` | The bot, for the executor's click |
 

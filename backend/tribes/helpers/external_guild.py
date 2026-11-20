@@ -753,15 +753,16 @@ def _alert_cleanup_failed(seat: TribeExternalGuildSeat) -> None:
     # pylint: disable-next=import-outside-toplevel
     from tribes.helpers.chiefs import ChiefResolver
 
-    # The chief, else the tribe chief, else the executor standing in.
-    chief = ChiefResolver().for_group(binding.tribe_group).user
-    if chief is not None:
-        chief_discord = DiscordUser.objects.filter(user_id=chief.id).first()
-        if chief_discord is not None:
-            try:
-                client.send_dm(str(chief_discord.id), message=message)
-            except (DiscordError, requests.RequestException) as exc:
-                logger.warning("Failed chief DM for seat %s: %s", seat.pk, exc)
+    # Every timezone chief, else the tribe chief, else the executor.
+    chief_ids = [
+        chief.id
+        for chief in ChiefResolver().for_group(binding.tribe_group).users
+    ]
+    for chief_discord in DiscordUser.objects.filter(user_id__in=chief_ids):
+        try:
+            client.send_dm(str(chief_discord.id), message=message)
+        except (DiscordError, requests.RequestException) as exc:
+            logger.warning("Failed chief DM for seat %s: %s", seat.pk, exc)
 
 
 def append_query(base_url: str, **params: str) -> str:

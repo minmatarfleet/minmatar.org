@@ -6,6 +6,7 @@ name so the UI can show the chief's portrait and a hover.
 
 import logging
 
+from tribes.helpers.chiefs import group_seats
 from tribes.models import Tribe
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,9 @@ def _group_rows(tribe) -> list[dict]:
         for tg in tribe.groups.all():
             if not getattr(tg, "is_active", True):
                 continue
-            cid, cname = _chief(tg.chief)
+            # The first timezone chief (US, EU, AU) stands for the group.
+            seats = group_seats(tg)
+            cid, cname = _chief(seats[0].user if seats else None)
             out.append({"name": tg.name, "chief_id": cid, "chief_name": cname})
         out.sort(key=lambda g: g["name"])
     except Exception:  # pragma: no cover - defensive
@@ -59,7 +62,9 @@ def tribe_team_rows() -> list[dict]:
             _row_from_tribe(t)
             for t in Tribe.objects.filter(is_active=True)
             .select_related("chief__eveplayer__primary_character")
-            .prefetch_related("groups__chief__eveplayer__primary_character")
+            .prefetch_related(
+                "groups__chief_seats__user__eveplayer__primary_character"
+            )
             .order_by("name")
         ]
     except Exception:  # pragma: no cover - defensive

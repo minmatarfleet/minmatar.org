@@ -31,11 +31,11 @@ def get_tribe_groups(request, tribe_id: int):
     groups = (
         tribe.groups.filter(is_active=True)
         .select_related(
-            "chief__eveplayer__primary_character",
             "tribe__chief__eveplayer__primary_character",
             "group__discord_group",
         )
         .prefetch_related(
+            "chief_seats__user__eveplayer__primary_character",
             "allowed_affiliations",
             "ranks",
             "requirements__asset_types__eve_type",

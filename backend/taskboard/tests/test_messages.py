@@ -30,6 +30,7 @@ from taskboard.models import (
 )
 from taskboard.services import TaskError
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import TribeGroupChief
 
 # A Sunday, 17:00 EVE: the default send time.
 SUNDAY_17 = datetime(2026, 11, 22, 17, 0, tzinfo=dt_timezone.utc)
@@ -199,8 +200,9 @@ class RemindTestCase(TestCase):
         self.pilot = make_pilot("Teysha", 9001)
         self.chief = make_pilot("Casper", 9002)
         tribe = Tribe.objects.create(name="Capitals", chief=self.chief)
-        self.group = TribeGroup.objects.create(
-            tribe=tribe, name="Dreads", chief=self.chief
+        self.group = TribeGroup.objects.create(tribe=tribe, name="Dreads")
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
         )
         TribeGroupMembership.objects.create(
             user=self.pilot, tribe_group=self.group, status="active"

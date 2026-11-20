@@ -640,6 +640,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         description="Read survey responses. Unwired, so only superusers pass.",
         deny_community_statuses=(),
     ),
+    "esi_health.manage": FeatureDefinition(
+        code="esi_health.manage",
+        label="Manage ESI health",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "See every corporation's ESI problems, decide how scope changes "
+            "are asked for and message pilots on Discord. Unwired, so only "
+            "superusers pass."
+        ),
+        deny_community_statuses=(),
+    ),
     "site.debug_pages": FeatureDefinition(
         code="site.debug_pages",
         label="Debug pages",

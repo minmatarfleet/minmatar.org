@@ -1146,3 +1146,9 @@ export interface ManageEntityValue {
     name:       string;
     icon_url?:  string | null;
 }
+
+/** A tribe group's timezone chief seat with nobody in it (region US, EU or AU). */
+export interface TribeChiefOpenSeat {
+    region:     string;
+    label:      string;
+}

@@ -11,7 +11,8 @@ from tribes.models import TribeGroup
 
 def get_tribe_group_or_redirect(request, group_id):
     tribe_group = (
-        TribeGroup.objects.select_related("tribe", "chief")
+        TribeGroup.objects.select_related("tribe")
+        .prefetch_related("chief_seats__user")
         .filter(pk=group_id)
         .first()
     )

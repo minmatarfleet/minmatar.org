@@ -31,6 +31,7 @@ import type {
     MemberView,
 } from '@helpers/corporations/detail'
 import { month_year, short_date } from '@helpers/corporations/about'
+import { readd_label } from '@helpers/esi_health'
 import { query_string } from '@helpers/string'
 
 import Input from '@components/blocks/Input.astro'
@@ -424,7 +425,7 @@ const selected_template = t('corporations.members.selected')
                                                 <span class="cm-pilot__sub">
                                                     {alts && <span class="cm-muted">{alts}</span>}
                                                     {attention &&
-                                                        <span class:list={['cm-attention-text', attention === 'trial_ready' ? 'is-good' : 'is-warn']}>{attention_label(attention)}</span>
+                                                        <span class:list={['cm-attention-text', attention === 'trial_ready' ? 'is-good' : 'is-warn']}>{attention === 'esi_suspended' && member.readd_count > 0 ? readd_label(t, member.needs_readd, member.readd_count) : attention_label(attention)}</span>
                                                     }
                                                     {!attention &&
                                                         <span class="cm-mobile-meta cm-muted">{tenure_label(member.corp_joined_at)} · {last}</span>
@@ -509,8 +510,8 @@ const selected_template = t('corporations.members.selected')
                                                                 <li>
                                                                     <span class="cm-strong">{alt.character_name}</span>
                                                                     <span class="cm-muted">{t('corporations.members.alt')}</span>
-                                                                    <span class:list={['cm-token', { 'is-warn': alt.registered === false || alt.esi_suspended }]}>
-                                                                        {alt.esi_suspended
+                                                                    <span class:list={['cm-token', { 'is-warn': alt.registered === false || alt.esi_suspended || alt.needs_readd }]}>
+                                                                        {(alt.needs_readd ?? alt.esi_suspended)
                                                                             ? t('corporations.members.attention_esi_suspended')
                                                                             : alt.registered === false ? t('corporations.members.no_token') : alt.token_level || '—'}
                                                                     </span>
