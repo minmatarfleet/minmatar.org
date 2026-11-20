@@ -66,7 +66,7 @@ pipenv run python manage.py town_hall_report \
 | Capitals | `capitals.dreads`, `capitals.carriers`, `capitals.faxes` | Kills, losses, fleet ops (qualifying hulls); top 5 by kills |
 | Supply | `supply.mining` | Volume m³ + ore ISK; top 5 (alliance default) |
 | Supply | `supply.planetary-interaction` | Gross PI ISK; top 5 roster |
-| Supply | `supply.capital-production`, `supply.subcapital-production` | Delivered/committed units + margin; top 5 by delivered margin |
+| Supply | `supply.production` | Delivered/committed units + margin; top 5 by delivered margin. Ranks are Capital Production and Subcapital Production |
 | Supply | `supply.freighters` | Program totals only (contracts, ISK, m³, completion hours) |
 | Pulse | `pulse.fleet-commanders` | Fleets led; top 5 alliance-wide |
 
@@ -121,8 +121,7 @@ Alliance-wide; top 5 shown. k/l/f = kills / losses / fleets.
 ### Planetary Interaction — [total ISK]
 Top 5: …
 
-### Capital Production — [delivered/committed], [margin]
-### Subcapital Production — [status or "empty"]
+### Production — [delivered/committed], [margin]
 ### Freighters — [contracts], [ISK], [m³], median [h]h
 ### Manual: Market, Loyalty Points
 
@@ -141,7 +140,7 @@ Top 5: …
 
 ## Known gaps to mention when relevant
 
-- **Subcap production empty**: usually missing `IndustryOrder.tribe_groups` tags, not a broken query. Orders are tagged in Django admin only today.
+- **Production empty**: usually missing `IndustryOrder.tribe_groups` tags on the Production group, not a broken query. Orders are tagged in Django admin only today.
 - **Mining scope**: alliance vs roster shows different leaders; ask which the slide should use if unclear.
 - **Freighters**: totals only, no per-pilot rows.
 - **Fleet Commanders tribe**: town hall works alliance-wide; member view needs roster members in prod.

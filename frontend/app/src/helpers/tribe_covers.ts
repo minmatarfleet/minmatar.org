@@ -8,6 +8,7 @@ export const TRIBE_GROUP_COVERS: Record<number, string> = {
     15: '/images/advocate-cover.webp',
     13: '/images/thinkspeak-cover.webp',
     14: '/images/readiness-cover.webp',
+    // Production kept the Capital Production row (pk 5).
     5: '/images/capital-production-cover.webp',
     7: '/images/planetary-interaction-cover.webp',
     6: '/images/mining-cover.webp',

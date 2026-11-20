@@ -86,6 +86,7 @@ GROUP_LEADER_METRIC = {
     "capitals.faxes": "fleet_count",
     "supply.mining": "volume_m3",
     "supply.planetary-interaction": "isk_pi_30d_estimate",
+    "supply.production": "delivered_units",
     "supply.subcapital-production": "delivered_units",
     "supply.capital-production": "delivered_units",
     "supply.market": "fits_sold",

@@ -270,9 +270,9 @@ Requests accept them as numbers or digit strings. The existing
    1490366732458528981, planetary-interaction 1480262027485380659,
    technology 1174095095537078312, readiness 1391028680934822018,
    thinkspeak 1172908092573360149, fleet-commanders 1475181633232437408.
-   `#production` is not linked: it is unclear whether it belongs to
-   subcapital or capital production. Capitals groups keep the `#capitals`
-   tribe fallback.
+   `#production` belongs to the Production group (`supply.production`)
+   and is still set by hand: the channel id was never recorded here.
+   Capitals groups keep the `#capitals` tribe fallback.
 
 ## Website
 
