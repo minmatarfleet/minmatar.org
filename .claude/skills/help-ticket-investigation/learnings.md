@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-20 — Review tasks for other corporations' applications
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** no reply (this environment's bot is the test guild and 403s the production help thread)
+**PR:** fix+skill
+**Symptom vs cause:** An alliance member saw review tasks for pending corporation applications, and thought a newly added director-scoped character caused it. The account was not a director or recruiter of any corporation. The Alliance auth group held the application permissions, so `can_review_applications` was true for every member and every corporation. The token did not add a directors or recruiters row.
+**Durable rule:** Ignore application permissions that come only from the Alliance group. A non-reviewer still receives their own rows from the application list, because the corporation page uses that list for status. Corp recruiter groups keep the permission.
+**Skill update:** added the review-tasks row.
+
 ## 2026-11-14 — Open technology threads (batch, Discord MCP on production)
 
 **Category:** pulse.technology

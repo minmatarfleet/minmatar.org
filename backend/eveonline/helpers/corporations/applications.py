@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from django.contrib.auth.models import User
 from datetime import timedelta
 
+from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
 
@@ -14,24 +14,58 @@ from eveonline.helpers.characters.identity import (
 )
 from eveonline.helpers.corporations.permissions import can_manage_corporation
 from eveonline.models import EveCharacterSkill, EveCorporation, EvePlayer
-from groups.helpers.feature_access import can_use_feature
 
 DAYS_PER_MONTH = 30.4375
 ACCEPTANCE_WINDOW_DAYS = 30
+
+# Every alliance member is in this auth group. It is not a recruiter role.
+# Permissions on it must not open other people's applications. The data
+# migration strips them; this check still ignores the group if they return.
+ALLIANCE_AUTH_GROUP = "Alliance"
+APPLICATION_REVIEW_CODENAMES = (
+    "view_evecorporationapplication",
+    "change_evecorporationapplication",
+)
+
+
+def user_holds_application_review_permission(user: User) -> bool:
+    """A review permission set on the user, or on a group other than Alliance.
+
+    Corp recruiter groups and a permission granted to the user directly
+    still review every corporation. The Alliance group does not.
+    """
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    direct = user.user_permissions.filter(
+        content_type__app_label="applications",
+        codename__in=APPLICATION_REVIEW_CODENAMES,
+    )
+    if direct.exists():
+        return True
+    return (
+        user.groups.exclude(name=ALLIANCE_AUTH_GROUP)
+        .filter(
+            permissions__content_type__app_label="applications",
+            permissions__codename__in=APPLICATION_REVIEW_CODENAMES,
+        )
+        .exists()
+    )
 
 
 def can_review_applications(user: User, corporation: EveCorporation) -> bool:
     if user is None or not getattr(user, "is_authenticated", False):
         return False
+    if getattr(user, "is_superuser", False):
+        return True
     if can_manage_corporation(user, corporation):
         return True
     if corporation.recruiters.filter(user_id=user.id).exists():
         return True
     if corporation.recruiters.filter(token__user_id=user.id).exists():
         return True
-    if can_use_feature(user, "applications.view"):
-        return True
-    return can_use_feature(user, "applications.manage")
+    return user_holds_application_review_permission(user)
 
 
 def application_process(corporation_id: int) -> dict:

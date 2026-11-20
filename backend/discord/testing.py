@@ -1,5 +1,7 @@
 """Shared helpers for Discord-related Django tests."""
 
+from contextlib import contextmanager
+
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 
@@ -9,6 +11,25 @@ from discord.signals import (
     resolve_existing_discord_role_from_server,
     user_group_changed,
 )
+
+
+@contextmanager
+def without_discord_group_sync():
+    """Create auth groups in a test without calling the live Discord API."""
+    signals.post_save.disconnect(
+        group_post_save,
+        sender=Group,
+        dispatch_uid="group_post_save",
+    )
+    signals.m2m_changed.disconnect(
+        user_group_changed,
+        sender=User.groups.through,
+        dispatch_uid="user_group_changed",
+    )
+    try:
+        yield
+    finally:
+        reconnect_discord_group_signals()
 
 
 def reconnect_discord_group_signals() -> None:
