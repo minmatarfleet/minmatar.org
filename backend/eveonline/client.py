@@ -1,4 +1,6 @@
+import contextvars
 import logging
+from contextlib import contextmanager
 from typing import Any, List
 
 from django.conf import settings
@@ -107,17 +109,42 @@ def _esi_to_python(data: Any) -> Any:
     return data
 
 
+# Status codes of every EsiResponse built while a recorder is open. The
+# character sync wraps each section in ``record_esi_outcomes`` so it can tell
+# "synced" from "failed" without every helper returning a status.
+_esi_outcomes: contextvars.ContextVar[list | None] = contextvars.ContextVar(
+    "esi_outcomes", default=None
+)
+
+
+@contextmanager
+def record_esi_outcomes():
+    """Collect the ``response_code`` of every EsiResponse built inside."""
+    outcomes: list[int] = []
+    token = _esi_outcomes.set(outcomes)
+    try:
+        yield outcomes
+    finally:
+        _esi_outcomes.reset(token)
+
+
 class EsiResponse:
     """Represents a response from the ESI API"""
 
     data: any
     response: any
     response_code: int
+    # True when the client already reported this response to esi_budget,
+    # so esi_budget.note_response must not count it again.
+    budget_observed: bool = False
 
     def __init__(self, response_code, data=None, response=None):
         self.data = data
         self.response = response
         self.response_code = response_code
+        outcomes = _esi_outcomes.get()
+        if outcomes is not None:
+            outcomes.append(response_code)
 
     def success(self):
         """Returns true of the ESI call was successful."""
@@ -156,6 +183,25 @@ class EsiResponse:
             return f"HTTP server error ({self.response_code})"
 
         return f"Unexpected ESI status ({self.response_code})"
+
+
+def _error_headers(error) -> dict:
+    headers = getattr(error, "headers", None)
+    try:
+        return dict(headers) if headers else {}
+    except (TypeError, ValueError):
+        return {}
+
+
+def _observed(response: EsiResponse, headers: dict) -> EsiResponse:
+    """Report a django-esi failure to the app-wide error budget once.
+
+    Raw ``esi_http`` calls already report themselves; django-esi operations
+    did not, so the budget never saw errors from character syncs.
+    """
+    esi_budget.observe_response(response.response_code, headers)
+    response.budget_observed = True
+    return response
 
 
 class EsiClient:
@@ -296,7 +342,10 @@ class EsiClient:
                 ),
                 e,
             )
-            return EsiResponse(response_code=e.status_code, response=e)
+            return _observed(
+                EsiResponse(response_code=e.status_code, response=e),
+                _error_headers(e),
+            )
         except ESIErrorLimitException as e:
             logger.warning(
                 "ESI operation.results() error-limited for %s: %s",
@@ -305,7 +354,10 @@ class EsiClient:
                 ),
                 e,
             )
-            return EsiResponse(response_code=420, response=e)
+            return _observed(
+                EsiResponse(response_code=420, response=e),
+                {"X-Esi-Error-Limit-Reset": getattr(e, "reset", None) or 60},
+            )
         except Exception as e:
             logger.warning(
                 "ESI operation.results() failed for %s: %s",
@@ -350,7 +402,10 @@ class EsiClient:
                 ),
                 e,
             )
-            return EsiResponse(response_code=e.status_code, response=e)
+            return _observed(
+                EsiResponse(response_code=e.status_code, response=e),
+                _error_headers(e),
+            )
         except ESIErrorLimitException as e:
             logger.warning(
                 "ESI operation.result() error-limited for %s: %s",
@@ -359,7 +414,10 @@ class EsiClient:
                 ),
                 e,
             )
-            return EsiResponse(response_code=420, response=e)
+            return _observed(
+                EsiResponse(response_code=420, response=e),
+                {"X-Esi-Error-Limit-Reset": getattr(e, "reset", None) or 60},
+            )
         except Exception as e:
             logger.warning(
                 "ESI operation.result() failed for %s: %s",

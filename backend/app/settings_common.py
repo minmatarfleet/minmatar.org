@@ -216,6 +216,17 @@ JANICE_API_URL = "https://janice.e-351.com/api/rest/v2/pricer"
 # Read by GET /api/users/me/gates; change it and restart the app to flip.
 FRONTEND_GATE_SOURCE = os.environ.get("FRONTEND_GATE_SOURCE", "legacy")
 
+# How character ESI data is refreshed (eveonline.character_sync):
+# "fanout" (every member every 4 h, spread across the window), "shadow"
+# (fanout, plus the scheduler logs what it would queue) or "scheduled"
+# (per-section intervals). Change it and restart workers and beat to flip.
+# See docs/architecture/character-sync.md.
+CHARACTER_SYNC_MODE = os.environ.get("CHARACTER_SYNC_MODE", "fanout")
+# Weighted section fetches the scheduler queues per 5-minute tick.
+CHARACTER_SYNC_COST_PER_TICK = int(
+    os.environ.get("CHARACTER_SYNC_COST_PER_TICK", "300")
+)
+
 # The alliance executor's character (BearThatCares). They stand in as
 # interim chief of any tribe without a chief, and of any group whose tribe
 # has none, and they appoint chiefs from volunteers. 0 turns it off.

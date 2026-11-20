@@ -165,6 +165,8 @@ def note_call(
     character_id: int | None,
     status: int,
     headers: dict | None = None,
+    *,
+    observed: bool = False,
 ) -> None:
     """Record one finished ESI call: cost, error budget, pause, and ETag.
 
@@ -174,7 +176,9 @@ def note_call(
     allowance.
     """
     headers = headers or {}
-    observe_response(status, headers)
+    if not observed:
+        # EsiClient already reports django-esi failures (budget_observed).
+        observe_response(status, headers)
     cost = token_cost(status)
     if cost:
         spend(group, character_id, cost)
@@ -230,6 +234,7 @@ def note_response(group: str, character_id: int | None, response) -> None:
             character_id,
             status,
             dict(headers) if headers else {},
+            observed=bool(getattr(response, "budget_observed", False)),
         )
         return
     if hasattr(response, "success") and not response.success():

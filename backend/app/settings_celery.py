@@ -76,14 +76,34 @@ CELERYBEAT_CHARACTERS = [
         "[Characters] Update Affiliations",
         {
             "task": "eveonline.tasks.affiliations.update_character_affilliations",
-            "schedule": crontab(minute="0,30", hour="*"),
+            "schedule": crontab(minute="*/15"),
+            "options": {"expire_seconds": 15 * 60},
         },
     ),
     (
+        # Fanout mode only (CHARACTER_SYNC_MODE); returns early when the
+        # scheduler below runs the sync.
         "[Characters] Update Characters (assets, skills, killmails)",
         {
             "task": "eveonline.tasks.characters.update_alliance_characters",
             "schedule": crontab(minute=37, hour="*/4"),
+        },
+    ),
+    (
+        # Scheduled and shadow modes; returns early in fanout mode.
+        "[Characters] Queue due character syncs",
+        {
+            "task": "eveonline.tasks.character_sync.queue_due_character_syncs",
+            "schedule": crontab(minute="*/5"),
+            "options": {"expire_seconds": 5 * 60},
+        },
+    ),
+    (
+        "[Characters] Character sync health",
+        {
+            "task": "eveonline.tasks.character_sync.report_character_sync_health",
+            "schedule": crontab(minute="3,18,33,48"),
+            "options": {"expire_seconds": 15 * 60},
         },
     ),
     (
@@ -117,6 +137,14 @@ CELERYBEAT_CHARACTERS = [
 ]
 # Corporations
 CELERYBEAT_CORPORATIONS = [
+    (
+        "[Corporations] Sync freight contracts",
+        {
+            "task": "eveonline.tasks.corporations.sync_freight_contracts",
+            "schedule": crontab(minute="*/10"),
+            "options": {"expire_seconds": 10 * 60},
+        },
+    ),
     (
         "[Corporations] Import Corporations",
         {
@@ -188,6 +216,14 @@ CELERYBEAT_CORPORATIONS = [
 
 # Buyback stock ledger + weekly metrics
 CELERYBEAT_BUYBACK = [
+    (
+        "[Buyback] Sync M-EXC contracts",
+        {
+            "task": "buyback.tasks.sync_buyback_contracts_task",
+            "schedule": crontab(minute="*/10"),
+            "options": {"expire_seconds": 10 * 60},
+        },
+    ),
     (
         "[Buyback] Sync stock ledger (contracts, sells, hangar)",
         {

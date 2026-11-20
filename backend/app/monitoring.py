@@ -44,7 +44,7 @@ CRON_MONITORED_SCHEDULES = (
     "[Queues] Monitor queue health",
     "[Campaigns] Close the week",
     "[Campaigns] Generate daily orders",
-    "[Characters] Update Characters (assets, skills, killmails)",
+    "[Characters] Queue due character syncs",
     "[Market] Fetch Market Item History",
     "[Capabilities] Load new SDE builds",
     "[Industry] Start provisional orders",

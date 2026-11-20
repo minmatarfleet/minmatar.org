@@ -307,18 +307,16 @@ class CapabilityServicesTestCase(TestCase):
 
     def test_skill_sync_queues_a_rerate_only_when_levels_changed(self):
         # pylint: disable=import-outside-toplevel
-        from eveonline.tasks import characters as character_tasks
+        from eveonline import character_sync
 
         pilot = self._character(2032, "Logi", {})
         for changed, expected in ((False, 0), (True, 1)):
             with mock.patch.object(
-                character_tasks,
+                character_sync,
                 "refresh_character_skills",
                 return_value=changed,
-            ), mock.patch.object(
-                character_tasks.app, "signature"
-            ) as signature:
-                character_tasks._refresh_skills_and_readiness(  # pylint: disable=protected-access
+            ), mock.patch.object(character_sync.app, "signature") as signature:
+                character_sync._run_skills(  # pylint: disable=protected-access
                     pilot
                 )
             self.assertEqual(signature.call_count, expected)

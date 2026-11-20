@@ -1,91 +1,51 @@
 import logging
+import zlib
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils import timezone
 from esi.exceptions import ESIErrorLimitException
-from esi.models import Token
 
 from app.celery import app
+from eveonline import character_sync
 from eveonline.helpers.characters import (
     update_character_public_data as refresh_character_public_data,
-    update_character_assets as refresh_character_assets,
-    update_character_blueprints as refresh_character_blueprints,
-    update_character_clones as refresh_character_clones,
-    update_character_contracts as refresh_character_contracts,
-    update_character_industry_jobs as refresh_character_industry_jobs,
-    update_character_killmails as refresh_character_killmails,
-    update_character_mining as refresh_character_mining,
-    update_character_planets as refresh_character_planets,
-    update_character_skills as refresh_character_skills,
 )
 from eveonline.helpers.alliances import tracked_alliance_ids
 from eveonline.helpers.characters.corporation_history import (
     CORPORATION_HISTORY_TTL,
     sync_character_corporation_history,
 )
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCharacterSyncState
 from eveonline.utils import get_esi_downtime_countdown
 
 logger = logging.getLogger(__name__)
 
-SCOPE_ASSETS = ["esi-assets.read_assets.v1"]
-SCOPE_SKILLS = ["esi-skills.read_skills.v1"]
-SCOPE_KILLMAILS = ["esi-killmails.read_killmails.v1"]
-SCOPE_CONTRACTS = ["esi-contracts.read_character_contracts.v1"]
-SCOPE_INDUSTRY_JOBS = ["esi-industry.read_character_jobs.v1"]
-SCOPE_MINING = ["esi-industry.read_character_mining.v1"]
-SCOPE_PLANETS = ["esi-planets.manage_planets.v1"]
-SCOPE_BLUEPRINTS = ["esi-characters.read_blueprints.v1"]
-SCOPE_CLONES = ["esi-clones.read_clones.v1"]
-SCOPE_IMPLANTS = ["esi-clones.read_implants.v1"]
-
 # Pace initial/stale corporation-history backfill (~10 chars/min).
 CORPORATION_HISTORY_BACKFILL_BATCH = 50
 
-
-def _refresh_contracts_and_reconcile(eve_character_id: int) -> None:
-    refresh_character_contracts(eve_character_id)
-    # A signature, not send_task, so AppTask dedupes it like any call.
-    app.signature(
-        "industry.tasks.reconcile_industry_contract_associations_for_character_task",
-        args=[eve_character_id],
-    ).delay()
+# The fan-out spreads members over its 4-hour window in 5-minute slots.
+FANOUT_WINDOW = timedelta(hours=4)
+FANOUT_SLOT = timedelta(minutes=5)
+# Characters updated this recently (e.g. just added) are skipped by the
+# fan-out.
+FANOUT_RECENT = timedelta(hours=3, minutes=30)
 
 
-def _refresh_industry_jobs_and_notify(eve_character_id: int) -> None:
-    result = refresh_character_industry_jobs(eve_character_id)
-    created_job_ids = result[1] if isinstance(result, tuple) else []
-    if created_job_ids:
-        app.signature(
-            "industry.tasks.emit_order_job_notifications_for_jobs",
-            args=[created_job_ids],
-        ).delay()
-
-
-def _refresh_skills_and_readiness(character: EveCharacter):
-    """Sync skills; re-rate the character only when a level changed."""
-    changed = refresh_character_skills(character.character_id)
-    if changed and character.user_id:
-        app.signature(
-            "capabilities.tasks.refresh_character_readiness",
-            args=[character.pk],
-        ).delay()
-
-
-@app.task(rate_limit="5/m")
+@app.task(expires=FANOUT_WINDOW.total_seconds())
 def update_character(eve_character_id):
-    """Update a character's assets, skills, killmails, contracts, and industry jobs."""
-    countdown = get_esi_downtime_countdown()
-    if countdown > 0:
-        update_character.apply_async(
-            args=[eve_character_id],
-            countdown=countdown,
-        )
+    """Update a character's public data and every ESI section.
+
+    Used by the fanout mode, new characters, and the tech router. Pacing
+    comes from the caller (the fan-out spreads its countdowns); there is no
+    Celery rate limit, and during ESI downtime it returns instead of
+    re-queuing itself.
+    """
+    if get_esi_downtime_countdown() > 0:
         logger.info(
-            "Deferring character update for %s by %s s (ESI downtime 11:00–11:15 UTC)",
+            "Skipping character update for %s during ESI downtime",
             eve_character_id,
-            countdown,
         )
         return
 
@@ -104,37 +64,19 @@ def update_character(eve_character_id):
         eve_character_id,
     )
     refresh_character_public_data(eve_character_id)
+    character.refresh_from_db()
     if character.esi_suspended:
         logger.info(
             "Skipping update for ESI suspended character %s",
             eve_character_id,
         )
         return
-    if Token.get_token(eve_character_id, SCOPE_ASSETS):
-        refresh_character_assets(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_SKILLS):
-        _refresh_skills_and_readiness(character)
-    if Token.get_token(eve_character_id, SCOPE_KILLMAILS):
-        refresh_character_killmails(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_CONTRACTS):
-        _refresh_contracts_and_reconcile(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_INDUSTRY_JOBS):
-        _refresh_industry_jobs_and_notify(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_MINING):
-        refresh_character_mining(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_PLANETS):
-        refresh_character_planets(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_BLUEPRINTS):
-        refresh_character_blueprints(eve_character_id)
-    if Token.get_token(eve_character_id, SCOPE_CLONES) and Token.get_token(
-        eve_character_id, SCOPE_IMPLANTS
-    ):
-        refresh_character_clones(eve_character_id)
+    character_sync.run_character_sync(character, force=True)
 
 
 @app.task()
 def update_character_urgent(eve_character_id):
-    """No rate limit for urgent updates."""
+    """A new character's first fetch: every section, right away."""
     update_character(eve_character_id)
 
 
@@ -213,7 +155,14 @@ def queue_stale_character_corporation_history(
 
 @app.task
 def update_alliance_characters():
-    """Queue update_character for each alliance character (assets, skills, killmails)."""
+    """Fanout mode: queue update_character for every member character,
+    spread across the 4-hour window.
+
+    Returns early in scheduled mode, where queue_due_character_syncs keeps
+    each section fresh on its own interval.
+    """
+    if character_sync.sync_mode() == character_sync.MODE_SCHEDULED:
+        return 0
     # Tracked scope: characters in any alliance we sync, not only FL33T/BUILD.
     alliance_characters = EveCharacter.objects.filter(
         alliance_id__in=tracked_alliance_ids()
@@ -221,14 +170,36 @@ def update_alliance_characters():
     users_with_alliance_chars = User.objects.filter(
         evecharacter__in=alliance_characters
     ).distinct()
-    all_characters = EveCharacter.objects.filter(
-        user__in=users_with_alliance_chars,
-        esi_deleted=False,
-    ).exclude(token=None)
+    recent = EveCharacterSyncState.objects.filter(
+        section=character_sync.ASSETS,
+        attempted_at__gte=timezone.now() - FANOUT_RECENT,
+    ).values("character_id")
+    all_characters = (
+        EveCharacter.objects.filter(
+            user__in=users_with_alliance_chars,
+            esi_deleted=False,
+        )
+        .exclude(token=None)
+        .exclude(pk__in=recent)
+    )
 
+    character_ids = list(all_characters.values_list("character_id", flat=True))
     logger.info(
         "Queuing update_character for %d alliance character(s)",
-        all_characters.count(),
+        len(character_ids),
     )
-    for character in all_characters:
-        update_character.apply_async(args=[character.character_id])
+    for character_id in character_ids:
+        countdown = fanout_countdown(character_id)
+        update_character.apply_async(
+            args=[character_id],
+            countdown=countdown,
+            expires=countdown + 60 * 60,
+        )
+    return len(character_ids)
+
+
+def fanout_countdown(character_id: int) -> int:
+    """A stable 5-minute slot in the 4-hour window for this character."""
+    slots = int(FANOUT_WINDOW / FANOUT_SLOT)
+    slot = zlib.crc32(str(character_id).encode()) % slots
+    return int(slot * FANOUT_SLOT.total_seconds())

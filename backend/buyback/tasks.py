@@ -38,6 +38,31 @@ def sync_buyback_ledger_task():
     return result
 
 
+@shared_task(expires=10 * 60, exclusive=10 * 60)
+def sync_buyback_contracts_task() -> dict:
+    """Every 10 minutes: M-EXC's corporation contracts and the contract
+    ledger. The hourly task still takes the hangar snapshot (ESI caches
+    corporation assets for an hour) and syncs sell fills.
+    """
+    # pylint: disable=import-outside-toplevel
+    from buyback.models import BUYBACK_CORPORATION_ID
+    from eveonline.helpers.corporations import update_corporation_contracts
+    from eveonline.utils import get_esi_downtime_countdown
+
+    if get_esi_downtime_countdown() > 0:
+        return {"skipped": "downtime"}
+    synced = update_corporation_contracts(BUYBACK_CORPORATION_ID)
+    result = refresh_buyback_ledger(
+        sync_contracts=True,
+        sync_sell_orders=False,
+        snapshot_hangar=False,
+        refresh_metrics=False,
+        seed_allowlist=False,
+    )
+    result["corporation_contracts"] = synced
+    return result
+
+
 @shared_task
 def refresh_buyback_accepted_item_metrics_task():
     """Monday: seed allowlist + demand/stockpile metrics on accepted items."""

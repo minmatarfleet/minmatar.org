@@ -8,6 +8,7 @@ do `from eveonline.tasks import update_character`, etc.
 
 from eveonline.tasks import (
     affiliations,
+    character_sync,
     characters,
     corporations,
     notifications,

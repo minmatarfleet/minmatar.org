@@ -330,7 +330,16 @@ def sync_industry_jobs_for_order_assignees() -> None:
     For every character assigned to part of an industry order, sync industry
     jobs for that character and all their related characters (same user).
     Runs every 4 hours via Celery beat.
+
+    In scheduled character-sync mode this returns early: the scheduler keeps
+    assignees with undelivered work on open orders on a 1-hour jobs interval
+    (eveonline.character_sync).
     """
+    # pylint: disable=import-outside-toplevel
+    from eveonline import character_sync
+
+    if character_sync.sync_mode() == character_sync.MODE_SCHEDULED:
+        return
     # Distinct character PKs that have at least one assignment
     assigned_character_pks = set(
         IndustryOrderItemAssignment.objects.values_list(
