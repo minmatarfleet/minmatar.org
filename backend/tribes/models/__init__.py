@@ -1,5 +1,6 @@
 from tribes.models.tribe import Tribe
 from tribes.models.tribe_group import TribeGroup
+from tribes.models.tribe_group_chief import TribeGroupChief
 from tribes.models.tribe_group_rank import TribeGroupRank
 from tribes.models.tribe_group_requirement import TribeGroupRequirement
 from tribes.models.tribe_group_requirement_asset_type import (
@@ -27,6 +28,7 @@ from tribes.models.tribe_external_guild import (
 __all__ = [
     "Tribe",
     "TribeGroup",
+    "TribeGroupChief",
     "TribeGroupRank",
     "TribeGroupRequirement",
     "TribeGroupRequirementAssetType",

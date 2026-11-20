@@ -15,6 +15,7 @@ from notifications.models import (
     NotificationPreference,
 )
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeGroup,
     TribeGroupMembership,
@@ -138,8 +139,9 @@ class MembershipApplyTestCase(TestCase):
     def _make_chief(self):
         chief = User.objects.create_user(username="chief")
         DiscordUser.objects.create(id=777, discord_tag="chief#1", user=chief)
-        self.tribe_group.chief = chief
-        self.tribe_group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=chief
+        )
         return chief
 
     @patch("notifications.service.deliver_notification")
@@ -249,8 +251,9 @@ class MembershipApprovalTestCase(TestCase):
         self.chief = User.objects.create_user(username="chief")
         self.random = User.objects.create_user(username="random")
 
-        self.tribe_group.chief = self.chief
-        self.tribe_group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=self.chief
+        )
 
         self.membership = TribeGroupMembership.objects.create(
             user=self.applicant,
@@ -313,8 +316,9 @@ class MembershipLeaveTestCase(TestCase):
 
     def test_chief_can_remove_member(self):
         chief = User.objects.create_user(username="chief")
-        self.tribe_group.chief = chief
-        self.tribe_group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=chief
+        )
 
         token = make_token(chief)
         url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships/{self.membership.pk}"
@@ -341,8 +345,9 @@ class MembershipListTestCase(TestCase):
         self.chief = User.objects.create_user(username="chief")
         self.member = User.objects.create_user(username="member")
         self.other = User.objects.create_user(username="other")
-        self.tribe_group.chief = self.chief
-        self.tribe_group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=self.chief
+        )
 
         self.member_membership = TribeGroupMembership.objects.create(
             user=self.member,
@@ -553,8 +558,9 @@ class TribeGroupRankApiTestCase(TestCase):
         )
         self.chief = User.objects.create_user(username="chief")
         self.member = User.objects.create_user(username="member")
-        self.tribe_group.chief = self.chief
-        self.tribe_group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=self.chief
+        )
         self.membership = TribeGroupMembership.objects.create(
             user=self.member,
             tribe_group=self.tribe_group,

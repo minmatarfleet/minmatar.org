@@ -52,7 +52,7 @@
       </div>
       <div class="tribes-settings-panel__item">
         <span class="tribes-settings-panel__label">{% translate "Chief" %}</span>
-        <span class="tribes-settings-panel__value">{{ tribe_group.chief|default:"—" }}</span>
+        <span class="tribes-settings-panel__value">{% for seat in tribe_group.chief_seats.all %}{{ seat.get_region_display }} {{ seat.user }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</span>
       </div>
       <div class="tribes-settings-panel__item">
         <span class="tribes-settings-panel__label">{% translate "Active" %}</span>

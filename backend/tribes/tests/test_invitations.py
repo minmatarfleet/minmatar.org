@@ -25,6 +25,7 @@ from tribes.helpers.invitations import (
     invite_blocker,
 )
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeGroup,
     TribeGroupInvitation,
@@ -86,8 +87,9 @@ class InvitationTestCase(TestCase):
             tribe=self.tribe, name="Dreads", code="capitals.dreads-inv"
         )
         self.chief, _ = _pilot("casper", 91001, "Casper Sullivan", 501)
-        self.group.chief = self.chief
-        self.group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
+        )
         self.pilot, self.pilot_char = _pilot(
             "teysha", 91002, "Teysha Blackblade", 502
         )

@@ -94,7 +94,7 @@
         <tr>
           <td><strong>{{ row.tribe_group.name }}</strong></td>
           <td>{{ row.tribe_group.tribe.name }}</td>
-          <td>{{ row.tribe_group.chief|default:"—" }}</td>
+          <td>{% for seat in row.tribe_group.chief_seats.all %}{{ seat.get_region_display }} {{ seat.user }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
           <td>{% if row.tribe_group.is_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</td>
           <td><a href="{{ row.hub_url }}" class="tribes-btn tribes-btn--primary">{% translate "Open" %}</a></td>
         </tr>

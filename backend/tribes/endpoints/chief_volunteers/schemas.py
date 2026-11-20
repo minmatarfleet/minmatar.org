@@ -9,6 +9,8 @@ class ChiefVolunteerSchema(BaseModel):
     tribe_name: str
     # Empty for the tribe chief seat.
     tribe_group_id: Optional[int] = None
+    # A group seat's timezone region (US, EU, AU); empty for the tribe seat.
+    region: str = ""
     seat_name: str
     user_id: int
     # The volunteer's main.
@@ -24,6 +26,9 @@ class ChiefVolunteerSchema(BaseModel):
 class VolunteerRequest(BaseModel):
     # Empty volunteers for the tribe chief seat.
     tribe_group_id: Optional[int] = None
+    # A group's timezone seat (US, EU, AU). Empty picks the pilot's own
+    # timezone when that seat is open, else the first open one.
+    region: Optional[str] = None
     note: str = ""
 
 

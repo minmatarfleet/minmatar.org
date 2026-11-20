@@ -107,7 +107,16 @@ def _models(apps):
     def get(app_label, name):
         return apps.get_model(app_label, name)
 
+    def seat_model():
+        # Group chiefs became timezone seats after this move was written;
+        # migration 0051 runs it on the older TribeGroup.chief schema.
+        try:
+            return get("tribes", "TribeGroupChief")
+        except LookupError:
+            return None
+
     return {
+        "ChiefSeat": seat_model(),
         "Tribe": get("tribes", "Tribe"),
         "TribeGroup": get("tribes", "TribeGroup"),
         "Membership": get("tribes", "TribeGroupMembership"),
@@ -150,6 +159,38 @@ def _choose_primary(groups):
     return None
 
 
+def _group_chief_id(models, group):
+    """A group's chief (the first timezone seat on the newer schema)."""
+    seat = models["ChiefSeat"]
+    if seat is None:
+        return group.chief_id
+    return (
+        seat.objects.filter(tribe_group_id=group.pk)
+        .order_by("pk")
+        .values_list("user_id", flat=True)
+        .first()
+    )
+
+
+def _set_group_chief(models, group, user_id):
+    """Seat ``user_id`` as the group's chief, or clear every seat (None)."""
+    seat = models["ChiefSeat"]
+    if seat is None:
+        group.chief_id = user_id
+        return
+    if user_id is None:
+        seat.objects.filter(tribe_group_id=group.pk).delete()
+        return
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.chief_regions import FALLBACK_REGION
+
+    seat.objects.get_or_create(
+        tribe_group_id=group.pk,
+        user_id=user_id,
+        defaults={"region": FALLBACK_REGION},
+    )
+
+
 def _create_primary(models, pulse, fanfest, log):
     description = SEED_TRIBE_DESCRIPTION
     content = ""
@@ -167,9 +208,11 @@ def _create_primary(models, pulse, fanfest, log):
         description=description,
         content=content,
         discord_channel_id=channel_id,
-        chief_id=chief_id,
         is_active=True,
     )
+    if chief_id:
+        _set_group_chief(models, primary, chief_id)
+        primary.save()
     log.info(f"Created Pulse group {primary.code} pk={primary.pk}")
     return primary
 
@@ -182,7 +225,7 @@ def _reshape_primary(models, primary, pulse, fanfest, log):
     primary.description = _description(primary, fanfest)
     primary.is_active = True
     if fanfest is not None:
-        _copy_tribe_fields(primary, fanfest)
+        _copy_tribe_fields(models, primary, fanfest)
     primary.save()
     log.info(
         f"Fanfest group pk={primary.pk} is {primary.name} "
@@ -190,13 +233,13 @@ def _reshape_primary(models, primary, pulse, fanfest, log):
     )
 
 
-def _copy_tribe_fields(primary, fanfest):
+def _copy_tribe_fields(models, primary, fanfest):
     if not (primary.content or "").strip() and (fanfest.content or "").strip():
         primary.content = fanfest.content
     if not primary.discord_channel_id and fanfest.discord_channel_id:
         primary.discord_channel_id = fanfest.discord_channel_id
-    if not primary.chief_id and fanfest.chief_id:
-        primary.chief_id = fanfest.chief_id
+    if not _group_chief_id(models, primary) and fanfest.chief_id:
+        _set_group_chief(models, primary, fanfest.chief_id)
 
 
 def _description(primary, fanfest):
@@ -261,7 +304,7 @@ def _merge_into_primary(models, source, primary, log):
         else None
     )
     source.group_id = None
-    source.chief_id = None
+    _set_group_chief(models, source, None)
     source.is_active = False
     source.save()
     if source_auth_id and (
@@ -637,21 +680,22 @@ def _move_volunteers(models, fanfest, pulse, primary, log):
     volunteer_model = models["Volunteer"]
     offers = volunteer_model.objects.filter(tribe_id=fanfest.pk)
     for offer in offers:
-        _retarget_volunteer(volunteer_model, offer, pulse, primary, now, log)
+        _retarget_volunteer(models, offer, pulse, primary, now, log)
 
 
-def _retarget_volunteer(volunteer_model, offer, pulse, primary, now, log):
+def _retarget_volunteer(models, offer, pulse, primary, now, log):
     offer.tribe_id = pulse.pk
     if offer.tribe_group_id is None:
         offer.tribe_group_id = primary.pk
-        _close_tribe_seat_offer(volunteer_model, offer, primary, now, log)
+        _close_tribe_seat_offer(models, offer, primary, now, log)
     offer.save()
 
 
-def _close_tribe_seat_offer(volunteer_model, offer, primary, now, log):
+def _close_tribe_seat_offer(models, offer, primary, now, log):
+    volunteer_model = models["Volunteer"]
     if offer.status != STATUS_PENDING:
         return
-    seat_filled = bool(primary.chief_id)
+    seat_filled = bool(_group_chief_id(models, primary))
     duplicate = (
         volunteer_model.objects.filter(
             tribe_group_id=primary.pk,

@@ -21,6 +21,7 @@ from groups.models import (
     UserCommunityStatus,
 )
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import TribeGroupChief
 
 
 def _perm(dotted: str) -> Permission:
@@ -147,8 +148,9 @@ class FeatureCodesTestCase(TestCase):
         users.append(thinker)
 
         group_chief = self._user("group_chief", "Alliance")
-        self.mining.chief = group_chief
-        self.mining.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.mining, region="US", user=group_chief
+        )
         users.append(group_chief)
 
         tribe_chief = self._user("tribe_chief", "Alliance")

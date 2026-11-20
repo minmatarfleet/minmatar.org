@@ -89,9 +89,9 @@ def _build_reminder_message(tribe_group, memberships: list) -> str:
     lines.append("\nPlease review applications in the admin panel.")
 
     mentions = []
-    # The chief, else whoever stands in (tribe chief, then the executor).
-    chief = chiefs.ChiefResolver().for_group(tribe_group).user
-    if chief:
+    # Every timezone chief, else whoever stands in (tribe chief, then the
+    # executor).
+    for chief in chiefs.ChiefResolver().for_group(tribe_group).users:
         chief_mention = _discord_mention(chief)
         if chief_mention:
             mentions.append(chief_mention)

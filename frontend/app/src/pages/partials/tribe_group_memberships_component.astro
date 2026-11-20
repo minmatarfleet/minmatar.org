@@ -117,6 +117,7 @@ if (Astro.request.method === "DELETE") {
 
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
+import { seated_chiefs } from '@helpers/tribe_chiefs'
 
 let tribe_group:TribeGroup | null = null
 let tribe_slug = ''
@@ -254,6 +255,7 @@ const tribe_filter_url = translatePath(
             {pending.length > 0 || approved.length > 0 ?
                 <GroupLeadership
                     chief={tribe_group?.chief}
+                    seats={seated_chiefs(tribe_group)}
                     elders={[]}
                     user_characters={user_characters}
                     tribe_group={tribe_group}

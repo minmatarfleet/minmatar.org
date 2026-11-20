@@ -10,6 +10,7 @@ from tribes.helpers.publishing import (
     visible_group_ids,
 )
 from tribes.models import TribeGroup, TribeGroupMembership
+from tribes.models import TribeGroupChief
 from tribes.tests.publishing_fixtures import (
     add_member,
     make_tribe_group,
@@ -34,8 +35,9 @@ class CanPublishTests(TestCase):
         )
         self.outsider = make_user("outsider")
         self.chief = make_user("chief")
-        self.group.chief = self.chief
-        self.group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
+        )
         self.tribe_chief = make_user("tribe_chief")
         self.group.tribe.chief = self.tribe_chief
         self.group.tribe.save()

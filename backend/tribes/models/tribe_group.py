@@ -49,14 +49,6 @@ class TribeGroup(models.Model):
         related_name="tribe_group",
         help_text="Group-level Discord role (e.g. 'Dreads').",
     )
-    chief = models.ForeignKey(
-        "auth.User",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="led_tribe_groups",
-        help_text="Group leader; can approve/deny membership for this group.",
-    )
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     required_token_type = models.CharField(

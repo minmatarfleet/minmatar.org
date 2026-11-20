@@ -13,13 +13,15 @@ from tribes.endpoints.groups.schemas import (
     QualifyingAssetTypeSchema,
     QualifyingSkillSchema,
     RequirementSchema,
+    TribeGroupChiefSeatSchema,
     TribeGroupSchema,
 )
 from tribes.endpoints.serialization import user_to_character_ref
 from tribes.helpers import user_can_manage_group, user_can_view_group_roster
+from tribes.helpers.chief_regions import LABELS as REGION_LABELS, REGIONS
 from tribes.helpers.chiefs import (
     ChiefResolver,
-    has_pending_offer,
+    group_seats,
     user_is_executor,
 )
 from tribes.helpers.publishing import (
@@ -29,7 +31,49 @@ from tribes.helpers.publishing import (
     can_publish,
     group_role_name,
 )
-from tribes.models import TribeGroup, TribeGroupMembership
+from tribes.models import (
+    TribeChiefVolunteer,
+    TribeGroup,
+    TribeGroupMembership,
+)
+
+
+def _pending_region(request_user, tg: TribeGroup) -> str | None:
+    """The seat the viewer volunteered for, if they have a pending offer."""
+    offer = (
+        TribeChiefVolunteer.objects.filter(
+            tribe_group=tg,
+            user_id=request_user.pk,
+            status=TribeChiefVolunteer.STATUS_PENDING,
+        )
+        .values_list("region", flat=True)
+        .first()
+    )
+    return offer
+
+
+def serialize_chief_seats(
+    tg: TribeGroup, show_identities: bool, pending_region: str | None = None
+) -> list[TribeGroupChiefSeatSchema]:
+    """Every timezone seat, US, EU, AU, filled or open."""
+    by_region = {seat.region: seat for seat in group_seats(tg)}
+    out = []
+    for region in REGIONS:
+        seat = by_region.get(region)
+        out.append(
+            TribeGroupChiefSeatSchema(
+                region=region,
+                label=REGION_LABELS[region],
+                chief=(
+                    user_to_character_ref(seat.user)
+                    if seat is not None and show_identities
+                    else None
+                ),
+                is_open=seat is None,
+                has_volunteered=pending_region == region and seat is None,
+            )
+        )
+    return out
 
 
 def effective_allowed_affiliations(
@@ -93,13 +137,13 @@ def serialize_tribe_group(
         request_user is not None
         and user_can_view_group_roster(request_user, tg)
     )
-    chief_ref = (
-        user_to_character_ref(tg.chief)
-        if tg.chief and show_identities
-        else None
-    )
     resolver = resolver or ChiefResolver()
     acting = resolver.for_group(tg)
+    chief_ref = (
+        user_to_character_ref(acting.user)
+        if acting.user and not acting.is_interim and show_identities
+        else None
+    )
     # A hidden roster hides the group's own chief; a stand-in (tribe chief
     # or executor) is public on the tribe page anyway.
     acting_ref = (
@@ -111,6 +155,7 @@ def serialize_tribe_group(
     can_manage = False
     can_appoint_chief = False
     has_volunteered = False
+    pending_region = None
     if request_user is not None and getattr(
         request_user, "is_authenticated", False
     ):
@@ -118,9 +163,11 @@ def serialize_tribe_group(
             request_user, "tribes.apply", tribe_group=tg
         )
         can_manage = user_can_manage_group(request_user, tg)
-        if acting.is_interim:
+        # A seat is open while any of the three timezones has no chief.
+        if len(acting.users) < len(REGIONS) or acting.is_interim:
             can_appoint_chief = user_is_executor(request_user, resolver)
-            has_volunteered = has_pending_offer(request_user, tg.tribe, tg)
+            pending_region = _pending_region(request_user, tg)
+            has_volunteered = pending_region is not None
 
     return TribeGroupSchema(
         id=tg.pk,
@@ -132,6 +179,7 @@ def serialize_tribe_group(
         content=tg.content or "",
         discord_channel_id=tg.discord_channel_id,
         chief=chief_ref,
+        chiefs=serialize_chief_seats(tg, show_identities, pending_region),
         acting_chief=acting_ref,
         chief_is_interim=acting.is_interim,
         can_appoint_chief=can_appoint_chief,

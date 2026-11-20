@@ -21,6 +21,7 @@ from groups.models import (
     UserCommunityStatus,
 )
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import TribeGroupChief
 from users.helpers import get_user_permissions
 
 
@@ -110,8 +111,11 @@ class FeatureAccessTestCase(TestCase):
             tribe=tribe,
             name="Freighters",
             code="supply.freighters",
-            chief=chief,
         )
+        if chief is not None:
+            TribeGroupChief.objects.create(
+                tribe_group=group, region="US", user=chief
+            )
         feature = PilotFeature.objects.get(code="freight.manage")
         feature.tribe_groups.set([group])
         clear_feature_cache()

@@ -1,11 +1,15 @@
 ---
 /**
  * Help wanted: a tribe or group with no chief, and who stands in meanwhile.
+ * A group has a chief seat per timezone (USTZ, EUTZ, AUTZ); once one is
+ * filled, `open_seats` lists the rest and the banner says just that.
  * Volunteering DMs the alliance executor, who appoints chiefs; the executor
  * gets a link to the volunteers instead of the button.
  */
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeChiefOpenSeat } from '@dtypes/layout_components'
 
 interface Props {
     tribe_id:               number;
@@ -19,6 +23,10 @@ interface Props {
     login_href:             string;
     has_volunteered:        boolean;
     can_appoint:            boolean;
+    /** A group's open timezone seats; empty for the tribe seat. */
+    open_seats?:            TribeChiefOpenSeat[];
+    /** Some of the group's seats are filled; only the rest need a chief. */
+    partly_filled?:         boolean;
     [propName: string]:     any;
 }
 
@@ -33,6 +41,8 @@ const {
     login_href,
     has_volunteered,
     can_appoint,
+    open_seats = [],
+    partly_filled = false,
     ...attributes
 } = Astro.props
 
@@ -43,11 +53,16 @@ import { query_string } from '@helpers/string'
 const HELP_WANTED_ID = 'tribe-chief-help-wanted'
 
 const is_tribe_seat = group_id === null
-const title = t(is_tribe_seat ? 'tribes.chief.help_wanted_tribe' : 'tribes.chief.help_wanted_group')
-    .replace('{seat}', seat_name)
+const open_labels = open_seats.map((seat) => seat.label).join(', ')
+const title = partly_filled
+    ? t('tribes.chief.open_seats').replace('{seat}', seat_name).replace('{tz}', open_labels)
+    : t(is_tribe_seat ? 'tribes.chief.help_wanted_tribe' : 'tribes.chief.help_wanted_group')
+        .replace('{seat}', seat_name)
 
 let covered: string = t('tribes.chief.covered_nobody')
-if (interim_name && interim_is_executor)
+if (partly_filled)
+    covered = t('tribes.chief.open_seats_hint')
+else if (interim_name && interim_is_executor)
     covered = t(is_tribe_seat ? 'tribes.chief.covered_by_executor_tribe' : 'tribes.chief.covered_by_executor_group')
         .replace('{name}', interim_name)
 else if (interim_name)
@@ -70,6 +85,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 
 import Button from '@components/blocks/Button.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
+import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 ---
@@ -114,6 +130,20 @@ import Textarea from '@components/blocks/Textarea.astro'
                                 <h3>{t('tribes.chief.volunteer_title').replace('{seat}', seat_name)}</h3>
                                 <p class="[ text-muted ]">{dialog_hint}</p>
                             </Flexblock>
+                            {open_seats.length > 1 &&
+                                <Flexblock gap="var(--space-3xs)">
+                                    <label for="chief-volunteer-region">{t('tribes.chief.seat_label')}</label>
+                                    <Select id="chief-volunteer-region" name="region" size="sm">
+                                        <option value="">{t('tribes.chief.seat_any')}</option>
+                                        {open_seats.map((seat) => (
+                                            <option value={seat.region}>{seat.label}</option>
+                                        ))}
+                                    </Select>
+                                </Flexblock>
+                            }
+                            {open_seats.length === 1 &&
+                                <input type="hidden" name="region" value={open_seats[0].region} />
+                            }
                             <Flexblock gap="var(--space-3xs)">
                                 <label for="chief-volunteer-note">{t('tribes.chief.note_label')}</label>
                                 <Textarea

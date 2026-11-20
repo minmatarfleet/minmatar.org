@@ -1,6 +1,8 @@
 """Who leads a tribe or group, and filling a seat that has no chief.
 
-A group without a chief is led by its tribe chief, as interim chief. A tribe
+A tribe has one chief. A group has up to three, one per timezone seat
+(US, EU, AU; tribes.models.TribeGroupChief), and every seated chief leads
+it. A group with no seat filled is led by its tribe chief, as interim chief. A tribe
 without a chief, and any chiefless group in it, is led by the alliance
 executor (settings.ALLIANCE_EXECUTOR_CHARACTER_ID), also as interim. Pages
 show Help wanted whenever the chief shown is interim.
@@ -16,7 +18,7 @@ Pilots volunteer for an open seat; the executor gets a DM and appoints one
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from django.conf import settings
 from django.db import transaction
@@ -26,10 +28,19 @@ from app.links import site_url
 from eveonline.models import EveCharacter
 from notifications.service import notify_user
 from notifications.types.tribes import TRIBE_CHIEF_VOLUNTEERED_KEY
+from timezones.services import timezone_for
+from tribes.helpers.chief_regions import (
+    LABELS as REGION_LABELS,
+    REGIONS,
+    clean_region,
+    home_region,
+    pick_region,
+)
 from tribes.models import (
     Tribe,
     TribeChiefVolunteer,
     TribeGroup,
+    TribeGroupChief,
     TribeGroupMembership,
 )
 
@@ -44,10 +55,34 @@ class ChiefVolunteerError(Exception):
 
 @dataclass(frozen=True)
 class ActingChief:
-    """The pilot shown as chief, and whether they only stand in."""
+    """The pilot shown as chief, and whether they only stand in.
+
+    ``users`` is everyone who leads the seat: every seated group chief, or
+    the one stand-in. ``user`` is the first of them.
+    """
 
     user: object | None
     is_interim: bool
+    users: tuple = field(default=())
+
+
+def group_seats(tribe_group: TribeGroup) -> list[TribeGroupChief]:
+    """The group's filled seats in US, EU, AU order (uses a prefetch)."""
+    seats = list(tribe_group.chief_seats.all())
+    seats.sort(key=lambda seat: REGIONS.index(seat.region))
+    return seats
+
+
+def group_chief_ids(tribe_group: TribeGroup) -> set[int]:
+    return {seat.user_id for seat in tribe_group.chief_seats.all()}
+
+
+def user_region(user) -> str | None:
+    """The pilot's timezone region, from the timezones app."""
+    if user is None:
+        return None
+    row = timezone_for(user.pk)
+    return home_region(row.home, row.brackets) if row else None
 
 
 def executor_user():
@@ -87,13 +122,17 @@ class ChiefResolver:
 
     def for_tribe(self, tribe: Tribe) -> ActingChief:
         if tribe.chief_id:
-            return ActingChief(tribe.chief, False)
-        return ActingChief(self.executor, True)
+            return ActingChief(tribe.chief, False, (tribe.chief,))
+        executor = self.executor
+        return ActingChief(executor, True, (executor,) if executor else ())
 
     def for_group(self, tribe_group: TribeGroup) -> ActingChief:
-        if tribe_group.chief_id:
-            return ActingChief(tribe_group.chief, False)
-        return ActingChief(self.for_tribe(tribe_group.tribe).user, True)
+        seats = group_seats(tribe_group)
+        if seats:
+            users = tuple(seat.user for seat in seats)
+            return ActingChief(users[0], False, users)
+        stand_in = self.for_tribe(tribe_group.tribe).user
+        return ActingChief(stand_in, True, (stand_in,) if stand_in else ())
 
 
 def user_is_executor(user, resolver: ChiefResolver | None = None) -> bool:
@@ -103,15 +142,33 @@ def user_is_executor(user, resolver: ChiefResolver | None = None) -> bool:
     return executor is not None and executor.pk == user.pk
 
 
-def seat_is_open(tribe: Tribe, tribe_group: TribeGroup | None) -> bool:
+def open_regions(tribe_group: TribeGroup) -> list[str]:
+    taken = set(
+        TribeGroupChief.objects.filter(tribe_group=tribe_group).values_list(
+            "region", flat=True
+        )
+    )
+    return [region for region in REGIONS if region not in taken]
+
+
+def seat_is_open(
+    tribe: Tribe, tribe_group: TribeGroup | None, region: str | None = None
+) -> bool:
+    """A group seat is open when ``region`` (or, without one, any of its
+    three seats) has no chief."""
     if tribe_group is not None:
-        return not tribe_group.chief_id
+        regions = open_regions(tribe_group)
+        return region in regions if region else bool(regions)
     return not tribe.chief_id
+
+
+def seat_label(name: str, region: str | None) -> str:
+    return f"{name} ({REGION_LABELS[region]})" if region else name
 
 
 def seat_name(offer: TribeChiefVolunteer) -> str:
     if offer.tribe_group_id:
-        return offer.tribe_group.name
+        return seat_label(offer.tribe_group.name, offer.region or None)
     return offer.tribe.name
 
 
@@ -134,16 +191,20 @@ def display_name(user) -> str:
     return user.username
 
 
-def pending_volunteers(tribe: Tribe, tribe_group: TribeGroup | None):
-    return (
-        TribeChiefVolunteer.objects.filter(
-            tribe=tribe,
-            tribe_group=tribe_group,
-            status=TribeChiefVolunteer.STATUS_PENDING,
-        )
-        .select_related("user__eveplayer__primary_character")
-        .order_by("created_at")
+def pending_volunteers(
+    tribe: Tribe, tribe_group: TribeGroup | None, region: str | None = None
+):
+    """A seat's open offers; a group without ``region`` lists all three."""
+    offers = TribeChiefVolunteer.objects.filter(
+        tribe=tribe,
+        tribe_group=tribe_group,
+        status=TribeChiefVolunteer.STATUS_PENDING,
     )
+    if tribe_group is not None and region:
+        offers = offers.filter(region=region)
+    return offers.select_related(
+        "user__eveplayer__primary_character"
+    ).order_by("created_at")
 
 
 def has_pending_offer(user, tribe: Tribe, tribe_group) -> bool:
@@ -157,8 +218,31 @@ def has_pending_offer(user, tribe: Tribe, tribe_group) -> bool:
     ).exists()
 
 
+def _volunteer_region(user, tribe_group: TribeGroup, region) -> str:
+    """The group seat an offer is for: the asked one, else the pilot's own
+    timezone when free, else the first free seat."""
+    if region:
+        asked = clean_region(region)
+        if asked is None:
+            raise ChiefVolunteerError("Pick the US, EU or AU seat.")
+        if not seat_is_open(tribe_group.tribe, tribe_group, asked):
+            raise ChiefVolunteerError(
+                f"The {REGION_LABELS[asked]} seat already has a chief."
+            )
+        return asked
+    taken = set(REGIONS) - set(open_regions(tribe_group))
+    picked = pick_region(user_region(user), taken)
+    if picked is None:
+        raise ChiefVolunteerError("Every seat already has a chief.")
+    return picked
+
+
 def volunteer(
-    user, tribe: Tribe, tribe_group: TribeGroup | None, note: str = ""
+    user,
+    tribe: Tribe,
+    tribe_group: TribeGroup | None,
+    note: str = "",
+    region: str | None = None,
 ) -> TribeChiefVolunteer:
     """Offer to lead an open seat; DMs the executor."""
     note = (note or "").strip()
@@ -171,7 +255,12 @@ def volunteer(
         tribe_group is not None and not tribe_group.is_active
     ):
         raise ChiefVolunteerError("That group isn't active.", status_code=404)
-    if not seat_is_open(tribe, tribe_group):
+    seat_region = ""
+    if tribe_group is not None:
+        if user.pk in group_chief_ids(tribe_group):
+            raise ChiefVolunteerError("You're already a chief of this group.")
+        seat_region = _volunteer_region(user, tribe_group, region)
+    elif not seat_is_open(tribe, tribe_group):
         raise ChiefVolunteerError("This seat already has a chief.")
     executor = executor_user()
     if executor is None:
@@ -183,7 +272,11 @@ def volunteer(
 
     with transaction.atomic():
         offer = TribeChiefVolunteer.objects.create(
-            tribe=tribe, tribe_group=tribe_group, user=user, note=note
+            tribe=tribe,
+            tribe_group=tribe_group,
+            region=seat_region,
+            user=user,
+            note=note,
         )
         transaction.on_commit(lambda: _notify_executor(offer, executor))
     return offer
@@ -197,11 +290,11 @@ def volunteered_delivery_key(offer: TribeChiefVolunteer) -> str:
 def _notify_executor(offer: TribeChiefVolunteer, executor) -> None:
     tribe = offer.tribe
     tribe_group = offer.tribe_group
-    interim = (
-        ChiefResolver().for_group(tribe_group).user
-        if tribe_group is not None
-        else executor
-    )
+    interim = executor
+    if tribe_group is not None:
+        acting = ChiefResolver().for_group(tribe_group)
+        # Another timezone's chief isn't standing in; they lead already.
+        interim = acting.user if acting.is_interim else None
     try:
         notify_user(
             executor,
@@ -292,11 +385,23 @@ def appoint(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
             if offer.tribe_group_id
             else None
         )
-        if not seat_is_open(tribe, tribe_group):
+        region = offer.region or None
+        if tribe_group is not None and region is None:
+            region = pick_region(
+                user_region(offer.user),
+                set(REGIONS) - set(open_regions(tribe_group)),
+            )
+        if not seat_is_open(tribe, tribe_group, region):
             raise ChiefVolunteerError("This seat already has a chief.")
         if tribe_group is not None:
-            tribe_group.chief = offer.user
-            tribe_group.save(update_fields=["chief"])
+            if offer.user_id in group_chief_ids(tribe_group):
+                raise ChiefVolunteerError(
+                    "They're already a chief of this group."
+                )
+            TribeGroupChief.objects.create(
+                tribe_group=tribe_group, region=region, user=offer.user
+            )
+            offer.region = region
             _activate_membership(offer.user, tribe_group, by)
         else:
             tribe.chief = offer.user
@@ -304,10 +409,21 @@ def appoint(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
         offer.status = TribeChiefVolunteer.STATUS_APPOINTED
         offer.decided_at = now
         offer.decided_by = by
-        offer.save(update_fields=["status", "decided_at", "decided_by"])
-        others = list(
-            pending_volunteers(tribe, tribe_group).exclude(pk=offer.pk)
+        offer.save(
+            update_fields=["status", "decided_at", "decided_by", "region"]
         )
+        # The seat's other offers, and the new chief's offers for the
+        # group's other seats.
+        others = [
+            other
+            for other in pending_volunteers(tribe, tribe_group)
+            if other.pk != offer.pk
+            and (
+                tribe_group is None
+                or other.region == offer.region
+                or other.user_id == offer.user_id
+            )
+        ]
         TribeChiefVolunteer.objects.filter(
             pk__in=[o.pk for o in others]
         ).update(
@@ -333,10 +449,55 @@ def appoint(offer: TribeChiefVolunteer, by) -> TribeChiefVolunteer:
     return offer
 
 
+def _set_group_seat(by, tribe_group: TribeGroup, region: str, user):
+    """Fill or empty one group seat; returns the pilot who held it.
+
+    A pilot already in another of the group's seats moves to this one.
+    """
+    current = (
+        TribeGroupChief.objects.select_related("user")
+        .filter(tribe_group=tribe_group, region=region)
+        .first()
+    )
+    old = current.user if current else None
+    if (old.pk if old else None) == (user.pk if user else None):
+        return old, False
+    if current is not None:
+        current.delete()
+    if user is not None:
+        TribeGroupChief.objects.filter(
+            tribe_group=tribe_group, user=user
+        ).delete()
+        TribeGroupChief.objects.create(
+            tribe_group=tribe_group, region=region, user=user
+        )
+        _activate_membership(user, tribe_group, by)
+    return old, True
+
+
+def _swap_region(user, region) -> str:
+    """The group seat a superuser swap targets."""
+    seat_region = clean_region(region) if region else None
+    if region and seat_region is None:
+        raise ChiefVolunteerError("Pick the US, EU or AU seat.")
+    if seat_region is None and user is not None:
+        seat_region = user_region(user) or REGIONS[0]
+    if seat_region is None:
+        raise ChiefVolunteerError("Say which seat to empty.")
+    return seat_region
+
+
 def set_chief(
-    by, tribe: Tribe, tribe_group: TribeGroup | None, user
+    by,
+    tribe: Tribe,
+    tribe_group: TribeGroup | None,
+    user,
+    region: str | None = None,
 ) -> object | None:
     """Superuser override: put ``user`` in the seat, or empty it (None).
+
+    A group seat is one of its timezone seats: ``region`` (US, EU, AU),
+    defaulting to the pilot's own timezone when filling one.
 
     Unlike ``appoint`` this works on a filled seat and needs no volunteer.
     The old chief keeps their group memberships. Waiting offers are closed
@@ -354,6 +515,9 @@ def set_chief(
         raise ChiefVolunteerError(
             "Only superusers can swap a chief.", status_code=403
         )
+    seat_region = (
+        _swap_region(user, region) if tribe_group is not None else None
+    )
     now = timezone.now()
     with transaction.atomic():
         tribe = Tribe.objects.select_for_update().get(pk=tribe.pk)
@@ -361,20 +525,26 @@ def set_chief(
             tribe_group = TribeGroup.objects.select_for_update().get(
                 pk=tribe_group.pk
             )
-        seat = tribe_group if tribe_group is not None else tribe
-        old = seat.chief
-        if (old.pk if old else None) == (user.pk if user else None):
-            return user
-        seat.chief = user
-        if tribe_group is not None:
-            seat.save(update_fields=["chief"])
-            if user is not None:
-                _activate_membership(user, tribe_group, by)
+            old, changed = _set_group_seat(by, tribe_group, seat_region, user)
+            label = seat_label(tribe_group.name, seat_region)
         else:
-            seat.save(update_fields=["chief", "updated_at"])
+            old = tribe.chief
+            changed = (old.pk if old else None) != (user.pk if user else None)
+            if changed:
+                tribe.chief = user
+                tribe.save(update_fields=["chief", "updated_at"])
+            label = tribe.name
+        if not changed:
+            return user
         others = []
         if user is not None:
-            others = list(pending_volunteers(tribe, tribe_group))
+            others = [
+                offer
+                for offer in pending_volunteers(tribe, tribe_group)
+                if tribe_group is None
+                or offer.region == seat_region
+                or offer.user_id == user.pk
+            ]
             TribeChiefVolunteer.objects.filter(
                 pk__in=[o.pk for o in others]
             ).update(
@@ -382,13 +552,12 @@ def set_chief(
                 decided_at=now,
                 decided_by=by,
             )
-            for changed in others:
-                changed.status = TribeChiefVolunteer.STATUS_CLOSED
-                _queue_dm_update(changed)
-        seat_label = tribe_group.name if tribe_group else tribe.name
+            for changed_offer in others:
+                changed_offer.status = TribeChiefVolunteer.STATUS_CLOSED
+                _queue_dm_update(changed_offer)
         record_audit(
             by,
-            f"Chief of {seat_label}: {display_name(old) if old else 'nobody'}"
+            f"Chief of {label}: {display_name(old) if old else 'nobody'}"
             f" -> {display_name(user) if user else 'nobody'}",
             "other",
         )

@@ -1,7 +1,9 @@
 """GET/POST "/{tribe_id}/chief-volunteers" - an open seat's volunteers.
 
-POST: the viewer volunteers (tribe seat, or ``tribe_group_id``'s seat).
-GET: the executor lists a seat's pending offers.
+POST: the viewer volunteers (tribe seat, or one of ``tribe_group_id``'s
+timezone seats).
+GET: the executor lists a seat's pending offers (a group's three seats
+together unless ``region`` names one).
 """
 
 from typing import List, Optional
@@ -12,6 +14,7 @@ from tribes.endpoints.chief_volunteers.schemas import (
     VolunteerRequest,
 )
 from tribes.endpoints.chief_volunteers.serializers import serialize_volunteer
+from tribes.helpers.chief_regions import clean_region
 from tribes.helpers.chiefs import (
     ChiefVolunteerError,
     pending_volunteers,
@@ -55,7 +58,10 @@ def _seat(tribe_id: int, tribe_group_id: Optional[int]):
 
 
 def get_chief_volunteers(
-    request, tribe_id: int, tribe_group_id: Optional[int] = None
+    request,
+    tribe_id: int,
+    tribe_group_id: Optional[int] = None,
+    region: Optional[str] = None,
 ):
     if not user_is_executor(request.user):
         return 403, {"detail": "Only the alliance executor sees volunteers."}
@@ -64,9 +70,9 @@ def get_chief_volunteers(
         return 404, {"detail": missing}
     return 200, [
         serialize_volunteer(offer)
-        for offer in pending_volunteers(tribe, tribe_group).select_related(
-            "tribe", "tribe_group"
-        )
+        for offer in pending_volunteers(
+            tribe, tribe_group, clean_region(region)
+        ).select_related("tribe", "tribe_group")
     ]
 
 
@@ -75,7 +81,13 @@ def post_chief_volunteer(request, tribe_id: int, payload: VolunteerRequest):
     if missing:
         return 404, {"detail": missing}
     try:
-        offer = volunteer(request.user, tribe, tribe_group, payload.note)
+        offer = volunteer(
+            request.user,
+            tribe,
+            tribe_group,
+            payload.note,
+            region=payload.region,
+        )
     except ChiefVolunteerError as exc:
         return exc.status_code, {"detail": str(exc)}
     return 201, serialize_volunteer(offer)

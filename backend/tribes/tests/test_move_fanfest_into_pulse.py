@@ -31,6 +31,7 @@ from tribes.models import (
     TribeChiefVolunteer,
     TribeEvent,
     TribeGroup,
+    TribeGroupChief,
     TribeGroupInvitation,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
@@ -187,7 +188,12 @@ class MoveFanfestIntoPulseTestCase(TestCase):
         self.assertEqual(group.tribe_id, self.pulse.pk)
         self.assertEqual(group.code, NEW_CODE)
         self.assertEqual(group.name, "Fanfest")
-        self.assertEqual(group.chief_id, self.fanfest_chief.pk)
+        self.assertEqual(
+            TribeGroupChief.objects.get(
+                tribe_group=group, region="US"
+            ).user_id,
+            self.fanfest_chief.pk,
+        )
         self.assertEqual(group.discord_channel_id, 4242)
         self.assertEqual(group.content, "Pack a capsule.")
         self.assertIn("Meet the pilots going", group.description)
@@ -239,7 +245,9 @@ class MoveFanfestIntoPulseTestCase(TestCase):
     def test_keeps_a_custom_group_description_and_existing_group_chief(self):
         leader = self._user("group-leader")
         self.group.description = "Custom blurb"
-        self.group.chief = leader
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=leader
+        )
         self.group.discord_channel_id = 77
         self.group.save()
 
@@ -247,7 +255,10 @@ class MoveFanfestIntoPulseTestCase(TestCase):
 
         group = TribeGroup.objects.get(pk=self.group.pk)
         self.assertEqual(group.description, "Custom blurb")
-        self.assertEqual(group.chief_id, leader.pk)
+        self.assertEqual(
+            list(group.chief_seats.values_list("user_id", flat=True)),
+            [leader.pk],
+        )
         self.assertEqual(group.discord_channel_id, 77)
 
     def test_reparents_other_fanfest_groups(self):
@@ -415,7 +426,9 @@ class MoveFanfestIntoPulseTestCase(TestCase):
         self.assertEqual(offer.status, TribeChiefVolunteer.STATUS_CLOSED)
         self.assertEqual(offer.tribe_group_id, self.group.pk)
         self.assertEqual(
-            TribeGroup.objects.get(pk=self.group.pk).chief_id,
+            TribeGroupChief.objects.get(
+                tribe_group_id=self.group.pk, region="US"
+            ).user_id,
             self.fanfest_chief.pk,
         )
 

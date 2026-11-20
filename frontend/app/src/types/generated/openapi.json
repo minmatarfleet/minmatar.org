@@ -6329,6 +6329,17 @@
             "title": "Character Name",
             "type": "string"
           },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
           "tribe_group_id": {
             "anyOf": [
               {
@@ -6402,6 +6413,11 @@
           "note": {
             "default": "",
             "title": "Note",
+            "type": "string"
+          },
+          "region": {
+            "default": "",
+            "title": "Region",
             "type": "string"
           },
           "seat_name": {
@@ -42391,6 +42407,17 @@
       },
       "SetChiefRequest": {
         "properties": {
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
           "user_id": {
             "anyOf": [
               {
@@ -45421,6 +45448,14 @@
               }
             ]
           },
+          "chiefs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PersonResponse"
+            },
+            "title": "Chiefs",
+            "type": "array"
+          },
           "closed_this_week": {
             "title": "Closed This Week",
             "type": "integer"
@@ -47657,6 +47692,44 @@
         "title": "TribeGroupAboutSchema",
         "type": "object"
       },
+      "TribeGroupChiefSeatSchema": {
+        "properties": {
+          "chief": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterRefSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_volunteered": {
+            "default": false,
+            "title": "Has Volunteered",
+            "type": "boolean"
+          },
+          "is_open": {
+            "default": true,
+            "title": "Is Open",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "region",
+          "label"
+        ],
+        "title": "TribeGroupChiefSeatSchema",
+        "type": "object"
+      },
       "TribeGroupGrowthSchema": {
         "properties": {
           "counts": {
@@ -48230,6 +48303,14 @@
             "default": false,
             "title": "Chief Is Interim",
             "type": "boolean"
+          },
+          "chiefs": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TribeGroupChiefSeatSchema"
+            },
+            "title": "Chiefs",
+            "type": "array"
           },
           "code": {
             "default": "",
@@ -49663,6 +49744,17 @@
             "default": "",
             "title": "Note",
             "type": "string"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
           },
           "tribe_group_id": {
             "anyOf": [
@@ -87617,6 +87709,22 @@
                 }
               ],
               "title": "Tribe Group Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
             }
           }
         ],

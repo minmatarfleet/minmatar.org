@@ -38,6 +38,7 @@ from groups.tasks import (
     sync_user_corporation_groups,
 )
 from tribes.models import Tribe, TribeGroup
+from tribes.models import TribeGroupChief
 
 
 def _attach_affiliation(
@@ -629,8 +630,9 @@ class SyncTribeChiefGroupTestCase(TestCase):
             slug="capitals",
             chief=tribe_chief,
         )
-        TribeGroup.objects.create(
-            tribe=tribe, name="Dreads", chief=group_chief
+        dreads = TribeGroup.objects.create(tribe=tribe, name="Dreads")
+        TribeGroupChief.objects.create(
+            tribe_group=dreads, region="US", user=group_chief
         )
         sync_tribe_chief_group_membership()
         chief_group = Group.objects.get(name=TRIBE_CHIEF_GROUP_NAME)
@@ -643,15 +645,15 @@ class SyncTribeChiefGroupTestCase(TestCase):
     def test_sync_removes_when_tribe_group_chief_cleared(self):
         group_chief = User.objects.create_user(username="former_group_chief")
         tribe = Tribe.objects.create(name="Capitals", slug="capitals2")
-        tg = TribeGroup.objects.create(
-            tribe=tribe, name="Carriers", chief=group_chief
+        tg = TribeGroup.objects.create(tribe=tribe, name="Carriers")
+        seat = TribeGroupChief.objects.create(
+            tribe_group=tg, region="US", user=group_chief
         )
         sync_tribe_chief_group_membership()
         chief_group = Group.objects.get(name=TRIBE_CHIEF_GROUP_NAME)
         self.assertIn(chief_group, group_chief.groups.all())
 
-        tg.chief = None
-        tg.save(update_fields=["chief"])
+        seat.delete()
         sync_tribe_chief_group_membership()
 
         self.assertEqual(

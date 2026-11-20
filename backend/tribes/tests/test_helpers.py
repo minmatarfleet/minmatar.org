@@ -19,6 +19,7 @@ from tribes.helpers import (
     user_is_tribe_chief,
 )
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeGroup,
     TribeGroupMembership,
@@ -147,8 +148,9 @@ class UserPermissionHelpersTestCase(TestCase):
 
         self.tribe.chief = self.chief
         self.tribe.save()
-        self.tribe_group.chief = self.group_chief
-        self.tribe_group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=self.group_chief
+        )
 
     def test_tribe_chief_can_manage_group(self):
         self.assertTrue(user_can_manage_group(self.chief, self.tribe_group))

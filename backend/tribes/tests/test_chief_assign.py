@@ -8,6 +8,7 @@ from django.test import Client, TestCase, override_settings
 
 from audit.models import AuditEntry
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeChiefVolunteer,
     TribeGroup,
@@ -43,7 +44,9 @@ class SetChiefTestCase(TestCase):
             tribe=self.tribe,
             name="Fishermen",
             code="pulse.fish-assign",
-            chief=self.old,
+        )
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.old
         )
 
     def _put(self, url, user, who):
@@ -86,8 +89,8 @@ class SetChiefTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["character_name"], "Casper Sullivan")
-        self.group.refresh_from_db()
-        self.assertEqual(self.group.chief, self.new)
+        seat = TribeGroupChief.objects.get(tribe_group=self.group, region="US")
+        self.assertEqual(seat.user, self.new)
         membership = TribeGroupMembership.objects.get(
             user=self.new, tribe_group=self.group
         )

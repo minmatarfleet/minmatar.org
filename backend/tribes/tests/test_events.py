@@ -11,6 +11,7 @@ from app.testing import make_token
 from tribes.helpers import event_sync
 from tribes.helpers.events import discord_event_payload, recurrence_rule
 from tribes.models import TribeEvent, TribeGroup
+from tribes.models import TribeGroupChief
 from tribes.tests.publishing_fixtures import (
     GROUP_CHANNEL_ID,
     ROLE_ID,
@@ -38,8 +39,9 @@ class TribeEventTests(TestCase):
         self.member = make_user("member")
         add_member(self.group, self.member)
         self.chief = make_user("chief")
-        self.group.chief = self.chief
-        self.group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
+        )
         self.outsider = make_user("outsider")
         self.start = (timezone.now() + timedelta(days=3)).replace(
             microsecond=0

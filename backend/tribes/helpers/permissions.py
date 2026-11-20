@@ -39,7 +39,8 @@ def user_is_tribe_chief(user, tribe) -> bool:
 def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     """
     Return True if the user can approve/deny memberships for a TribeGroup.
-    Covers: tribe chief, group chief, superuser, or explicit perm. A
+    Covers: tribe chief, any of the group's timezone chiefs, superuser, or
+    explicit perm. A
     chiefless group is run by its tribe chief; a chiefless tribe by the
     alliance executor (docs/tribes/interim-chiefs.md).
     """
@@ -52,7 +53,8 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     tribe = tribe_group.tribe
     if tribe.chief_id and tribe.chief_id == user.pk:
         return True
-    if tribe_group.chief_id and tribe_group.chief_id == user.pk:
+    # .all() so a prefetch of chief_seats saves the query.
+    if any(seat.user_id == user.pk for seat in tribe_group.chief_seats.all()):
         return True
     return is_interim_executor(user, tribe)
 
