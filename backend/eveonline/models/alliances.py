@@ -62,6 +62,59 @@ class EveLocation(MinmatarSoftDeleteModel):
         blank=True,
         help_text="Fitting tags that qualify sell-order fittings at this location (ANY match).",
     )
+    # Structure browser (additive). Filled when a pilot's submission is
+    # approved; older rows leave them empty.
+    type_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="EVE type of the structure or station (Fortizar, Sotiyo, ...).",
+    )
+    description = models.TextField(blank=True, default="", db_default="")
+    fitting_text = models.TextField(
+        blank=True,
+        default="",
+        db_default="",
+        help_text="The last ship scan pasted for this structure.",
+    )
+    fitting = models.JSONField(
+        default=list,
+        db_default=[],
+        blank=True,
+        help_text="Parsed modules from fitting_text: name, type_id, slot.",
+    )
+    fitting_scanned_at = models.DateTimeField(null=True, blank=True)
+    reinforce_hour = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="EVE time hour (0-23) the structure comes out of reinforcement.",
+    )
+    AUDIENCE_PUBLIC = "public"
+    AUDIENCE_ALLIANCE = "alliance"
+    AUDIENCE_GROUPS = "groups"
+    AUDIENCE_CHOICES = (
+        (AUDIENCE_PUBLIC, "Everyone"),
+        (AUDIENCE_ALLIANCE, "The alliance"),
+        (AUDIENCE_GROUPS, "Only some groups"),
+    )
+    audience = models.CharField(
+        max_length=16,
+        choices=AUDIENCE_CHOICES,
+        default=AUDIENCE_ALLIANCE,
+        db_default=AUDIENCE_ALLIANCE,
+    )
+    good_for = models.JSONField(
+        default=list,
+        db_default=[],
+        blank=True,
+        help_text="Hand-picked uses: industry, clones, logistics.",
+    )
+    added_by = models.ForeignKey(
+        "auth.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 

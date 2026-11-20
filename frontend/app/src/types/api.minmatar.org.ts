@@ -3368,3 +3368,16 @@ export type EsiScopeRollout = ApiResponse<'ScopeRolloutResponse'>
 export type EsiScopeRolloutPatch = ApiRequest<'ScopeRolloutPatch'>
 export type EsiMessageResult = ApiResponse<'MessageResponse'>
 export type DirectorToken = ApiResponse<'DirectorTokenResponse'>
+
+// Structure browser (/api/structures/locations)
+export type StructureLocationCard = ApiResponse<'LocationCard'>
+export type StructureLocationList = ApiResponse<'LocationList'>
+export type StructureLocationDetail = ApiResponse<'LocationDetail'>
+export type StructureLocationModule = ApiResponse<'LocationModule'>
+export type StructureLocationChange = ApiResponse<'LocationChangeEntry'>
+export type StructureLocationPatch = ApiRequest<'LocationPatch'>
+export type StructureLocationParse = ApiResponse<'LocationParseResult'>
+export type StructureLocationDocked = ApiResponse<'LocationDocked'>
+export type StructureLocationSubmissionRequest = ApiRequest<'LocationSubmissionRequest'>
+export type StructureLocationSubmission = ApiResponse<'LocationSubmissionRow'>
+export type StructureLocationManage = ApiResponse<'LocationManage'>

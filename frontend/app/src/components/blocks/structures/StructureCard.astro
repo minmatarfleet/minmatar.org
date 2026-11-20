@@ -1,0 +1,259 @@
+---
+/**
+ * A structure on the browse page: its render fills the card, status tags
+ * sit on top, name, system, fitting and two numbers for the chosen view at
+ * the bottom. The whole card opens the structure's page.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StructureLocationCard } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { structure_flags, security_colour, security_label, type StructureView } from '@helpers/structure_locations'
+
+interface Props {
+    card:           StructureLocationCard;
+    view:           StructureView;
+    [propName: string]: any;
+}
+
+const { card, view, ...attributes } = Astro.props
+delete attributes.class
+
+const href = translatePath(`/structures/${card.location_id}/`)
+const art = card.type_id ? get_item_icon(card.type_id, 512) : null
+const scanned = card.fitting_scanned_at !== null
+
+const you = card.you.clones > 0
+    ? t(card.you.clones === 1 ? 'structures.card.clone' : 'structures.card.clones').replace('~COUNT', String(card.you.clones))
+    : card.you.items > 0
+        ? t('structures.card.items').replace('~COUNT', String(card.you.items))
+        : null
+
+const reinforce = card.reinforce_hour !== null ? `${String(card.reinforce_hour).padStart(2, '0')}:00` : null
+
+type Figure = { label: string, value: string, muted?: boolean }
+let figures: Figure[]
+let go: { label: string, href: string } | null = null
+if (view === 'industry') {
+    figures = [
+        { label: t('structures.card.rigs'), value: String(card.rigs.length), muted: card.rigs.length === 0 },
+        { label: t('structures.card.services'), value: String(card.services.length), muted: card.services.length === 0 },
+    ]
+    if (card.planner_facility) go = { label: t('structures.card.plan_here'), href: translatePath(`/industry/orders/planner/?facility=${card.planner_facility}`) }
+} else if (view === 'logistics') {
+    figures = [
+        { label: t('structures.card.routes'), value: card.route_count > 0 ? String(card.route_count) : t('structures.card.no_route'), muted: card.route_count === 0 },
+        { label: t('structures.card.freighters'), value: card.freighter_dock ? t('structures.card.dock') : t('structures.card.cant_dock') },
+    ]
+    if (card.freight) go = { label: t('structures.card.ship_here'), href: translatePath('/market/freight/') }
+} else {
+    figures = [
+        { label: t('structures.card.you_have'), value: you ?? t('structures.card.nothing'), muted: you === null },
+        { label: t('structures.card.reinforces'), value: reinforce ?? t('structures.card.not_set'), muted: reinforce === null },
+    ]
+}
+
+import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
+import StructureFit from '@components/blocks/structures/StructureFit.astro'
+---
+
+<article class:list={['[ structure-card ]', { 'no-art': !art }, Astro.props.class]} {...attributes}>
+    {art && <img class="[ structure-card__art ]" src={art} alt="" loading="lazy" width="512" height="512" />}
+    <span class="[ structure-card__shade ]" aria-hidden="true"></span>
+
+    <div class="[ structure-card__top ]">
+        <span class="[ structure-card__kind ]">{card.type_name}</span>
+        <StructureFlags flags={structure_flags(card)} />
+    </div>
+
+    <div class="[ structure-card__bottom ]">
+        <div>
+            <h3 class="[ structure-card__name ]"><a href={href}>{card.short_name}</a></h3>
+            <p class="[ structure-card__sys ]">
+                {card.security !== null && <b style={`color: ${security_colour(card.security)}`}>{security_label(card.security)}</b>}
+                <span>{card.solar_system_name}</span>
+                {card.audience === 'groups' && card.audience_groups.length > 0 &&
+                    <span class="[ structure-card__aud ]">{card.audience_groups.join(', ')}</span>
+                }
+            </p>
+        </div>
+        <StructureFit rigs={card.rigs} services={card.services.slice(0, 3)} is_structure={card.is_structure} scanned={scanned} />
+        <div class="[ structure-card__figs ]">
+            {figures.map((figure) => (
+                <div>
+                    <span class="[ structure-card__label ]">{figure.label}</span>
+                    <span class:list={['[ structure-card__value ]', { muted: figure.muted }]}>{figure.value}</span>
+                </div>
+            ))}
+            {go && <a class="[ structure-card__go ]" href={go.href}>{go.label}</a>}
+        </div>
+    </div>
+</article>
+
+<style lang="scss">
+    .structure-card {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-s);
+        min-height: 29rem;
+        overflow: hidden;
+        background-color: var(--component-background);
+
+        &.no-art {
+            background:
+                radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--alliance-blue) 35%, transparent), transparent 60%),
+                var(--component-background);
+        }
+
+        &:focus-within {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .structure-card__art {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 30%;
+        transition: transform var(--slow-transition);
+    }
+
+    @media (hover: hover) {
+        .structure-card:hover .structure-card__art {
+            transform: scale(1.04);
+        }
+    }
+
+    .structure-card__shade {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--background) 55%, transparent) 0%,
+            transparent 22%,
+            transparent 34%,
+            color-mix(in srgb, var(--background) 86%, transparent) 56%,
+            color-mix(in srgb, var(--background) 97%, transparent) 100%
+        );
+    }
+
+    .structure-card__top {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2xs);
+        padding: var(--space-s) var(--space-s) 0;
+    }
+
+    .structure-card__kind {
+        padding: 0.3em 0.6em;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--highlight);
+        background-color: color-mix(in srgb, var(--background) 70%, transparent);
+    }
+
+    .structure-card__bottom {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-m) var(--space-m) var(--space-s);
+    }
+
+    .structure-card__name {
+        margin: 0;
+        font-size: var(--step-1);
+        line-height: 1.05;
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: 0;
+            }
+
+            &:focus-visible {
+                outline: none;
+            }
+        }
+    }
+
+    .structure-card__sys {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        margin: 0;
+        font-size: var(--step--1);
+
+        b {
+            font-weight: 700;
+        }
+    }
+
+    .structure-card__aud {
+        color: var(--highlight);
+    }
+
+    .structure-card__figs {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        align-items: end;
+        gap: var(--space-s);
+        padding-top: var(--space-xs);
+        border-top: 1px solid var(--hairline-strong);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            min-width: 0;
+        }
+    }
+
+    .structure-card__label {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .structure-card__value {
+        overflow: hidden;
+        font-size: var(--step-0);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--highlight);
+
+        &.muted {
+            color: var(--text-muted);
+        }
+    }
+
+    .structure-card__go {
+        position: relative;
+        z-index: 1;
+        font-size: var(--step--1);
+        font-weight: 600;
+        white-space: nowrap;
+        color: var(--highlight);
+    }
+</style>

@@ -1,0 +1,175 @@
+---
+/**
+ * A manager's Settings tab: who can see the structure, its name and
+ * description, the Good for tags and the EveLocation switches that put it
+ * to use on the site. Saves through structure_settings_component.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StructureLocationDetail, TribeGroup } from '@dtypes/api.minmatar.org'
+import { get_tribes, get_tribe_groups } from '@helpers/api.minmatar.org/tribes'
+
+interface Props {
+    detail:         StructureLocationDetail;
+}
+
+const { detail } = Astro.props
+
+let groups: { tribe: string, groups: TribeGroup[] }[] = []
+try {
+    const tribes = await get_tribes()
+    groups = await Promise.all(tribes.map(async (tribe) => ({ tribe: tribe.name, groups: await get_tribe_groups(tribe.id) })))
+} catch (failure) {
+    console.log(failure)
+}
+
+const FLAGS = [
+    { name: 'freight_active', on: detail.freight, hint: t('structures.settings.freight_hint').replace('~COUNT', String(detail.route_count)) },
+    { name: 'fleets_active', on: detail.fleets, hint: t('structures.settings.fleets_hint') },
+    { name: 'market_active', on: detail.market, hint: t('structures.settings.market_hint') },
+    { name: 'prices_active', on: detail.prices, hint: t('structures.settings.prices_hint') },
+] as const
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+<form
+    class="[ structure-settings ]"
+    hx-post={translatePath(`/partials/structure_settings_component/?id=${detail.location_id}`)}
+    hx-target="#structure-settings-result"
+    hx-swap="innerHTML"
+    x-data={`{ audience: '${detail.audience}' }`}
+>
+    <Flexblock gap="var(--space-l)">
+        <fieldset class="[ structure-settings__set ]">
+            <legend><h2>{t('structures.settings.audience')}</h2></legend>
+            {(['public', 'alliance', 'groups'] as const).map((value) => (
+                <label class="[ structure-settings__radio ]">
+                    <input type="radio" name="audience" value={value} x-model="audience" checked={detail.audience === value} />
+                    <span>
+                        <b>{t(t_key('structures.audience.', value))}</b>
+                        <small>{t(t_key('structures.audience.hint_', value))}</small>
+                    </span>
+                </label>
+            ))}
+            <div x-show="audience === 'groups'" x-cloak={detail.audience === 'groups' ? undefined : ''}>
+                <ManageField label={t('structures.settings.groups')} for="structure-groups">
+                    <select id="structure-groups" name="audience_tribe_group_ids" multiple size="8" class="[ structure-settings__multi ]">
+                        {groups.map((tribe) => (
+                            <optgroup label={tribe.tribe}>
+                                {tribe.groups.map((group) => (
+                                    <option value={group.id} selected={detail.audience_tribe_group_ids.includes(group.id)}>{group.name}</option>
+                                ))}
+                            </optgroup>
+                        ))}
+                    </select>
+                </ManageField>
+            </div>
+        </fieldset>
+
+        <fieldset class="[ structure-settings__set ]">
+            <legend><h2>{t('structures.settings.details')}</h2></legend>
+            <ManageField label={t('structures.add.short_name')} for="structure-short" hint={t('structures.add.short_name_hint')}>
+                <Input id="structure-short" name="short_name" maxlength="32" value={detail.short_name} required />
+            </ManageField>
+            <ManageField label={t('structures.add.reinforce')} for="structure-hour">
+                <Select id="structure-hour" name="reinforce_hour" size="sm">
+                    <option value="">{t('structures.add.not_known')}</option>
+                    {Array.from({ length: 24 }, (_, h) => (
+                        <option value={h} selected={detail.reinforce_hour === h}>{String(h).padStart(2, '0')}:00 EVE</option>
+                    ))}
+                </Select>
+            </ManageField>
+            <div class="[ manage-chips ]" role="group" aria-label={t('structures.add.good_for')}>
+                {['industry', 'clones', 'logistics'].map((value) => (
+                    <label class="[ manage-chip ]">
+                        <input type="checkbox" name="good_for" value={value} checked={detail.good_for.includes(value)} />
+                        {t(t_key('structures.good_for.', value))}
+                    </label>
+                ))}
+            </div>
+            <ManageField label={t('structures.add.about')} for="structure-about">
+                <Textarea id="structure-about" name="description" rows="4" maxlength="4000">{detail.description}</Textarea>
+            </ManageField>
+        </fieldset>
+
+        <fieldset class="[ structure-settings__set ]">
+            <legend><h2>{t('structures.settings.used')}</h2></legend>
+            {FLAGS.map((flag) => (
+                <div class="[ structure-settings__row ]">
+                    <span>
+                        <b>{t(t_key('structures.settings.flag_', flag.name))}</b>
+                        <small>{flag.hint}</small>
+                    </span>
+                    <ManageSwitch name={flag.name} label={t(t_key('structures.settings.flag_', flag.name))} hide_label={true} checked={flag.on} value="on" />
+                </div>
+            ))}
+            <p class="[ manage-muted ]">{detail.staging ? t('structures.settings.is_staging') : t('structures.settings.staging_hint')}</p>
+        </fieldset>
+
+        <div class="[ manage-actions ]">
+            <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('structures.settings.save')}</Button>
+            <span id="structure-settings-result" aria-live="polite"></span>
+        </div>
+    </Flexblock>
+</form>
+
+<style lang="scss">
+    .structure-settings__set {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        margin: 0;
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 0;
+
+        legend {
+            float: left;
+            width: 100%;
+            margin-bottom: var(--space-s);
+        }
+    }
+
+    .structure-settings__radio,
+    .structure-settings__row {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-top: 1px solid var(--hairline-medium);
+
+        span {
+            display: flex;
+            flex-direction: column;
+        }
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .structure-settings__row {
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .structure-settings__multi {
+        min-width: min(100%, 24rem);
+        padding: var(--space-2xs);
+        color: var(--highlight);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
+    }
+</style>

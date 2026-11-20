@@ -148,3 +148,129 @@ class EveStructurePing(models.Model):
     )
     text = models.CharField(max_length=2000, null=True)
     event_time = models.DateTimeField(null=True)
+
+
+class LocationAudienceGroup(models.Model):
+    """A tribe group or corporation that can see a location.
+
+    Only used when EveLocation.audience is "groups".
+    """
+
+    location = models.ForeignKey(
+        "eveonline.EveLocation",
+        on_delete=models.CASCADE,
+        related_name="audience_groups",
+    )
+    tribe_group = models.ForeignKey(
+        "tribes.TribeGroup",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+    corporation = models.ForeignKey(
+        EveCorporation,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(tribe_group__isnull=False)
+                | models.Q(corporation__isnull=False),
+                name="location_audience_has_target",
+            )
+        ]
+
+
+class LocationSubmission(models.Model):
+    """A structure a pilot asked to add. A manager approves it into an
+    EveLocation. Submissions without a structure ID stay pending until one
+    turns up (location_id is EveLocation's primary key)."""
+
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_DECLINED = "declined"
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "Pending"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_DECLINED, "Declined"),
+    )
+
+    location_id = models.BigIntegerField(null=True, blank=True, db_index=True)
+    id_source = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        help_text="How the ID was found: search, docked, structure, listed.",
+    )
+    name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=32, blank=True, default="")
+    type_id = models.IntegerField(null=True, blank=True)
+    solar_system_id = models.BigIntegerField(null=True, blank=True)
+    solar_system_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    paste_text = models.TextField(blank=True, default="")
+    fitting = models.JSONField(default=list, blank=True)
+    reinforce_hour = models.PositiveSmallIntegerField(null=True, blank=True)
+    audience = models.CharField(max_length=16, default="alliance")
+    audience_tribe_group_ids = models.JSONField(default=list, blank=True)
+    good_for = models.JSONField(default=list, blank=True)
+    description = models.TextField(blank=True, default="")
+
+    status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
+    submitted_by = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    decided_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decline_reason = models.CharField(max_length=255, blank=True, default="")
+
+    def __str__(self):
+        return f"{self.name} ({self.status})"
+
+
+class LocationChange(models.Model):
+    """One entry on a location's History tab."""
+
+    KIND_CHOICES = (
+        ("added", "Added"),
+        ("approved", "Approved"),
+        ("fitting", "Fitting"),
+        ("details", "Details"),
+        ("audience", "Audience"),
+        ("flags", "Site settings"),
+    )
+
+    location = models.ForeignKey(
+        "eveonline.EveLocation",
+        on_delete=models.CASCADE,
+        related_name="changes",
+    )
+    user = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    summary = models.CharField(max_length=255)
+    details = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]

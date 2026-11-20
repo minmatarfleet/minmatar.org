@@ -1,0 +1,132 @@
+---
+/**
+ * One step of the Add a structure dialog. The form posts `go` (the step to
+ * show next) plus everything gathered so far; this renders that step.
+ */
+// no-error-refetch: a form step; errors show inside the dialog.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { StructureLocationDocked, StructureLocationModule } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { parse_structure_paste, get_docked_characters, submit_structure } from '@helpers/api.minmatar.org/structure_locations'
+import type { StructureAddState } from '@components/blocks/structures/StructureAddSteps.astro'
+import StructureAddSteps from '@components/blocks/structures/StructureAddSteps.astro'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const form = await Astro.request.formData()
+const text_field = (name: string) => String(form.get(name) ?? '').trim()
+const number_field = (name: string) => {
+    const value = parseInt(text_field(name))
+    return Number.isFinite(value) ? value : null
+}
+let modules: StructureLocationModule[] = []
+try {
+    modules = JSON.parse(text_field('modules') || '[]')
+} catch {
+    modules = []
+}
+
+const state: StructureAddState = {
+    text: form.has('text_input') ? text_field('text_input') : text_field('text'),
+    name: text_field('name'),
+    solar_system_name: text_field('solar_system_name'),
+    location_id: number_field('location_id'),
+    id_source: text_field('id_source'),
+    found_with: text_field('found_with'),
+    type_id: number_field('type_id'),
+    type_name: text_field('type_name'),
+    match_status: text_field('match_status'),
+    reinforce_hour: number_field('reinforce_hour'),
+    modules,
+    parts: text_field('parts').split(',').filter(Boolean),
+}
+
+let go = text_field('go') || 'paste'
+let step: 'paste' | 'docked' | 'match' | 'fitting' | 'details' | 'sent' = 'paste'
+let error: string | null = null
+let docked: StructureLocationDocked[] = []
+
+try {
+    if (go === 'paste') {
+        step = 'paste'
+    } else if (go === 'paste_new') {
+        step = 'paste'
+        state.text = ''
+    } else if (go === 'docked') {
+        docked = await get_docked_characters(auth_token)
+        step = 'docked'
+    } else if (go === 'match') {
+        const docked_id = number_field('docked_location_id')
+        if (docked_id) {
+            const docked_name = text_field('docked_name')
+            const parsed = docked_name || state.text ? await parse_structure_paste(auth_token, [docked_name, state.text].filter(Boolean).join('\n')) : null
+            state.name = docked_name || parsed?.name || ''
+            state.solar_system_name = parsed?.solar_system_name ?? state.name.split(' - ')[0]
+            state.location_id = docked_id
+            state.id_source = 'docked'
+            state.found_with = text_field('docked_character')
+            state.match_status = parsed?.match.status === 'listed' ? 'listed' : 'found'
+            state.modules = parsed?.modules ?? []
+            state.reinforce_hour = parsed?.reinforce_hour ?? null
+            state.parts = parsed?.parts ?? []
+            state.type_id = parsed?.type_id ?? null
+            state.type_name = parsed?.match.type_name ?? ''
+            step = 'match'
+        } else if (!state.text) {
+            error = t('structures.add.paste_first')
+            step = 'paste'
+        } else {
+            const parsed = await parse_structure_paste(auth_token, state.text)
+            if (!parsed.name) {
+                error = t('structures.add.no_name')
+                step = 'paste'
+            } else {
+                state.name = parsed.match.name || parsed.name
+                state.solar_system_name = parsed.match.solar_system_name
+                state.location_id = parsed.match.location_id
+                state.id_source = parsed.match.source
+                state.found_with = parsed.match.found_with
+                state.type_id = parsed.match.type_id
+                state.type_name = parsed.match.type_name
+                state.match_status = parsed.match.status
+                state.reinforce_hour = parsed.reinforce_hour
+                state.modules = parsed.modules
+                state.parts = parsed.parts
+                step = 'match'
+            }
+        }
+    } else if (go === 'match_back') {
+        step = 'match'
+    } else if (go === 'fitting') {
+        step = 'fitting'
+    } else if (go === 'details') {
+        step = 'details'
+    } else if (go === 'submit') {
+        await submit_structure(auth_token, {
+            paste_text: state.text,
+            name: state.name,
+            location_id: state.location_id,
+            id_source: state.id_source,
+            type_id: state.type_id,
+            short_name: text_field('short_name'),
+            reinforce_hour: state.reinforce_hour,
+            audience: text_field('audience') === 'public' ? 'public' : 'alliance',
+            audience_tribe_group_ids: [],
+            good_for: form.getAll('good_for').map(String),
+            description: text_field('description'),
+        })
+        step = 'sent'
+        Astro.response.headers.set('HX-Trigger', JSON.stringify({ 'structures-changed': true }))
+    }
+} catch (failure) {
+    error = (failure as Error).message
+    step = go === 'submit' ? 'details' : go === 'match' ? 'paste' : step
+}
+---
+
+<StructureAddSteps step={step} state={state} docked={docked} error={error} />
+
