@@ -254,8 +254,7 @@ def render_fleet_invite_feedback(ctx: dict) -> dict:
         listed = "\n".join(f"- {line}" for line in lines)
         message = f"{body}\n\n**{heading}**\n{listed}".strip()
     # The buttons are the action, so the payload omits Mark as read. Answer
-    # opens the form in Discord (the bot handles it); the link is the same
-    # form on the website.
+    # opens the form in Discord (the bot handles it).
     payload = {
         "title": title,
         "body": body,
