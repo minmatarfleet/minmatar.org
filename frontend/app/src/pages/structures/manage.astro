@@ -27,6 +27,7 @@ const breadcrumbs = [
     { page_title, accumulated_path: translatePath('/structures/manage/') },
 ]
 const REVIEW = translatePath('/partials/structures_review_component/')
+const RETIRE = translatePath('/partials/structures_retire_component/')
 const tick = (on: boolean) => on ? t('structures.on') : '—'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -101,10 +102,11 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
                             { label: t('structures.settings.flag_prices_active'), align: 'num' },
                             { label: t('structures.flag.staging'), align: 'num' },
                             { label: t('structures.col.audience') },
+                            { label: t('structures.col.retire'), align: 'act' },
                         ]}
                     >
                         {overview.locations.map((row) => (
-                            <tr>
+                            <tr id={`structure-location-${row.location_id}`}>
                                 <td><a href={translatePath(`/structures/${row.location_id}/`)}>{row.short_name}</a><small class="[ manage-muted ]"> {row.type_name}{row.price_baseline ? ` · ${t('structures.price_baseline')}` : ''}</small></td>
                                 <td class="num">{tick(row.freight)}</td>
                                 <td class="num">{tick(row.fleets)}</td>
@@ -112,6 +114,20 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
                                 <td class="num">{tick(row.prices)}</td>
                                 <td class="num">{tick(row.staging)}</td>
                                 <td>{row.audience === 'groups' ? row.audience_groups.join(', ') : t(t_key('structures.audience.', row.audience))}</td>
+                                <td class="act">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        color="transparent"
+                                        hx-post={RETIRE}
+                                        hx-vals={JSON.stringify({ id: row.location_id })}
+                                        hx-confirm={t('structures.retire_confirm').replace('~NAME', row.short_name)}
+                                        hx-target={`#structure-location-${row.location_id}`}
+                                        hx-swap="outerHTML"
+                                        disabled={row.staging || row.price_baseline}
+                                        title={row.staging || row.price_baseline ? t('structures.retire_blocked') : undefined}
+                                    >{t('structures.retire')}</Button>
+                                </td>
                             </tr>
                         ))}
                     </ManageTable>

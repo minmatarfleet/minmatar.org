@@ -508,23 +508,38 @@ def approve_submission(submission: LocationSubmission, user) -> EveLocation:
         raise ApprovalError(f"Unknown solar system for {submission.name}.")
     short = submission.short_name or submission.name[:32]
     now = timezone.now()
-    location = EveLocation.objects.create(
-        location_id=submission.location_id,
-        location_name=submission.name,
-        solar_system_id=system_id,
-        solar_system_name=system_name,
-        short_name=short[:32],
-        is_structure=submission.location_id > 2_000_000_000,
-        type_id=submission.type_id,
-        description=submission.description,
-        fitting_text=submission.paste_text if submission.fitting else "",
-        fitting=submission.fitting,
-        fitting_scanned_at=now if submission.fitting else None,
-        reinforce_hour=submission.reinforce_hour,
-        audience=submission.audience,
-        good_for=submission.good_for,
-        added_by=submission.submitted_by,
-    )
+    fields = {
+        "location_name": submission.name,
+        "solar_system_id": system_id,
+        "solar_system_name": system_name,
+        "short_name": short[:32],
+        "is_structure": submission.location_id > 2_000_000_000,
+        "type_id": submission.type_id,
+        "description": submission.description,
+        "fitting_text": submission.paste_text if submission.fitting else "",
+        "fitting": submission.fitting,
+        "fitting_scanned_at": now if submission.fitting else None,
+        "reinforce_hour": submission.reinforce_hour,
+        "audience": submission.audience,
+        "good_for": submission.good_for,
+    }
+    # The ID is the EVE structure ID, so a retired structure comes back as
+    # the same row: its fleets, orders and history stay attached.
+    location = EveLocation.deleted_objects.filter(
+        location_id=submission.location_id
+    ).first()
+    restored = location is not None
+    if restored:
+        for key, value in fields.items():
+            setattr(location, key, value)
+        location.save()  # saving a soft-deleted row restores it
+        location.audience_groups.all().delete()
+    else:
+        location = EveLocation.objects.create(
+            location_id=submission.location_id,
+            added_by=submission.submitted_by,
+            **fields,
+        )
     if submission.audience == EveLocation.AUDIENCE_GROUPS:
         for group_id in submission.audience_tribe_group_ids:
             LocationAudienceGroup.objects.create(
@@ -535,7 +550,10 @@ def approve_submission(submission: LocationSubmission, user) -> EveLocation:
     submission.decided_at = now
     submission.save()
     added = record_change(
-        location, submission.submitted_by, "added", "added it"
+        location,
+        submission.submitted_by,
+        "restored" if restored else "added",
+        "added it back" if restored else "added it",
     )
     LocationChange.objects.filter(pk=added.pk).update(
         created_at=submission.created_at
@@ -567,6 +585,50 @@ def decline_submission(submission: LocationSubmission, user, reason: str = ""):
     submission.decided_at = timezone.now()
     submission.decline_reason = reason[:255]
     submission.save()
+
+
+# Flags a retired location gives up, so adding it back later starts clean.
+RETIRE_FLAGS = (
+    "freight_active",
+    "fleets_active",
+    "market_active",
+    "prices_active",
+)
+
+
+class RetireError(Exception):
+    pass
+
+
+@transaction.atomic
+def retire_location(location: EveLocation, user, reason: str = ""):
+    """Hide a location from the site without touching anything that points
+    at it. Fleets, orders, contracts and history keep their link; adding the
+    structure again restores this row with every site setting off."""
+    if location.staging_active:
+        raise RetireError(
+            "This is the staging system. Move staging somewhere else first."
+        )
+    if location.price_baseline:
+        raise RetireError(
+            "This is the price baseline. Pick another baseline first."
+        )
+    turned_off = [flag for flag in RETIRE_FLAGS if getattr(location, flag)]
+    if location.freight_active:
+        # pylint: disable=import-outside-toplevel
+        from freight.models import EveFreightRoute
+
+        EveFreightRoute.objects.filter(
+            Q(origin_location=location) | Q(destination_location=location)
+        ).update(active=False)
+    for flag in RETIRE_FLAGS:
+        setattr(location, flag, False)
+    location.save()
+    details = {"turned_off": turned_off}
+    if reason:
+        details["reason"] = reason[:255]
+    record_change(location, user, "retired", "retired it", details)
+    location.delete()
 
 
 def fitting_diff(old: List[dict], new: List[dict]) -> dict:

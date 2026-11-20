@@ -314,3 +314,183 @@ class LocationApiTestCase(TestCase):
         )
         items = svc.attention_items(EveLocation.objects.all())
         self.assertIn("duplicate_short_name", [item["kind"] for item in items])
+
+
+class RetireLocationTestCase(TestCase):
+    """Retiring hides a location without touching what points at it, and
+    approving the same structure again brings the same row back."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.staging = EveLocation.objects.create(
+            location_id=1022167642188,
+            location_name="Amamake - 5 times nearly AT winners",
+            solar_system_id=30002537,
+            solar_system_name="Amamake",
+            short_name="Amamake",
+            is_structure=True,
+            staging_active=True,
+            freight_active=True,
+        )
+        self.spoke = EveLocation.objects.create(
+            location_id=1035466617946,
+            location_name="Auga - Old Spoke",
+            solar_system_id=30002538,
+            solar_system_name="Auga",
+            short_name="Auga",
+            is_structure=True,
+            freight_active=True,
+            fleets_active=True,
+            market_active=True,
+            prices_active=True,
+        )
+
+    def _manager(self):
+        self.user.user_permissions.add(
+            Permission.objects.get(
+                codename="change_evelocation",
+                content_type__app_label="eveonline",
+            )
+        )
+        clear_feature_cache()
+
+    def _retire(self, location_id):
+        return self.client.post(
+            f"/api/structures/locations/{location_id}/retire",
+            data=json.dumps({"reason": "Unanchoring"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+    def test_needs_manage(self):
+        self.assertEqual(self._retire(self.spoke.location_id).status_code, 403)
+        self.assertTrue(EveLocation.objects.filter(pk=self.spoke.pk).exists())
+
+    def test_staging_cannot_be_retired(self):
+        self._manager()
+        self.assertEqual(
+            self._retire(self.staging.location_id).status_code, 400
+        )
+        self.assertTrue(
+            EveLocation.objects.filter(pk=self.staging.pk).exists()
+        )
+
+    def test_retire_keeps_fleets_and_stops_routes(self):
+        # pylint: disable=import-outside-toplevel
+        from fleets.models import EveFleet
+        from freight.models import EveFreightRoute
+        from fittings.helpers.change_request_display import (
+            _location_name_map,
+        )
+
+        self._manager()
+        fleet = EveFleet.objects.create(
+            start_time="2026-11-01T19:00:00Z",
+            description="Old roam",
+            type="training",
+            status="complete",
+            created_by=self.user,
+            location=self.spoke,
+        )
+        route = EveFreightRoute.objects.create(
+            origin_location=self.staging, destination_location=self.spoke
+        )
+
+        response = self._retire(self.spoke.location_id)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["name"], "Auga - Old Spoke")
+
+        # Gone from the site and the manage list.
+        self.assertFalse(EveLocation.objects.filter(pk=self.spoke.pk).exists())
+        overview = self.client.get(
+            "/api/structures/locations/manage/overview",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        ).json()
+        self.assertNotIn(
+            self.spoke.location_id,
+            [row["location_id"] for row in overview["locations"]],
+        )
+        self.assertEqual(
+            self.client.get(
+                f"/api/structures/locations/{self.spoke.location_id}"
+            ).status_code,
+            404,
+        )
+
+        # Still there for the fleet and for name lookups.
+        fleet = EveFleet.objects.get(pk=fleet.pk)
+        self.assertEqual(fleet.location_id, self.spoke.location_id)
+        self.assertEqual(fleet.location.location_name, "Auga - Old Spoke")
+        self.assertEqual(
+            _location_name_map([self.spoke.location_id]),
+            {self.spoke.location_id: "Auga"},
+        )
+
+        # Site settings are off and its routes stopped.
+        retired = EveLocation.all_objects.get(pk=self.spoke.pk)
+        self.assertIsNotNone(retired.deleted)
+        self.assertFalse(retired.freight_active)
+        self.assertFalse(retired.fleets_active)
+        self.assertFalse(retired.market_active)
+        self.assertFalse(retired.prices_active)
+        route.refresh_from_db()
+        self.assertFalse(route.active)
+        change = LocationChange.objects.filter(location=retired).first()
+        self.assertEqual(change.kind, "retired")
+        self.assertEqual(change.details["reason"], "Unanchoring")
+
+    @patch("structures.locations._solar_system_id", return_value=30002538)
+    def test_approving_again_restores_the_same_row(self, system):
+        # pylint: disable=import-outside-toplevel
+        from fleets.models import EveFleet
+
+        self._manager()
+        fleet = EveFleet.objects.create(
+            start_time="2026-11-01T19:00:00Z",
+            description="Old roam",
+            type="training",
+            status="complete",
+            created_by=self.user,
+            location=self.spoke,
+        )
+        self.assertEqual(self._retire(self.spoke.location_id).status_code, 200)
+
+        # A pilot submits it again; it is not "already listed".
+        match = svc.find_structure(self.user, "Auga - Old Spoke")
+        self.assertNotEqual(match.status, "listed")
+        submission = LocationSubmission.objects.create(
+            name="Auga - Back Again",
+            location_id=self.spoke.location_id,
+            short_name="Auga II",
+            submitted_by=self.user,
+        )
+        response = self.client.post(
+            f"/api/structures/locations/submissions/{submission.id}/approve",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        location = EveLocation.objects.get(pk=self.spoke.pk)
+        self.assertIsNone(location.deleted)
+        self.assertEqual(location.location_name, "Auga - Back Again")
+        self.assertEqual(location.short_name, "Auga II")
+        # Comes back clean: nothing switched on.
+        self.assertFalse(location.freight_active)
+        self.assertFalse(location.fleets_active)
+        self.assertFalse(location.market_active)
+        self.assertEqual(
+            EveLocation.all_objects.filter(pk=self.spoke.pk).count(), 1
+        )
+        self.assertEqual(
+            EveFleet.objects.get(pk=fleet.pk).location_id,
+            self.spoke.location_id,
+        )
+        kinds = list(
+            LocationChange.objects.filter(location=location).values_list(
+                "kind", flat=True
+            )
+        )
+        self.assertIn("retired", kinds)
+        self.assertIn("restored", kinds)
+        self.assertNotIn("added", kinds)
