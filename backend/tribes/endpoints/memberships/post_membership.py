@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def _notify_chief_of_new_request(membership):
-    """Tell the tribe group chief a new membership application came in.
+    """Tell every group chief (each timezone seat) a new application came in.
 
     A group without a chief tells whoever stands in: the tribe chief, else
     the alliance executor (docs/tribes/interim-chiefs.md).
@@ -43,27 +43,25 @@ def _notify_chief_of_new_request(membership):
     from tribes.helpers.chiefs import ChiefResolver
 
     tg = membership.tribe_group
-    chief = ChiefResolver().for_group(tg).user
-    if not chief:
-        return
-    try:
-        notify_user(
-            chief,
-            TRIBE_MEMBERSHIP_REQUESTED_KEY,
-            {
-                "group_name": tg.name,
-                "tribe_name": tg.tribe.name,
-                "applicant": membership.user.username,
-            },
-        )
-    except Exception:  # pylint: disable=broad-except
-        logger.warning(
-            "Failed to queue tribe request notification to chief %s for "
-            "group %s",
-            chief,
-            tg,
-            exc_info=True,
-        )
+    for chief in ChiefResolver().for_group(tg).users:
+        try:
+            notify_user(
+                chief,
+                TRIBE_MEMBERSHIP_REQUESTED_KEY,
+                {
+                    "group_name": tg.name,
+                    "tribe_name": tg.tribe.name,
+                    "applicant": membership.user.username,
+                },
+            )
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Failed to queue tribe request notification to chief %s "
+                "for group %s",
+                chief,
+                tg,
+                exc_info=True,
+            )
 
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships"

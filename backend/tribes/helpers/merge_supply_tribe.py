@@ -321,7 +321,7 @@ def merge_contracts_and_orders(
         if apply:
             orders.is_active = False
             orders.group = None
-            orders.chief = None
+            orders.chief_seats.all().delete()
             orders.save()
 
     log.info(

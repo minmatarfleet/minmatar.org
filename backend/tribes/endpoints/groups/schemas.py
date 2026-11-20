@@ -37,6 +37,17 @@ class AffiliationRefSchema(BaseModel):
     name: str
 
 
+class TribeGroupChiefSeatSchema(BaseModel):
+    # US, EU or AU; label is the Discord role name (USTZ, EUTZ, AUTZ).
+    region: str
+    label: str
+    # Empty when the seat is open, or the roster is hidden from the viewer.
+    chief: Optional[CharacterRefSchema] = None
+    is_open: bool = True
+    # The viewer has a pending offer for this seat.
+    has_volunteered: bool = False
+
+
 class TribeGroupSchema(BaseModel):
     id: int
     tribe_id: int
@@ -46,14 +57,18 @@ class TribeGroupSchema(BaseModel):
     description: str
     content: str = ""
     discord_channel_id: Optional[int] = None
+    # The first seated chief (US, EU, AU order); ``chiefs`` has every seat.
     chief: Optional[CharacterRefSchema] = None
-    # Who the page shows as chief: the chief, else the tribe chief, else
+    # One entry per timezone seat (US, EU, AU), filled or open.
+    chiefs: List[TribeGroupChiefSeatSchema] = []
+    # Who the page shows as chief: the first chief, else the tribe chief, else
     # the alliance executor. Interim means the seat is open (Help wanted).
     acting_chief: Optional[CharacterRefSchema] = None
     chief_is_interim: bool = False
-    # Viewer flags: the executor appoints; anyone may volunteer once.
+    # Viewer flags: the executor appoints; anyone may volunteer once per
+    # group. Open seats beside filled ones take volunteers too.
     can_appoint_chief: bool = False
-    # The viewer is a superuser and can swap the chief.
+    # The viewer is a superuser and can swap any seat's chief.
     can_set_chief: bool = False
     has_volunteered: bool = False
     is_active: bool

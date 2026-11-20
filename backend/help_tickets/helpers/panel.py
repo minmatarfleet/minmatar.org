@@ -17,9 +17,8 @@ def _mention_discord_ids(category: HelpRequestCategory) -> list[int]:
         # pylint: disable-next=import-outside-toplevel
         from tribes.helpers.chiefs import ChiefResolver
 
-        # The group chief, else whoever stands in for them.
-        chief = ChiefResolver().for_group(category.tribe_group).user
-        if chief is not None:
+        # Every timezone chief, else whoever stands in for them.
+        for chief in ChiefResolver().for_group(category.tribe_group).users:
             chief_id = _discord_user_id(chief)
             if chief_id is not None:
                 ids.append(chief_id)
@@ -42,10 +41,11 @@ def build_help_ticket_panel_config() -> dict:
     categories = []
     queryset = (
         HelpRequestCategory.objects.filter(is_active=True)
-        .select_related(
-            "tribe_group__tribe", "tribe_group__chief__discord_user"
+        .select_related("tribe_group__tribe")
+        .prefetch_related(
+            "assignees__discord_user",
+            "tribe_group__chief_seats__user__discord_user",
         )
-        .prefetch_related("assignees__discord_user")
         .order_by("sort_order", "title")
     )
     for category in queryset:

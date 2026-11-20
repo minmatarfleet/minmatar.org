@@ -6,7 +6,7 @@ class HelpRequestCategory(models.Model):
     """
     A selectable help topic in #help.
 
-    Link to a TribeGroup for tribe routing (chief is mentioned automatically),
+    Link to a TribeGroup for tribe routing (its chiefs are mentioned automatically),
     and/or assign specific users to mention. General categories use assignees only.
     """
 

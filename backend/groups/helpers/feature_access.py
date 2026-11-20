@@ -246,8 +246,9 @@ def _leads_chiefless_tribe(user, tribe) -> bool:
 
 
 def _leads_group(user, tribe_group) -> bool:
-    """Group chief, its tribe's chief, or the executor for a chiefless tribe."""
-    if tribe_group.chief_id == user.pk:
+    """A group chief (any timezone seat), its tribe's chief, or the executor
+    for a chiefless tribe."""
+    if tribe_group.pk in _chief_tribe_group_ids(user):
         return True
     if tribe_group.tribe.chief_id == user.pk:
         return True
@@ -255,20 +256,23 @@ def _leads_group(user, tribe_group) -> bool:
 
 
 def _chief_tribe_group_ids(user) -> frozenset[int]:
-    """Tribe groups the user leads, directly or as chief of the tribe (or
+    """Tribe groups the user leads, from any of the group's timezone seats
+    or as chief of the tribe (or
     as the executor standing in for a tribe without a chief)."""
 
     def compute():
         # pylint: disable-next=import-outside-toplevel
         from tribes.helpers.executor import user_is_executor_q
 
-        lead = Q(chief_id=user.pk) | Q(tribe__chief_id=user.pk)
+        lead = Q(chief_seats__user_id=user.pk) | Q(tribe__chief_id=user.pk)
         executor = user_is_executor_q(user.pk)
         if executor is not None:
             # One query: the executor check is a subquery.
             lead |= Q(tribe__chief_id__isnull=True) & executor
         return frozenset(
-            TribeGroup.objects.filter(lead).values_list("pk", flat=True)
+            TribeGroup.objects.filter(lead)
+            .values_list("pk", flat=True)
+            .distinct()
         )
 
     return _memoized(user, "chief_tribe_group_ids", compute)

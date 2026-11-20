@@ -16,6 +16,7 @@ from fleets.models import EveFleet, EveFleetAudience
 from fleets.tasks import update_fleet_schedule
 from fleets.tests import setup_fleet_reference_data
 from tribes.models import TribeGroup
+from tribes.models import TribeGroupChief
 from tribes.tests.publishing_fixtures import (
     GROUP_CHANNEL_ID,
     ROLE_ID,
@@ -61,8 +62,9 @@ class GroupFleetTestBase(TestCase):
         add_member(self.group, self.member)
         self.outsider = make_user("outsider", perms=FC_PERMS)
         self.chief = make_user("chief", perms=VIEW)
-        self.group.chief = self.chief
-        self.group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
+        )
 
     def call(self, method, path, user, data=None):
         client = Client()

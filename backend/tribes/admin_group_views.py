@@ -89,8 +89,10 @@ def tribes_view(request):
         }
         for tribe in tribes
     ]
-    groups = TribeGroup.objects.select_related("tribe", "chief").order_by(
-        "tribe__name", "name"
+    groups = (
+        TribeGroup.objects.select_related("tribe")
+        .prefetch_related("chief_seats__user")
+        .order_by("tribe__name", "name")
     )
     group_rows = [
         {

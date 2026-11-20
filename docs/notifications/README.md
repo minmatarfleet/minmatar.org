@@ -53,7 +53,7 @@ Delivery status becomes `read` and `read_at` is set. Message ids are stored on `
 |-----|-------------|--------------------|
 | `industry.*` | Industry order participants | see [Industry orders](industry-orders.md) |
 | `fleets.closed` | The FC, when tracking stops | Web (on), Eve mail (on) |
-| `tribes.membership_requested` | The tribe group chief, when a pilot applies | Discord (on), Web (off) |
+| `tribes.membership_requested` | Every timezone chief of the tribe group, when a pilot applies | Discord (on), Web (off) |
 | `tribes.invited` | A pilot a chief invites to a tribe group (Open invite / Decline buttons) | Discord (on), Web (on) |
 | `tribes.invite_answered` | The inviter, when the pilot joins or declines | Discord (on), Web (off) |
 

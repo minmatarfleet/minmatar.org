@@ -8,6 +8,7 @@ from app.test import TestCase
 from app.testing import make_token
 from posts.models import EvePost
 from tribes.models import TribeGroup
+from tribes.models import TribeGroupChief
 from tribes.tests.publishing_fixtures import (
     GROUP_CHANNEL_ID,
     ROLE_ID,
@@ -31,8 +32,9 @@ class GroupPostTests(TestCase):
         self.member = make_user("member")
         add_member(self.group, self.member)
         self.chief = make_user("chief")
-        self.group.chief = self.chief
-        self.group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
+        )
         self.outsider = make_user("outsider", perms=("add_evepost",))
 
     def call(self, method, path, user=None, data=None):

@@ -23,6 +23,7 @@ from notifications.types.tribes import (
 from tribes.helpers.chief_discord import appoint_custom_id
 from tribes.helpers.chiefs import ChiefResolver
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeChiefVolunteer,
     TribeGroup,
@@ -137,8 +138,10 @@ class ChiefVolunteerTestCase(TestCase):
         supply = resolver.for_tribe(self.supply)
         self.assertEqual(supply.user, self.executor)
         self.assertTrue(supply.is_interim)
-        self.fishermen.chief = self.pilot
-        self.assertFalse(resolver.for_group(self.fishermen).is_interim)
+        TribeGroupChief.objects.create(
+            tribe_group=self.fishermen, region="US", user=self.pilot
+        )
+        self.assertFalse(ChiefResolver().for_group(self.fishermen).is_interim)
 
     def test_group_payload_shows_interim_and_keeps_chief_empty(self):
         body = self._group(self.fishermen)
@@ -260,8 +263,12 @@ class ChiefVolunteerTestCase(TestCase):
             **_auth(self.executor),
         )
         self.assertEqual(response.status_code, 200, response.content)
-        self.fishermen.refresh_from_db()
-        self.assertEqual(self.fishermen.chief, self.pilot)
+        self.assertEqual(
+            TribeGroupChief.objects.get(
+                tribe_group=self.fishermen, region="US"
+            ).user,
+            self.pilot,
+        )
         self.assertTrue(
             TribeGroupMembership.objects.filter(
                 user=self.pilot,
@@ -325,8 +332,7 @@ class ChiefVolunteerTestCase(TestCase):
         offer.refresh_from_db()
         self.assertEqual(offer.status, "declined")
         queue_dm.assert_called_once()
-        self.fishermen.refresh_from_db()
-        self.assertIsNone(self.fishermen.chief)
+        self.assertFalse(self.fishermen.chief_seats.exists())
 
     def test_appoint_edits_the_executor_dm(self):
         with self.captureOnCommitCallbacks(execute=True):
@@ -343,7 +349,7 @@ class ChiefVolunteerTestCase(TestCase):
         self.assertEqual(payload["components"], [])
         self.assertEqual(
             payload["embeds"][0]["title"],
-            "Casper Sullivan is now chief of Fishermen",
+            "Casper Sullivan is now chief of Fishermen (USTZ)",
         )
 
     def test_failed_role_sync_rolls_the_appointment_back(self):
@@ -363,8 +369,7 @@ class ChiefVolunteerTestCase(TestCase):
         self.assertEqual(response.status_code, 502)
         offer.refresh_from_db()
         self.assertEqual(offer.status, "pending")
-        self.fishermen.refresh_from_db()
-        self.assertIsNone(self.fishermen.chief)
+        self.assertFalse(self.fishermen.chief_seats.exists())
 
 
 @override_settings(ALLIANCE_EXECUTOR_CHARACTER_ID=EXECUTOR_CHARACTER_ID)
@@ -389,7 +394,9 @@ class InterimChiefPowersTestCase(TestCase):
             tribe=self.supply,
             name="Market",
             code="supply.mkt-powers",
-            chief=self.pilot,
+        )
+        TribeGroupChief.objects.create(
+            tribe_group=self.market, region="US", user=self.pilot
         )
 
     def test_executor_manages_a_chiefless_tribe(self):

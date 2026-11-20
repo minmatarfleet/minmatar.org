@@ -7,6 +7,7 @@ from django.test import TestCase
 
 from eveonline.models import EveCharacter
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeGroup,
     TribeGroupMembership,
@@ -65,7 +66,9 @@ class TribeGroupModelTestCase(TestCase):
             name="Dreads",
             description="Dreadnought pilots",
             group=self.tribe_group_auth,
-            chief=self.chief,
+        )
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
         )
 
     def test_str(self):

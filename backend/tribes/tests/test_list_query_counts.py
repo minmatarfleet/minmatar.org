@@ -11,6 +11,7 @@ from django.test.utils import CaptureQueriesContext
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import EveCharacter
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import TribeGroupChief
 
 BASE_URL = "/api/tribes"
 
@@ -28,8 +29,9 @@ class TribeListQueryCountTest(TestCase):
             tribe=self.tribe, name="Mining", roster_hidden=True
         )
         self.chief = User.objects.create_user(username="chief")
-        self.group.chief = self.chief
-        self.group.save()
+        TribeGroupChief.objects.create(
+            tribe_group=self.group, region="US", user=self.chief
+        )
         self.members = 0
 
     def add_members(self, count: int):

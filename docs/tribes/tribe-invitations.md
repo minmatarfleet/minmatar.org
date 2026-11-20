@@ -8,7 +8,7 @@ Wireframes: https://claude.ai/artifact/QYo8NfVSxE12Ps63sFmcsu
 ## Rules
 
 1. **Who can invite:** anyone who can manage the group
-   (`user_can_manage_group`: the group chief, the tribe chief, admins). The
+   (`user_can_manage_group`: any of the group's timezone chiefs, the tribe chief, admins). The
    same check as approving applications.
 2. **Who can be invited:** pilots who could apply. `invite_blocker` in
    `backend/tribes/helpers/invitations.py` says why someone can't be:

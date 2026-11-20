@@ -13263,6 +13263,8 @@ export interface components {
              * @default
              */
             character_name?: string;
+            /** Region */
+            region?: string | null;
             /** Tribe Group Id */
             tribe_group_id?: number | null;
             /** Tribe Id */
@@ -13290,6 +13292,11 @@ export interface components {
              * @default
              */
             note?: string;
+            /**
+             * Region
+             * @default
+             */
+            region?: string;
             /** Seat Name */
             seat_name: string;
             /** Status */
@@ -27643,6 +27650,8 @@ export interface components {
         };
         /** SetChiefRequest */
         SetChiefRequest: {
+            /** Region */
+            region?: string | null;
             /** User Id */
             user_id?: number | null;
         };
@@ -28826,6 +28835,11 @@ export interface components {
         /** TeamGroupResponse */
         TeamGroupResponse: {
             chief?: components["schemas"]["PersonResponse"] | null;
+            /**
+             * Chiefs
+             * @default []
+             */
+            chiefs?: components["schemas"]["PersonResponse"][];
             /** Closed This Week */
             closed_this_week: number;
             /** Id */
@@ -29762,6 +29776,24 @@ export interface components {
             tribe_id: number;
             year?: components["schemas"]["TribeAboutGroupSchema"] | null;
         };
+        /** TribeGroupChiefSeatSchema */
+        TribeGroupChiefSeatSchema: {
+            chief?: components["schemas"]["CharacterRefSchema"] | null;
+            /**
+             * Has Volunteered
+             * @default false
+             */
+            has_volunteered?: boolean;
+            /**
+             * Is Open
+             * @default true
+             */
+            is_open?: boolean;
+            /** Label */
+            label: string;
+            /** Region */
+            region: string;
+        };
         /** TribeGroupGrowthSchema */
         TribeGroupGrowthSchema: {
             /** Counts */
@@ -29990,6 +30022,11 @@ export interface components {
              * @default false
              */
             chief_is_interim?: boolean;
+            /**
+             * Chiefs
+             * @default []
+             */
+            chiefs?: components["schemas"]["TribeGroupChiefSeatSchema"][];
             /**
              * Code
              * @default
@@ -30565,6 +30602,8 @@ export interface components {
              * @default
              */
             note?: string;
+            /** Region */
+            region?: string | null;
             /** Tribe Group Id */
             tribe_group_id?: number | null;
         };
@@ -55557,6 +55596,7 @@ export interface operations {
         parameters: {
             query?: {
                 tribe_group_id?: number | null;
+                region?: string | null;
             };
             header?: never;
             path: {

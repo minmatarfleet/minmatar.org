@@ -30,6 +30,7 @@ from tribes.helpers.external_guild import (
     send_pending_join_dm,
 )
 from tribes.models import (
+    TribeGroupChief,
     Tribe,
     TribeExternalGuild,
     TribeExternalGuildSeat,
@@ -388,8 +389,9 @@ class ExternalGuildSeatTestCase(TestCase):
     def test_cleanup_alert_channel_failure_dms_chief_once(
         self, client_for_binding, discord_cls
     ):
-        self.tribe_group.chief = self.user
-        self.tribe_group.save(update_fields=["chief"])
+        TribeGroupChief.objects.create(
+            tribe_group=self.tribe_group, region="US", user=self.user
+        )
         client = client_for_binding.return_value
         client.kick_guild_member.side_effect = _missing_permissions_error()
         discord_cls.return_value.create_message.side_effect = (

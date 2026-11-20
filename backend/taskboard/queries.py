@@ -18,6 +18,7 @@ from eveonline.helpers.characters.identity import primary_refs_for_users
 from eveonline.models import EveCorporation, EvePlayer
 from groups.models import UserCommunityStatus
 from manage_hub.screens import SCREENS
+from tribes.helpers.chiefs import group_seats
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 from taskboard.models import (
     Project,
@@ -463,7 +464,7 @@ def _team_scope(user, kind: str, team_id: int):
             members = set().union(*by_group.values()) if by_group else set()
             groups = list(
                 TribeGroup.objects.filter(pk__in=team.group_ids)
-                .select_related("chief")
+                .prefetch_related("chief_seats")
                 .order_by("name")
             )
             name = (
@@ -494,8 +495,13 @@ def team_detail(user, kind: str, team_id: int) -> Optional[dict]:
     group_rows = []
     if groups:
         by_group = _member_ids_by_group(group.pk for group in groups)
-        chiefs = people(group.chief_id for group in groups)
+        seat_ids = {
+            group.pk: [seat.user_id for seat in group_seats(group)]
+            for group in groups
+        }
+        chiefs = people(uid for ids in seat_ids.values() for uid in ids)
         for group in groups:
+            group_chiefs = [chiefs[uid] for uid in seat_ids[group.pk]]
             group_members = by_group.get(group.pk, set()) - paused
             open_count, closed = _counts(
                 _groups_q([group.pk]), group_members, since
@@ -505,7 +511,8 @@ def team_detail(user, kind: str, team_id: int) -> Optional[dict]:
                     "id": group.pk,
                     "tribe_id": group.tribe_id,
                     "name": group.name,
-                    "chief": chiefs.get(group.chief_id),
+                    "chief": group_chiefs[0] if group_chiefs else None,
+                    "chiefs": group_chiefs,
                     "open": open_count,
                     "closed_this_week": closed,
                 }
