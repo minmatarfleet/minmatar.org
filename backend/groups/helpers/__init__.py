@@ -37,6 +37,8 @@ CORPORATION_GROUP_SUFFIXES = {
 # Same Django permissions as alliance corp recruiter groups (A-RAT, L3ARN, …).
 # Associate recruiters are not in the Alliance group, so they only get site
 # access if these are on their Corp <TICKER> Recruiter group.
+# Never grant these to the Alliance group itself. That group is every
+# member, and review checks ignore it.
 RECRUITER_APPLICATION_PERMISSION_CODENAMES = (
     "add_evecorporationapplication",
     "change_evecorporationapplication",
