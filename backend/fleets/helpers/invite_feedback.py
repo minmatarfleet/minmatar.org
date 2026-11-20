@@ -38,7 +38,6 @@ PROBE_KEY = "invite-feedback-probe"
 WINDOW = timedelta(days=28)
 REMIND_AFTER = timedelta(days=3)
 COMMENT_MAX = 280
-PAGE_PATH = "/fleets/invite-feedback/"
 SOURCE_WEB = "web"
 SOURCE_DISCORD = "discord"
 
@@ -605,7 +604,6 @@ def _dm_context(survey, *, reminder: bool) -> dict:
     return {
         "title": title,
         "body": body,
-        "url": site_url(PAGE_PATH),
         "round_id": survey.id,
         "list_heading": LIST_HEADING,
     }

@@ -480,13 +480,12 @@ class InviteFeedbackTests(TestCase):
                 "process?"
             ),
         )
-        answer, website = payload["discord_components"][0]["components"]
+        # The survey is answered in Discord only: no website button.
+        (answer,) = payload["discord_components"][0]["components"]
         self.assertEqual(answer["label"], "Answer")
         self.assertEqual(
             answer["custom_id"], f"invite_feedback:answer:{survey.id}"
         )
-        self.assertEqual(website["label"], "Answer on the website")
-        self.assertEqual(website["style"], 5)
 
     def test_dm_lists_the_pilots_own_invites(self, unused_delay, unused_async):
         bear = make_user("BearThatCares")
