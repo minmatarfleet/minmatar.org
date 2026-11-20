@@ -39,11 +39,21 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-20 — Thread replies after the investigation PRs merged
+
+**Category:** pulse.technology
+**Verdict:** two bugs already fixed, one clarify
+**Discord:** fix + PR URL in the two bug threads; clarify in the academy thread, including that directors edit Settings
+**PR:** skill-only (product PRs already merged)
+**Symptom vs cause:** The investigation PRs recorded no Discord reply because that environment's bot is the test guild. The workspace Discord MCP posts in the production help threads. The academy follow-up image is another corporation's Apply tab (ship rules present). The academy still has zero `CorporationRequirement` rows. `can_edit_corporation_settings` is the CEO and directors.
+**Durable rule:** After a help-ticket PR merges without a thread reply, post from the workspace Discord MCP and record that the reply landed. A screenshot of green doctrine rows is the recruitment-requirement check. Do not re-ask about the written application question.
+**Skill update:** Discord-reply note, and the L3ARN row now names directors and the follow-up screenshot.
+
 ## 2026-11-20 — Academy recruitment page shows no ship/doctrine check
 
 **Category:** pulse.technology
 **Verdict:** clarify, plus needs-decision on the written question
-**Discord:** no reply (test-guild bot 403s the production help thread)
+**Discord:** clarify posted after merge (directors can edit Settings; written question not re-asked)
 **PR:** skill-only
 **Symptom vs cause:** The academy recruitment page does not show which doctrine ships an applicant can fly, and other corps do. The automatic check is `CorporationRequirement` rows. The academy has none, so the Apply tab is interview topics only. Corps with `ships` rules show the check. Directors add rules under Settings. The written doctrine-ships question on the shared application form was left off the academy form on purpose.
 **Durable rule:** Compare `CorporationRequirement` rows before calling the skill check disabled. The written question is a separate, intentional academy-form gap.
@@ -53,7 +63,7 @@ do not duplicate it — one clarifying clause at most.
 
 **Category:** pulse.technology
 **Verdict:** bug
-**Discord:** no reply (this environment's bot is the test guild and 403s the production help thread)
+**Discord:** fix + PR URL posted after merge
 **PR:** fix+skill
 **Symptom vs cause:** An alliance member saw review tasks for pending corporation applications, and thought a newly added director-scoped character caused it. The account was not a director or recruiter of any corporation. The Alliance auth group held the application permissions, so `can_review_applications` was true for every member and every corporation. The token did not add a directors or recruiters row.
 **Durable rule:** Ignore application permissions that come only from the Alliance group. A non-reviewer still receives their own rows from the application list, because the corporation page uses that list for status. Corp recruiter groups keep the permission.
@@ -63,7 +73,7 @@ do not duplicate it — one clarifying clause at most.
 
 **Category:** pulse.technology
 **Verdict:** bug
-**Discord:** no reply (test-guild bot 403s the production help thread)
+**Discord:** fix + PR URL posted after merge
 **PR:** fix+skill
 **Symptom vs cause:** A published mentor class required a tribe group, and an active member still saw the class locked. The stored value was the group's display name. The check queried `tribe_group.code` only, so the name never matched. Membership is one row per user, including when the character on the roster is an alt. Pending membership still does not qualify.
 **Durable rule:** Dump `MentorClass.requirements` before the membership. A `tribe_group` token is a code or a unique group name. Active `TribeGroupMembership` on the account is what counts.
