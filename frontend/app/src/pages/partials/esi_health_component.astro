@@ -1,0 +1,501 @@
+---
+/**
+ * Manage › ESI health.
+ *
+ * part=corporations  chips, search, one row per alliance corporation (GET)
+ * part=pilots        chips, search, pilots with characters to re-add (GET)
+ * part=scopes        scope changes and how hard each is asked for (GET)
+ * part=scope_save    change one scope change's mode (POST): the row, open,
+ *                    inside a <table>
+ * part=message       send the Discord message (POST, user_ids optional):
+ *                    a line saying who it reached
+ *
+ * Superusers only (esi_health.manage). The API sends the messages, skipping
+ * pilots On Leave or messaged in the last week.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import {
+    get_esi_health_corporations,
+    get_esi_health_pilots,
+    get_esi_scope_rollouts,
+    save_esi_scope_rollout,
+    send_esi_messages,
+} from '@helpers/api.minmatar.org/esi_health'
+import type {
+    EsiHealthCorporation,
+    EsiHealthPilot,
+    EsiMessageResult,
+    EsiScopeRollout,
+} from '@dtypes/api.minmatar.org'
+import { error_text, form_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { message_preview, message_ready, readd_label } from '@helpers/esi_health'
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import ManageStatusDot from '@components/blocks/manage/ManageStatusDot.astro'
+import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
+import Button from '@components/blocks/Button.astro'
+import EsiMessagePreview from '@components/blocks/esi_health/EsiMessagePreview.astro'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!auth_token || !user) return HTTP_403_Forbidden()
+if (!can(await get_gates(Astro), 'esi_health.manage')) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const part = params.get('part') ?? 'corporations'
+const partial_url = (values: Record<string, string>) =>
+    translatePath(`/partials/esi_health_component/?${query_string(values)}`)
+const message_url = partial_url({ part: 'message' })
+const query = (params.get('q') ?? '').trim().toLowerCase()
+const date_of = (value: string | null) => value
+    ? new Date(value).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
+
+// part=message
+let message_result: EsiMessageResult | null = null
+let message_error: string | null = null
+if (part === 'message' && Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const user_ids = form.getAll('user_ids').map((value) => parseInt(String(value))).filter((id) => !Number.isNaN(id))
+    try {
+        message_result = await send_esi_messages(auth_token, user_ids)
+    } catch (error) {
+        message_error = error_text(error, t('esi_health.message_failed'))
+    }
+}
+
+// part=scope_save
+let saved_scope: EsiScopeRollout | null = null
+let scope_error: string | null = null
+let posted_scope_id: number | null = null
+if (part === 'scope_save' && Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    posted_scope_id = parseInt(form_text(form, 'id'))
+    const mode = form_text(form, 'mode') as EsiScopeRollout['mode']
+    try {
+        saved_scope = await save_esi_scope_rollout(auth_token, posted_scope_id, { mode: mode as 'none' | 'suggest' | 'require' })
+    } catch (error) {
+        scope_error = error_text(error, t('esi_health.scope_failed'))
+    }
+}
+
+let corporations: EsiHealthCorporation[] = []
+let pilots: EsiHealthPilot[] = []
+let scopes: EsiScopeRollout[] = []
+let error: Error | null = null
+try {
+    if (part === 'corporations') corporations = await get_esi_health_corporations(auth_token)
+    if (part === 'pilots') pilots = await get_esi_health_pilots(auth_token)
+    if (part === 'scopes' || part === 'scope_save') scopes = await get_esi_scope_rollouts(auth_token)
+} catch (failure) {
+    error = failure as Error
+}
+
+// --- Corporations
+const corp_view = ['readd', 'director'].includes(params.get('view') ?? '') ? params.get('view') as string : 'all'
+const corps_searched = corporations.filter((corporation) =>
+    !query || [corporation.name, corporation.ticker].some((text) => text.toLowerCase().includes(query)))
+const corp_rows = corps_searched.filter((corporation) =>
+    corp_view === 'all'
+    || (corp_view === 'readd' && corporation.needs_readd > 0)
+    || (corp_view === 'director' && corporation.director_state !== 'ok'))
+const CORP_COLUMNS = [
+    { label: t('esi_health.col_corporation') },
+    { label: t('esi_health.col_readd'), align: 'num' as const },
+    { label: t('esi_health.col_unlinked'), align: 'num' as const, phone: false },
+    { label: t('esi_health.col_director') },
+]
+const director_tone = (state: string) => state === 'ok' ? 'good' as const : 'warn' as const
+
+// --- Pilots
+const pilot_view = ['on_leave', 'all'].includes(params.get('view') ?? '') ? params.get('view') as string : 'active'
+const pilots_searched = pilots.filter((pilot) =>
+    !query || [pilot.main_character_name, pilot.username, ...pilot.characters].some((text) => text.toLowerCase().includes(query)))
+const pilot_rows = pilots_searched.filter((pilot) =>
+    pilot_view === 'all' || (pilot_view === 'on_leave') === pilot.on_leave)
+const PILOT_COLUMNS = [
+    { label: t('esi_health.col_pilot') },
+    { label: t('esi_health.col_corporation'), phone: false },
+    { label: t('esi_health.col_to_readd'), align: 'num' as const },
+    { label: t('esi_health.col_main') },
+    { label: t('esi_health.col_messaged'), phone: false },
+]
+
+// --- Scope changes
+const SCOPE_COLUMNS = [
+    { label: t('esi_health.col_change') },
+    { label: t('esi_health.col_added'), phone: false },
+    { label: t('esi_health.col_updated'), align: 'num' as const },
+    { label: t('esi_health.col_asking') },
+]
+// A character scope can only be suggested (an optional task); a Director
+// scope is either required of the corporation or not.
+const modes_for = (unit: string) => unit === 'corporations' ? ['none', 'require'] as const : ['none', 'suggest'] as const
+const mode_dot = (mode: string) => mode === 'none'
+    ? { tone: 'quiet' as const, text: t('esi_health.mode_none_dot') }
+    : { tone: 'warn' as const, text: t(mode === 'require' ? 'esi_health.mode_require_dot' : 'esi_health.mode_suggest_dot') }
+const scope_row_id = (id: number) => `esi-scope-${id}`
+const saved_row = part === 'scope_save'
+    ? saved_scope ?? scopes.find((scope) => scope.id === posted_scope_id) ?? null
+    : null
+---
+
+{part === 'corporations' && (
+    error
+        ? <div id="esi-health-corporations"><ErrorRefetch args={{ partial: partial_url({ part }), error, delay: 0 }} /></div>
+        : (
+            <div id="esi-health-corporations" class="[ manage-list ]">
+                <ViewChips
+                    id="esi-corp-filters"
+                    url={partial_url({ part })}
+                    target="esi-corp-list"
+                    selected={corp_view}
+                    search_id="esi-corp-search"
+                    legend={t('esi_health.corp_views')}
+                    views={[{ value: 'all', label: t('esi_health.view_all'), count: corps_searched.length }]}
+                    attention={[
+                        { value: 'readd', label: t('esi_health.view_readd'), count: corps_searched.filter((c) => c.needs_readd > 0).length, tone: 'warn' },
+                        { value: 'director', label: t('esi_health.view_director'), count: corps_searched.filter((c) => c.director_state !== 'ok').length, tone: 'warn' },
+                    ]}
+                >
+                    <div class="[ manage-toolbar ]">
+                        <ManageSearch id="esi-corp-search" value={params.get('q') ?? ''} label={t('esi_health.corp_search')} placeholder={t('esi_health.corp_search')} />
+                    </div>
+                </ViewChips>
+                <div id="esi-corp-list" class="[ manage-list ]" aria-live="polite">
+                    {corp_rows.length === 0
+                        ? <EmptyState title={t('esi_health.no_corporations')} />
+                        : (
+                            <ManageTable caption={t('esi_health.corp_caption')} columns={CORP_COLUMNS}>
+                                {corp_rows.map((corporation) => (
+                                    <ExpandRow
+                                        id={`esi-corp-${corporation.corporation_id}`}
+                                        colspan={CORP_COLUMNS.length + 1}
+                                        label={t('esi_health.open').replace('~NAME', corporation.name)}
+                                    >
+                                        <td>
+                                            <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                                <img src={get_corporation_logo(corporation.corporation_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                                                <span class="[ manage-who__text ]">
+                                                    <span class="[ manage-who__name ]">{corporation.name}</span>
+                                                    <span class="[ manage-who__sub ]">
+                                                        {t('esi_health.corp_sub').replace('~TICKER', corporation.ticker).replace('~COUNT', String(corporation.members))}
+                                                    </span>
+                                                </span>
+                                            </button>
+                                        </td>
+                                        <td class:list={['num', { 'manage-muted': corporation.needs_readd === 0 }]}>{corporation.needs_readd}</td>
+                                        <td class:list={['num is-wide', { 'manage-muted': corporation.unlinked === 0 }]}>{corporation.unlinked}</td>
+                                        <td><ManageStatusDot tone={director_tone(corporation.director_state)} text={t(t_key('esi_health.director_', corporation.director_state))} /></td>
+                                        <div slot="detail" class="[ esi-detail ]">
+                                            <dl class="[ esi-facts ]">
+                                                <div>
+                                                    <dt>{t('esi_health.fact_readd')}</dt>
+                                                    <dd>{t('esi_health.fact_readd_value')
+                                                        .replace('~COUNT', String(corporation.needs_readd))
+                                                        .replace('~ACTIVE', String(corporation.pilots_active))
+                                                        .replace('~LEAVE', String(corporation.pilots_on_leave))}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>{t('esi_health.fact_unlinked')}</dt>
+                                                    <dd>{t('esi_health.fact_unlinked_value').replace('~COUNT', String(corporation.unlinked))}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>{t('esi_health.fact_director')}</dt>
+                                                    <dd>{corporation.director_holders === 0
+                                                        ? t('esi_health.director_none')
+                                                        : t('esi_health.director_value')
+                                                            .replace('~COMPLETE', String(corporation.director_complete))
+                                                            .replace('~COUNT', String(corporation.director_holders))}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>{t('esi_health.fact_messaged')}</dt>
+                                                    <dd>{date_of(corporation.last_messaged) ?? t('esi_health.never')}</dd>
+                                                </div>
+                                            </dl>
+                                            <div class="[ manage-actions ]">
+                                                <span class="[ manage-actions__end ]">
+                                                    <Button size="sm" color="transparent" href={translatePath(`/alliance/corporations/${corporation.corporation_id}/#members`)}>
+                                                        {t('esi_health.open_members')}
+                                                    </Button>
+                                                    {corporation.active_user_ids.length > 0 &&
+                                                        <ConfirmAction
+                                                            label={t('esi_health.message_count').replace('~COUNT', String(corporation.active_user_ids.length))}
+                                                            title={t('esi_health.message_title').replace('~COUNT', String(corporation.active_user_ids.length))}
+                                                            consequence={t('esi_health.message_corp_consequence').replace('~NAME', corporation.name)}
+                                                            confirm_label={t('esi_health.message_confirm').replace('~COUNT', String(corporation.active_user_ids.length))}
+                                                            url={message_url}
+                                                            vals={{}}
+                                                            target="#esi-health-message-result"
+                                                            swap="innerHTML"
+                                                            color="fleet-red"
+                                                        >
+                                                            <Fragment slot="fields">
+                                                                {corporation.active_user_ids.map((id) => <input type="hidden" name="user_ids" value={String(id)} />)}
+                                                            </Fragment>
+                                                        </ConfirmAction>
+                                                    }
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </ExpandRow>
+                                ))}
+                            </ManageTable>
+                        )
+                    }
+                    <small class="[ manage-muted ]">{t('esi_health.corp_count').replace('~COUNT', String(corp_rows.length))}</small>
+                </div>
+            </div>
+        )
+)}
+
+{part === 'pilots' && (
+    error
+        ? <div id="esi-health-pilots"><ErrorRefetch args={{ partial: partial_url({ part }), error, delay: 0 }} /></div>
+        : (
+            <div id="esi-health-pilots" class="[ manage-list ]">
+                <ViewChips
+                    id="esi-pilot-filters"
+                    url={partial_url({ part })}
+                    target="esi-pilot-list"
+                    selected={pilot_view}
+                    search_id="esi-pilot-search"
+                    legend={t('esi_health.pilot_views')}
+                    views={[
+                        { value: 'active', label: t('esi_health.view_active'), count: pilots_searched.filter((p) => !p.on_leave).length },
+                        { value: 'on_leave', label: t('esi_health.view_on_leave'), count: pilots_searched.filter((p) => p.on_leave).length },
+                        { value: 'all', label: t('esi_health.view_all'), count: pilots_searched.length },
+                    ]}
+                >
+                    <div class="[ manage-toolbar ]">
+                        <ManageSearch id="esi-pilot-search" value={params.get('q') ?? ''} label={t('esi_health.pilot_search')} placeholder={t('esi_health.pilot_search')} />
+                    </div>
+                </ViewChips>
+                <div id="esi-pilot-list" class="[ manage-list ]" aria-live="polite">
+                    {pilot_rows.length === 0
+                        ? <EmptyState title={t('esi_health.no_pilots')} />
+                        : (
+                            <ManageTable caption={t('esi_health.pilot_caption')} columns={PILOT_COLUMNS}>
+                                {pilot_rows.map((pilot) => {
+                                    const ready = message_ready(pilot)
+                                    const why_not = pilot.on_leave
+                                        ? t('esi_health.dm_on_leave')
+                                        : !pilot.discord_linked
+                                            ? t('esi_health.dm_no_discord')
+                                            : !ready
+                                                ? t('esi_health.dm_recent').replace('~DATE', date_of(pilot.next_message_at) ?? '')
+                                                : t('esi_health.dm_not_opted_in').replace('~NAME', pilot.username)
+                                    return (
+                                        <ExpandRow
+                                            id={`esi-pilot-${pilot.user_id}`}
+                                            colspan={PILOT_COLUMNS.length + 1}
+                                            label={t('esi_health.open').replace('~NAME', pilot.main_character_name)}
+                                            dim={pilot.on_leave}
+                                        >
+                                            <td>
+                                                <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                                    {pilot.main_character_id &&
+                                                        <img src={get_player_icon(pilot.main_character_id, 64)} alt="" width="36" height="36" loading="lazy" />
+                                                    }
+                                                    <span class="[ manage-who__text ]">
+                                                        <span class="[ manage-who__name ]">{pilot.main_character_name}</span>
+                                                        <span class="[ manage-who__sub ]">{pilot.username}</span>
+                                                    </span>
+                                                </button>
+                                            </td>
+                                            <td class="[ is-wide ]">{pilot.corporation_ticker || '—'}</td>
+                                            <td class="num">{pilot.characters.length}</td>
+                                            <td>
+                                                <ManageStatusDot
+                                                    tone={pilot.main_needs_readd ? 'warn' : 'quiet'}
+                                                    text={pilot.main_needs_readd ? t('esi_health.main_broken') : t('esi_health.main_fine')}
+                                                />
+                                            </td>
+                                            <td class:list={['is-wide', { 'manage-muted': !pilot.last_messaged }]}>
+                                                {date_of(pilot.last_messaged) ?? t('esi_health.never')}
+                                            </td>
+                                            <div slot="detail" class="[ esi-detail ]">
+                                                <dl class="[ esi-facts ]">
+                                                    <div>
+                                                        <dt>{t('esi_health.fact_characters')}</dt>
+                                                        <dd>{readd_label(t, pilot.main_needs_readd, pilot.characters.length)}: {pilot.characters.join(', ')}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt>{t('esi_health.fact_groups')}</dt>
+                                                        <dd>{pilot.scope_groups.join(', ') || '—'}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt>{t('esi_health.fact_task')}</dt>
+                                                        <dd>{pilot.task_opened_at
+                                                            ? t('esi_health.task_open_since').replace('~DATE', date_of(pilot.task_opened_at) ?? '')
+                                                            : (pilot.on_leave ? t('esi_health.task_paused') : t('esi_health.task_none'))}</dd>
+                                                    </div>
+                                                    <div>
+                                                        <dt>{t('esi_health.fact_discord')}</dt>
+                                                        <dd>{pilot.discord_linked ? t('esi_health.discord_linked') : t('esi_health.discord_missing')}</dd>
+                                                    </div>
+                                                </dl>
+                                                <div class="[ manage-actions ]">
+                                                    <small class="[ manage-muted ]">{why_not}</small>
+                                                    <span class="[ manage-actions__end ]">
+                                                        {ready &&
+                                                            <ConfirmAction
+                                                                label={t('esi_health.send_dm')}
+                                                                title={t('esi_health.dm_title').replace('~NAME', pilot.main_character_name)}
+                                                                consequence=""
+                                                                confirm_label={t('esi_health.dm_confirm')}
+                                                                url={message_url}
+                                                                vals={{ user_ids: pilot.user_id }}
+                                                                target="#esi-health-message-result"
+                                                                swap="innerHTML"
+                                                                color="fleet-red"
+                                                            >
+                                                                <Fragment slot="consequence">
+                                                                    {t('esi_health.dm_consequence')}
+                                                                    <EsiMessagePreview preview={message_preview(t, user.username, pilot)} />
+                                                                </Fragment>
+                                                            </ConfirmAction>
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </ExpandRow>
+                                    )
+                                })}
+                            </ManageTable>
+                        )
+                    }
+                    <small class="[ manage-muted ]">
+                        {t('esi_health.pilot_count').replace('~COUNT', String(pilot_rows.length))}
+                    </small>
+                </div>
+            </div>
+        )
+)}
+
+{(part === 'scopes' || (part === 'scope_save' && saved_row)) && (
+    error
+        ? <div id="esi-health-scopes"><ErrorRefetch args={{ partial: partial_url({ part: 'scopes' }), error, delay: 0 }} /></div>
+        : (() => {
+            const rows = part === 'scope_save' && saved_row ? [saved_row] : scopes
+            const table = (
+                <ManageTable caption={t('esi_health.scope_caption')} columns={SCOPE_COLUMNS}>
+                    {rows.map((scope) => {
+                        const dot = mode_dot(scope.mode)
+                        return (
+                            <ExpandRow
+                                id={scope_row_id(scope.id)}
+                                colspan={SCOPE_COLUMNS.length + 1}
+                                label={t('esi_health.open').replace('~NAME', scope.label)}
+                                open={part === 'scope_save'}
+                            >
+                                <td>
+                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                        <span class="[ manage-who__text ]">
+                                            <span class="[ manage-who__name ]">{t('esi_health.scope_name').replace('~GROUP', scope.scope_group).replace('~LABEL', scope.label)}</span>
+                                            <span class="[ manage-who__sub ]">{scope.scope}</span>
+                                        </span>
+                                    </button>
+                                </td>
+                                <td class="[ is-wide ]">{date_of(scope.added_on)}</td>
+                                <td class="num">{t(t_key('esi_health.updated_', scope.unit)).replace('~DONE', String(scope.updated)).replace('~TOTAL', String(scope.total))}</td>
+                                <td><ManageStatusDot tone={dot.tone} text={dot.text} /></td>
+                                <form
+                                    slot="detail"
+                                    class="[ manage-form esi-detail ]"
+                                    hx-post={partial_url({ part: 'scope_save' })}
+                                    hx-target={`#${scope_row_id(scope.id)}`}
+                                    hx-select={`#${scope_row_id(scope.id)}`}
+                                    hx-swap="outerHTML"
+                                    x-data={`{ mode: ${JSON.stringify(scope.mode)} }`}
+                                >
+                                    <input type="hidden" name="id" value={String(scope.id)} />
+                                    <fieldset class="[ manage-chips ]">
+                                        <legend class="[ manage-eyebrow ]">{t(scope.unit === 'corporations' ? 'esi_health.ask_directors' : 'esi_health.ask_pilots')}</legend>
+                                        {modes_for(scope.unit).map((mode) => (
+                                            <label class="[ manage-chip ]" x-bind:class={`mode === '${mode}' && 'is-on'`}>
+                                                <input class="[ visually-hidden ]" type="radio" name="mode" value={mode} x-model="mode" checked={scope.mode === mode} />
+                                                <span>{t(t_key('esi_health.mode_', mode))}</span>
+                                            </label>
+                                        ))}
+                                    </fieldset>
+                                    {modes_for(scope.unit).map((mode) => (
+                                        <small class="[ manage-muted ]" x-show={`mode === '${mode}'`} x-cloak={scope.mode !== mode || undefined}>
+                                            {t(t_key('esi_health.mode_', `${mode}_${scope.unit === 'corporations' ? 'directors' : 'pilots'}`))}
+                                        </small>
+                                    ))}
+                                    <div class="[ manage-actions ]">
+                                        <Button type="submit" size="sm">{t('esi_health.save')}</Button>
+                                        {part === 'scope_save' && saved_scope && <span class="[ manage-saved ]">{t('esi_health.saved')}</span>}
+                                        {part === 'scope_save' && scope_error && <span class="[ manage-field__error ]" role="alert">{scope_error}</span>}
+                                    </div>
+                                </form>
+                            </ExpandRow>
+                        )
+                    })}
+                </ManageTable>
+            )
+            return part === 'scope_save'
+                ? <table>{table}</table>
+                : (
+                    <div id="esi-health-scopes" class="[ manage-list ]">
+                        {scopes.length === 0 ? <EmptyState title={t('esi_health.no_scopes')} /> : table}
+                    </div>
+                )
+        })()
+)}
+
+{part === 'message' && (
+    message_error
+        ? <p class="[ manage-field__error ]" role="alert">{message_error}</p>
+        : message_result && (
+            <p class="[ manage-saved ]" role="status">
+                {t('esi_health.message_sent').replace('~COUNT', String(message_result.sent))}
+                {message_result.recently_messaged > 0 && ` ${t('esi_health.message_skipped_recent').replace('~COUNT', String(message_result.recently_messaged))}`}
+                {message_result.on_leave > 0 && ` ${t('esi_health.message_skipped_leave').replace('~COUNT', String(message_result.on_leave))}`}
+                {message_result.no_discord > 0 && ` ${t('esi_health.message_skipped_discord').replace('~COUNT', String(message_result.no_discord))}`}
+            </p>
+        )
+)}
+
+<style lang="scss" is:global>
+    .esi-detail {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .esi-facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+        gap: 0 var(--space-xl);
+        margin: 0;
+
+        > div {
+            display: grid;
+            grid-template-columns: 11rem 1fr;
+            gap: var(--space-s);
+            padding-block: var(--space-2xs);
+            border-block-start: 1px solid var(--hairline-medium);
+        }
+
+        dt {
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+        }
+    }
+</style>

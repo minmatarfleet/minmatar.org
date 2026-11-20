@@ -268,6 +268,11 @@ const breadcrumbs = [
                 {can_view_members &&
                     <SectionTabPanel id="members" id_prefix="corporation" is_default={default_tab === 'members'}>
                         <div
+                            hx-get={translatePath(`/partials/corporation_director_token_component/?corporation_id=${corporation_id}`)}
+                            hx-trigger="intersect once"
+                            hx-swap="outerHTML"
+                        ></div>
+                        <div
                             hx-get={members_partial}
                             hx-trigger="intersect once"
                             hx-swap="outerHTML"

@@ -201,8 +201,15 @@ delete attributes.class
                                 data-tippy-content={(pilot.actual_groups ?? []).slice(SCOPE_GROUPS_SHOWN).map(scope_group_label).join(', ')}
                             />
                         }
-                        {(pilot.actual_groups ?? []).length === 0 &&
+                        {(pilot.actual_groups ?? []).length === 0 && pilot.token_status !== 'SUSPENDED' &&
                             <small class="[ pilot-list__muted ]">{t('account.public_only')}</small>
+                        }
+                        {!readonly && pilot.flags.includes('SCOPES_OUTDATED') &&
+                            <a
+                                class="[ pilot-list__update ]"
+                                href={`${FIX_CHARACTER_URL}&character_id=${pilot.character_id}`}
+                                data-tippy-content={t('account.esi_update_hint')}
+                            >{t('account.esi_update')}</a>
                         }
                     </div>
 
@@ -424,5 +431,9 @@ delete attributes.class
             grid-column: 1 / -1;
             padding-inline-start: calc(48px + var(--space-xs));
         }
+    }
+    .pilot-list__update {
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
     }
 </style>

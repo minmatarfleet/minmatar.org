@@ -82,7 +82,7 @@ Never check permission strings or `is_superuser` for access. Per-object rights c
     - `structures.timers.add_button`: it checked `fleets.add_evefleet`, but the page it opens needs `structures.timers.manage`.
 - **New codes keep today's audience.** They ship unwired, with the replaced permission as `legacy_permission`:
   - `fleets.manage_any`, `tribes.roster.view`, `industry.industrialists.view`, `characters.readiness`, `corporations.members.view_all`, `notifications.push`, `learning.admin`, `skillsets.admin`
-  - Superuser-only codes use `auth_group` scope with no wiring: `surveys.results.view`, `site.debug_pages`, `characters.lookup`, `site.all_pages` (the page finder and breadcrumbs list every page as available).
+  - Superuser-only codes use `auth_group` scope with no wiring: `surveys.results.view`, `esi_health.manage`, `site.debug_pages`, `characters.lookup`, `site.all_pages` (the page finder and breadcrumbs list every page as available).
   - `content.manage` is wired to `pulse.thinkspeak` with no on-leave deny, matching `is_thinkspeak_member`.
 - **Superusers see no change.** Django lists every permission for an active superuser, so even the `#strict` gates (old checks with no superuser OR) already let them in.
 - **Remaining differences are wider audiences.** Wiring is sometimes wider than the permission held by auth groups, for example `fleets.view` wired to Militia and Associate. Features mode then shows the frontend what the API already serves. The audit below counts these per gate.

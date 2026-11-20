@@ -1,0 +1,105 @@
+---
+// no-error-refetch: an optional warning; a failed fetch renders nothing.
+/**
+ * Corporation › Members: a warning above the roster when the corporation
+ * has no director token, or its best one lacks a permission we read. One
+ * updated token is enough. Leaders who hold a token get Update mine (EVE's
+ * login for that character, asking for Director); everyone else sees who
+ * could. Renders nothing when the token is fine or the viewer isn't a
+ * leader.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { get_director_token } from '@helpers/api.minmatar.org/esi_health'
+import type { DirectorToken } from '@dtypes/api.minmatar.org'
+import { get_public_api_url, get_app_url } from '@helpers/env'
+import { account_user_id_query } from '@helpers/account_user_query'
+
+const { auth_token } = get_request_user(Astro)
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+
+let status: DirectorToken | null = null
+if (auth_token && corporation_id) {
+    try {
+        status = await get_director_token(auth_token, corporation_id)
+    } catch {
+        status = null
+    }
+}
+const show = status !== null && status.state !== 'ok'
+const mine = status?.holders.find((holder) => holder.is_you) ?? null
+const others = status?.holders.filter((holder) => !holder.is_you).map((holder) => holder.character_name) ?? []
+const uses = status?.missing_labels.join(', ') ?? ''
+const update_url = mine
+    ? `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath(`/alliance/corporations/${corporation_id}/`)}${account_user_id_query(auth_token)}&token_type=Director&character_id=${mine.character_id}`
+    : ''
+const add_url = `${get_public_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath(`/alliance/corporations/${corporation_id}/`)}${account_user_id_query(auth_token)}&token_type=Director`
+
+import Button from '@components/blocks/Button.astro'
+---
+
+{show && status
+    ? (
+        <section class="[ director-token ]" role="note">
+            <div class="[ director-token__text ]">
+                <b>
+                    {status.state === 'missing'
+                        ? t('corporations.director_token.missing_title')
+                        : (uses
+                            ? t('corporations.director_token.update_title').replace('~USES', uses)
+                            : t('corporations.director_token.update_title_plain'))}
+                </b>
+                <span>
+                    {status.state === 'missing'
+                        ? t('corporations.director_token.missing_body')
+                        : t('corporations.director_token.update_body').replace('~COUNT', String(status.holders.length))}
+                </span>
+                {!mine && others.length > 0 &&
+                    <small>{t('corporations.director_token.holders').replace('~NAMES', others.slice(0, 6).join(', '))}</small>
+                }
+            </div>
+            <div class="[ director-token__actions ]">
+                {status.state === 'missing'
+                    ? <Button size="sm" href={add_url}>{t('corporations.director_token.add')}</Button>
+                    : mine && <Button size="sm" href={update_url}>{t('corporations.director_token.update_mine')}</Button>
+                }
+            </div>
+        </section>
+    )
+    : <div></div>
+}
+
+<style lang="scss">
+    .director-token {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs) var(--space-m);
+        margin-block-end: var(--space-s);
+        padding: var(--space-s) var(--space-m);
+        background-color: color-mix(in srgb, var(--security-status-point-4) 10%, transparent);
+        border: 1px solid color-mix(in srgb, var(--security-status-point-4) 55%, transparent);
+    }
+
+    .director-token__text {
+        display: flex;
+        flex: 1 1 20rem;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .director-token__actions {
+        display: flex;
+        gap: var(--space-xs);
+    }
+</style>

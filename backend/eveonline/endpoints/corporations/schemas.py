@@ -243,6 +243,8 @@ class CorporationMemberDetails(Schema):
     registered: bool = False
     exempt: bool = False
     esi_suspended: bool = False
+    # The owner has to log in again: the token stopped working or is gone.
+    needs_readd: bool = False
     token_count: int = 0
     token_level: str = None
     fleets_90d: int = 0
