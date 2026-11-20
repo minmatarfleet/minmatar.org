@@ -217,6 +217,7 @@ Scan this table before inventing a new theory.
 | Authed on the site but no Discord / voice | Dump `EvePlayer.primary_character`, `UserAffiliation`, `user.groups`. **Guest** + non-FL33T/BUILD alliance = expected (no Alliance role). **Corp TICKER** without Alliance and `primary_character` null = affiliation never ran; refresh Discord roles after a main is set. Affiliation sync now auto-sets a main when the user has **exactly one** character. Voice channels need the Alliance (or equivalent) Discord role, not just Guest. |
 | Recruiter / director cannot see applications / “auth” | Astro applications page checks `applications.change_evecorporationapplication`. That lives on **`Corp <TICKER> Recruiter`**, synced from ESI **Personnel_Manager** (`corporation.recruiters`). `Corporation Director` (generic Discord/auth group) and `Corp <TICKER> Director` do **not** get those perms from code. Dump `user.groups`, `esi_token_level`, and corp `recruiters`/`directors` M2M. Empty M2M → ESI corp-roles pull has nobody listed, not a missing button. |
 | Review tasks for applications to corporations the member does not recruit for | The Alliance auth group held the application permissions, so every member passed review and saw “Review N applications” for every corporation with a pending application. A director-scoped token does not add the directors or recruiters M2M by itself. `can_review_applications` ignores permissions that come only from the Alliance group. List, detail, accept, reject, and transfer use that check. A non-reviewer list call returns only that pilot’s own rows (the corporation page uses them for status). Migration `0007` removes the four application permissions from Alliance. Corp recruiter groups and a permission set on the user still review. |
+| L3ARN recruitment page has no ship/doctrine skill check; other corps do | Not a code disable. The Apply tab and the application review render `CorporationRequirement` rows. No rows means interview topics only. A corp with `ships` rules shows the check. Directors add them under Settings → Recruitment requirements. The written “What ships can you fly in our doctrines?” question is on the shared application form and was left off the L3ARN form on purpose. Adding that question is a product call. |
 | Tribe group green tick without a hull/skill they expected | Multiple `TribeGroupRequirement` rows on one group are **OR**. Skills **inside** one row are **AND**. UI copy is `tribal_group_requirement_text` (“At least one of these {count} requirements.”). Dump the group’s requirements + qualifying skills. Do not treat a green tick as “has every row.” |
 | Wiki `/en/…` connection timed out | `wiki.minmatar.org` is external. Current paths drop the MediaWiki `/en/` prefix (`/alliance/Onboarding`, not `/en/alliance/Onboarding`). Site links should not use `/en/`. If the wiki itself times out, that is hosting, not Django. Onboarding also lives on my.minmatar.org. |
 | SRP fails “Character not in fleet” | `is_valid_for_reimbursement` checks the **victim** character against `EveFleetInstanceMember` for the instance `select_fleet_instance_for_killmail` picks. If another character on the same account was tracked, the claim is accepted with `not_tracked_in_fleet` and reviewers get a warning in the SRP dialog (policy decided). The refusal now means no character on the account was tracked. Member rows are never removed and `update_fleet_instances` polls every 30s. Check `updated_at` around the kill to rule out a polling gap, then confirm which in-game fleet they were in. |
@@ -262,6 +263,7 @@ Still open the PR.
   `pipenv run python manage.py test … --settings=app.settings_test` from
   `backend/`. Frontend: `npm run check` / `npm run test` when UI changes.
 - Always include the §4 skill/learnings edits in the same PR.
+- Edit `.claude/skills/help-ticket-investigation/`, then run `python3 scripts/sync_agent_config.py`. `.cursor/skills/` is generated. A hand edit there fails `test_cursor_config_is_generated_from_claude`.
 - Open the PR (summary + test plan). Skill-only is fine for 1 and 3.
 - Do not end the run without a PR URL.
 
@@ -310,8 +312,8 @@ rots, delete it.
 ### 4d. Commit and open the PR
 
 Same branch as the product fix (or skill-only if there was no fix).
-Include `SKILL.md` and `learnings.md`. Then open the PR. The run is not
-done until that PR exists.
+Include the `.claude/skills/` edits and the synced `.cursor/skills/`
+copies. Then open the PR. The run is not done until that PR exists.
 
 ---
 
