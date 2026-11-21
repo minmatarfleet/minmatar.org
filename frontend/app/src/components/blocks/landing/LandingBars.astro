@@ -1,0 +1,81 @@
+---
+import { bar_heights } from '@helpers/landing'
+
+interface Props {
+    values:         number[];
+    hours:          number[];
+    label:          string;
+    label_every?:   number;
+    height?:        string;
+    [propName: string]: any;
+}
+
+const {
+    values,
+    hours,
+    label,
+    label_every = 3,
+    height = 'var(--space-3xl)',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const heights = bar_heights(values)
+const max = Math.max(1, ...values)
+const last = values.length - 1
+---
+
+<figure
+    class:list={['[ landing-bars ]', Astro.props.class]}
+    role="img"
+    aria-label={label}
+    {...attributes}
+>
+    <div class="landing-bars__plot">
+        {heights.map((percent, index) =>
+            <span
+                class="landing-bars__bar"
+                style={`height: ${percent}%; opacity: ${(0.3 + 0.7 * (values[index] / max)).toFixed(2)};`}
+                title={`${String(hours[index]).padStart(2, '0')}:00 · ${values[index]}`}
+            ></span>
+        )}
+    </div>
+    <div class="landing-bars__labels" aria-hidden="true">
+        {hours.map((hour, index) =>
+            <span>{(last - index) % label_every === 0 ? String(hour).padStart(2, '0') : ''}</span>
+        )}
+    </div>
+</figure>
+
+<style lang="scss" define:vars={{ height }}>
+    .landing-bars {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .landing-bars__plot,
+    .landing-bars__labels {
+        display: grid;
+        grid-template-columns: repeat(24, minmax(0, 1fr));
+        gap: var(--space-3xs);
+    }
+
+    .landing-bars__plot {
+        height: var(--height);
+        align-items: end;
+    }
+
+    .landing-bars__bar {
+        display: block;
+        background: var(--fleet-yellow);
+    }
+
+    .landing-bars__labels {
+        font-size: var(--step--2);
+        color: var(--text-muted);
+        text-align: center;
+    }
+</style>

@@ -157,6 +157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/alliance/landing/pulse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Alliance activity for the new landing page, 60 minutes behind */
+        get: operations["alliance_endpoints_landing_get_landing_pulse_get_landing_pulse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/alliance/trial/me": {
         parameters: {
             query?: never;
@@ -22074,6 +22091,114 @@ export interface components {
             /** Updated */
             updated: number;
         };
+        /** LandingDayTotals */
+        LandingDayTotals: {
+            /** Complexes */
+            complexes: number;
+            /** Freight Contracts */
+            freight_contracts: number;
+            /** Freight Volume */
+            freight_volume: number;
+            /** Industry Jobs */
+            industry_jobs: number;
+            /** Ships Destroyed */
+            ships_destroyed: number;
+            /** Ships Lost */
+            ships_lost: number;
+            /** Warzone Sites */
+            warzone_sites: number;
+        };
+        /** LandingEvent */
+        LandingEvent: {
+            /** Action */
+            action: string;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Others */
+            others: number;
+            /** Region */
+            region: string;
+        };
+        /** LandingHourlyKills */
+        LandingHourlyKills: {
+            /** Hour */
+            hour: number;
+            /** Kills */
+            kills: number;
+        };
+        /** LandingMoment */
+        LandingMoment: {
+            /** Kind */
+            kind: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Title */
+            title: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: number;
+        };
+        /** LandingPulseResponse */
+        LandingPulseResponse: {
+            day: components["schemas"]["LandingDayTotals"];
+            /** Delay Minutes */
+            delay_minutes: number;
+            /** Events */
+            events: components["schemas"]["LandingEvent"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Hourly Kills */
+            hourly_kills: components["schemas"]["LandingHourlyKills"][];
+            /** Moments */
+            moments: components["schemas"]["LandingMoment"][];
+            /** Timezone Kills */
+            timezone_kills: components["schemas"]["LandingTimezoneKills"][];
+            week: components["schemas"]["LandingWeekTotals"];
+        };
+        /** LandingTimezoneKills */
+        LandingTimezoneKills: {
+            /** Average Kills */
+            average_kills: number;
+            /** Hour */
+            hour: number;
+        };
+        /** LandingWeekTotals */
+        LandingWeekTotals: {
+            /** Complexes */
+            complexes: number;
+            /** Fleets */
+            fleets: number;
+            /** Freight Contracts */
+            freight_contracts: number;
+            /** Freight Volume */
+            freight_volume: number;
+            /** Industry Jobs */
+            industry_jobs: number;
+            /** Peak Comms */
+            peak_comms: number;
+            /** Peak Comms At */
+            peak_comms_at?: string | null;
+            /** Ships Destroyed */
+            ships_destroyed: number;
+            /** Warzone Sites */
+            warzone_sites: number;
+        };
         /** LeaderboardRow */
         LeaderboardRow: {
             /** Character Id */
@@ -33602,6 +33727,35 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    alliance_endpoints_landing_get_landing_pulse_get_landing_pulse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandingPulseResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

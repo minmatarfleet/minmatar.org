@@ -3198,6 +3198,10 @@ export type TrainingBring = ApiResponse<'BringResponse'>
 
 // Trial tab and the corp Members row: trial length, tiers, ships, kills.
 export type TrialReport = ApiResponse<'TrialReportResponse'>
+
+export type LandingPulse = ApiResponse<'LandingPulseResponse'>
+export type LandingEvent = ApiResponse<'LandingEvent'>
+export type LandingMoment = ApiResponse<'LandingMoment'>
 export type TrialStatus = ApiResponse<'TrialStatusResponse'>
 export type TrialProgress = ApiResponse<'TrialProgressResponse'>
 export type TrialCompare = ApiResponse<'TrialCompareResponse'>
