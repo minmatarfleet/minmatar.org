@@ -13,6 +13,8 @@ import type {
     BuildPack,
     IndustryOrderCharacterStatistics,
     OrderCapabilities,
+    OrderClaimCharacters,
+    OrderDeliveryLocation,
     CreateOrderRequest,
     CreateOrderResponse,
     OrderLinePricing,
@@ -31,6 +33,22 @@ export async function get_order_capabilities(access_token: string) {
     return await api_request<OrderCapabilities>(ENDPOINT, {
         token: access_token,
         error: 'Error fetching order capabilities',
+    })
+}
+
+/** Where a new order can deliver: the staging first, then Industry delivery locations. */
+export async function get_order_delivery_locations(access_token: string) {
+    return await api_request<OrderDeliveryLocation[]>(`${API_ENDPOINT}/orders/delivery-locations`, {
+        token: access_token,
+        error: 'Error fetching delivery locations',
+    })
+}
+
+/** The user's characters that can dock at an order's delivery location. */
+export async function get_order_claim_characters(access_token: string, order_id: number) {
+    return await api_request<OrderClaimCharacters>(`${API_ENDPOINT}/orders/${order_id}/claim-characters`, {
+        token: access_token,
+        error: 'Error fetching claim characters',
     })
 }
 
