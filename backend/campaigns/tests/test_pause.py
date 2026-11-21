@@ -116,3 +116,34 @@ class PausedOverlayTestCase(TestCase):
             {row["objective_label"] for row in response["systems"]},
             {"Paused"},
         )
+
+
+class OverlayCampaignListTestCase(TestCase):
+    """The window's switcher lists every live campaign, paused included."""
+
+    def test_live_and_paused_listed_drafts_and_done_not(self):
+        cache.clear()
+        live = make_campaign()
+        make_campaign(
+            slug="paused-one", short_code="PSD", status=CampaignStatus.PAUSED
+        )
+        make_campaign(
+            slug="done-one", short_code="DON", status=CampaignStatus.COMPLETED
+        )
+        make_campaign(
+            slug="draft-one", short_code="DRF", status=CampaignStatus.DRAFT
+        )
+        user, _ = enlist(live, "pilot", 4002)
+        grant(user, "view_campaign")
+        body = Client().get(f"{BASE}/overlay", **auth_headers(user)).json()
+        self.assertEqual(body["campaign"]["slug"], live.slug)
+        self.assertEqual(
+            sorted(row["slug"] for row in body["campaigns"]),
+            ["paused-one", "test-push"],
+        )
+        row = next(r for r in body["campaigns"] if r["slug"] == "paused-one")
+        self.assertEqual(row["status"], "paused")
+        self.assertEqual(
+            set(row["totals"]),
+            {"structures_destroyed", "isk_destroyed", "ships_killed"},
+        )

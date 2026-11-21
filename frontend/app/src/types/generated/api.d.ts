@@ -12890,9 +12890,17 @@ export interface components {
         /**
          * CampaignOverlay
          * @description The desktop app's Campaigns window.
+         *
+         *     ``campaign`` is the shape every installed version reads: the pilot's
+         *     live campaign. ``campaigns`` (added later) lists every live campaign.
          */
         CampaignOverlay: {
             campaign?: components["schemas"]["CampaignOverlayCampaign"] | null;
+            /**
+             * Campaigns
+             * @default []
+             */
+            campaigns?: components["schemas"]["CampaignOverlaySummary"][];
         };
         /** CampaignOverlayCampaign */
         CampaignOverlayCampaign: {
@@ -12950,6 +12958,29 @@ export interface components {
             /** System */
             system?: string | null;
         };
+        /**
+         * CampaignOverlaySummary
+         * @description One live campaign in the window's switcher.
+         */
+        CampaignOverlaySummary: {
+            features: components["schemas"]["CampaignFeatures"];
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /**
+             * Next Timers
+             * @default []
+             */
+            next_timers?: components["schemas"]["CampaignOverlayTimer"][];
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            totals: components["schemas"]["CampaignOverlayTotals"];
+        };
         /** CampaignOverlaySystem */
         CampaignOverlaySystem: {
             /** Change 24H */
@@ -12982,6 +13013,42 @@ export interface components {
             solar_system_id: number;
             /** System Id */
             system_id: number;
+        };
+        /** CampaignOverlayTimer */
+        CampaignOverlayTimer: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Final */
+            final: boolean;
+            /** Name */
+            name: string;
+            /** Stage */
+            stage: number;
+            /** System */
+            system: string;
+            /** Type Name */
+            type_name: string;
+        };
+        /** CampaignOverlayTotals */
+        CampaignOverlayTotals: {
+            /**
+             * Isk Destroyed
+             * @default 0
+             */
+            isk_destroyed?: number;
+            /**
+             * Ships Killed
+             * @default 0
+             */
+            ships_killed?: number;
+            /**
+             * Structures Destroyed
+             * @default 0
+             */
+            structures_destroyed?: number;
         };
         /** CampaignPartyOut */
         CampaignPartyOut: {

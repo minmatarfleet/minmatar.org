@@ -4562,7 +4562,7 @@
         "type": "object"
       },
       "CampaignOverlay": {
-        "description": "The desktop app's Campaigns window.",
+        "description": "The desktop app's Campaigns window.\n\n``campaign`` is the shape every installed version reads: the pilot's\nlive campaign. ``campaigns`` (added later) lists every live campaign.",
         "properties": {
           "campaign": {
             "anyOf": [
@@ -4573,6 +4573,14 @@
                 "type": "null"
               }
             ]
+          },
+          "campaigns": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignOverlaySummary"
+            },
+            "title": "Campaigns",
+            "type": "array"
           }
         },
         "title": "CampaignOverlay",
@@ -4687,6 +4695,56 @@
         "title": "CampaignOverlayPilot",
         "type": "object"
       },
+      "CampaignOverlaySummary": {
+        "description": "One live campaign in the window's switcher.",
+        "properties": {
+          "features": {
+            "$ref": "#/components/schemas/CampaignFeatures"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_timers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignOverlayTimer"
+            },
+            "title": "Next Timers",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/CampaignOverlayTotals"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "kind",
+          "status",
+          "features",
+          "totals"
+        ],
+        "title": "CampaignOverlaySummary",
+        "type": "object"
+      },
       "CampaignOverlaySystem": {
         "properties": {
           "change_24h": {
@@ -4791,6 +4849,66 @@
           "objective_label"
         ],
         "title": "CampaignOverlaySystem",
+        "type": "object"
+      },
+      "CampaignOverlayTimer": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type_name",
+          "system",
+          "stage",
+          "final",
+          "at"
+        ],
+        "title": "CampaignOverlayTimer",
+        "type": "object"
+      },
+      "CampaignOverlayTotals": {
+        "properties": {
+          "isk_destroyed": {
+            "default": 0,
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "ships_killed": {
+            "default": 0,
+            "title": "Ships Killed",
+            "type": "integer"
+          },
+          "structures_destroyed": {
+            "default": 0,
+            "title": "Structures Destroyed",
+            "type": "integer"
+          }
+        },
+        "title": "CampaignOverlayTotals",
         "type": "object"
       },
       "CampaignPartyOut": {

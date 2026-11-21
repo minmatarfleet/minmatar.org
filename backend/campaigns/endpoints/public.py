@@ -140,7 +140,10 @@ def get_overlay(request):
     if denied:
         return denied
     campaign = overlay.pick_campaign(request.user)
-    return {"campaign": overlay.overlay(campaign) if campaign else None}
+    return {
+        "campaign": overlay.overlay(campaign) if campaign else None,
+        "campaigns": overlay.campaigns(),
+    }
 
 
 @router.get(

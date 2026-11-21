@@ -671,10 +671,44 @@ class CampaignOverlayCampaign(Schema):
     active_pilots: list[CampaignOverlayPilot]
 
 
+class CampaignOverlayTotals(Schema):
+    structures_destroyed: int = 0
+    isk_destroyed: int = 0
+    ships_killed: int = 0
+
+
+class CampaignOverlayTimer(Schema):
+    name: str
+    type_name: str
+    system: str
+    # Chevrons filled (1-3: shield, armor, hull); final is the kill timer.
+    stage: int
+    final: bool
+    at: datetime
+
+
+class CampaignOverlaySummary(Schema):
+    """One live campaign in the window's switcher."""
+
+    id: int
+    slug: str
+    name: str
+    kind: str
+    status: str
+    features: CampaignFeatures
+    totals: CampaignOverlayTotals
+    next_timers: list[CampaignOverlayTimer] = []
+
+
 class CampaignOverlay(Schema):
-    """The desktop app's Campaigns window."""
+    """The desktop app's Campaigns window.
+
+    ``campaign`` is the shape every installed version reads: the pilot's
+    live campaign. ``campaigns`` (added later) lists every live campaign.
+    """
 
     campaign: CampaignOverlayCampaign | None = None
+    campaigns: list[CampaignOverlaySummary] = []
 
 
 # --- Settings (operator screens that used to live in Django admin) ---------

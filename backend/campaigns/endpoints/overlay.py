@@ -15,19 +15,21 @@ from __future__ import annotations
 import time
 from datetime import timedelta
 
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from campaigns.models import (
     ADVANTAGE_SITE_KINDS,
     Campaign,
+    CampaignKillmail,
     CampaignKillmailParticipant,
     CampaignSiteCompletion,
     CampaignStatus,
     KillmailOutcome,
     SiteKind,
+    StructureStatus,
 )
-from campaigns.services import objectives, plan
+from campaigns.services import objectives, plan, timers
 from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_refs_for_users,
@@ -49,6 +51,9 @@ STALE_SECONDS = 10 * 60
 REBUILD_LOCK_SECONDS = 30
 CACHE_KEY = "campaigns:overlay:{campaign_id}"
 LOCK_KEY = "campaigns:overlay:{campaign_id}:rebuilding"
+SUMMARY_CACHE_KEY = "campaigns:overlay:summary:{campaign_id}"
+SUMMARY_LOCK_KEY = "campaigns:overlay:summary:{campaign_id}:rebuilding"
+NEXT_TIMERS = 3
 
 # A paused faction warfare campaign stays in the window: kills still count.
 LIVE_STATUSES = (CampaignStatus.ACTIVE, CampaignStatus.PAUSED)
@@ -81,15 +86,36 @@ def overlay(campaign: Campaign) -> dict:
     cheap enough to run in a request, so one request rebuilds under a short
     lock while the others get the stale copy.
     """
-    key = CACHE_KEY.format(campaign_id=campaign.id)
-    lock = LOCK_KEY.format(campaign_id=campaign.id)
+    return _cached(
+        CACHE_KEY.format(campaign_id=campaign.id),
+        LOCK_KEY.format(campaign_id=campaign.id),
+        lambda: build(campaign),
+    )
+
+
+def campaigns() -> list[dict]:
+    """Every live campaign, newest first, for the window's switcher: what it
+    shows, its destruction totals and its next timers."""
+    return [
+        _cached(
+            SUMMARY_CACHE_KEY.format(campaign_id=campaign.id),
+            SUMMARY_LOCK_KEY.format(campaign_id=campaign.id),
+            lambda campaign=campaign: summary(campaign),
+        )
+        for campaign in Campaign.objects.filter(
+            status__in=LIVE_STATUSES
+        ).order_by("-start_at")
+    ]
+
+
+def _cached(key: str, lock: str, builder) -> dict:
     cached = cache_get(key)
     if cached is not None:
         if cached["fresh_until"] > time.time():
             return cached["payload"]
         if not cache_add(lock, 1, REBUILD_LOCK_SECONDS):
             return cached["payload"]  # someone else is rebuilding it
-    payload = build(campaign)
+    payload = builder()
     cache_set(
         key,
         {"fresh_until": time.time() + FRESH_SECONDS, "payload": payload},
@@ -97,6 +123,38 @@ def overlay(campaign: Campaign) -> dict:
     )
     cache_delete(lock)
     return payload
+
+
+def summary(campaign: Campaign) -> dict:
+    kills = CampaignKillmail.objects.filter(
+        campaign=campaign, outcome=KillmailOutcome.KILL
+    )
+    return {
+        "id": campaign.id,
+        "slug": campaign.slug,
+        "name": campaign.name,
+        "kind": campaign.kind,
+        "status": campaign.status,
+        "features": campaign.features,
+        "totals": {
+            "structures_destroyed": campaign.structures.filter(
+                status=StructureStatus.DESTROYED
+            ).count(),
+            "isk_destroyed": kills.aggregate(v=Sum("isk_value"))["v"] or 0,
+            "ships_killed": kills.count(),
+        },
+        "next_timers": [
+            {
+                "name": row["name"],
+                "type_name": row["type_name"],
+                "system": row["system"],
+                "stage": row["stage"],
+                "final": row["final"],
+                "at": row["at"],
+            }
+            for row in timers.next_timers(campaign, limit=NEXT_TIMERS)
+        ],
+    }
 
 
 def build(campaign: Campaign) -> dict:
