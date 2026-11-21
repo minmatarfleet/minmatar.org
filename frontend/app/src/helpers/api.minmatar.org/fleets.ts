@@ -38,10 +38,11 @@ export async function get_audiences(access_token:string) {
 }
 
 /** `host_group_id` lists one tribe group's fleets (those the viewer can see). */
-export async function get_fleets_v3(access_token:string, status:FleetStatus, host_group_id?:number | null) {
+export async function get_fleets_v3(access_token:string, status:FleetStatus, host_group_id?:number | null, campaign_id?:number | null) {
     const group = host_group_id ? `&host_group_id=${host_group_id}` : ''
+    const campaign = campaign_id ? `&campaign_id=${campaign_id}` : ''
 
-    return await api_request<Fleet[]>(`${API_ENDPOINT}/v3?fleet_filter=${status}${group}`, {
+    return await api_request<Fleet[]>(`${API_ENDPOINT}/v3?fleet_filter=${status}${group}${campaign}`, {
         token: access_token,
         error: 'Error fetching fleets',
     })

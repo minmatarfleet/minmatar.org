@@ -3614,7 +3614,7 @@ export interface paths {
         };
         /**
          * Get V3 Fleets
-         * @description List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.
+         * @description List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).
          */
         get: operations["fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets"];
         put?: never;
@@ -41169,6 +41169,7 @@ export interface operations {
             query?: {
                 fleet_filter?: "active" | "upcoming" | "recent";
                 host_group_id?: number | null;
+                campaign_id?: number | null;
             };
             header?: never;
             path?: never;

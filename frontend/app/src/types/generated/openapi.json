@@ -66623,7 +66623,7 @@
     },
     "/api/fleets/v3": {
       "get": {
-        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.",
+        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).",
         "operationId": "fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets",
         "parameters": [
           {
@@ -66659,6 +66659,22 @@
                 }
               ],
               "title": "Host Group Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "campaign_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Campaign Id"
             }
           }
         ],

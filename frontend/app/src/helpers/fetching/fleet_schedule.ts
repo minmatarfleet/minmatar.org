@@ -151,12 +151,13 @@ export interface FleetHistory {
 }
 
 /** `host_group_id` narrows the history to one tribe group's fleets. */
-export async function fetch_fleet_history(auth_token:string, host_group_id:number | null = null):Promise<FleetHistory> {
+/** The fleet history page's data; `campaign_id` scopes it to one campaign's fleets, for as long as it ran. */
+export async function fetch_fleet_history(auth_token:string, host_group_id:number | null = null, campaign_id:number | null = null):Promise<FleetHistory> {
     const fc_metrics_promise = get_fleet_commander_metrics(auth_token)
     fc_metrics_promise.catch(() => null)
     const [fc_metrics, fleets] = await settled_in_order(
         fc_metrics_promise,
-        fetch_fleets_auth(auth_token, false, false, fc_metrics_promise, host_group_id),
+        fetch_fleets_auth(auth_token, false, false, fc_metrics_promise, host_group_id, campaign_id),
     )
     const started = (fleet:FleetItem) => new Date(fleet.tracking?.start_time ?? fleet.start_time).getTime()
     fleets.sort((a, b) => started(b) - started(a))

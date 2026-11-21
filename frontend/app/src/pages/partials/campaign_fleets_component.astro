@@ -1,0 +1,58 @@
+---
+/**
+ * The campaign Fleets tab's history: the fleet history page's list (totals,
+ * then one row per fleet), scoped to the fleets linked to this campaign.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { fetch_fleet_history, type FleetHistory } from '@helpers/fetching/fleet_schedule'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'campaigns.view')) return HTTP_403_Forbidden()
+
+const campaign_id = parseInt(Astro.url.searchParams.get('campaign_id') ?? '')
+if (!Number.isFinite(campaign_id) || campaign_id <= 0) return HTTP_403_Forbidden()
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+// Fleet history needs fleets.view; without it the tab keeps its upcoming list only.
+const can_view_fleets = can(gates, 'fleets.view')
+
+let history: FleetHistory | null = null
+let fetch_error: Error | false = false
+if (can_view_fleets) {
+    try {
+        history = await fetch_fleet_history(auth_token as string, null, campaign_id)
+    } catch (error) {
+        fetch_error = error
+    }
+}
+
+const PARTIAL_URL = translatePath(`/partials/campaign_fleets_component?campaign_id=${campaign_id}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import FleetHistoryList from '@components/blocks/FleetHistoryList.astro'
+---
+
+<div id="campaign-fleet-history">
+    {fetch_error ?
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: fetch_error,
+                delay,
+                target: '#campaign-fleet-history',
+            }}
+        />
+        : history ?
+            <FleetHistoryList history={history} />
+            : <EmptyState title={t('campaigns.fleets.none')} />
+    }
+</div>

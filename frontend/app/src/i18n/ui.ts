@@ -7507,6 +7507,7 @@ export const ui = {
         'campaigns.paused.body': 'The alliance is out of faction warfare for now. No weekly targets, orders or awards until the campaign resumes. Your kills still count.',
         'campaigns.paused.resume': 'Resume',
         'campaigns.paused.row': 'Paused',
+        'campaigns.fleets.loading': 'Loading fleet history…',
         'campaigns.timers.title': 'Timers',
         'campaigns.timers.hint': 'Every enemy timer in this campaign, soonest first.',
         'campaigns.timers.tracking': '~UPCOMING upcoming · ~DONE done',
