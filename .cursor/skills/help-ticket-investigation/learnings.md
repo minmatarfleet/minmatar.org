@@ -79,6 +79,16 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** Dump `MentorClass.requirements` before the membership. A `tribe_group` token is a code or a unique group name. Active `TribeGroupMembership` on the account is what counts.
 **Skill update:** added the mentor-class tribe requirement row.
 
+## 2026-11-21 — Help ticket thread cuts off a long report
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A report longer than 1024 characters showed up cut off in the help thread. The modal allows 2000 and the row stores the full body. The starter embed put that body in a field, which Discord caps at 1024, so the rest never appeared. Nothing threw, so Sentry and PostHog had no error.
+**Durable rule:** Compare `len(HelpTicket.body)` to 1024 before calling it a modal limit. The thread posts the body as an embed description (4096) and continues in another embed past that.
+**Skill update:** added the clipped help-ticket row.
+
 ## 2026-11-14 — Open technology threads (batch, Discord MCP on production)
 
 **Category:** pulse.technology

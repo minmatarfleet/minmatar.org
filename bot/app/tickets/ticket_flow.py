@@ -16,6 +16,26 @@ from .views import build_close_ticket_view
 
 logger = logging.getLogger(__name__)
 
+# Discord embed field values stop at 1024 characters. The help modal allows
+# 2000, so a field cut the report off. An embed description holds 4096.
+# Anything longer continues in another embed.
+EMBED_DESCRIPTION_MAX = 4096
+
+
+def ticket_detail_embeds(body: str) -> list[discord.Embed]:
+    """The reporter's text, in full, as embed descriptions."""
+    text = body or ""
+    if not text:
+        return []
+    embeds = []
+    for index in range(0, len(text), EMBED_DESCRIPTION_MAX):
+        chunk = text[index:index + EMBED_DESCRIPTION_MAX]
+        embed = discord.Embed(description=chunk, color=0x2ECC71)
+        if index == 0:
+            embed.title = "Details"
+        embeds.append(embed)
+    return embeds
+
 
 async def create_ticket_from_modal(
     interaction: discord.Interaction,
@@ -69,9 +89,6 @@ async def create_ticket_from_modal(
         description=welcome_description,
         color=0x2ECC71,
     )
-    details_embed = discord.Embed(color=0x2ECC71)
-    details_embed.add_field(name="Details", value=body[:1024], inline=False)
-
     mention = _format_mentions(category.mention_discord_ids)
     if not mention:
         logger.warning(
@@ -105,7 +122,7 @@ async def create_ticket_from_modal(
 
     await thread.send(
         content=mention or None,
-        embeds=[welcome_embed, details_embed],
+        embeds=[welcome_embed, *ticket_detail_embeds(body)],
         view=build_close_ticket_view(ticket.id),
     )
 
