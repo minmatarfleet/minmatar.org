@@ -11,16 +11,18 @@ import { MENTOR_REQUEST_MODAL, MENTOR_SETTINGS_PATH, mentor_class_cover, mentor_
  * evenings they teach, how fast they answer, their
  * classes as cover tiles, and a button to ask for a class. `class_id`
  * preselects a class in the request. The viewer's own card says "You" and
- * links to My settings instead.
+ * links to My settings instead. A logged-out visitor (`login_href`) gets a
+ * log-in button in place of the request button.
  */
 interface Props {
     card: MentorCard;
     class_id?: number;
     can_request?: boolean;
+    login_href?: string | null;
     [propName: string]: any;
 }
 
-const { card, class_id, can_request = true, ...attributes } = Astro.props
+const { card, class_id, can_request = true, login_href = null, ...attributes } = Astro.props
 
 delete attributes.class
 
@@ -149,6 +151,11 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
             <Button class="[ mentor-card__action ]" size="sm" color="transparent" href={translatePath(MENTOR_SETTINGS_PATH)}>{t('mentors.nav.settings')}</Button>
             : card.full ?
             <span class="[ mentor-card__full ]">{t('mentors.full')}</span>
+            : login_href ?
+            card.classes.length > 0 &&
+            <Button class="[ mentor-card__action ]" size="sm" color="transparent" href={login_href}>
+                {t('mentors.login_to_request')}
+            </Button>
             : can_request && card.classes.length > 0 &&
             <Button class="[ mentor-card__action ]" type="button" size="sm" x-data x-on:click={modal_click(request_url)}>
                 {t('mentors.request')}

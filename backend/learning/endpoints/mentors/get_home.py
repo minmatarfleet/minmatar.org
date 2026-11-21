@@ -1,6 +1,8 @@
-"""GET "" - Find a mentor: the viewer's classes and the mentors who fit."""
+"""GET "" - Find a mentor: the viewer's classes and the mentors who fit.
 
-from authentication import AuthBearer
+Logged-out visitors get the mentors read-only (see views.guest_home)."""
+
+from authentication import AuthLenient
 from learning.mentors import views
 from learning.mentors.schemas import MentorsHomeResponse
 
@@ -8,7 +10,7 @@ PATH = ""
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": "Find a mentor: your classes and mentors sorted by fit.",
-    "auth": AuthBearer(),
+    "auth": AuthLenient(),
     "response": {200: MentorsHomeResponse},
 }
 

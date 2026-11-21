@@ -1,6 +1,6 @@
 """GET "/classes/{slug}" - a class, checked against the viewer."""
 
-from authentication import AuthBearer
+from authentication import AuthLenient
 from learning.endpoints.mentors.common import ERRORS, handles_errors
 from learning.mentors import views
 from learning.mentors.schemas import MentorClassDetailResponse
@@ -11,7 +11,7 @@ PATH = "/classes/{slug}"
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": "A class, its requirements for you, and its mentors.",
-    "auth": AuthBearer(),
+    "auth": AuthLenient(),
     "response": {200: MentorClassDetailResponse, **ERRORS},
 }
 

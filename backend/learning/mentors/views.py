@@ -225,10 +225,25 @@ def me(user) -> dict:
     }
 
 
-def home(user, now=None) -> dict:
-    base = me(user)
-    viewer = service.default_pilot_availability(user)
-    mentors = list(
+def is_guest(user) -> bool:
+    return user is None or not user.is_authenticated
+
+
+def guest_card(card: dict) -> dict:
+    """A mentor card as a logged-out visitor sees it: no Discord details."""
+    return {
+        **card,
+        "person": {
+            **card["person"],
+            "user_id": 0,
+            "discord_handle": "",
+            "discord_id": None,
+        },
+    }
+
+
+def _approved_mentors() -> list[MentorProfile]:
+    return list(
         MentorProfile.objects.filter(
             status=MentorProfile.STATUS_APPROVED,
             taking_requests=True,
@@ -236,6 +251,34 @@ def home(user, now=None) -> dict:
             teaching__mentor_class__status=MentorClass.STATUS_PUBLISHED,
         ).distinct()
     )
+
+
+def guest_home(now=None) -> dict:
+    """Find a mentor, read-only, for a visitor who is not logged in."""
+    return {
+        "can_request": False,
+        "is_mentor": False,
+        "mentor_status": None,
+        "can_manage": False,
+        "open_asks": 0,
+        "availability": availability(
+            avail.Availability.build([], [], avail.ALL_DAYS)
+        ),
+        "classes": [],
+        "past_count": 0,
+        "mentors": [
+            guest_card(card)
+            for card in mentor_cards(_approved_mentors(), None, now)
+        ],
+    }
+
+
+def home(user, now=None) -> dict:
+    if is_guest(user):
+        return guest_home(now)
+    base = me(user)
+    viewer = service.default_pilot_availability(user)
+    mentors = _approved_mentors()
     mine = _requests_qs().filter(pilot=user)
     open_rows = mine.filter(status__in=MentorRequest.OPEN_STATUSES).order_by(
         "starts_at", "created_at"
@@ -267,7 +310,12 @@ def past_classes(user) -> list[dict]:
 
 
 def class_detail(user, mentor_class: MentorClass) -> dict:
-    checks = reqs.check(user, mentor_class.requirements)
+    guest = is_guest(user)
+    checks = (
+        reqs.unchecked(mentor_class.requirements)
+        if guest
+        else reqs.check(user, mentor_class.requirements)
+    )
     teachers = list(
         MentorProfile.objects.filter(
             status=MentorProfile.STATUS_APPROVED,
@@ -282,7 +330,15 @@ def class_detail(user, mentor_class: MentorClass) -> dict:
                 mentor_class.author_id
             )
         )
-    open_req = service.open_request_for(user, mentor_class)
+        if guest:
+            author = guest_card({"person": author})["person"]
+    open_req = None if guest else service.open_request_for(user, mentor_class)
+    if guest:
+        cards = [guest_card(c) for c in mentor_cards(teachers, None)]
+    else:
+        cards = mentor_cards(
+            teachers, service.default_pilot_availability(user), viewer=user
+        )
     return {
         "id": mentor_class.pk,
         "slug": mentor_class.slug,
@@ -300,9 +356,7 @@ def class_detail(user, mentor_class: MentorClass) -> dict:
         "author": author,
         "requirements": [c.__dict__ for c in checks],
         "all_met": all(c.met for c in checks),
-        "mentors": mentor_cards(
-            teachers, service.default_pilot_availability(user), viewer=user
-        ),
+        "mentors": cards,
         "pilots_taught": MentorRequest.objects.filter(
             mentor_class=mentor_class, status=MentorRequest.STATUS_DONE
         )
