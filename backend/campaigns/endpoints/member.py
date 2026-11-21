@@ -20,7 +20,7 @@ from campaigns.models import (
     CampaignStatus,
     CampaignSystem,
 )
-from campaigns.services import advantage, stats
+from campaigns.services import advantage, disclosure, stats
 from eveonline.models import EveCharacter, EvePlayer
 from eveonline.scopes import CAMPAIGN_SCOPES
 from groups.helpers.feature_access import require_feature
@@ -46,9 +46,12 @@ WRITABLE_STATUSES = (
 )
 
 
-def _campaign(slug: str) -> Campaign:
-    return get_object_or_404(
-        Campaign.objects.exclude(status=CampaignStatus.DRAFT), slug=slug
+def _campaign(request, slug: str) -> Campaign:
+    """By slug, or by public key while the campaign is undisclosed."""
+    return disclosure.resolve(
+        Campaign.objects.exclude(status=CampaignStatus.DRAFT),
+        slug,
+        request.user,
     )
 
 
@@ -189,7 +192,7 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
     if denied:
         return denied
 
-    campaign = _campaign(slug)
+    campaign = _campaign(request, slug)
     enlistment, _ = CampaignEnlistment.objects.update_or_create(
         campaign=campaign,
         user=request.user,
@@ -265,7 +268,7 @@ def leave(request, slug: str):
     if denied:
         return denied
 
-    campaign = _campaign(slug)
+    campaign = _campaign(request, slug)
     enlistment = CampaignEnlistment.objects.filter(
         campaign=campaign, user=request.user
     ).first()
@@ -287,7 +290,7 @@ def leave(request, slug: str):
 )
 def include_character(request, slug: str, character_id: int):
     """Count this character from now on."""
-    campaign = _campaign(slug)
+    campaign = _campaign(request, slug)
     enlistment = get_object_or_404(
         CampaignEnlistment, campaign=campaign, user=request.user
     )
@@ -314,7 +317,7 @@ def include_character(request, slug: str, character_id: int):
 )
 def exclude_character(request, slug: str, character_id: int):
     """Stop counting this character. History already attributed stays."""
-    campaign = _campaign(slug)
+    campaign = _campaign(request, slug)
     enlistment = get_object_or_404(
         CampaignEnlistment, campaign=campaign, user=request.user
     )
@@ -339,7 +342,7 @@ def report_advantage(
     request, slug: str, system_id: int, payload: schemas.AdvantageRequest
 ):
     """One tap from a pilot in space. ESI will not tell us this."""
-    campaign = _campaign(slug)
+    campaign = _campaign(request, slug)
     denied = _may_act(request, campaign, ENLIST_FEATURE)
     if denied:
         return denied
@@ -369,7 +372,7 @@ def report_advantage(
 )
 def form_gang(request, slug: str, payload: schemas.GangRequest):
     """Four fields and a line. Anyone enlisted can start one."""
-    campaign = _campaign(slug)
+    campaign = _campaign(request, slug)
     denied = _may_act(request, campaign, GANG_FEATURE)
     if denied:
         return denied

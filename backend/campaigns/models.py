@@ -8,6 +8,8 @@ counted: kills, losses, complex captures, advantage sites, fleets. See
 
 from __future__ import annotations
 
+import secrets
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -77,6 +79,17 @@ FEATURE_PRESETS = {
 
 def feature_field(feature: str) -> str:
     return f"{feature}_enabled"
+
+
+COORDINATOR_SCOPES = ("sides", "structures", "timers", "fleets", "fittings")
+
+
+def default_coordinator_scopes() -> list[str]:
+    return ["sides", "structures", "timers", "fleets"]
+
+
+def new_public_key() -> str:
+    return secrets.token_hex(6)
 
 
 class StructureStatus(models.TextChoices):
@@ -210,6 +223,24 @@ class Campaign(models.Model):
         max_length=16,
         choices=(("alliance", "Alliance"), ("public", "Public")),
         default="alliance",
+    )
+    undisclosed = models.BooleanField(
+        default=False,
+        help_text="Only managers and invited coordinators see the campaign. "
+        "Everyone else sees an Upcoming Campaign with its start time.",
+    )
+    public_key = models.CharField(
+        max_length=16,
+        unique=True,
+        default=new_public_key,
+        help_text="The address everyone else uses while the campaign is "
+        "undisclosed, so the slug never gives the name away.",
+    )
+    coordinator_scopes = models.JSONField(
+        default=default_coordinator_scopes,
+        blank=True,
+        help_text="What invited coordinators can see: any of "
+        "sides, structures, timers, fleets, fittings.",
     )
 
     created_by = models.ForeignKey(
@@ -363,6 +394,8 @@ class PartyKind(models.TextChoices):
 class PartySide(models.TextChoices):
     ENEMY = "enemy", "Enemy"
     ALLY = "ally", "Ally"
+    # Likely to show up for their own reasons; neither ours nor the target.
+    THIRD_PARTY = "third_party", "Third party"
 
 
 class StructureAffiliation(models.TextChoices):
@@ -384,7 +417,7 @@ class CampaignParty(models.Model):
         db_index=True,
     )
     side = models.CharField(
-        max_length=8,
+        max_length=16,
         choices=PartySide.choices,
         default=PartySide.ENEMY,
         db_index=True,
@@ -881,9 +914,95 @@ class CampaignFitting(models.Model):
     role_label = models.CharField(max_length=64, blank=True, default="")
     srp_eligible = models.BooleanField(default=True)
     order = models.PositiveSmallIntegerField(default=0)
+    enabled = models.BooleanField(
+        default=True, help_text="Off hides it from the campaign page."
+    )
+    doctrine = models.ForeignKey(
+        "CampaignDoctrine",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="fittings",
+        help_text="The attached doctrine that brought this fitting in.",
+    )
 
     class Meta:
         ordering = ["order", "id"]
+
+
+class CampaignDoctrine(models.Model):
+    """A doctrine attached to a campaign; brings its fittings in."""
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="doctrines"
+    )
+    doctrine = models.ForeignKey(
+        "fittings.EveDoctrine", on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "doctrine"],
+                name="campaign_doctrine_unique",
+            )
+        ]
+
+
+class CampaignCoordinator(models.Model):
+    """A character from outside the alliance who helps run a campaign.
+
+    Invited by character, whether or not they have signed in to the site.
+    Whoever owns that character on the site gets the coordinator view.
+    """
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="coordinators"
+    )
+    character_id = models.BigIntegerField(db_index=True)
+    character_name = models.CharField(max_length=255)
+    corporation_name = models.CharField(max_length=255, blank=True, default="")
+    alliance_name = models.CharField(max_length=255, blank=True, default="")
+    invited_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["character_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "character_id"],
+                name="campaign_coordinator_unique",
+            )
+        ]
+
+
+class CampaignDiscordLink(models.Model):
+    """Another Discord server a coordinator forwards campaign pings to."""
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="discord_links"
+    )
+    guild_id = models.BigIntegerField()
+    guild_name = models.CharField(max_length=255, blank=True, default="")
+    timers_channel_id = models.BigIntegerField(null=True, blank=True)
+    fleets_channel_id = models.BigIntegerField(null=True, blank=True)
+    linked_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "guild_id"],
+                name="campaign_discord_link_unique",
+            )
+        ]
 
 
 class CampaignEnlistment(models.Model):

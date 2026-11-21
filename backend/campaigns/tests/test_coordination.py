@@ -77,8 +77,12 @@ class CoordinationTestCase(TestCase):
         self.assertEqual(
             [row["name"] for row in body["channels"]], ["pings", "timers"]
         )
-        self.assertIn("client_id=bot-client", body["invite_url"])
-        self.assertIn("permissions=8", body["invite_url"])
+        self.assertIn("/discord/bot/connect?purpose=ours", body["invite_url"])
+        self.assertIn("purpose=link", body["link_url"])
+        url = coordination.authorize_url("state")
+        self.assertIn("client_id=bot-client", url)
+        self.assertIn("permissions=8", url)
+        self.assertIn("response_type=code", url)
 
     def test_listing_another_server_shows_its_channels(self):
         response = self.client.get(

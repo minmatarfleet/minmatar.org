@@ -12,6 +12,7 @@ from campaigns.models import (
     CampaignSystem,
     CampaignWeekTarget,
 )
+from eveonline.models import EveCharacter
 
 
 def _system_out(system: CampaignSystem) -> dict:
@@ -25,6 +26,35 @@ def _system_out(system: CampaignSystem) -> dict:
         "is_fw_objective": system.is_fw_objective,
         "retired": system.retired_at is not None,
     }
+
+
+def coordinators_out(campaign: Campaign) -> list[dict]:
+    """Invited coordinators, whether their character is on the site, and
+    the servers they forward to."""
+    rows = list(campaign.coordinators.all())
+    owners = dict(
+        EveCharacter.objects.filter(
+            character_id__in=[row.character_id for row in rows],
+            user__isnull=False,
+        ).values_list("character_id", "user_id")
+    )
+    servers: dict[int, list[str]] = {}
+    for link in campaign.discord_links.all():
+        servers.setdefault(link.linked_by_id, []).append(
+            link.guild_name or str(link.guild_id)
+        )
+    return [
+        {
+            "id": row.id,
+            "character_id": row.character_id,
+            "character_name": row.character_name,
+            "corporation_name": row.corporation_name,
+            "alliance_name": row.alliance_name,
+            "signed_in": row.character_id in owners,
+            "discord_servers": servers.get(owners.get(row.character_id), []),
+        }
+        for row in rows
+    ]
 
 
 def _settings(campaign: Campaign) -> dict:
@@ -53,7 +83,19 @@ def _settings(campaign: Campaign) -> dict:
             }
             for structure in campaign.structures.all()
         ],
-        "fittings": serializers.campaign_fittings(campaign),
+        "fittings": serializers.campaign_fittings(campaign, everything=True),
+        "undisclosed": campaign.undisclosed,
+        "public_key": campaign.public_key,
+        "coordinator_scopes": list(campaign.coordinator_scopes or []),
+        "coordinators": coordinators_out(campaign),
+        "doctrines": [
+            {
+                "id": row.id,
+                "doctrine_id": row.doctrine_id,
+                "name": row.doctrine.name,
+            }
+            for row in campaign.doctrines.select_related("doctrine")
+        ],
         "week_targets": [
             {
                 "id": row.id,

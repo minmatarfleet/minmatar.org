@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from django.shortcuts import get_object_or_404
+from django.db.models import Q
+from django.http import Http404
 from django.utils import timezone
 
 from app.errors import ErrorResponse
@@ -26,6 +27,7 @@ from campaigns.models import (
     KillmailOutcome,
     SiteKind,
 )
+from campaigns.services import disclosure
 from campaigns.services import entities as entity_service
 from campaigns.services import fleets as fleet_service
 from campaigns.services import objectives, plan, stats
@@ -41,28 +43,47 @@ HOSTILE_GANG_WINDOW_HOURS = 2
 
 
 def _visible(request):
-    """Campaigns a viewer may see. Drafts are for their creator and staff."""
-    queryset = Campaign.objects.exclude(status=CampaignStatus.DRAFT)
+    """Campaigns a viewer may see. Drafts are for staff and the campaign's
+    own coordinators."""
     user = request.user
     if getattr(user, "is_authenticated", False) and (
         user.is_staff or user.is_superuser
     ):
-        queryset = Campaign.objects.all()
+        return Campaign.objects.all().prefetch_related("systems")
+    queryset = Campaign.objects.exclude(status=CampaignStatus.DRAFT)
+    coordinated = disclosure.coordinated_ids(user)
+    if coordinated:
+        queryset = Campaign.objects.filter(
+            ~Q(status=CampaignStatus.DRAFT) | Q(id__in=coordinated)
+        )
     return queryset.prefetch_related("systems")
 
 
 def _get(request, slug: str) -> Campaign:
-    return get_object_or_404(_visible(request), slug=slug)
+    """The campaign at ``slug``: its slug, or its public key."""
+    return disclosure.resolve(_visible(request), slug, request.user)
 
 
-def _may_read(request, campaign: Campaign):
+def _may_read(request, campaign: Campaign, scope: str = ""):
     """Gate every read on the campaign's own visibility.
 
     A campaign's sub-resources are as sensitive as the campaign itself: the
     roster names pilots, the coverage chart shows the hours the alliance is
     not online, and the strip says which gang is forming right now. Only a
     campaign explicitly marked public is readable without the feature.
+
+    An undisclosed campaign's sub-resources are for its managers and its
+    coordinators. A coordinator reads only the parts the managers shared
+    with them (``scope``), feature or not.
     """
+    viewer = disclosure.role(request.user, campaign)
+    if viewer == disclosure.COORDINATOR:
+        if scope and disclosure.coordinator_may(campaign, scope):
+            return None
+        if campaign.undisclosed:
+            return 403, {"detail": "not_shared_with_coordinators"}
+    elif viewer == disclosure.MEMBER and campaign.undisclosed:
+        raise Http404
     if campaign.visibility == "public":
         return None
     return require_feature(request.user, VIEW_FEATURE)
@@ -87,7 +108,10 @@ def list_campaigns(request, status: str = ""):
     permitted = require_feature(request.user, VIEW_FEATURE) is None
     queryset = _visible(request)
     if not permitted:
-        queryset = queryset.filter(visibility="public")
+        queryset = queryset.filter(
+            Q(visibility="public")
+            | Q(id__in=disclosure.coordinated_ids(request.user))
+        )
         if not queryset.exists():
             return require_feature(request.user, VIEW_FEATURE)
     if status:
@@ -110,7 +134,14 @@ def list_campaigns(request, status: str = ""):
         if getattr(request.user, "is_authenticated", False)
         else None
     )
-    return [serializers.list_item(campaign, user) for campaign in campaigns]
+    return [
+        (
+            serializers.list_item(campaign, user)
+            if disclosure.sees_details(user, campaign)
+            else serializers.redacted_list_item(campaign, user)
+        )
+        for campaign in campaigns
+    ]
 
 
 @router.get(
@@ -142,7 +173,7 @@ def get_overlay(request):
     campaign = overlay.pick_campaign(request.user)
     return {
         "campaign": overlay.overlay(campaign) if campaign else None,
-        "campaigns": overlay.campaigns(),
+        "campaigns": overlay.campaigns(request.user),
     }
 
 
@@ -153,15 +184,21 @@ def get_overlay(request):
 )
 def get_campaign(request, slug: str):
     campaign = _get(request, slug)
-    denied = _may_read(request, campaign)
-    if denied:
-        return denied
-
     user = (
         request.user
         if getattr(request.user, "is_authenticated", False)
         else None
     )
+    viewer = disclosure.role(user, campaign)
+    if campaign.undisclosed and viewer == disclosure.MEMBER:
+        denied = require_feature(request.user, VIEW_FEATURE)
+        if denied:
+            return denied
+        return serializers.redacted_detail(campaign, user)
+    if viewer != disclosure.COORDINATOR:
+        denied = _may_read(request, campaign)
+        if denied:
+            return denied
 
     enlistment = (
         campaign.enlistments.filter(user=user, status="active").first()
@@ -176,10 +213,26 @@ def get_campaign(request, slug: str):
     tickers = alliance_tickers(
         (owner_alliance(row)[0] for row in structures), campaign
     )
+    shared = (
+        set(campaign.coordinator_scopes or [])
+        if viewer == disclosure.COORDINATOR
+        else {"sides", "structures", "fittings"}
+    )
     return {
         "id": campaign.id,
         "slug": campaign.slug,
         "name": campaign.name,
+        "undisclosed": campaign.undisclosed,
+        "redacted": False,
+        "viewer_role": viewer,
+        "coordinator_scopes": (
+            sorted(shared) if viewer == disclosure.COORDINATOR else []
+        ),
+        "coordination_ready": viewer == disclosure.MANAGER
+        and bool(
+            campaign.coordination_timers_channel_id
+            or campaign.coordination_fleets_channel_id
+        ),
         "short_code": campaign.short_code,
         "tagline": campaign.tagline,
         "description_md": campaign.description_md,
@@ -192,12 +245,26 @@ def get_campaign(request, slug: str):
         "commander_order_is_draft": campaign.commander_order_is_draft,
         "systems": serializers.campaign_systems(campaign),
         "areas": serializers.campaign_areas(campaign),
-        "parties": [serializers.party_out(row) for row in parties],
-        "structures": [
-            serializers.structure_out(row, parties=parties, tickers=tickers)
-            for row in structures
-        ],
-        "fittings": serializers.campaign_fittings(campaign),
+        "parties": (
+            [serializers.party_out(row) for row in parties]
+            if "sides" in shared
+            else []
+        ),
+        "structures": (
+            [
+                serializers.structure_out(
+                    row, parties=parties, tickers=tickers
+                )
+                for row in structures
+            ]
+            if "structures" in shared
+            else []
+        ),
+        "fittings": (
+            serializers.campaign_fittings(campaign)
+            if "fittings" in shared
+            else []
+        ),
         "totals": stats.campaign_totals(campaign),
         "is_enlisted": enlistment is not None,
         "characters_included": (
@@ -423,7 +490,7 @@ def _my_contribution(campaign_system, user, window) -> dict:
 def get_fleets(request, slug: str, limit: int = 50):
     """Every fleet attributed to the campaign, newest first, with its impact."""
     campaign = _get(request, slug)
-    denied = _may_read(request, campaign)
+    denied = _may_read(request, campaign, scope="fleets")
     if denied:
         return denied
 

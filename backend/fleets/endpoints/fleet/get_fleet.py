@@ -45,6 +45,18 @@ ROUTE_SPEC = {
 }
 
 
+def _campaign_fields(fleet, user) -> dict:
+    """An undisclosed campaign stays off the fleet for people who may not
+    see it."""
+    # Imported here: campaigns imports fleets models at load time.
+    from campaigns.services import disclosure  # pylint: disable=C0415
+
+    campaign = fleet.campaign
+    if campaign is None or not disclosure.sees_details(user, campaign):
+        return {"campaign_id": None, "campaign_slug": None}
+    return {"campaign_id": campaign.id, "campaign_slug": campaign.slug}
+
+
 def get_fleet(request, fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
@@ -84,8 +96,7 @@ def get_fleet(request, fleet_id: int):
         "hide_volunteers": fleet.hide_volunteers,
         "status": fleet.status,
         "aar_link": fleet.aar_link,
-        "campaign_id": fleet.campaign_id,
-        "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
+        **_campaign_fields(fleet, request.user),
         "roam_report_url": fleet.roam_report_url,
         "aar_forum_url": aars_forum_url(),
         "can_copy": can_copy_fleet(request.user, fleet),

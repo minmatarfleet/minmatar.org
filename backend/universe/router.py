@@ -30,6 +30,7 @@ from ninja import Router, Schema
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from campaigns.services import disclosure
 from campaigns.services.timers import TYPE_NAMES, timer_stage
 from eveonline.helpers.characters.identity import primary_refs_for_users
 from groups.helpers.feature_access import can_use_feature
@@ -495,8 +496,16 @@ def list_timers(request):
                 at=timer.timer,
                 alliance_name=timer.alliance_name or "",
                 corporation_name=timer.corporation_name or "",
-                campaign_name=campaign.name if campaign else "",
-                campaign_slug=campaign.slug if campaign else "",
+                campaign_name=(
+                    disclosure.display_name(campaign, request.user)
+                    if campaign
+                    else ""
+                ),
+                campaign_slug=(
+                    disclosure.address(campaign, request.user)
+                    if campaign
+                    else ""
+                ),
                 done=timer.timer <= now,
             )
         )
