@@ -154,6 +154,30 @@ def request_payload(
     }
 
 
+def _party_buttons(
+    *,
+    request_id: int,
+    other_name: str,
+    other_discord_id: int | None,
+    as_mentor: bool,
+) -> list:
+    """Message, and for the mentor a link to change the time, then cancel."""
+    first = other_name.split(" ")[0]
+    buttons = []
+    if other_discord_id:
+        buttons.append(
+            _button(
+                f"Message {first}", url=discord_profile_url(other_discord_id)
+            )
+        )
+    if as_mentor:
+        buttons.append(_button("Change the time", url=site_url(MENTEES_PATH)))
+    buttons.append(
+        _button("I can't make it", custom_id=cancel_custom_id(request_id))
+    )
+    return buttons
+
+
 def booked_payload(
     *,
     request_id: int,
@@ -184,17 +208,6 @@ def booked_payload(
         ],
         thumbnail=other_portrait,
     )
-    buttons = []
-    if other_discord_id:
-        buttons.append(
-            _button(
-                f"Message {first}",
-                url=discord_profile_url(other_discord_id),
-            )
-        )
-    buttons.append(
-        _button("I can't make it", custom_id=cancel_custom_id(request_id))
-    )
     hello = (
         f"Send @{other_handle} a friend request and say hello. "
         f"{first} has your name too."
@@ -204,7 +217,74 @@ def booked_payload(
     return {
         "content": hello,
         "embeds": [embed],
-        "components": [_row(*buttons)],
+        "components": [
+            _row(
+                *_party_buttons(
+                    request_id=request_id,
+                    other_name=other_name,
+                    other_discord_id=other_discord_id,
+                    as_mentor=as_mentor,
+                )
+            )
+        ],
+    }
+
+
+def rescheduled_payload(
+    *,
+    request_id: int,
+    other_name: str,
+    other_portrait: str,
+    other_handle: str,
+    other_discord_id: int | None,
+    class_title: str,
+    starts_at: datetime,
+    previous: datetime | None,
+    bring: str,
+    as_mentor: bool,
+) -> dict:
+    first = other_name.split(" ")[0]
+    new_stamp = int(starts_at.timestamp())
+    moved = previous is None or int(previous.timestamp()) != new_stamp
+    if moved and previous is not None:
+        content = (
+            f"**{class_title}** with {other_name} moved to "
+            f"<t:{new_stamp}:F> (was <t:{int(previous.timestamp())}:F>)."
+        )
+        title = f"New time for {class_title} with {other_name}"
+    elif moved:
+        content = f"**{class_title}** with {other_name} is <t:{new_stamp}:F>."
+        title = f"New time for {class_title} with {other_name}"
+    else:
+        content = (
+            f"What to bring for **{class_title}** with {other_name} changed."
+        )
+        title = f"Updated {class_title} with {other_name}"
+    embed = _embed(
+        title,
+        fields=[
+            ("When", _when(starts_at)),
+            (
+                f"{first} on Discord",
+                f"@{other_handle}" if other_handle else "",
+            ),
+            ("Bring", bring),
+        ],
+        thumbnail=other_portrait,
+    )
+    return {
+        "content": content,
+        "embeds": [embed],
+        "components": [
+            _row(
+                *_party_buttons(
+                    request_id=request_id,
+                    other_name=other_name,
+                    other_discord_id=other_discord_id,
+                    as_mentor=as_mentor,
+                )
+            )
+        ],
     }
 
 

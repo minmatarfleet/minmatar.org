@@ -31,8 +31,17 @@ try {
 }
 
 const pilot = data?.request.pilot
-const first = data?.slots[0] ?? 'other'
+const reschedule = data?.request.status === 'booked'
+const current = data?.request.starts_at ?? null
+const matched = current && data?.slots
+    ? data.slots.find(slot => new Date(slot).getTime() === new Date(current).getTime())
+    : undefined
+const initial_slot = reschedule ? (matched ?? 'other') : (data?.slots[0] ?? 'other')
+const current_date = current ? new Date(current).toISOString().slice(0, 10) : ''
+const current_time = current ? new Date(current).toISOString().slice(11, 16) : ''
 const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+const date_min = reschedule ? new Date().toISOString().slice(0, 10) : tomorrow
+const post_mode = reschedule ? 'reschedule' : 'accept'
 
 import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -57,15 +66,15 @@ import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astr
     :
     <form
         class="[ mentor-modal ]"
-        hx-post={translatePath(mentors_url(MENTORS_MENTEES_PARTIAL, { mode: 'accept', request_id }))}
+        hx-post={translatePath(mentors_url(MENTORS_MENTEES_PARTIAL, { mode: post_mode, request_id }))}
         hx-target="#mentors-mentees"
         hx-swap="outerHTML"
-        x-data={`{ slot: '${first}' }`}
+        x-data={JSON.stringify({ slot: initial_slot })}
     >
         <header class="[ mentor-modal__head ]">
             <img src={get_player_icon(pilot.character_id ?? 1, 64)} alt="" width="48" height="48" />
             <div>
-                <p class="[ mentor-modal__eyebrow ]">{t('mentors.accept.eyebrow').replace('{class}', data.request.mentor_class.title)}</p>
+                <p class="[ mentor-modal__eyebrow ]">{(reschedule ? t('mentors.reschedule.eyebrow') : t('mentors.accept.eyebrow')).replace('{class}', data.request.mentor_class.title)}</p>
                 <h2>{pilot.name}</h2>
                 <p class="[ mentor-modal__muted ]">
                     {t('mentors.weekdays')}: {brackets_text(data.request.availability.weekday_brackets)} ·
@@ -91,20 +100,20 @@ import MentorModalStyles from '@components/blocks/mentors/MentorModalStyles.astr
                 </span>
             </OptionCard>
             <div class="[ mentor-modal__when ]" x-show="slot === 'other'" x-cloak>
-                <Input type="date" name="date" min={tomorrow} size="sm" aria-label={t('mentors.accept.other_hint')} />
-                <Input type="time" name="time" step="900" size="sm" aria-label={t('mentors.accept.other_hint')} />
+                <Input type="date" name="date" min={date_min} value={reschedule ? current_date : undefined} size="sm" aria-label={t('mentors.accept.other_hint')} />
+                <Input type="time" name="time" step="900" value={reschedule ? current_time : undefined} size="sm" aria-label={t('mentors.accept.other_hint')} />
             </div>
         </fieldset>
 
         <ManageField label={t('mentors.accept.bring').replace('{name}', pilot.name)} for="mentor-accept-bring">
-            <Textarea id="mentor-accept-bring" name="bring" rows="2" maxlength="500"></Textarea>
+            <Textarea id="mentor-accept-bring" name="bring" rows="2" maxlength="500">{reschedule ? data.request.bring : ''}</Textarea>
         </ManageField>
 
-        <p class="[ mentor-modal__muted ]">{t('mentors.accept.footer')}</p>
+        <p class="[ mentor-modal__muted ]">{reschedule ? t('mentors.reschedule.footer') : t('mentors.accept.footer')}</p>
 
         <div class="[ mentor-modal__actions ]">
             <Button type="button" size="sm" color="transparent" modal-action="cancel">{t('cancel')}</Button>
-            <Button type="submit" size="sm" color="green" modal-action="accept">{t('mentors.accept.book')}</Button>
+            <Button type="submit" size="sm" color="green" modal-action="accept">{reschedule ? t('mentors.reschedule.save') : t('mentors.accept.book')}</Button>
         </div>
     </form>
 }

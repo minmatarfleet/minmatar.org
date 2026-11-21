@@ -6,6 +6,7 @@ import {
     invite_class_teacher,
     make_mentor,
     pass_mentor_request,
+    reschedule_mentor_request,
     save_mentor_settings,
     send_mentor_feedback,
     set_mentor_class_status,
@@ -20,7 +21,7 @@ import { form_numbers, form_strings } from '@helpers/mentors'
  * a `mode` and render again, so each one shows the result of its own action.
  */
 export type MentorMode =
-    | 'request' | 'cancel' | 'pass' | 'accept' | 'feedback' | 'apply'
+    | 'request' | 'cancel' | 'pass' | 'accept' | 'reschedule' | 'feedback' | 'apply'
     | 'save_settings' | 'teach' | 'stop' | 'invite_teacher'
     | 'class_status' | 'mentor_status' | 'make_mentor'
 
@@ -66,11 +67,13 @@ export async function run_mentor_action(
             })
             return { ok: true, message: '', mentor_name: created.mentor.name }
         }
-        if (mode === 'accept') {
+        if (mode === 'accept' || mode === 'reschedule') {
             const starts_at = picked_start(form)
             if (!starts_at)
                 return { ok: false, message: 'Pick a time for the class.' }
-            const result = await accept_mentor_request(token, request_id, starts_at, text_of(form, 'bring'))
+            const result = mode === 'accept'
+                ? await accept_mentor_request(token, request_id, starts_at, text_of(form, 'bring'))
+                : await reschedule_mentor_request(token, request_id, starts_at, text_of(form, 'bring'))
             return { ok: true, message: result.message }
         }
         if (mode === 'save_settings') {
