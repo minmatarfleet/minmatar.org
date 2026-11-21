@@ -14,6 +14,7 @@ from industry.endpoints.orders.serialization import (
     order_pi_coordinators_response,
     unfulfilled_item_to_response,
 )
+from industry.helpers.delivery_location import order_location_fields
 from industry.helpers.order_profit_breakdown import (
     can_refresh_order_profit_breakdown,
     stored_profit_per_unit_by_type,
@@ -70,10 +71,7 @@ def get_order(request, order_id: int):
         campaign_slug=order.campaign.slug if order.campaign_id else None,
         campaign_id=order.campaign_id,
         location=(
-            OrderLocationResponse(
-                location_id=order.location.location_id,
-                location_name=order.location.location_name,
-            )
+            OrderLocationResponse(**order_location_fields(order.location))
             if order.location_id
             else None
         ),

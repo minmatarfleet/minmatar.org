@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 
+from django.db.models import Q
 from django.utils import timezone
 
 from eveonline.helpers.characters import user_characters
@@ -85,9 +86,17 @@ def validate_needed_by(needed_by: date) -> str | None:
     return None
 
 
+def delivery_locations():
+    """Where orders can deliver: the staging plus every location with
+    Industry delivery on. The staging stays first, then by short name."""
+    return EveLocation.objects.filter(
+        Q(staging_active=True) | Q(industry_delivery=True)
+    ).order_by("-staging_active", "-deployment_active", "short_name")
+
+
 def resolve_staging_location(location_id: int | None):
     """
-    Require a staging EveLocation.
+    Require a delivery EveLocation: the staging or an Industry delivery one.
 
     Returns (location, None) on success, or (None, error_detail).
     """
@@ -96,8 +105,11 @@ def resolve_staging_location(location_id: int | None):
     location = EveLocation.objects.filter(pk=location_id).first()
     if not location:
         return None, f"Location {location_id} not found."
-    if not location.staging_active:
-        return None, "Delivery location must be the active staging location."
+    if not (location.staging_active or location.industry_delivery):
+        return None, (
+            "Delivery location must be the staging or a location with "
+            "Industry delivery on."
+        )
     return location, None
 
 
