@@ -27,9 +27,12 @@ if (Astro.request.method === 'POST') {
     const data = await Astro.request.formData()
     const fcId = data.get('fc_character_id')
     const fc_character_id = fcId != null && fcId !== '' ? parseInt(fcId as string) : undefined
-    
+    // Only sent while deployed (the "Forms up in" select); else the staging.
+    const location = parseInt((data.get('location_id') as string | null) ?? '')
+    const location_id = Number.isFinite(location) ? location : undefined
+
     try {
-        const fleet = await start_fleet_now(auth_token as string, fc_character_id)
+        const fleet = await start_fleet_now(auth_token as string, fc_character_id, location_id)
         send_active_fleet_notification(auth_token as string, fleet.id)
 
         const fleet_path = translatePath(`/fleets/upcoming/${fleet.id}`)

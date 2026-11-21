@@ -7,11 +7,13 @@ import { objective_status_i18n_key, holder_militia } from '@helpers/fetching/cam
 
 interface Props {
     row:                ObjectiveRow;
+    paused?:            boolean;
     [propName: string]: any;
 }
 
 const {
     row,
+    paused = false,
     ...attributes
 } = Astro.props
 
@@ -30,7 +32,7 @@ const flipped_text = row.flipped === 'captured' ? t('campaigns.objective.flipped
 // As in the desktop window: the bar is neutral and only the move is coloured, always beside an arrow.
 const change_tone = row.flipped === 'captured' ? 'up' : row.flipped === 'lost' ? 'down'
     : row.change_direction === 'up' ? 'up' : row.change_direction === 'down' ? 'down' : 'steady'
-const show_change = row.change_text !== '' || flipped_text !== ''
+const show_change = !paused && (row.change_text !== '' || flipped_text !== '')
 // Exact figures stay in the hover: progress, what it is made of, the week's move and the day's.
 const row_title = [
     t(objective_status_i18n_key(row.status)),
@@ -48,7 +50,7 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
 ---
 
 <div
-    class:list={['[ campaign-objective ]', Astro.props.class]}
+    class:list={['[ campaign-objective ]', { 'is-paused': paused }, Astro.props.class]}
     data-kind={row.kind}
     data-status={row.status}
     title={row_title}
@@ -71,7 +73,7 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                 :
                 <span class="[ campaign-objective-system ]">{row.system_name}</span>
             }
-            <small class="[ campaign-objective-what ]">{row.label}</small>
+            <small class="[ campaign-objective-what ]">{paused ? t('campaigns.paused.row') : row.label}</small>
         </span>
     </div>
 
@@ -104,12 +106,16 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
                 }
             </>
             :
-            <span class="[ campaign-objective-figure ]">{row.now_text}</span>
+            <span class="[ campaign-objective-figure ]">{paused ? '–' : row.now_text}</span>
         }
     </span>
 </div>
 
 <style lang="scss">
+    .campaign-objective.is-paused {
+        opacity: 0.5;
+    }
+
     .campaign-objective {
         display: grid;
         grid-template-columns: var(--campaign-objective-columns);

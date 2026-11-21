@@ -53,3 +53,8 @@ test('ago text', () => {
     assert.equal(ago_text('2026-10-16T17:59:50Z', now), 'just now')
     assert.equal(ago_text('2026-10-16T16:46:00Z', now), '1h 14m ago')
 })
+
+test('compact_number: ISK and counts for the Totals row', () => {
+    const { compact_number } = require('../src/renderer/campaign_format')
+    assert.deepEqual([41_600_000_000, 850_000_000, 12_000, 212, null, 2_000_000_000_000].map(compact_number), ['41.6B', '850M', '12k', '212', '-', '2T'])
+})

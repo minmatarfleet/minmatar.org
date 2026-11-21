@@ -31,7 +31,11 @@ const FLAGS = [
     { name: 'market_active', on: detail.market, hint: t('structures.settings.market_hint') },
     { name: 'prices_active', on: detail.prices, hint: t('structures.settings.prices_hint') },
     { name: 'deployment_active', on: detail.deployment, hint: t('structures.settings.deployment_hint') },
+    { name: 'industry_delivery', on: detail.industry_delivery, hint: t('structures.settings.industry_delivery_hint') },
 ] as const
+
+const dock_names = detail.dock_access.map((entry) => entry.name || entry.ticker).join(', ')
+const dock_mode = detail.dock_access.length > 0 ? 'only' : 'anyone'
 
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
@@ -47,7 +51,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
     hx-post={translatePath(`/partials/structure_settings_component/?id=${detail.location_id}`)}
     hx-target="#structure-settings-result"
     hx-swap="innerHTML"
-    x-data={`{ audience: '${detail.audience}' }`}
+    x-data={`{ audience: '${detail.audience}', dock_mode: '${dock_mode}' }`}
 >
     <Flexblock gap="var(--space-l)">
         <fieldset class="[ structure-settings__set ]">
@@ -89,6 +93,23 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                     ))}
                 </Select>
             </ManageField>
+            <ManageField label={t('structures.settings.dock')} for="structure-dock">
+                <Select id="structure-dock" name="dock_mode" size="sm" x-model="dock_mode">
+                    <option value="anyone" selected={dock_mode === 'anyone'}>{t('structures.settings.dock_anyone')}</option>
+                    <option value="only" selected={dock_mode === 'only'}>{t('structures.settings.dock_only')}</option>
+                </Select>
+            </ManageField>
+            <div x-show="dock_mode === 'only'" x-cloak={dock_mode === 'only' ? undefined : ''}>
+                <ManageField label={t('structures.settings.dock_names')} for="structure-dock-names">
+                    <Input
+                        id="structure-dock-names"
+                        name="dock_access_names"
+                        value={dock_names}
+                        placeholder={t('structures.settings.dock_names_placeholder')}
+                        maxlength="1000"
+                    />
+                </ManageField>
+            </div>
             <div class="[ manage-chips ]" role="group" aria-label={t('structures.add.good_for')}>
                 {['industry', 'clones', 'logistics'].map((value) => (
                     <label class="[ manage-chip ]">

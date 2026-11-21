@@ -169,6 +169,7 @@ class OpsTheaterAttributionTests(TestCase):
             kind=CampaignKind.STRATEGIC,
             slug="ops-attr",
             short_code="OPA",
+            destruction_enabled=False,
         )
         self.system = self.campaign.systems.first()
         self.system.is_fw_objective = False

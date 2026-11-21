@@ -18,6 +18,8 @@ from campaigns.models import (
     CampaignAdvantageState,
     CampaignKillmail,
     CampaignKillmailParticipant,
+    CampaignKind,
+    CampaignStructure,
     CampaignSystem,
     CampaignSystemSnapshot,
     CampaignWeekTarget,
@@ -27,6 +29,7 @@ from campaigns.models import (
 )
 from campaigns.tests.helpers import auth_headers, enlist, grant, make_campaign
 from eveonline.models import EveCharacter, EvePlayer
+from structures.models import EveStructureTimer
 
 AMARR, MINMATAR = 500003, 500002
 Metric = CampaignWeekTarget.Metric
@@ -60,7 +63,9 @@ class CampaignContractTests(TestCase):
         self.clock.start()
         self.addCleanup(self.clock.stop)
         self.now = contracts.FIXED_NOW
-        self.campaign = make_campaign(slug="contract-push", name="Push")
+        self.campaign = make_campaign(
+            id=7101, slug="contract-push", name="Push"
+        )
         self.user, character = enlist(self.campaign, "pilot", 3001)
         main = EveCharacter.objects.create(
             character_id=3002, character_name="Pilot Main", user=self.user
@@ -244,9 +249,53 @@ class CampaignContractTests(TestCase):
             "week": self._get(f"/api/campaigns/{slug}/week"),
         }
 
+    def _seed_structure_campaign(self):
+        """A second live campaign, strategic, with no weekly progress: the
+        window's switcher shows its totals and next timers."""
+        campaign = make_campaign(
+            id=7102,
+            slug="contract-structures",
+            short_code="CST",
+            name="Structures",
+            kind=CampaignKind.STRATEGIC,
+            start_at=self.now - timedelta(days=2),
+        )
+        CampaignStructure.objects.create(
+            campaign=campaign,
+            name="Forward Box",
+            structure_type="astrahus",
+            solar_system_id=campaign.system_ids()[0],
+            system_name="Kamela",
+            status="destroyed",
+        )
+        CampaignKillmail.objects.create(
+            campaign=campaign,
+            killmail_id=9101,
+            killmail_time=self.now - timedelta(hours=5),
+            solar_system_id=campaign.system_ids()[0],
+            isk_value=2_500_000_000,
+            outcome=KillmailOutcome.KILL,
+            is_structure=True,
+        )
+        for timer_id, name, kind, state, hours in (
+            (8101, "Home Station", "fortizar", "armor", 6),
+            (8102, "Forward Station", "astrahus", "armor", 30),
+            (8103, "Old Station", "raitaru", "hull", -10),
+        ):
+            EveStructureTimer.objects.create(
+                id=timer_id,
+                name=name,
+                type=kind,
+                state=state,
+                timer=self.now + timedelta(hours=hours),
+                system_name="Kamela",
+                campaign=campaign,
+            )
+
     def test_campaign_overlay(self):
         self._seed_targets()
         self._seed_pilot_activity()
+        self._seed_structure_campaign()
         contracts.check(
             self,
             contracts.DESKTOP / "campaign_overlay.json",

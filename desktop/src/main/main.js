@@ -909,9 +909,10 @@ on_fleet('fleet:done', () => fleet_window.done())
 on_fleet('fleet:destination', value => id_of(value) && fleet_window.set_destination(value))
 on_fleet('fleet:start', value => id_of(value) && fleet_window.start(value))
 on_fleet('fleet:remind', value => id_of(value) && fleet_window.toggle_reminder(value))
-on_command('campaigns:open', () => {
-    // Same rule as fleets: only a URL we built.
-    if (state.campaign) shell.openExternal(state.campaign.url)
+on_command('campaigns:open', (_event, slug) => {
+    // Same rule as fleets: only a URL we built. The window may name which live campaign it shows.
+    const shown = state.campaign && ((state.campaign.campaigns || []).find(entry => entry.slug === slug))
+    if (state.campaign) shell.openExternal((shown || state.campaign).url)
 })
 // Copying a d-scan or Local in EVE opens the report (clipboard_watch.js) without taking focus from EVE: the
 // pilot stays in the game, and the window only takes the keyboard when they click a field (intel:focus).

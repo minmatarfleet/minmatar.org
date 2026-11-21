@@ -1,0 +1,124 @@
+---
+/** The Destruction tab's kill list: one line per kill, newest first. */
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignDestructionRow } from '@dtypes/api.minmatar.org'
+import { get_alliance_logo, get_item_icon } from '@helpers/eve_image_server'
+import { eve_date_time } from '@helpers/campaign_manage'
+import { format_isk } from '@helpers/numbers'
+
+interface Props {
+    rows:   CampaignDestructionRow[];
+    [propName: string]: any;
+}
+
+const {
+    rows,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+{rows.length === 0 ?
+    <EmptyState title={t('campaigns.destruction.none')} />
+    :
+    <div class:list={['[ campaign-destruction ]', Astro.props.class]} role="table" aria-label={t('campaigns.destruction.title')} {...attributes}>
+        <div class="[ campaign-destruction-head ]" role="row">
+            <span role="columnheader">{t('campaigns.destruction.col.date')}</span>
+            <span role="columnheader">{t('campaigns.destruction.col.killed')}</span>
+            <span role="columnheader">{t('campaigns.destruction.col.owner')}</span>
+            <span role="columnheader" class="[ campaign-destruction-isk ]">{t('campaigns.destruction.col.isk')}</span>
+        </div>
+        {rows.map((row) =>
+            <div class="[ campaign-destruction-row ]" role="row">
+                <span role="cell" class="[ campaign-destruction-muted ]">{eve_date_time(lang, row.killmail_time)}</span>
+                <span role="cell" class="[ campaign-destruction-killed ]">
+                    {row.type_id && <img src={get_item_icon(row.type_id, 32)} alt="" width="28" height="28" loading="lazy" />}
+                    <a
+                        href={`https://zkillboard.com/kill/${row.killmail_id}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-tippy-content={row.type_name && row.type_name !== row.name ? row.type_name : undefined}
+                    >{row.name || row.type_name || `#${row.killmail_id}`}</a>
+                </span>
+                <span role="cell" class="[ campaign-destruction-owner ]">
+                    {row.alliance_id && <img src={get_alliance_logo(row.alliance_id, 32)} alt="" width="22" height="22" loading="lazy" />}
+                    <span>{row.alliance_ticker || '—'}</span>
+                </span>
+                <span role="cell" class="[ campaign-destruction-isk ]">{format_isk(row.isk_value)}</span>
+            </div>
+        )}
+    </div>
+}
+
+<style lang="scss">
+    .campaign-destruction-head,
+    .campaign-destruction-row {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 0.9fr);
+        gap: var(--space-s);
+        align-items: center;
+        font-size: var(--step--1);
+        white-space: nowrap;
+    }
+
+    .campaign-destruction-head {
+        color: var(--highlight);
+        border-bottom: solid 1px var(--border-color);
+        padding-block-end: var(--space-3xs);
+    }
+
+    .campaign-destruction-row {
+        padding-block: var(--space-3xs);
+
+        > * {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .campaign-destruction-killed,
+    .campaign-destruction-owner {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        img {
+            flex-shrink: 0;
+        }
+
+        a, span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .campaign-destruction-isk {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    .campaign-destruction-muted {
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 720px) {
+        .campaign-destruction-head {
+            display: none;
+        }
+
+        .campaign-destruction-row {
+            grid-template-columns: 1fr auto;
+        }
+
+        .campaign-destruction-row > :first-child,
+        .campaign-destruction-owner {
+            display: none;
+        }
+    }
+</style>

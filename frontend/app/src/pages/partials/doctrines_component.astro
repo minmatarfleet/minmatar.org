@@ -6,6 +6,9 @@ import type { DoctrineType, DoctrineLocationUI } from '@dtypes/layout_components
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 import type { Location } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { get_stagings } from '@helpers/api.minmatar.org/stagings'
+import { doctrine_tabs, doctrines_at } from '@helpers/doctrine_tabs'
 
 let doctrines:DoctrineType[] = []
 let fetch_doctrines_error: Error | false = false
@@ -15,6 +18,12 @@ let all_locations_ui: DoctrineLocationUI[] = []
 
 const AMAMAKE_LOCATION_ID = 1022167642188
 const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? String(AMAMAKE_LOCATION_ID))
+
+// `?tab=home|deployed` is a panel of the deployment doctrine tabs: the
+// doctrines staged at that tab's locations, without the location reel.
+const requested_tab = Astro.url.searchParams.get('tab')
+const { auth_token } = get_request_user(Astro)
+const doctrine_tab = doctrine_tabs(await get_stagings(auth_token)).find((tab) => tab.id === requested_tab)
 
 try {
     doctrines = await fetch_doctrines()
@@ -61,13 +70,21 @@ try {
     fetch_doctrines_error = error
 }
 
-const active_doctrine_location_ui = all_locations_ui.find(location => location.id === active_location_id)
+const tab_location_ui: DoctrineLocationUI | undefined = doctrine_tab && {
+    id: doctrine_tab.location_ids[0],
+    name: doctrine_tab.names.join(', '),
+    doctrine_count: doctrines_at(doctrines, doctrine_tab.location_ids).length,
+    doctrines: doctrines_at(doctrines, doctrine_tab.location_ids),
+}
 
-const non_active_doctrine_location_ui = all_locations_ui.filter(location => location.id !== active_location_id)
+const active_doctrine_location_ui = tab_location_ui ?? all_locations_ui.find(location => location.id === active_location_id)
 
-const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
+const non_active_doctrine_location_ui = tab_location_ui ? [] : all_locations_ui.filter(location => location.id !== active_location_id)
+
+const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${doctrine_tab ? `?tab=${doctrine_tab.id}` : active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
 import DoctrinesList from '@components/blocks/DoctrinesList.astro';
+import EmptyState from '@components/blocks/EmptyState.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
@@ -79,6 +96,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             delay: 0,
         }}
     />
+    :
+    tab_location_ui && tab_location_ui.doctrines.length === 0 ?
+        <EmptyState title={t('doctrines.tab.empty')} />
     :
     active_doctrine_location_ui !== undefined &&
         <DoctrinesList

@@ -213,6 +213,7 @@ class FeatureCodesTestCase(TestCase):
 
         for code in (
             "surveys.results.view",
+            "campaigns.coordination",
             "esi_health.manage",
             "site.debug_pages",
             "characters.lookup",

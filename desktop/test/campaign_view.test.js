@@ -3,7 +3,7 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { load_campaign } = require('../src/main/api')
-const { content, render_system, render_pilots } = require('../src/renderer/campaign_view')
+const { content, render_system, render_pilots, selected_campaign } = require('../src/renderer/campaign_view')
 
 const system = (extra = {}) => ({
     system_id: 30002537, name: 'Amamake', holder: 'minmatar', objective_label: 'Hold the complexes', progress_percent: 42,
@@ -59,4 +59,62 @@ test('loading, no campaign, and an error above the last good data', async () => 
 test('nobody active in the last hour', async () => {
     const quiet = await campaign({ campaign: { ...OVERLAY.campaign, active_pilots: [] } })
     assert.match(render_pilots(quiet), /Nobody has flown this campaign in the last hour/)
+})
+
+const STRUCTURE = {
+    id: 7, slug: 'forward-push', name: 'Structure campaign', status: 'active',
+    features: { weekly_progress_enabled: false, structures_enabled: true, timers_enabled: true },
+    totals: { structures_destroyed: 2, isk_destroyed: 41_600_000_000, ships_killed: 212 },
+    next_timers: [
+        { name: 'Blaster', type_name: 'Astrahus', system: 'Jita', stage: 3, final: true, at: '2026-10-17T19:09:00Z' },
+        { name: 'Home Station', type_name: 'Fortizar', system: 'Amamake', stage: 2, final: false, at: '2026-10-17T20:02:00Z' },
+    ],
+}
+const WARZONE = { id: 1, slug: 'op-hekate', name: 'Warzone', status: 'paused', features: { weekly_progress_enabled: true }, totals: { structures_destroyed: 0, isk_destroyed: 0, ships_killed: 0 }, next_timers: [] }
+const NOW = new Date('2026-10-17T14:00:00Z')
+
+test('a structure campaign: switcher, Totals and Next timers with stage chevrons', async () => {
+    const model = await campaign({ ...OVERLAY, campaigns: [STRUCTURE, WARZONE] })
+    const html = content({ campaign: model, campaign_updated_at: 'x' }, 'forward-push', NOW)
+    assert.match(html, /data-campaign="forward-push" aria-pressed="true"/)
+    assert.match(html, /Warzone <span class="eve-dim">&middot; paused<\/span>/)
+    assert.match(html, /<span class="total__value">2<\/span><span class="total__label">Structures<\/span>/)
+    assert.match(html, /41\.6B/)
+    assert.match(html, />212</)
+    assert.ok(!/class="system"/.test(html), 'no weekly rows when weekly progress is off')
+    assert.equal((html.match(/class="timer"/g) || []).length, 2)
+    assert.match(html, /stage stage--final" title="Final timer: the structure dies"/)
+    assert.match(html, /title="Armor timer: a hull timer follows"/)
+    assert.match(html, /Astrahus &middot;|Astrahus \u00b7 Jita/)
+    assert.match(html, /data-at="2026-10-17T19:09:00Z">05:09:00</)
+    assert.match(html, /Sat 19:09/)
+    assert.equal((html.match(/stage__step is-on/g) || []).length, 5, 'three chevrons for stage 3, two for stage 2')
+})
+
+test('switching to the legacy campaign shows the weekly rows again', async () => {
+    const model = await campaign({ ...OVERLAY, campaigns: [STRUCTURE, WARZONE] })
+    const html = content({ campaign: model, campaign_updated_at: 'x' }, 'op-hekate', NOW)
+    assert.equal((html.match(/class="system"/g) || []).length, 3)
+    assert.match(html, /data-campaign="op-hekate" aria-pressed="true"/)
+    assert.equal(selected_campaign(model, 'nope').slug, 'op-hekate', 'an unknown pick falls back to the legacy campaign')
+})
+
+test('an older backend without `campaigns` keeps today\'s window: no switcher', async () => {
+    const model = await campaign()
+    assert.deepEqual(model.campaigns, [])
+    const html = content({ campaign: model, campaign_updated_at: 'x' })
+    assert.ok(!html.includes('switcher'))
+    assert.equal((html.match(/class="system"/g) || []).length, 3)
+})
+
+test('only structure campaigns live (no legacy campaign) still draws, and junk fields are ignored', async () => {
+    const junk = { ...STRUCTURE, totals: { structures_destroyed: 'x' }, next_timers: [{ name: 'bad', at: 'nope' }, { ...STRUCTURE.next_timers[0], stage: 9 }] }
+    const model = await campaign({ campaign: null, campaigns: [junk, { name: 'no slug' }] })
+    assert.equal(model.campaigns.length, 1)
+    const html = content({ campaign: model, campaign_updated_at: 'x' }, null, NOW)
+    assert.ok(!html.includes('switcher'), 'one campaign needs no switcher')
+    assert.match(html, /<span class="total__value">-<\/span>/)
+    assert.equal((html.match(/class="timer"/g) || []).length, 1)
+    assert.match(html, /stage__step is-on/)
+    assert.equal(await campaign({ campaign: null, campaigns: [] }), null)
 })

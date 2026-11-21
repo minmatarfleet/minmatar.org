@@ -38,7 +38,7 @@ import { create_fleet, get_audiences, get_locations, start_fleet } from '@helper
 import type { FleetRequest, FleetTypes, Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
 import { ALLIANCE_HOST, fleet_host_fields, parse_host_param, ping_preview_request, tribe_group_path } from '@helpers/fleet_hosts'
 import { fetch_fleet_ping_preview, type FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
-import { AMAMAKE_LOCATION_ID } from '@helpers/market_ops_redirect'
+import { staging_location } from '@helpers/fleet_form_up'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -191,7 +191,7 @@ const cancel_href = host_groups.length === 0 ? null :
 let ping_preview:FleetPingPreviewUI | null = null
 if (host_groups.length > 0 && !fetch_doctrines_error) {
     const selected_group = host_groups.find((group) => String(group.id) === selected_host) ?? null
-    const default_location = locations.find((location) => location.location_id === AMAMAKE_LOCATION_ID)
+    const default_location = staging_location(locations)
     const preview_form = new Map<string, string>([
         [ 'host', selected_host ],
         [ 'fleet_type', selected_group ? 'non_strategic' : 'strategic' ],

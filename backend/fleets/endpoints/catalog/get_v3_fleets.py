@@ -31,7 +31,9 @@ ROUTE_SPEC = {
     "description": (
         "List fleets matching the filter. Requires fleets.view_evefleet. "
         "Tribe group fleets are included when the viewer can see them; "
-        "host_group_id lists one group's fleets."
+        "host_group_id lists one group's fleets; campaign_id lists the "
+        "fleets linked to one campaign (recent: the whole campaign, not "
+        "just the last 30 days)."
     ),
 }
 
@@ -40,6 +42,7 @@ def get_v3_fleets(
     request,
     fleet_filter: EveFleetFilter = EveFleetFilter.RECENT,
     host_group_id: Optional[int] = None,
+    campaign_id: Optional[int] = None,
 ) -> Union[List[EveFleetResponse], tuple[int, dict]]:
     denied = require_feature(request.user, "fleets.view")
     if denied and not is_strategic_fc(request.user):
@@ -69,11 +72,18 @@ def get_v3_fleets(
             )
             .order_by("start_time")
         )
+    elif campaign_id:
+        # A campaign's history runs as long as the campaign.
+        fleets = EveFleet.objects.filter(
+            start_time__lte=timezone.now()
+        ).order_by("-start_time")
     else:
         fleets = EveFleet.objects.filter(
             start_time__gte=timezone.now() - timedelta(days=30)
         ).order_by("-start_time")
 
+    if campaign_id:
+        fleets = fleets.filter(campaign_id=campaign_id)
     if host_group_id:
         fleets = fleets.filter(host_group_id=host_group_id)
     if not is_strategic_fc(request.user):

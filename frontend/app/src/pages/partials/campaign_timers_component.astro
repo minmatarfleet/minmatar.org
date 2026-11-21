@@ -1,0 +1,79 @@
+---
+/** The campaign Timers tab body, loaded when the tab opens. */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import type { CampaignTimer } from '@dtypes/api.minmatar.org'
+import { get_campaign_timers } from '@helpers/api.minmatar.org/campaigns'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'campaigns.view')) return HTTP_403_Forbidden()
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let timers: CampaignTimer[] = []
+let fetch_error: Error | false = false
+try {
+    timers = await get_campaign_timers(slug, auth_token as string)
+} catch (error) {
+    fetch_error = error
+}
+
+const PARTIAL_URL = translatePath(`/partials/campaign_timers_component?slug=${encodeURIComponent(slug)}`)
+const ADD_TIMER_URL = translatePath(`/intel/timers/add/?campaign_slug=${slug}`)
+const tracking = t('campaigns.timers.tracking')
+    .replace('~UPCOMING', String(timers.filter((timer) => !timer.done).length))
+    .replace('~DONE', String(timers.filter((timer) => timer.done).length))
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
+---
+
+<div id="campaign-timers">
+    {fetch_error ?
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: fetch_error,
+                delay,
+                target: '#campaign-timers',
+            }}
+        />
+        :
+        <Flexblock gap="var(--space-s)">
+            <FlexInline gap="var(--space-s)" justification="space-between" class="[ items-center ]">
+                <Flexblock gap="var(--space-3xs)">
+                    <h3>{t('campaigns.timers.title')}</h3>
+                    <small>{t('campaigns.timers.hint')}</small>
+                    {timers.length > 0 && <small class="[ campaign-timers-tracking ]">{tracking}</small>}
+                </Flexblock>
+                <Button size="sm" href={ADD_TIMER_URL}>{t('campaigns.structures.add_timer')}</Button>
+            </FlexInline>
+            <CampaignTimersTable timers={timers} />
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .campaign-timers-tracking {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

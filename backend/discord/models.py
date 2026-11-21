@@ -118,6 +118,8 @@ class DiscordGuild(models.Model):
     # (or Administrator) on this server. The reconciler skips it until then.
     # db_default keeps inserts from code that predates these columns working.
     can_manage_roles = models.BooleanField(default=False, db_default=False)
+    # From the same snapshot: the bot holds the Administrator permission.
+    bot_is_administrator = models.BooleanField(default=False, db_default=False)
     # When the snapshot last finished, including a permission failure.
     # Empty while a connect is still waiting on Discord.
     roles_checked_at = models.DateTimeField(null=True, blank=True)

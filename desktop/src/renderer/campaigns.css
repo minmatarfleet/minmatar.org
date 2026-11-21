@@ -66,3 +66,35 @@
     .pilots__more[hidden] { display: none; }
     .pilots__label { display: inline; margin-left: 10px; color: var(--eve-text-dim); font-size: 12px; white-space: nowrap; }
 }
+
+/* Switcher between live campaigns, then Totals and Next timers for a campaign without weekly rows. */
+.switcher { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.switch { padding: 8px 12px; font: inherit; color: var(--eve-text); background: transparent; border: 1px solid var(--eve-line); cursor: default; }
+.switch:hover { background: var(--eve-hover); }
+.switch.is-on { color: var(--eve-gold); border-color: var(--eve-gold); }
+.switch:focus-visible { outline: 1px solid var(--eve-gold); outline-offset: 2px; }
+
+.totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px; border-bottom: 1px solid var(--eve-line); }
+.total { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.total__value { color: var(--eve-text-strong); font-size: 20px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.total__label { color: var(--eve-text-dim); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.timer { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto; column-gap: 10px; align-items: center; height: 40px; padding: 0 8px; border-bottom: 1px solid var(--eve-line); }
+.timer:hover { background: var(--eve-hover); }
+.timer__names { display: flex; flex-direction: column; min-width: 0; }
+.timer__name, .timer__where { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.timer__name { color: var(--eve-text-strong); }
+.timer__where { color: var(--eve-text-dim); font-size: 12px; }
+.timer__clock { color: var(--eve-gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.timer__when { min-width: 64px; text-align: right; color: var(--eve-text-dim); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.stage { display: flex; gap: 0; }
+.stage__step svg { display: block; width: 10px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; color: rgba(255, 255, 255, 0.2); }
+.stage__step.is-on svg { color: var(--eve-text-strong); }
+.stage--final .stage__step.is-on svg { color: var(--eve-danger); }
+
+@media (max-width: 359px) {
+    .timer { grid-template-columns: 38px minmax(0, 1fr) auto; }
+    .timer__when { display: none; }
+    .switch { padding: 4px 8px; }
+}

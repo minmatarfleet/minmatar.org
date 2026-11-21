@@ -924,6 +924,8 @@ export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'u
 export type TrackingStatus = typeof tracking_status[number]
 
 export type Audience = ApiResponse<'EveFleetChannelResponse'>
+/** A fleet form-up location (home staging, a deployment or another). */
+export type FleetLocation = ApiResponse<'EveFleetLocationResponse'>
 
 export interface FleetMember {
     character_id:       number;
@@ -1954,6 +1956,8 @@ export interface BuildPack {
 }
 
 export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
+export type OrderDeliveryLocation = ApiResponse<'OrderLocationResponse'>
+export type OrderClaimCharacters = ApiResponse<'OrderClaimCharactersResponse'>
 export type OrderPatch = ApiRequest<'PatchOrderRequest'>
 
 export interface OrderLpStockpileContact {
@@ -2639,7 +2643,7 @@ export interface CreatorAccount {
     last_synced_at:     string | null;
 }
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'completed' | 'archived'
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'archived'
 export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
 export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
 export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
@@ -2739,6 +2743,8 @@ export interface CampaignStructure {
     alliance_name:      string;
     related_alliance_id: number | null;
     related_alliance_name: string;
+    owner_alliance_id:  number | null;
+    owner_alliance_ticker: string;
     affiliation:        CampaignStructureAffiliation;
     status:             'anchored' | 'reinforced' | 'destroyed' | 'unanchored';
     source:             'recon' | 'timer' | 'killmail';
@@ -2815,6 +2821,8 @@ export interface CampaignDetail {
     standing_fleet_up:          boolean;
     standing_fleet_members:     number;
     standing_fleet_boss:        string | null;
+    features:                   CampaignFeatures;
+    paused_at:                  string | null;
 }
 
 export interface CampaignWeekTarget {
@@ -3274,6 +3282,12 @@ export type FreightManageRoute = ApiResponse<'ManageRoute'>
 export type FreightRouteCreate = ApiRequest<'RouteCreateRequest'>
 export type FreightRoutePatch = ApiRequest<'RoutePatchRequest'>
 export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
+export type CampaignCoordination = ApiResponse<'CampaignCoordinationOut'>
+export type CampaignCoordinationPut = ApiRequest<'CampaignCoordinationRequest'>
+export type CampaignFeatures = ApiResponse<'CampaignFeatures'>
+export type CampaignTimer = ApiResponse<'CampaignTimerOut'>
+export type CampaignDestruction = ApiResponse<'CampaignDestructionOut'>
+export type CampaignDestructionRow = ApiResponse<'CampaignDestructionRow'>
 export type CampaignSettingsSystem = ApiResponse<'SettingsSystemOut'>
 export type CampaignCreate = ApiRequest<'CampaignCreateRequest'>
 export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
@@ -3385,4 +3399,6 @@ export type StructureLocationRetired = ApiResponse<'LocationRetired'>
 export type StructureLocationService = ApiResponse<'LocationService'>
 export type StructureRigBonus = ApiResponse<'RigBonus'>
 export type StructureLocationHoldings = ApiResponse<'LocationHoldings'>
+export type StagingLocation = ApiResponse<'StagingLocation'>
+export type Stagings = ApiResponse<'Stagings'>
 export type StructureLocationUsers = ApiResponse<'LocationUsers'>

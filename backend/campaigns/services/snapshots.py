@@ -20,6 +20,7 @@ from feed.constants import ESI_FW_SYSTEMS_URL
 from feed.models import FeedEvent
 
 from campaigns.models import (
+    COUNTING_STATUSES,
     Campaign,
     CampaignEvent,
     CampaignSystem,
@@ -87,7 +88,7 @@ def fw_systems_without_snapshots():
     return CampaignSystem.objects.filter(
         retired_at__isnull=True,
         is_fw_objective=True,
-        campaign__status__in=["scheduled", "active"],
+        campaign__status__in=COUNTING_STATUSES,
         snapshots__isnull=True,
     )
 
@@ -117,7 +118,7 @@ def record_snapshots(
 
     campaign_systems = CampaignSystem.objects.filter(
         retired_at__isnull=True,
-        campaign__status__in=["scheduled", "active"],
+        campaign__status__in=COUNTING_STATUSES,
     ).select_related("campaign")
     if campaign is None:
         # The scheduled poll only scores faction-warfare objectives.

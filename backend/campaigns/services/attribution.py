@@ -19,6 +19,7 @@ from feed.models import FeedKillmail
 
 from campaigns.helpers import CampaignRoster, counting_campaigns
 from campaigns.models import (
+    COUNTING_STATUSES,
     Campaign,
     CampaignKillmail,
     CampaignKillmailParticipant,
@@ -26,6 +27,10 @@ from campaigns.models import (
     KillmailOutcome,
 )
 from campaigns.services import structures as structure_service
+from campaigns.services.kill_scope import (
+    kill_scope_system_ids,
+    monitor_kill_scope,
+)
 from eveonline.killmail_classes import CAPSULE_TYPE_IDS
 from eveonline.models import EveCharacter
 
@@ -48,7 +53,9 @@ def attribute_feed_killmail(
     moment = feed_killmail.killmail_time
     count = 0
 
-    for campaign in counting_campaigns(feed_killmail.solar_system_id, moment):
+    for campaign in counting_campaigns(
+        feed_killmail.solar_system_id, moment, kill_scope=True
+    ):
         roster = _roster_for(campaign, rosters)
         if _attribute_one(campaign, feed_killmail, raw, zkb, source, roster):
             count += 1
@@ -109,9 +116,15 @@ def _attribute_one(
         solar_system_id=feed_killmail.solar_system_id
     ).exists()
     # Ops theaters (is_fw_objective=False) do not score ship kills unless a
-    # campaign structure sits in the system (citadel bash path).
+    # campaign structure sits in the system (citadel bash path). A campaign
+    # with the Destruction feature counts its whole area: counting_campaigns
+    # only hands it mails from inside (services/kill_scope.py).
     fw_objective = bool(campaign_system and campaign_system.is_fw_objective)
-    if not fw_objective and not has_structure:
+    if (
+        not fw_objective
+        and not has_structure
+        and not campaign.destruction_enabled
+    ):
         return False
 
     ship_type_id = victim.get("ship_type_id")
@@ -318,7 +331,11 @@ def _write_participants(mail, victim: dict, attackers: list, included: dict):
 def sweep_campaign(campaign: Campaign, hours: int = 48) -> dict:
     """Re-attribute recent feed killmails in one campaign's systems."""
     since = timezone.now() - timedelta(hours=hours)
-    system_ids = set(campaign.system_ids())
+    system_ids = (
+        kill_scope_system_ids(campaign)
+        if campaign.destruction_enabled
+        else set(campaign.system_ids())
+    )
     if not system_ids:
         return {"scanned": 0, "attributed": 0}
 
@@ -344,10 +361,14 @@ def sweep_recent(hours: int = 48) -> dict:
     the fight.
     """
     since = timezone.now() - timedelta(hours=hours)
-    campaigns = Campaign.objects.filter(status__in=["scheduled", "active"])
+    campaigns = Campaign.objects.filter(status__in=COUNTING_STATUSES)
     system_ids = set()
     for campaign in campaigns:
-        system_ids.update(campaign.system_ids())
+        if campaign.destruction_enabled:
+            monitor_kill_scope(campaign)
+            system_ids.update(kill_scope_system_ids(campaign))
+        else:
+            system_ids.update(campaign.system_ids())
     if not system_ids:
         return {"scanned": 0, "attributed": 0}
 

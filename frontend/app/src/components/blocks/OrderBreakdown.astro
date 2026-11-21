@@ -2,13 +2,16 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import type { OrderClaimCharacters, RootSingleItem } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
 
 interface Props {
     order_id:                   number;
     primary_character_id?:      number | null;
     claim_disabled_reason?:     string | null;
+    /** The user's characters that can dock, when the delivery location
+     * limits docking. Null or unrestricted: claims use the main. */
+    claim_characters?:          OrderClaimCharacters | null;
     order_breakdown:            RootSingleItem[];
     location_name:              string | undefined;
     /** HTMX swap target for claim/delivery. Detail page uses the breakdown root. */
@@ -21,7 +24,8 @@ interface Props {
 const {
     order_id,
     primary_character_id,
-    claim_disabled_reason = null,
+    claim_disabled_reason: disabled_reason = null,
+    claim_characters = null,
     order_breakdown,
     location_name,
     swap_target_id,
@@ -37,6 +41,21 @@ const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_
     order_id: order_id,
     ...(location_name && { location_name }),
 })}`
+
+// A delivery location that limits docking: claim with a character that can
+// dock there (the main when it can).
+const dock_restricted = Boolean(claim_characters?.restricted)
+const dock_characters = dock_restricted ? (claim_characters?.characters ?? []) : []
+const dock_character_ids = new Set(dock_characters.map((character) => character.character_id))
+const claim_character_id = !dock_restricted || dock_character_ids.has(primary_character_id ?? 0)
+    ? primary_character_id
+    : dock_characters[0]?.character_id ?? primary_character_id
+const claim_disabled_reason = disabled_reason
+    ?? (dock_restricted && dock_characters.length === 0
+        ? t('industry.orders.claim_no_docking').replace('{location}', claim_characters?.location_name ?? '')
+        : null)
+const is_users = (character_id: number) =>
+    character_id === primary_character_id || dock_character_ids.has(character_id)
 
 const id = `order-breakdown-${order_id}-inner`
 const hx_swap_target = swap_target_id ?? `order-item-${order_id}`
@@ -89,7 +108,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             (c, assignment) => c + (assignment.delivered_at ? assignment.quantity : 0)
         , 0)
 
-        const user_assignment = item.assignments.find(assignment => assignment.character_id === primary_character_id)
+        const user_assignment = item.assignments.find(assignment => is_users(assignment.character_id))
 
         const completion = item.quantity > 0 ? items_delivered / item.quantity * 100 : 0
         const progress_color = completion >= 50 ? '--security-status-point-6' :
@@ -227,7 +246,9 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                                             order_id={order_id}
                                             claimed={user_assignment?.quantity ?? 0}
                                             item={item}
-                                            character_id={primary_character_id as number}
+                                            character_id={(user_assignment?.character_id ?? claim_character_id) as number}
+                                            characters={dock_restricted ? dock_characters : null}
+                                            deliver_to={dock_restricted ? claim_characters?.location_name : null}
                                             has_blueprints={user_assignment?.has_blueprints ?? false}
                                             render={claim_render}
                                             claiming={item.provisional}

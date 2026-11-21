@@ -17,6 +17,7 @@ from django.utils import timezone
 from app.celery import app
 from campaigns.helpers import campaign_day, campaign_week_start
 from campaigns.models import (
+    COUNTING_STATUSES,
     Campaign,
     CampaignEnlistmentCharacter,
     CampaignEvent,
@@ -45,9 +46,7 @@ logger = logging.getLogger(__name__)
 
 
 def _live_campaigns():
-    return Campaign.objects.filter(
-        status__in=[CampaignStatus.SCHEDULED, CampaignStatus.ACTIVE]
-    )
+    return Campaign.objects.filter(status__in=COUNTING_STATUSES)
 
 
 def _included_character_rows(order_field: str):
@@ -55,7 +54,7 @@ def _included_character_rows(order_field: str):
     return (
         CampaignEnlistmentCharacter.objects.filter(
             enlistment__status="active",
-            enlistment__campaign__status__in=["scheduled", "active"],
+            enlistment__campaign__status__in=COUNTING_STATUSES,
             included_until__isnull=True,
         )
         .select_related("character")
@@ -400,7 +399,8 @@ def generate_campaign_orders() -> dict:
 
 @app.task(expires=60, exclusive=5 * 60)
 def run_campaign_lifecycle() -> dict:
-    """Scheduled becomes active on time; active completes at the end.
+    """Scheduled becomes active on time; active (or paused) completes at
+    the end.
 
     A campaign is never allowed to go active without having been scheduled
     first, because attribution has no backfill and the hook has to have been
@@ -429,12 +429,16 @@ def run_campaign_lifecycle() -> dict:
         started += 1
 
     for campaign in Campaign.objects.filter(
-        status=CampaignStatus.ACTIVE, end_at__lte=now
+        status__in=[CampaignStatus.ACTIVE, CampaignStatus.PAUSED],
+        end_at__lte=now,
     ):
+        was_paused = campaign.is_paused
         campaign.status = CampaignStatus.COMPLETED
-        campaign.save(update_fields=["status"])
+        campaign.paused_at = None
+        campaign.save(update_fields=["status", "paused_at"])
         stats.rebuild_stats(campaign)
-        awards.close_week(campaign)
+        if not was_paused:  # a paused week hands out no awards
+            awards.close_week(campaign)
         awards.close_campaign(campaign)
         CampaignEvent.objects.get_or_create(
             campaign=campaign,

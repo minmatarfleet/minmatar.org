@@ -3748,6 +3748,121 @@
         "title": "CampaignChoicesOut",
         "type": "object"
       },
+      "CampaignCoordinationOut": {
+        "description": "The campaign's coordination Discord (admins only).",
+        "properties": {
+          "channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CoordinationChannelOut"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "channels_unavailable": {
+            "default": false,
+            "title": "Channels Unavailable",
+            "type": "boolean"
+          },
+          "fleets_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Channel Id"
+          },
+          "guild_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Id"
+          },
+          "guild_name": {
+            "default": "",
+            "title": "Guild Name",
+            "type": "string"
+          },
+          "invite_url": {
+            "default": "",
+            "title": "Invite Url",
+            "type": "string"
+          },
+          "is_default": {
+            "default": true,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "servers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CoordinationServerOut"
+            },
+            "title": "Servers",
+            "type": "array"
+          },
+          "timers_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers Channel Id"
+          }
+        },
+        "title": "CampaignCoordinationOut",
+        "type": "object"
+      },
+      "CampaignCoordinationRequest": {
+        "properties": {
+          "fleets_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Channel Id"
+          },
+          "guild_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Id"
+          },
+          "timers_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers Channel Id"
+          }
+        },
+        "title": "CampaignCoordinationRequest",
+        "type": "object"
+      },
       "CampaignCreateRequest": {
         "properties": {
           "description_md": {
@@ -3857,6 +3972,101 @@
         "title": "CampaignCreated",
         "type": "object"
       },
+      "CampaignDestructionOut": {
+        "properties": {
+          "biggest_kill_isk": {
+            "default": 0,
+            "title": "Biggest Kill Isk",
+            "type": "integer"
+          },
+          "isk_destroyed_week": {
+            "default": 0,
+            "title": "Isk Destroyed Week",
+            "type": "integer"
+          },
+          "rows": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignDestructionRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "structures_destroyed": {
+            "default": 0,
+            "title": "Structures Destroyed",
+            "type": "integer"
+          }
+        },
+        "title": "CampaignDestructionOut",
+        "type": "object"
+      },
+      "CampaignDestructionRow": {
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "alliance_ticker": {
+            "default": "",
+            "title": "Alliance Ticker",
+            "type": "string"
+          },
+          "is_structure": {
+            "default": false,
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "isk_value": {
+            "default": 0,
+            "title": "Isk Value",
+            "type": "integer"
+          },
+          "killmail_id": {
+            "title": "Killmail Id",
+            "type": "integer"
+          },
+          "killmail_time": {
+            "format": "date-time",
+            "title": "Killmail Time",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "default": "",
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "killmail_id",
+          "killmail_time"
+        ],
+        "title": "CampaignDestructionRow",
+        "type": "object"
+      },
       "CampaignDetail": {
         "properties": {
           "areas": {
@@ -3902,6 +4112,23 @@
             "title": "End At",
             "type": "string"
           },
+          "features": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeatures"
+              }
+            ],
+            "default": {
+              "destruction": false,
+              "fleets": true,
+              "pilots": true,
+              "projects": true,
+              "structures": false,
+              "theater": true,
+              "timers": false,
+              "weekly_progress": true
+            }
+          },
           "fittings": {
             "default": [],
             "items": {
@@ -3935,6 +4162,18 @@
             },
             "title": "Parties",
             "type": "array"
+          },
+          "paused_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused At"
           },
           "short_code": {
             "title": "Short Code",
@@ -4010,6 +4249,147 @@
           "totals"
         ],
         "title": "CampaignDetail",
+        "type": "object"
+      },
+      "CampaignFeatures": {
+        "description": "Which parts of the campaign page show. See models.CAMPAIGN_FEATURES.",
+        "properties": {
+          "destruction": {
+            "default": false,
+            "title": "Destruction",
+            "type": "boolean"
+          },
+          "fleets": {
+            "default": true,
+            "title": "Fleets",
+            "type": "boolean"
+          },
+          "pilots": {
+            "default": true,
+            "title": "Pilots",
+            "type": "boolean"
+          },
+          "projects": {
+            "default": true,
+            "title": "Projects",
+            "type": "boolean"
+          },
+          "structures": {
+            "default": false,
+            "title": "Structures",
+            "type": "boolean"
+          },
+          "theater": {
+            "default": true,
+            "title": "Theater",
+            "type": "boolean"
+          },
+          "timers": {
+            "default": false,
+            "title": "Timers",
+            "type": "boolean"
+          },
+          "weekly_progress": {
+            "default": true,
+            "title": "Weekly Progress",
+            "type": "boolean"
+          }
+        },
+        "title": "CampaignFeatures",
+        "type": "object"
+      },
+      "CampaignFeaturesPatch": {
+        "properties": {
+          "destruction": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destruction"
+          },
+          "fleets": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets"
+          },
+          "pilots": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pilots"
+          },
+          "projects": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projects"
+          },
+          "structures": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structures"
+          },
+          "theater": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theater"
+          },
+          "timers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers"
+          },
+          "weekly_progress": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Progress"
+          }
+        },
+        "title": "CampaignFeaturesPatch",
         "type": "object"
       },
       "CampaignFittingOut": {
@@ -4297,7 +4677,7 @@
         "type": "object"
       },
       "CampaignOverlay": {
-        "description": "The desktop app's Campaigns window.",
+        "description": "The desktop app's Campaigns window.\n\n``campaign`` is the shape every installed version reads: the pilot's\nlive campaign. ``campaigns`` (added later) lists every live campaign.",
         "properties": {
           "campaign": {
             "anyOf": [
@@ -4308,6 +4688,14 @@
                 "type": "null"
               }
             ]
+          },
+          "campaigns": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignOverlaySummary"
+            },
+            "title": "Campaigns",
+            "type": "array"
           }
         },
         "title": "CampaignOverlay",
@@ -4422,6 +4810,56 @@
         "title": "CampaignOverlayPilot",
         "type": "object"
       },
+      "CampaignOverlaySummary": {
+        "description": "One live campaign in the window's switcher.",
+        "properties": {
+          "features": {
+            "$ref": "#/components/schemas/CampaignFeatures"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_timers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignOverlayTimer"
+            },
+            "title": "Next Timers",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/CampaignOverlayTotals"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "kind",
+          "status",
+          "features",
+          "totals"
+        ],
+        "title": "CampaignOverlaySummary",
+        "type": "object"
+      },
       "CampaignOverlaySystem": {
         "properties": {
           "change_24h": {
@@ -4528,6 +4966,66 @@
         "title": "CampaignOverlaySystem",
         "type": "object"
       },
+      "CampaignOverlayTimer": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type_name",
+          "system",
+          "stage",
+          "final",
+          "at"
+        ],
+        "title": "CampaignOverlayTimer",
+        "type": "object"
+      },
+      "CampaignOverlayTotals": {
+        "properties": {
+          "isk_destroyed": {
+            "default": 0,
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "ships_killed": {
+            "default": 0,
+            "title": "Ships Killed",
+            "type": "integer"
+          },
+          "structures_destroyed": {
+            "default": 0,
+            "title": "Structures Destroyed",
+            "type": "integer"
+          }
+        },
+        "title": "CampaignOverlayTotals",
+        "type": "object"
+      },
       "CampaignPartyOut": {
         "properties": {
           "alliance_id": {
@@ -4629,6 +5127,16 @@
               }
             ],
             "title": "End At"
+          },
+          "features": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeaturesPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "anyOf": [
@@ -4789,6 +5297,23 @@
             "title": "End At",
             "type": "string"
           },
+          "features": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeatures"
+              }
+            ],
+            "default": {
+              "destruction": false,
+              "fleets": true,
+              "pilots": true,
+              "projects": true,
+              "structures": false,
+              "theater": true,
+              "timers": false,
+              "weekly_progress": true
+            }
+          },
           "fittings": {
             "items": {
               "$ref": "#/components/schemas/CampaignFittingOut"
@@ -4945,6 +5470,22 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "owner_alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Alliance Id"
+          },
+          "owner_alliance_ticker": {
+            "default": "",
+            "title": "Owner Alliance Ticker",
             "type": "string"
           },
           "reinforce_hour": {
@@ -5315,6 +5856,103 @@
           "goal"
         ],
         "title": "CampaignSystemSummary",
+        "type": "object"
+      },
+      "CampaignTimerOut": {
+        "description": "One row of the campaign timerboard.",
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "alliance_ticker": {
+            "default": "",
+            "title": "Alliance Ticker",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "done": {
+            "default": false,
+            "title": "Done",
+            "type": "boolean"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "destroyed",
+              "survived",
+              "passed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "structure_type": {
+            "title": "Structure Type",
+            "type": "string"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "structure_type",
+          "type_name",
+          "system",
+          "state",
+          "stage",
+          "final",
+          "at",
+          "outcome"
+        ],
+        "title": "CampaignTimerOut",
         "type": "object"
       },
       "CampaignTotals": {
@@ -5850,6 +6488,22 @@
           "character_id": {
             "title": "Character Id",
             "type": "integer"
+          },
+          "formup_ship_type_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Formup Ship Type Ids",
+            "type": "array"
+          },
+          "parked": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ParkedHull"
+            },
+            "title": "Parked",
+            "type": "array"
           },
           "ship_type_ids": {
             "items": {
@@ -6817,6 +7471,52 @@
           }
         },
         "title": "ContactPatchRequest",
+        "type": "object"
+      },
+      "CoordinationChannelOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CoordinationChannelOut",
+        "type": "object"
+      },
+      "CoordinationServerOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_administrator": {
+            "default": false,
+            "title": "Is Administrator",
+            "type": "boolean"
+          },
+          "is_primary": {
+            "default": false,
+            "title": "Is Primary",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CoordinationServerOut",
         "type": "object"
       },
       "CopyEveFleetRequest": {
@@ -12436,6 +13136,34 @@
         "title": "DiscordUserSchema",
         "type": "object"
       },
+      "DockAccessEntry": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ticker": {
+            "default": "",
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "title": "DockAccessEntry",
+        "type": "object"
+      },
       "DoctrineCellResponse": {
         "properties": {
           "column": {
@@ -14703,8 +15431,31 @@
         "title": "EveFleetLinkCoverage",
         "type": "object"
       },
+      "EveFleetLocationDefaultResponse": {
+        "description": "Where a flash form forms up unless the FC picks another location.",
+        "properties": {
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          }
+        },
+        "title": "EveFleetLocationDefaultResponse",
+        "type": "object"
+      },
       "EveFleetLocationResponse": {
         "properties": {
+          "deployment_active": {
+            "default": false,
+            "title": "Deployment Active",
+            "type": "boolean"
+          },
           "location_id": {
             "title": "Location Id",
             "type": "integer"
@@ -26656,6 +27407,11 @@
             "title": "Industry",
             "type": "boolean"
           },
+          "industry_delivery": {
+            "default": false,
+            "title": "Industry Delivery",
+            "type": "boolean"
+          },
           "industry_orders": {
             "title": "Industry Orders",
             "type": "integer"
@@ -26945,6 +27701,14 @@
             "title": "Description",
             "type": "string"
           },
+          "dock_access": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DockAccessEntry"
+            },
+            "title": "Dock Access",
+            "type": "array"
+          },
           "facility_tax": {
             "anyOf": [
               {
@@ -27004,6 +27768,11 @@
           },
           "industry": {
             "title": "Industry",
+            "type": "boolean"
+          },
+          "industry_delivery": {
+            "default": false,
+            "title": "Industry Delivery",
             "type": "boolean"
           },
           "industry_orders": {
@@ -27451,6 +28220,11 @@
             "title": "Freight",
             "type": "boolean"
           },
+          "industry_delivery": {
+            "default": false,
+            "title": "Industry Delivery",
+            "type": "boolean"
+          },
           "is_structure": {
             "title": "Is Structure",
             "type": "boolean"
@@ -27802,6 +28576,20 @@
             ],
             "title": "Description"
           },
+          "dock_access_names": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dock Access Names"
+          },
           "fleets_active": {
             "anyOf": [
               {
@@ -27848,6 +28636,17 @@
               }
             ],
             "title": "Good For"
+          },
+          "industry_delivery": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry Delivery"
           },
           "market_active": {
             "anyOf": [
@@ -34949,6 +35748,64 @@
         "title": "OrderCapabilitiesResponse",
         "type": "object"
       },
+      "OrderClaimCharacterResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "is_primary": {
+            "default": false,
+            "title": "Is Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name"
+        ],
+        "title": "OrderClaimCharacterResponse",
+        "type": "object"
+      },
+      "OrderClaimCharactersResponse": {
+        "description": "The user's characters that can dock at the order's delivery location.",
+        "properties": {
+          "characters": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OrderClaimCharacterResponse"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "dock_tickers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dock Tickers",
+            "type": "array"
+          },
+          "location_name": {
+            "default": "",
+            "title": "Location Name",
+            "type": "string"
+          },
+          "restricted": {
+            "title": "Restricted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "restricted"
+        ],
+        "title": "OrderClaimCharactersResponse",
+        "type": "object"
+      },
       "OrderDetailResponse": {
         "description": "Full order with items and who committed to each item.",
         "properties": {
@@ -35579,6 +36436,24 @@
       "OrderLocationResponse": {
         "description": "Location where the order should be built/delivered.",
         "properties": {
+          "costed": {
+            "default": true,
+            "title": "Costed",
+            "type": "boolean"
+          },
+          "deployment": {
+            "default": false,
+            "title": "Deployment",
+            "type": "boolean"
+          },
+          "dock_tickers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dock Tickers",
+            "type": "array"
+          },
           "location_id": {
             "title": "Location Id",
             "type": "integer"
@@ -35586,6 +36461,21 @@
           "location_name": {
             "title": "Location Name",
             "type": "string"
+          },
+          "short_name": {
+            "default": "",
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "default": "",
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "staging": {
+            "default": false,
+            "title": "Staging",
+            "type": "boolean"
           }
         },
         "required": [
@@ -36068,6 +36958,34 @@
           "is_acknowledged"
         ],
         "title": "PageProgressStatusResponse",
+        "type": "object"
+      },
+      "ParkedHull": {
+        "properties": {
+          "at_formup": {
+            "title": "At Formup",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "location_name": {
+            "title": "Location Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "location_id",
+          "location_name",
+          "at_formup"
+        ],
+        "title": "ParkedHull",
         "type": "object"
       },
       "PartnerSchema": {
@@ -45975,6 +46893,58 @@
         "title": "SrpStatsOverviewResponse",
         "type": "object"
       },
+      "StagingLocation": {
+        "properties": {
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "name",
+          "short_name",
+          "solar_system_name"
+        ],
+        "title": "StagingLocation",
+        "type": "object"
+      },
+      "Stagings": {
+        "properties": {
+          "deployments": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StagingLocation"
+            },
+            "title": "Deployments",
+            "type": "array"
+          },
+          "home": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StagingLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "Stagings",
+        "type": "object"
+      },
       "StartFleetNowRequest": {
         "description": "Optional body for quick-start fleet (which character is in the fleet).",
         "properties": {
@@ -45988,6 +46958,17 @@
               }
             ],
             "title": "Fc Character Id"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
           },
           "objective": {
             "anyOf": [
@@ -57032,6 +58013,197 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/coordination": {
+      "get": {
+        "description": "The campaign's coordination Discord server and channels. Admins\nonly: nobody else sees which server a campaign is run from.\n``guild_id`` lists another server's channels while choosing one.",
+        "operationId": "campaigns_endpoints_get_coordination_get_coordination",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "guild_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Guild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignCoordinationOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Coordination",
+        "tags": [
+          "Campaigns"
+        ]
+      },
+      "put": {
+        "description": "Link the campaign to a server the bot is in, and pick its timers and\nfleet pings channels there. Admins only.",
+        "operationId": "campaigns_endpoints_put_coordination_put_coordination",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignCoordinationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignCoordinationOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put Coordination",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/destruction": {
+      "get": {
+        "description": "The Destruction tab: this week's ISK, structures killed, the biggest\nkill, and the kills themselves, newest first.",
+        "operationId": "campaigns_endpoints_get_destruction_get_campaign_destruction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDestructionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Campaign Destruction",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/enlist": {
       "delete": {
         "operationId": "campaigns_endpoints_member_leave",
@@ -58152,7 +59324,7 @@
         ]
       },
       "patch": {
-        "description": "Rename, reschedule, or move a campaign between draft and live.",
+        "description": "Rename, reschedule, switch features, or move a campaign between\ndraft and live.",
         "operationId": "campaigns_endpoints_patch_settings_patch_campaign",
         "parameters": [
           {
@@ -58882,6 +60054,61 @@
           }
         ],
         "summary": "Get Timeline",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/timers": {
+      "get": {
+        "description": "The campaign timerboard: upcoming soonest first, then done.",
+        "operationId": "campaigns_endpoints_get_timers_get_campaign_timers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignTimerOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Campaign Timers",
         "tags": [
           "Campaigns"
         ]
@@ -65924,7 +67151,7 @@
     },
     "/api/fleets/start-now": {
       "post": {
-        "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. Needs fleets.create.",
+        "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. location_id picks a fleet form-up location (default: the staging). Needs fleets.create.",
         "operationId": "fleets_endpoints_active_post_start_fleet_now_start_fleet_now",
         "parameters": [],
         "requestBody": {
@@ -66069,9 +67296,47 @@
         ]
       }
     },
+    "/api/fleets/v2/locations/default": {
+      "get": {
+        "description": "The form-up location one of your characters is docked at (main first, ESI location cached for a minute), else the staging. Needs fleets.create.",
+        "operationId": "fleets_endpoints_reference_get_v2_fleet_location_default_get_v2_fleet_location_default",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetLocationDefaultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get V2 Fleet Location Default",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
     "/api/fleets/v3": {
       "get": {
-        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.",
+        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).",
         "operationId": "fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets",
         "parameters": [
           {
@@ -66107,6 +67372,22 @@
                 }
               ],
               "title": "Host Group Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "campaign_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Campaign Id"
             }
           }
         ],
@@ -72199,6 +73480,38 @@
         ]
       }
     },
+    "/api/industry/orders/delivery-locations": {
+      "get": {
+        "operationId": "industry_endpoints_orders_get_order_delivery_locations_get_order_delivery_locations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderLocationResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Locations a manufacturing order can deliver to",
+        "tags": [
+          "Industry",
+          "Industry - Orders"
+        ]
+      }
+    },
     "/api/industry/orders/pricing": {
       "get": {
         "operationId": "industry_endpoints_orders_get_order_line_pricing_get_order_line_pricing",
@@ -72794,6 +74107,54 @@
         "tags": [
           "Industry",
           "Industry - Breakdown"
+        ]
+      }
+    },
+    "/api/industry/orders/{order_id}/claim-characters": {
+      "get": {
+        "operationId": "industry_endpoints_orders_get_order_claim_characters_get_order_claim_characters",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderClaimCharactersResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Your characters that can dock at the order's delivery location",
+        "tags": [
+          "Industry",
+          "Industry - Orders"
         ]
       }
     },
@@ -84277,6 +85638,35 @@
           }
         ],
         "summary": "Post Parse",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/stagings": {
+      "get": {
+        "description": "The home staging and the deployment locations this user may see.",
+        "operationId": "structures_endpoints_get_stagings_get_stagings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stagings"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Stagings",
         "tags": [
           "Structures",
           "Structure browser"

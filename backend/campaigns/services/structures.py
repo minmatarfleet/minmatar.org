@@ -14,6 +14,7 @@ from eveuniverse.models import EveSolarSystem
 
 from campaigns.constants import STRUCTURE_TYPE_BY_ID, STRUCTURE_TYPE_IDS
 from campaigns.models import (
+    COUNTING_STATUSES,
     Campaign,
     CampaignParty,
     CampaignStructure,
@@ -487,7 +488,7 @@ def deactivate_unused_campaign_monitors(solar_system_id: int) -> None:
     still_needed = CampaignSystem.objects.filter(
         solar_system_id=solar_system_id,
         retired_at__isnull=True,
-        campaign__status__in=["scheduled", "active"],
+        campaign__status__in=COUNTING_STATUSES,
     ).exists()
     if still_needed:
         return

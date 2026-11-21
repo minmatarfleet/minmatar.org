@@ -269,6 +269,22 @@ class GroupFleetVisibilityTests(GroupFleetTestBase):
             {hidden.id},
         )
 
+    def test_campaign_filter_covers_the_whole_campaign(self):
+        # pylint: disable-next=import-outside-toplevel
+        from campaigns.tests.helpers import make_campaign
+
+        campaign = make_campaign()
+        old = self.alliance_fleet(
+            campaign=campaign,
+            start_time=timezone.now() - timedelta(days=45),
+            status="complete",
+        )
+        self.alliance_fleet(start_time=timezone.now() - timedelta(days=1))
+        self.alliance_fleet(campaign=campaign)  # not run yet
+        self.assertEqual(
+            self.ids(self.member, campaign_id=campaign.id), {old.id}
+        )
+
     def test_creator_who_left_still_sees_their_fleet(self):
         fleet = self.group_fleet()
         self.fc.tribe_memberships.update(status="inactive")

@@ -36,6 +36,7 @@ def _settings(campaign: Campaign) -> dict:
         "description_md": campaign.description_md,
         "status": campaign.status,
         "kind": campaign.kind,
+        "features": campaign.features,
         "start_at": campaign.start_at,
         "end_at": campaign.end_at,
         "commander_order_text": campaign.commander_order_text,

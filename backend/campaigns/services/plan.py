@@ -52,7 +52,10 @@ MAX_SYSTEM_ORDERS_PER_DAY = 3
 
 
 def propose_week(campaign: Campaign, week_start: date | None = None) -> int:
-    """Propose one target per system. An operator accepts or nudges it."""
+    """Propose one target per system. An operator accepts or nudges it.
+    A paused campaign gets no targets."""
+    if campaign.is_paused:
+        return 0
     week_start = week_start or campaign_week_start()
     proposed = 0
 
@@ -498,7 +501,10 @@ def update_week_progress(campaign: Campaign) -> int:
 
 
 def generate_orders(campaign: Campaign, day: date | None = None) -> int:
-    """Three small orders per pilot, derived from the week's remaining gap."""
+    """Three small orders per pilot, derived from the week's remaining gap.
+    A paused campaign gets none."""
+    if campaign.is_paused:
+        return 0
     day = day or campaign_day()
     if CampaignDailyOrder.objects.filter(campaign=campaign, day=day).exists():
         return 0

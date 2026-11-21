@@ -41,9 +41,14 @@ def confirm_codes_and_recount(apps, schema_editor):
         rescore_completions(event_code=code)
 
     codes = [code for code, _ in CONFIRMED_CODES]
-    for campaign in Campaign.objects.filter(
-        site_completions__event_code__in=codes
-    ).distinct():
+    # Ids first: these are today's models, so on a fresh database a query
+    # that selects every Campaign column would name columns added later.
+    campaign_ids = set(
+        CampaignSiteCompletion.objects.filter(
+            event_code__in=codes
+        ).values_list("campaign_id", flat=True)
+    )
+    for campaign in Campaign.objects.filter(id__in=campaign_ids):
         moments = CampaignSiteCompletion.objects.filter(
             campaign=campaign, event_code__in=codes
         ).values_list("occurred_at", flat=True)

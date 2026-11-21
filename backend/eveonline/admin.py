@@ -684,6 +684,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "fleets_active",
         "staging_active",
         "deployment_active",
+        "industry_delivery",
         "freight_route_active",
         "deleted",
     )
@@ -698,6 +699,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "fleets_active",
         "staging_active",
         "deployment_active",
+        "industry_delivery",
         "freight_route_active",
     )
     ordering = ("location_name",)
@@ -736,6 +738,8 @@ class EveLocationAdmin(SafeDeleteAdmin):
                     "fleets_active",
                     "staging_active",
                     "deployment_active",
+                    "industry_delivery",
+                    "dock_access",
                 )
             },
         ),

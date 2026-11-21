@@ -87,6 +87,8 @@ class CampaignStructureOut(Schema):
     alliance_name: str = ""
     related_alliance_id: int | None = None
     related_alliance_name: str = ""
+    owner_alliance_id: int | None = None
+    owner_alliance_ticker: str = ""
     affiliation: str = "neutral"
     status: str
     source: str
@@ -137,6 +139,30 @@ class CampaignTotals(Schema):
     active_today: int = 0
 
 
+class CampaignFeatures(Schema):
+    """Which parts of the campaign page show. See models.CAMPAIGN_FEATURES."""
+
+    weekly_progress: bool = True
+    structures: bool = False
+    timers: bool = False
+    theater: bool = True
+    fleets: bool = True
+    destruction: bool = False
+    pilots: bool = True
+    projects: bool = True
+
+
+class CampaignFeaturesPatch(Schema):
+    weekly_progress: bool | None = None
+    structures: bool | None = None
+    timers: bool | None = None
+    theater: bool | None = None
+    fleets: bool | None = None
+    destruction: bool | None = None
+    pilots: bool | None = None
+    projects: bool | None = None
+
+
 class CampaignDetail(Schema):
     id: int
     slug: str
@@ -163,6 +189,84 @@ class CampaignDetail(Schema):
     standing_fleet_up: bool = False
     standing_fleet_members: int = 0
     standing_fleet_boss: str | None = None
+    features: CampaignFeatures = CampaignFeatures()
+    paused_at: datetime | None = None
+
+
+class CampaignTimerOut(Schema):
+    """One row of the campaign timerboard."""
+
+    id: int
+    name: str
+    structure_type: str
+    type_name: str
+    type_id: int | None = None
+    system: str
+    state: str
+    # Chevrons filled (1-3: shield, armor, hull) and whether it is the kill.
+    stage: int
+    final: bool
+    at: datetime
+    alliance_id: int | None = None
+    alliance_ticker: str = ""
+    done: bool = False
+    outcome: Literal["destroyed", "survived", "passed"]
+
+
+class CampaignDestructionRow(Schema):
+    killmail_id: int
+    killmail_time: datetime
+    type_id: int | None = None
+    # The structure's name when the kill was a campaign structure, else
+    # the ship type.
+    name: str = ""
+    type_name: str = ""
+    alliance_id: int | None = None
+    alliance_ticker: str = ""
+    isk_value: int = 0
+    is_structure: bool = False
+
+
+class CampaignDestructionOut(Schema):
+    isk_destroyed_week: int = 0
+    structures_destroyed: int = 0
+    biggest_kill_isk: int = 0
+    rows: list[CampaignDestructionRow] = []
+
+
+class CoordinationServerOut(Schema):
+    # Discord snowflakes are strings: they do not fit a JavaScript number.
+    id: str
+    name: str
+    is_primary: bool = False
+    # The bot holds Administrator there, as of the last role snapshot.
+    is_administrator: bool = False
+
+
+class CoordinationChannelOut(Schema):
+    id: str
+    name: str
+
+
+class CampaignCoordinationOut(Schema):
+    """The campaign's coordination Discord (admins only)."""
+
+    guild_id: str | None = None
+    guild_name: str = ""
+    # No server stored: the campaign runs from ours.
+    is_default: bool = True
+    timers_channel_id: str | None = None
+    fleets_channel_id: str | None = None
+    servers: list[CoordinationServerOut] = []
+    channels: list[CoordinationChannelOut] = []
+    channels_unavailable: bool = False
+    invite_url: str = ""
+
+
+class CampaignCoordinationRequest(Schema):
+    guild_id: str | None = None
+    timers_channel_id: str | None = None
+    fleets_channel_id: str | None = None
 
 
 class RightNow(Schema):
@@ -602,10 +706,44 @@ class CampaignOverlayCampaign(Schema):
     active_pilots: list[CampaignOverlayPilot]
 
 
+class CampaignOverlayTotals(Schema):
+    structures_destroyed: int = 0
+    isk_destroyed: int = 0
+    ships_killed: int = 0
+
+
+class CampaignOverlayTimer(Schema):
+    name: str
+    type_name: str
+    system: str
+    # Chevrons filled (1-3: shield, armor, hull); final is the kill timer.
+    stage: int
+    final: bool
+    at: datetime
+
+
+class CampaignOverlaySummary(Schema):
+    """One live campaign in the window's switcher."""
+
+    id: int
+    slug: str
+    name: str
+    kind: str
+    status: str
+    features: CampaignFeatures
+    totals: CampaignOverlayTotals
+    next_timers: list[CampaignOverlayTimer] = []
+
+
 class CampaignOverlay(Schema):
-    """The desktop app's Campaigns window."""
+    """The desktop app's Campaigns window.
+
+    ``campaign`` is the shape every installed version reads: the pilot's
+    live campaign. ``campaigns`` (added later) lists every live campaign.
+    """
 
     campaign: CampaignOverlayCampaign | None = None
+    campaigns: list[CampaignOverlaySummary] = []
 
 
 # --- Settings (operator screens that used to live in Django admin) ---------
@@ -618,6 +756,7 @@ class CampaignPatchRequest(Schema):
     status: str | None = None
     start_at: datetime | None = None
     end_at: datetime | None = None
+    features: CampaignFeaturesPatch | None = None
 
 
 class SystemAddRequest(Schema):
@@ -685,6 +824,7 @@ class CampaignSettingsOut(Schema):
     fittings: list[CampaignFittingOut]
     week_targets: list[SettingsWeekTargetOut]
     daily_orders: list[SettingsOrderOut]
+    features: CampaignFeatures = CampaignFeatures()
 
 
 class PayoutCodeOut(Schema):

@@ -28,8 +28,19 @@ class CampaignStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     SCHEDULED = "scheduled", "Scheduled"
     ACTIVE = "active", "Active"
+    # Faction warfare campaigns only: the alliance is out of the militia for
+    # a while. Kills still count; no weekly targets, orders or week awards.
+    PAUSED = "paused", "Paused"
     COMPLETED = "completed", "Completed"
     ARCHIVED = "archived", "Archived"
+
+
+# Statuses whose campaigns record activity as it happens.
+COUNTING_STATUSES = (
+    CampaignStatus.SCHEDULED,
+    CampaignStatus.ACTIVE,
+    CampaignStatus.PAUSED,
+)
 
 
 class CampaignKind(models.TextChoices):
@@ -37,6 +48,35 @@ class CampaignKind(models.TextChoices):
 
     FACTION_WARFARE = "faction_warfare", "Faction Warfare"
     STRATEGIC = "strategic", "Strategic"
+
+
+# Feature switches on a campaign, in the order the Settings tab lists them.
+# Each one shows or hides a part of the campaign page (a tab, or the weekly
+# progress hero); the kind only picks which start on.
+CAMPAIGN_FEATURES = (
+    "weekly_progress",
+    "structures",
+    "timers",
+    "theater",
+    "fleets",
+    "destruction",
+    "pilots",
+    "projects",
+)
+FEATURE_PRESETS = {
+    "faction_warfare": {
+        "weekly_progress",
+        "theater",
+        "fleets",
+        "pilots",
+        "projects",
+    },
+    "strategic": {"structures", "timers", "fleets", "destruction"},
+}
+
+
+def feature_field(feature: str) -> str:
+    return f"{feature}_enabled"
 
 
 class StructureStatus(models.TextChoices):
@@ -120,7 +160,11 @@ class OperationalState(models.TextChoices):
 
 
 class Campaign(models.Model):
-    """One named operation. Theaters may be systems, structures, or both."""
+    """One named operation. Theaters may be systems, structures, or both.
+
+    A new campaign takes its feature switches from its kind's preset, except
+    the ones the caller set explicitly.
+    """
 
     slug = models.SlugField(max_length=64, unique=True)
     short_code = models.CharField(
@@ -154,6 +198,12 @@ class Campaign(models.Model):
         default=CampaignStatus.DRAFT,
         db_index=True,
     )
+    paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When a faction warfare campaign was paused; cleared on "
+        "resume.",
+    )
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
     visibility = models.CharField(
@@ -166,6 +216,15 @@ class Campaign(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    # Coordination Discord (admins only): the server the campaign is run
+    # from, ours unless set, and its timers and fleet pings channels.
+    coordination_guild_id = models.BigIntegerField(null=True, blank=True)
+    coordination_timers_channel_id = models.BigIntegerField(
+        null=True, blank=True
+    )
+    coordination_fleets_channel_id = models.BigIntegerField(
+        null=True, blank=True
+    )
     voice_channel_ids = models.JSONField(default=list, blank=True)
     default_fleet_audience = models.ForeignKey(
         "fleets.EveFleetAudience",
@@ -190,6 +249,35 @@ class Campaign(models.Model):
     donation_corporation_id = models.BigIntegerField(null=True, blank=True)
     donation_division = models.PositiveSmallIntegerField(default=1)
 
+    weekly_progress_enabled = models.BooleanField(
+        default=True,
+        help_text="This week's progress in the header, with weekly targets "
+        "and the commander's order. Off shows destruction totals instead.",
+    )
+    structures_enabled = models.BooleanField(
+        default=False, help_text="The Structures tab."
+    )
+    timers_enabled = models.BooleanField(
+        default=False, help_text="The Timers tab."
+    )
+    theater_enabled = models.BooleanField(
+        default=True, help_text="The Theater tab."
+    )
+    fleets_enabled = models.BooleanField(
+        default=True, help_text="The Fleets tab."
+    )
+    destruction_enabled = models.BooleanField(
+        default=False,
+        help_text="The Destruction tab. Also counts kills anywhere in the "
+        "campaign systems and areas, not only FW objectives.",
+    )
+    pilots_enabled = models.BooleanField(
+        default=True, help_text="The Pilots tab."
+    )
+    projects_enabled = models.BooleanField(
+        default=True, help_text="The Projects tab."
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -197,8 +285,39 @@ class Campaign(models.Model):
         ordering = ["-start_at"]
         indexes = [models.Index(fields=["status", "-start_at"])]
 
+    def __init__(self, *args, **kwargs):
+        explicit = {
+            name
+            for name in map(feature_field, CAMPAIGN_FEATURES)
+            if name in kwargs
+        }
+        super().__init__(*args, **kwargs)
+        self._explicit_features = explicit
+
     def __str__(self) -> str:
         return str(self.name)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self.apply_feature_presets(skip=self._explicit_features)
+        super().save(*args, **kwargs)
+
+    def apply_feature_presets(self, skip=()) -> None:
+        """Switch features on or off by kind, leaving ``skip`` alone."""
+        preset = FEATURE_PRESETS.get(
+            self.kind, FEATURE_PRESETS[CampaignKind.FACTION_WARFARE]
+        )
+        for feature in CAMPAIGN_FEATURES:
+            name = feature_field(feature)
+            if name not in skip:
+                setattr(self, name, feature in preset)
+
+    @property
+    def features(self) -> dict[str, bool]:
+        return {
+            feature: bool(getattr(self, feature_field(feature)))
+            for feature in CAMPAIGN_FEATURES
+        }
 
     def clean(self):
         super().clean()
@@ -210,12 +329,13 @@ class Campaign(models.Model):
         return self.status == CampaignStatus.ACTIVE
 
     @property
+    def is_paused(self) -> bool:
+        return self.status == CampaignStatus.PAUSED
+
+    @property
     def is_counting(self) -> bool:
         """Scheduled campaigns already attribute, so nothing is missed."""
-        return self.status in (
-            CampaignStatus.SCHEDULED,
-            CampaignStatus.ACTIVE,
-        )
+        return self.status in COUNTING_STATUSES
 
     def system_ids(self) -> list[int]:
         return list(

@@ -101,6 +101,7 @@ def _campaign_for(fleet: EveFleet, start_time: datetime):
     if campaign.status not in (
         CampaignStatus.SCHEDULED,
         CampaignStatus.ACTIVE,
+        CampaignStatus.PAUSED,
     ):
         return None
     if campaign.end_at and campaign.end_at <= start_time:

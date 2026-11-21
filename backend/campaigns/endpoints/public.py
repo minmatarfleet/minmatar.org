@@ -29,6 +29,7 @@ from campaigns.models import (
 from campaigns.services import entities as entity_service
 from campaigns.services import fleets as fleet_service
 from campaigns.services import objectives, plan, stats
+from campaigns.services.tickers import alliance_tickers, owner_alliance
 from eveonline.models import EveCharacter
 from fleets.helpers.fleet_boss import in_game_fleet_commander
 from fleets.models import EveFleetInstance, EveFleetInstanceMember
@@ -94,6 +95,7 @@ def list_campaigns(request, status: str = ""):
 
     order = {
         CampaignStatus.ACTIVE: 0,
+        CampaignStatus.PAUSED: 0,
         CampaignStatus.SCHEDULED: 1,
         CampaignStatus.COMPLETED: 2,
         CampaignStatus.ARCHIVED: 3,
@@ -138,7 +140,10 @@ def get_overlay(request):
     if denied:
         return denied
     campaign = overlay.pick_campaign(request.user)
-    return {"campaign": overlay.overlay(campaign) if campaign else None}
+    return {
+        "campaign": overlay.overlay(campaign) if campaign else None,
+        "campaigns": overlay.campaigns(),
+    }
 
 
 @router.get(
@@ -165,6 +170,12 @@ def get_campaign(request, slug: str):
     )
 
     parties = list(campaign.parties.all())
+    structures = list(
+        campaign.structures.select_related("timer", "killmail").all()
+    )
+    tickers = alliance_tickers(
+        (owner_alliance(row)[0] for row in structures), campaign
+    )
     return {
         "id": campaign.id,
         "slug": campaign.slug,
@@ -183,10 +194,8 @@ def get_campaign(request, slug: str):
         "areas": serializers.campaign_areas(campaign),
         "parties": [serializers.party_out(row) for row in parties],
         "structures": [
-            serializers.structure_out(row, parties=parties)
-            for row in campaign.structures.select_related(
-                "timer", "killmail"
-            ).all()
+            serializers.structure_out(row, parties=parties, tickers=tickers)
+            for row in structures
         ],
         "fittings": serializers.campaign_fittings(campaign),
         "totals": stats.campaign_totals(campaign),
@@ -204,6 +213,8 @@ def get_campaign(request, slug: str):
         "standing_fleet_up": False,
         "standing_fleet_members": 0,
         "standing_fleet_boss": None,
+        "features": campaign.features,
+        "paused_at": campaign.paused_at,
     }
 
 

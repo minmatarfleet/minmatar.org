@@ -118,5 +118,70 @@
     ],
     "week_count": 3,
     "week_index": 2
-  }
+  },
+  "campaigns": [
+    {
+      "features": {
+        "destruction": true,
+        "fleets": true,
+        "pilots": false,
+        "projects": false,
+        "structures": true,
+        "theater": false,
+        "timers": true,
+        "weekly_progress": false
+      },
+      "id": 7102,
+      "kind": "strategic",
+      "name": "Structures",
+      "next_timers": [
+        {
+          "at": "2026-01-18T00:00:00Z",
+          "final": false,
+          "name": "Home Station",
+          "stage": 2,
+          "system": "Kamela",
+          "type_name": "Fortizar"
+        },
+        {
+          "at": "2026-01-19T00:00:00Z",
+          "final": true,
+          "name": "Forward Station",
+          "stage": 3,
+          "system": "Kamela",
+          "type_name": "Astrahus"
+        }
+      ],
+      "slug": "contract-structures",
+      "status": "active",
+      "totals": {
+        "isk_destroyed": 2500000000,
+        "ships_killed": 1,
+        "structures_destroyed": 1
+      }
+    },
+    {
+      "features": {
+        "destruction": false,
+        "fleets": true,
+        "pilots": true,
+        "projects": true,
+        "structures": false,
+        "theater": true,
+        "timers": false,
+        "weekly_progress": true
+      },
+      "id": 7101,
+      "kind": "faction_warfare",
+      "name": "Push",
+      "next_timers": [],
+      "slug": "contract-push",
+      "status": "active",
+      "totals": {
+        "isk_destroyed": 0,
+        "ships_killed": 1,
+        "structures_destroyed": 0
+      }
+    }
+  ]
 }

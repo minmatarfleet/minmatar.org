@@ -26,6 +26,18 @@ from industry.endpoints.orders.delete_order_pi_coordinator import (
     delete_order_pi_coordinator,
     METHOD as delete_order_pi_coordinator_method,
 )
+from industry.endpoints.orders.get_order_claim_characters import (
+    PATH as get_order_claim_characters_path,
+    ROUTE_SPEC as get_order_claim_characters_spec,
+    get_order_claim_characters,
+    METHOD as get_order_claim_characters_method,
+)
+from industry.endpoints.orders.get_order_delivery_locations import (
+    PATH as get_order_delivery_locations_path,
+    ROUTE_SPEC as get_order_delivery_locations_spec,
+    get_order_delivery_locations,
+    METHOD as get_order_delivery_locations_method,
+)
 from industry.endpoints.orders.get_order_capabilities import (
     PATH as get_order_capabilities_path,
     ROUTE_SPEC as get_order_capabilities_spec,
@@ -175,8 +187,20 @@ _ROUTES = (
         get_order_line_pricing_spec,
         get_order_line_pricing,
     ),
+    (
+        get_order_delivery_locations_method,
+        get_order_delivery_locations_path,
+        get_order_delivery_locations_spec,
+        get_order_delivery_locations,
+    ),
     (post_order_method, post_order_path, post_order_spec, post_order),
     (get_order_method, get_order_path, get_order_spec, get_order),
+    (
+        get_order_claim_characters_method,
+        get_order_claim_characters_path,
+        get_order_claim_characters_spec,
+        get_order_claim_characters,
+    ),
     (
         get_order_material_options_method,
         get_order_material_options_path,

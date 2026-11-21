@@ -46,6 +46,7 @@ import Markdown from '@components/blocks/Markdown.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
 import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
+import DeploymentStrip from '@components/blocks/DeploymentStrip.astro'
 
 const { auth_token, user } = get_request_user(Astro)
 
@@ -127,7 +128,7 @@ if (campaign) {
 }
 
 /** Enlisting only makes sense while the campaign can still be joined. */
-const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'scheduled')
+const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'scheduled')
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
@@ -213,6 +214,8 @@ const breadcrumbs = [
                 )}
             </PageActions>
         </FlexInline>
+
+        <DeploymentStrip />
 
         {fetch_campaign_error || !campaign ?
             <ErrorRefetch

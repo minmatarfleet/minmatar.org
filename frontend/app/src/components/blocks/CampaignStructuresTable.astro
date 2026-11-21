@@ -3,9 +3,10 @@ import { i18n, dynamic_key, t_key } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignStructure } from '@dtypes/api.minmatar.org'
-import { format_date_time } from '@helpers/date'
 import { get_item_icon } from '@helpers/eve_image_server'
 import { get_structure_id } from '@helpers/eve'
+import { sort_campaign_structures } from '@helpers/campaign_features'
+import { eve_date_time } from '@helpers/campaign_manage'
 
 interface Props {
     structures:         CampaignStructure[];
@@ -34,12 +35,6 @@ const status_color = (status:string) => {
     return 'alliance-blue'
 }
 
-const affiliation_color = (affiliation:string) => {
-    if (affiliation === 'hostile') return 'fleet-red'
-    if (affiliation === 'friendly') return 'green'
-    return 'alliance-blue'
-}
-
 const format_reinforce_hour = (hour:number | null) => {
     if (hour === null || hour === undefined) return ''
     return `${String(hour).padStart(2, '0')}:00`
@@ -50,10 +45,16 @@ const structure_icon = (structure:CampaignStructure) => {
     return type_id ? get_item_icon(type_id, 64) : ''
 }
 
+const type_label = (structure:CampaignStructure) => t(dynamic_key(structure.structure_type)) ?? structure.structure_type
+const now = Date.now()
+const upcoming = (structure:CampaignStructure) => structure.timer_at !== null && new Date(structure.timer_at).getTime() > now
+const rows = sort_campaign_structures(structures)
+
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
+import Countdown from '@components/blocks/Countdown.astro'
 ---
 
 <Flexblock gap='var(--space-s)' class:list={['[ campaign-structures ]', Astro.props.class]} {...attributes}>
@@ -80,53 +81,44 @@ import Tag from '@components/blocks/Tag.astro'
         :
         <div class="[ campaign-structures-table ]" role="table" aria-label={t('campaigns.structures.title')}>
             <div class="[ campaign-structures-head ]" role="row">
-                <span role="columnheader">{t('campaigns.structures.col.name')}</span>
+                <span role="columnheader"><span class="[ visually-hidden ]">{t('campaigns.structures.col.name')}</span></span>
                 <span role="columnheader">{t('campaigns.structures.col.system')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.type')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.owner')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.related')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.affiliation')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.status')}</span>
                 <span role="columnheader">{t('campaigns.structures.col.rh')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.timer')}</span>
+                <span role="columnheader">{t('campaigns.structures.next_timer')}</span>
+                <span role="columnheader">{t('campaigns.structures.has_fit')}</span>
             </div>
-            {structures.map(structure => {
+            {rows.map(structure => {
                 const icon = structure_icon(structure)
-                const affiliation = structure.affiliation || 'neutral'
+                const destroyed = structure.status === 'destroyed'
                 return (
-                <div class="[ campaign-structures-row ]" role="row">
+                <div class:list={['[ campaign-structures-row ]', { 'is-destroyed': destroyed }]} role="row">
                     <span role="cell">
-                        <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
-                            {icon &&
-                                <img
-                                    class="[ structure-icon ]"
-                                    loading="lazy"
-                                    height="32"
-                                    width="32"
-                                    src={icon}
-                                    alt=""
-                                />
+                        <button
+                            type="button"
+                            class="[ campaign-structures-copy ]"
+                            data-name={structure.name}
+                            data-tippy-content={t('campaigns.structures.copy_tip').replace('~NAME', structure.name).replace('~TYPE', type_label(structure))}
+                            aria-label={`${structure.name} · ${type_label(structure)}`}
+                            x-data="{ copied: false }"
+                            x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+                            x-bind:class="{ 'is-copied': copied }"
+                        >
+                            {icon ?
+                                <img class="[ structure-icon ]" loading="lazy" height="32" width="32" src={icon} alt="" />
+                                :
+                                <span>{structure.name}</span>
                             }
-                            <span>{structure.name}</span>
-                            {structure.fitting &&
-                                <Tag text={t('campaigns.structures.has_fit')} color='alliance-blue' />
-                            }
-                        </FlexInline>
+                        </button>
                     </span>
                     <span role="cell">{structure.system_name}</span>
-                    <span role="cell">{t(dynamic_key(structure.structure_type)) ?? structure.structure_type}</span>
-                    <span role="cell">{structure.corporation_name || '—'}</span>
-                    <span role="cell">{structure.related_alliance_name || structure.alliance_name || '—'}</span>
-                    <span role="cell">
-                        <Tag
-                            text={t(t_key('campaigns.structures.affiliation.', affiliation))}
-                            color={affiliation_color(affiliation)}
-                        />
-                    </span>
+                    <span role="cell">{structure.owner_alliance_ticker || '—'}</span>
                     <span role="cell">
                         <Tag
                             text={t(t_key('campaigns.structures.status.', structure.status))}
                             color={status_color(structure.status)}
+                            class="w-fit"
                         />
                     </span>
                     <span role="cell">
@@ -134,12 +126,28 @@ import Tag from '@components/blocks/Tag.astro'
                             format_reinforce_hour(structure.reinforce_hour)
                             : '—'}
                     </span>
+                    <span role="cell" class="[ campaign-structures-timer ]">
+                        {upcoming(structure) && structure.timer_at ?
+                            <Fragment>
+                                <Countdown id={structure.id} tag="campaign-structure" date={structure.timer_at} />
+                                <span class="[ campaign-structures-muted ]">{eve_date_time(lang, structure.timer_at)}</span>
+                            </Fragment>
+                            : destroyed && structure.destroyed_at ?
+                                <span class="[ campaign-structures-muted ]">{t('campaigns.structures.killed_at').replace('~DATE', eve_date_time(lang, structure.destroyed_at))}</span>
+                                : <span class="[ campaign-structures-muted ]">—</span>
+                        }
+                    </span>
                     <span role="cell">
-                        {structure.timer_at ?
-                            format_date_time(lang, structure.timer_at)
-                            : structure.destroyed_at ?
-                                format_date_time(lang, structure.destroyed_at)
-                                : '—'}
+                        {structure.fitting &&
+                            <Tag
+                                text={t('campaigns.structures.has_fit')}
+                                variant="outline"
+                                color="highlight"
+                                narrow={true}
+                                class="w-fit"
+                                data-tippy-content={structure.fitting}
+                            />
+                        }
                     </span>
                 </div>
                 )
@@ -155,15 +163,30 @@ import Tag from '@components/blocks/Tag.astro'
     }
 
     .structure-icon {
+        display: block;
         flex-shrink: 0;
+    }
+
+    .campaign-structures-copy {
+        display: block;
+        padding: 0;
+        background: none;
+        border: 0;
+        cursor: copy;
+        color: var(--highlight);
+
+        &.is-copied {
+            outline: 1px solid var(--green);
+        }
     }
 
     .campaign-structures-head,
     .campaign-structures-row {
         display: grid;
-        grid-template-columns: 1.5fr 0.9fr 0.9fr 1fr 1fr 0.7fr 0.7fr 0.5fr 0.9fr;
-        gap: var(--space-2xs);
+        grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1fr) 4rem minmax(0, 2.4fr) 3rem;
+        gap: var(--space-xs);
         align-items: center;
+        white-space: nowrap;
     }
 
     .campaign-structures-head {
@@ -176,6 +199,32 @@ import Tag from '@components/blocks/Tag.astro'
     .campaign-structures-row {
         font-size: var(--step--1);
         padding-block: var(--space-3xs);
+
+        > * {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &.is-destroyed {
+            opacity: 0.5;
+        }
+    }
+
+    .campaign-structures-timer {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
+
+        :global(.countdown) {
+            font-size: var(--step-1);
+            letter-spacing: 2px;
+            text-indent: 0;
+            color: var(--highlight);
+        }
+    }
+
+    .campaign-structures-muted {
+        color: var(--text-muted);
     }
 
     @media (max-width: 720px) {
@@ -184,7 +233,7 @@ import Tag from '@components/blocks/Tag.astro'
         }
 
         .campaign-structures-row {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 3rem 1fr 1fr;
             gap: var(--space-3xs);
         }
     }

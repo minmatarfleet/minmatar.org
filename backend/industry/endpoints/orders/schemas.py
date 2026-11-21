@@ -12,6 +12,14 @@ class OrderLocationResponse(BaseModel):
 
     location_id: int
     location_name: str
+    short_name: str = ""
+    solar_system_name: str = ""
+    staging: bool = False
+    deployment: bool = False
+    # False when the location has no facility profile to plan profit with.
+    costed: bool = True
+    # Who can dock; empty means anyone in the alliance.
+    dock_tickers: List[str] = []
 
 
 class OrderItemQuantityResponse(BaseModel):
@@ -343,3 +351,18 @@ class BuildPackResponse(BaseModel):
     count: int
     price: Decimal | None = None
     location_name: str | None = None
+
+
+class OrderClaimCharacterResponse(BaseModel):
+    character_id: int
+    character_name: str
+    is_primary: bool = False
+
+
+class OrderClaimCharactersResponse(BaseModel):
+    """The user's characters that can dock at the order's delivery location."""
+
+    restricted: bool
+    location_name: str = ""
+    dock_tickers: List[str] = []
+    characters: List[OrderClaimCharacterResponse] = []

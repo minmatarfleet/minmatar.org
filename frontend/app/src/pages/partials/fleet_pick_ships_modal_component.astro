@@ -97,7 +97,25 @@ const has_suggestions = pilots.some(pilot => pilot.suggestion)
 // not bringing anything is offered an owned hull for a short line.
 const target_by_id = new Map(targets.map(target => [target.id, target]))
 const line_by_ship = new Map(hangar.lines_by_ship.map(row => [row.ship_type_id, target_by_id.get(row.target_id)]))
-const owned_by_character = new Map(hangar.hangars.map(row => [row.character_id, new Set(row.ship_type_ids)]))
+// While deployed, "In hangar" counts only hulls at the fleet's form-up
+// (older backends send no formup_ship_type_ids: every owned hull counts).
+const owned_by_character = new Map(hangar.hangars.map(row => [row.character_id, new Set(row.formup_ship_type_ids ?? row.ship_type_ids)]))
+
+// Where each character's hulls are parked (only sent while deployed): the
+// line under the character for the hull they pick.
+const parked_by_character = new Map(hangar.hangars.map(row => [
+    row.character_id,
+    Object.fromEntries((row.parked ?? []).map(hull => [hull.ship_type_id, {
+        text: t(hull.at_formup ? 'fleets.form_up.parked' : 'fleets.form_up.parked_away')
+            .replace('{ship}', hull_names.get(hull.ship_type_id) ?? composition.find(entry => entry.ship_id === hull.ship_type_id)?.ship_name ?? '')
+            .replace('{location}', hull.location_name),
+        at_formup: hull.at_formup,
+    }])),
+]))
+const parked_of = (pilot:MyFleetPilot) => parked_by_character.get(pilot.character_id) ?? {}
+const has_parked = (pilot:MyFleetPilot) => Object.keys(parked_of(pilot)).length > 0
+// In a character row: where the hull picked for that character is parked.
+const PARKED_PICK = '(parked[ships[picks[cid]]?.ship_id] ?? null)'
 
 // Which ship target line each picker value fills, so "Still needed" can
 // count the picks live. Off-doctrine hulls count toward a line too.
@@ -145,14 +163,14 @@ const fit_name = (entry:FleetCompositionEntry) => (hull_count.get(entry.ship_id)
 const ship_name = (entry:FleetCompositionEntry) => entry.ship_name || entry.name
 const line_name = (key:string) => lines.find(line => line.id === line_of_key[key])?.name ?? ''
 
-const ships:Record<string, { name:string, fit:string, line:string, icon:string }> = {
-    other: { name: t('pick_ships_other_ship'), fit: '', line: '', icon: '' },
+const ships:Record<string, { name:string, fit:string, line:string, icon:string, ship_id:number | null }> = {
+    other: { name: t('pick_ships_other_ship'), fit: '', line: '', icon: '', ship_id: null },
 }
 for (const entry of composition)
-    ships[entry.key] = { name: ship_name(entry), fit: fit_name(entry), line: line_name(entry.key), icon: get_item_icon(entry.ship_id, 64) }
+    ships[entry.key] = { name: ship_name(entry), fit: fit_name(entry), line: line_name(entry.key), icon: get_item_icon(entry.ship_id, 64), ship_id: entry.ship_id }
 for (const pilot of pilots) {
     const hull = off_doctrine_hull(pilot)
-    if (hull) ships[hull.key] = { name: hull.name, fit: '', line: line_name(hull.key), icon: get_item_icon(pilot.selection!.ship_type_id!, 64) }
+    if (hull) ships[hull.key] = { name: hull.name, fit: '', line: line_name(hull.key), icon: get_item_icon(pilot.selection!.ship_type_id!, 64), ship_id: pilot.selection!.ship_type_id! }
 }
 
 // The ship menu: one group per target line, most needed first, then the
@@ -338,7 +356,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                             class="[ pick-ships__row ]"
                             x-show={pilot.recent_fleets ? 'true' : 'show_all'}
                             x-cloak={!pilot.recent_fleets && !show_all_by_default ? true : undefined}
-                            x-data={`{ cid: ${pilot.character_id}, open: false, search: '' }`}
+                            x-data={`{ cid: ${pilot.character_id}, open: false, search: ''${has_parked(pilot) ? `, parked: ${JSON.stringify(parked_of(pilot))}` : ''} }`}
                         >
                             <PilotBadge
                                 character_id={pilot.character_id}
@@ -347,10 +365,19 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                 icon_quality={64}
                                 inert={true}
                             >
-                                <small class="[ pick-ships__quiet ]">
+                                <small class="[ pick-ships__quiet ]" x-show={has_parked(pilot) ? `!${PARKED_PICK}` : undefined}>
                                     {pilot.suggestion ? suggested_label(pilot) :
                                         pilot.recent_fleets ? t('pick_ships_recent') : t('pick_ships_no_recent')}
                                 </small>
+                                {has_parked(pilot) &&
+                                    <small
+                                        class="[ pick-ships__parked ]"
+                                        x-show={PARKED_PICK}
+                                        x-cloak
+                                        x-bind:class={`{ 'is-away': ${PARKED_PICK} && !${PARKED_PICK}.at_formup }`}
+                                        x-text={`${PARKED_PICK}?.text ?? ''`}
+                                    ></small>
+                                }
                             </PilotBadge>
 
                             <div
@@ -586,6 +613,14 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
 
     .pick-ships__quiet {
         color: var(--text-muted);
+    }
+
+    .pick-ships__parked {
+        color: var(--green);
+
+        &.is-away {
+            color: var(--attention);
+        }
     }
 
     .pick-ships__needed {

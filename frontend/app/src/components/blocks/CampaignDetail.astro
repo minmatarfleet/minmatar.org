@@ -15,6 +15,7 @@ import type {
 } from '@dtypes/api.minmatar.org'
 import { campaign_totals_stats, sort_systems_by_contest, fw_objective_systems, ops_theater_systems } from '@helpers/fetching/campaigns'
 import { format_isk } from '@helpers/numbers'
+import { campaign_tabs } from '@helpers/campaign_features'
 import type { CampaignChoices } from '@helpers/api.minmatar.org/campaigns'
 
 interface Props {
@@ -64,22 +65,14 @@ const is_strategic = campaign.kind === 'strategic'
 const stats = campaign_totals_stats(campaign.totals, t, format_isk, campaign.kind).slice(0, 5)
 const structures = campaign.structures ?? []
 const structures_destroyed = campaign.totals.structures_destroyed
-const structures_remaining = campaign.totals.structures_remaining
-const structures_tracking = t('campaigns.structures.tracking')
+const structures_tracking = t('campaigns.structures.tracking_states')
     .replace('{destroyed}', String(structures_destroyed))
-    .replace('{remaining}', String(structures_remaining))
+    .replace('{reinforced}', String(structures.filter((row) => row.status === 'reinforced').length))
+    .replace('{anchored}', String(structures.filter((row) => row.status === 'anchored').length))
 const has_systems = systems.length > 0 || areas.length > 0
-/** Structures lead strategic; FW systems (and any theater systems) show when attached. */
-const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'projects' | 'you' | 'settings' )[] = [
-    ...(is_strategic ? ['structures'] as const : []),
-    ...(has_systems || !is_strategic ? ['systems'] as const : []),
-    'fleets',
-    'activity',
-    'pilots',
-    'projects',
-    'you',
-    ...(can_manage ? ['settings'] as const : []),
-]
+const features = campaign.features
+/** Each feature switch shows or hides its tab (helpers/campaign_features). */
+const TABS = campaign_tabs({ kind: campaign.kind, features, has_systems, can_manage })
 const tab_label = (tab:string) => tab === 'settings'
     ? t('campaigns.manage.tab')
     : t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
@@ -89,6 +82,11 @@ const show_structures_tab = TABS.includes('structures')
 
 // Corporation projects directors put toward the campaign; loaded when the tab opens.
 const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(campaign.slug)}`)
+const TIMERS_PARTIAL_URL = translatePath(`/partials/campaign_timers_component?slug=${encodeURIComponent(campaign.slug)}`)
+const DESTRUCTION_PARTIAL_URL = translatePath(`/partials/campaign_destruction_component?slug=${encodeURIComponent(campaign.slug)}`)
+const FLEETS_PARTIAL_URL = translatePath(`/partials/campaign_fleets_component?campaign_id=${campaign.id}`)
+/** Fleets still to run (or running) sit above the history, which only lists finished ones. */
+const upcoming_fleets = fleets.filter((fleet) => fleet.is_live || fleet.status === 'pending')
 const SCHEDULE_FLEET_URL = translatePath(`/fleets/add/?campaign_id=${campaign.id}`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -98,6 +96,7 @@ import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import CampaignOrdersHero from '@components/blocks/CampaignOrdersHero.astro'
+import CampaignPausedBanner from '@components/blocks/CampaignPausedBanner.astro'
 import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
 import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
 import CampaignTheaterList from '@components/blocks/CampaignTheaterList.astro'
@@ -110,11 +109,17 @@ import CampaignCorporationBoard from '@components/blocks/CampaignCorporationBoar
 import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astro'
+import { get_gates, can } from '@helpers/gates'
+
+const can_coordinate = can_manage && can(await get_gates(Astro), 'campaigns.coordination')
 ---
 
 <Flexblock gap='var(--space-l)' class:list={['[ campaign-detail ]', Astro.props.class]} {...attributes}>
+    {campaign.status === 'paused' && <CampaignPausedBanner campaign={campaign} can_manage={can_manage} />}
+
     <CampaignOrdersHero campaign={campaign} week={week} />
 
     <SectionTabs
@@ -160,7 +165,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                                 </Flexblock>
                             </ComponentBlock>
                         }
-                        {!is_strategic && structures.length > 0 &&
+                        {!show_structures_tab && structures.length > 0 &&
                             <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                                 <CampaignStructuresTable
                                     structures={structures}
@@ -187,6 +192,17 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
             </SectionTabPanel>
         }
 
+        {TABS.includes('timers') &&
+            <SectionTabPanel id="timers" id_prefix="campaign" is_default={default_tab === 'timers'}>
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <LazyPartial url={TIMERS_PARTIAL_URL} trigger="reveal">
+                        <p class="[ campaign-panel-label ]">{t('campaigns.timers.loading')}</p>
+                    </LazyPartial>
+                </ComponentBlock>
+            </SectionTabPanel>
+        }
+
+        {TABS.includes('fleets') &&
         <SectionTabPanel id="fleets" id_prefix="campaign" is_default={default_tab === 'fleets'}>
             <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                 <Flexblock gap='var(--space-s)'>
@@ -199,11 +215,26 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                             {t('campaigns.fleets.schedule')}
                         </Button>
                     </FlexInline>
-                    <CampaignFleetsTable fleets={fleets} />
+                    {upcoming_fleets.length > 0 && <CampaignFleetsTable fleets={upcoming_fleets} />}
+                    <LazyPartial url={FLEETS_PARTIAL_URL} trigger="reveal">
+                        <p class="[ campaign-panel-label ]">{t('campaigns.fleets.loading')}</p>
+                    </LazyPartial>
                 </Flexblock>
             </ComponentBlock>
         </SectionTabPanel>
+        }
 
+        {TABS.includes('destruction') &&
+            <SectionTabPanel id="destruction" id_prefix="campaign" is_default={default_tab === 'destruction'}>
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <LazyPartial url={DESTRUCTION_PARTIAL_URL} trigger="reveal">
+                        <p class="[ campaign-panel-label ]">{t('campaigns.destruction.loading')}</p>
+                    </LazyPartial>
+                </ComponentBlock>
+            </SectionTabPanel>
+        }
+
+        {TABS.includes('activity') &&
         <SectionTabPanel id="activity" id_prefix="campaign" is_default={default_tab === 'activity'}>
             <Flexblock gap='var(--space-m)'>
 
@@ -230,7 +261,9 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 }
             </Flexblock>
         </SectionTabPanel>
+        }
 
+        {TABS.includes('pilots') &&
         <SectionTabPanel id="pilots" id_prefix="campaign" is_default={default_tab === 'pilots'}>
             <Flexblock gap='var(--space-m)'>
                 <Flexblock gap='var(--space-2xs)'>
@@ -274,7 +307,9 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 </ComponentBlock>
             </Flexblock>
         </SectionTabPanel>
+        }
 
+        {TABS.includes('projects') &&
         <SectionTabPanel id="projects" id_prefix="campaign" is_default={default_tab === 'projects'}>
             <div
                 hx-get={PROJECTS_PARTIAL_URL}
@@ -284,6 +319,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 <p class="[ campaign-panel-label ]">{t('campaigns.projects.loading')}</p>
             </div>
         </SectionTabPanel>
+        }
 
         <SectionTabPanel id="you" id_prefix="campaign" is_default={default_tab === 'you'}>
             <CampaignYouPanel campaign={campaign} readiness={readiness} flash={token_error} />
@@ -291,7 +327,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
 
         {can_manage &&
             <SectionTabPanel id="settings" id_prefix="campaign" is_default={false}>
-                <CampaignSettingsPanel campaign={campaign} week={week} choices={choices} has_structures_tab={show_structures_tab} />
+                <CampaignSettingsPanel campaign={campaign} week={week} choices={choices} has_structures_tab={show_structures_tab} can_coordinate={can_coordinate} />
             </SectionTabPanel>
         }
     </SectionTabs>

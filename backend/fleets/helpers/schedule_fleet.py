@@ -203,6 +203,7 @@ def resolve_campaign(campaign_id):
     if campaign.status not in (
         CampaignStatus.SCHEDULED,
         CampaignStatus.ACTIVE,
+        CampaignStatus.PAUSED,
     ):
         return 400, ErrorResponse.new(
             f"Campaign {campaign.slug} is {campaign.status}"
