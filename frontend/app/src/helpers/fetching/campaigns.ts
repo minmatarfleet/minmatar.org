@@ -61,7 +61,7 @@ export interface CoverageBar {
 }
 
 /** A fleet can only be attached to a campaign that is open for fights. */
-const ATTACHABLE_CAMPAIGN_STATUSES = [ 'scheduled', 'active' ]
+const ATTACHABLE_CAMPAIGN_STATUSES = [ 'scheduled', 'active', 'paused' ]
 
 /**
  * Id/name/slug only — the campaign dropdown on the fleet schedule form.
@@ -86,7 +86,7 @@ export async function fetch_campaign_options(access_token:string | false = false
 /** Live campaigns first, then the ones yet to open, then everything finished. */
 export const group_campaigns = (campaigns:CampaignListItem[]):CampaignGroups => {
     return {
-        live: campaigns.filter(campaign => campaign.status === 'active'),
+        live: campaigns.filter(campaign => campaign.status === 'active' || campaign.status === 'paused'),
         upcoming: campaigns.filter(campaign => campaign.status === 'scheduled' || campaign.status === 'draft'),
         past: campaigns.filter(campaign => campaign.status === 'completed' || campaign.status === 'archived'),
     }

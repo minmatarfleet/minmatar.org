@@ -39,7 +39,11 @@ TOKEN_CHAIN_URL = (
 )
 
 
-WRITABLE_STATUSES = (CampaignStatus.SCHEDULED, CampaignStatus.ACTIVE)
+WRITABLE_STATUSES = (
+    CampaignStatus.SCHEDULED,
+    CampaignStatus.ACTIVE,
+    CampaignStatus.PAUSED,
+)
 
 
 def _campaign(slug: str) -> Campaign:

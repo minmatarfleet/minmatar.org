@@ -2639,7 +2639,7 @@ export interface CreatorAccount {
     last_synced_at:     string | null;
 }
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'completed' | 'archived'
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'paused' | 'completed' | 'archived'
 export type CampaignAdvantageBasis = 'reading' | 'estimate' | 'unknown'
 export type CampaignStatusChip = 'gaining' | 'holding' | 'losing'
 export type CampaignPace = 'on_pace' | 'behind' | 'ahead'
@@ -2818,6 +2818,7 @@ export interface CampaignDetail {
     standing_fleet_members:     number;
     standing_fleet_boss:        string | null;
     features:                   CampaignFeatures;
+    paused_at:                  string | null;
 }
 
 export interface CampaignWeekTarget {

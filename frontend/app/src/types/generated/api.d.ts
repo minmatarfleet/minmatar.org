@@ -12606,6 +12606,8 @@ export interface components {
              * @default []
              */
             parties?: components["schemas"]["CampaignPartyOut"][];
+            /** Paused At */
+            paused_at?: string | null;
             /** Short Code */
             short_code: string;
             /** Slug */

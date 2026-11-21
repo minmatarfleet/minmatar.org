@@ -50,6 +50,10 @@ REBUILD_LOCK_SECONDS = 30
 CACHE_KEY = "campaigns:overlay:{campaign_id}"
 LOCK_KEY = "campaigns:overlay:{campaign_id}:rebuilding"
 
+# A paused faction warfare campaign stays in the window: kills still count.
+LIVE_STATUSES = (CampaignStatus.ACTIVE, CampaignStatus.PAUSED)
+PAUSED_LABEL = "Paused"
+
 OBJECTIVE_LABELS = {
     "capture_complexes": "Capture complexes",
     "defend_complexes": "Defend complexes",
@@ -61,7 +65,7 @@ OBJECTIVE_LABELS = {
 
 def pick_campaign(user) -> Campaign | None:
     """The live campaign the pilot is enlisted in, else the newest live one."""
-    live = Campaign.objects.filter(status=CampaignStatus.ACTIVE).order_by(
+    live = Campaign.objects.filter(status__in=LIVE_STATUSES).order_by(
         "-start_at"
     )
     enlisted = live.filter(
@@ -115,14 +119,17 @@ def objective_rows(campaign: Campaign) -> list[dict]:
     """The week's objective rows (campaigns/services/objectives.py), in the
     shape installed desktop versions read. Structure objectives have no
     place in the window."""
+    paused = campaign.is_paused
     return [
-        _overlay_row(row)
+        _overlay_row(row, paused)
         for row in objectives.weekly_rows(campaign)
         if row["objective"] in OBJECTIVE_LABELS
     ]
 
 
-def _overlay_row(row: dict) -> dict:
+def _overlay_row(row: dict, paused: bool = False) -> dict:
+    """While a campaign is paused its rows keep their shape but every
+    objective reads "Paused"."""
     return {
         "system_id": row["system_id"],
         "name": row["name"],
@@ -130,7 +137,9 @@ def _overlay_row(row: dict) -> dict:
         "priority": row["priority"],
         "holder": row["holder"],
         "objective": row["objective"],
-        "objective_label": OBJECTIVE_LABELS[row["objective"]],
+        "objective_label": (
+            PAUSED_LABEL if paused else OBJECTIVE_LABELS[row["objective"]]
+        ),
         "progress_percent": _round(row["progress_percent"]),
         "change_week": _round(row["change_week"]),
         "change_24h": _round(row["change_24h"]),

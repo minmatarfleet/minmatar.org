@@ -95,6 +95,7 @@ def list_campaigns(request, status: str = ""):
 
     order = {
         CampaignStatus.ACTIVE: 0,
+        CampaignStatus.PAUSED: 0,
         CampaignStatus.SCHEDULED: 1,
         CampaignStatus.COMPLETED: 2,
         CampaignStatus.ARCHIVED: 3,
@@ -210,6 +211,7 @@ def get_campaign(request, slug: str):
         "standing_fleet_members": 0,
         "standing_fleet_boss": None,
         "features": campaign.features,
+        "paused_at": campaign.paused_at,
     }
 
 

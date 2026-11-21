@@ -28,7 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 def close_week(campaign: Campaign, week_start: date | None = None) -> int:
-    """Decide the week's awards. Idempotent: a code is awarded once a week."""
+    """Decide the week's awards. Idempotent: a code is awarded once a week.
+    A paused campaign hands out none."""
+    if campaign.is_paused:
+        return 0
     week_start = week_start or campaign_week_start()
     rows = CampaignParticipantDay.objects.filter(
         campaign=campaign, day__gte=week_start, day__lt=_next_week(week_start)

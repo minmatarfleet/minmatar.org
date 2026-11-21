@@ -4048,6 +4048,18 @@
             "title": "Parties",
             "type": "array"
           },
+          "paused_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused At"
+          },
           "short_code": {
             "title": "Short Code",
             "type": "string"

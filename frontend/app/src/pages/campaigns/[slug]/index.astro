@@ -127,7 +127,7 @@ if (campaign) {
 }
 
 /** Enlisting only makes sense while the campaign can still be joined. */
-const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'scheduled')
+const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'scheduled')
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 

@@ -93,6 +93,7 @@ import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import CampaignOrdersHero from '@components/blocks/CampaignOrdersHero.astro'
+import CampaignPausedBanner from '@components/blocks/CampaignPausedBanner.astro'
 import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
 import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
 import CampaignTheaterList from '@components/blocks/CampaignTheaterList.astro'
@@ -111,6 +112,8 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
 ---
 
 <Flexblock gap='var(--space-l)' class:list={['[ campaign-detail ]', Astro.props.class]} {...attributes}>
+    {campaign.status === 'paused' && <CampaignPausedBanner campaign={campaign} can_manage={can_manage} />}
+
     <CampaignOrdersHero campaign={campaign} week={week} />
 
     <SectionTabs

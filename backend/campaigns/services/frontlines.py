@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from app.links import PRODUCTION_SITE_URL
 from campaigns.models import (
+    COUNTING_STATUSES,
     Campaign,
     CampaignAdvantageReading,
     CampaignSystem,
@@ -90,7 +91,7 @@ def record_advantage(
             by_id[system_id] = entry
     campaign_systems = CampaignSystem.objects.filter(
         retired_at__isnull=True,
-        campaign__status__in=["scheduled", "active"],
+        campaign__status__in=COUNTING_STATUSES,
     )
     if campaign is not None:
         campaign_systems = campaign_systems.filter(campaign=campaign)

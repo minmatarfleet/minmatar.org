@@ -63,7 +63,11 @@ def get_corporation_projects(request, corporation_id: int):
             _campaign_ref(link.campaign)
         )
     open_campaigns = Campaign.objects.filter(
-        status__in=[CampaignStatus.SCHEDULED, CampaignStatus.ACTIVE]
+        status__in=[
+            CampaignStatus.SCHEDULED,
+            CampaignStatus.ACTIVE,
+            CampaignStatus.PAUSED,
+        ]
     ).order_by("start_at")
 
     return {

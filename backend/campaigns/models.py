@@ -28,12 +28,19 @@ class CampaignStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     SCHEDULED = "scheduled", "Scheduled"
     ACTIVE = "active", "Active"
+    # Faction warfare campaigns only: the alliance is out of the militia for
+    # a while. Kills still count; no weekly targets, orders or week awards.
+    PAUSED = "paused", "Paused"
     COMPLETED = "completed", "Completed"
     ARCHIVED = "archived", "Archived"
 
 
 # Statuses whose campaigns record activity as it happens.
-COUNTING_STATUSES = (CampaignStatus.SCHEDULED, CampaignStatus.ACTIVE)
+COUNTING_STATUSES = (
+    CampaignStatus.SCHEDULED,
+    CampaignStatus.ACTIVE,
+    CampaignStatus.PAUSED,
+)
 
 
 class CampaignKind(models.TextChoices):
@@ -191,6 +198,12 @@ class Campaign(models.Model):
         default=CampaignStatus.DRAFT,
         db_index=True,
     )
+    paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When a faction warfare campaign was paused; cleared on "
+        "resume.",
+    )
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
     visibility = models.CharField(
@@ -305,6 +318,10 @@ class Campaign(models.Model):
     @property
     def is_live(self) -> bool:
         return self.status == CampaignStatus.ACTIVE
+
+    @property
+    def is_paused(self) -> bool:
+        return self.status == CampaignStatus.PAUSED
 
     @property
     def is_counting(self) -> bool:

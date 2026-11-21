@@ -190,6 +190,7 @@ class CampaignDetail(Schema):
     standing_fleet_members: int = 0
     standing_fleet_boss: str | None = None
     features: CampaignFeatures = CampaignFeatures()
+    paused_at: datetime | None = None
 
 
 class CampaignTimerOut(Schema):

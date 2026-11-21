@@ -78,7 +78,7 @@ import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
                     hx-trigger="every 300s"
                     hx-swap="innerHTML"
                 >
-                    <CampaignObjectivesTable week={week} systems={campaign.systems} />
+                    <CampaignObjectivesTable week={week} systems={campaign.systems} paused={campaign.status === 'paused'} />
                 </div>
             </Fragment>
             :
