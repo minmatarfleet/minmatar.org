@@ -149,6 +149,9 @@ services:
         build:
             context: ./frontend/
             dockerfile: Dockerfile
+            # The Dockerfile's last stage is rust. Without this, the website
+            # image is the Storybook server and its healthcheck never passes.
+            target: runtime
             secrets:
                 - frontend_env
         depends_on:
