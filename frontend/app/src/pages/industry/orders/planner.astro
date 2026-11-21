@@ -65,9 +65,10 @@ try {
             type_name: item.eve_type_name,
             quantity: item.quantity,
         }
-    } else {
+    } else if (Astro.url.searchParams.has('type_id') || Astro.url.searchParams.has('order_id') || Astro.url.searchParams.has('item_id')) {
         throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
     }
+    // No product chosen: the page shows a search box to pick one.
 
     facilities = await get_planner_facilities(auth_token || undefined)
     if (is_logged_in)
@@ -144,6 +145,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import EmptyState from '@components/blocks/EmptyState.astro';
 
 const page_title = product
     ? (product.quantity > 1
@@ -153,10 +155,15 @@ const page_title = product
 const viewport_title = product
     ? `${page_title} · ${t('industry.orders.planner.page_title')}`
     : t('industry.orders.planner.page_title')
-// The structure browser's "Plan here" opens the planner on that structure.
-const facility_param = Astro.url.searchParams.get('facility') ?? ''
-const default_facility = facilities.find((facility) => facility.key === facility_param)?.key ?? facilities[0]?.key ?? 'amamake'
-const default_refine = (facilities.find((facility) => facility.key === default_facility) ?? facilities[0])?.reprocessing?.refine_rate ?? 0
+// The structure browser's "Plan here" opens the planner on that structure
+// (?facility=<key>); an unknown key falls back to the first facility.
+const facility_param = (Astro.url.searchParams.get('facility') ?? '').trim().toLowerCase()
+const initial_facility = facilities.find(f => f.key === facility_param) ?? facilities[0]
+const default_facility = initial_facility?.key ?? 'amamake'
+const default_refine = initial_facility?.reprocessing?.refine_rate ?? 0
+const PRODUCT_SEARCH_URL = translatePath(`/partials/planner_product_search_component?${query_string({
+    ...(initial_facility && facility_param === initial_facility.key ? { facility: initial_facility.key } : {}),
+})}`)
 
 const order_code = order?.public_short_code ?? (order_id > 0 ? String(order_id) : null)
 const breadcrumbs = [
@@ -1793,10 +1800,58 @@ const planner_copy = JSON.stringify({
                         </BlockList>
                     </div>
                 </>}
+                {!product &&
+                    <ComponentBlock class="[ planner-search ]">
+                        <Flexblock gap="var(--space-xs)">
+                            <label for="planner-product-search">{t('industry.orders.planner.search_label')}</label>
+                            <Input
+                                id="planner-product-search"
+                                type="search"
+                                name="q"
+                                maxlength="100"
+                                autocomplete="off"
+                                autofocus
+                                placeholder={t('industry.orders.planner.search_placeholder')}
+                                hx-get={PRODUCT_SEARCH_URL}
+                                hx-trigger="input changed delay:300ms, search"
+                                hx-target="#planner-product-search-results"
+                                hx-swap="innerHTML"
+                                hx-sync="this:replace"
+                            />
+                            <div id="planner-product-search-results" aria-live="polite">
+                                <EmptyState title={t('industry.orders.planner.search_hint')} />
+                            </div>
+                        </Flexblock>
+                    </ComponentBlock>
+                }
             }
         </BlockList>
     </PageDefault>
 </Viewport>
+
+<style lang="scss" is:global>
+    .planner-search-results {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        a {
+            display: block;
+            padding: var(--space-3xs) var(--space-2xs);
+            color: var(--foreground);
+            text-decoration: none;
+            border-radius: var(--space-3xs);
+        }
+
+        a:hover,
+        a:focus-visible {
+            background-color: var(--surface-sunken);
+        }
+    }
+</style>
 
 <style lang="scss">
     .planner-beta {

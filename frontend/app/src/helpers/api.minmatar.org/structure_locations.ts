@@ -9,6 +9,7 @@ import type {
     StructureLocationManage,
     StructureLocationRetired,
     StructureLocationHoldings,
+    StructureLocationUsers,
 } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
 
@@ -100,5 +101,12 @@ export async function get_structure_holdings(access_token:string, location_id:nu
     return await api_request<StructureLocationHoldings>(`${API_ENDPOINT}/${location_id}/holdings`, {
         token: access_token,
         error: 'Error fetching alliance holdings',
+    })
+}
+
+export async function get_structure_users(access_token:string | false | null, location_id:number) {
+    return await api_request<StructureLocationUsers>(`${API_ENDPOINT}/${location_id}/users`, {
+        token: access_token || undefined,
+        error: 'Error fetching who uses this structure',
     })
 }

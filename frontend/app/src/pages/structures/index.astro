@@ -54,7 +54,6 @@ import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import StructureCard from '@components/blocks/structures/StructureCard.astro'
-import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
 import StructureAddDialog from '@components/blocks/structures/StructureAddDialog.astro'
 ---
 
@@ -65,21 +64,9 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             <img class="[ structures-band__art ]" src={backdrop} alt="" width="512" height="512" />
             <span class="[ structures-band__veil ]" aria-hidden="true"></span>
             <PageBreadcrumbs is_landing_page={true} links_only={true} breadcrumbs={breadcrumbs} />
-            <div class="[ structures-band__top ]">
-                <div>
-                    <h1>{page_title}</h1>
-                    <p class="[ structures-band__lead ]">{t('structures.lead')}</p>
-                    {staging &&
-                        <a class="[ structures-band__staging ]" href={translatePath(`/structures/${staging.location_id}/`)}>
-                            <StructureFlags flags={[{ kind: 'home' }]} />
-                            <span>{staging.short_name}</span>
-                        </a>
-                    }
-                </div>
-                <div class="[ structures-band__acts ]">
-                    {can_manage && <Button size="sm" color="transparent" href={translatePath('/structures/manage/')}>{t('structures.manage')}</Button>}
-                    {list?.can_add && <StructureAddDialog />}
-                </div>
+            <div>
+                <h1>{page_title}</h1>
+                <p class="[ structures-band__lead ]">{t('structures.lead')}</p>
             </div>
         </header>
 
@@ -116,13 +103,21 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                     </form>
                 </details>
             </div>
-            <nav class="[ manage-chips ]" aria-label={t('structures.views')}>
-                {STRUCTURE_VIEWS.map((name) => (
-                    <a class:list={['[ manage-chip ]', { 'is-on': name === view }]} href={page_query(name, picked_rigs)} aria-current={name === view ? 'page' : undefined}>
-                        {t(t_key('structures.view_', name))} <span class="[ manage-muted ]">{counts[name]}</span>
-                    </a>
-                ))}
-            </nav>
+            <div class="[ structures-controls__views ]">
+                <nav class="[ manage-chips ]" aria-label={t('structures.views')}>
+                    {STRUCTURE_VIEWS.map((name) => (
+                        <a class:list={['[ manage-chip ]', { 'is-on': name === view }]} href={page_query(name, picked_rigs)} aria-current={name === view ? 'page' : undefined}>
+                            {t(t_key('structures.view_', name))} <span class="[ manage-muted ]">{counts[name]}</span>
+                        </a>
+                    ))}
+                </nav>
+                {(can_manage || list?.can_add) &&
+                    <div class="[ structures-controls__acts ]">
+                        {can_manage && <Button size="sm" color="transparent" href={translatePath('/structures/manage/')}>{t('structures.manage')}</Button>}
+                        {list?.can_add && <StructureAddDialog />}
+                    </div>
+                }
+            </div>
             {picked_rigs.length > 0 &&
                 <ul class="[ structures-picked ]" aria-label={t('structures.rigs.label')}>
                     {picked_rigs.map((group) => (
@@ -191,33 +186,24 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             linear-gradient(0deg, var(--background) 0%, transparent 45%);
     }
 
-    .structures-band__top {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: var(--space-m);
-    }
-
     .structures-band__lead {
         margin-top: var(--space-2xs);
         font-size: var(--step-0);
     }
 
-    .structures-band__staging {
-        display: inline-flex;
+    .structures-controls__views {
+        display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: var(--space-2xs);
-        margin-top: var(--space-s);
-        font-weight: 600;
-        color: var(--highlight);
-        text-decoration: none;
+        justify-content: space-between;
+        gap: var(--space-s);
     }
 
-    .structures-band__acts {
+    .structures-controls__acts {
         display: flex;
         align-items: center;
         gap: var(--space-s);
+        margin-inline-start: auto;
     }
 
     .structures-controls {

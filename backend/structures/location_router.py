@@ -1,5 +1,6 @@
 """Structure browser API: /api/structures/locations/..."""
 
+import logging
 from datetime import datetime
 from typing import List, Optional
 
@@ -16,6 +17,7 @@ from . import dock_access as dock
 from . import locations as svc
 from .models import LocationAudienceGroup, LocationChange, LocationSubmission
 
+logger = logging.getLogger(__name__)
 router = Router(tags=["Structure browser"])
 
 
@@ -129,6 +131,7 @@ class LocationDetail(LocationCard):
     audience_tribe_group_ids: List[int]
     changes: List[LocationChangeEntry]
     can_manage: bool
+    can_view_assets: bool
 
 
 class LocationPatch(Schema):
@@ -263,6 +266,24 @@ class LocationHoldings(Schema):
     by_item: List[HoldingType]
 
 
+class LocationUserCorporation(Schema):
+    corporation_id: int
+    name: str
+    pilots: int
+
+
+class LocationUserPilot(Schema):
+    character_id: int
+    name: str
+    corporation_id: Optional[int]
+    corporation_name: str
+
+
+class LocationUsers(Schema):
+    corporations: List[LocationUserCorporation]
+    pilots: List[LocationUserPilot]
+
+
 class LocationManageRow(Schema):
     location_id: int
     name: str
@@ -319,21 +340,51 @@ def _security_map(system_ids) -> dict:
 MEDIUM_STRUCTURES = {35832, 35825, 35835}  # Astrahus, Raitaru, Athanor
 
 
-def _station_types(rows) -> dict:
-    """NPC station type ids from eveuniverse, for card art."""
+STATION_REFRESH_DAYS = 7
+
+
+def _stations(rows) -> dict:
+    """NPC stations from eveuniverse: {id: (type id, ESI service names)},
+    for card art and the station's services. Stations eveuniverse doesn't
+    have, or last loaded over a week ago, are (re)loaded in the background
+    for the next view."""
     # pylint: disable=import-outside-toplevel
+    from datetime import timedelta
+
     from eveuniverse.models import EveStation
 
     ids = [
         row.location_id
         for row in rows
-        if not row.type_id and row.location_id < 100_000_000
+        if not row.is_structure and row.location_id < 100_000_000
     ]
     if not ids:
         return {}
-    return dict(
-        EveStation.objects.filter(id__in=ids).values_list("id", "eve_type_id")
-    )
+    stale_before = timezone.now() - timedelta(days=STATION_REFRESH_DAYS)
+    out = {}
+    fresh = set()
+    for station in EveStation.objects.filter(id__in=ids).prefetch_related(
+        "services"
+    ):
+        out[station.id] = (
+            station.eve_type_id,
+            [s.name for s in station.services.all()],
+        )
+        if station.last_updated and station.last_updated >= stale_before:
+            fresh.add(station.id)
+    load = sorted(set(ids) - fresh)
+    if load:
+        # pylint: disable=import-outside-toplevel
+        from app.celery import app
+
+        try:
+            app.signature(
+                "structures.tasks.load_station_services", args=[load]
+            ).delay()
+        except Exception:  # pylint: disable=broad-except
+            # A refresh for the next view; never fail this one over it.
+            logger.warning("Could not queue station refresh", exc_info=True)
+    return out
 
 
 class CardContext:
@@ -345,14 +396,31 @@ class CardContext:
         self.orders = svc.open_order_counts(ids)
         self.security = _security_map(row.solar_system_id for row in rows)
         self.routes = svc.route_counts(ids)
-        self.stations = _station_types(rows)
+        self.stations = _stations(rows)
         self.indices = caps.cost_indices(row.solar_system_id for row in rows)
+        self.station_services = {
+            sid: caps.station_service_modules(services)
+            for sid, (_, services) in self.stations.items()
+        }
         self.service_ids = caps.service_type_ids(
-            m.get("name", "")
-            for row in rows
-            for m in (row.fitting or [])
-            if m.get("slot") == "service"
+            [
+                m.get("name", "")
+                for row in rows
+                for m in (row.fitting or [])
+                if m.get("slot") == "service"
+            ]
+            + [
+                m["name"]
+                for modules in self.station_services.values()
+                for m in modules
+            ]
         )
+
+    def fitting(self, location) -> list:
+        """The scanned fit; for a station without one, its ESI services."""
+        if location.is_structure or location.fitting:
+            return location.fitting or []
+        return self.station_services.get(location.location_id, [])
 
 
 def _rigs(fitting, sec) -> List[dict]:
@@ -397,8 +465,11 @@ def _costs(location, ctx: CardContext) -> dict:
 
 
 def _card(location, ctx: CardContext) -> dict:
-    fitting = location.fitting or []
-    type_id = location.type_id or ctx.stations.get(location.location_id)
+    fitting = ctx.fitting(location)
+    type_id = (
+        location.type_id
+        or ctx.stations.get(location.location_id, (None, []))[0]
+    )
     sec = ctx.security.get(location.solar_system_id)
     return {
         "location_id": location.location_id,
@@ -754,6 +825,7 @@ def get_location(request, location_id: int):
             ],
             "changes": _changes(location),
             "can_manage": bool(user) and svc.can_manage(user),
+            "can_view_assets": bool(user) and user.is_superuser,
         }
     )
     return card
@@ -956,16 +1028,37 @@ def patch_location(request, location_id: int, payload: LocationPatch):
     auth=AuthBearer(),
     response={200: LocationHoldings, 403: ErrorResponse, 404: ErrorResponse},
     description=(
-        "Which alliance pilots hold items in this structure. Structure "
-        "managers only: it names pilots."
+        "Which alliance pilots hold items in this structure, and which "
+        "items. Superusers only for now: it names pilots and what they hold."
     ),
 )
 def get_holdings(request, location_id: int):
-    if not svc.can_manage(request.user):
-        return _forbidden()
+    if not request.user.is_superuser:
+        return 403, {"detail": "Only superusers can see holdings."}
     if not EveLocation.objects.filter(location_id=location_id).exists():
         return 404, {"detail": "Location not found."}
     return svc.alliance_holdings(location_id)
+
+
+@router.get(
+    "/{location_id}/users",
+    auth=AuthOptional(),
+    response={200: LocationUsers, 404: ErrorResponse},
+    description=(
+        "The corporations and pilots that use this location (items, clones, "
+        "blueprints or recent industry jobs). Public to anyone who can see "
+        "the location, so it names who, never how."
+    ),
+)
+def get_users(request, location_id: int):
+    user = _user(request)
+    if (
+        not svc.visible_locations(user)
+        .filter(location_id=location_id)
+        .exists()
+    ):
+        return 404, {"detail": "Location not found."}
+    return svc.location_users(location_id)
 
 
 @router.post(

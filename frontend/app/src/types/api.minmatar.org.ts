@@ -3401,3 +3401,4 @@ export type StructureRigBonus = ApiResponse<'RigBonus'>
 export type StructureLocationHoldings = ApiResponse<'LocationHoldings'>
 export type StagingLocation = ApiResponse<'StagingLocation'>
 export type Stagings = ApiResponse<'Stagings'>
+export type StructureLocationUsers = ApiResponse<'LocationUsers'>

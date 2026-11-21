@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+// Name search over items a blueprint can manufacture (GET ?q=, 2+ characters).
+// Each match links to the build planner for that item.
+import { search_buildable_types } from '@helpers/sde/items'
+import type { BuildableTypeMatch } from '@helpers/sde/items'
+import { query_string } from '@helpers/string'
+
+const query = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100)
+const facility = (Astro.url.searchParams.get('facility') ?? '').trim().toLowerCase().slice(0, 32)
+
+let matches: BuildableTypeMatch[] = []
+let search_failed = false
+
+if (query.length >= 2) {
+    try {
+        matches = await search_buildable_types(query)
+    } catch (error) {
+        console.error('planner product search failed', error)
+        search_failed = true
+    }
+}
+
+const planner_href = (type_id: number) => translatePath(`/industry/orders/planner?${query_string({
+    type_id,
+    ...(facility ? { facility } : {}),
+})}`)
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+---
+
+{query.length < 2 ?
+    <EmptyState title={t('industry.orders.planner.search_hint')} />
+    : search_failed ?
+    <EmptyState title={t('industry.orders.planner.search_failed')} />
+    : matches.length === 0 ?
+    <EmptyState title={t('industry.orders.planner.search_empty')} />
+    :
+    <ul class="[ planner-search-results ]" role="list">
+        {matches.map(match =>
+            <li>
+                <a href={planner_href(match.type_id)}>
+                    <ItemBadge
+                        item_name={match.type_name}
+                        type_id={match.type_id}
+                        size={32}
+                    />
+                </a>
+            </li>
+        )}
+    </ul>
+}

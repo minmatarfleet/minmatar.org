@@ -27682,6 +27682,10 @@
             "title": "Can Manage",
             "type": "boolean"
           },
+          "can_view_assets": {
+            "title": "Can View Assets",
+            "type": "boolean"
+          },
           "changes": {
             "items": {
               "$ref": "#/components/schemas/LocationChangeEntry"
@@ -27970,7 +27974,8 @@
           "fitting",
           "audience_tribe_group_ids",
           "changes",
-          "can_manage"
+          "can_manage",
+          "can_view_assets"
         ],
         "title": "LocationDetail",
         "type": "object"
@@ -29013,6 +29018,88 @@
           "created_at"
         ],
         "title": "LocationSubmissionRow",
+        "type": "object"
+      },
+      "LocationUserCorporation": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pilots": {
+            "title": "Pilots",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "name",
+          "pilots"
+        ],
+        "title": "LocationUserCorporation",
+        "type": "object"
+      },
+      "LocationUserPilot": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Id"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "corporation_id",
+          "corporation_name"
+        ],
+        "title": "LocationUserPilot",
+        "type": "object"
+      },
+      "LocationUsers": {
+        "properties": {
+          "corporations": {
+            "items": {
+              "$ref": "#/components/schemas/LocationUserCorporation"
+            },
+            "title": "Corporations",
+            "type": "array"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/LocationUserPilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "corporations",
+          "pilots"
+        ],
+        "title": "LocationUsers",
         "type": "object"
       },
       "LogAnalysis": {
@@ -85996,7 +86083,7 @@
     },
     "/api/structures/locations/{location_id}/holdings": {
       "get": {
-        "description": "Which alliance pilots hold items in this structure. Structure managers only: it names pilots.",
+        "description": "Which alliance pilots hold items in this structure, and which items. Superusers only for now: it names pilots and what they hold.",
         "operationId": "structures_location_router_get_holdings",
         "parameters": [
           {
@@ -86126,6 +86213,55 @@
           }
         ],
         "summary": "Retire",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/{location_id}/users": {
+      "get": {
+        "description": "The corporations and pilots that use this location (items, clones, blueprints or recent industry jobs). Public to anyone who can see the location, so it names who, never how.",
+        "operationId": "structures_location_router_get_users",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationUsers"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Users",
         "tags": [
           "Structures",
           "Structure browser"
