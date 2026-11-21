@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
-from eveonline.models import EveCharacterAsset
+from eveonline.models import EveCharacterAsset, EveLocation
 from fleets.helpers.composition import fleet_composition
 from fleets.helpers.private_fleets import (
     _group_ids_by_type,
@@ -163,7 +163,13 @@ def line_owners(fleet: EveFleet, target: EveFleetShipTarget) -> list[dict]:
 def my_target_hangar(fleet: EveFleet, user) -> dict:
     """For the ship picker: which target line each composition hull counts
     toward, and which composition hulls each of the user's characters
-    owns (from ESI assets)."""
+    owns (from ESI assets).
+
+    While the alliance is deployed (a location has deployment_active) and
+    the fleet has a form-up location, each character also says where each
+    hull is parked, and ``formup_ship_type_ids`` keeps only the hulls at the
+    form-up. Otherwise it repeats ``ship_type_ids`` and ``parked`` is empty.
+    """
     composition_hulls = {
         entry.ship_id for entry in fleet_composition(fleet) if entry.ship_id
     }
@@ -175,19 +181,80 @@ def my_target_hangar(fleet: EveFleet, user) -> dict:
             if _line_matches(target, type_id, groups.get(type_id)):
                 lines.append({"ship_type_id": type_id, "target_id": target.id})
                 break
-    owned: dict[int, set[int]] = defaultdict(set)
+    assets = []
     if composition_hulls:
-        for character_id, type_id in EveCharacterAsset.objects.filter(
-            character__user=user, type_id__in=composition_hulls
-        ).values_list("character__character_id", "type_id"):
-            owned[character_id].add(type_id)
+        assets = list(
+            EveCharacterAsset.objects.filter(
+                character__user=user, type_id__in=composition_hulls
+            )
+            .values_list(
+                "character__character_id",
+                "type_id",
+                "location_id",
+                "location_name",
+            )
+            .order_by("character__character_id", "id")
+        )
+    owned: dict[int, set[int]] = defaultdict(set)
+    for character_id, type_id, _, _ in assets:
+        owned[character_id].add(type_id)
+    parked = _parked_hulls(fleet, assets)
     return {
         "lines_by_ship": lines,
         "hangars": [
-            {"character_id": character_id, "ship_type_ids": sorted(types)}
+            {
+                "character_id": character_id,
+                "ship_type_ids": sorted(types),
+                "formup_ship_type_ids": (
+                    sorted(
+                        row["ship_type_id"]
+                        for row in parked[character_id]
+                        if row["at_formup"]
+                    )
+                    if parked is not None
+                    else sorted(types)
+                ),
+                "parked": parked[character_id] if parked is not None else [],
+            }
             for character_id, types in sorted(owned.items())
         ],
     }
+
+
+def _parked_hulls(fleet: EveFleet, assets: list) -> dict | None:
+    """Per character, one row per hull: where it is parked, at the form-up
+    when one is there. None when there is no deployment or no form-up."""
+    formup = fleet.formup_location
+    if (
+        formup is None
+        or not EveLocation.objects.filter(deployment_active=True).exists()
+    ):
+        return None
+    short_names = dict(
+        EveLocation.objects.filter(
+            location_id__in={row[2] for row in assets}
+        ).values_list("location_id", "short_name")
+    )
+    best: dict[int, dict[int, dict]] = defaultdict(dict)
+    for character_id, type_id, location_id, location_name in assets:
+        here = location_id == formup.location_id
+        current = best[character_id].get(type_id)
+        if current and (current["at_formup"] or not here):
+            continue
+        best[character_id][type_id] = {
+            "ship_type_id": type_id,
+            "location_id": location_id,
+            "location_name": short_names.get(location_id)
+            or (location_name or "").split(" - ")[0],
+            "at_formup": here,
+        }
+    return defaultdict(
+        list,
+        {
+            character_id: [rows[type_id] for type_id in sorted(rows)]
+            for character_id, rows in best.items()
+        },
+    )
 
 
 def line_type_ids(target: EveFleetShipTarget) -> set[int]:
