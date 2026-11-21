@@ -3,8 +3,9 @@
  * The body of the Report a structure dialog, one step at a time:
  * Find → Match → Details → Sent. Each step posts to
  * universe_structure_report_component, which renders the next one; what the
- * pilot entered so far travels along as hidden fields. The step strip and
- * layout are the Add a structure dialog's (StructureAddSteps).
+ * pilot entered so far travels along as hidden fields. It renders inside the
+ * shared StructureSteps shell with StructureHowTo clips, like Add a
+ * structure. With a campaign_slug the report also lands on that campaign.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -17,6 +18,7 @@ export interface UniverseReportState {
     type_id:        number | null;
     name:           string;
     structure_id:   number | null;
+    campaign_slug:  string;
 }
 
 interface Props {
@@ -28,7 +30,7 @@ interface Props {
 }
 
 const { step, candidates = [], picked = null, error = null } = Astro.props
-const state: UniverseReportState = { system_name: '', type_id: null, name: '', structure_id: null, ...(Astro.props.state ?? {}) }
+const state: UniverseReportState = { system_name: '', type_id: null, name: '', structure_id: null, campaign_slug: '', ...(Astro.props.state ?? {}) }
 
 // Types a pilot can report; the backend holds the same list.
 const REPORTABLE_TYPES: [number, string][] = [
@@ -48,6 +50,10 @@ const summary = [
     '',
     '',
 ]
+const steps = STEPS.map((name, index) => ({
+    label: t(t_key('universe.report.step_', name)),
+    note: index < current ? summary[index] : index === current ? t(t_key('universe.report.step_now_', name)) : '',
+}))
 const go = (value: string) => JSON.stringify({ go: value })
 
 import Button from '@components/blocks/Button.astro'
@@ -55,25 +61,12 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
+import StructureSteps from '@components/blocks/structures/StructureSteps.astro'
+import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
 ---
 
-<div class="[ structure-add ]">
-    <h2>{t('universe.report.title')}</h2>
-
-    <ol class="[ structure-steps ]" aria-label={t('universe.report.steps')}>
-        {STEPS.map((name, index) => (
-            <li class:list={[{ done: index < current, now: index === current }]} aria-current={index === current ? 'step' : undefined}>
-                <span class="[ structure-steps__node ]">
-                    {index < current
-                        ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
-                        : index + 1}
-                </span>
-                <span class="[ structure-steps__t ]">{t(t_key('universe.report.step_', name))}</span>
-                <span class="[ structure-steps__s ]">{index < current ? summary[index] : index === current ? t(t_key('universe.report.step_now_', name)) : ''}</span>
-            </li>
-        ))}
-    </ol>
-
+<StructureSteps title={t('universe.report.title')} steps_label={t('universe.report.steps')} steps={steps} current={current}>
+    {state.campaign_slug && <input type="hidden" name="campaign_slug" value={state.campaign_slug} />}
     {step !== 'find' &&
         <Fragment>
             <input type="hidden" name="system_name" value={state.system_name} />
@@ -87,6 +80,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 
     {step === 'find' &&
         <div class="[ structure-add__body ]">
+            <StructureHowTo topics={['name']} />
             <div class="[ structure-add__two ]">
                 <ManageField label={t('universe.report.system')} for="universe-report-system">
                     <Input id="universe-report-system" name="system_name" value={state.system_name} required />
@@ -139,6 +133,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 
     {step === 'details' &&
         <div class="[ structure-add__body ]">
+            <StructureHowTo topics={['owner', 'reinforce', 'fitting']} />
             <div class="[ structure-add__two ]">
                 <ManageField label={t('universe.report.corporation')} for="universe-report-corp">
                     <Input id="universe-report-corp" name="corporation_name" value={picked?.corporation_name ?? ''} />
@@ -172,7 +167,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
         <div class="[ structure-add__body ]">
             <div class="[ structure-add__sent ]">
                 <h3>{t('universe.report.sent_title')}</h3>
-                <p>{t('universe.report.sent_body')}</p>
+                <p>{state.campaign_slug ? t('universe.report.sent_body_campaign') : t('universe.report.sent_body')}</p>
             </div>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" x-on:click="close_dialog()">{t('universe.report.done')}</Button>
@@ -180,7 +175,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
             </div>
         </div>
     }
-</div>
+</StructureSteps>
 
 <style lang="scss" is:global>
     .universe-report__choices {

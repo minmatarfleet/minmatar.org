@@ -23,6 +23,7 @@ export const IMAGERY_COLLECTIONS: ImageryCollection[] = [
     { id: 'brand', title: 'Brand marks', description: 'Fleet, SIG and team marks (also on the Branding page).', root: 'public', dir: 'images/brand', recursive: true, layout: 'grid' },
     { id: 'corporations', title: 'Corporation art', description: 'The art each member corporation\'s page and slide uses.', root: 'public', dir: 'images/corporations', recursive: true, layout: 'wide' },
     { id: 'ui-icons', title: 'EVE UI icons', description: 'Raster UI, fleet group, input group and ship class icons.', root: 'public', dir: 'images/icons', recursive: true, layout: 'grid' },
+    { id: 'structure-guide', title: 'Structure dialog clips', description: 'Clips from the EVE client shown in the Add and Report a structure dialogs (StructureHowTo).', root: 'public', dir: 'images/structure-guide', recursive: true, layout: 'grid' },
     { id: 'guides', title: 'Guides', description: 'Screenshots, maps and diagrams in the guides.', root: 'public', dir: 'images/guides', recursive: true, layout: 'wide' },
     { id: 'newsletter', title: 'Newsletter', description: 'Images in the monthly Fleet Dispatch issues.', root: 'public', dir: 'images/newsletter', recursive: true, layout: 'wide' },
     { id: 'campaigns', title: 'Campaigns', description: 'Campaign write-up and Reddit post images.', root: 'public', dir: 'images/campaigns', recursive: true, layout: 'wide' },

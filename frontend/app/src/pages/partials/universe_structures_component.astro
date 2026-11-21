@@ -24,7 +24,6 @@ const gates = await get_gates(Astro)
 if (!can(gates, 'universe.structures')) return HTTP_403_Forbidden()
 
 const PARTIAL_URL = translatePath('/partials/universe_structures_component/')
-const REPORT_URL = translatePath('/partials/universe_structure_report_component/')
 
 let action_error: string | null = null
 let opened: number | null = null
@@ -90,7 +89,7 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
-import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps.astro'
+import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
 ---
 
 <div id="universe-structures" class="[ universe-structures ]" x-data="{ view: 'all', q: '' }">
@@ -109,12 +108,7 @@ import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps
                 </div>
                 <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
                     <ManageSearch id="universe-structures-search" label={t('universe.structures.search')} placeholder={t('universe.structures.search')} x-model="q" />
-                    <DialogButton size="sm" color="fleet-red" max_width="52rem" id="universe-report-button">
-                        {t('universe.structures.report')}
-                        <form slot="dialog" id="universe-report" hx-post={REPORT_URL} hx-target="this" hx-swap="innerHTML" x-on:submit.prevent="">
-                            <UniverseReportSteps step="find" />
-                        </form>
-                    </DialogButton>
+                    <StructureReportDialog />
                 </FlexInline>
             </div>
 

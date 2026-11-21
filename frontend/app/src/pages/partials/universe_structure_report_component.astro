@@ -2,6 +2,8 @@
 /**
  * One step of the Report a structure dialog. The form posts `go` (the step to
  * show next) plus what the pilot entered so far; this renders that step.
+ * Opened from a campaign, the form carries campaign_slug and the sent report
+ * is attached to that campaign as well.
  */
 // no-error-refetch: a form step; errors show inside the dialog.
 import { i18n } from '@helpers/i18n'
@@ -11,6 +13,8 @@ import type { UniverseStructure } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { match_universe_structures, report_universe_structure } from '@helpers/api.minmatar.org/universe'
+import { attach_campaign_structure } from '@helpers/api.minmatar.org/campaigns'
+import { get_structure_type } from '@helpers/eve'
 import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps.astro'
 import type { UniverseReportState } from '@components/blocks/universe/UniverseReportSteps.astro'
 
@@ -29,6 +33,7 @@ const state: UniverseReportState = {
     type_id: number('type_id'),
     name: text('name'),
     structure_id: number('structure_id'),
+    campaign_slug: text('campaign_slug'),
 }
 
 let step: 'find' | 'match' | 'details' | 'sent' = 'find'
@@ -52,7 +57,7 @@ try {
             }
         }
     } else if (go === 'send') {
-        await report_universe_structure(auth_token, {
+        const report = {
             structure_id: state.structure_id,
             system_name: state.system_name,
             type_id: state.type_id ?? 0,
@@ -62,7 +67,21 @@ try {
             affiliated_alliance_name: text('affiliated_alliance_name'),
             reinforce_hour: number('reinforce_hour'),
             fitting: text('fitting'),
-        })
+        }
+        await report_universe_structure(auth_token, report)
+        const structure_type = state.type_id === null ? null : get_structure_type(state.type_id)
+        if (state.campaign_slug && structure_type) {
+            await attach_campaign_structure(state.campaign_slug, auth_token, {
+                name: report.name,
+                structure_type,
+                system_name: report.system_name,
+                corporation_name: report.corporation_name,
+                alliance_name: report.alliance_name,
+                related_alliance_name: report.affiliated_alliance_name,
+                fitting: report.fitting,
+                reinforce_hour: report.reinforce_hour,
+            })
+        }
         step = 'sent'
     }
 } catch (failure) {

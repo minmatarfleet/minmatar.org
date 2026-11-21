@@ -1152,3 +1152,12 @@ export interface TribeChiefOpenSeat {
     region:     string;
     label:      string;
 }
+
+/** One numbered step in a structure dialog's step strip (StructureSteps). */
+export interface StructureStep {
+    label:  string;
+    note:   string;
+}
+
+/** A "how to get this from EVE" topic shown under a structure dialog step (StructureHowTo). */
+export type StructureHowToTopic = 'name' | 'owner' | 'reinforce' | 'fitting' | 'dscan'

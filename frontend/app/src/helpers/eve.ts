@@ -67,28 +67,30 @@ export const parse_eve_html = (html:string):string => {
     return $.html()
 }
 
-export const get_structure_id = (structure_type:string):number => {
-    const STRUCTURE_TYPE_BY_ID = {
-        'astrahus': 35832,
-        'fortizar': 35833,
-        'keepstar': 35834,
-        'raitaru': 35825,
-        'azbel': 35826,
-        'sotiyo': 35827,
-        'athanor': 35835,
-        'tatara': 35836,
-        'tenebrex_cyno_jammer': 37534,
-        'pharolux_cyno_beacon': 35840,
-        'ansiblex_jump_gate': 35841,
-        'orbital_skyhook': 81080,
-        'metenox_moon_drill': 81826,
-        'mercenary_den': 85230,
-        'player_owned_customs_office': 2233,
-        'player_owned_starbase': 20059,
-    }
-
-    return STRUCTURE_TYPE_BY_ID[structure_type] ?? null
+const STRUCTURE_TYPE_BY_ID:Record<string, number> = {
+    'astrahus': 35832,
+    'fortizar': 35833,
+    'keepstar': 35834,
+    'raitaru': 35825,
+    'azbel': 35826,
+    'sotiyo': 35827,
+    'athanor': 35835,
+    'tatara': 35836,
+    'tenebrex_cyno_jammer': 37534,
+    'pharolux_cyno_beacon': 35840,
+    'ansiblex_jump_gate': 35841,
+    'orbital_skyhook': 81080,
+    'metenox_moon_drill': 81826,
+    'mercenary_den': 85230,
+    'player_owned_customs_office': 2233,
+    'player_owned_starbase': 20059,
 }
+
+export const get_structure_id = (structure_type:string):number => STRUCTURE_TYPE_BY_ID[structure_type] ?? null
+
+/** The structure_type key for an EVE type id (35832 → 'astrahus'), or null. */
+export const get_structure_type = (type_id:number):string | null =>
+    Object.entries(STRUCTURE_TYPE_BY_ID).find(([, id]) => id === type_id)?.[0] ?? null
 
 export const get_ship_type_icon = (ship_type:string):string | null => ship_group_icon(ship_type)
 
